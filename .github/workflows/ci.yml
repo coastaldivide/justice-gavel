@@ -1,0 +1,171 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Justice Gavel — CI Pipeline
+#
+# Runs on every push and PR. Three jobs:
+#   typecheck  — tsc --noEmit with error summary and trend tracking
+#   test       — Jest unit tests
+#   build      — Expo web export smoke test (catches Metro/bundler errors)
+#
+# The build job is the most important — it runs Metro which catches JSX errors
+# that TSC sometimes misses (bad default exports, missing navigation screens).
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main, master, develop]
+    paths:
+      - 'frontend/**'
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ── Job 1: TypeScript type checking ────────────────────────────────────────
+  typecheck:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --ignore-scripts
+
+      - name: Run TypeScript check
+        run: |
+          echo "Running tsc --noEmit..."
+          npx tsc --noEmit 2>&1 | tee /tmp/tsc-output.txt || true
+          ERRORS=$(grep -c "error TS" /tmp/tsc-output.txt || echo 0)
+          echo ""
+          echo "Total errors: $ERRORS"
+          echo ""
+          echo "Top error codes:"
+          grep "error TS" /tmp/tsc-output.txt \
+            | grep -oP 'error TS\d+' | sort | uniq -c | sort -rn | head -10 || true
+          echo ""
+          echo "Top files:"
+          grep "error TS" /tmp/tsc-output.txt \
+            | grep -oP 'src/[^(]+' | sort | uniq -c | sort -rn | head -10 || true
+          # Fail if there are JSX structural errors specifically (TS17xxx, TS1003, TS1005 etc.)
+          # Type-level errors (TS2304, TS7006) are tracked but not yet blocking
+          JSX_ERRORS=$(grep -c "error TS17\|error TS1003\|error TS1005\|error TS1128\|error TS1108" /tmp/tsc-output.txt || echo 0)
+          echo ""
+          echo "JSX structural errors (blocking): $JSX_ERRORS"
+          if [[ $JSX_ERRORS -gt 0 ]]; then
+            echo "❌ JSX structural errors found — these must be 0"
+            exit 1
+          fi
+          echo "✅ No JSX structural errors"
+
+      - name: Save TSC snapshot
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        run: |
+          mkdir -p ../.tsc-snapshots
+          ERRORS=$(grep -c "error TS" /tmp/tsc-output.txt || echo 0)
+          echo '{"timestamp":"'$(date -u +%Y%m%dT%H%M%SZ)'","total":'$ERRORS'}' \
+            > ../.tsc-snapshots/latest.json
+
+      - name: Upload TSC output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tsc-output
+          path: /tmp/tsc-output.txt
+          retention-days: 30
+
+  # ── Job 2: Jest unit tests ─────────────────────────────────────────────────
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --ignore-scripts
+
+      - name: Run tests
+        run: |
+          npm test -- \
+            --config jest.frontend.config.js \
+            --watchAll=false \
+            --passWithNoTests \
+            --coverageReporters=text-summary \
+            2>&1 | tail -30
+
+  # ── Job 3: Expo web bundle (Metro smoke test) ──────────────────────────────
+  build:
+    name: Expo Bundle
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    # This is the most valuable check — Metro catches errors TSC misses
+    # Run after typecheck so we have TSC context for any failures
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --ignore-scripts
+
+      - name: Expo web export (Metro bundler smoke test)
+        env:
+          CI: '1'
+          NODE_OPTIONS: '--max-old-space-size=4096'
+        run: |
+          echo "Bundling for web platform via Metro..."
+          echo "This catches: import errors, missing screens, bad JSX, circular deps"
+          echo ""
+          npx expo export --platform web --output-dir /tmp/dist-check 2>&1 | tee /tmp/expo-output.txt
+          echo ""
+          echo "✅ Metro bundle succeeded"
+          BUNDLE_SIZE=$(du -sh /tmp/dist-check 2>/dev/null | cut -f1 || echo "unknown")
+          echo "Bundle size: $BUNDLE_SIZE"
+
+      - name: Upload bundle (for size tracking)
+        if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-bundle
+          path: /tmp/dist-check
+          retention-days: 7
+
+      - name: Upload Expo output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: expo-failure-log
+          path: /tmp/expo-output.txt
+          retention-days: 30

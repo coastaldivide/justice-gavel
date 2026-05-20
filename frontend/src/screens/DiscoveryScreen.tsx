@@ -148,7 +148,6 @@ function Section({
               onPress={() => Clipboard.setString(item)}
             accessibilityRole="button"
               accessibilityLabel={`Copy item: ${item}`}
-              accessibilityRole="button"
             >
               <View style={[styles.itemBullet, { backgroundColor: color }]}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.itemBulletText}>
@@ -449,7 +448,6 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
         onPress={pickFile}
         activeOpacity={0.8}
         accessibilityLabel="Select discovery document"
-        accessibilityRole="button"
       >
         {file ? (
           <>
@@ -494,7 +492,6 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
               borderColor: docType === t ? COLORS.navy : colors.border }]}
             onPress={() => setDocType(docType === t ? '' : t)}
             accessibilityLabel={t}
-            accessibilityRole="radio"
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.typeChipText,
               { color: docType === t ? colors.bgCard : colors.textSecond }]}>

@@ -673,7 +673,6 @@ export default function DeadlineCalculatorScreen(): JSX.Element {
                 title: 'Legal Deadlines' });
             } catch {}
           }}
-          accessibilityRole="button"
           accessibilityLabel="Share deadline results"
         >
           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>

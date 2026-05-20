@@ -362,7 +362,6 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
             onPress={() => navigation.navigate('HomeTab')}
             activeOpacity={0.88}
             accessibilityLabel={`Court date in ${upcomingCase.daysLeft} days -- tap to review case`}
-            accessibilityRole="button"
           >
             <View style={styles.courtCountdownLeft}>
               <Text maxFontSizeMultiplier={1.4} style={styles.courtCountdownNum}>{upcomingCase.daysLeft}</Text>

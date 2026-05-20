@@ -258,7 +258,6 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): JSX
             ]}
             onPress={() => setCharge(ct.key === charge ? '' : ct.key)}
             accessibilityLabel={ct.label}
-            accessibilityRole="radio"
             accessibilityState={{ selected: charge === ct.key }}>
             <Text maxFontSizeMultiplier={1.4} style={[
               styles.chargeChipText,
@@ -283,7 +282,6 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): JSX
             ]}
             onPress={() => setPrior(p.key)}
             accessibilityLabel={p.label}
-            accessibilityRole="radio"
             accessibilityState={{ selected: prior === p.key }}>
             <Text maxFontSizeMultiplier={1.4} style={[
               styles.priorChipText,

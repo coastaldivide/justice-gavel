@@ -280,7 +280,6 @@ function StepCard({ step, color, isActive, onPress }: {
                 Alert.alert('Reminder set ✓', 'We\'ll remind you about this step tomorrow.');
               } catch { /* silent */ }
             }}
-            accessibilityRole="button"
             accessibilityLabel="Set a reminder for this step"
           >
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12 }}>🔔</Text>

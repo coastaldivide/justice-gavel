@@ -262,7 +262,6 @@ export default function CaseTimelineScreen({ navigation, route }: ScreenProps): 
                 ]
               );
             }}
-          accessibilityRole="button"
           accessibilityLabel={`${label}: ${item.title}. Long press to remove.`}
           accessibilityHint={item.id < 0 ? "Auto-recorded status change" : "Long press for options"}
           activeOpacity={0.85}

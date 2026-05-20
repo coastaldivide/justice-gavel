@@ -654,7 +654,6 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           accessibilityLabel="Go to More"
           style={[styles.savedHeaderBtn]}
           onPress={() => navigation.navigate('MoreTab', { screen: 'SavedLawyers' })}
-          accessibilityLabel="View saved lawyers"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.savedHeaderBtnText}>⭐ Saved</Text>
         </TouchableOpacity>
@@ -689,7 +688,6 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
                 marginBottom: 10, borderWidth: 1,
                 borderColor: colors.navy + '40',
               }}
-              accessibilityRole="button"
               accessibilityLabel="Upgrade to Pro for verified credentials and response times">
               <Text maxFontSizeMultiplier={1.2}
                 style={{ fontSize: 12, color: colors.navy, flex: 1 }}>

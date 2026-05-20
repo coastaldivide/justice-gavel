@@ -159,7 +159,6 @@ function LangPicker({
           }]}
           onPress={() => onChange(l.code)}
           accessibilityLabel={`${l.label} -- ${l.native}`}
-          accessibilityRole="radio"
           accessibilityState={{ selected: value === l.code }}>
           <Text maxFontSizeMultiplier={1.4} style={styles.langChipFlag}>{l.flag}</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.langChipLabel,
@@ -447,7 +446,6 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): JS
               onPress={() => createSession(m.key as 'solo'|'split')}
               disabled={creating}
               accessibilityLabel={m.label}
-              accessibilityRole="button"
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.modeIcon}>{m.icon}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.modeLabel, { color: colors.textPrimary }]}>{m.label}</Text>

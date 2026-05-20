@@ -547,7 +547,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): J
                         // Share API unavailable on this browser/device — fail silently
 
                     }}}
-                    accessibilityRole="button" accessibilityLabel="Share petition draft"
+ accessibilityLabel="Share petition draft"
                   >
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14,
                       color: colors.navy, fontWeight: '600' }}>Share</Text>

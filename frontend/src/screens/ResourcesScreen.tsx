@@ -204,7 +204,6 @@ export default function ResourcesScreen(): JSX.Element {
                   shadowOffset:{ width:0, height:2 },
                 }}
                 accessibilityLabel={item.title}
-                accessibilityRole="button"
               >
                 {/* Header row */}
                 <View style={{ flexDirection:'row', alignItems:'flex-start', gap:8 }}>

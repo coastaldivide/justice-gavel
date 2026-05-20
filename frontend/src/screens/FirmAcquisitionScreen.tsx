@@ -181,7 +181,6 @@ export default function FirmAcquisitionScreen({ navigation }: ScreenProps<'FirmA
             <TouchableOpacity key={f} style={[s.flowBtn, flow===f && s.flowBtnActive]} onPress={() => setFlow(f)}
                       accessibilityRole="button"
               accessibilityLabel='Select firm vertical'
-              accessibilityRole='button'
             >
               <Text style={[s.flowLabel, flow===f && s.flowLabelActive]}>
                 {f === 'browse' ? '🔍 Explore' : '🚀 Start Free Trial'}

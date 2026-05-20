@@ -86,8 +86,8 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
           </Text>
         </View>
       )}
-      {!!item.notes && <Markdown style={{ body: { fontSize:14, lineHeight:21, color:COLORS.textSecond } }} maxFontSizeMultiplier={1.4} style={styles.cardNotes} numberOfLines={2}>{item.notes}</Markdown>}
-      <Text maxFontSizeMultiplier={1.4} style={styles.cardCreated}>Created {new Date(item.created_at).toLocaleDateString()}</Text>
+      {!!item.notes && <Markdown style={{ body: { fontSize:14, lineHeight:21, color:COLORS.textSecond } }} maxFontSizeMultiplier={1.4} numberOfLines={2}>{item.notes}</Markdown>}
+      <Text maxFontSizeMultiplier={1.4}>Created {new Date(item.created_at).toLocaleDateString()}</Text>
       <TouchableOpacity
         style={styles.shareBtn}
         onPress={() => onShare(item)}
@@ -682,7 +682,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
           onPress={() => setActiveTab('tools')}
             accessibilityRole="button"
           accessibilityLabel="Defender Tools"
-          accessibilityRole="tab"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'tools' && styles.tabBtnTextActive]}>
             {t('case_tab_tools')}
@@ -743,10 +742,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
           windowSize={10}
           removeClippedSubviews={true}
           getItemLayout={(_, index) => ({ length: 130, offset: 130 * index, index })}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={true}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadSavedLawyers().finally(() => setRefreshing(false)); }} tintColor={colors.textSecond} />}
               data={cases}
               keyExtractor={i => String(i.id)}
@@ -1024,7 +1019,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
   privilegeNote:     { borderRadius: 8, borderWidth: 1, padding: 10, marginTop: 6 },
   privilegeNoteText: { fontSize: 11, lineHeight: 16 }});
             }}
-            accessibilityRole="button"
             accessibilityLabel="Discuss case with AI"
           >
             <View style={[styles.toolCardIcon, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>

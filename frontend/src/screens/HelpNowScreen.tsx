@@ -102,7 +102,6 @@ function ContactCard({ contact, type }: { contact: Record<string,unknown>; type:
           onPress={() => callPhone(contact.phone)}
             accessibilityRole="button"
             activeOpacity={0.85}
-          activeOpacity={0.85}
           accessibilityLabel={`Call ${contact.name}`}
           accessibilityHint="Opens your phone dialer to call this contact"
         >
@@ -354,7 +353,6 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): JSX.E
                   style={styles.cityRow}
                   onPress={() => fetchForCity(city)}
                     activeOpacity={0.85}
-                  activeOpacity={0.75}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.cityRowText}>📍  {city}</Text>
                 </TouchableOpacity>
@@ -578,8 +576,6 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): JSX.E
                         }
           }}
           activeOpacity={0.85}
-          accessibilityLabel="Share Justice Gavel with someone who might need it"
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.referralPromptIcon}>🤝</Text>
           <View style={{ flex: 1 }}>

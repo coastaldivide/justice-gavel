@@ -57,7 +57,6 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
         borderWidth: 1,
         borderColor: colors.border,
       }}
-      accessibilityRole="button"
       accessibilityLabel={`Attorney ${lawyer.name}${dist ? `, ${dist} away` : ''}`}>
 
       {/* Header row */}

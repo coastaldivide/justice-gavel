@@ -93,7 +93,6 @@ function ResultCard({ contact, type, price }: { contact: Record<string,unknown>;
           onPress={() => callPhone(contact.phone)}
             accessibilityRole="button"
             activeOpacity={0.85}
-          activeOpacity={0.85}
           accessibilityLabel={`Call ${contact.name}`}
           accessibilityHint="Opens your phone dialer"
         >

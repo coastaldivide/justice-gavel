@@ -106,7 +106,6 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
                 setSituation(sit.key);
                 setShowSituationPicker(false);
               }}
-              accessibilityRole="button"
               accessibilityLabel={sit.label}
               activeOpacity={0.8}
             >

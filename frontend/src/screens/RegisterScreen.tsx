@@ -81,7 +81,6 @@ export default function RegisterScreen({ navigation }: ScreenProps): JSX.Element
               secureTextEntry={!showPassword}
               value={password}
               onChangeText={v => { setPassword(v); setError(''); }}
-              secureTextEntry={!showPass}
               textContentType="newPassword" returnKeyType="next"
               onSubmitEditing={() => nameRef.current?.focus()}
               selectionColor={COLORS.steel}

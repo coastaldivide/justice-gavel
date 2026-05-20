@@ -913,7 +913,6 @@ const loadHistory = useCallback(async () => {
             );
           }}
           accessibilityLabel={`Generate ${selected.label} for $9.99`}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.generateBtnText}>
             Generate {selected.label} -- $9.99 →

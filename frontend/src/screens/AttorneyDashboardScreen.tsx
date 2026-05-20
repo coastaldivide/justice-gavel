@@ -760,7 +760,6 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): JS
                   Alert.alert('Could not submit', e.response?.data?.error || 'Try again.');
                 }
               }}
-              accessibilityRole="button"
               accessibilityLabel="Submit bar number for verification"
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.legal }]}>✅  Submit Bar Number for Verification →</Text>

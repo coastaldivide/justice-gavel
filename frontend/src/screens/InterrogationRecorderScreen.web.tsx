@@ -159,7 +159,6 @@ export default function InterrogationRecorderScreen(): JSX.Element {
               borderWidth: step === 'recording' ? 3 : 0,
               borderColor: '#FF5252',
             }}
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 36 }}>
               {step === 'recording' ? '⏹' : '🎙️'}

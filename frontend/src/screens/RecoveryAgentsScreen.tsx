@@ -240,7 +240,6 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): JSX.E
             onPress={() => openWeb(item.website)}
             accessibilityRole="button"
             activeOpacity={0.85}
-            accessibilityRole="link"
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.webBtnText,
               { color: colors.blue }]}>🌐 Website</Text>
@@ -275,7 +274,6 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): JSX.E
                   hapticImpact();
                   setState(st);
                 }}
-                accessibilityRole="button"
               >
                 <Text maxFontSizeMultiplier={1.2} style={[styles.statePillText,
                   { color: selectedState === st ? '#fff' : colors.textSecond }]}>

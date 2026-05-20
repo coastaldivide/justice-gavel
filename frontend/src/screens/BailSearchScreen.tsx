@@ -282,7 +282,6 @@ export default function BailSearchScreen(): JSX.Element {
                 return result;
               })()
           }
-          keyExtractor={i => String(i.id)}
           contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
@@ -336,7 +335,6 @@ export default function BailSearchScreen(): JSX.Element {
           style={styles.callBtnBig}
           onPress={() => callPhone(item?.phone)}
           activeOpacity={0.85}
-          accessibilityLabel={`Call ${item?.name}`}
           accessibilityHint="Opens your phone dialer"
           >
           <Text maxFontSizeMultiplier={1.4} style={styles.callBtnBigText}>📞  CALL NOW  --  {item?.phone}</Text>
@@ -389,7 +387,6 @@ export default function BailSearchScreen(): JSX.Element {
             style={{ flexDirection:'row', alignItems:'center', gap:6,
               paddingVertical:8, paddingHorizontal:12,
               backgroundColor:colors.infoBg, borderRadius:20, marginTop:6 }}
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14 }}>📍</Text>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color:colors.blue, fontWeight:'600' }}>Use My Location</Text>

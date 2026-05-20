@@ -133,7 +133,6 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
                 borderWidth: 1.5,
                 borderColor: isSel ? colors.primary : (colors.border),
               }}
-              accessibilityRole="button"
               accessibilityLabel={s.charge}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

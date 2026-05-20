@@ -218,7 +218,6 @@ function ResearchBubble({ msg }: { msg: Message }) {
           onPress={() => Clipboard.setString(msg.content)}
             accessibilityRole="button"
           accessibilityLabel="Copy research result"
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: colors.textMuted }]}>Copy</Text>
         </TouchableOpacity>
@@ -246,7 +245,6 @@ function ResearchBubble({ msg }: { msg: Message }) {
             } catch { Alert.alert('Export failed', 'Could not generate PDF.'); }
           }}
           accessibilityLabel="Export as PDF"
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>PDF Export</Text>
         </TouchableOpacity>
@@ -258,7 +256,6 @@ function ResearchBubble({ msg }: { msg: Message }) {
           onPress={() => onDiscussWithAI(msg.content)}
             accessibilityRole="button"
           accessibilityLabel="Discuss this research with AI"
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>⚖️ Discuss with AI</Text>
         </TouchableOpacity>
@@ -331,7 +328,6 @@ function PaywallView({ onSubscribe, loading, colors, isDark }: Record<string,unk
             accessibilityRole="button"
           disabled={loading}
           accessibilityLabel="Subscribe to Legal Research for $49.99/mo"
-          accessibilityRole="button"
         >
           {loading
             ? <ActivityIndicator color={colors.bgCard} />
@@ -342,7 +338,6 @@ function PaywallView({ onSubscribe, loading, colors, isDark }: Record<string,unk
           onPress={() => onSubscribe('legal_research_annual')}
             accessibilityRole="button"
           disabled={loading}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.annualBtnText, { color: COLORS.navy }]}>
             Annual -- $374.99/yr · Save $224/yr
@@ -357,7 +352,7 @@ function PaywallView({ onSubscribe, loading, colors, isDark }: Record<string,unk
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function LegalResearchScreen({ route, navigation }: ScreenProps)
+export default function LegalResearchScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
@@ -608,7 +603,6 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps)
                   }]}
                   onPress={() => runSearch(p.text)}
                   accessibilityLabel={p.label}
-                  accessibilityRole="button"
                 >
                   <Text maxFontSizeMultiplier={1.4} style={[styles.quickChipText, { color: colors.textPrimary }]}>
                     {p.label}
@@ -690,7 +684,6 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps)
             accessibilityRole="button"
           disabled={!query.trim() || searching}
           accessibilityLabel="Run legal research"
-          accessibilityRole="button"
         >
           {searching
             ? <ActivityIndicator color={colors.bgCard} size="small" />
@@ -794,3 +787,5 @@ const styles = StyleSheet.create({
   cutoffBanner:  { borderRadius: 8, borderWidth: 1, padding: 8, marginBottom: 10 },
   cutoffText:    { fontSize: 11, lineHeight: 16 },
 });
+
+}

@@ -101,7 +101,6 @@ export default function AgeGateScreen({ route, navigation }: ScreenProps) {
     }
   }}
           accessibilityLabel="I am the parent or guardian"
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.familyBtnText}>
             I'm a parent or guardian -- get help now →

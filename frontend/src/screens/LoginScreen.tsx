@@ -107,7 +107,6 @@ export default function LoginScreen({ navigation }: ScreenProps): JSX.Element {
               secureTextEntry={!showPassword}
               value={password}
               onChangeText={v => { setPassword(v); setError(''); }}
-              secureTextEntry={!showPass}
               textContentType="password"
               returnKeyType="done"
               onSubmitEditing={onLogin}

@@ -233,12 +233,9 @@ export default function CourtFormsScreen({ route, navigation }: ScreenProps): JS
           keyExtractor={item => item.state}
           renderItem={renderStateItem}
           ItemSeparatorComponent={() => <View style={s.separator} />}
-          initialNumToRender={15}
-          windowSize={10}
-          removeClippedSubviews
           getItemLayout={(_, index) => ({ length: 72, offset: 72 * index, index })}
           ListHeaderComponent={
-            <View style={s.disclaimer}>
+            <View>
               <Text maxFontSizeMultiplier={1.4} style={s.disclaimerText}>
                 All forms link to official .gov and court websites. Government forms
                 are public domain (17 U.S.C. § 105).

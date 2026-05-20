@@ -180,7 +180,6 @@ export default function CourtLocatorScreen(): JSX.Element {
                 shadowColor: colors.textPrimary, shadowOpacity: 0.06,
                 shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
               }}
-              accessibilityRole="button"
               accessibilityLabel={item.name}
             >
               {/* Header */}

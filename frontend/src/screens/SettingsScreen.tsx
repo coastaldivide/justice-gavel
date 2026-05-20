@@ -440,7 +440,6 @@ export default function SettingsScreen({ route, navigation }: ScreenProps) {
               ]}
               onPress={() => toggleLang(l.code)}
               accessibilityLabel={`Switch language to ${l.label}`}
-              accessibilityRole="radio"
               accessibilityState={{ selected: language === l.code }}>
               <Text maxFontSizeMultiplier={1.4} style={[
                 styles.langChipText,
@@ -543,7 +542,6 @@ export default function SettingsScreen({ route, navigation }: ScreenProps) {
             Alert.alert('Push test failed', e.response?.data?.error || e.message);
           }
         }}
-        accessibilityRole="button"
         accessibilityLabel="Send a test push notification"
       >
         <Text maxFontSizeMultiplier={1.4} style={[styles.testPushText, { color: colors.textMuted }]}>Send test notification →</Text>
@@ -769,7 +767,6 @@ export default function SettingsScreen({ route, navigation }: ScreenProps) {
                 await StoreReview.requestReview();
               }
             }}
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.3} style={{ color:colors.textPrimary, fontSize:14 }}>
               ⭐ Rate Justice Gavel
