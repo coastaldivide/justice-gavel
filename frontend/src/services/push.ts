@@ -1,0 +1,3 @@
+import * as Notifications from 'expo-notifications'; import * as Device from 'expo-device';
+Notifications.setNotificationHandler({ handleNotification: async()=>({ shouldShowAlert:true, shouldPlaySound:false, shouldSetBadge:false }) });
+export async function registerForPush(){ if(!Device.isDevice) throw new Error('Use device for Push'); const { status:existing } = await Notifications.getPermissionsAsync(); let final=existing; if(existing!=='granted'){ const { status } = await Notifications.requestPermissionsAsync(); final=status; } if(final!=='granted') throw new Error('Push not granted'); const token=(await Notifications.getExpoPushTokenAsync()).data; return token; }

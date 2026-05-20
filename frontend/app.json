@@ -1,0 +1,276 @@
+{
+  "expo": {
+    "name": "Justice Gavel",
+    "slug": "justicegavel",
+    "version": "5.89.11",
+    "orientation": "portrait",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "extra": {
+      "apiBase": "http://localhost:4000/api",
+      "apiBaseDevice": "http://YOUR_LOCAL_IP:4000/api",
+      "_note": "Set EXPO_PUBLIC_API_BASE=https://your-deployed-backend.railway.app/api before building for production",
+      "_apiBase_instructions": "BEFORE BUILDING: replace apiBase with your deployed backend URL. E.g. https://your-app.railway.app \u2014 see DevHandoff doc.",
+      "EXPO_PUBLIC_SENTRY_DSN": "",
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+      },
+      "reviewNotes": "Reviewer credentials: see App Store Connect > App Review Notes. Subscription purchase on iOS opens the web browser to justicegavel.app/subscribe \u2014 this is the intended behavior per Apple guideline \u00a73.1.1 compliance while native StoreKit integration is in development. All other features are fully functional."
+    },
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#042C53"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.justicegavel.mobile",
+      "buildNumber": "5991",
+      "infoPlist": {
+        "NSCalendarsUsageDescription": "Justice Gavel adds your court dates to your calendar so you never miss a hearing.",
+        "NSCalendarsWriteOnlyAccessUsageDescription": "Justice Gavel adds your court dates to your calendar so you never miss a hearing.",
+        "NSPhotoLibraryUsageDescription": "Justice Gavel reads documents from your photo library to populate case details.",
+        "NSCameraUsageDescription": "Justice Gavel uses the camera to scan charging documents and bail slips.",
+        "NSFaceIDUsageDescription": "Justice Gavel uses Face ID to protect your sensitive legal information.",
+        "NSMicrophoneUsageDescription": "Justice Gavel uses your microphone to record voice notes that are transcribed into text for your case.",
+        "NSLocationWhenInUseUsageDescription": "Justice Gavel uses your location to find nearby attorneys, bail bondsmen, and court facilities.",
+        "NSContactsUsageDescription": "Justice Gavel accesses your contacts to let you add emergency contacts for the SOS feature.",
+        "NSPhotoLibraryAddUsageDescription": "Justice Gavel saves documents to your photo library.",
+        "NSSpeechRecognitionUsageDescription": "Justice Gavel uses speech recognition to transcribe your voice notes.",
+        "UIBackgroundModes": [
+          "audio",
+          "fetch",
+          "location"
+        ],
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Justice Gavel uses your location in the background to notify you when someone you are monitoring has been arrested in your county.",
+        "NSLocationAlwaysUsageDescription": "Background location is used only for the arrest monitor feature when enabled."
+      },
+      "appStoreUrl": "https://apps.apple.com/app/justice-gavel/id0000000000",
+      "appleCategoryId": "REFERENCE",
+      "associatedDomains": [
+        "applinks:justicegavel.app"
+      ],
+      "privacyPolicyURL": "https://justicegavel.app/privacy",
+      "privacyManifests": {
+        "NSPrivacyTracking": false,
+        "NSPrivacyTrackingDomains": [],
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryFileTimestamp",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "C617.1"
+            ]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryDiskSpace",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "E174.1"
+            ]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategorySystemBootTime",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "35F9.1"
+            ]
+          },
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryCoarseLocation",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
+          }
+        ],
+        "NSPrivacyCollectedDataTypes": [
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeAudioData",
+            "NSPrivacyCollectedDataTypeLinked": false,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePreciseLocation",
+            "NSPrivacyCollectedDataTypeLinked": false,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          },
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeEmailAddress",
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          }
+        ]
+      },
+      "entitlements": {
+        "aps-environment": "development"
+      },
+      "statusBarStyle": "auto",
+      "googleServicesFile": "./GoogleService-Info.plist"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#042C53"
+      },
+      "package": "app.justicegavel.mobile",
+      "versionCode": 5991,
+      "permissions": [
+        "READ_MEDIA_IMAGES",
+        "CAMERA",
+        "USE_BIOMETRIC",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED",
+        "FOREGROUND_SERVICE",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "justicegavel.app"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "privacyPolicyUrl": "https://justicegavel.app/privacy",
+      "jsEngine": "hermes",
+      "targetSdkVersion": 34,
+      "minSdkVersion": 24,
+      "googleServicesFile": "./google-services.json"
+    },
+    "backgroundColor": "#020E1C",
+    "scheme": "justicegavel",
+    "privacyPolicyUrl": "https://justicegavel.app/privacy",
+    "termsOfServiceUrl": "https://justicegavel.app/terms",
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Justice Gavel uses the camera to scan charging documents and bail slips."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#042C53",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Justice Gavel uses Face ID to protect your sensitive legal information."
+        }
+      ],
+      [
+        "sentry-expo",
+        {
+          "organization": "justice-gavel",
+          "project": "justice-gavel-mobile",
+          "enableInExpoDevelopment": false,
+          "debug": false
+        }
+      ]
+    ],
+    "description": "Legal help for people who need it most. Find bail agents, connect with lawyers, know your rights, and get AI-powered legal guidance \u2014 all in one place.",
+    "metadata": {
+      "appleCategoryId": "6013",
+      "appleSecondaryCategory": "6012",
+      "apple": {
+        "subtitle": "Legal help for everyone",
+        "promotionalText": "Find lawyers, track court dates, and know your rights \u2014 powered by AI. Built for people who need legal help but can't afford to be lost in the system."
+      },
+      "google": {
+        "shortDescription": "AI legal guide, attorney finder & case tracker"
+      }
+    },
+    "fonts": [
+      "./assets/fonts/Inter_400Regular.ttf",
+      "./assets/fonts/Inter_500Medium.ttf",
+      "./assets/fonts/Inter_600SemiBold.ttf",
+      "./assets/fonts/Inter_700Bold.ttf",
+      "./assets/fonts/Inter_800ExtraBold.ttf",
+      "./assets/fonts/Inter_900Black.ttf"
+    ],
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/REPLACE_WITH_EAS_PROJECT_ID"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "keywords": [
+      "legal help",
+      "attorney finder",
+      "bail bonds",
+      "criminal defense",
+      "legal rights",
+      "public defender",
+      "court dates",
+      "expungement",
+      "case tracker",
+      "legal aid",
+      "Miranda rights",
+      "justice"
+    ],
+    "shortDescription": "AI legal help, attorney finder, bail bonds & case tracker \u2014 your rights in one app.",
+    "experiments": {
+      "newArchEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/icon.png",
+      "name": "Justice Gavel",
+      "shortName": "JusticeGavel",
+      "lang": "en",
+      "themeColor": "#042C53",
+      "backgroundColor": "#042C53",
+      "description": "Free legal help if you get arrested. Find attorneys, bail bondsmen, and know your rights.",
+      "htmlPath": "./web/index.html"
+    },
+    "userInterfaceStyle": "automatic",
+    "hooks": {
+      "postPublish": [
+        {
+          "file": "sentry-expo/upload-sourcemaps",
+          "config": {
+            "organization": "justice-gavel",
+            "project": "justice-gavel-mobile",
+            "authToken": "${SENTRY_AUTH_TOKEN}"
+          }
+        }
+      ]
+    },
+    "privacyChoicesUrl": "https://justicegavel.app/privacy#choices"
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "name": "justicegavel",
+  "version": "5.89.11",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "test": "jest --config jest.frontend.config.js --no-coverage",
+    "test:coverage": "jest --config jest.frontend.config.js --coverage",
+    "start:web": "expo start --web",
+    "build:web": "expo export --platform web",
+    "serve:web": "npx serve dist",
+    "electron:dev": "ELECTRON_START_URL=http://localhost:8081 electron electron/main.js",
+    "electron:build": "expo export --platform web --output-dir web-build && electron-builder",
+    "electron:pack": "electron-builder --dir",
+    "electron:dmg": "expo export --platform web --output-dir web-build && electron-builder --mac dmg"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "^55.0.10",
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-community/netinfo": "^11.3.2",
+    "@react-native-picker/picker": "^2.6.1",
+    "@react-navigation/bottom-tabs": "^6.6.1",
+    "@react-navigation/native": "^6.1.18",
+    "@react-navigation/native-stack": "^6.10.1",
+    "@sentry/react-native": "~5.26.0",
+    "axios": "^1.7.2",
+    "expo": "~51.0.14",
+    "expo-av": "~14.0.7",
+    "expo-calendar": "~13.0.2",
+    "expo-camera": "~15.0.16",
+    "expo-device": "~6.0.2",
+    "expo-document-picker": "~12.0.2",
+    "expo-file-system": "~17.0.1",
+    "expo-font": "~12.0.10",
+    "expo-haptics": "~13.0.1",
+    "expo-image-manipulator": "^13.0.0",
+    "expo-image-picker": "~15.0.7",
+    "expo-linking": "~6.3.1",
+    "expo-local-authentication": "~14.0.1",
+    "expo-location": "~17.0.1",
+    "expo-notifications": "~0.28.11",
+    "expo-print": "~13.0.1",
+    "expo-screen-capture": "~5.8.0",
+    "expo-secure-store": "~13.0.2",
+    "expo-sharing": "~12.0.1",
+    "expo-sqlite": "~15.1.2",
+    "expo-status-bar": "~1.12.1",
+    "expo-store-review": "~7.0.0",
+    "expo-updates": "~0.25.27",
+    "posthog-react-native": "~3.3.7",
+    "react": "18.2.0",
+    "react-dom": "^19.2.5",
+    "react-native": "0.74.5",
+    "react-native-markdown-display": "~7.0.2",
+    "react-native-safe-area-context": "4.10.5",
+    "react-native-screens": "~3.31.0",
+    "react-native-svg": "^15.2.0",
+    "react-native-web": "^0.21.2"
+  },
+  "description": "Justice Gavel — Justice, in your hands.",
+  "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-typescript": "^7.28.5",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^12.9.0",
+    "@types/react": "^19.2.15",
+    "@types/react-native": "^0.72.8",
+    "babel-jest": "^30.3.0",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.0",
+    "jest": "^29.7.0",
+    "jest-expo": "^55.0.16",
+    "react-test-renderer": "^18.2.0"
+  },
+  "build": {
+    "appId": "app.justicegavel.desktop",
+    "productName": "Justice Gavel",
+    "copyright": "Copyright © 2026 Justice Gavel",
+    "directories": {
+      "output": "electron-dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "web-build/**/*",
+      "electron/**/*",
+      "assets/icon.png",
+      "assets/icon.icns",
+      "assets/icon.ico"
+    ],
+    "asar": true,
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "electron/entitlements.mac.plist",
+      "entitlementsInherit": "electron/entitlements.mac.plist",
+      "notarize": false
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "publisherName": "Justice Gavel"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Justice Gavel"
+    },
+    "dmg": {
+      "title": "Justice Gavel ${version}",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "justice-gavel",
+        "repo": "desktop"
+      }
+    ]
+  }
+}
