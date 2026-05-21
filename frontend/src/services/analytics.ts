@@ -33,7 +33,7 @@ type EventName =
   | 'document_analyzed'
   | 'emergency_alert_sent'
   | 'onboarding_completed'
-  | 'login';
+  | 'login' | 'screen_view';
 
 type EventProps = Record<string, string | number | boolean | null>;
 

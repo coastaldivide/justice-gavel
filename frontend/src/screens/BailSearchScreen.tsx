@@ -389,7 +389,7 @@ export default function BailSearchScreen(): React.JSX.Element {
             onPress={async () => {
               try {
                 const loc = await import('../services/location').then(m => m.detectAndSaveUserState());
-                if ((loc as any)?.city) setCity(loc.city);
+                if ((loc as any)?.city) setCity((loc as any).city);
               } catch { /* location unavailable */ }
             }}
             style={{ flexDirection:'row', alignItems:'center', gap:6,

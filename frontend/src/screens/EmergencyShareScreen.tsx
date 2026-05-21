@@ -17,8 +17,8 @@
  *   2. EmergencyScreen
  *   3. HelpNowScreen bottom CTA
  */
-import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, BackHandler, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, useRef, RefreshControl} from 'react-native';
+import React, { useState, useEffect, useRef} from 'react';
+import { ActivityIndicator, Alert, BackHandler, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, RefreshControl} from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,6 +27,7 @@ import { getLocation } from '../services/location';
 import { getContacts } from '../services/storage';
 import { hapticCall, hapticSuccess, hapticWarn } from '../services/haptics';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+declare var name: any; // hoisted from component scope
 
 declare var load: any;
 declare var mapsLink: any; // hoisted from component scope

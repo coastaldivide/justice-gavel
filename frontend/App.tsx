@@ -228,20 +228,20 @@ function AppInner() {
         if (!nav) return;
         // Route by notification type — navigate to the relevant screen
         if (data.type === 'case_update' && data.case_id) {
-          nav.navigate('MoreTab', { screen: 'Cases' });
+          (nav as any).navigate('MoreTab', { screen: 'Cases' });
         } else if (data.type === 'arrest_alert') {
-          nav.navigate('MoreTab', { screen: 'ArrestMonitor' });
+          (nav as any).navigate('MoreTab', { screen: 'ArrestMonitor' });
         } else if (data.type === 'message' && data.case_id) {
-          nav.navigate('MoreTab', {
+          (nav as any).navigate('MoreTab', {
             screen: 'Messages',
             params: { caseId: data.case_id },
           });
         } else if (data.type === 'expungement_eligible') {
-          nav.navigate('MoreTab', { screen: 'Expungement' });
+          (nav as any).navigate('MoreTab', { screen: 'Expungement' });
         } else if (data.type === 'court_reminder') {
-          nav.navigate('MoreTab', { screen: 'Cases' });
+          (nav as any).navigate('MoreTab', { screen: 'Cases' });
         } else if (data.type === 'lead_accepted' || data.type === 'new_lead') {
-          nav.navigate('MoreTab', { screen: 'AttorneyDashboard' });
+          (nav as any).navigate('MoreTab', { screen: 'AttorneyDashboard' });
         }
       } catch {}
     });
@@ -328,7 +328,7 @@ function AppInner() {
             style={{ backgroundColor:'#2C1800', flexDirection:'row',
               alignItems:'center', paddingHorizontal:16, paddingVertical:10,
               gap:8, borderBottomWidth:1, borderBottomColor:'#E65100' }}
-            onPress={() => navigationRef.current?.navigate('MoreTab', { screen:'OfflineStatus' })}
+            onPress={() => (navigationRef.current as any)?.navigate('MoreTab', { screen:'OfflineStatus' })}
             accessibilityRole="button"
             accessibilityLabel="No internet — tap to see what works offline"
           >

@@ -1,5 +1,5 @@
 import { MotionTypeBadge } from '../components/MotionTypeBadge';
-import { trackMotionGenerated } from '../services/analytics';
+import Analytics from '../services/analytics';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 /**
@@ -662,7 +662,7 @@ const loadHistory = useCallback(async () => {
         const content = (job.result as any)?.content || (job.result as any)?.draft || '';
         setDraft(content);
         setEditDraft(content);
-        trackMotionGenerated(selectedType?.key ?? 'unknown', 'user');
+        Analytics.motionGenerated(selectedType?.key ?? 'unknown', 'user');
       setPhase('result');
         return;
       }

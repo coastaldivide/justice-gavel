@@ -282,9 +282,9 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
                         {r.charges}
                       </Text>
                     )}
-                    {r.bail_amount > 0 && (
+                    {(r as any).bail_amount > 0 && (
                       <Text maxFontSizeMultiplier={1.4} style={styles.arrestResultBail}>
-                        Bail: ${r.bail_amount.toLocaleString()}
+                        Bail: ${(r as any).bail_amount.toLocaleString()}
                       </Text>
                     )}
                   </View>

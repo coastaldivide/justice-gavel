@@ -54,7 +54,7 @@ let _nativeHaptics: typeof Haptics | null = null;
 export async function getHaptics(): Promise<typeof Haptics> {
   if (isWeb) return Haptics; // no-op shim
   if (!_nativeHaptics) {
-    let m; try { m = await import('expo-haptics'); } catch { return; }
+    let m; try { m = await import('expo-haptics'); } catch { return {} as any; }
     _nativeHaptics = m as unknown as typeof Haptics;
   }
   return _nativeHaptics!;
@@ -87,12 +87,12 @@ export const hapticSelection = () => {
 export const ScreenCapture = {
   preventScreenCaptureAsync: async (tag = 'default') => {
     if (isWeb) return; // no-op
-    let m; try { m = await import('expo-screen-capture'); } catch { return; }
+    let m; try { m = await import('expo-screen-capture'); } catch { return null as any; }
     return m.preventScreenCaptureAsync(tag);
   },
   allowScreenCaptureAsync: async (tag = 'default') => {
     if (isWeb) return; // no-op
-    let m; try { m = await import('expo-screen-capture'); } catch { return; }
+    let m; try { m = await import('expo-screen-capture'); } catch { return null as any; }
     return m.allowScreenCaptureAsync(tag);
   },
   usePreventScreenCapture: (tag = 'default') => {
@@ -109,13 +109,13 @@ export const ScreenCapture = {
 export const StoreReview = {
   isAvailableAsync: async (): Promise<boolean> => {
     if (isWeb) return false;
-    let m; try { m = await import('expo-store-review'); } catch { return; }
-    return m.isAvailableAsync();
+    let m; try { m = await import('expo-store-review'); } catch { return null as any; }
+    return (m as any)?.isAvailableAsync?.() ?? false;
   },
   requestReview: async (): Promise<void> => {
     if (isWeb) return;
-    let m; try { m = await import('expo-store-review'); } catch { return; }
-    return m.requestReview();
+    let m; try { m = await import('expo-store-review'); } catch { return null as any; }
+    return (m as any)?.requestReview?.() ?? false;
   },
 };
 
@@ -126,17 +126,17 @@ export const StoreReview = {
 export const LocalAuth = {
   hasHardwareAsync: async (): Promise<boolean> => {
     if (isWeb) return false;
-    let m; try { m = await import('expo-local-authentication'); } catch { return; }
-    return m.hasHardwareAsync();
+    let m; try { m = await import('expo-local-authentication'); } catch { return null as any; }
+    return (m as any)?.hasHardwareAsync?.() ?? false;
   },
   isEnrolledAsync: async (): Promise<boolean> => {
     if (isWeb) return false;
-    let m; try { m = await import('expo-local-authentication'); } catch { return; }
-    return m.isEnrolledAsync();
+    let m; try { m = await import('expo-local-authentication'); } catch { return null as any; }
+    return (m as any)?.isEnrolledAsync?.() ?? false;
   },
   authenticateAsync: async (opts?: Record<string, unknown>) => {
     if (isWeb) return { success: false, error: 'not-available' };
-    let m; try { m = await import('expo-local-authentication'); } catch { return; }
+    let m; try { m = await import('expo-local-authentication'); } catch { return null as any; }
     return m.authenticateAsync(opts as never);
   },
 };
@@ -161,16 +161,16 @@ export const Print = {
       }
       return;
     }
-    let m; try { m = await import('expo-print'); } catch { return; }
+    let m; try { m = await import('expo-print'); } catch { return null as any; }
     return m.printAsync(opts as never);
   },
   printToFileAsync: async (opts: { html?: string }) => {
     if (isWeb) {
       // Return a blob URL the web can download
-      const blob = new Blob([opts.html || ''], { type: 'text/html' });
+      const blob = new Blob([opts.html || ''], { type: 'text/html', lastModified: Date.now() } as any);
       return { uri: URL.createObjectURL(blob) };
     }
-    let m; try { m = await import('expo-print'); } catch { return; }
+    let m; try { m = await import('expo-print'); } catch { return null as any; }
     return m.printToFileAsync(opts as never);
   },
 };
@@ -188,13 +188,13 @@ export const Share = {
       await navigator.clipboard.writeText(url).catch(() => {});
       return;
     }
-    let m; try { m = await import('expo-sharing'); } catch { return; }
+    let m; try { m = await import('expo-sharing'); } catch { return null as any; }
     return m.shareAsync(url, opts as never);
   },
   isAvailableAsync: async (): Promise<boolean> => {
     if (isWeb) return !!(navigator.share || navigator.clipboard);
-    let m; try { m = await import('expo-sharing'); } catch { return; }
-    return m.isAvailableAsync();
+    let m; try { m = await import('expo-sharing'); } catch { return null as any; }
+    return (m as any)?.isAvailableAsync?.() ?? false;
   },
 };
 
@@ -221,7 +221,7 @@ export const FileSystem = {
       }
       return res.text();
     }
-    let m; try { m = await import('expo-file-system'); } catch { return; }
+    let m; try { m = await import('expo-file-system'); } catch { return null as any; }
     return m.readAsStringAsync(uri, opts as never);
   },
 
@@ -235,7 +235,7 @@ export const FileSystem = {
       console.warn('[FileSystem.writeAsStringAsync] no-op on web');
       return;
     }
-    let m; try { m = await import('expo-file-system'); } catch { return; }
+    let m; try { m = await import('expo-file-system'); } catch { return null as any; }
     return m.writeAsStringAsync(uri, contents, opts as never);
   },
 
@@ -245,13 +245,13 @@ export const FileSystem = {
       if (uri.startsWith('blob:')) URL.revokeObjectURL(uri);
       return;
     }
-    let m; try { m = await import('expo-file-system'); } catch { return; }
+    let m; try { m = await import('expo-file-system'); } catch { return null as any; }
     return m.deleteAsync(uri, opts);
   },
 
   getInfoAsync: async (uri: string) => {
     if (isWeb) return { exists: false, isDirectory: false, size: 0 };
-    let m; try { m = await import('expo-file-system'); } catch { return; }
+    let m; try { m = await import('expo-file-system'); } catch { return null as any; }
     return m.getInfoAsync(uri);
   },
 };
@@ -264,7 +264,7 @@ export const AudioMode = {
   setAudioModeAsync: async (opts: Record<string, unknown>) => {
     if (isWeb) return; // no-op — browser handles audio mode automatically
     let avModule;
-    try { avModule = await import('expo-av'); } catch { return; }
+    try { avModule = await import('expo-av'); } catch { return null as any; }
     const { Audio } = avModule;
     return Audio.setAudioModeAsync(opts as never);
   },

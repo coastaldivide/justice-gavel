@@ -43,7 +43,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
   const styles = makeStyles(colors);
   const [cardError, setCardError] = React.useState<string|null>(null);
   const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try { await fetchCard(); } catch {}
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);

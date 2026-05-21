@@ -149,7 +149,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>Platform fee  <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{duration.fee}</Text></Text>
         </View>
         <TouchableOpacity style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
-          onPress={handleBack}
+          onPress={(handleBack as any)}
             accessibilityRole="button"
           >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done</Text>
@@ -168,7 +168,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           {lawyerName || 'The attorney'} will call you at {callbackPhone} to schedule a time.
         </Text>
         <TouchableOpacity style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
-          onPress={handleBack}
+          onPress={(handleBack as any)}
             accessibilityRole="button"
           >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done</Text>

@@ -100,7 +100,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
           </Text>
         </View>
       )}
-      {!!item.notes && <Markdown style={{ body: { fontSize:14, lineHeight:21, color:COLORS.textSecond } }} maxFontSizeMultiplier={1.4} numberOfLines={2}>{item.notes}</Markdown>}
+      {!!item.notes && <Markdown style={{ body: { fontSize:14, lineHeight:21, color:COLORS.textSecond } }} numberOfLines={2}>{item.notes}</Markdown>}
       <Text maxFontSizeMultiplier={1.4}>Created {new Date(item.created_at).toLocaleDateString()}</Text>
       <TouchableOpacity
         style={styles.shareBtn}
@@ -250,7 +250,7 @@ export default function CaseScreen({ route, navigation }: any) {
 <div class="meta">Exported ${date} · Justice Gavel</div>
 <h2>Case Details</h2>
 <div class="field"><span class="label">Status:</span> ${cas.status || 'Active'}</div>
-<div class="field"><span class="label">Next Court Date:</span> ${cas.next_court_date ? new Date(cas.next_court_date).toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}) : 'Not set'}</div>
+<div class="field"><span class="label">Next Court Date:</span> ${cas.next_court_date ? new Date(String(cas.next_court_date)).toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}) : 'Not set'}</div>
 <div class="field"><span class="label">State:</span> ${cas.state || 'Not specified'}</div>
 ${cas.charges ? `<div class="field"><span class="label">Charges:</span> \${cas.charges}</div>` : ''}
 ${cas.bail_amount ? `<div class="field"><span class="label">Bail Amount:</span> $\${Number(cas.bail_amount).toLocaleString()}</div>` : ''}
@@ -1014,7 +1014,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
           {/* {t('case_ai_title')} -- case-aware Defender Mode */}
           <TouchableOpacity
             accessibilityRole="button"
-            style={[styles.toolCard, styles.toolCardAI, { backgroundColor: COLORS.navy, borderColor: COLORS.navy }]}
+            style={[styles.toolCard, styles.toolCard, { backgroundColor: COLORS.navy, borderColor: COLORS.navy }]}
             onPress={() => {
               const activeCase = cases.find((ca: Record<string,unknown>) => ['Open','Active'].includes(ca.status));
               const ctx = activeCase

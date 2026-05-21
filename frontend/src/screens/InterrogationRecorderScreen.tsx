@@ -19,7 +19,7 @@ const Audio = Platform.OS === 'web' ? null : require('expo-av').Audio;
 import * as Location from 'expo-location';
 import { FileSystem, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api, BASE_URL} from '../services/api';
+import { api} from '../services/api';
 import { useTheme } from '../constants/theme';
 import { getToken } from '../utils/secureStorage';
 
@@ -33,7 +33,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try { await fetchLaw(); } catch {}
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
@@ -176,7 +176,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
       formData.append('dateTime', new Date().toLocaleString('en-US', { timeZoneName: 'short' }));
 
       const res = await fetch(
-        (BASE_URL || 'http://localhost:4000/api') + '/interrogation/transcribe',
+        ('' || 'http://localhost:4000/api') + '/interrogation/transcribe',
         {
           method: 'POST',
           headers: {

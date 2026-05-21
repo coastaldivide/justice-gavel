@@ -5,9 +5,9 @@
 import React from 'react';
 import { Animated, View } from 'react-native';
 
-type ThemeColors = Record<string, string>;
+type ThemeColors = any;
 
-function SkeletonCard({ colors }: { colors: Record<string, unknown> }) {
+function SkeletonCard({ colors }: { colors: any }) {
   const shimmer = React.useRef(new Animated.Value(0)).current;
   React.useEffect(() => {
     Animated.loop(

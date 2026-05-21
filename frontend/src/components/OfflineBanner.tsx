@@ -16,7 +16,7 @@ try {
 } catch {}
 
 function OfflineBanner() {
-  const netInfo  = useNetInfo ? useNetInfo() : null;
+  const netInfo  = useNetInfo ? (useNetInfo as any)() : null;
   const isOnline = netInfo ? netInfo.isConnected !== false : true;
   const [opacity] = useState(new Animated.Value(0));
 

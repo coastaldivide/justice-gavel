@@ -332,6 +332,6 @@ export function trackScreenChange(state: Record<string, unknown> | undefined) {
     route = routes[route.index as number ?? routes.length - 1];
   }
   if (route.name) {
-    Analytics.track('screen_view', { screen: route.name });
+    Analytics.track('screen_view', { screen: route.name } as any);
   }
 }

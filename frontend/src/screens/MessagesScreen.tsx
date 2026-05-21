@@ -680,6 +680,5 @@ function SendButton({ onPress, active, sending }: {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
-const styles = makeStyles(COLORS);
 
 }

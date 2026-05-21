@@ -114,8 +114,8 @@ function TierGatedRow({
         style={{ flexDirection:'row', alignItems:'center', paddingVertical:14, paddingHorizontal:4, borderBottomWidth:StyleSheet.hairlineWidth, borderBottomColor:COLORS.border }}>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize:20, width:32 }}>📋</Text>
         <View style={{ flex:1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, fontFamily:FONTS.semiBold, color:COLORS.textPrimary }}>Official Court Forms</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, fontFamily:FONTS.regular, color:COLORS.textMuted }}>Government forms -- all 50 states</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, ...FONTS.semiBold, color:COLORS.textPrimary }}>Official Court Forms</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, ...FONTS.regular, color:COLORS.textMuted }}>Government forms -- all 50 states</Text>
         </View>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, color:COLORS.textMuted }}>›</Text>
       </TouchableOpacity>
@@ -312,13 +312,13 @@ export default function SettingsScreen({ route, navigation }: any) {
     })();
   }, []);
 
-  const toggleLang = (l: string) => {
+  const toggleLang = async (l: string) => {
     setLanguage(l);
     setLang(l);
     await AsyncStorage.setItem('lang', l);
   };
 
-  const toggleMaster = (val: boolean) => {
+  const toggleMaster = async (val: boolean) => {
     setNotifMaster(val);
     await AsyncStorage.setItem('notifs', String(val));
   };
@@ -349,8 +349,7 @@ export default function SettingsScreen({ route, navigation }: any) {
 
   const shareReferral = () => {
     try {
-          Share.share({
-      title: 'Justice Gavel -- $5 off' });
+          Share.share({ title: 'Justice Gavel -- $5 off', url: 'https://justicegavel.com' });
         } catch (shareErr: any) {
           // Share failed (unsupported browser) — silently ignore
         };

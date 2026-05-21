@@ -139,7 +139,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
         
       <TermsAcceptanceModal
         visible={showTerms}
-        onAccept={() => setShowTerms(false)}
+        onAccepted={() => setShowTerms(false)}
         onDecline={() => setShowTerms(false)}
       />
     </View>

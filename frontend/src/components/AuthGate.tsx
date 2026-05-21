@@ -78,7 +78,7 @@ export function useAuthGate(navigation: any, quickMode = false) {
       // Execute the pending action
       if (pendingFn) setTimeout(() => pendingFn(), 300);
     } catch (e: unknown) {
-      setSignupError(e.response?.data?.error || 'Could not create account. Try again.');
+      setSignupError((e as any).response?.data?.error || 'Could not create account. Try again.');
     } finally {
       setSignupLoading(false);
     }

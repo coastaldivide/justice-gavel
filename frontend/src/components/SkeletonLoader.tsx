@@ -42,9 +42,9 @@ function Shimmer({ width, height, borderRadius = 8, style }: {
   return (
     <Animated.View
       style={[
-        { width, height, borderRadius, opacity },
+        { width, height, borderRadius, opacity } as any,
         { backgroundColor: base },
-        style,
+        style as any,
       ]}
     />
   );

@@ -149,7 +149,7 @@ export default function TenantRightsScreen(): React.JSX.Element {
 
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
-        <Text style={[styles.disclaimerText, { color: colors.textFaint }]}>
+        <Text style={[styles.disclaimer, { color: colors.textFaint }]}>
           This information is for general education only and is not legal advice.
           Laws vary by state. Consult a licensed attorney for advice about your situation.
         </Text>
