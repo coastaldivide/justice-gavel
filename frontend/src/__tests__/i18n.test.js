@@ -6,7 +6,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const I18N_DIR = '/tmp/JailToBail/frontend/src/i18n';
+const I18N_DIR = require('path').resolve(__dirname, '../i18n');
 const LANGS    = ['en', 'es', 'vi', 'pt'];
 
 // Load all language files
