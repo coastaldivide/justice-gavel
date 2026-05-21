@@ -18,7 +18,7 @@
  *   2. MoreStack navigator
  */
 import React, { useState, useMemo } from 'react';
-import type, { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
 import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Share, KeyboardAvoidingView, Platform, RefreshControl} from 'react-native';
 import { getUserState } from '../utils/userState';
 

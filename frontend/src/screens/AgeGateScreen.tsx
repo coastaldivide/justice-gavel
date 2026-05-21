@@ -34,7 +34,7 @@ type Phase = 'entry' | 'underage';
 
 export default function AgeGateScreen({ route, navigation }: any) {
   const { colors: COLORS } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles(COLORS);
   const [year, setYear]   = useState('');
   const [phase, setPhase] = useState<Phase>('entry');
   const [error, setError] = useState('');

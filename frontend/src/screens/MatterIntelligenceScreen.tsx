@@ -72,7 +72,8 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
         api.get(`/matter-intelligence/${matterId}/signals`),
         api.get(`/matter-intelligence/${matterId}/motions`),
         api.get(`/matter-intelligence/${matterId}/diversion`),
-        api.get(`/matter-intelligence/${matterId}/escalation`),
+        api.get(`/matter-intelligence/${matterId}/escalation`),,
+        api.get(`/matter-intelligence/${matterId}/analytics`),
       ]);
       if (!isMounted.current) return;
       setErrorMsg(null);  // clear any prior error on successful load
@@ -81,7 +82,7 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
       if (motRes.status === 'fulfilled') setMotions(motRes.value.data.motions || []);
       if (divRes.status === 'fulfilled') setDiversion(divRes.value.data.diversion_tracks || []);
       if (escRes.status === 'fulfilled') setEscalation(escRes.value.data);
-      if (anlRes.status === 'fulfilled') setAnalytics(anlRes.value.data);
+      if (anlRes.status === 'fulfilled') setAnalytics((anlRes as any)?.value?.data);
       // Show feedback if any endpoint failed
       const failures = [outRes,sigRes,motRes,divRes,escRes,anlRes].filter(r => r.status === 'rejected');
       if (failures.length > 0 && failures.length < 6) {

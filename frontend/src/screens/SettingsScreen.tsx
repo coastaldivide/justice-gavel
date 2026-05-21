@@ -12,7 +12,7 @@
  *   7. Sign out
  */
 import React, { useRef, useEffect, useState } from 'react';
-import type, { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { Linking, View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert, Share, ActivityIndicator, RefreshControl} from 'react-native';
 import AsyncStorage          from '@react-native-async-storage/async-storage';

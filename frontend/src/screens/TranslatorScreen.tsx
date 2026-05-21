@@ -214,7 +214,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
   // Auto-scroll on new messages
   useEffect(() => {
     if (messages.length > 0) {
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }, [events]), 100);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }, [messages.length]);
 

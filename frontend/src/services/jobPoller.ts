@@ -74,7 +74,7 @@ export async function pollJob(
           // Still pending/processing — back off progressively
           setTimeout(tick, nextInterval());
         }
-      } catch (e: unknown) {
+      } catch (e: any) {
         // Network error — use next progressive interval before retrying
         if (elapsed < timeoutMs - 5_000) {
           setTimeout(tick, nextInterval() * 1.5);
@@ -131,7 +131,7 @@ export function useJobPoller<T = any>() {
         setResult(job.result as T);
         setPhase('');
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       if (!abortRef.current) {
         setError(e.message || 'Something went wrong.');
         setPhase('');

@@ -12,14 +12,13 @@
  *   4. ResourcesScreen "Crisis Support" category
  */
 import { api } from '../services/api';
-import React from 'react';
+import React, { useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshControl} from 'react-native';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
 declare var data: any;
-declare var useState: any;
 declare var setIsLoading: any; // hoisted from component scope
 // ── Hotlines ──────────────────────────────────────────────────────────────────
 const CRISIS_LINES = [

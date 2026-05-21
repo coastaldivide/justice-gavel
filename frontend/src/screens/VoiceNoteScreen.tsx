@@ -579,7 +579,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     letterSpacing: 0.8, marginBottom: 8 },
   resultBulletRow: { flexDirection: 'row', gap: 8, marginBottom: 6, alignItems: 'flex-start' },
   resultBullet:    { fontSize: 16,
-    lineHeight: 24, fontFamily: 'Inter_700Bold', fontWeight: '700', flexShrink: 0, lineHeight: 20 },
+    fontFamily: 'Inter_700Bold', fontWeight: '700', flexShrink: 0, lineHeight: 20 },
   resultBulletText:{ flex: 1, fontSize: 12, lineHeight: 19 },
 
   fieldLabel: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase',

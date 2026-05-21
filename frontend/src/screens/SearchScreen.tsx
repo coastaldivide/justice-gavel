@@ -64,8 +64,8 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
         const { cases=[], messages=[], lawyers=[], lessons=[] } = cached.results as any;
         const allResults = [...cases, ...messages, ...lawyers, ...lessons];
         setResults(allResults);
-        cacheSearch(q, { cases, messages, lawyers, lessons }).catch(() => {});
-        saveRecentSearch(q).then(() =>
+        cacheSearch(cached.query, { cases, messages, lawyers, lessons }).catch(() => {});
+        saveRecentSearch(cached.query).then(() =>
           getRecentSearches().then(setRecentSearches).catch(() => {})
         ).catch(() => {});
         setSearched(true);
@@ -139,7 +139,7 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
       params: item.params });
   };
 
-  const s = styles(colors);
+  const s = styles(colors as any);
 
   return (
     <KeyboardAvoidingView

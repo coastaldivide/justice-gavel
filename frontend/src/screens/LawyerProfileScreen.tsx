@@ -161,7 +161,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
   };
 
 
-  const s = styles(colors);
+  const s = styles(colors as any);
 
   if (loading) return (
     <View style={[s.screen, { justifyContent:'center', alignItems:'center' }]}>

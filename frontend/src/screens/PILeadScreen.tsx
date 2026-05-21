@@ -50,7 +50,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
     setTimeout(() => setRefreshing(false), 1200)
   }, []);
 
-  const { requireAuth } = useAuthGate();
+  const { requireAuth } = useAuthGate(navigation);
 
   const initType = (route?.params as any)?.caseType || '';
 

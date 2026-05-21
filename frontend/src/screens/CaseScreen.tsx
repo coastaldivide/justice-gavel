@@ -100,7 +100,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
           </Text>
         </View>
       )}
-      {!!item.notes && <Markdown style={{ body: { fontSize:14, lineHeight:21, color:COLORS.textSecond } }} numberOfLines={2}>{item.notes}</Markdown>}
+      {!!item.notes && <Markdown style={{ body: { fontSize:14, lineHeight:21, color:COLORS.textSecond } }}>{item.notes}</Markdown>}
       <Text maxFontSizeMultiplier={1.4}>Created {new Date(item.created_at).toLocaleDateString()}</Text>
       <TouchableOpacity
         style={styles.shareBtn}
@@ -560,12 +560,12 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
     // Try structured JSON first (if AI returned JSON)
     // Check for structured _intake from case_intake branch
     if (data._intake) {
-      const i = data._intake;
+      const i = (data as any)._intake as any;
       return {
         title:     (i as any).title || (i as any).charge || '',
-        state:     (i.state || '').toUpperCase().slice(0, 2),
-        courtDate: i.court_date || '',
-        notes:     [i.defendant_name ? `Defendant: ${i.defendant_name}` : '', i.notes].filter(Boolean).join('')};
+        state:     ((i as any).state || '').toUpperCase().slice(0, 2),
+        courtDate: (i as any).court_date || '',
+        notes:     [(i as any).defendant_name ? `Defendant: ${(i as any).defendant_name}` : '', (i as any).notes].filter(Boolean).join('')};
     }
     try {
       const json = JSON.parse(raw.replace(/```json|```/g, '').trim());
@@ -586,7 +586,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
       courtDate = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
     }
     // Use summary as notes if no structured data
-    const notes = data.summary || raw.slice(0, 400);
+    const notes = String((data as any).summary || raw.slice(0, 400));
     return { title, state: stateMatch?.[1] || '', courtDate, notes };
   };
 
@@ -639,7 +639,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
       }
       // Get default calendar
       const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-      const writeable  = calendars.find(cal => cal.allowsModifications && cal.type !== 'birthday');
+      const writeable  = calendars.find(cal => cal.allowsModifications && (cal.type as any) !== 'birthday');
       if (!writeable) {
         Alert.alert('No calendar found', 'Could not find a writable calendar on this device.');
         return;
@@ -1016,7 +1016,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
             accessibilityRole="button"
             style={[styles.toolCard, styles.toolCard, { backgroundColor: COLORS.navy, borderColor: COLORS.navy }]}
             onPress={() => {
-              const activeCase = cases.find((ca: Record<string,unknown>) => ['Open','Active'].includes(ca.status));
+              const activeCase = cases.find((ca: any) => ['Open','Active'].includes(ca.status));
               const ctx = activeCase
                 ? [
                     `Case: ${activeCase.title}`,
@@ -1075,8 +1075,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
           <TouchableOpacity
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('Discovery', {
-              caseId:    cases.find((ca: Record<string,unknown>) => ['Open','Active'].includes(ca.status))?.id,
-              caseTitle: cases.find((ca: Record<string,unknown>) => ['Open','Active'].includes(ca.status))?.title})}
+              caseId:    cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
+              caseTitle: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
             accessibilityRole="button"
           >
             <View style={[styles.toolCardIcon, { backgroundColor: colors.blue + '18' }]}>
@@ -1097,7 +1097,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
           <TouchableOpacity
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('LegalResearch', {
-              caseContext: cases.find((ca: Record<string,unknown>) => ['Open','Active'].includes(ca.status))?.title})}
+              caseContext: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
             accessibilityRole="button"
           >
             <View style={[styles.toolCardIcon, { backgroundColor: colors.legal + '18' }]}>
@@ -1118,8 +1118,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
           <TouchableOpacity
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('VoiceNote', {
-              caseId:        cases.find((ca: Record<string,unknown>) => ['Open','Active'].includes(ca.status))?.id,
-              caseTitle:     cases.find((ca: Record<string,unknown>) => ['Open','Active'].includes(ca.status))?.title,
+              caseId:        cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
+              caseTitle:     cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title,
               existingNotes: ''})}
             accessibilityRole="button"
           >
@@ -1181,9 +1181,9 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolsSectionLabel, { color: colors.textMuted, marginTop: 14 }]}>
                 Analyze by case
               </Text>
-              {cases.filter((ca: Record<string,unknown>) => ['Open','Active','Pending'].includes(ca.status)).slice(0,5).map((ca: Record<string,unknown>) => (
+              {cases.filter((ca: any) => ['Open','Active','Pending'].includes(ca.status)).slice(0,5).map((ca: any) => (
                 <TouchableOpacity
-                  key={ca.id}
+                  key={String(ca.id)}
                   style={[styles.caseToolRow, { backgroundColor: isDark ? colors.bg : COLORS.bg, borderColor: colors.surface }]}
                   onPress={() => navigation.navigate('Discovery', {
                     caseId: ca.id, caseTitle: ca.title
@@ -1191,7 +1191,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
                   accessibilityRole="button"
                 >
                   <Text maxFontSizeMultiplier={1.4} style={[styles.caseToolTitle, { color: colors.steel }]}
-                    numberOfLines={1}>📁 {ca.title}</Text>
+                    numberOfLines={1}>📁 {String(ca.title)}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.caseToolCta, { color: COLORS.navy }]}>Analyze docs →</Text>
                 </TouchableOpacity>
               ))}

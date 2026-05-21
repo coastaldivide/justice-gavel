@@ -185,7 +185,7 @@ export default function BailSearchScreen(): React.JSX.Element {
         </Text>
       </View>
 
-      <TouchableOpacity activeOpacity={0.6} style={styles.searchBtn} onPress={search} disabled={loading}
+      <TouchableOpacity activeOpacity={0.6} style={styles.searchBtn} onPress={() => search()} disabled={loading}
         accessibilityRole="button"
         accessibilityLabel="Searching…"
       >

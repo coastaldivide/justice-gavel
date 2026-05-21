@@ -36,7 +36,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+export default function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | null {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -136,8 +136,6 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
         location_label: locLabel,
         notes,
         device_info: `ReactNative/${new Date().toISOString()}`,
-        lat: locationData?.lat ?? null,
-        lng: locationData?.lng ?? null,
       });
       hapticNotification().catch(()=>{});
       setStreak(s => s + 1);
@@ -248,7 +246,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
     <View style={styles.center}>
       <ActivityIndicator size="large" color={COLORS.navy} />
       <Text maxFontSizeMultiplier={1.4} style={styles.loadingText}>
-        {phase === 'gps' ? 'Getting your location…' : 'Submitting your check-in…'}
+        {(phase as string) === 'gps' ? 'Getting your location…' : 'Submitting your check-in…'}
       </Text>
     </View>
   );
@@ -448,6 +446,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
       </ScrollView>
       </KeyboardAvoidingView>
   );
+  return null;
 }
 
 const makeStyles = (colors: any) => StyleSheet.create({

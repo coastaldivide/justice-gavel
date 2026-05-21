@@ -111,7 +111,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
     try {
       const Print   = (await import('expo-print')).default;
       const Sharing = (await import('expo-sharing')).default;
-      const date = new Date(payment.created_at || Date.now()).toLocaleDateString('en-US', {
+      const date = new Date(String(payment.created_at || Date.now())).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric',
       });
       const html = `<!DOCTYPE html>
@@ -137,11 +137,11 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
 <p class="receipt-no">Receipt #JG-${String(payment.id || Date.now()).slice(-8).toUpperCase()} · ${date}</p>
 <table>
   <tr><td>Description</td><td>${payment.description || payment.tier || 'Subscription'}</td></tr>
-  <tr><td>Amount</td><td>$${((payment.amount_cents || 0) / 100).toFixed(2)}</td></tr>
+  <tr><td>Amount</td><td>$${((Number((payment as any).amount_cents) || 0) / 100).toFixed(2)}</td></tr>
   <tr><td>Status</td><td>${payment.status || 'Paid'}</td></tr>
   <tr><td>Date</td><td>${date}</td></tr>
 </table>
-<table class="total"><tr><td>Total Paid</td><td>$${((payment.amount_cents || 0) / 100).toFixed(2)}</td></tr></table>
+<table class="total"><tr><td>Total Paid</td><td>$${((Number((payment as any).amount_cents) || 0) / 100).toFixed(2)}</td></tr></table>
 <div class="footer">
   Justice Gavel, Inc. · Not a law firm · This receipt is for payment purposes only.<br>
   Questions? Contact support at justicegavel.app

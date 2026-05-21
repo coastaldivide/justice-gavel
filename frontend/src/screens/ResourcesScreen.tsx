@@ -266,7 +266,7 @@ export default function ResourcesScreen(): React.JSX.Element {
                       {item.address ? (
                         <TouchableOpacity
                           accessibilityRole="button"
-                          onPress={() => Linking.openURL(`https://maps.apple.com/?address=${encodeURIComponent(item.address).catch(() => {})}`).catch(() => {})}
+                          onPress={() => Linking.openURL(`https://maps.apple.com/?address=${encodeURIComponent(item.address)}`).catch(() => {})}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>📍</Text>
                           <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.address}</Text>

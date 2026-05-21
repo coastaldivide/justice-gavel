@@ -39,10 +39,10 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
   const { colors }                      = useTheme();
   const [scanError, setScanError] = React.useState<string|null>(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const [facing]                        = useState<CameraType>('back');
+  const [facing]                        = useState<'back' | 'front'>('back');
   const [captured, setCaptured]         = useState<string | null>(null);
   const [uploading, setUploading]       = useState(false);
-  const cameraRef                       = useRef<CameraView>(null);
+  const cameraRef                       = useRef<any>(null);
   const mountedRef                      = useRef(true);
 
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -106,7 +106,7 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
     }
   }, [captured, caseId, onCapture, navigation]);
 
-  const s = styles(colors);
+  const s = styles(colors as any);
 
   // ── Permission denied ─────────────────────────────────────────────────────
   if (!permission) return <View style={s.screen} />;

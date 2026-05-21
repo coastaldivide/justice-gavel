@@ -85,13 +85,6 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
     return () => { mountedRef.current = false; };
   }, []);
 
-  const onRefresh = useCallback(async () => {
-    if (!selectedState) return;  // no search to refresh if nothing selected
-    setRefreshing(true);
-    await search().catch(() => {});
-    setRefreshing(false);
-  }, [selectedState, search]);
-
   var search = useCallback(async () => {
     if (!selectedState) {
       Alert.alert('Select a state', 'Choose a state to search for recovery agents.');
@@ -121,6 +114,14 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
       if (mountedRef.current) setLoading(false);
     }
   }, [selectedState, armedOnly, userLat, userLng]);
+
+  const onRefresh = useCallback(async () => {
+    if (!selectedState) return;  // no search to refresh if nothing selected
+    setRefreshing(true);
+    await search().catch(() => {});
+    setRefreshing(false);
+  }, [selectedState, search]);
+
 
   const call = (phone: string, name: string) => {
     hapticImpact();

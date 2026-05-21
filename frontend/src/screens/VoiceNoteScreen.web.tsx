@@ -22,7 +22,7 @@ export default function VoiceNoteScreen(): React.JSX.Element {
   const [transcript, setTranscript] = useState('');
   const [error, setError]   = useState('');
   const [seconds, setSeconds] = useState(0);
-  const mediaRef  = useRef<MediaRecorder | null>(null);
+  const mediaRef  = useRef<any>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -53,9 +53,9 @@ export default function VoiceNoteScreen(): React.JSX.Element {
     // Wait for final chunk
     await new Promise(r => setTimeout(r, 400));
     try {
-      const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+      const blob = new Blob(chunksRef.current as any, { type: 'audio/webm' } as any);
       const form = new FormData();
-      form.append('audio', blob, 'voice_note.webm');
+      (form as any).append('audio', blob, 'voice_note.webm');
       const res = await api.post('/transcribe/audio', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });

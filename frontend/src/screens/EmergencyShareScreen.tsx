@@ -621,14 +621,14 @@ const makeStyles = (colors: any) => StyleSheet.create({
   crisisSectionTitle: {
     fontSize: 15,
     lineHeight: 22,
-    fontFamily: FONTS.bold,
+    ...FONTS.bold,
     color: COLORS.textPrimary,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 2 },
   crisisSectionSub: {
     fontSize: 12,
-    fontFamily: FONTS.regular,
+    ...FONTS.regular,
     color: COLORS.textMuted,
     paddingHorizontal: 16,
     paddingBottom: 10 },
@@ -649,8 +649,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flexShrink: 0 },
   crisisIconText: { fontSize: 18 },
   crisisInfo:     { flex: 1 },
-  crisisName:     { fontSize: 12, fontFamily: FONTS.semiBold, color: COLORS.textPrimary },
-  crisisDetail:   { fontSize: 11, fontFamily: FONTS.regular, color: COLORS.textMuted, marginTop: 1 },
+  crisisName:     { fontSize: 12, ...FONTS.semiBold, color: COLORS.textPrimary },
+  crisisDetail:   { fontSize: 11, ...FONTS.regular, color: COLORS.textMuted, marginTop: 1 },
   crisisArrow:    { fontSize: 18, color: COLORS.textMuted },
   quickExitBar: {
     flexDirection: 'row',

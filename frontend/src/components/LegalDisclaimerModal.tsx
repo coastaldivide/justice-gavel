@@ -28,6 +28,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { COLORS, FONTS } from '../constants/theme';
 import {
   View,
   Text,
@@ -67,6 +68,8 @@ export async function clearConsent(): Promise<void> {
 interface Props {
   visible: boolean;
   onAccept: () => void;
+  featureContext?: string;
+  onDecline?: () => void;
 }
 
 function LegalDisclaimerModal({ visible, onAccept }: Props) {

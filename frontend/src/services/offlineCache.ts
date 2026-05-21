@@ -116,7 +116,7 @@ export async function cacheCases(cases: unknown[]) {
   // Only cache cases from the last 30 days to bound storage size
   const cutoff = Date.now() - TTL_30_DAYS;
   const recent = cases.filter(c => {
-    const d = c.next_court_date || c.created_at;
+    const d = (c as any).next_court_date || (c as any).created_at;
     return !d || new Date(d).getTime() > cutoff;
   });
   await write(CACHE_KEYS.cases, recent, CACHE_KEYS.casesAt);
@@ -139,7 +139,7 @@ export async function addMotionToCache(motion: unknown) {
   try {
     const { motions } = await getCachedMotions();
     // Prepend new motion, dedupe by id, keep last 30
-    const updated = [motion, ...motions.filter(m => m.id !== motion.id)].slice(0, 30);
+    const updated = [(motion as any), ...motions.filter((m: any) => m.id !== (motion as any).id)].slice(0, 30);
     await cacheMotions(updated);
   } catch {}
 }
@@ -198,7 +198,7 @@ export async function getCachedBailAgents(): Promise<{ agents: unknown[]; age: s
     const raw = await AsyncStorage.getItem(CACHE_KEYS.bailAgents);
     const at  = await AsyncStorage.getItem(CACHE_KEYS.bailAgentsAt);
     const agents = raw ? JSON.parse(raw) : [];
-    const age = at ? cacheAgeLabel(Number(at)) : '';
+    const age = at ? cacheAgeLabel(String(Number(at))) : '';
     if (agents.length && at && Date.now() - Number(at) > TTL_7_DAYS) return { agents: [], age: '' };
     return { agents, age };
   } catch { return { agents: [], age: '' }; }

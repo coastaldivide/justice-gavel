@@ -212,8 +212,7 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
         keyExtractor={s => s.key}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { scrollEventThrottle: 16 },
-          { useNativeDriver: false }
+          { useNativeDriver: false },
         )}
         onMomentumScrollEnd={e => {
           setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / width));

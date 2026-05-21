@@ -274,7 +274,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
   const checkEligibility = async () => {
     setLoading(true);
     try {
-      const res = await cachedGet('/expungement/check', {
+      const res = await (cachedGet as any)('/expungement/check', {
         params: { state, charges, status: caseStatus },
       });
       if (!mountedRef.current) return;
@@ -283,7 +283,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
       // Fetch matched expungement attorneys for this state
       if (res.data?.eligibility && !res.data?.eligibility.notEligible) {
         setAttLoading(true);
-        cachedGet('/expungement/attorneys', { params: { state, limit: 5 } })
+        (cachedGet as any)('/expungement/attorneys', { params: { state, limit: 5 } })
           .then(r => setAttorneys(r.data?.attorneys || []))
           .catch((e) => { __DEV__ && console.warn(e?.message); })
           .finally(() => setAttLoading(false));
@@ -469,7 +469,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
         <Text maxFontSizeMultiplier={1.4} style={styles.verdictEmoji}>{eligIcon}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.verdictLabel, { color: eligColor }]}>{eligLabel}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.verdictState}>{result?.stateName} · {result?.chargeType}</Text>
-        {result?.eligibility.waitYears > 0 && (
+        {(result?.eligibility?.waitYears ?? 0) > 0 && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.verdictWait, { color: eligColor }]}>
             Typical waiting period: {(result as any).eligibility?.waitYears} year{(result as any).eligibility?.waitYears > 1 ? 's' : ''}
           </Text>
@@ -558,7 +558,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
                 </View>
                 <ScrollView style={{ flex: 1, padding: 16 }}>
                   <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 20,
-                    color: colors.textPrimary, fontFamily: 'Courier New' || 'monospace' }}>
+                    color: colors.textPrimary, fontFamily: 'Courier New' }}>
                     {petitionDraft}
                   </Text>
                 </ScrollView>

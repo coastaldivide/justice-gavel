@@ -97,7 +97,7 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
     });
   };
 
-  const elements: ReactElement[] = [];
+  const elements: React.ReactElement[] = [];
   const lines = text.split('\n');
   lines.forEach((line: string, i: number) => {
     const key = 'line-' + i;

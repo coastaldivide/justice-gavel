@@ -422,7 +422,7 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
         {/* Receipt */}
         <View style={styles.receiptCard}>
           <Text maxFontSizeMultiplier={1.4} style={styles.receiptTitle}>Receipt</Text>
-          {(result.breakdown || []).map((b: Record<string,unknown>) => (
+          {(result.breakdown || []).map((b: any) => (
             <View key={b.item} style={styles.receiptRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.receiptItem}>{b.item}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.receiptPrice}>{b.price}</Text>
@@ -511,7 +511,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   stepNum:    { width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   stepNumText:{ color: COLORS.bgCard, fontSize: 12, lineHeight: 20, ...FONTS.black },
   stepText:   { fontSize: 14,
-    lineHeight: 21, ...FONTS.medium, color: COLORS.textPrimary, flex: 1, lineHeight: 19 },
+    ...FONTS.medium, color: COLORS.textPrimary, flex: 1, lineHeight: 19 },
 
   // Guarantees
   guaranteeRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 14 },
@@ -563,7 +563,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   footerNote: { textAlign: 'center', color: COLORS.textSecond, fontSize: 11, lineHeight: 17, marginTop: 4 },
 
   // Results
-  callPrompt: { fontSize: 15, lineHeight: 22, ...FONTS.bold, color: COLORS.textPrimary, textAlign: 'center', marginBottom: 16, lineHeight: 21 },
+  callPrompt: { fontSize: 15, ...FONTS.bold, color: COLORS.textPrimary, textAlign: 'center', marginBottom: 16, lineHeight: 21 },
 
   resultCard: {
     backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg,

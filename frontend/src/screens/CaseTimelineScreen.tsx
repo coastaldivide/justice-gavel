@@ -228,7 +228,7 @@ export default function CaseTimelineScreen({ navigation, route }: ScreenProps): 
     );
   };
 
-  const s = styles(colors);
+  const s = styles(colors as any);
 
   const renderItem = ({ item, index }: { item: CaseEvent; index: number }) => {
     const color = EVENT_COLORS[item.event_type] || EVENT_COLORS.textMuted;

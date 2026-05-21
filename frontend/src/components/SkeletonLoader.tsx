@@ -150,6 +150,15 @@ export const MemoizedSkeletonBailCard = React.memo(SkeletonBailCard);
 export const MemoizedSkeletonBailList = React.memo(SkeletonBailList);
 export const MemoizedSkeletonRow = React.memo(SkeletonRow);
 
-export { SkeletonLawyerCard, SkeletonLawyerList, SkeletonBailCard, SkeletonBailList, SkeletonRow };
 
-export { SkeletonLawyerCard as SkeletonLoader };
+
+// ── Generic SkeletonLoader with rows and label ─────────────────────────────────
+function SkeletonLoaderGeneric({ rows = 3, label }: { rows?: number; label?: string }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, i) => <SkeletonRow key={i} lines={2} />)}
+    </>
+  );
+}
+
+export { SkeletonLawyerCard, SkeletonLoaderGeneric as SkeletonLoader };

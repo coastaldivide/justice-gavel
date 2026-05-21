@@ -1,622 +1,755 @@
 /**
- * MessagesScreen -- Secure defender-client messaging
+ * LegalResearchScreen -- AI Legal Research ($49/mo)
  *
- * Design direction: refined utilitarian -- built for speed and clarity
- * in a courthouse hallway. High contrast. No decoration. Every pixel
- * earns its place. The UI feels like a tool, not a social app.
+ * Design direction: reference-grade precision.
+ * Think: a well-designed legal database terminal -- dark sidebar,
+ * clean white research area, monospace citations, professional density.
+ * Feels like it belongs next to LexisNexis, not next to Instagram.
+ *
+ * The UX insight: legal research is non-linear. Attorneys ask a question,
+ * get an answer, pivot, follow a citation, ask about a circuit split.
+ * The interface must feel like a conversation with a knowledgeable
+ * colleague, not a search engine returning blue links.
+ *
+ * Phases:
+ *   paywall → home (new research) → searching → result (threaded)
+ *   → history sidebar → session reload
  *
  * Entry points:
- *   1. CaseScreen → "Messages" tab (primary)
- *   2. Push notification deep-link
- *   3. HomeScreen unread badge (future)
- *
- * Features:
- *   - Threaded per-case messaging
- *   - Read receipts (single ✓ sent, double ✓✓ read)
- *   - Auto-scroll to latest message
- *   - Optimistic send (message appears instantly, confirms in background)
- *   - Translation badge on messages from non-English clients
- *   - Polling every 8 seconds for new messages (no WebSocket needed at launch)
- *   - Timestamp grouping (Today, Yesterday, date)
- *   - Empty state with clear next action
+ *   1. CaseScreen → "Research" tab
+ *   2. MotionLibraryScreen → "Research precedent" CTA
+ *   3. Direct nav from Home
  */
-
 import type { ScreenProps } from '../types/navigation';
 import React, {
   useState, useEffect, useCallback, useRef, useMemo
 } from 'react';
-import { ActivityIndicator, Alert, Animated, FlatList, KeyboardAvoidingView, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, Linking, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, Clipboard, RefreshControl} from 'react-native';
 import { api } from '../services/api';
-import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
+import { t }   from '../i18n';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { useAuthGate } from '../components/AuthGate';
+import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
-import { useFocusEffect } from '@react-navigation/native';
 
-declare var displayMessages: any;
-declare var listEmpty: any;
-declare var msgs: any;
-declare var pickDocument: any;
-declare var refreshing: any;
-declare var renderItem: any;
-declare var setMsgs: any;
-declare var setRefreshing: any;
-declare var t: any;
-declare var load: any; // hoisted from component scope
-declare var messages: any; // hoisted from component scope
-declare var searchQuery: any; // hoisted from component scope
-declare var setAttachment: any; // hoisted from component scope
-declare var styles: any; // hoisted from component scope
-declare var userId: any; // hoisted from component scope
+declare var loadHistory: any; // hoisted from component scope
+declare var mountedRef: any; // hoisted from component scope
+declare var onDiscussWithAI: any; // hoisted from component scope
+declare var onRefresh: any; // hoisted from component scope
+declare var refreshing: any; // hoisted from component scope
+// ── Quick research prompts ────────────────────────────────────────────────────
+const QUICK_PROMPTS = [
+  { label: 'Motion to suppress',  text: 'What are the legal standards for a successful motion to suppress? Cite key federal and state cases.' },
+  { label: 'Probable cause stops',text: 'Cases where a motion to suppress was granted for a traffic stop without probable cause. Cite the cases and holdings.' },
+  { label: 'Bail reduction',      text: 'What factors do courts consider when ruling on a motion for bail reduction? List the key cases.' },
+  { label: 'Brady violations',    text: 'What constitutes a Brady violation and what is the remedy? Cite Brady v. Maryland and subsequent cases.' },
+  { label: 'Speedy trial',        text: 'What are the Barker v. Wingo factors for speedy trial analysis? How do courts apply them?' },
+  { label: 'Miranda exception',   text: 'What are the exceptions to Miranda warnings? When can statements be admitted despite no warning?' },
+  { label: 'Search incident',     text: 'What is the scope of a search incident to arrest? Cite Chimel v. California and later developments.' },
+  { label: 'Stop and frisk',      text: 'What is the legal standard for a Terry stop? What justifies a pat-down for weapons?' },
+];
+
 // ── Types ─────────────────────────────────────────────────────────────────────
-interface Msg {
-  id: number;
-  case_id: number;
-  sender_id: number;
-  sender_role: 'client' | 'defender';
-  sender_name: string | null;
-  body: string;
-  lang: string;
-  read_at: string | null;
-  created_at: string;
-  _optimistic?: boolean;
-}
+interface Message { role: 'user' | 'assistant'; content: string; created_at?: string; }
+interface Session { id: number; title: string; updated_at: string; }
+type Phase = 'paywall' | 'home' | 'searching' | 'thread' | 'history';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-}
-
-function dayLabel(iso: string): string {
-  const d   = new Date(iso);
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - d.getTime()) / 86400000);
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Yesterday';
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function groupByDay(msgs: Msg[]): { type: 'day'; label: string } | Msg[] {
-  // Returns flat list with day-separator objects interleaved
-  const out: Record<string,unknown>[] = [];
-  let lastDay = '';
-  for (const m of msgs) {
-    const day = new Date(m.created_at).toDateString();
-    if (day !== lastDay) {
-      out.push({ type: 'day', label: dayLabel(m.created_at), key: `day-${day}` });
-      lastDay = day;
-    }
-    out.push(m);
-  }
-  return out as any;
-}
-
-// ── Message bubble ────────────────────────────────────────────────────────────
-function MessageBubble({
-  msg, isMine, prevMine, showAvatar,
-}: {
-  msg: Msg; isMine: boolean; prevMine: boolean; showAvatar: boolean;
-}) {
+// ── Markdown + Citation renderer ─────────────────────────────────────────────
+function MarkdownText({ text, style }: { text: string; style?: object }) {
   const { colors, isDark } = useTheme();
-  const fadeAnim = useRef(new Animated.Value(msg._optimistic ? 0.6 : 1)).current;
+  const [refreshing, setRefreshing] = React.useState(false);
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try { await loadHistory(); } catch {}
+    setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
+  }, []);
 
-  useEffect(() => {
-    if (!msg._optimistic) {
-      Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
-    }
-  }, [msg._optimistic]);
+  const citationBlue = false ? COLORS.steel : COLORS.blue;
+  const headingColor = COLORS.textPrimary;
 
-  const bubbleBg = isMine
-    ? COLORS.navy
-    : isDark ? COLORS.border : COLORS.bgSubtle;
+  const openVerify = (citation: string) => {
+    const q = encodeURIComponent(citation.trim());
+    Linking.openURL('https://www.courtlistener.com/?q=' + q + '&type=o&order_by=score+desc').catch(() => {});
+  };
 
-  const textColor = isMine ? COLORS.bgCard : COLORS.textPrimary;
-
-  const pickDocument = React.useCallback(async () => {
-    try {
-      const { default: DocumentPicker } = await import('expo-document-picker');
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/*', 'application/msword',
-               'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-        copyToCacheDirectory: true,
-      });
-      if (!result.canceled && result.assets?.[0]) {
-        const asset = result.assets[0];
-        setAttachment({ name: asset.name, uri: asset.uri, size: asset.size || 0 });
+  const renderInline = (line: string, baseKey: string) => {
+    const segments = line.split(/(\*\*[^*]+\*\*|\*[^*]+\*|[A-Z][A-Za-z ,&.']+v\.\s+[A-Z][A-Za-z ,&.']+,\s*\d+\s+\S+\s+\d+[^,;\s]*\s*\([^)]+\))/g);
+    return segments.map((seg: string, si: number) => {
+      const key = baseKey + '-' + si;
+      if (seg.startsWith('**') && seg.endsWith('**')) {
+        return <Text maxFontSizeMultiplier={1.4} key={key} style={{ fontFamily: 'Inter_700Bold', fontWeight: '700', color: headingColor }}>{seg.slice(2,-2)}</Text>;
       }
-    } catch {
-      Alert.alert('Could not open file picker', 'Please try again.');
-    }
-  }, []);
-
-  // Upload attachment to backend -- called during send if attachment present
-  const uploadAttachment = React.useCallback(async (
-    attachObj: { name: string; uri: string; size: number },
-    conversationId?: string | number
-  ) => {
-    const form = new FormData();
-    form.append('file', {
-      uri:  attachObj.uri,
-      name: attachObj.name,
-      type: 'application/octet-stream',
-    } as unknown as Blob);
-    if (conversationId) form.append('conversation_id', String(conversationId));
-    const res = await api.post('/messages/attachment', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      if (seg.startsWith('*') && seg.endsWith('*') && !seg.startsWith('**')) {
+        return <Text maxFontSizeMultiplier={1.4} key={key} style={{ fontStyle: 'italic', color: citationBlue }}>{seg.slice(1,-1)}</Text>;
+      }
+      if (/v\.\s+[A-Z].*\d+/.test(seg)) {
+        return (
+          <Text maxFontSizeMultiplier={1.4} key={key}
+            style={{ fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: citationBlue,
+              textDecorationLine: 'underline', fontSize: 14 }}
+            onPress={() => openVerify(seg)}
+            accessibilityRole="link">
+            {seg}
+          </Text>
+        );
+      }
+      return <Text maxFontSizeMultiplier={1.4} key={key}>{seg}</Text>;
     });
-    return res.data;
-  }, []);
+  };
 
+  const elements: React.ReactElement[] = [];
+  const lines = text.split('\n');
+  lines.forEach((line: string, i: number) => {
+    const key = 'line-' + i;
+    if (/^# /.test(line)) {
+      elements.push(<Text maxFontSizeMultiplier={1.4} key={key} selectable={true} style={{ fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 18, lineHeight: 26, color: headingColor, marginTop: 16, marginBottom: 8 }}>{line.slice(2)}</Text>);
+    } else if (/^## /.test(line)) {
+      elements.push(<Text maxFontSizeMultiplier={1.4} key={key} selectable={true} style={{ fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 16, lineHeight: 24, color: headingColor, marginTop: 12, marginBottom: 6 }}>{line.slice(3)}</Text>);
+    } else if (/^### /.test(line)) {
+      elements.push(<Text maxFontSizeMultiplier={1.4} key={key} selectable={true} style={{ fontFamily: 'Inter_600SemiBold', fontWeight: '600', fontSize: 15, lineHeight: 22, color: headingColor, marginTop: 10, marginBottom: 4 }}>{line.slice(4)}</Text>);
+    } else if (/^[-*] /.test(line)) {
+      elements.push(
+        <View key={key} style={{ flexDirection: 'row', marginBottom: 4, paddingLeft: 8 }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: citationBlue, marginRight: 8, fontSize: 14 }}>{'•'}</Text>
+          <Text maxFontSizeMultiplier={1.4} selectable={true} style={[style, { flex: 1, lineHeight: 22 }]}>{renderInline(line.slice(2), key)}</Text>
+        </View>
+      );
+    } else if (/^\d+\. /.test(line)) {
+      const numMatch = line.match(/^(\d+)\. (.*)/);
+      if (numMatch) {
+        elements.push(
+          <View key={key} style={{ flexDirection: 'row', marginBottom: 4, paddingLeft: 8 }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: citationBlue, marginRight: 8, fontFamily: 'Inter_600SemiBold', fontWeight: '600', minWidth: 20 }}>{numMatch[1] + '.'}</Text>
+            <Text maxFontSizeMultiplier={1.4} selectable={true} style={[style, { flex: 1, lineHeight: 22 }]}>{renderInline(numMatch[2], key)}</Text>
+          </View>
+        );
+      }
+    } else if (/^---+$/.test(line.trim())) {
+      elements.push(<View key={key} style={{ height: 1, backgroundColor: COLORS.border, marginVertical: 10 }} />);
+    } else if (!line.trim()) {
+      elements.push(<View key={key} style={{ height: 10 }} />);
+    } else {
+      elements.push(<Text maxFontSizeMultiplier={1.4} key={key} selectable={true} style={[style, { lineHeight: 25, marginBottom: 2 }]}>{renderInline(line, key)}</Text>);
+    }
+  });
 
-  // Refresh data whenever user navigates back to this screen
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  return <View>{elements}</View>;
+}
+
+function HighlightedText({ text, style }: { text: string; style?: object }) {
+  const { colors } = useTheme();
+  // Match case citations: Name v. Name, 123 F.3d 456 (Court Year)
+  const parts = text.split(/(\*[^*]+\*|\b[A-Z][a-z].*?v\..*?,\s*\d+\s+\S+\s+\d+\s*\([^)]+\))/g);
+
+  const openVerify = (citation: string) => {
+    // CourtListener full-text search -- free, comprehensive federal cases
+    const q = encodeURIComponent(citation.trim());
+    Linking.openURL(`https://www.courtlistener.com/?q=${q}&type=o&order_by=score+desc`).catch(() => {});
+  };
 
   return (
-    <Animated.View
-      style={[
-        styles.msgRow,
-        isMine && styles.msgRowMine,
-        !prevMine && { marginTop: 10 },
-        { opacity: fadeAnim },
-      ]}
-      accessibilityRole="text"
-      accessibilityLabel={`${isMine ? 'You' : (msg.sender_name || 'Client')}: ${msg.body}`}
-    >
-      {/* Avatar -- shown for first message in a run */}
-      {!isMine && (
-        <View style={[styles.avatar, { opacity: showAvatar ? 1 : 0 }]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.avatarText}>
-            {(msg.sender_name || 'C')[0].toUpperCase()}
-          </Text>
-        </View>
-      )}
-      <View style={{ maxWidth: '78%' }}>
-        {/* Sender name -- first in a run only */}
-        {!isMine && showAvatar && msg.sender_name && (
-          <Text maxFontSizeMultiplier={1.4} style={[styles.senderName, { color: COLORS.textMuted }]}>
-            {msg.sender_name}
-          </Text>
-        )}
-        <View style={[styles.bubble, { backgroundColor: bubbleBg },
-          isMine && styles.bubbleMine,
-          !isMine && styles.bubbleTheirs,
-        ]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.bubbleText, { color: textColor }]}>
-            {msg.body}
-          </Text>
-        </View>
-
-        {/* Time + read receipt */}
-        <View style={[styles.metaRow, isMine && styles.metaRowMine]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.metaText, { color: COLORS.textMuted }]}>
-            {formatTime(msg.created_at)}
-                        {msg.sender_id === userId && (
-                          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:10, lineHeight:14,
-                            color: msg.read_at ? COLORS.blue : colors?.textFaint || COLORS.textFaint,
-                            marginTop:1, alignSelf:'flex-end' }}>
-                            {msg.read_at ? '✓✓ Read' : '✓ Sent'}
-                          </Text>
-                        )}
-          </Text>
-          {isMine && (
-            <Text maxFontSizeMultiplier={1.4} style={[styles.readTick, { color: msg.read_at ? COLORS.steel : COLORS.textMuted }]}>
-              {msg.read_at ? ' ✓✓' : ' ✓'}
+    <Text maxFontSizeMultiplier={1.4} style={style}>
+      {parts.map((part, i) => {
+        if (part.startsWith('*') && part.endsWith('*')) {
+          return <Text maxFontSizeMultiplier={1.4} key={i} style={{ fontStyle: 'italic', color: COLORS.navy }}>{part.slice(1,-1)}</Text>;
+        }
+        if (/v\..*\d+\s+\S+\s+\d+/.test(part)) {
+          // Tappable citation -- opens CourtListener for instant verification
+          return (
+            <Text maxFontSizeMultiplier={1.4}
+              key={i}
+              style={{ fontFamily: 'monospace', fontSize: 12, color: COLORS.navy,
+                fontWeight: '700', textDecorationLine: 'underline' }}
+              onPress={() => openVerify(part)}
+              accessibilityRole="link"
+              accessibilityLabel={`Verify citation: ${part}`}
+              accessibilityHint="Opens CourtListener to verify this case citation"
+            >
+              {part} ↗
             </Text>
-          )}
-          {msg.lang && msg.lang !== 'en' && !isMine && (
-            <View style={styles.langBadge}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.langBadgeText}>{msg.lang.toUpperCase()}</Text>
-            </View>
-          )}
-        </View>
-      </View>
+          );
+        }
+        return <Text maxFontSizeMultiplier={1.4} key={i}>{part}</Text>;
+      })}
+    </Text>
+  );
+}
+
+// ── Message bubble (research thread) ─────────────────────────────────────────
+function ResearchBubble({ msg }: { msg: Message }) {
+  const styles = makeStyles(COLORS);
+  const { colors, isDark } = useTheme();
+  const isUser = msg.role === 'user';
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+  }, []);
+
+  if (isUser) return (
+    <Animated.View style={[styles.userBubble, { opacity: fadeAnim,
+      backgroundColor: false ? COLORS.bgElevated : COLORS.bgSubtle,
+      borderColor: COLORS.navy + '33' }]}>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.userQuery, { color: COLORS.navy }]} selectable={true}>{msg.content}</Text>
     </Animated.View>
   );
 
-  // Search filter -- client-side, instant
-  const filteredMessages = React.useMemo(() => {
-    if (!searchQuery.trim()) return messages;
-    const q = searchQuery.toLowerCase();
-    return messages.filter((m: Record<string,unknown>) =>
-      ((m as any).body || (m as any).content || '').toLowerCase().includes(q) ||
-      ((m as any).sender_name || '').toLowerCase().includes(q)
-    );
-  }, [messages, searchQuery]);
+  return (
+    <Animated.View style={[styles.assistantBubble, { opacity: fadeAnim,
+      backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
+      {/* Research result header */}
+      <View style={styles.resultHeader}>
+        <View style={[styles.resultDot, { backgroundColor: COLORS.legal }]} />
+        <Text maxFontSizeMultiplier={1.4} style={[styles.resultLabel, { color: COLORS.legal }]}>Research Result</Text>
+      </View>
 
+      {/* Knowledge cutoff banner -- every result, every time */}
+      <View style={[styles.cutoffBanner, { backgroundColor: false ? COLORS.warnBg : COLORS.warnBg,
+        borderColor: COLORS.gold + '70' }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.cutoffText, { color: false ? COLORS.gold : COLORS.warnDark }]}>
+          ⚠️  Knowledge cutoff: August 2025 -- verify all citations before relying on them in court.
+          Tap any underlined citation to check on CourtListener.
+        </Text>
+      </View>
+
+      <MarkdownText
+        text={msg.content}
+        style={[styles.assistantText, { color: COLORS.textPrimary }]}
+      />
+      {/* Copy button */}
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+        <TouchableOpacity
+          activeOpacity={0.6}
+          style={[styles.copyBtn, { borderColor: COLORS.border, flex: 1 }]}
+          onPress={() => Clipboard.setString(msg.content)}
+            accessibilityRole="button"
+          accessibilityLabel="Copy research result"
+        >
+          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.textMuted }]}>Copy</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityRole="button"
+          style={[styles.copyBtn, { borderColor: COLORS.navy, flex: 1 }]}
+          onPress={async () => {
+            try {
+              const { default: Print } = await import('expo-print');
+              const { default: Sharing } = await import('expo-sharing');
+              const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+              const bodyHtml = msg.content.split('\n').map((line: string) => {
+                if (!line.trim()) return '<p style="height:8px"></p>';
+                const esc = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                return '<p style="margin:0 0 10px">' + esc.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>') + '</p>';
+              }).join('');
+              const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Georgia,serif;font-size:12pt;line-height:1.8;padding:1in 1.25in;color:#000}.hdr{border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:20px;font-size:10pt;color:#555}.disc{background:#fff8e1;border:1px solid #f9a825;padding:8px;font-size:9pt;margin:16px 0}</style></head><body><div class="hdr">Justice Gavel Legal Research &middot; ' + today + '</div><div class="disc">AI research &mdash; verify all citations before relying on them in court. Knowledge cutoff August 2025.</div>' + bodyHtml + '</body></html>';
+              const { uri } = await Print.printToFileAsync({ html, base64: false });
+              const canShare = await Sharing.isAvailableAsync();
+              if (canShare) {
+                await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Export Research', UTI: 'com.adobe.pdf' });
+              } else {
+                await Print.printAsync({ html });
+              }
+            } catch { Alert.alert('Export failed', 'Could not generate PDF.'); }
+          }}
+          accessibilityLabel="Export as PDF"
+        >
+          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>PDF Export</Text>
+        </TouchableOpacity>
+      </View>
+      {/* Discuss with AI -- continue into Defender Mode chat with research context */}
+      {onDiscussWithAI && (
+        <TouchableOpacity
+          style={[styles.copyBtn, { borderColor: COLORS.navy + '55', backgroundColor: COLORS.navy + '08' }]}
+          onPress={() => onDiscussWithAI(msg.content)}
+            accessibilityRole="button"
+          accessibilityLabel="Discuss this research with AI"
+        >
+          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>⚖️ Discuss with AI</Text>
+        </TouchableOpacity>
+      )}
+    </Animated.View>
+  );
+}
+
+// ── Paywall screen ────────────────────────────────────────────────────────────
+function PaywallView({ onSubscribe, loading, colors }: any) {
+  const styles = makeStyles(COLORS);
+  return (
+    <ScrollView contentContainerStyle={styles.paywallScroll}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
+      <View style={[styles.paywallCard, {
+        backgroundColor: false ? COLORS.textPrimary : COLORS.bgSubtle,
+        borderColor: COLORS.navy + '33'
+      }]}>
+        <Text maxFontSizeMultiplier={1.4} style={styles.paywallIcon}>⚖️</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallTitle, { color: COLORS.textPrimary }]}>
+          AI Legal Research
+        </Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallSub, { color: COLORS.textMuted }]}>
+          Westlaw costs $100-500/mo and hasn't changed since 2005.
+          Get case law, statutes, and legal standards in seconds.
+        </Text>
+
+        {/* Comparison table */}
+        {[
+          ['Westlaw',            '$100-500/mo', '❌'],
+          ['Casetext',          '$65/mo',      '❌'],
+          ['Harvey AI',         '$500+/mo',    '❌'],
+          ['Justice Gavel Research', '$49.99/mo', '✅'],
+        ].map(([name, price, check]) => (
+          <View key={name} style={[styles.compareRow, {
+            backgroundColor: check === '✅'
+              ? (false ? COLORS.legalBg : COLORS.legalBg)
+              : COLORS.bgCard,
+            borderColor: check === '✅' ? COLORS.legal + '55' : COLORS.border,
+          }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.compareName, { color: check === '✅' ? COLORS.legal : COLORS.textSecond,
+              fontWeight: check === '✅' ? '800' : '400' }]}>{name}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.comparePrice, { color: check === '✅' ? COLORS.legal : COLORS.textMuted }]}>{price}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.compareCheck}>{check}</Text>
+          </View>
+        ))}
+
+        {/* Features */}
+        <View style={[styles.featureList, { borderColor: COLORS.border }]}>
+          {[
+            'Case law with full citations',
+            'Jurisdiction-aware research',
+            'Motion precedent & standards',
+            'Constitutional law (4th, 5th, 6th)',
+            'Sentencing ranges & factors',
+            'Unlimited queries per month',
+            'Threaded research sessions',
+          ].map(f => (
+            <View key={f} style={styles.featureRow}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.featureCheck, { color: COLORS.legal }]}>✓</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.featureText, { color: COLORS.textSecond }]}>{f}</Text>
+            </View>
+          ))}
+        </View>
+
+        <TouchableOpacity
+          style={[styles.subscribeBtn, { backgroundColor: COLORS.navy }, loading && { opacity: 0.6 }]}
+          onPress={() => onSubscribe('legal_research')}
+            accessibilityRole="button"
+          disabled={loading}
+          accessibilityLabel="Subscribe to Legal Research for $49.99/mo"
+        >
+          {loading
+            ? <ActivityIndicator color={COLORS.bgCard} />
+            : <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>Start 14-Day Free Trial -- $49.99/mo</Text>}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.annualBtn, { borderColor: COLORS.navy + '55' }]}
+          onPress={() => onSubscribe('legal_research_annual')}
+            accessibilityRole="button"
+          disabled={loading}
+        >
+          <Text maxFontSizeMultiplier={1.4} style={[styles.annualBtnText, { color: COLORS.navy }]}>
+            Annual -- $374.99/yr · Save $224/yr
+          </Text>
+        </TouchableOpacity>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallDisclaimer, { color: COLORS.textMuted }]}>
+          Cancel anytime. Verify all citations independently before filing.
+        </Text>
+      </View>
+    </ScrollView>
+  );
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 const makeStyles = (colors: any) => StyleSheet.create({
-  screen:      { flex: 1 },
-  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  listContent: { padding: 12, paddingBottom: 8 },
+  screen:  { flex: 1 },
+  centreWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
+  emptyTitle: { fontSize: 18, ...FONTS.heavy, marginBottom: 16 },
 
-  // Day divider
-  dayDivider: { flexDirection: 'row', alignItems: 'center', marginVertical: 14, gap: 8 },
-  dayLine:    { flex: 1, height: 0.5 },
-  dayLabel:   { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', paddingHorizontal: 8, letterSpacing: 0.3 },
+  // Paywall
+  paywallScroll: { padding: 16, paddingBottom: 40 },
+  paywallCard:   { borderRadius: RADIUS.xl, borderWidth: 1, padding: 20, ...SHADOW.sm },
+  paywallIcon:   { fontSize: 44, textAlign: 'center', marginBottom: 10 },
+  paywallTitle:  { fontSize: 22, ...FONTS.black, textAlign: 'center', marginBottom: 8 },
+  paywallSub:    { fontSize: 12, textAlign: 'center', lineHeight: 20, marginBottom: 16 },
+  compareRow:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md,
+    borderWidth: 1, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 6 },
+  compareName:   { flex: 1, fontSize: 12 },
+  comparePrice:  { fontSize: 12, marginRight: 10 },
+  compareCheck:  { fontSize: 16,
+    lineHeight: 24, },
+  featureList:   { borderRadius: RADIUS.md, borderWidth: 0.5, padding: 16, marginVertical: 16 },
+  featureRow:    { flexDirection: 'row', gap: 8, marginBottom: 7, alignItems: 'flex-start' },
+  featureCheck:  { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', flexShrink: 0 },
+  featureText:   { flex: 1, fontSize: 12, lineHeight: 18 },
+  subscribeBtn:  { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center',
+    marginBottom: 8, ...SHADOW.sm },
+  subscribeBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
+  annualBtn:     { borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 11, alignItems: 'center', marginBottom: 10 },
+  annualBtnText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  paywallDisclaimer: { fontSize: 11, textAlign: 'center', lineHeight: 16 },
 
-  // Message row
-  msgRow:     { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 3 },
-  msgRowMine: { flexDirection: 'row-reverse' },
+  // Home
+  threadContent: { padding: 16, paddingBottom: 8 },
+  homeContent:   { flexGrow: 1 },
+  homeTitle:     { fontSize: 20, ...FONTS.black, marginBottom: 6 },
+  homeSub:       { fontSize: 12, lineHeight: 20, marginBottom: 14 },
+  contextPill:   { alignSelf: 'flex-start', borderRadius: 16, borderWidth: 1,
+    paddingHorizontal: 12, paddingVertical: 10, marginBottom: 16 },
+  contextPillText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  quickLabel:    { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase',
+    letterSpacing: 0.8, marginBottom: 8 },
+  quickScroll:   { marginBottom: 14 },
+  quickChip:     { paddingHorizontal: 16, paddingVertical: 9, borderRadius: RADIUS.pill,
+    borderWidth: 1.5, flexShrink: 0 },
+  quickChipText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  disclaimerBox: { borderRadius: RADIUS.md, borderWidth: 1, padding: 10, marginBottom: 16 },
+  disclaimerText:{ fontSize: 11, lineHeight: 16 },
 
-  // Avatar
-  avatar:     { width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.navy,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  avatarText: { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  // Thread
+  userBubble:    { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 10 },
+  userQuery:     { fontSize: 14, ...FONTS.heavy, lineHeight: 20 },
+  assistantBubble: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 14, ...SHADOW.sm },
+  resultHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  resultDot:     { width: 7, height: 7, borderRadius: 4.5 },
+  resultLabel:   { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8 },
+  assistantText: { fontSize: 15, lineHeight: 25, fontFamily: 'Inter_400Regular' },
+  copyBtn:       { alignSelf: 'flex-start', borderRadius: 8, borderWidth: 1,
+    paddingHorizontal: 10, paddingVertical: 10, marginTop: 10 },
+  copyBtnText:   { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 
-  senderName: { fontSize: 11, fontWeight: '600', marginBottom: 3, marginLeft: 2 },
-
-  // Bubble
-  bubble: {
-    borderRadius: RADIUS.xl, paddingHorizontal: 16, paddingVertical: 9,
-    maxWidth: '100%',
-  },
-  bubbleMine:   { borderBottomRightRadius: 4 },
-  bubbleTheirs: { borderBottomLeftRadius: 4 },
-  bubbleText:   { fontSize: 15, lineHeight: 21, letterSpacing: 0.1 },
-
-  // Meta
-  metaRow:    { flexDirection: 'row', alignItems: 'center', marginTop: 3, marginLeft: 2 },
-  metaRowMine:{ justifyContent: 'flex-end', marginRight: 2 },
-  metaText:   { fontSize: 11, fontWeight: '500' },
-  readTick:   { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  langBadge:  { marginLeft: 5, backgroundColor: COLORS.bgSubtle, borderRadius: 4,
-    paddingHorizontal: 5, paddingVertical: 1 },
-  langBadgeText: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.blue },
+  // Searching indicator
+  searchingRow:  { flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderRadius: RADIUS.md, borderWidth: 1, padding: 12, marginBottom: 10 },
+  searchingText: { fontSize: 12 },
 
   // Input bar
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 8,
-    paddingHorizontal: 12, paddingVertical: 10,
-    borderTopWidth: 0.5,
+    paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 0.5,
   },
-  input: {
+  queryInput: {
     flex: 1, borderWidth: 1.5, borderRadius: 20,
     paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10,
-    fontSize: 15, maxHeight: 120, lineHeight: 20,
+    fontSize: 14, maxHeight: 120, lineHeight: 20,
   },
-  sendBtn: {
+  searchBtn: {
     width: 42, height: 42, borderRadius: 21,
     alignItems: 'center', justifyContent: 'center',
   },
-  sendBtnText: { color: COLORS.bgCard, fontSize: 20, fontWeight: '300', lineHeight: 22, marginTop: -1 },
+  searchBtnText: { color: COLORS.bgCard, fontSize: 20, fontWeight: '300' },
 
-  // Empty
-  emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 36 },
-  emptyIcon:  { fontSize: 48, marginBottom: 14 },
-  emptyTitle: { fontSize: 20, ...FONTS.black, textAlign: 'center', marginBottom: 8 },
-  emptySub:   { fontSize: 12, textAlign: 'center', lineHeight: 20 },
-  encryptBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 5, paddingVertical: 10, backgroundColor: colors.legal, borderBottomWidth: 0.5,
-    borderBottomColor: colors.legal },
-  encryptIcon:  { fontSize: 11 },
-  encryptText:  { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.legal, letterSpacing: 0.3 },
+  // History
+  histRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg,
+    borderWidth: 1, padding: 16, marginBottom: 8 },
+  histIcon:  { fontSize: 20 },
+  histTitle: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 2, lineHeight: 18 },
+  histDate:  { fontSize: 11 },
+
+  // New search button
+  newSearchBtn:     { borderRadius: RADIUS.lg, paddingVertical: 13, paddingHorizontal: 24,
+    alignItems: 'center', marginTop: 12 },
+  newSearchBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
+  cutoffBanner:  { borderRadius: 8, borderWidth: 1, padding: 8, marginBottom: 10 },
+  cutoffText:    { fontSize: 11, lineHeight: 16 },
 });
-export default function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
-const styles = makeStyles(COLORS);
-  const styles = makeStyles(colors);
-
-  // Mounted guard -- prevents setState after unmount (crash in strict mode)
+export default function LegalResearchScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
+  const [disclaimerVisible, setDisclaimerVisible] = React.useState(false);
+  React.useEffect(() => { hasValidConsent().then(ok => { if (!ok) setDisclaimerVisible(true); }).catch(() => {}); }, []);
+
   const { colors, isDark } = useTheme();
-  const { caseId, caseTitle } = (route?.params as any) ?? {};
+  const styles = makeStyles(colors);
+  const { requireAuth, AuthGateModal } = useAuthGate(navigation);
+  const { initialQuery, caseContext } = (route?.params as any) ?? {};
 
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [page, setPage]   = React.useState(1);
-  const [hasMore, setHasMore] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [searchActive, setSearchActive] = React.useState(false);
-  const [attachment, setAttachment] = React.useState<{name:string;uri:string;size:number}|null>(null);
-  const [loading,  setLoading]  = useState(true);
-  const [msgError,  setMsgError]  = useState('');
-  const [sending,  setSending]  = useState(false);
-  const [body,     setBody]     = useState('');
-  const [myId,     setMyId]     = useState<number | null>(null);
-  const [role,     setRole]     = useState<'client' | 'defender'>('client');
+  const [phase,      setPhase]      = useState<Phase>('home');
+  const [query,      setQuery]      = useState(initialQuery || '');
+  const [messages,   setMessages]   = useState<Message[]>([]);
+  const [sessionId,  setSessionId]  = useState<number | null>(null);
+  const [searching,  setSearching]  = useState(false);
+  const [hasAccess,  setHasAccess]  = useState<boolean | null>(null);
+  const [subLoading, setSubLoading] = useState(false);
+  const [history,    setHistory]    = useState<Session[]>([]);
+  const [histLoading,setHistLoad]   = useState(false);
 
-  const listRef  = useRef<FlatList>(null);
-      {/* Search bar */}
-      {searchActive && (<></>)
+  const listRef = useRef<ScrollView>(null);
 
-      {/* Attachment preview */}
-      {attachment && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8,
-          marginHorizontal: 12, marginBottom: 4, backgroundColor: colors.bgElevated,
-          borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16, marginRight: 8 }}>📄</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ flex: 1, fontSize: 12, lineHeight: 17,
-            fontFamily: 'Inter_500Medium', color: colors.textPrimary }}
-            numberOfLines={1}>
-            {attachment.name}
-          </Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color: colors.textMuted, marginRight: 8 }}>
-            {attachment.size > 1024*1024
-              ? (attachment.size/1024/1024).toFixed(1)+'MB'
-              : Math.round(attachment.size/1024)+'KB'}
-          </Text>
-          <TouchableOpacity activeOpacity={0.6} onPress={() => setAttachment(null)}
-            accessibilityRole="button"
-          >
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 16 }}>✕</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      {searchActive && (
-        <View style={{ flexDirection: 'row', alignItems: 'center',
-          paddingHorizontal: 12, paddingVertical: 8,
-          backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search messages..."
-            placeholderTextColor={colors.placeholder}
-            autoFocus
-            style={{ flex: 1, fontSize: 14, lineHeight: 21,
-              fontFamily: 'Inter_400Regular',
-              color: colors.textPrimary, backgroundColor: colors.bg,
-              borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }}
-            accessibilityLabel="Search messages"
-            returnKeyType="search"
-          blurOnSubmit
-        />
-          <TouchableOpacity
-            accessibilityRole="button"
-            onPress={() => { setSearchActive(false); setSearchQuery(''); }}
-            style={{ marginLeft: 10, paddingHorizontal: 8 }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 14 }}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      <FlatList
-          keyExtractor={(item, index) => String(item?.id ?? index)}
-          keyboardShouldPersistTaps="handled"
-          onEndReached={() => { if (hasMore) setPage(p => p+1); }}
-          onEndReachedThreshold={0.3}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(1).finally(() => setRefreshing(false)); }} />}
-          data={displayMessages}
-          renderItem={renderItem}
-          ListEmptyComponent={listEmpty}
-          style={{ flex: 1 }}
-          inverted
-        />
-  const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Set header title
+  // Check access on mount
   useEffect(() => {
-    if (caseTitle) navigation.setOptions({ title: caseTitle ,
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={() => setSearchActive(s => !s)}
-            accessibilityRole="button"
-          style={{ marginRight: 16, padding: 4 }}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 18, color: colors.steel }}>🔍</Text>
-        </TouchableOpacity>
-      ),});
-  }, [caseTitle]);
-
-  // Get current user id + role
-  useEffect(() => {
-    AsyncStorage.getItem('user').then(u => {
-      if (u) {
-        const user = JSON.parse(u);
-        setMyId(user.id);
-        setRole(user.is_defender ? 'defender' : 'client');
-      }
-    }).catch(() => {});
+    api.get('/research/status')
+      .then(r => {
+        setHasAccess(r.data?.has_access);
+        if (!r.data?.has_access) setPhase('paywall');
+      })
+      .catch(() => setHasAccess(true)); // fail open in demo
   }, []);
 
-  // Load messages
-  const load = useCallback(async (silent = false) => {
-    if (!caseId) return;
-    if (!silent) setLoading(true);
-    try {
-      const res = await api.get(`/messages/${caseId}`);
-      setMessages(res.data?.messages || []);
-    } catch (e: any) { __DEV__ && console.warn(e?.message); setMsgError('Could not load messages. Check your connection.'); }
-    setLoading(false);
-  }, [caseId]);
-
+  // Header buttons
   useEffect(() => {
-    load();
-    // Real-time messages via Server-Sent Events (falls back to polling)
-    const lastId = msgs.length > 0 ? Math.max(...msgs.map((m: Record<string, unknown>) => m.id)) : 0;
-    let eventSource: EventSource | null = null;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { getToken } = require('../utils/secureStorage');
-      getToken().then((token: string | null) => {
-        if (!token) return;
-        const url = `${require('../services/api').API_BASE}/messages/${caseId}/stream?lastId=${lastId}&token=${token}`;
-        eventSource = new EventSource(url);
-        eventSource.onmessage = (e: MessageEvent) => {
-          try {
-            const newMsgs = JSON.parse(e.data);
-            if (Array.isArray(newMsgs) && newMsgs.length > 0) {
-              setMsgs(prev => {
-                const ids = new Set(prev.map((m: Record<string, unknown>) => m.id));
-                const added = newMsgs.filter((m: Record<string, unknown>) => !ids.has(m.id));
-                return added.length > 0 ? [...prev, ...added] : prev;
-              });
-            }
-          } catch {}
-        };
-        eventSource.onerror = () => {
-          // SSE failed -- fall back to 8s polling
-          eventSource?.close();
-          pollRef.current = setInterval(() => load(true), 8000);
-        };
-      }).catch(() => {
-        pollRef.current = setInterval(() => load(true), 8000);
-      });
-    } catch {
-      pollRef.current = setInterval(() => load(true), 8000);
-    }
-    return () => {
-      eventSource?.close();
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [load]);
-
-  // Auto-scroll on new message
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }, [messages]), 100);
-    }
-  }, [messages.length]);
-
-  // Send
-  const send = useCallback(async () => {
-    const text = body.trim();
-    if (!text || sending) return;
-
-    // Optimistic update
-    const optimisticMsg: Msg = {
-      id: Date.now(),
-      case_id: caseId,
-      sender_id: myId!,
-      sender_role: role,
-      sender_name: 'You',
-      body: text,
-      lang: 'en',
-      read_at: null,
-      created_at: new Date().toISOString(),
-      _optimistic: true,
-    };
-    setMessages(prev => [...prev, optimisticMsg]);
-    setBody('');
-    setSending(true);
-
-    try {
-      await api.post(`/messages/${caseId}`, { body: text, role });
-      await load(true); // confirm with server version
-    } catch {
-      // Remove optimistic on failure
-      setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
-      setBody(text); // restore draft
-    } finally {
-      setSending(false);
-    }
-  }, [body, sending, caseId, myId, role, load]);
-
-  // Grouped items for FlatList
-  const items = useMemo(() => groupByDay(messages), [messages]);
-
-  // ── Empty state ─────────────────────────────────────────────────────────────
-  if (!loading && messages.length === 0) return (
-    <KeyboardAvoidingView
-      style={[styles.screen, { backgroundColor: colors.bg }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={90}
-    >
-      <View style={styles.emptyWrap}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>💬</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-          No messages yet
-        </Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textMuted }]}>
-          Start the conversation. Messages are private, logged, and{'\n'}
-          keep your personal number off the record.
-        </Text>
-      </View>
-      <View style={[styles.inputBar, {
-        backgroundColor: isDark ? colors.tabBg : colors.bg,
-        borderTopColor: colors.border,
-      }]}>
-
-          {/* Attachment picker */}
-          <TouchableOpacity
-            onPress={pickDocument}
-            style={{ padding: 8, marginRight: 4 }}
-            accessibilityRole="button"
-          >
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20, color: colors.steel }}>📎</Text>
+    navigation.setOptions({
+      title: phase === 'history' ? '📚 Research History' : '⚖️ Legal Research',
+      headerRight: () => hasAccess && phase !== 'paywall' ? (
+        <View style={{ flexDirection: 'row', gap: 16, marginRight: 14 }}>
+          <TouchableOpacity onPress={loadHistory} accessibilityRole="button">
+            <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
           </TouchableOpacity>
+          {phase === 'thread' && (
+            <TouchableOpacity onPress={() => {
+              setMessages([]); setSessionId(null); setQuery(''); setPhase('home');
+            }} accessibilityRole="button">
+              <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : null,
+    });
+  }, [phase, hasAccess]);
 
-          <TextInput
-          style={[styles.input, {
-            backgroundColor: colors.bgCard,
-            borderColor: colors.border,
-            color: colors.textPrimary,
-          }]}
-          placeholder={t('msg_placeholder')}
-          placeholderTextColor={COLORS.textSecond}
-          value={body}
-          onChangeText={setBody}
-          multiline
-          maxLength={2000}
-          accessibilityLabel="Message input"
-        />
-        <SendButton onPress={send} active={body.trim().length > 0} sending={sending} />
-      </View>
-    </KeyboardAvoidingView>
+  // Auto-search if initial query provided
+  useEffect(() => {
+    if (initialQuery && hasAccess) runSearch(initialQuery);
+  }, [hasAccess]);
+
+  const subscribe = useCallback(async (tier: string) => {
+    requireAuth(async () => {
+      setSubLoading(true);
+      try {
+        await api.post('/billing/subscribe', { tier, provider_type: 'addon' });
+        setHasAccess(true);
+        setPhase('home');
+        Alert.alert('Welcome!', 'Your Legal Research trial is active. Start searching.');
+      } catch (e: any) {
+        const msg = e.response?.data?.error || 'Could not start subscription.';
+        Alert.alert('Subscription error', msg);
+      } finally {
+        setSubLoading(false);
+      }
+    });
+  }, [requireAuth]);
+
+  const loadHistory = useCallback(async () => {
+    setHistLoad(true);
+    try {
+      const res = await api.get('/research/history');
+      setHistory(res.data || []);
+      setPhase('history');
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
+    setHistLoad(false);
+  }, []);
+
+  const loadSession = useCallback(async (sess: Session) => {
+    try {
+      const res = await api.get(`/research/session/${sess.id}`);
+      setMessages(res.data?.messages || []);
+      setSessionId(sess.id);
+      setPhase('thread');
+      const _t1 = setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 200); return () => clearTimeout(_t1);
+    } catch {
+      Alert.alert(t('res_load_error'));
+    }
+  }, []);
+
+  const runSearch = useCallback(async (q: string) => {
+    const text = q.trim();
+    if (!text || searching) return;
+    setSearching(true);
+
+    const userMsg: Message = { role: 'user', content: text, created_at: new Date().toISOString() };
+    setMessages(prev => [...prev, userMsg]);
+    setQuery('');
+    setPhase('thread');
+
+    try {
+      const res = await api.post('/research/ask', {
+        query: text,
+        session_id: sessionId,
+        context: caseContext,
+      });
+      setSessionId(res.data?.session_id);
+      const assistantMsg: Message = {
+        role: 'assistant',
+        content: res.data?.answer,
+        created_at: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+    } catch (e: any) {
+      const errMsg = e.response?.data?.error || 'Research failed. Check your connection.';
+      if (e.response?.status === 402) {
+        setPhase('paywall');
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: '⚠️ ' + errMsg + '\n\nPlease try again.',
+        }]);
+      }
+    } finally {
+      setSearching(false);
+    }
+  }, [searching, sessionId, caseContext]);
+
+  // ── RENDER: Loading ───────────────────────────────────────────────────────
+  if (hasAccess === null) return (
+    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      <ActivityIndicator style={{ flex: 1 }} color={COLORS.navy} />
+    </View>
   );
 
+  // ── RENDER: Paywall ───────────────────────────────────────────────────────
+  if (phase === 'paywall') return (
+    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      <AuthGateModal />
+      <PaywallView onSubscribe={subscribe} loading={subLoading} colors={colors} isDark={isDark} />
+    </View>
+  );
+
+  // ── RENDER: History ───────────────────────────────────────────────────────
+  if (phase === 'history') return (
+    <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
+      contentContainerStyle={{ padding: 16 }}>
+      {histLoading
+        ? <ActivityIndicator color={COLORS.navy} style={{ marginTop: 40 }} />
+        : history.length === 0
+        ? (
+          <View style={styles.centreWrap}>
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 40, marginBottom: 12 }}>📚</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No research yet</Text>
+            <TouchableOpacity style={[styles.newSearchBtn, { backgroundColor: COLORS.navy }]}
+              onPress={() => setPhase('home')}
+            accessibilityRole="button"
+              >
+              <Text maxFontSizeMultiplier={1.4} style={styles.newSearchBtnText}>Start Researching →</Text>
+            </TouchableOpacity>
+          </View>
+        )
+        : history.map(sess => (
+          <TouchableOpacity
+            key={sess.id}
+            style={[styles.histRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
+            onPress={() => loadSession(sess)}
+            accessibilityRole="button"
+            accessibilityLabel={`Open: ${sess.title}`}
+          >
+            <Text maxFontSizeMultiplier={1.4} style={styles.histIcon}>⚖️</Text>
+            <View style={{ flex: 1 }}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.histTitle, { color: colors.textPrimary }]}
+                numberOfLines={2}>{sess.title}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.histDate, { color: colors.textMuted }]}>
+                {new Date(sess.updated_at).toLocaleDateString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric'
+                })}
+              </Text>
+            </View>
+            <Text maxFontSizeMultiplier={1.4} style={[{ color: colors.textMuted, fontSize: 20 }]}>›</Text>
+          </TouchableOpacity>
+        ))
+      }
+    </ScrollView>
+  );
+
+  // ── RENDER: Home + Thread ─────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.bg }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={90}
     >
-      {loading ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator color={COLORS.navy} />
-        </View>
-      ) : (
-        <FlatList
-          keyboardShouldPersistTaps="handled"
-          ref={listRef}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={true}
-          data={items as any[]}
-          keyExtractor={(item: Record<string,unknown>) => item.key ?? String(item.id)}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
-          ListEmptyComponent={
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
-              No messages yet. Messages from your attorneys will appear here.
+      <AuthGateModal />
+
+      {/* Thread / home scroll area */}
+      <ScrollView
+        ref={listRef}
+        contentContainerStyle={[
+          styles.threadContent,
+          phase === 'home' && styles.homeContent,
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Home state ──────────────────────────────────────────────────── */}
+        {phase === 'home' && (
+          <>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.homeTitle, { color: colors.textPrimary }]}>
+              What do you need to research?
             </Text>
-          }
-          renderItem={({ item, index }: { item: Record<string,any>; index: number }) => {
-            if (item.type === 'day') {
-              return (
-                <View style={styles.dayDivider}>
-                  <View style={[styles.dayLine, { backgroundColor: colors.border }]} />
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.dayLabel, { color: colors.textMuted,
-                    backgroundColor: colors.bg }]}>
-                    {item.label}
+            <Text maxFontSizeMultiplier={1.4} style={[styles.homeSub, { color: colors.textMuted }]}>
+              Case law · Statutes · Constitutional standards · Sentencing
+            </Text>
+
+            {caseContext && (
+              <View style={[styles.contextPill, {
+                backgroundColor: COLORS.navy + '14',
+                borderColor: COLORS.navy + '33'
+              }]}>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.contextPillText, { color: COLORS.navy }]}
+                  numberOfLines={1}>📁 {caseContext}</Text>
+              </View>
+            )}
+
+            {/* Quick prompts */}
+            <Text maxFontSizeMultiplier={1.4} style={[styles.quickLabel, { color: colors.textMuted }]}>
+              Common research queries
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}
+              style={styles.quickScroll} contentContainerStyle={{ gap: 8 }}>
+              {QUICK_PROMPTS.map(p => (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  key={p.label}
+                  style={[styles.quickChip, {
+                    backgroundColor: colors.bgCard,
+                    borderColor: colors.border,
+                  }]}
+                  onPress={() => runSearch(p.text)}
+                  accessibilityLabel={p.label}
+                >
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.quickChipText, { color: colors.textPrimary }]}>
+                    {p.label}
                   </Text>
-                  <View style={[styles.dayLine, { backgroundColor: colors.border }]} />
-                </View>
-              );
-            }
-            const msg     = item as Msg;
-            const isMine  = msg.sender_id === myId;
-            const prevItem = items[index - 1] as any;
-            const prevMsg  = prevItem && !prevItem.type ? prevItem as Msg : null;
-            const prevMine = prevMsg ? prevMsg.sender_id === myId : false;
-            const showAvatar = !isMine && (!prevMsg || prevMsg.sender_id !== msg.sender_id);
-            return (
-              <MessageBubble
-                msg={msg}
-                isMine={isMine}
-                prevMine={prevMine}
-                showAvatar={showAvatar}
-              />
-            );
-          }}
-        />
-      )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={[styles.disclaimerBox, {
+              backgroundColor: isDark ? colors.bgCard : colors.warnBg,
+              borderColor: colors.gold + '55'
+            }]}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerText, { color: isDark ? colors.gold : colors.textSecond }]}>
+                ⚠️  Always verify citations before filing. AI research may miss recent decisions. Use Westlaw or Lexis for appellate work.
+              </Text>
+            </View>
+          </>
+        )}
+
+        {/* ── Thread ──────────────────────────────────────────────────────── */}
+        {messages.map((msg, i) => (
+          <ResearchBubble key={i} msg={msg} />
+        ))}
+
+        {/* Searching indicator */}
+        {searching && (
+          <View style={[styles.searchingRow, {
+            backgroundColor: colors.bgCard,
+            borderColor: colors.border
+          }]}>
+            <ActivityIndicator size="small" color={COLORS.legal} />
+            <Text maxFontSizeMultiplier={1.4} style={[styles.searchingText, { color: colors.textMuted }]}>
+              Searching case law and statutes…
+            </Text>
+          </View>
+        )}
+        <View style={{ height: 16 }} />
+
+      <View style={{ backgroundColor:colors.bgCard, borderRadius:10,
+        borderLeftWidth:4, borderLeftColor:colors.warn,
+        padding:12, marginTop:12 }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:'#555', fontStyle:'italic', lineHeight:16 }}>
+          ⚖️ AI legal research is not legal advice. Analysis may miss key issues or
+          misinterpret jurisdiction-specific rules. Have an attorney review all documents.
+        </Text>
+      </View>
+      </ScrollView>
 
       {/* Input bar */}
       <View style={[styles.inputBar, {
@@ -624,61 +757,44 @@ const styles = makeStyles(COLORS);
         borderTopColor: colors.border,
       }]}>
         <TextInput
-          style={[styles.input, {
+          style={[styles.queryInput, {
             backgroundColor: colors.bgCard,
             borderColor: colors.border,
             color: colors.textPrimary,
           }]}
-          placeholder={t('msg_placeholder')}
+          placeholder={phase === 'thread'
+            ? t('res_placeholder_follow')
+            : 'e.g. Tennessee cases suppressing traffic stop evidence…'}
           placeholderTextColor={COLORS.textSecond}
-          value={body}
-          onChangeText={setBody}
+          value={query}
+          onChangeText={setQuery}
           multiline
           maxLength={2000}
-          returnKeyType="default"
-          accessibilityLabel="Message input"
+          accessibilityLabel="Legal research query"
+          onSubmitEditing={() => runSearch(query)}
+
+          returnKeyType="next"
+          blurOnSubmit
         />
-        <SendButton onPress={send} active={body.trim().length > 0} sending={sending} />
+        <TouchableOpacity
+          style={[styles.searchBtn, {
+            backgroundColor: query.trim() && !searching ? COLORS.navy : colors.border
+          }]}
+          onPress={() => runSearch(query)}
+            accessibilityRole="button"
+          disabled={!query.trim() || searching}
+          accessibilityLabel="Run legal research"
+        >
+          {searching
+            ? <ActivityIndicator color={colors.bgCard} size="small" />
+            : <Text maxFontSizeMultiplier={1.4} style={styles.searchBtnText}>→</Text>}
+        </TouchableOpacity>
       </View>
+      <LegalDisclaimerModal visible={disclaimerVisible} onAccept={() => setDisclaimerVisible(false)} featureContext="research" />
     </KeyboardAvoidingView>
   );
-}
-
-// ── Send button ───────────────────────────────────────────────────────────────
-function SendButton({ onPress, active, sending }: {
-  onPress: () => void; active: boolean; sending: boolean;
-}) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePress = () => {
-    Animated.sequence([
-      Animated.timing(scaleAnim, { toValue: 0.88, duration: 80, useNativeDriver: true }),
-      Animated.timing(scaleAnim, { toValue: 1,    duration: 80, useNativeDriver: true }),
-    ]).start();
-    onPress();
-  };
-
-  return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <Pressable
-        onPress={handlePress}
-        disabled={!active || sending}
-        style={[styles.sendBtn,
-          { backgroundColor: active ? COLORS.navy : colors.border }
-        ]}
-        accessibilityLabel="Send message"
-        accessibilityRole="button"
-      >
-        {sending
-          ? <ActivityIndicator color={colors.bgCard} size="small" />
-          : <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>↑</Text>}
-      </Pressable>
-    </Animated.View>
-  );
-}
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-// Module-level styles for helper components (uses static COLORS, not dynamic theme)
-
+// Module-level fallback for helper components
 }

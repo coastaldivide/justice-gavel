@@ -506,7 +506,7 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
   const userStateRef = React.useRef<string>('');
   React.useEffect(() => {
     const { getUserState } = require('../utils/userState');
-    getUserState().then((s: Record<string, unknown>) => { if (s?.code) userStateRef.current = s.code; }).catch(() => {});
+    getUserState().then((s: any) => { if (s?.code) userStateRef.current = s.code; }).catch(() => {});
   }, []);
 
   // AI motion review pass
@@ -662,7 +662,7 @@ const loadHistory = useCallback(async () => {
         const content = (job.result as any)?.content || (job.result as any)?.draft || '';
         setDraft(content);
         setEditDraft(content);
-        Analytics.motionGenerated(selectedType?.key ?? 'unknown', 'user');
+        Analytics.motionGenerated(selectedType?.key ?? 'unknown');
       setPhase('result');
         return;
       }

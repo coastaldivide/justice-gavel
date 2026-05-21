@@ -323,10 +323,9 @@ export default function SavedLawyersScreen({ navigation }: any): React.JSX.Eleme
   const load = useCallback(async (refresh = false) => {
     // Try cache first for instant display while fresh data loads
     try {
-      const cached = await getCachedSearch('saved_lawyers');
-      if (cached?.results?.lawyers?.length && mountedRef.current) {
-        const { getCachedSearch: _g, ...rest } = cached;
-        setSavedLawyers(cached.results?.lawyers || []);
+      const cached = await getCachedSearch();
+      if ((cached as any)?.results?.lawyers?.length && mountedRef.current) {
+        setSavedLawyers((cached as any).results?.lawyers || []);
       }
     } catch {}
 

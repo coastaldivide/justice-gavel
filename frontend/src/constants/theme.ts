@@ -356,7 +356,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   return React.createElement(
     ThemeContext.Provider,
-    { value: { colors, isDark, toggleDark, fontsLoaded } },
+    { value: { colors, isDark, toggleDark, fontsLoaded } as any },
     children
   );
 }

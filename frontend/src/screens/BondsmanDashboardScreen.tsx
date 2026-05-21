@@ -138,7 +138,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
             <TouchableOpacity
               accessibilityRole="button"
               style={styles.acceptBtn}
-              onPress={() => onAccept(lead)}
+              onPress={() => onAccept()}
               activeOpacity={0.85}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.acceptBtnText}>
@@ -493,7 +493,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
         {[
           { label:'Accepted',   value: String(leads.filter((l: Record<string, unknown>) =>l.purchased).length),  color:colors.legalDark },
           { label:'Accept Rate', value: leads.length ? Math.round(leads.filter((l: Record<string, unknown>) =>l.purchased).length/leads.length*100)+'%' : '--', color:colors.blue },
-          { label:'Avg Bail',   value: leads.length ? '$'+Math.round(leads.reduce((s: number, l: Record<string, unknown>)=>s+(l.bail_amount||0),0)/leads.length).toLocaleString() : '--', color:colors.warnDark },
+          { label:'Avg Bail',   value: leads.length ? '$'+Math.round(leads.reduce((s: number, l: Record<string, unknown>)=>s+((l as any).bail_amount||0),0)/leads.length).toLocaleString() : '--', color:colors.warnDark },
           { label:'High Value', value: String(leads.filter((l: Record<string, unknown>) =>(l as any).bail_amount>=25000).length), color:colors.navy },
         ].map((s,i) => (
           <View key={i} style={{ flex:1, backgroundColor:colors.bgCard, borderRadius:8,
@@ -599,7 +599,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
             </View>
           }
           renderItem={({ item }) => (
-            <LeadCard lead={item} onAccept={handleAccept} />
+            <LeadCard lead={item} onAccept={() => handleAccept(item)} />
           )}
         />
         </>

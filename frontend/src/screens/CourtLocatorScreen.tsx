@@ -50,12 +50,8 @@ export default function CourtLocatorScreen(): React.JSX.Element {
   const text = colors.textPrimary;
   const sub  = colors.textMuted;
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await doSearch(search || 'Nashville').catch(() => {});
-    setRefreshing(false);
-  }, [search, doSearch]);
-
+  // Forward declaration — doSearch is defined below via useCallback
+  var doSearch: (q: string) => Promise<void>;
   var doSearch = useCallback(async (q: string) => {
     if (q.trim().length < 2) { setResults([]); return; }
     setLoading(true); setError('');
@@ -81,6 +77,13 @@ export default function CourtLocatorScreen(): React.JSX.Element {
       setError('Could not load courthouses. Check connection.');
     } finally { setLoading(false); }
   }, [courtMode]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await doSearch(search || 'Nashville').catch(() => {});
+    setRefreshing(false);
+  }, [search, doSearch]);
+
 
   useEffect(() => {
     const t = setTimeout(() => doSearch(search), 350);

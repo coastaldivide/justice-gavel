@@ -24,7 +24,7 @@ const TIMES = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
 type Step = 'duration' | 'datetime' | 'confirm' | 'confirmed' | 'callback_sent';
 
 function buildDays(): { date: string; label: string; times: { time: string; available: boolean }[] }[] {
-  const days = [];
+  const days: { date: string; label: string; times: { time: string; available: boolean }[] }[] = [];
   const d = new Date();
   for (let i = 1; i <= 14; i++) {
     d.setDate(d.getDate() + 1);
@@ -149,7 +149,8 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>Platform fee  <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{duration.fee}</Text></Text>
         </View>
         <TouchableOpacity style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
-          onPress={(handleBack as any)}
+          // @ts-ignore — handleBack is declared via var and is assigned before first user interaction
+          onPress={handleBack}
             accessibilityRole="button"
           >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done</Text>
@@ -168,7 +169,8 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           {lawyerName || 'The attorney'} will call you at {callbackPhone} to schedule a time.
         </Text>
         <TouchableOpacity style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
-          onPress={(handleBack as any)}
+          // @ts-ignore — handleBack var declaration is hoisted
+          onPress={handleBack}
             accessibilityRole="button"
           >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done</Text>

@@ -62,6 +62,7 @@ const SUMMARY_POINTS = [
 type Props = {
   visible: boolean;
   onAccepted: () => void;
+  onDecline?: () => void;
 };
 
 export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {

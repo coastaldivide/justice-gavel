@@ -131,7 +131,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
         const open = (res.data || []).filter((ca: Record<string,unknown>) => ca.next_court_date);
         if (!open.length) return;
         const sorted = open.sort((a: Record<string,unknown>, b: Record<string,unknown>) =>
-          new Date(a.next_court_date).getTime() - new Date(b.next_court_date).getTime());
+          new Date(String(a.next_court_date ?? 0)).getTime() - new Date(String(b.next_court_date ?? 0)).getTime());
         const next = sorted[0];
         const diff = Math.ceil((new Date(next.next_court_date).getTime() - Date.now()) / 86400000);
         if (diff >= 0 && diff <= 30) setUpcomingCase({ title: next.title, date: next.next_court_date, daysLeft: diff });
@@ -405,7 +405,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
 
         {/* Tile grid */}
         <View style={styles.grid}>
-          {TILES.map(t => (
+          {TILES.map((t: any) => (
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel={t.label.replace(/\n/g, ' ')}

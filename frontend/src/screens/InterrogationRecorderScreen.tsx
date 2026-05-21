@@ -35,7 +35,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    try { await fetchLaw(); } catch {}
+    try { await fetchLaw(''); } catch {}
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
   }, []);
 
@@ -141,7 +141,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
         if (mountedRef.current) setElapsed(n => n + 1);
       }, 1000);
 
-    } catch (e: unknown) {
+    } catch (e: any) {
       Alert.alert('Could not start recording', e.message || 'Check microphone permissions.');
     }
   };
@@ -176,7 +176,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
       formData.append('dateTime', new Date().toLocaleString('en-US', { timeZoneName: 'short' }));
 
       const res = await fetch(
-        ('' || 'http://localhost:4000/api') + '/interrogation/transcribe',
+        'http://localhost:4000/api' + '/interrogation/transcribe',
         {
           method: 'POST',
           headers: {
@@ -196,7 +196,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
       setDocId(data.doc_id || '');
       setPhase('done');
 
-    } catch (e: unknown) {
+    } catch (e: any) {
       if (!mountedRef.current) return;
       setError(e.message || 'Could not process recording. Make sure you have internet access and try again.');
       setPhase('error');

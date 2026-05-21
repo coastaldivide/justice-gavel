@@ -31,7 +31,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
   const [officerName, setOfficerName] = useState('');
   const [location,   setLocation]   = useState('');
 
-  const mediaRef  = useRef<MediaRecorder | null>(null);
+  const mediaRef  = useRef<any>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -73,9 +73,9 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
     await new Promise(r => setTimeout(r, 600));
 
     try {
-      const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+      const blob = new Blob(chunksRef.current as any, { type: 'audio/webm' } as any);
       const form = new FormData();
-      form.append('audio', blob, 'encounter.webm');
+      (form as any).append('audio', blob, 'encounter.webm');
       if (officerName) form.append('officer_name', officerName);
       if (location)    form.append('location', location);
 
@@ -120,7 +120,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
       {/* Context fields */}
       {step === 'idle' && (
         <View style={{ gap: 12 }}>
-          <Text maxFontSizeMultiplier={1.3}Input
+          <TextInput
             value={officerName}
             onChangeText={setOfficerName}
             placeholder="Officer name / badge number (optional)"
@@ -129,7 +129,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
               color: colors.textPrimary, fontSize: 14, borderWidth: 1, borderColor: colors.border }}
             accessibilityLabel="Officer name or badge number"
           />
-          <Text maxFontSizeMultiplier={1.3}Input
+          <TextInput
             value={location}
             onChangeText={setLocation}
             placeholder="Location (optional)"
@@ -202,7 +202,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textPrimary, lineHeight: 22, fontSize: 14 }}>
             {transcript}
           </Text>
-          <Text maxFontSizeMultiplier={1.3}Input
+          <TextInput
             value={notes}
             onChangeText={setNotes}
             placeholder="Add your own notes…"

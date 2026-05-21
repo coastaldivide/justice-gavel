@@ -161,7 +161,7 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
   React.useEffect(() => {
     setDivLoading(true);
     api.get("/lessons?category=Court%20Process&limit=5").then(r => {
-      const d = ((r as any).data || []).find((l: Record<string, unknown>) => l.title?.toLowerCase().includes('diversion'));
+      const d = ((r as any).data || []).find((l: any) => l.title?.toLowerCase().includes('diversion'));
       if (d) setDiversionLesson(d);
     }).catch(() => { setDivError(true); }).finally(() => setDivLoading(false));
   }, []);

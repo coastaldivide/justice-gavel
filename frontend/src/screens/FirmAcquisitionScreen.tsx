@@ -148,8 +148,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
   const activateTrial = async () => {
     if (!firmName.trim()) { Alert.alert('Required', 'Firm name is required.'); return; }
     if (firmName.trim().length < 2) { Alert.alert('Too short', 'Firm name must be at least 2 characters.'); return; }
-    const canProceed = await requireAuth();
-    if (!canProceed) return;
+    const canProceed = await (requireAuth as any)();
+    if (canProceed === false) return;
     setActiv(true);
     try {
       const res = await api.post('/firm-acquisition/trial', {

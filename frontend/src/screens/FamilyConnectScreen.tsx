@@ -264,7 +264,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
           {searchResults.length > 0 && (
             <View style={styles.resultsList}>
               <Text maxFontSizeMultiplier={1.4} style={styles.resultsHeader}>{searchResults.length} record(s) found -- tap to select:</Text>
-              {searchResults.map((r: Record<string,unknown>) => (
+              {searchResults.map((r: any) => (
                 <TouchableOpacity
                   accessibilityRole="button"
                   key={r.id}
@@ -435,7 +435,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
               {result.attorneys?.length > 0 && (
                 <>
                   <Text maxFontSizeMultiplier={1.4} style={styles.contactsHeading}>⚖️ Criminal Defense Attorneys</Text>
-                  {result.attorneys.map((a: Record<string, unknown>) => (
+                  {result.attorneys.map((a: any) => (
                     <ContactCard key={a.id} contact={a} type="attorney" />
                   ))}
                 </>
@@ -444,7 +444,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
               {result.bail_agents?.length > 0 && (
                 <>
                   <Text maxFontSizeMultiplier={1.4} style={styles.contactsHeading}>🔓 Bail Bondsmen</Text>
-                  {result.bail_agents.map((a: Record<string, unknown>) => (
+                  {result.bail_agents.map((a: any) => (
                     <ContactCard key={a.id} contact={a} type="bail" />
                   ))}
                 </>

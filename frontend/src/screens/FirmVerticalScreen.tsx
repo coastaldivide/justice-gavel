@@ -415,7 +415,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); setRefresh(true).finally(() => setRefreshing(false)); }}  />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); Promise.resolve(setRefresh(true)).finally(() => setRefreshing(false)); }}  />}
         keyboardShouldPersistTaps="handled"
       >
 
@@ -952,4 +952,7 @@ const styles = (c: any) => StyleSheet.create({
   dlDesc:           { fontSize: TYPE.xs, color: c.textMuted },
   dlDue:            { fontSize: TYPE.sm, fontFamily: FONT.semiBold, color: c.text, marginBottom: 2 },
   dlDays:           { fontSize: TYPE.xs, color: c.textMuted, textAlign: 'right' },
+  graceBanner:      { backgroundColor: c.warnBg, borderRadius: 12, padding: 16, marginHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: c.warn },
+  graceBannerTitle: { fontSize: 16, fontWeight: '700', color: c.warn, marginBottom: 4 },
+  graceBannerBody:  { fontSize: 14, color: c.textSecond, lineHeight: 20 },
 });

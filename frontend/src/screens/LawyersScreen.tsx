@@ -121,8 +121,8 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
       try {
         // Find an existing open case or create a quick one for this lawyer
         var res = await api.get('/cases');
-        const openCase = res.data?.find?.((c: Record<string,unknown>) =>
-          ['Open','Active'].includes(c.status)
+        const openCase = res.data?.find?.((c: any) =>
+          ['Open','Active'].includes(String(c.status))
         );
         let caseId: number;
         let caseTitle: string;
@@ -519,7 +519,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
         if ((cached as any).isCache && (cached as any).data?.length > 0) {
           setLawyers((cached as any).data);
         // Write-through cache for offline access
-        cacheSearch('lawyers_list', { cases:[], messages:[], lawyers: res.data?.slice(0,20), lessons:[] }).catch(() => {});
+        cacheSearch('lawyers_list', { cases:[], messages:[], lawyers: [], lessons:[] }).catch(() => {});
           setLoading(false);
           if (!cached.stale) return; // fresh cache -- skip network call
           // Stale: continue fetch in background without showing spinner
@@ -598,8 +598,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
   const [bulkMsg, setBulkMsg]         = React.useState('');
   const [bulkSending, setBulkSending] = React.useState(false);
   const [bulkResult, setBulkResult]   = React.useState<string | null>(null);
-  const [reviewSummaries, setReviewSummaries] = React.useState<
-    Record<number, { avg_rating: number; count: number; top_reviews: { rating: number; comment: string }[] }>
+  const [reviewSummaries, setReviewSummaries] = React.useState<    Record<number, { avg_rating: number; count: number; top_reviews: { rating: number; comment: string }[] }>>({});
   const [showBadgeInfo, setShowBadgeInfo] = React.useState(false);
   const [badgeInfoType, setBadgeInfoType] = React.useState<'bar'|'jtb'|'golden'>('bar');
   useEffect(() => {
@@ -1125,7 +1124,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
     width: '47%', paddingVertical: 16, paddingHorizontal: 12,
     borderRadius: 14, alignItems: 'center', borderWidth: 1.5 },
   needBtnIcon:  { fontSize: 28, marginBottom: 6 },
-  needBtnLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textAlign: 'center', lineHeight: 17 },
   modalContainer: { flex: 1, backgroundColor: COLORS.bg },
   modalHeader: {
     backgroundColor: COLORS.navy, padding: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40,
@@ -1156,6 +1154,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     backgroundColor: COLORS.warn + '10' },
   savedHeaderBtnText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.warn },
   conflictNote: { fontSize: 11, lineHeight: 16, paddingHorizontal: 2, marginBottom: 10, fontStyle: 'italic' },
+  needBtnLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.textPrimary, textAlign: 'center' },
   conflictNoteBox: { borderRadius: 8, borderWidth: 1, padding: 10, marginBottom: 10 } });
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
