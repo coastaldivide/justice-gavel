@@ -91,7 +91,7 @@ export default function CourtLocatorScreen(): React.JSX.Element {
   }, [search, doSearch, courtMode]);
 
   // Load nearby / default on mount
-  useEffect(() => { doSearch('Nashville'); }, []);
+  useEffect(() => { doSearch('Nashville'); }, [doSearch]);
 
   const openMaps = (address: string) => {
     const encoded = encodeURIComponent(address);

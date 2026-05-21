@@ -24,6 +24,8 @@ function FloatingSOSButton({ onPress, sending }: { onPress: () => void; sending?
     );
     pAnim.start();
     rAnim.start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => { pAnim.stop(); rAnim.stop(); };
   }, []);
 

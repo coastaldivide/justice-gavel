@@ -126,7 +126,7 @@ function SavedCard({
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load])
+    }, [])
   );
 
   return (

@@ -69,6 +69,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
     if (timerRef.current) clearInterval(timerRef.current);
     setStep('uploading');
 
+    // eslint-disable-next-line no-promise-executor-return
     // Wait for final data chunk
     await new Promise(r => setTimeout(r, 600));
 

@@ -117,6 +117,7 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
     d.setFullYear(d.getFullYear() + waitYears);
     return d;
   }, [caseDate, waitYears]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const now = new Date();
   const isEligible = eligible <= now;
@@ -146,7 +147,7 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
     } catch {
       Alert.alert('Could not set reminder', 'Make sure notifications are enabled in Settings.');
     }
-  }, [eligible, isEligible]);
+  }, [eligible, isEligible, now]);
 
   return (
     <View style={{ backgroundColor: isEligible ? COLORS.legalBg : COLORS.bgSubtle,
@@ -234,7 +235,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
         if (s?.code) setState(s.code);
       }).catch(() => {});
     }
-  }, []);
+  }, [incomingState]);
   // Auto-submit when navigated from CaseScreen with charges + state
   // so user sees results immediately without re-entering data
   React.useEffect(() => {
@@ -243,8 +244,10 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
       const t = setTimeout(() => {
         checkEligibility();
       }, 400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
       return () => clearTimeout(t);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incomingState]);
 
 

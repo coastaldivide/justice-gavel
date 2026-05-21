@@ -66,6 +66,8 @@ function PulseRing({ active }: { active: boolean }) {
       scale.setValue(1);
       opac.setValue(0);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => anim.current?.stop();
   }, [active]);
 

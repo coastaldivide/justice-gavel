@@ -301,7 +301,7 @@ export default function CaseTimelineScreen({ navigation, route }: ScreenProps): 
   useFocusEffect(
     useCallback(() => {
       loadEvents();
-    }, [])
+    }, [loadEvents])
   );
 
   return (

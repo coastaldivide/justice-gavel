@@ -47,6 +47,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
     setRefreshing(true);
     try { await fetchCard(''); } catch {}
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const mountedRef = useRef(true);
@@ -88,7 +89,9 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
         setCard(buildFallbackCard(''));
         fetchCard('');
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const fetchCard = async (st: string) => {
     // Do not show loading spinner -- static card already showing

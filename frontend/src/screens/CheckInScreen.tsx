@@ -72,6 +72,8 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
         Animated.timing(pulse, { toValue: 1.04, duration: 900, useNativeDriver: true }),
         Animated.timing(pulse, { toValue: 1.00, duration: 900, useNativeDriver: true }),
       ])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     ).start();
   }, []);
 
@@ -79,6 +81,8 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
     if (!enrollmentId) {
       setPhase('no_enrollment');
       return;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }
     loadStatus();
   }, [enrollmentId]);

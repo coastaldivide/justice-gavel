@@ -377,9 +377,9 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
           .catch((e) => { __DEV__ && console.warn(e?.message); });
       }
     });
-  }, []);
+  }, [loadLeads, loadProfile]);
 
-  useEffect(() => { loadLeads(); }, [filterHours]);
+  useEffect(() => { loadLeads(); }, [filterHours, loadLeads]);
 
   const handleAccept = (lead: Record<string,unknown>) => requireAuth(() => setSelectedLead(lead));
 

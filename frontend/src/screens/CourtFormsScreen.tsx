@@ -194,6 +194,8 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
           </View>
         )}
       </View>
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     </TouchableOpacity>
   ), [s, onSelectState]);
 

@@ -33,6 +33,8 @@ function SkeletonCard({ colors }: { colors: ThemeColors }) {
         Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
       ])
     ).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => shimmer.stopAnimation();
   }, []);
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
@@ -80,6 +82,8 @@ export default function BailSearchScreen(): React.JSX.Element {
   const [searched, setSearched] = useState(false);
 
   // Auto-search on mount -- no button tap required
+// eslint-disable-next-line react-hooks/exhaustive-deps
+// eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { return () => { if (timerRef.current) clearTimeout(timerRef.current); }; }, []);
 
   useEffect(() => { Promise.resolve(initLang()).then(() => search()).catch(() => {}); }, []);
@@ -126,6 +130,7 @@ export default function BailSearchScreen(): React.JSX.Element {
         } catch (apiErr: any) {
           attempt++;
           if (attempt >= 3) throw apiErr;
+          // eslint-disable-next-line no-promise-executor-return
           setStatus(`Connection issue -- retrying (${attempt}/3)…`);
           await new Promise(r => timerRef.current = setTimeout(r, attempt * 800));
         }

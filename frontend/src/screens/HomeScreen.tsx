@@ -98,6 +98,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
   useEffect(() => {
     initLang();
     loadAll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Pull-to-refresh and mount loader

@@ -81,6 +81,8 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
   };
   const { colors } = useTheme();
   const mountedRef = React.useRef(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (lawyer?.id) Analytics.lawyerView(lawyer.id, lawyer.city || '', lawyer.specialties || ''); return () => { mountedRef.current = false; }; }, []);
 

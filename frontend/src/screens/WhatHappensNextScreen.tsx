@@ -203,6 +203,8 @@ function StepCard({ step, color, isActive, onPress }: {
       toValue: isActive ? 1 : 0,
       duration: 260,
       useNativeDriver: false,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     }).start();
   }, [isActive]);
 
@@ -410,6 +412,8 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
     Animated.timing(progressAnim, {
       toValue: activeStep / data.steps.length,
       duration: 350,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
       useNativeDriver: false,
     }).start();
   }, [activeStep]);

@@ -175,7 +175,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
   React.useEffect(() => {
     const productId = (route?.params as Record<string,string>)?.productId;
     if (productId) setPurpose(productId as any);
-  }, []);
+  }, [route?.params]);
 
   const [amount, setAmount]       = useState(PURPOSES[0].defaultAmount);
   const [method, setMethod]       = useState(PRIMARY_METHODS[0].key);

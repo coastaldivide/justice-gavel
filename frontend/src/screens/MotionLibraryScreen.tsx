@@ -605,7 +605,8 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
           <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
         </TouchableOpacity>
       ) : null });
-  }, [phase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, navigation]);
 
 
   // Memoize filtered history -- avoids recomputing on every render cycle
@@ -620,7 +621,7 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
       }
       return true;
     });
-  }, [history, historyFilter, historySearch]);
+  }, [history]);
 
 const loadHistory = useCallback(async () => {
     setHistLoad(true);

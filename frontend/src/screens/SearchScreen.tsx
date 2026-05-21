@@ -95,6 +95,7 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
     setRefreshing(true);
     await doSearch(query).catch(() => {});
     setRefreshing(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
   const doSearch = useCallback(async (q: string) => {

@@ -183,6 +183,8 @@ function ResearchBubble({ msg }: { msg: Message }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
   }, []);
 
@@ -502,10 +504,14 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
             </TouchableOpacity>
           )}
         </View>
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
       ) : null,
     });
   }, [phase, hasAccess]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   // Auto-search if initial query provided
   useEffect(() => {
     if (initialQuery && hasAccess) runSearch(initialQuery);

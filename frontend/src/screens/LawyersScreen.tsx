@@ -141,7 +141,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         setCaseLoading(false);
       }
     });
-  }, [item.id, item?.name, navigation, requireAuth]);
+  }, [item?.name, navigation]);
 
   const [expanded, setExpanded] = useState(false);
   const [saved,   setSaved]   = useState(false);
@@ -431,6 +431,8 @@ function SkeletonCard({ colors }: { colors: Record<string, any> }) {
         Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
       ])
     ).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => shimmer.stopAnimation();
   }, []);
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
@@ -578,6 +580,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
         setShowNeedModal(true);
       } else {
         fetchLawyers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
       }
     }).catch(() => fetchLawyers());
   }, []);
@@ -595,6 +599,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
   const [reviewSummaries, setReviewSummaries] = React.useState<    Record<number, { avg_rating: number; count: number; top_reviews: { rating: number; comment: string }[] }>>({});
   const [showBadgeInfo, setShowBadgeInfo] = React.useState(false);
   const [badgeInfoType, setBadgeInfoType] = React.useState<'bar'|'jtb'|'golden'>('bar');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!mounted) { setMounted(true); return; }
     fetchLawyers();

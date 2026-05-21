@@ -360,6 +360,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
       setSessionId(id);
       loadHistory(id);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -678,7 +679,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
       setLoading(false);
       scrollToBottom();
     }
-  }, [sessionId, loading, scrollToBottom]);
+  }, [sessionId, loading, scrollToBottom, caseContext, caseId, caseTitle, mode]);
 
   // ── Navigation helpers ────────────────────────────────────────────────────────
   const onFindLawyer = () => navigation.navigate('Match');

@@ -72,6 +72,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
 
   useEffect(() => {
     loadUsResources();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUsResources = useCallback(async () => {

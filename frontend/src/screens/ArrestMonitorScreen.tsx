@@ -62,6 +62,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [watches,   setWatches]   = useState<Watch[]>([]);

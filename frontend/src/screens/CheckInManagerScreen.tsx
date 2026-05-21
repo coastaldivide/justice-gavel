@@ -75,7 +75,7 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load])
+    }, [])
   );
 
   return (
@@ -283,7 +283,7 @@ export default function CheckInManagerScreen({ route, navigation }: ScreenProps)
     }
   }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const deactivate = (id: number, name: string) => {
     Alert.alert(`Remove ${name}?`, 'They will no longer need to check in. $9.99/month removed from your bill.', [

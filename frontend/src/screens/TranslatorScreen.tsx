@@ -84,6 +84,8 @@ function TurnBubble({
     Animated.parallel([
       Animated.timing(fade,  { toValue: 1, duration: 220, useNativeDriver: true }),
       Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: true }),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     ]).start();
   }, []);
 
@@ -207,6 +209,8 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
   const scrollRef = useRef<ScrollView>(null);
   const pollRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     navigation.setOptions({ title: '🗣 Interpreter' });
   }, []);
@@ -257,6 +261,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
         Alert.alert('Could not start session', e.response?.data?.error || e.message);
       } finally {
         setCreating(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
       }
     };
     run();

@@ -53,7 +53,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
       }
       setLoading(false);
     })();
-  }, []);
+  }, [incomingCategory]);
 
   const markComplete = async (id: number, pts: number) => {
     if (completed.has(id)) return;
@@ -127,6 +127,8 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
                   </View>
                 )}
               </TouchableOpacity>
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
             );
   }, [colors, completed, expanded]);
 

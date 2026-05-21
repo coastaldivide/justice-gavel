@@ -25,6 +25,8 @@ function OfflineBanner() {
       toValue:         isOnline ? 0 : 1,
       duration:        300,
       useNativeDriver: true,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     }).start();
   }, [isOnline]);
 

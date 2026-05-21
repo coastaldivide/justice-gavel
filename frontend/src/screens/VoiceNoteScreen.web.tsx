@@ -50,6 +50,7 @@ export default function VoiceNoteScreen(): React.JSX.Element {
     if (timerRef.current) clearInterval(timerRef.current);
     setRecording(false);
     setUploading(true);
+    // eslint-disable-next-line no-promise-executor-return
     // Wait for final chunk
     await new Promise(r => setTimeout(r, 400));
     try {

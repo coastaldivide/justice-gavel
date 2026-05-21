@@ -91,7 +91,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
   // Auth check at mount
   useEffect(() => {
     requireAuth(() => {});
-  }, []);
+  }, [requireAuth]);
 
   const availTimes = selDay?.times.filter(t => t.available) ?? [];
   const noSlots    = availTimes.length === 0;
