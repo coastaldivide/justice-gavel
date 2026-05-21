@@ -145,9 +145,9 @@ function SavedCard({
               ★ {lawyer.rating.toFixed(1)}
             </Text>
           )}
-          {(lawyer as any).gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.bail, marginTop: 3 }}>🥉 Bronze Gavel</Text>}
-          {(lawyer as any).gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.textSecond, marginTop: 3 }}>🥈 Silver Gavel</Text>}
-          {(lawyer as any).gavel_level >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.gold, marginTop: 3 }}>🏆 Golden Gavel</Text>}
+          {(lawyer as import('../types/api').Lawyer).gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.bail, marginTop: 3 }}>🥉 Bronze Gavel</Text>}
+          {(lawyer as import('../types/api').Lawyer).gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.textSecond, marginTop: 3 }}>🥈 Silver Gavel</Text>}
+          {((lawyer as import('../types/api').Lawyer).gavel_level ?? 0) >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.gold, marginTop: 3 }}>🏆 Golden Gavel</Text>}
         </View>
         <TouchableOpacity
           style={styles.removeBtn}
@@ -389,7 +389,7 @@ export default function SavedLawyersScreen({ navigation }: any): React.JSX.Eleme
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList
+        <FlatList testID="saved-lawyers-list"
           keyboardShouldPersistTaps="handled"
           getItemLayout={(_, index) => ({ length: 190, offset: 190 * index, index })}
           initialNumToRender={10}

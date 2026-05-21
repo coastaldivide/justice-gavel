@@ -240,7 +240,8 @@ function MoreNavigator() {
       <MoreStack.Screen name="Search"                component={SearchScreen}                options={{ title: '🔍 Search' }} />
       <MoreStack.Screen name="TermsOfService" component={TermsOfServiceScreen} options={{ title: "Terms of Service" }} />
       <MoreStack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ title: "Privacy Policy" }} />
-      <MoreStack.Screen name="Settings"              component={SettingsScreen}              options={{ title: '⚙️ Settings' }} />
+      <MoreStack.Screen name="Settings"              component={SettingsScreen}
+options={{ title: '⚙️ Settings' }} />
     </MoreStack.Navigator>
     </ErrorBoundary>
   );
@@ -274,7 +275,7 @@ function MainTabs() {
         },
         tabBarLabelStyle: { fontSize: 10, fontWeight: '700' },
       }}>
-      <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarLabel: 'Home',     tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> }} />
+      <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarLabel: 'Home', tabBarTestID: 'home-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> }} />
       <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: 'AI Help',  tabBarIcon: ({ focused }) => <TabIcon emoji="💬" focused={focused} /> }} />
       <Tab.Screen name="LawyersTab" component={LawyersScreen}   options={{ tabBarLabel: 'Lawyers',  tabBarIcon: ({ focused }) => <TabIcon emoji="⚖️" focused={focused} /> }} />
       <Tab.Screen name="BailTab"    component={BailSearchScreen}options={{ tabBarLabel: 'Bail Help',tabBarIcon: ({ focused }) => <TabIcon emoji="💰" focused={focused} /> }} />

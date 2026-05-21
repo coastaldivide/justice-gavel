@@ -51,7 +51,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
     : null;
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}
+    <TouchableOpacity testID="case-card" style={styles.card} onPress={onPress} activeOpacity={0.85}
       accessibilityRole="button"
     >
       <View style={styles.cardTop}>
@@ -563,11 +563,11 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
     // Try structured JSON first (if AI returned JSON)
     // Check for structured _intake from case_intake branch
     if (data._intake) {
-      const i = (data as any)._intake as any;
+      const i = (data as any)._intake as import('../types/api').CaseIntake;
       return {
-        title:     (i as any).title || (i as any).charge || '',
-        state:     ((i as any).state || '').toUpperCase().slice(0, 2),
-        courtDate: (i as any).court_date || '',
+        title:     i.title || i.charge || '',
+        state:     (i.state || '').toUpperCase().slice(0, 2),
+        courtDate: i.court_date || '',
         notes:     [(i as any).defendant_name ? `Defendant: ${(i as any).defendant_name}` : '', (i as any).notes].filter(Boolean).join('')};
     }
     try {
@@ -671,7 +671,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
   }, [selectedCase, gated, unlock, unlocking]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+    <View testID="case-screen" style={[styles.screen, { backgroundColor: colors.bg }]}>
       {/* Tab switcher */}
       <View style={styles.tabRow}>
         <TouchableOpacity
@@ -710,7 +710,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'lawyers' && styles.tabBtnActive]}
-          onPress={() => { setActiveTab('lawyers'); loadSavedLawyers(); }}
+          testID="case-save-button" onPress={() => { setActiveTab('lawyers'); loadSavedLawyers(); }}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'lawyers' && styles.tabBtnTextActive]}>
             Lawyers {savedLawyers.length > 0 ? `(${savedLawyers.length})` : ''}
@@ -719,7 +719,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
       </View>
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('case_tab_cases')}</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={openNew}
+        <TouchableOpacity style={styles.addBtn} testID="case-add-button" onPress={openNew}
           accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.addBtnText}>{t('case_new')}</Text>
@@ -745,7 +745,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
         ? <ActivityIndicator style={{ marginTop: 40 }} color={colors.navy} />
         : cases.length === 0
           ? (
-            <View style={styles.empty}>
+            <View testID="case-empty-state" style={styles.empty}>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>📁</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>No cases yet</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>Tap "+ New case" to start tracking your legal matter.</Text>
@@ -758,6 +758,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
           )
           : (
             <FlatList
+          testID="case-list"
           initialNumToRender={8}
           maxToRenderPerBatch={5}
           windowSize={10}
@@ -771,7 +772,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
               No cases yet. Tap + to start tracking your first case.
             </Text>
           }
-              renderItem={({ item }) => <CaseCard item={item} onPress={() => openEdit(item)} navigation={navigation} onCalendar={addToCalendar} onShare={shareCase} onInvite={openInvite} />}
+              renderItem={({ item }) => <CaseCard item={item} testID="case-share-button" onPress={() => openEdit(item)} navigation={navigation} onCalendar={addToCalendar} onShare={shareCase} onInvite={openInvite} />}
               contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
             />
           )
@@ -805,7 +806,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
       )}
 
       {/* ── Invite family member modal ───────────────────────────────────── */}
-      <Modal visible={inviteModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setInviteModal(false)}>
+      <Modal testID="case-detail-screen" visible={inviteModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setInviteModal(false)}>
         <View style={[styles.modal, { backgroundColor: colors.bg }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setInviteModal(false)}
@@ -881,7 +882,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
                   <Text maxFontSizeMultiplier={1.4} style={styles.scanBtnIcon}>📷</Text>
                   <View>
                     <Text maxFontSizeMultiplier={1.4} style={styles.scanBtnTitle}>Scan Document</Text>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.scanBtnSub}>Auto-fill from charging doc, bail slip, or police report</Text>
+                    <Text testID="case-bail-amount" maxFontSizeMultiplier={1.4} style={styles.scanBtnSub}>Auto-fill from charging doc, bail slip, or police report</Text>
                   </View>
                 </>
               )}
@@ -931,7 +932,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
                   style={[styles.dateQuickChip, editCase.next_court_date === iso && styles.dateQuickChipActive]}
                   onPress={() => setEditCase(p => ({ ...p, next_court_date: iso }))}
                 >
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.dateQuickText, editCase.next_court_date === iso && styles.dateQuickTextActive]}>
+                  <Text testID="case-court-date" maxFontSizeMultiplier={1.4} style={[styles.dateQuickText, editCase.next_court_date === iso && styles.dateQuickTextActive]}>
                     {label}
                   </Text>
                 </TouchableOpacity>

@@ -52,7 +52,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
 
   const { requireAuth } = useAuthGate(navigation);
 
-  const initType = (route?.params as any)?.caseType || '';
+  const initType = (route?.params as import('../types/api').RouteParams)?.caseType || '';
 
   const [step, setStep]         = useState<Step>(initType ? 'severity' : 'type');
   const [caseType, setCaseType] = useState(initType);

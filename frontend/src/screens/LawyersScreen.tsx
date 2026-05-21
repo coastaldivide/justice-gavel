@@ -70,7 +70,7 @@ function DistanceBadge({ distanceKm }: { distanceKm: number | null }) {
 
 
   return (
-    <View style={[styles.badge, { backgroundColor: color + '18', borderColor: color + '55' }]}>
+    <View testID="lawyers-screen" style={[styles.badge, { backgroundColor: color + '18', borderColor: color + '55' }]}>
       <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color }]}>📍 {label}</Text>
     </View>
   );
@@ -203,7 +203,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
       <View style={styles.cardHeader}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, flexWrap:'wrap' }}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.cardName}>{item?.name}</Text>
+            <Text testID="lawyer-name" maxFontSizeMultiplier={1.4} style={styles.cardName}>{item?.name}</Text>
             {item.availability === 'accepting' && (
               <View style={{ backgroundColor:COLORS.legalBg, borderRadius:10, paddingHorizontal:7, paddingVertical:2 }}>
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontWeight:'700', color:COLORS.legalDark }}>✓ Accepting</Text>
@@ -234,7 +234,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         </View>
         {item?.rating != null && (
           <View style={styles.ratingBlock}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.ratingNum}>{item?.rating.toFixed(1)}</Text>
+            <Text testID="lawyer-rating" maxFontSizeMultiplier={1.4} style={styles.ratingNum}>{item?.rating.toFixed(1)}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.ratingStar}>★</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.reviewCount}>({item.reviews ?? 0})</Text>
           </View>
@@ -248,7 +248,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         {item.pro_bono         && <View style={[styles.badge, styles.purpleBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.blue }]}>Pro Bono</Text></View>}
         {item.sliding_scale    && <View style={[styles.badge, styles.tealBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.legalDark }]}>Sliding Scale</Text></View>}
         {item.jtb_verified && (
-          <TouchableOpacity
+          <TouchableOpacity testID="lawyer-card"
             style={{ flexDirection:'row', alignItems:'center', gap:4 }}
             onPress={() => { setBadgeInfoType('jtb'); setShowBadgeInfo(true); }}
             accessibilityRole="button"
@@ -664,7 +664,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           accessibilityRole="button"
           accessibilityLabel="Go to More"
           style={[styles.savedHeaderBtn]}
-          onPress={() => navigation.navigate('MoreTab', { screen: 'SavedLawyers' })}
+          testID="lawyer-save-button" onPress={() => navigation.navigate('MoreTab', { screen: 'SavedLawyers' })}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.savedHeaderBtnText}>⭐ Saved</Text>
         </TouchableOpacity>
@@ -709,7 +709,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               </Text>
             </TouchableOpacity>
           )}
-                <FlatList
+                <FlatList testID="lawyer-list"
           getItemLayout={(_, index) => ({ length: 200, offset: 200 * index, index })}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
@@ -926,7 +926,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               color:colors.textMuted, marginBottom:12 }}>
               Your message will be sent to all selected attorneys. The first to respond wins.
             </Text>
-            <TextInput
+            <TextInput testID="lawyers-search-input"
               style={{ borderWidth:1, borderColor:colors.inputBorder, borderRadius:10,
                 padding:12, fontSize:14, lineHeight:21, color:colors.inputText,
                 backgroundColor:colors.inputBg, minHeight:100, textAlignVertical:'top',

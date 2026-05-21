@@ -29,7 +29,7 @@ type CheckInPhase = 'loading' | 'ready' | 'gps' | 'submitting' | 'done' | 'alrea
 
 
 const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
-  <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
+  <View testID="checkin-already-done" style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
     <Text style={{ fontSize: 48, marginBottom: 16 }}>{icon}</Text>
     <Text style={{ fontSize: 18, fontWeight: '700', color: '#042C53', textAlign: 'center', marginBottom: 8 }}>{title}</Text>
     <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 }}>{subtitle}</Text>
@@ -45,7 +45,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
     load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
   }, []);
 
-  const enrollmentId = (route?.params as any)?.enrollmentId;
+  const enrollmentId = (route?.params as import('../types/api').RouteParams)?.enrollmentId;
 
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -202,7 +202,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
   // ── Error ──────────────────────────────────────────────────────────────────
   if (phase === 'error') return (
     <View style={styles.center}>
-      <Text maxFontSizeMultiplier={1.4} style={styles.errorIcon}>⚠️</Text>
+      <Text testID="checkin-error-message" maxFontSizeMultiplier={1.4} style={styles.errorIcon}>⚠️</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Check-in unavailable</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity style={styles.retryBtn} onPress={loadStatus}
@@ -233,7 +233,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
       )}
       <View style={styles.statsRow}>
         <View style={styles.statBlock}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statNum}>{streak}</Text>
+          <Text testID="checkin-streak-count" maxFontSizeMultiplier={1.4} style={styles.statNum}>{streak}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>Total check-ins</Text>
         </View>
         <View style={styles.statBlock}>
@@ -258,7 +258,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
   // ── Confirmed ─────────────────────────────────────────────────────────────
   if (phase === 'done') return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={[styles.scroll, { alignItems: 'center' }]}>
-      <View style={styles.doneHero}>
+      <View testID="checkin-success-screen" style={styles.doneHero}>
         <Text maxFontSizeMultiplier={1.4} style={styles.doneCheck}>✓</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.doneTitle}>Check-in Complete!</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>Your bondsman has been notified</Text>
@@ -301,7 +301,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
 
   // ── Ready to check in ─────────────────────────────────────────────────────
   return (
-    <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <ScrollView testID="checkin-screen" style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
       {/* Header */}
       <View style={styles.header}>
@@ -373,6 +373,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
       <View style={styles.section}>
         <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>Any notes? <Text maxFontSizeMultiplier={1.4} style={styles.optional}>(optional)</Text></Text>
         <TextInput
+              testID="checkin-notes-input"
           style={[styles.input, { height: 72, textAlignVertical: 'top' }]}
           placeholder="e.g. At home -- waiting for attorney callback"
           placeholderTextColor={COLORS.textSecond}
@@ -423,7 +424,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
         accessibilityRole="button"
         accessibilityLabel="Check In Now"
         style={styles.checkInBtn}
-        onPress={doCheckIn}
+        testID="checkin-submit-button" onPress={doCheckIn}
         activeOpacity={0.88}
       >
           <Text maxFontSizeMultiplier={1.4} style={styles.checkInBtnIcon}>✓</Text>

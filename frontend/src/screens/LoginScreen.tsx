@@ -94,6 +94,7 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
               keyboardType="email-address"
               textContentType="username"
               returnKeyType="next"
+              testID="login-email-input"
               onSubmitEditing={() => passRef.current?.focus()}
               selectionColor={COLORS.steel}
             />
@@ -103,6 +104,7 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
           <View style={styles.inputWrap}>
             <TextInput
               ref={passRef}
+              testID="login-password-input"
               style={[styles.input, { flex: 1 }]}
               placeholder="Your password"
               placeholderTextColor={COLORS.textSecond}
@@ -122,7 +124,7 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
           </View>
 
           {!!error && (
-            <View style={styles.errorBox}>
+            <View style={styles.errorBox} testID="login-error-message">
               <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>⚠  {error}</Text>
             </View>
           )}
@@ -152,7 +154,7 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
             accessibilityRole="button"
             accessibilityLabel="Sign In"
             style={[styles.primaryBtn, loading && styles.btnDisabled]}
-            onPress={onLogin} disabled={loading} activeOpacity={0.85}
+            testID="login-submit-button" onPress={onLogin} disabled={loading} activeOpacity={0.85}
           >
             {loading
               ? <ActivityIndicator color={colors.bgCard} />
@@ -160,7 +162,7 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
             }
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.registerLink} onPress={() => navigation.navigate('Register')}
+          <TouchableOpacity style={styles.registerLink} onPress={() => navigation.navigate('Register')} testID="login-register-link"
             accessibilityRole="button"
             accessibilityLabel="Create one"
           >

@@ -150,7 +150,7 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
   }, [eligible, isEligible, now]);
 
   return (
-    <View style={{ backgroundColor: isEligible ? COLORS.legalBg : COLORS.bgSubtle,
+    <View testID="expungement-screen" style={{ backgroundColor: isEligible ? COLORS.legalBg : COLORS.bgSubtle,
       borderRadius: 12, padding: 14, marginTop: 10,
       borderWidth: 1, borderColor: isEligible ? COLORS.legalDark : COLORS.border }}>
       {isEligible ? (
@@ -227,6 +227,11 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
       setGenPetition(false);
     }
   };
+  // Route params — forward-declared here so effects below can reference them
+  // (assigned at the route destructure block below, before useState)
+  var incomingState: string = (route?.params as import('../types/api').RouteParams)?.incomingState || '';
+  var incomingCharges: string | null = (route?.params as import('../types/api').RouteParams)?.incomingCharges || null;
+
 
   // Load user's saved state as default if not passed via route params
   React.useEffect(() => {
@@ -252,10 +257,8 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
 
 
   const { colors, isDark } = useTheme();
-  const incomingCaseId = (route?.params as any)?.case_id;
-  var incomingState   = (route?.params as any)?.incomingState || (route?.params as any)?.state || '';
-  const incomingCharges = (route?.params as any)?.incomingCharges || null;
-  const incomingCaseTitle = (route?.params as any)?.caseTitle || null;
+  const incomingCaseId = (route?.params as import('../types/api').RouteParams)?.case_id;
+  const incomingCaseTitle = (route?.params as import('../types/api').RouteParams)?.caseTitle || null;
 
   const [step, setStep]         = useState<'form'|'result'>('form');
   const [state, setState]       = useState(incomingState);
@@ -386,7 +389,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
       {/* State */}
       <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Your state</Text>
       <TouchableOpacity style={styles.stateBtn}
-        onPress={() => setShowStatePicker(p => !p)}
+        testID="expungement-state-picker" onPress={() => setShowStatePicker(p => !p)}
         accessibilityRole="button">
         <Text maxFontSizeMultiplier={1.4} style={styles.stateBtnText}>{state}  ▾</Text>
       </TouchableOpacity>
@@ -435,6 +438,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
         ))}
       </View>
       <TextInput
+              testID="expungement-charges-input"
         style={styles.chargeInput}
         placeholder="Or type your charge (e.g. 'possession of marijuana 2020')"
         placeholderTextColor={COLORS.textSecond}
@@ -447,7 +451,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
       <TouchableOpacity
         accessibilityRole="button"
         style={[styles.checkBtn, loading && { opacity: 0.6 }]}
-        onPress={checkEligibility}
+        testID="expungement-check-button" onPress={checkEligibility}
         disabled={loading}
         activeOpacity={0.85}>
 
@@ -468,9 +472,9 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll}>
 
       {/* Eligibility verdict */}
-      <View style={[styles.verdictCard, { backgroundColor: eligBg, borderColor: eligColor }]}>
+      <View testID="expungement-result-screen" style={[styles.verdictCard, { backgroundColor: eligBg, borderColor: eligColor }]}>
         <Text maxFontSizeMultiplier={1.4} style={styles.verdictEmoji}>{eligIcon}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.verdictLabel, { color: eligColor }]}>{eligLabel}</Text>
+        <Text testID="expungement-eligible-banner" maxFontSizeMultiplier={1.4} style={[styles.verdictLabel, { color: eligColor }]}>{eligLabel}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.verdictState}>{result?.stateName} · {result?.chargeType}</Text>
         {(result?.eligibility?.waitYears ?? 0) > 0 && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.verdictWait, { color: eligColor }]}>
@@ -571,7 +575,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
           {attLoading && (
             <View style={[styles.partnerCard, { alignItems: 'center', padding: 20 }]}>
               <ActivityIndicator color={colors.steelMid} />
-              <Text maxFontSizeMultiplier={1.4} style={[styles.partnerDesc, { marginTop: 8 }]}>Finding attorneys near you…</Text>
+              <Text testID="expungement-attorneys-section" maxFontSizeMultiplier={1.4} style={[styles.partnerDesc, { marginTop: 8 }]}>Finding attorneys near you…</Text>
             </View>
           )}
 
@@ -652,7 +656,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
 
       {/* Not eligible */}
       {result?.eligibility.notEligible && (
-        <View style={styles.notEligibleCard}>
+        <View testID="expungement-not-eligible-banner" style={styles.notEligibleCard}>
           <Text maxFontSizeMultiplier={1.4} style={styles.notEligibleTitle}>What you can still do</Text>
           {[
             '⚖️  Speak to a defense attorney -- some exceptions exist',

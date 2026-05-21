@@ -175,10 +175,10 @@ export default function BailSearchScreen(): React.JSX.Element {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}>
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+    <View testID="bail-search-screen" style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Bail Bond Help</Text>
+          <Text testID="bail-agent-bail-amount" maxFontSizeMultiplier={1.4} style={styles.heading}>Bail Bond Help</Text>
           {items.length > 0 && !loading && (
             <View style={styles.countPill}>
               <Text maxFontSizeMultiplier={1.4} style={styles.countPillText}>{items.length} agents nearby</Text>
@@ -190,7 +190,7 @@ export default function BailSearchScreen(): React.JSX.Element {
         </Text>
       </View>
 
-      <TouchableOpacity activeOpacity={0.6} style={styles.searchBtn} onPress={() => search()} disabled={loading}
+      <TouchableOpacity activeOpacity={0.6} style={styles.searchBtn} testID="bail-search-submit-button" onPress={() => search()} disabled={loading}
         accessibilityRole="button"
         accessibilityLabel="Searching…"
       >
@@ -268,13 +268,13 @@ export default function BailSearchScreen(): React.JSX.Element {
 
 
           {_fetchError && (
-            <View style={{ backgroundColor: colors.errorBg, padding: 12, margin: 8, borderRadius: 8 }}>
+            <View testID="bail-search-error" style={{ backgroundColor: colors.errorBg, padding: 12, margin: 8, borderRadius: 8 }}>
               <Text maxFontSizeMultiplier={1.2} style={{ color: colors.emergency, fontSize: 13 }}>
                 {_fetchError}
               </Text>
             </View>
           )}
-      <FlatList
+      <FlatList testID="bail-agent-list"
           keyExtractor={(item, index) => String(item?.id ?? item?.booking_number ?? index)}
           keyboardShouldPersistTaps="handled"
           onRefresh={() => { setRefreshing(true); search().finally(() => setRefreshing(false)); }}
@@ -342,7 +342,7 @@ export default function BailSearchScreen(): React.JSX.Element {
 
           {/* ALWAYS-VISIBLE call button -- primary action */}
           {item?.phone ? (
-          <TouchableOpacity
+          <TouchableOpacity testID="bail-agent-card"
           accessibilityRole="button"
           accessibilityLabel="No phone number on file"
           style={styles.callBtnBig}
@@ -350,7 +350,7 @@ export default function BailSearchScreen(): React.JSX.Element {
           activeOpacity={0.85}
           accessibilityHint="Opens your phone dialer"
           >
-          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnBigText}>📞  CALL NOW  --  {item?.phone}</Text>
+          <Text testID="bail-agent-phone" maxFontSizeMultiplier={1.4} style={styles.callBtnBigText}>📞  CALL NOW  --  {item?.phone}</Text>
           </TouchableOpacity>
           ) : (
           <View style={styles.noPhoneBox}>
@@ -378,7 +378,7 @@ export default function BailSearchScreen(): React.JSX.Element {
       {locationDenied && (
         <View style={styles.cityFallback}>
           <Text maxFontSizeMultiplier={1.4} style={styles.cityFallbackTitle}>📍 What city are you in?</Text>
-          <TextInput
+          <TextInput testID="bail-search-city-input"
             style={styles.citySearchInput}
             placeholder={t('bail_city_placeholder')}
             placeholderTextColor={colors.textMuted}
@@ -421,7 +421,7 @@ export default function BailSearchScreen(): React.JSX.Element {
       )}
 
       {searched && items.length === 0 && !loading && !locationDenied && (
-        <View style={styles.emptyState}>
+        <View testID="bail-search-empty" style={styles.emptyState}>
           <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>🔍</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>No bail agents found here.</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.emptyHint}>Try a nearby city:</Text>

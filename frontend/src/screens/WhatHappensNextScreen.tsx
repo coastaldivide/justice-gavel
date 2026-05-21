@@ -399,7 +399,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
     setTimeout(() => setRefreshing(false), 1200)
   }, []);
 
-  const chargeKey   = (route?.params as any)?.chargeType || '';
+  const chargeKey   = (route?.params as import('../types/api').RouteParams)?.chargeType || '';
   const walkthroughKey = CHARGE_TO_WALKTHROUGH[chargeKey] || 'General Criminal';
   const data        = WALKTHROUGHS[walkthroughKey] || WALKTHROUGHS['General Criminal'];
 

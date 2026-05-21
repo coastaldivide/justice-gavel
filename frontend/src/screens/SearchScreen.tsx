@@ -61,7 +61,7 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
     getCachedSearch().then(cached => {
       if (cached?.query && cached.results) {
         setQuery(cached.query);
-        const { cases=[], messages=[], lawyers=[], lessons=[] } = cached.results as any;
+        const { cases=[], messages=[], lawyers=[], lessons=[] } = cached.results as any /* SearchResults — raw API, transformed to SearchResult[] below */;
         const allResults = [...cases, ...messages, ...lawyers, ...lessons];
         setResults(allResults);
         cacheSearch(cached.query, { cases, messages, lawyers, lessons }).catch(() => {});

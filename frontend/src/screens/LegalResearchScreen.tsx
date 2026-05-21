@@ -463,7 +463,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
-  const { initialQuery, caseContext } = (route?.params as any) ?? {};
+  const { initialQuery, caseContext } = (route?.params as import('../types/api').RouteParams) ?? {};
 
   const [phase,      setPhase]      = useState<Phase>('home');
   const [query,      setQuery]      = useState(initialQuery || '');

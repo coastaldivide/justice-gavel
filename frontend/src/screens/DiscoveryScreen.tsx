@@ -226,7 +226,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
   }, []);
   const { colors, isDark } = useTheme();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
-  const { caseId, caseTitle } = (route?.params as any) ?? {};
+  const { caseId, caseTitle } = (route?.params as import('../types/api').RouteParams) ?? {};
 
   const [phase,     setPhase]     = useState<Phase>('upload');
   const [file,      setFile]      = useState<{ name: string; uri: string; size: number } | null>(null);

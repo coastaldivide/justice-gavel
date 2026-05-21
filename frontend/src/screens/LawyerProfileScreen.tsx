@@ -189,7 +189,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
     : (lawyer.languages || []);
 
   return (
-    <ScrollView style={s.screen} contentContainerStyle={{ paddingBottom: 120 }}
+    <ScrollView testID="lawyer-profile-screen" style={s.screen} contentContainerStyle={{ paddingBottom: 120 }}
       showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -393,7 +393,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
       <View style={s.actions}>
         <TouchableOpacity style={[s.actionBtn, { backgroundColor:colors.navy }]}
           accessibilityRole="button"
-          onPress={() => { hapticImpact(); handleBook(); }}>
+          testID="lawyer-book-button" onPress={() => { hapticImpact(); handleBook(); }}>
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>📅 Book Consultation</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[s.actionBtn, { backgroundColor:colors.legal }]}
@@ -403,7 +403,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
         </TouchableOpacity>
         {lawyer.phone && (
           <TouchableOpacity style={[s.actionBtn, { backgroundColor:colors.legalDark }]}
-            onPress={handleCall} accessibilityRole="button" accessibilityLabel="Call attorney">
+            testID="lawyer-profile-contact-button" onPress={handleCall} accessibilityRole="button" accessibilityLabel="Call attorney">
             <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>📞 Call</Text>
           </TouchableOpacity>
         )}

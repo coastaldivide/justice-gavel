@@ -33,7 +33,7 @@ function OfflineBanner() {
   if (isOnline && !(opacity as any)._value) return null;
 
   return (
-    <Animated.View style={[styles.banner, { opacity }]} accessibilityRole="alert" accessibilityLabel="You are offline — showing cached data">
+    <Animated.View testID="offline-banner" style={[styles.banner, { opacity }]} accessibilityRole="alert" accessibilityLabel="You are offline — showing cached data">
       <Text style={styles.icon}>📵</Text>
       <Text style={styles.text}>No connection — showing cached data</Text>
     </Animated.View>

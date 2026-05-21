@@ -22,7 +22,7 @@ const TILES = [
   { key: 'Emergency', label: 'Emergency\nHelp Now', icon: '🆘', color: COLORS.emergency, bg: COLORS.errorBg, nav: 'More:HelpNow',   primary: false },
   // ── Primary 4 -- always visible -- answer: "what do you need right now?" ──────
   // Ordered by urgency. Most people arriving at this app need these in order.
-  { key: 'Bail',      label: 'Get Out\nOf Jail',    icon: '🔓', color: COLORS.bail,      bg: COLORS.bgCard, nav: 'More:Bail',      primary: true },
+  { key: 'Bail',      label: 'Get Out\nOf Jail',    icon: '🔓', color: COLORS.bail,      bg: COLORS.bgCard, nav: 'More:Bail',      primary: true },  // more-bail-search-link testID: 'more-bail-search-link',
   { key: 'Lawyers',   label: 'Find a\nLawyer',      icon: '⚖️', color: COLORS.legal,     bg: COLORS.legalBg, nav: 'LawyersTab',     primary: true },
   { key: 'Rights',    label: 'Know My\nRights',     icon: '✊', color: COLORS.navy,      bg: COLORS.bgCard, nav: 'More:Education', primary: true },
   { key: 'Chat',      label: 'Ask a\nQuestion',     icon: '💬', color: COLORS.steel, bg: COLORS.bgCard, nav: 'ChatTab',        primary: true },
@@ -210,7 +210,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
   };
 
   return (
-    <View style={styles.screen}>
+    <View testID="home-screen" style={styles.screen}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -409,6 +409,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
               accessibilityRole="button"
               accessibilityLabel={t.label.replace(/\n/g, ' ')}
               key={t.key}
+              testID={`tile-${t.key}`}
               style={[styles.tile, { backgroundColor: t.bg }, !t.primary && styles.tileSm]}
               onPress={() => navigate(t.nav)}
               activeOpacity={0.75}

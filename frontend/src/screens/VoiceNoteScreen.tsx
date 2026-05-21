@@ -114,7 +114,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
     load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
   }, []);
 
-  const { caseId, caseTitle, existingNotes = '', onSave } = (route?.params as any) ?? {};
+  const { caseId, caseTitle, existingNotes = '', onSave } = (route?.params as import('../types/api').RouteParams) ?? {};
 
   const [phase,    setPhase]    = useState<Phase>('idle');
   const [note,     setNote]     = useState<StructuredNote | null>(null);

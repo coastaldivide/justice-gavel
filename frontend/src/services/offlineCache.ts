@@ -116,7 +116,7 @@ export async function cacheCases(cases: unknown[]) {
   // Only cache cases from the last 30 days to bound storage size
   const cutoff = Date.now() - TTL_30_DAYS;
   const recent = cases.filter(c => {
-    const d = (c as any).next_court_date || (c as any).created_at;
+    const d = (c as import('../types/api').Case).next_court_date || (c as import('../types/api').Case).created_at;
     return !d || new Date(d).getTime() > cutoff;
   });
   await write(CACHE_KEYS.cases, recent, CACHE_KEYS.casesAt);

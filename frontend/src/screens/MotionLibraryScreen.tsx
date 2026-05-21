@@ -530,7 +530,7 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
   const { gated, unlocking, unlock } = useBiometricGate('motion_library');
 
   // Receive charges from CaseScreen for charge-aware filtering
-  const incomingCharges = (route?.params as any)?.charges || null;
+  const incomingCharges = (route?.params as import('../types/api').RouteParams)?.charges || null;
   const relevantMotions = React.useMemo(
     () => getRelevantMotions(incomingCharges),
     [incomingCharges]
@@ -559,7 +559,7 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
   }, []);
 
   const { colors, isDark } = useTheme();
-  const { caseId, caseTitle, prefill } = (route?.params as any) ?? {};
+  const { caseId, caseTitle, prefill } = (route?.params as import('../types/api').RouteParams) ?? {};
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
 
   const [phase,     setPhase]     = useState<Phase>('library');
@@ -589,7 +589,7 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
 
   // Pre-fill from case if provided
   useEffect(() => {
-    if (prefill) setFields(prev => ({ ...prev, ...prefill }));
+    if (prefill && typeof prefill === 'object') setFields(prev => ({ ...prev, ...(prefill as Record<string,string>) }));
   }, [prefill]);
 
   // Set header
@@ -637,7 +637,7 @@ const loadHistory = useCallback(async () => {
   const selectMotion = (m: typeof MOTION_TYPES[0]) => {
     requireAuth(() => {
       setSelected(m);
-      setFields(prefill || {});
+      setFields(typeof prefill === 'object' && prefill ? prefill as Record<string,string> : {});
       setPhase('form');
     });
   };

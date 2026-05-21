@@ -44,7 +44,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
   };
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView testID="register-screen" style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
         <View style={styles.logoSection}>
@@ -65,7 +65,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
               value={identifier}
               onChangeText={v => { setIdentifier(v); setError(''); }}
               autoCapitalize="none"
-          autoComplete="email"
+          testID="register-email-input" autoComplete="email"
           importantForAutofill="yes" keyboardType={identifier.includes("@") || (!identifier.match(/^[0-9]/) && identifier.length > 0) ? "email-address" : "phone-pad"}
               textContentType="username" returnKeyType="next"
               onSubmitEditing={() => passRef.current?.focus()}
@@ -80,7 +80,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
               style={[styles.input, { flex: 1 }]}
               placeholder="At least 6 characters"
               placeholderTextColor={COLORS.textSecond}
-              secureTextEntry={!showPassword}
+              testID="register-password-input" secureTextEntry={!showPassword}
               value={password}
               onChangeText={v => { setPassword(v); setError(''); }}
               textContentType="newPassword" returnKeyType="next"
@@ -111,7 +111,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
           </View>
 
           {!!error && (
-            <View style={styles.errorBox}>
+            <View testID="register-error-message" style={styles.errorBox}>
               <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>⚠  {error}</Text>
             </View>
           )}
@@ -119,7 +119,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
             accessibilityRole="button"
             accessibilityLabel="Create Account"
             style={[styles.primaryBtn, loading && styles.btnDisabled]}
-            onPress={onRegister} disabled={loading} activeOpacity={0.85}
+            testID="register-submit-button" onPress={onRegister} disabled={loading} activeOpacity={0.85}
           >
             {loading
               ? <ActivityIndicator color={colors.bgCard} />

@@ -62,7 +62,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
 
 
   return (
-    <TouchableOpacity
+    <TouchableOpacity testID="lead-card"
       accessibilityRole="button"
       style={[styles.card, lead.purchased && styles.cardPurchased]}
       onPress={() => setExpanded(e => !e)}
@@ -71,7 +71,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
       {/* Top row */}
       <View style={styles.cardTop}>
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.leadName}>{lead.name}</Text>
+          <Text testID="lead-defendant-name" maxFontSizeMultiplier={1.4} style={styles.leadName}>{lead.name}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.leadLocation}>
             {lead.county ? `${lead.county} County` : ''}{lead.state ? `, ${lead.state}` : ''}
           </Text>
@@ -101,14 +101,14 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
 
       {/* Charges */}
       {lead.charges && (
-        <Text maxFontSizeMultiplier={1.4} style={styles.charges} numberOfLines={expanded ? undefined : 1}>
+        <Text testID="lead-charge" maxFontSizeMultiplier={1.4} style={styles.charges} numberOfLines={expanded ? undefined : 1}>
           📋 {lead.charges}
         </Text>
       )}
 
       {/* Expanded: full details + accept */}
       {expanded && (
-        <View style={styles.expandedSection}>
+        <View testID="lead-detail-screen" style={styles.expandedSection}>
           {lead.jail_location && (
             <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>🏛 {lead.jail_location}</Text>
           )}
@@ -137,7 +137,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
             <TouchableOpacity
               accessibilityRole="button"
               style={styles.acceptBtn}
-              onPress={() => onAccept()}
+              testID="lead-accept-button" onPress={() => onAccept()}
               activeOpacity={0.85}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.acceptBtnText}>
@@ -274,7 +274,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
             </View>
             <View style={[styles.confirmRow, styles.feeRow]}>
               <Text maxFontSizeMultiplier={1.4} style={styles.feeLabel}>Lead fee charged now</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.feeAmount}>{leadFeeLabel(lead.bail_amount)}</Text>
+              <Text testID="lead-bail-amount" maxFontSizeMultiplier={1.4} style={styles.feeAmount}>{leadFeeLabel(lead.bail_amount)}</Text>
             </View>
           </View>
 
@@ -433,7 +433,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
   const highValueLeads = leads.filter(l => l.bail_amount >= 25000).length;
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+    <View testID="bondsman-dashboard-screen" style={[styles.screen, { backgroundColor: colors.bg }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
@@ -490,14 +490,14 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
       {/* Revenue + Performance stats */}
       <View style={{ flexDirection:'row', paddingHorizontal:12, paddingVertical:8, gap:8 }}>
         {[
-          { label:'Accepted',   value: String(leads.filter((l: Record<string, unknown>) =>l.purchased).length),  color:colors.legalDark },
-          { label:'Accept Rate', value: leads.length ? Math.round(leads.filter((l: Record<string, unknown>) =>l.purchased).length/leads.length*100)+'%' : '--', color:colors.blue },
-          { label:'Avg Bail',   value: leads.length ? '$'+Math.round(leads.reduce((s: number, l: Record<string, unknown>)=>s+((l as any).bail_amount||0),0)/leads.length).toLocaleString() : '--', color:colors.warnDark },
-          { label:'High Value', value: String(leads.filter((l: Record<string, unknown>) =>(l as any).bail_amount>=25000).length), color:colors.navy },
+          { label:'Accepted',   value: String(leads.filter((l: import('../types/api').BondsmanLead) =>l.purchased).length),  color:colors.legalDark },
+          { label:'Accept Rate', value: leads.length ? Math.round(leads.filter((l: import('../types/api').BondsmanLead) => l.purchased).length/leads.length*100)+'%' : '--', color:colors.blue },
+          { label:'Avg Bail',   value: leads.length ? '$'+Math.round(leads.reduce((s: number, l: import('../types/api').BondsmanLead) => s + (l.bail_amount ?? 0),0)/leads.length).toLocaleString() : '--', color:colors.warnDark },
+          { label:'High Value', value: String(leads.filter((l: import('../types/api').BondsmanLead) => (l.bail_amount ?? 0) >= 25000).length), color:colors.navy },
         ].map((s,i) => (
           <View key={i} style={{ flex:1, backgroundColor:colors.bgCard, borderRadius:8,
             padding:8, alignItems:'center', borderWidth:1, borderColor:colors.border }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, fontWeight:'800', color:s.color }}>{s.value}</Text>
+            <Text testID="stat-avg-bail" maxFontSizeMultiplier={1.4} style={{ fontSize:16, fontWeight:'800', color:s.color }}>{s.value}</Text>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize:10, color:colors.textMuted, marginTop:1, textAlign:'center' }}>{s.label}</Text>
           </View>
         ))}
@@ -572,6 +572,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
             </View>
           )}
         <FlatList
+          testID="lead-list"
           getItemLayout={(_, index) => ({ length: 150, offset: 150 * index, index })}
           initialNumToRender={10}
           maxToRenderPerBatch={10}

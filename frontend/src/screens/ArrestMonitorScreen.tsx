@@ -39,8 +39,8 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
     const seen = new Map<string, any>();
     for (const arrest of arrests) {
       const key = [
-        ((arrest as any).name || '').toLowerCase().trim(),
-        ((arrest as any).charge || (arrest as any).charges || '').toLowerCase().slice(0, 30),
+        ((arrest as import('../types/api').ArrestRecord).name || '').toLowerCase().trim(),
+        ((arrest as import('../types/api').ArrestRecord).charge || (arrest as import('../types/api').ArrestRecord).charges || '').toLowerCase().slice(0, 30),
         ((arrest as any).booking_date || (arrest as any).date || '').slice(0, 10),
       ].join('|');
       if (!seen.has(key)) {

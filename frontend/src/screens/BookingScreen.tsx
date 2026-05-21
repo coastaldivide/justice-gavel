@@ -48,7 +48,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
   const [submitting, setSubmitting] = React.useState(false);
 
   // Load attorney's weekly availability so users know best times to expect responses
-  const { lawyerName, lawyerPhone, lawyerId } = (route?.params as any) ?? {};
+  const { lawyerName, lawyerPhone, lawyerId } = (route?.params as import('../types/api').RouteParams) ?? {};
   React.useEffect(() => {
     if (!lawyerId) return;
     api.get('/attorney/profile/availability', { params: { lawyerId } })
@@ -197,7 +197,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
     <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}>
-        <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
+        <ScrollView testID="booking-screen" style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
       <AuthGateModal />
 
@@ -305,7 +305,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           ) : (
             <>
               <Text maxFontSizeMultiplier={1.4} style={[styles.timesLabel, { color: colors.textMuted }]}>Available times</Text>
-              <View style={styles.timesGrid}>
+              <View testID="booking-datetime-step" style={styles.timesGrid}>
                 {availTimes.map(t => (
                   <TouchableOpacity key={t.time}
                     accessibilityRole="button"
@@ -322,7 +322,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
               <TouchableOpacity
                 accessibilityRole="button"
                 style={[styles.nextBtn, { backgroundColor: COLORS.navy }, !selTime && styles.nextBtnDisabled]}
-                onPress={handleConfirmStep}
+                testID="booking-confirm-button" onPress={handleConfirmStep}
                 disabled={!selTime}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>Next →</Text>
               </TouchableOpacity>

@@ -9,7 +9,7 @@
  *                       arrest alerts, check-in reminders, marketing)
  *   5. Invite a Friend -- referral code + share
  *   6. About -- ToS, Privacy, Feedback, version
- *   7. Sign out
+ *   7. testID="settings-logout-button" Sign out
  */
 import React, { useRef, useEffect, useState } from 'react';
 import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
