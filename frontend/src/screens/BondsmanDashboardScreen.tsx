@@ -264,7 +264,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
             <Text maxFontSizeMultiplier={1.4} style={styles.confirmCharges}>{lead.charges}</Text>
             <View style={styles.confirmRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.confirmLabel}>Bail amount</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.confirmValue}>
+              <Text testID="lead-bail-amount-detail" maxFontSizeMultiplier={1.4} style={styles.confirmValue}>
                 {lead.bail_amount > 0 ? `$${lead.bail_amount.toLocaleString()}` : 'TBD'}
               </Text>
             </View>
@@ -330,6 +330,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [accepting, setAccepting] = useState(false);
+  const [acceptedMsg, setAcceptedMsg] = useState('');
   const [filterHours, setFilterHours] = useState(48);
   const [badgeStatus, setBadgeStatus] = useState<any>(null);
   const [badgeLoading, setBadgeLoading] = useState(false);
@@ -420,7 +421,9 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
         `Charged ${res.data?.fee_charged}. Contact info revealed below.`,
         [{ text: 'OK' }]
       );
+      setAcceptedMsg(`Lead accepted. ${res.data?.fee_charged || ''} charged.`);
       loadLeads(true);
+      setAcceptedMsg(`Lead accepted. ${res.data?.fee_charged || ''} charged.`);
     } catch (e: any) {
       Alert.alert('Payment issue', 'Could not process payment. Check your card details and try again.');
     } finally {
@@ -602,6 +605,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
             <LeadCard lead={item} onAccept={() => handleAccept(item)} />
           )}
         />
+      {!!acceptedMsg && <View testID="lead-accepted-confirmation" style={{ backgroundColor: COLORS.legalBg, borderRadius: 8, padding: 12, margin: 12, borderWidth: 1, borderColor: COLORS.legal }}><Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.legalDark, fontSize: 13 }}>✅ {acceptedMsg}</Text></View>}
         </>
       )}
 

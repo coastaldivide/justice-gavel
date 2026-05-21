@@ -262,6 +262,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
 
   const [step, setStep]         = useState<'form'|'result'>('form');
   const [state, setState]       = useState(incomingState);
+  const [stateError, setStateError]   = useState('');
   const [charges, setCharges]   = useState(incomingCharges || '');
   const [caseStatus, setCaseStatus] = useState('Closed');
   const [loading, setLoading]   = useState(false);
@@ -278,6 +279,8 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
   const [showPetition, setShowPetition]     = useState(false);
 
   const checkEligibility = async () => {
+    if (!state) { setStateError('Please select your state first.'); setLoading(false); return; }
+    setStateError('');
     setLoading(true);
     try {
       const res = await (cachedGet as any)('/expungement/check', {
@@ -391,6 +394,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
       <TouchableOpacity style={styles.stateBtn}
         testID="expungement-state-picker" onPress={() => setShowStatePicker(p => !p)}
         accessibilityRole="button">
+      {!!stateError && <Text testID="expungement-state-error" style={{ color: COLORS.emergency, fontSize: 12, marginTop: 4, marginLeft: 4 }}>{stateError}</Text>}
         <Text maxFontSizeMultiplier={1.4} style={styles.stateBtnText}>{state}  ▾</Text>
       </TouchableOpacity>
       {showStatePicker && (
@@ -477,7 +481,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
         <Text testID="expungement-eligible-banner" maxFontSizeMultiplier={1.4} style={[styles.verdictLabel, { color: eligColor }]}>{eligLabel}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.verdictState}>{result?.stateName} · {result?.chargeType}</Text>
         {(result?.eligibility?.waitYears ?? 0) > 0 && (
-          <Text maxFontSizeMultiplier={1.4} style={[styles.verdictWait, { color: eligColor }]}>
+          <Text testID="expungement-wait-years" maxFontSizeMultiplier={1.4} style={[styles.verdictWait, { color: eligColor }]}>
             Typical waiting period: {(result as any).eligibility?.waitYears} year{(result as any).eligibility?.waitYears > 1 ? 's' : ''}
           </Text>
         )}

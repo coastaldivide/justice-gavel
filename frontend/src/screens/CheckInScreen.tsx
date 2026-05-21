@@ -182,7 +182,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
       </View>
       <TouchableOpacity
         accessibilityRole="button"
-        accessibilityLabel="Find a Bail Bondsman →"
+        testID="checkin-enroll-button" accessibilityLabel="Find a Bail Bondsman →"
         style={{ backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 32, ...SHADOW.md }}
         onPress={() => navigation.navigate('BailTab')}
       >

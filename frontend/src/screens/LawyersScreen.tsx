@@ -723,7 +723,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetchLawyers(true)} tintColor={COLORS.navy} />}
           ListHeaderComponent={
             <>
-              {statusMsg ? <Text maxFontSizeMultiplier={1.4} style={styles.statusMsg}>{statusMsg}</Text> : null}
+              {statusMsg ? <Text testID="lawyers-offline-message" maxFontSizeMultiplier={1.4} style={styles.statusMsg}>{statusMsg}</Text> : null}
               {caseType && ['DUI','Drug Offenses','Assault'].includes(caseType) && !loading && lawyers.length > 0 && (
                 <TouchableOpacity
                   accessibilityRole="button"

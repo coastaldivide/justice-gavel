@@ -102,7 +102,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
       )}
       {!!item.notes && <Markdown style={{ body: { fontSize:14, lineHeight:21, color:COLORS.textSecond } }}>{item.notes}</Markdown>}
       <Text maxFontSizeMultiplier={1.4}>Created {new Date(item.created_at).toLocaleDateString()}</Text>
-      <TouchableOpacity
+      <TouchableOpacity testID="case-share-sheet"
         style={styles.shareBtn}
         onPress={() => onShare(item)}
         accessibilityRole="button"
@@ -777,6 +777,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
             />
           )
       }
+      {offlineCases.length > 0 && <View testID="case-offline-message" style={styles.offlineBanner}><Text maxFontSizeMultiplier={1.4} style={styles.offlineBannerText}>📴 {offlineCases.length} case{offlineCases.length > 1 ? 's' : ''} saved offline — will sync when connected</Text></View>}
 
       {/* ── Family-shared cases ──────────────────────────────────────────── */}
       {familyCases.length > 0 && activeTab === 'cases' && (
@@ -890,7 +891,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
           )}
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Case title <Text maxFontSizeMultiplier={1.4} style={styles.required}>*</Text></Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>Describe the matter briefly, e.g. "DUI charge -- Shelby County" or "Assault charge appeal"</Text>
-          <TextInput
+          <TextInput testID="case-title-input"
             style={styles.textInput}
             placeholder="e.g. DUI arrest Memphis TN Oct 2025"
             placeholderTextColor={colors.textMuted}
