@@ -248,6 +248,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
             <Text maxFontSizeMultiplier={1.4} style={styles.helpNowBtnText}>{t('help_now')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
+          accessibilityRole="button"
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             style={styles.settingsBtn}
           >

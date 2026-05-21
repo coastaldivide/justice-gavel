@@ -409,6 +409,7 @@ export default function BailSearchScreen(): React.JSX.Element {
               <TouchableOpacity
                 key={city}
                 style={styles.cityRow}
+          accessibilityRole="button"
                 onPress={() => { setLocationDenied(false); setCityQuery(''); search(city); }}
                 activeOpacity={0.75}
               >

@@ -410,6 +410,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.typeLink}
+          accessibilityRole="button"
           onPress={() => setPhase('idle')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>← Use voice instead</Text>

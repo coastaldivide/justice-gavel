@@ -321,26 +321,26 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
   };
 
   const eligColor = result
-    ? result.eligibility.likely       ? COLORS.legal
-    : result.eligibility.conditional  ? COLORS.warn
+    ? result?.eligibility?.likely       ? COLORS.legal
+    : result?.eligibility?.conditional  ? COLORS.warn
     : COLORS.emergency
     : COLORS.textMuted;
 
   const eligBg = result
-    ? result.eligibility.likely       ? COLORS.legalBg
-    : result.eligibility.conditional  ? COLORS.warnBg
+    ? result?.eligibility?.likely       ? COLORS.legalBg
+    : result?.eligibility?.conditional  ? COLORS.warnBg
     : COLORS.emergencyBg
     : COLORS.bg;
 
   const eligIcon = result
-    ? result.eligibility.likely       ? '✅'
-    : result.eligibility.conditional  ? '⚠️'
+    ? result?.eligibility?.likely       ? '✅'
+    : result?.eligibility?.conditional  ? '⚠️'
     : '❌'
     : '';
 
   const eligLabel = result
-    ? result.eligibility.likely       ? 'Likely Eligible'
-    : result.eligibility.conditional  ? 'Possibly Eligible'
+    ? result?.eligibility?.likely       ? 'Likely Eligible'
+    : result?.eligibility?.conditional  ? 'Possibly Eligible'
     : 'Not Eligible'
     : '';
 
@@ -511,13 +511,13 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
       </View>
 
       {/* Attorney marketplace */}
-      {result && !result.eligibility.notEligible && (
+      {result && !result?.eligibility?.notEligible && (
         <>
           <Text maxFontSizeMultiplier={1.4} style={styles.partnersTitle}>
             Expungement attorneys in {result.stateName || state}
           </Text>
             {/* Generate expungement petition */}
-            {result && !result.eligibility.notEligible && (
+            {result && !result?.eligibility?.notEligible && (
               <TouchableOpacity
                 style={{ marginTop: 12, backgroundColor: colors.legal, borderRadius: 12,
                   paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row',
@@ -628,7 +628,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
           {!attLoading && attorneys.length === 0 && (
             <View>
               <Text maxFontSizeMultiplier={1.4} style={styles.partnersTitle}>Partner services</Text>
-              {result.partners.map(partner => (
+              {result?.partners?.map(partner => (
                 <View key={partner.key} style={styles.partnerCard}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.partnerName}>{partner.name}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.partnerDesc} numberOfLines={3} ellipsizeMode="tail">{partner.description}</Text>

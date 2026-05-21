@@ -84,6 +84,7 @@ function TierGatedRow({
         {/* State preference -- controls rights card, AI jurisdiction, and provider search */}
         <TouchableOpacity
           style={styles.row}
+          accessibilityRole="button"
           onPress={() => setShowStatePickerSettings(true)}
           accessibilityLabel="Change your state preference"
         >

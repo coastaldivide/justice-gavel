@@ -327,6 +327,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
           )}
           <TouchableOpacity
             style={styles.stateChangeBtn}
+          accessibilityRole="button"
             onPress={() => setShowPicker(p => !p)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.stateChangeBtnText}>🗺  Change State</Text>

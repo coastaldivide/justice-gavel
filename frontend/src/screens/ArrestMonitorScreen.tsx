@@ -294,7 +294,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
                 </View>
               </View>
             ) : (
-              <TouchableOpacity style={styles.addTrigger} onPress={() => setShowForm(true)}
+              <TouchableOpacity accessibilityRole="button" style={styles.addTrigger} onPress={() => setShowForm(true)}
               >
                 <Text maxFontSizeMultiplier={1.4} style={styles.addTriggerText}>+ Add a Name to Monitor</Text>
               </TouchableOpacity>

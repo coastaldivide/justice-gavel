@@ -272,6 +272,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[s.upgradeBtn, { backgroundColor: colors.gold }]}
+          accessibilityRole="button"
                     onPress={() => requestUpgrade('mission')}
                     disabled={upgrading}
                   >
@@ -290,7 +291,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                 <Text style={s.actionEmoji}>⚙️</Text>
                 <Text style={s.actionLabel}>Configure vertical</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.actionBtn} onPress={() => navigation.navigate('DeadlineCalculator')}
+              <TouchableOpacity accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('DeadlineCalculator')}
                       >
                 <Text style={s.actionEmoji}>📅</Text>
                 <Text style={s.actionLabel}>Deadline calculator</Text>
@@ -301,7 +302,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                 <Text style={s.actionEmoji}>📁</Text>
                 <Text style={s.actionLabel}>Create matter</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical', { tab: 'pricing' })}
+              <TouchableOpacity accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical', { tab: 'pricing' })}
                       >
                 <Text style={s.actionEmoji}>💳</Text>
                 <Text style={s.actionLabel}>Upgrade plan</Text>
@@ -364,7 +365,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                         <Text style={[s.tierName, { color: TIER_COLORS[p.tier_key] }]}>{p.display_name}</Text>
                         <Text style={s.tierDesc}>{p.description}</Text>
                       </View>
-                      <Text style={s.tierPrice}>${(p.monthly_cents / 100).toFixed(0)}<Text style={s.tierPriceSub}>/mo</Text></Text>
+                      <Text style={s.tierPrice}>${((p.monthly_cents ?? 0) / 100).toFixed(0)}<Text style={s.tierPriceSub}>/mo</Text></Text>
                     </View>
                     <View style={s.tierMeta}>
                       <Text style={s.tierMetaItem}>🪑 {p.seat_limit >= 999 ? '∞' : p.seat_limit} seats</Text>

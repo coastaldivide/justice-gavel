@@ -72,7 +72,7 @@ export function useAuthGate(navigation: any, quickMode = false) {
         displayName: undefined,
       });
       await setToken(res.data.token);
-      await AsyncStorage.setItem('user', JSON.stringify(res.data.user));
+      try { await AsyncStorage.setItem('user', JSON.stringify(res.data.user)); } catch {} // storage failure is non-fatal
       setAppAuth('authed');
       setVisible(false);
       // Execute the pending action

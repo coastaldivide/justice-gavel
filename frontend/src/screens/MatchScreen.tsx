@@ -132,7 +132,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
             </TouchableOpacity>
           )}
           {item?.phone && (
-            <TouchableOpacity style={[styles.actionBtn, styles.smsBtn]} onPress={() => sendSMS(item?.phone)}
+            <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.smsBtn]} onPress={() => sendSMS(item?.phone)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>💬 Text</Text>
             </TouchableOpacity>
@@ -145,7 +145,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
             </TouchableOpacity>
           )}
           {item.website && (
-            <TouchableOpacity style={[styles.actionBtn, styles.webBtn]} onPress={() => openWebsite(item.website)}
+            <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.webBtn]} onPress={() => openWebsite(item.website)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>🌐 Web</Text>
             </TouchableOpacity>
@@ -421,6 +421,7 @@ export default function MatchScreen(): React.JSX.Element {
         {/* Search button */}
         <TouchableOpacity activeOpacity={0.6} style={[styles.searchBtn, loading && styles.searchBtnDisabled]} onPress={findMatches} disabled={loading}
           accessibilityLabel="📍 Find My Best Matches"
+          accessibilityRole="button"
         >
           {loading
             ? <ActivityIndicator color={colors.bgCard} />

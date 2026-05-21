@@ -121,7 +121,7 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
         <TouchableOpacity
           onPress={() => onCall
             ? onCall(lawyer.phone!)
-            : Linking.openURL(`tel:${lawyer.phone}`)}
+            : Linking.openURL(`tel:${lawyer.phone}`).catch(() => {})}
           style={{
             backgroundColor: colors.navy, borderRadius: 10,
             paddingVertical: 10, alignItems: 'center',

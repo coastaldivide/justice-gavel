@@ -275,6 +275,7 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
             </TouchableOpacity>
           )}
           <TouchableOpacity style={styles.loginBtn} onPress={goToLogin} activeOpacity={0.8}
+          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.loginBtnText}>
               {isLast ? t('onboard_signin_last') : t('onboard_signin')}

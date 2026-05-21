@@ -129,6 +129,7 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.stripBtn, { backgroundColor: colors.blue }]}
+          accessibilityRole="button"
           onPress={() => call('988')}
           accessibilityLabel="Call 988 crisis line"
         >

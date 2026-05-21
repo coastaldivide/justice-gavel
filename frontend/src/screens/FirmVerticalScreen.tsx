@@ -429,6 +429,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
               <TouchableOpacity
                 key={v.key}
                 style={[s.vertCard, selectedV === v.key && s.vertCardSelected]}
+          accessibilityRole="button"
                 onPress={() => {
                   setSelectedVsetSelectedV(v.key);
                   // Preserve existing flag values; only initialise new flags to false
@@ -491,7 +492,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
               <View key={t.tier_key} style={[s.tierCard, { borderLeftColor: PRICING_COLORS[t.tier_key] || colors.steel }]}>
                 <View style={s.tierHeader}>
                   <Text style={[s.tierName, { color: PRICING_COLORS[t.tier_key] || colors.text }]}>{t.display_name}</Text>
-                  <Text style={s.tierPrice}>${(t.monthly_cents / 100).toFixed(0)}<Text style={s.tierPriceSub}>/mo</Text></Text>
+                  <Text style={s.tierPrice}>${((t.monthly_cents ?? 0) / 100).toFixed(0)}<Text style={s.tierPriceSub}>/mo</Text></Text>
                 </View>
                 <Text style={s.tierDesc}>{t.description}</Text>
                 <View style={s.tierStats}>

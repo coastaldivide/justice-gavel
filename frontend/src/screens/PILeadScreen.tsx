@@ -102,6 +102,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.homeBtn}
+          accessibilityRole="button"
           onPress={() => navigation.navigate('HomeTab')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.homeBtnText, { color: colors.textMuted }]}>Back to Home</Text>

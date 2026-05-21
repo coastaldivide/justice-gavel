@@ -299,6 +299,7 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.toggleBtn, annual && styles.toggleBtnActive]}
+          accessibilityRole="button"
           onPress={() => setAnnual(true)}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, annual && styles.toggleBtnTextActive]}>Annual</Text>

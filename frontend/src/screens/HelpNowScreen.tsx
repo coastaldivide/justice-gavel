@@ -459,7 +459,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
                 </TouchableOpacity>
               ) : null}
               {courthouse.phone ? (
-                <TouchableOpacity style={styles.callBtn} onPress={() => callPhone(courthouse.phone)}
+                <TouchableOpacity accessibilityRole="button" style={styles.callBtn} onPress={() => callPhone(courthouse.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {courthouse.phone}</Text>
                 </TouchableOpacity>
@@ -473,6 +473,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
             <Text style={[styles.noResultsBtnText, { color: '#fff' }]}>Find Courthouses Near You →</Text>
           </TouchableOpacity>
       <TouchableOpacity
+          accessibilityRole="button"
         onPress={() => navigation.navigate('BailCalculator')}
         style={{ marginTop: 8, padding: 12, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
         <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 14 }}>💰 Bail Amount Calculator</Text>

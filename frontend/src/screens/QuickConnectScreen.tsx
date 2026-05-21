@@ -257,7 +257,7 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
             {credit > 0 && (
               <View style={styles.creditRow}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.creditLabel}>Referral credit</Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.creditAmount}>-${(credit / 100).toFixed(2)}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.creditAmount}>-${((credit ?? 0) / 100).toFixed(2)}</Text>
               </View>
             )}
             {credit > 0 && (

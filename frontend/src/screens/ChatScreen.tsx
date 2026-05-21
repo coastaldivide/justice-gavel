@@ -730,11 +730,11 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
       {showDisclaimer && (
         <TouchableOpacity
           activeOpacity={0.6}
+          accessibilityRole="button"
           onPress={() => {
             setShowDisclaimer(false);
             recordConsent();
           }}
-          accessibilityRole="button"
           style={{
             backgroundColor: colors.bgCard, borderRadius: 8,
             padding: 12, margin: 12,

@@ -39,7 +39,7 @@ function bailTier(bailAmount: number): { label: string; color: string; bg: strin
 
 function timeAgo(dateStr: string): string {
   if (!dateStr) return '';
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const diff = Date.now() - (new Date(dateStr ?? 0).getTime() || Date.now());
   const h = Math.floor(diff / 3600000);
   const m = Math.floor((diff % 3600000) / 60000);
   if (h > 0) return `${h}h ago`;
@@ -294,6 +294,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
               style={[styles.confirmAccept, loading && { opacity: 0.6 }]}
               onPress={onConfirm}
               disabled={loading}
+          accessibilityRole="button"
             >
               {loading
                 ? <ActivityIndicator color={COLORS.bgCard} size="small" />
@@ -456,16 +457,16 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.checkInMgrBtn, { backgroundColor: '#042C53' }]}
+          accessibilityRole="button"
             onPress={() => {
               hapticImpact();
               navigation.navigate('RecoveryAgents');
             }}
-            accessibilityRole="button"
             accessibilityLabel="Find recovery agents for skip apprehension"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.checkInMgrBtnText}>🔍 Recovery</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.profileBtn} onPress={() => setShowProfile(true)}
+          <TouchableOpacity accessibilityRole="button" style={styles.profileBtn} onPress={() => setShowProfile(true)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.profileBtnText}>⚙️</Text>
           </TouchableOpacity>
@@ -494,7 +495,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
       <View style={{ flexDirection:'row', paddingHorizontal:12, paddingVertical:8, gap:8 }}>
         {[
           { label:'Accepted',   value: String(leads.filter((l: import('../types/api').BondsmanLead) =>l.purchased).length),  color:colors.legalDark },
-          { label:'Accept Rate', value: leads.length ? Math.round(leads.filter((l: import('../types/api').BondsmanLead) => l.purchased).length/leads.length*100)+'%' : '--', color:colors.blue },
+          { label:'Accept Rate', value: leads.length ? Math.round(leads.filter((l: import('../types/api').BondsmanLead) => l.purchased).length/ (leads.length || 1)*100)+'%' : '--', color:colors.blue },
           { label:'Avg Bail',   value: leads.length ? '$'+Math.round(leads.reduce((s: number, l: import('../types/api').BondsmanLead) => s + (l.bail_amount ?? 0),0)/leads.length).toLocaleString() : '--', color:colors.warnDark },
           { label:'High Value', value: String(leads.filter((l: import('../types/api').BondsmanLead) => (l.bail_amount ?? 0) >= 25000).length), color:colors.navy },
         ].map((s,i) => (
@@ -528,6 +529,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
             onPress={handleBadgeSubscribe}
             disabled={badgeLoading}
             activeOpacity={0.85}
+          accessibilityRole="button"
           >
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerPromoTitle}>

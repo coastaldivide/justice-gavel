@@ -934,7 +934,7 @@ const loadHistory = useCallback(async () => {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.backLink} onPress={() => setPhase('library')}
+        <TouchableOpacity accessibilityRole="button" style={styles.backLink} onPress={() => setPhase('library')}
           >
           <Text maxFontSizeMultiplier={1.4} style={[styles.backLinkText, { color: colors.textMuted }]}>← Back to library</Text>
         </TouchableOpacity>
@@ -1012,12 +1012,12 @@ const loadHistory = useCallback(async () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[egStyles.exportBtn, !attorneyReviewed && egStyles.exportBtnDisabled]}
+          accessibilityRole="button"
                   onPress={() => {
                     setShowExportGate(false);
                     shareMotion();
                   }}
                   disabled={!attorneyReviewed}
-                  accessibilityRole="button"
                   accessibilityState={{ disabled: !attorneyReviewed }}>
                   <Text maxFontSizeMultiplier={1.4} style={egStyles.exportBtnText}>Export Motion</Text>
                 </TouchableOpacity>
@@ -1064,6 +1064,7 @@ const loadHistory = useCallback(async () => {
             style={[styles.resultAction, { backgroundColor: COLORS.steel }]}
             onPress={shareMotion}
             accessibilityLabel="Share motion"
+          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>↑ Share</Text>
           </TouchableOpacity>
@@ -1077,18 +1078,19 @@ const loadHistory = useCallback(async () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.resultAction, { backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.border }]}
+          accessibilityRole="button"
             onPress={() => { setPhase('library'); setSelected(null); setDraft(''); }}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.resultActionText, { color: colors.textSecond }]}>+ New</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.resultAction, { backgroundColor: COLORS.legal }]}
+          accessibilityRole="button"
             onPress={() => navigation.navigate('LegalResearch', {
               initialQuery: selected
                 ? `Precedent and case law supporting a ${selected.label} -- cite key cases`
                 : '' })}
             accessibilityLabel="Research precedent for this motion"
-            accessibilityRole="button"
             >
             <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>⚖️ Research</Text>
           </TouchableOpacity>
@@ -1158,8 +1160,8 @@ const loadHistory = useCallback(async () => {
               style={[styles.histFilterChip, active && {
                 backgroundColor: cfg ? cfg.bg : COLORS.navy + '14',
                 borderColor: cfg ? cfg.color : COLORS.navy }]}
+          accessibilityRole="button"
               onPress={() => setHistFilter(key)}
-              accessibilityRole="button"
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.histFilterText, { color: active ? (cfg?.color || COLORS.navy) : colors.textMuted }]}>
                 {key === 'all' ? 'All' : `${cfg!.icon} ${cfg!.label}`}

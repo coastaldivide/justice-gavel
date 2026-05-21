@@ -332,7 +332,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
       <View style={styles.summaryCard}>
         <View style={styles.summaryRow}>
           <Text maxFontSizeMultiplier={1.4} style={styles.summaryLabel}>{purpose.icon} {purpose.label}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.summaryAmount}>${parseFloat(amount || '0').toFixed(2)}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.summaryAmount}>${(parseFloat(amount || '0') || 0).toFixed(2)}</Text>
         </View>
         <View style={styles.summaryRow}>
           <Text maxFontSizeMultiplier={1.4} style={styles.summaryMeta}>via {selectedMethod.label}</Text>
@@ -346,7 +346,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
           disabled={loading}>
           {loading
             ? <ActivityIndicator color={colors.bgCard} />
-            : <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>Pay ${parseFloat(amount || '0').toFixed(2)} with {selectedMethod.label}</Text>
+            : <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>Pay ${(parseFloat(amount || '0') || 0).toFixed(2)} with {selectedMethod.label}</Text>
           }
         </TouchableOpacity>
 

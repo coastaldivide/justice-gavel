@@ -484,6 +484,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
         {activeStep < data.steps.length ? (
           <TouchableOpacity
             style={[styles.navBtn, { backgroundColor: data.color, flex: 2 }]}
+          accessibilityRole="button"
             onPress={() => setActiveStep(s => Math.min(data.steps.length, s + 1))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.navBtnText}>Next Step →</Text>

@@ -194,16 +194,17 @@ function SavedCard({
         )}
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: COLORS.navy }]}
+          accessibilityRole="button"
           onPress={() => navigation.navigate('MoreTab', {
             screen: 'Booking',
             params: { lawyerName: lawyer.name, lawyerPhone: lawyer.phone || '', lawyerId: lawyer.provider_id } })}
           accessibilityLabel={`Book consultation with ${lawyer.name}`}
-          accessibilityRole="button"
           >
           <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📅 Book</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: COLORS.warnDark }]}
+          accessibilityRole="button"
           onPress={() => setReviewing(r => !r)}
           accessibilityLabel={`Leave a review for ${lawyer.name}`}
         >
@@ -280,6 +281,7 @@ function SavedCard({
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.notesBtn, { backgroundColor: COLORS.border }]}
+          accessibilityRole="button"
                 onPress={() => { setNote(lawyer.notes || ''); setEditingNote(false); }}
               >
                 <Text maxFontSizeMultiplier={1.4} style={[styles.notesBtnText, { color: COLORS.textSecond }]}>Cancel</Text>

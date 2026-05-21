@@ -412,6 +412,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
 
         <TouchableOpacity
           style={styles.backLink}
+          accessibilityRole="button"
           onPress={() => setPhase('setup')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.backLinkText, { color: colors.textMuted }]}>← Back</Text>
@@ -523,6 +524,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
             </TouchableOpacity>
           )}
           <TouchableOpacity
+          accessibilityRole="button"
             onPress={() => {
               if (pollRef.current) clearInterval(pollRef.current);
               setPhase('setup');
@@ -531,7 +533,6 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
             }}
             style={styles.endBtn}
             accessibilityLabel="End session"
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.endBtnText}>End</Text>
           </TouchableOpacity>

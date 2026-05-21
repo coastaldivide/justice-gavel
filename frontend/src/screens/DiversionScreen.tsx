@@ -401,6 +401,7 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.ctaBtn, { backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.border }]}
+          accessibilityRole="button"
           onPress={() => { setStep('form'); setCharge(''); }}
           accessibilityLabel="Check a different charge"
         >

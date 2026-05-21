@@ -341,7 +341,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           </View>
         )}
 
-        <TouchableOpacity style={s.btnSecondary} onPress={() => setPhase('home')}
+        <TouchableOpacity accessibilityRole="button" style={s.btnSecondary} onPress={() => setPhase('home')}
         >
           <Text style={s.btnSecondaryText}>← Back</Text>
         </TouchableOpacity>

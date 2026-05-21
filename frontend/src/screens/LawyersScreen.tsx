@@ -308,7 +308,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
             {caseLoading ? '…' : '🔒 Message'}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryBtn} onPress={() => setExpanded(e => !e)}
+        <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setExpanded(e => !e)}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.secondaryBtnText}>{expanded ? t('lawyers_less') : t('lawyers_more')}</Text>
         </TouchableOpacity>
@@ -390,6 +390,7 @@ function FilterModal({
 
           <TouchableOpacity style={styles.applyBtn} onPress={onApply}
             accessibilityLabel="Apply Filters"
+          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.applyBtnText}>Apply Filters</Text>
           </TouchableOpacity>

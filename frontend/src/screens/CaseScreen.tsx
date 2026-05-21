@@ -47,7 +47,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
   const color = STATUS_COLORS[item.status] || COLORS.textMuted;
   const hasDate = !!item.next_court_date;
   const daysUntil = hasDate
-    ? Math.ceil((new Date(item.next_court_date!).getTime() - Date.now()) / 86400000)
+    ? Math.ceil(((new Date(item.next_court_date ?? 0).getTime() || Infinity) - Date.now()) / 86400000)
     : null;
 
   return (
@@ -61,6 +61,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                 <TouchableOpacity
                   style={{ flexDirection:'row', alignItems:'center', gap:4, paddingVertical:6,
                     marginTop:2 }}
+          accessibilityRole="button"
                   onPress={async () => {
                     const d = new Date(item.next_court_date!);
                     const remind = new Date(d);
@@ -79,7 +80,6 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                       Alert.alert('Reminder set ✓', 'We\'ll remind you the day before court.');
                     } catch { Alert.alert('Could not set reminder'); }
                   }}
-                  accessibilityRole="button"
                   accessibilityLabel="Set court date reminder"
                 >
                   <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11 }}>🔔</Text>
@@ -112,6 +112,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.shareBtn, { borderColor: 'rgba(133,183,235,0.33)', backgroundColor: COLORS.bgCard }]}
+          accessibilityRole="button"
         onPress={() => onInvite(item)}
         accessibilityLabel={`Invite a family member to ${item.title}`}
       >
@@ -130,11 +131,11 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
       {['Open', 'Active', 'Pending'].includes(item.status) && (
         <TouchableOpacity
           style={styles.discoveryBtn}
+          accessibilityRole="button"
           onPress={() => navigation?.navigate('Discovery', {
             caseId: item.id, caseTitle: item.title
           })}
           accessibilityLabel={`Analyze discovery documents for ${item.title}`}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.discoveryBtnText}>🔍 Analyze discovery docs →</Text>
         </TouchableOpacity>
@@ -143,22 +144,22 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
         <>
           <TouchableOpacity
             style={[styles.expungeBtn, { backgroundColor: COLORS.bgSubtle }]}
+          accessibilityRole="button"
             onPress={() => navigation?.navigate('MoreTab', {
               screen: 'CaseTimeline',
               params: { caseId: item.id, caseTitle: item.title }
             })}
-            accessibilityRole="button"
             accessibilityLabel="View case timeline"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>📋 View Timeline →</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.expungeBtn, { backgroundColor: COLORS.bgSubtle }]}
+          accessibilityRole="button"
             onPress={() => navigation?.navigate('MoreTab', {
               screen: 'VoiceNote',
               params: { caseId: item.id, caseTitle: item.title }
             })}
-            accessibilityRole="button"
             accessibilityLabel="Record a voice note for this case"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>
@@ -167,11 +168,11 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.expungeBtn, { backgroundColor: COLORS.infoBg }]}
+          accessibilityRole="button"
             onPress={() => navigation?.navigate('MoreTab', {
               screen: 'DocumentScanner',
               params: { caseId: item.id }
             })}
-            accessibilityRole="button"
             accessibilityLabel="Scan a document and attach to this case"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>
@@ -190,6 +191,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.expungeBtn}
+          accessibilityRole="button"
             onPress={() => navigation?.navigate('MoreTab', {
               screen: 'Expungement',
               params: {
@@ -203,12 +205,12 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.civilRightsBtn}
+          accessibilityRole="button"
             onPress={() => navigation?.navigate('MoreTab', {
               screen: 'PILead',
               params: { caseType: 'Civil Rights' }
             })}
             accessibilityLabel="Were your rights violated? Submit your case to civil rights attorneys -- free"
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.civilRightsBtnText}>✊ Were your rights violated? Get a civil rights attorney -- free →</Text>
           </TouchableOpacity>
@@ -710,6 +712,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'lawyers' && styles.tabBtnActive]}
+          accessibilityRole="button"
           testID="case-save-button" onPress={() => { setActiveTab('lawyers'); loadSavedLawyers(); }}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'lawyers' && styles.tabBtnTextActive]}>
@@ -861,6 +864,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
             ><Text maxFontSizeMultiplier={1.4} style={styles.modalClose}>✕</Text></TouchableOpacity>
             <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>{editCase.id ? 'Edit case' : 'New case'}</Text>
             <TouchableOpacity activeOpacity={0.6} onPress={save} disabled={saving}
+          accessibilityRole="button"
             >
               {saving ? <ActivityIndicator color={colors.navy} /> : <Text maxFontSizeMultiplier={1.4} style={styles.modalSave}>Save</Text>}
             </TouchableOpacity>
@@ -978,6 +982,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.micChip, { backgroundColor: COLORS.navy + '12', borderColor: COLORS.navy + '33' }]}
+          accessibilityRole="button"
               onPress={() => navigation.navigate('VoiceNote', {
                 caseId:        editCase.id,
                 caseTitle:     editCase.title || 'This case',
@@ -986,7 +991,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
                   setEditCase(p => ({ ...p, notes: combined }));
                 }})}
               accessibilityLabel="Record a voice note for this case"
-              accessibilityRole="button"
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.micChipIcon}>🎙</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.micChipText, { color: COLORS.navy }]}>Voice note</Text>
@@ -1126,11 +1130,11 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
           {/* Voice Notes */}
           <TouchableOpacity
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
+          accessibilityRole="button"
             onPress={() => navigation.navigate('VoiceNote', {
               caseId:        cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
               caseTitle:     cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title,
               existingNotes: ''})}
-            accessibilityRole="button"
           >
             <View style={[styles.toolCardIcon, { backgroundColor: COLORS.navy + '18' }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>🎙</Text>
@@ -1194,10 +1198,10 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
                 <TouchableOpacity
                   key={String(ca.id)}
                   style={[styles.caseToolRow, { backgroundColor: isDark ? colors.bg : COLORS.bg, borderColor: colors.surface }]}
+          accessibilityRole="button"
                   onPress={() => navigation.navigate('Discovery', {
                     caseId: ca.id, caseTitle: ca.title
                   })}
-                  accessibilityRole="button"
                 >
                   <Text maxFontSizeMultiplier={1.4} style={[styles.caseToolTitle, { color: colors.steel }]}
                     numberOfLines={1}>📁 {String(ca.title)}</Text>

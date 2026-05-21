@@ -397,6 +397,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>📅 Book Consultation</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[s.actionBtn, { backgroundColor:colors.legal }]}
+          accessibilityRole="button"
           onPress={() => { hapticImpact(); handleMessage(); }}
                   >
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>💬 Send Message</Text>
@@ -411,6 +412,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
         <View style={{ flexDirection:'row', gap:10 }}>
           <TouchableOpacity
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
+          accessibilityRole="button"
             onPress={handleSave}>
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>⭐ Save</Text>
           </TouchableOpacity>
@@ -422,6 +424,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
           </TouchableOpacity>
           <TouchableOpacity
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
+          accessibilityRole="button"
             onPress={handleShare}>
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>↑ Share</Text>
           </TouchableOpacity>

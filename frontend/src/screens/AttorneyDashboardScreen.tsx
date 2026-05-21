@@ -29,7 +29,7 @@ type Tab = 'cases' | 'templates' | 'cle' | 'profile';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const daysUntil = (dateStr: string | null) => {
   if (!dateStr) return null;
-  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
+  return Math.ceil(((new Date(dateStr ?? 0).getTime() || Infinity) - Date.now()) / 86400000);
 };
 const urgencyColor = (days: number | null) => {
   if (days === null) return COLORS.textMuted;
@@ -449,6 +449,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.caseActionBtn, { borderColor: colors.border }]}
+          accessibilityRole="button"
                       onPress={() => navigation.navigate('MotionLibrary', { caseId: cas.id })}
                       accessibilityLabel="Draft a motion for this case"
                     >
@@ -492,8 +493,8 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
                   style={[styles.filterChip,
                     { backgroundColor: tplFilter===f ? colors.steel : colors.bgCard,
                       borderColor: tplFilter===f ? colors.steel : colors.border }]}
+          accessibilityRole="button"
                   onPress={() => setTplFilter(f)}
-                  accessibilityRole="button"
                   accessibilityLabel={f}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={[styles.filterChipText, { color: tplFilter===f ? colors.bg : colors.textMuted }]}>

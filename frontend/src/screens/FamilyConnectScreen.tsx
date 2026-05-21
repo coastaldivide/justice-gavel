@@ -387,7 +387,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
             <Text maxFontSizeMultiplier={1.4} style={styles.payBtnSub}>Demo mode: no real charge</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.backBtn} onPress={() => setStep(1)}
+          <TouchableOpacity accessibilityRole="button" style={styles.backBtn} onPress={() => setStep(1)}
               accessibilityLabel="Go back"
               accessibilityHint="Returns to previous step">
             <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>← Back</Text>

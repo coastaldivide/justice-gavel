@@ -523,6 +523,7 @@ if (phase === 'ready') return (
         </View>
       )}
       <TouchableOpacity style={styles.sendBtn} onPress={sendShare} activeOpacity={0.85}
+          accessibilityRole="button"
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>🚨  Send Now</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnSub}>Opens your Messages app</Text>
