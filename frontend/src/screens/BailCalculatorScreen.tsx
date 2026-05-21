@@ -7,6 +7,7 @@ import { Picker } from '@react-native-picker/picker';
 import { api, cachedGet } from '../services/api';
 import { useTheme } from '../constants/theme';
 
+declare var bondAmount: any;
 const STATES = [
   'ALL','AL','AK','AZ','AR','CA','CO','CT','DC','DE','FL','GA','HI',
   'ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS',
@@ -128,7 +129,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
               key={s.id}
               onPress={() => setSelected(isSel ? null : s)}
               style={{
-                backgroundColor: isSel ? (isDark ? colors.surfaceVariant : colors.infoBg) : card,
+                backgroundColor: isSel ? (isDark ? colors.bgSubtle : colors.infoBg) : card,
                 borderRadius: 12, padding: 13, marginBottom: 8,
                 borderWidth: 1.5,
                 borderColor: isSel ? colors.primary : (colors.border),

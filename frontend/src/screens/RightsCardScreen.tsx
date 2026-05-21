@@ -23,6 +23,7 @@ import { getUserState, setUserState} from '../utils/userState';
 import { detectAndSaveUserState } from '../services/location';
 import * as secureStorage from '../utils/secureStorage';
 
+declare var data: any;
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
   'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
@@ -37,7 +38,7 @@ type CardData = {
   emergency: string[]; footer: string; generatedAt: string;
 };
 
-export default function RightsCardScreen({ navigation }: ScreenProps): JSX.Element {
+export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [cardError, setCardError] = React.useState<string|null>(null);
@@ -69,7 +70,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): JSX.Eleme
                     'starter_annual','pro_annual','consumer_intel_annual'].includes(sub.tier)) {
           setIsSubscriber(true);
         }
-      } catch (e) { __DEV__ && console.warn(e?.message); }
+      } catch (e: any) { __DEV__ && console.warn(e?.message); }
     });
 
     // Load user's saved state preference -- set during onboarding or Settings
@@ -136,7 +137,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): JSX.Eleme
           message: shareText },
         { dialogTitle: 'Share Your Rights Card' }
       );
-    } catch (e) {
+    } catch (e: any) {
       if (e.message !== 'User did not share') {
         Alert.alert('Could not share', e.message);
       }

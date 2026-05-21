@@ -1,3 +1,7 @@
+declare var window: any;
+declare var MediaRecorder: any;
+declare var navigator: any;
+
 /**
  * AppNavigator.tsx — Navigation structure
  * Contains all stack and tab navigators.
@@ -86,6 +90,7 @@ import MatterIntelligenceScreen from '../screens/MatterIntelligenceScreen';
 import { Analytics } from '../services/analytics';
 import HagueContactScreen from '../screens/HagueContactScreen';
 
+declare var navigationRef: any; // hoisted from component scope
 // ── Deep link configuration ────────────────────────────────────────────────────
 // Handles universal links (https://justicegavel.app/...) and
 // custom scheme (justicegavel://...) from push notifications,

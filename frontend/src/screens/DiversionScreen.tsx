@@ -20,6 +20,7 @@ import { ActivityIndicator, View, Text, StyleSheet, TouchableOpacity, ScrollView
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
+declare var data: any;
 // ── Diversion program data ────────────────────────────────────────────────────
 type DiversionType = {
   name: string;
@@ -150,7 +151,7 @@ const US_STATES = [
     'VA','WA','WV','WI','WY','DC',
   ];
 
-export default function DiversionScreen({ navigation, route }: ScreenProps): JSX.Element {
+export default function DiversionScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
@@ -160,16 +161,17 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): JSX
   React.useEffect(() => {
     setDivLoading(true);
     api.get("/lessons?category=Court%20Process&limit=5").then(r => {
-      const d = (r.data || []).find((l: Record<string, unknown>) => l.title?.toLowerCase().includes('diversion'));
+      const d = ((r as any).data || []).find((l: Record<string, unknown>) => l.title?.toLowerCase().includes('diversion'));
       if (d) setDiversionLesson(d);
     }).catch(() => { setDivError(true); }).finally(() => setDivLoading(false));
   }, []);
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     api.get('/lessons?category=Court%20Process&limit=5')
-      .then(r => { const d=(r.data||[]).find(l=>l.title?.toLowerCase().includes('diversion'));
+      .then(r => { const d=((r as any).data||[]).find(l=>l.title?.toLowerCase().includes('diversion'));
         if (d && mountedRef.current) setDiversionLesson(d); })
       .catch(() => { if (mountedRef.current) setDivError(true); });
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
@@ -177,7 +179,7 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): JSX
 
 
   const [step, setStep]       = useState<'form' | 'result'>('form');
-  const [state, setState]     = useState(route?.params?.state || '');
+  const [state, setState]     = useState((route?.params as any)?.state || '');
   const [charge, setCharge]   = useState('');
   const [prior, setPrior]     = useState('none');
   const [showState, setShowState] = useState(false);
@@ -432,7 +434,7 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): JSX
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 16 },
 
@@ -524,3 +526,6 @@ const styles = StyleSheet.create({
   prosecutorNoteTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 6 },
   prosecutorNoteBody:  { fontSize: 12, lineHeight: 18 },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

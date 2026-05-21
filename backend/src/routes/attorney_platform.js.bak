@@ -1,0 +1,728 @@
+/**
+ * attorney_platform.js — Attorney Practice Management Layer
+ *
+ * GET  /api/attorney/cases                  — list assigned cases
+ * POST /api/attorney/cases/:caseId/assign   — assign case to defender
+ * GET  /api/attorney/office                 — office member list
+ * POST /api/attorney/office/join            — join an office
+ *
+ * GET  /api/attorney/templates              — shared motion templates
+ * POST /api/attorney/templates              — create template
+ * PATCH /api/attorney/templates/:id/approve — supervisor approves template
+ * PATCH /api/attorney/templates/:id/status  — update template status
+ *
+ * GET  /api/attorney/cle                    — CLE courses list
+ * GET  /api/attorney/cle/:id               — course detail + content
+ * POST /api/attorney/cle/:id/complete      — mark completed, award credit
+ * GET  /api/attorney/cle/transcript        — attorney CLE transcript
+ *
+ * GET  /api/attorney/profile               — attorney profile + stats
+ * PATCH /api/attorney/profile              — update profile
+ */
+import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { Router }       from 'express';
+import { getDb }        from '../db/index.js';
+import { authRequired } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
+
+// ── Profile field sanitiser — strip HTML tags and control characters ───────────
+// Prevents stored XSS if profile data is ever rendered in a WebView context.
+// We strip rather than encode because our app renders in React Native Text
+// components (not HTML), so angle brackets are display artefacts not markup.
+function sanitiseField(value, maxLen = 500) {
+  if (typeof value !== 'string') return value;
+  return value
+    .replace(/<[^>]*>/g, '')          // strip HTML tags
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '') // strip control chars
+    .trim()
+    .slice(0, maxLen);
+}
+
+function sanitiseProfileFields(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const safe = {};
+  for (const [k, v] of Object.entries(obj)) {
+    safe[k] = typeof v === 'string' ? sanitiseField(v) : v;
+  }
+  return safe;
+}
+
+const router = Router();
+
+// ── Helper: ensure user is a defender ────────────────────────────────────────
+async function requireDefender(req, res) {
+  const db   = await getDb();
+  const user = await db.get('SELECT id, display_name, email, bar_number, bar_verified, jtb_verified, is_admin FROM users WHERE id=? LIMIT 50', [req.user.id]);
+  if (!user) { err401(res, 'Not found'); return null; }
+  // Accept is_defender flag OR attorney subscription
+  const sub = await db.get(
+    `SELECT tier FROM subscriptions WHERE user_id=? AND provider_type='lawyer'
+     AND status IN ('active','trialing') LIMIT 1`, [req.user.id]
+  ).catch(() => null);
+  if (!user.is_defender && !sub) {
+    return res.status(403).json({ error: 'Attorney account required' });
+  }
+  return { db, user };
+}
+
+// ── CASES ─────────────────────────────────────────────────────────────────────
+
+// GET /api/attorney/cases — all cases assigned to this defender
+router.get('/cases', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db } = ctx;
+    const cases = await db.all(
+      `SELECT c.*, ca.assigned_at, ca.status as assignment_status, ca.notes as assignment_notes,
+              u.name as client_name, u.email as client_email
+       FROM cases c
+       JOIN case_assignments ca ON ca.case_id = c.id
+       LEFT JOIN users u ON u.id = c.user_id
+       WHERE ca.defender_id = ? AND ca.status = 'active'
+       ORDER BY c.next_court_date ASC NULLS LAST, ca.assigned_at DESC`,
+      [req.user.id]
+    );
+    return res.json({ cases, count: cases.length });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// POST /api/attorney/cases/:caseId/assign — assign case to self or another defender
+router.post('/cases/:caseId/assign', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db } = ctx;
+    const { defender_id, notes = '' } = req.body;
+
+  if (notes) notes = truncateStr(notes, 2000);    const assignTo = defender_id || req.user.id;
+    const { caseId } = req.params;
+
+    // Verify case exists
+    const cas = await db.get('SELECT id FROM cases WHERE id=?', [caseId]);
+    if (!cas) return err404(res, 'Case not found');
+
+    await db.run(
+      `INSERT OR REPLACE INTO case_assignments
+       (case_id, defender_id, assigned_by, office_id, status, notes, assigned_at)
+       VALUES (?,?,?,?,?,?,datetime('now'))`,
+      [caseId, assignTo, req.user.id, ctx.user.office_id || null, 'active', notes]
+    );
+    return res.status(201).json({ ok: true, case_id: caseId, defender_id: assignTo });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// GET /api/attorney/office — office member list
+router.get('/office', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db, user } = ctx;
+    if (!user.office_id) return res.json({ members: [], office_id: null });
+    const members = await db.all(
+      `SELECT om.*, u.name, u.email,
+              COUNT(DISTINCT ca.case_id) as active_cases
+       FROM office_members om
+       JOIN users u ON u.id = om.user_id
+       LEFT JOIN case_assignments ca ON ca.defender_id = om.user_id AND ca.status='active'
+       WHERE om.office_id = ? AND om.active = 1
+       GROUP BY om.id
+       ORDER BY om.role DESC, u.name ASC`,
+      [user.office_id]
+    );
+    return res.json({ members, office_id: user.office_id });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// POST /api/attorney/office/join — join an office
+router.post('/office/join', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db } = ctx;
+    const { office_id, office_name, role = 'attorney' } = req.body;
+
+  if (office_name) office_name = truncateStr(office_name, 200);    if (!office_id || !office_name) return err400(res, 'office_id and office_name required');
+
+    await db.run(`UPDATE users SET office_id=? WHERE id=?`, [office_id, req.user.id]);
+    await db.run(
+      `INSERT OR IGNORE INTO office_members (office_id, office_name, user_id, role)
+       VALUES (?,?,?,?)`,
+      [office_id, office_name, req.user.id, role]
+    );
+    return res.status(201).json({ ok: true, office_id, role });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// ── MOTION TEMPLATES ──────────────────────────────────────────────────────────
+
+// GET /api/attorney/templates — all templates for this user's office
+router.get('/templates', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db, user } = ctx;
+    const { status = 'approved' } = req.query;
+    const templates = await db.all(
+      `SELECT mt.*, u.name as created_by_name, a.name as approved_by_name
+       FROM motion_templates mt
+       LEFT JOIN users u ON u.id = mt.created_by
+       LEFT JOIN users a ON a.id = mt.approved_by
+       WHERE mt.office_id = ? AND (? = 'all' OR mt.status = ?)
+       ORDER BY mt.status = 'approved' DESC, mt.created_at DESC`,
+      [user.office_id || '', status, status]
+    );
+    return res.json({ templates, count: templates.length });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// POST /api/attorney/templates — create a new template
+router.post('/templates', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db, user } = ctx;
+    const { motion_type, title, content, notes = '' } = req.body;
+  if (title) title = truncateStr(String(title), 300);
+  if (notes) notes = truncateStr(String(notes), 2000);
+
+  if (content) content = truncateStr(content, 5000);    if (!motion_type || !title || !content)
+      return err400(res, 'motion_type, title, content required');
+
+    const r = await db.run(
+      `INSERT INTO motion_templates (office_id, motion_type, title, content, notes, created_by, status)
+       VALUES (?,?,?,?,?,?,?)`,
+      [user.office_id || '', motion_type, title, content, notes, req.user.id,
+       user.office_id ? 'pending' : 'approved']  // no office = self-approved
+    );
+    return res.status(201).json({ ok: true, id: r.lastID, status: user.office_id ? 'pending' : 'approved' });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// PATCH /api/attorney/templates/:id/approve — supervisor approves a template
+router.patch('/templates/:id/approve', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db, user } = ctx;
+    const { approved, rejection_reason = '' } = req.body;
+
+    // Only admin/supervisor role can approve
+    const membership = await db.get(
+      `SELECT role FROM office_members WHERE user_id=? AND office_id=?`,
+      [req.user.id, user.office_id || '']
+    ).catch(() => null);
+    if (!membership || !['admin','supervisor'].includes(membership.role))
+      return res.status(403).json({ error: 'Supervisor or admin role required to approve templates' });
+
+    await db.run(
+      `UPDATE motion_templates SET status=?, approved_by=?, approved_at=datetime('now'),
+       notes = CASE WHEN ? !== '' THEN notes || char(10) || 'Reviewer: ' || ? ELSE notes END
+       WHERE id=? AND office_id=?`,
+      [approved ? 'approved' : 'rejected', req.user.id,
+       rejection_reason, rejection_reason,
+       safeInt(req.params.id), user.office_id || '']
+    );
+    return res.json({ ok: true, status: approved ? 'approved' : 'rejected' });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// ── CLE COURSES ───────────────────────────────────────────────────────────────
+
+// GET /api/attorney/cle — course list with completion status
+router.get('/cle', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db } = ctx;
+    const courses = await db.all(
+      `SELECT c.*,
+              cc.completed_at, cc.credit_hours as earned_hours, cc.certificate_id
+       FROM cle_courses c
+       LEFT JOIN cle_completions cc ON cc.course_id = c.id AND cc.user_id = ?
+       WHERE c.active = 1
+       ORDER BY cc.completed_at IS NULL DESC, c.category, c.title`,
+      [req.user.id]
+    );
+    const totalEarned = courses.reduce((s,c) => s + (c.earned_hours || 0), 0);
+    return res.json({ courses, total_earned: totalEarned });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// GET /api/attorney/cle/transcript — CLE transcript for this attorney
+router.get('/cle/transcript', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db, user } = ctx;
+    const completions = await db.all(
+      `SELECT cc.*, c.title, c.category, c.difficulty
+       FROM cle_completions cc
+       JOIN cle_courses c ON c.id = cc.course_id
+       WHERE cc.user_id = ?
+       ORDER BY cc.completed_at DESC`,
+      [req.user.id]
+    );
+    const totalHours = completions.reduce((s,c) => s + (c.credit_hours || 0), 0);
+    return res.json({
+      attorney_name: user.name,
+      bar_number:    user.bar_number || null,
+      completions,
+      total_hours:   totalHours,
+      generated_at:  new Date().toISOString(),
+    });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// GET /api/attorney/cle/:id — course detail with full content
+router.get('/cle/:id', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db } = ctx;
+    const course = await db.get('SELECT id, title, description, category, credits, duration_min, url FROM cle_courses WHERE id=? AND active=1', [safeInt(req.params.id)]);
+    if (!course) return err404(res, 'Course not found');
+    const completion = await db.get(
+      'SELECT id, user_id, course_id, completed_at, credits_earned FROM cle_completions WHERE user_id=? AND course_id=?',
+      [req.user.id, safeInt(req.params.id)]
+    ).catch(() => null);
+    return res.json({ ...course, completion: completion || null });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// POST /api/attorney/cle/:id/complete — mark course complete, award credit
+router.post('/cle/:id/complete', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db, user } = ctx;
+    const course = await db.get('SELECT id, title, description, category, credits, duration_min, url FROM cle_courses WHERE id=? AND active=1', [safeInt(req.params.id)]);
+    if (!course) return err404(res, 'Course not found');
+
+    // Idempotent — no error if already completed
+    const existing = await db.get(
+      'SELECT id, user_id, course_id, completed_at, credits_earned FROM cle_completions WHERE user_id=? AND course_id=?',
+      [req.user.id, safeInt(req.params.id)]
+    ).catch(() => null);
+    if (existing) return res.json({ ok: true, already_completed: true, completion: existing });
+
+    const certId = `JG-${req.user.id}-${safeInt(req.params.id)}-${Date.now()}`;
+    await db.run(
+      `INSERT INTO cle_completions (user_id, course_id, bar_number, credit_hours, certificate_id)
+       VALUES (?,?,?,?,?)`,
+      [req.user.id, safeInt(req.params.id), user.bar_number || null, course.credit_hours, certId]
+    );
+    return res.json({
+      ok: true,
+      credit_hours:  course.credit_hours,
+      certificate_id: certId,
+      message: `${course.credit_hours} CLE credit hour${course.credit_hours !== 1 ? 's' : ''} awarded`,
+    });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// ── PROFILE ───────────────────────────────────────────────────────────────────
+
+// GET /api/attorney/profile
+router.get('/profile', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db } = ctx;
+    const user = ctx.user;
+
+    const [activeCases, completedMotions, cleHours, avgRating] = await Promise.all([
+      db.get(`SELECT COUNT(*) as n FROM case_assignments WHERE defender_id=? AND status='active'`, [req.user.id]).catch(() => ({n:0})),
+      db.get(`SELECT COUNT(*) as n FROM motions WHERE user_id=?`, [req.user.id]).catch(() => ({n:0})),
+      db.get(`SELECT COALESCE(SUM(credit_hours),0) as hrs FROM cle_completions WHERE user_id=?`, [req.user.id]).catch(() => ({hrs:0})),
+      await db.get(`SELECT AVG(rating) as avg, COUNT(*) as cnt FROM reviews WHERE entity_type='lawyer' AND entity_id=?`, [req.user.id]).catch(() => ({avg:null,cnt:0})),
+    ]);
+
+    return res.json({
+      id:            user.id,
+      name:          user.name,
+      email:         user.email,
+      bar_number:       user.bar_number,
+      bar_state:        user.bar_state,
+      bar_verified:     !!user.bar_verified,
+      pending_bar_verification: !!user.pending_bar_verification,
+      office_id:        user.office_id,
+      is_defender:      user.is_defender,
+      gavel_level:      user.gavel_level || 0,
+      subscription_tier: user.subscription || 'basic',
+      office_name:      user.office_name,
+      bio:              user.bio,
+      phone:            user.phone,
+      specialties:      user.specialties ? (() => { try { return JSON.parse(user.specialties); } catch { return []; } })().catch?.() || [] : [],
+      stats: {
+        active_cases:       activeCases.n,
+        motions_generated:  completedMotions.n,
+        cle_hours_earned:   avgRating.hrs || cleHours.hrs,
+        avg_rating:         avgRating.avg ? Math.round(avgRating.avg * 10) / 10 : null,
+        review_count:       avgRating.cnt,
+      },
+    });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// PATCH /api/attorney/profile
+router.patch('/profile', authRequired, async (req, res) => {
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+    const { db } = ctx;
+    const { bar_number, is_defender } = req.body;
+    const updates = [];
+    const params  = [];
+    if (bar_number !== undefined) { updates.push('bar_number=?');  params.push(bar_number); }
+    if (is_defender !== undefined){ updates.push('is_defender=?'); params.push(is_defender ? 1 : 0); }
+    if (!updates.length) return err400(res, 'No fields to update');
+    params.push(req.user.id);
+    await db.run(`UPDATE users SET ${updates.join(',')} WHERE id=?`, params);
+    return res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// ── Weekly availability schedule ──────────────────────────────────────────────
+
+// GET /api/attorney/profile/availability
+router.get('/profile/availability', authRequired, async (req, res) => {
+  try {
+    const db  = await getDb();
+    const row = await db.get(
+      'SELECT weekly_availability, availability_note FROM lawyers WHERE user_id=?',
+      [req.user.id]
+    );
+    const schedule = row?.weekly_availability
+      ? JSON.parse(row.weekly_availability)
+      : {};
+    return res.json({ schedule, note: row?.availability_note || '' });
+  } catch {
+    return res.status(500).json({ error: 'Could not load availability.' });
+  }
+});
+
+// PUT /api/attorney/profile/availability
+router.put('/profile/availability', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const { schedule = {}, note = '' } = req.body;
+
+    // Validate: only known day/slot values accepted
+    const DAYS  = ['mon','tue','wed','thu','fri','sat','sun'];
+    const SLOTS = ['morning','afternoon','evening'];
+    const clean = {};
+    for (const day of DAYS) {
+      if (Array.isArray(schedule[day])) {
+        clean[day] = schedule[day].filter((s) => SLOTS.includes(s));
+      }
+    }
+
+    await db.run(
+      `UPDATE lawyers SET weekly_availability=?, availability_note=?,
+       updated_at=datetime('now') WHERE user_id=?`,
+      [JSON.stringify(clean), String(note).slice(0, 200), req.user.id]
+    );
+    return res.json({ ok: true, schedule: clean });
+  } catch {
+    return res.status(500).json({ error: 'Could not save availability.' });
+  }
+});
+
+;
+
+// POST /api/attorney/verify-bar — attorney submits bar number for verification
+// Sets bar_verified=0 (pending) initially; JTB admin reviews and flips to 1
+// ── State Bar Lookup URLs — for human verification step ───────────────────────
+// Every URL is the official state bar attorney search page.
+// Admin team uses these during the 1–2 business day review period.
+// Last verified: April 2026
+const STATE_BAR_LOOKUP = {
+  AL: 'https://www.alabar.org/for-the-public/find-a-lawyer/',
+  AK: 'https://www.alaskabar.org/for-the-public/find-an-attorney/',
+  AZ: 'https://www.azbar.org/for-the-public/attorney-search/',
+  AR: 'https://www.arkbar.com/for-the-public/find-a-lawyer',
+  CA: 'https://apps.calbar.ca.gov/attorney/Licensee/Detail/',
+  CO: 'https://www.cobar.org/For-the-Public/Find-A-Lawyer',
+  CT: 'https://www.ctbar.org/public/find-a-lawyer',
+  DE: 'https://www.dsba.org/for-the-public/find-an-attorney/',
+  DC: 'https://www.dcbar.org/for-the-public/find-a-member/',
+  FL: 'https://www.floridabar.org/directories/find-mbr/',
+  GA: 'https://www.gabar.org/for-the-public/find-a-lawyer.cfm',
+  HI: 'https://www.hawaiilawyerreferral.com/',
+  ID: 'https://isb.idaho.gov/member-search/',
+  IL: 'https://www.illinoislawyerfinder.com/',
+  IN: 'https://www.inbar.org/findlawyer/',
+  IA: 'https://www.iowabar.org/find-an-attorney/',
+  KS: 'https://www.ksbar.org/find-a-lawyer',
+  KY: 'https://www.kybar.org/find-a-lawyer/',
+  LA: 'https://www.lsba.org/public/find-a-lawyer.aspx',
+  ME: 'https://www.mainebar.org/page/findalawyer',
+  MD: 'https://www.msba.org/for-the-public/find-a-lawyer/',
+  MA: 'https://www.massbbo.org/licensed-attorneys/',
+  MI: 'https://www.michbar.org/member/attorney_search',
+  MN: 'https://lprb.mncourts.gov/attorney-directory/',
+  MS: 'https://www.msbar.org/for-the-public/find-a-lawyer/',
+  MO: 'https://www.mobar.org/find-a-lawyer/',
+  MT: 'https://montanabar.org/findlawyer/',
+  NE: 'https://www.nebar.com/find-a-lawyer/',
+  NV: 'https://www.nvbar.org/find-a-lawyer/',
+  NH: 'https://www.nhbar.org/find-a-lawyer/',
+  NJ: 'https://www.njlawpublichub.com/attorney-search/',
+  NM: 'https://www.nmbar.org/for-the-public/find-an-attorney/',
+  NY: 'https://iapps.courts.state.ny.us/attorneyservices/search',
+  NC: 'https://www.ncbar.gov/member-services/attorney-search/',
+  ND: 'https://www.sband.org/find-a-lawyer/',
+  OH: 'https://www.supremecourt.ohio.gov/attorney-services/attorney-status/',
+  OK: 'https://www.okbar.org/find-a-lawyer/',
+  OR: 'https://www.osbar.org/public/ris/memberDirectory.html',
+  PA: 'https://www.padisciplinaryboard.org/for-the-public/find-attorney/',
+  RI: 'https://www.ribar.com/public-resources/find-a-lawyer/',
+  SC: 'https://www.scbar.org/find-a-lawyer/',
+  SD: 'https://statebarofsouthdakota.com/find-a-lawyer/',
+  TN: 'https://www.tba.org/member-services/find-an-attorney/',
+  TX: 'https://www.texasbar.com/AM/Template.cfm?Section=Find_A_Lawyer',
+  UT: 'https://www.utahbar.org/public-information/attorney-search/',
+  VT: 'https://www.vtbar.org/public/find-a-lawyer/',
+  VA: 'https://www.vsb.org/site/publications/member_search',
+  WA: 'https://www.mywsba.org/PersonifyEbusiness/WSBAOnline/SearchLawyersAndParalegals.aspx',
+  WV: 'https://wvbar.org/for-the-public/find-a-lawyer/',
+  WI: 'https://www.wisbar.org/forPublic/Pages/find-a-lawyer.aspx',
+  WY: 'https://www.wyomingbar.org/for-the-public/hire-a-lawyer/',
+};
+
+router.post('/verify-bar', authRequired, async (req, res) => {
+  /**
+   * Attorney bar verification — Phase 1 of a two-phase process.
+   *
+   * PHASE 1 (this route): Attorney submits bar number + state.
+   *   - Stored as pending_bar_verification = 1
+   *   - bar_verified remains 0 (JTB badge NOT granted yet)
+   *   - Admin notified by email with direct link to state bar lookup
+   *
+   * PHASE 2 (POST /approve-verification — admin only):
+   *   - Admin manually checks bar number at STATE_BAR_LOOKUP[state]
+   *   - Confirms license is ACTIVE and attorney is in GOOD STANDING
+   *   - Grants bar_verified=1, jtb_verified=1
+   *   - Attorney notified by push + email
+   *
+   * IMPORTANT: The JTB Verified badge MUST NOT be granted automatically.
+   * Users facing criminal charges rely on this badge to assess attorney
+   * credibility. Automated bypass would constitute deceptive advertising
+   * and expose the company to FTC enforcement and state bar complaints.
+   */
+  try {
+    const ctx = await requireDefender(req, res);
+    if (!ctx) return;
+
+    const { bar_number, state } = req.body || {};
+    if (!bar_number || !state) {
+      return err400(res, 'bar_number and state required');
+    }
+
+    // Validate state code
+    const VALID_STATES = new Set([
+      'AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN',
+      'IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH',
+      'NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT',
+      'VT','VA','WA','WV','WI','WY',
+    ]);
+    const stateUpper = state.trim().toUpperCase();
+    if (!VALID_STATES.has(stateUpper)) {
+      return err400(res, 'Invalid state code. Use a 2-letter US state abbreviation (e.g. TN, CA).');
+    }
+
+    // Validate bar number format (3–20 chars, alphanumeric)
+    const cleanBar = bar_number.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    if (cleanBar.length < 3 || cleanBar.length > 20) {
+      return err400(res, 'Bar number must be 3–20 characters.');
+    }
+
+    const { db, user } = ctx;
+
+    // ── Atomic check-then-write using transaction ──────────────────────────────
+    // Without a transaction, two concurrent requests could both pass the
+    // "already verified" check and both set pending=1. BEGIN IMMEDIATE acquires
+    // a write lock so only one request can execute this block at a time.
+    await db.exec('BEGIN IMMEDIATE').catch(() => {}); // SQLite WAL mode
+    let current;
+    try {
+      current = await db.get(
+        'SELECT bar_verified, pending_bar_verification FROM users WHERE id=?',
+        [req.user.id]
+      );
+    } catch { await db.exec('ROLLBACK').catch(() => {}); throw new Error('DB read failed'); }
+
+    if (current?.bar_verified) {
+      await db.exec('ROLLBACK').catch(() => {});
+      return res.json({ ok: true, status: 'already_verified', message: 'Your bar number is already verified.' });
+    }
+
+    // Store bar submission — pending, not verified
+    await db.run(
+      `UPDATE users
+         SET bar_number              = ?,
+             bar_state               = ?,
+             pending_bar_verification = 1,
+             bar_verified             = 0,
+             bar_submitted_at         = datetime('now')
+       WHERE id = ?`,
+      [cleanBar, stateUpper, req.user.id]
+    );
+
+    // Mirror to provider record
+    const provider = await db.get(
+      'SELECT id FROM lawyers WHERE email=? LIMIT 1',
+      [user.email || '']
+    ).catch(() => null);
+
+    if (provider) {
+      await db.run(
+        `UPDATE lawyers
+           SET bar_number          = ?,
+               bar_state           = ?,
+               bar_verified         = 0,
+               pending_verification = 1
+         WHERE id = ?`,
+        [cleanBar, stateUpper, provider.id]
+      );
+    }
+
+    await db.exec('COMMIT').catch(() => {});
+
+    // Build admin lookup link
+    const lookupUrl = STATE_BAR_LOOKUP[stateUpper]
+      || 'https://www.americanbar.org/tools/find-a-lawyer/';
+    const adminUrl  = `${process.env.ADMIN_PANEL_URL || 'https://admin.justicegavel.app'}/verify/${req.user.id}`;
+
+    // Notify admin team
+    const { sendEmail } = await import('../services/sendgrid.js');
+    await sendEmail({
+      to:      process.env.ADMIN_EMAIL || 'admin@justicegavel.app',
+      subject: `[JTB Verify] Bar submission — ${cleanBar} (${stateUpper}) from ${user.email}`,
+      text: [
+        `Attorney email: ${user.email}`,
+        `Bar number:     ${cleanBar}`,
+        `State:          ${stateUpper}`,
+        `Submitted:      ${new Date().toISOString()}`,
+        ``,
+        `STEP 1 — Look up at official state bar:`,
+        lookupUrl,
+        ``,
+        `Search for: ${cleanBar}`,
+        `Confirm status is: ACTIVE / IN GOOD STANDING`,
+        ``,
+        `STEP 2 — Approve or reject in admin panel:`,
+        adminUrl,
+        ``,
+        `Do NOT approve if: suspended, disbarred, inactive, or name does not match.`,
+      ].join('\n'),
+      html: `
+        <h2>Bar Verification Request</h2>
+        <table>
+          <tr><td><b>Attorney:</b></td><td>${user.email}</td></tr>
+          <tr><td><b>Bar number:</b></td><td>${cleanBar}</td></tr>
+          <tr><td><b>State:</b></td><td>${stateUpper}</td></tr>
+          <tr><td><b>Submitted:</b></td><td>${new Date().toISOString()}</td></tr>
+        </table>
+        <p><a href="${lookupUrl}" style="font-size:16px;font-weight:bold">
+          → Look up ${cleanBar} at ${stateUpper} State Bar
+        </a></p>
+        <p style="color:#666">Confirm: ACTIVE and IN GOOD STANDING before approving.</p>
+        <p><a href="${adminUrl}" style="background:#042C53;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">
+          Approve or Reject in Admin Panel
+        </a></p>
+      `,
+    }).catch(err => logger.error('[bar-verify email]', err.message));
+
+    return res.json({
+      ok:         true,
+      status:     'pending_review',
+      message:    'Bar number submitted. Our team verifies each submission against your state bar\'s official records. You will receive a notification within 1–2 business days.',
+      bar_number: cleanBar,
+      state:      stateUpper,
+    });
+  } catch (e) {
+    logger.error('[attorney/verify-bar]', e.message);
+    return res.status(500).json({ error: 'Could not submit verification. Please try again.' });
+  }
+});
+
+// ── POST /approve-verification — Admin grants or rejects JTB Verified ─────────
+// Called by the admin team after manually confirming bar status at state bar website.
+router.post('/approve-verification', authRequired, async (req, res) => {
+  try {
+    const db    = await getDb();
+    const admin = await db.get('SELECT role FROM users WHERE id=?', [req.user.id]);
+    if (admin?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required.' });
+    }
+
+    const { attorney_user_id, approved, rejection_reason, verified_by } = req.body || {};
+    if (!attorney_user_id || typeof approved !== 'boolean') {
+      return err400(res, 'attorney_user_id (number) and approved (boolean) required');
+    }
+
+    const attorney = await db.get('SELECT id, email, phone, name, type, user_type, avatar_url, created_at, bar_number, bar_verified, bar_state, office_id, is_defender, gavel_level, golden_gavel, subscription, push_token, lang, notifs_enabled FROM users WHERE id=?', [attorney_user_id]);
+    if (!attorney) return err404(res, 'Attorney not found.');
+
+    const { sendEmail } = await import('../services/sendgrid.js');
+    const { sendPushToUser } = await import('../services/pushDelivery.js');
+
+    if (approved) {
+      // Grant the JTB Verified badge
+      await db.run(
+        `UPDATE users
+           SET bar_verified              = 1,
+               pending_bar_verification   = 0,
+               bar_verified_at            = datetime('now'),
+               bar_verified_by            = ?
+         WHERE id = ?`,
+        [verified_by || req.user.id, attorney_user_id]
+      );
+      await db.run(
+        `UPDATE lawyers
+           SET bar_verified      = 1,
+               jtb_verified      = 1,
+               pending_verification = 0
+         WHERE email = ?`,
+        [attorney.email]
+      );
+      await sendEmail({
+        to:      attorney.email,
+        subject: 'Justice Gavel — Bar Verification Approved ✅',
+        text:    'Congratulations — your bar number has been verified. The JTB Verified badge is now active on your Justice Gavel profile. Thank you for helping us maintain a trusted network of attorneys.',
+      }).catch(() => {});
+      await sendPushToUser(attorney_user_id, {
+        title: '✅ Bar Verified — JTB Badge Active',
+        body:  'Your Justice Gavel JTB Verified badge is now live on your profile.',
+        data:  { screen: 'AttorneyDashboard' },
+      }).catch(() => {});
+    } else {
+      // Reject — clear pending, leave bar_verified=0
+      await db.run(
+        `UPDATE users
+           SET pending_bar_verification = 0,
+               bar_rejection_reason      = ?
+         WHERE id = ?`,
+        [rejection_reason || 'Could not verify bar status with the state bar.', attorney_user_id]
+      );
+      await db.run(
+        `UPDATE lawyers SET pending_verification = 0 WHERE email = ?`,
+        [attorney.email]
+      );
+      await sendEmail({
+        to:      attorney.email,
+        subject: 'Justice Gavel — Bar Verification Update',
+        text:    `We were unable to verify your bar number at this time.\n\nReason: ${rejection_reason || 'Could not confirm active status with your state bar.'}\n\nIf you believe this is an error, please contact support@justicegavel.app with your full name, bar number, and state.`,
+      }).catch(() => {});
+    }
+
+    return res.status(201).json({ ok: true, approved, attorney_user_id });
+  } catch (e) {
+    logger.error('[attorney/approve-verification]', e.message);
+    return res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+export default router;

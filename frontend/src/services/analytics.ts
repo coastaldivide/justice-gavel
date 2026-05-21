@@ -138,6 +138,8 @@ export const Analytics = {
 
   onboardingCompleted: (skipped: boolean) =>
     track('onboarding_completed', { skipped }),
+  track,  // expose the raw track function
+
 };
 
 export default Analytics;

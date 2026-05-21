@@ -1,0 +1,20 @@
+
+google-services.json
+GoogleService-Info.plist
+electron-dist/
+web-build/
+# Local env files
+.env
+.env.local
+.env.*.local
+
+*.pem
+*.p12
+*.key
+*.cert
+.env.production
+.env.staging
+pc-api-key.json
+
+# Sentry auth token — add real token via EAS Secrets, not this file
+# sentry.properties

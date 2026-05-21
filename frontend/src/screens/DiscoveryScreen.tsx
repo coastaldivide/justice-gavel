@@ -23,13 +23,19 @@
  */
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Animated, Share, Clipboard } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Clipboard, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FileSystem, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { api } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 
+declare var load: any;
+declare var refreshing: any;
+declare var setRefreshing: any;
+declare var expanded: any; // hoisted from component scope
+declare var mountedRef: any; // hoisted from component scope
+declare var setExpanded: any; // hoisted from component scope
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Analysis {
   id?:             number;
@@ -81,18 +87,18 @@ function ProgressBar({ active }: { active: boolean }) {
 // ── Confidence tag helpers ───────────────────────────────────────────────────
 function ConfidenceTag({ text }: { text: string }) {
   if (text.startsWith('[STRONG]'))  return (
-    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.emergencyDark,
-      backgroundColor: colors.emergencyBg, paddingHorizontal: 5, paddingVertical: 2,
+    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.emergencyDark,
+      backgroundColor: COLORS.emergencyBg, paddingHorizontal: 5, paddingVertical: 2,
       borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>STRONG</Text>
   );
   if (text.startsWith('[NOTABLE]')) return (
-    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.warnDark,
-      backgroundColor: colors.warnBg, paddingHorizontal: 5, paddingVertical: 2,
+    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.warnDark,
+      backgroundColor: COLORS.warnBg, paddingHorizontal: 5, paddingVertical: 2,
       borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>NOTABLE</Text>
   );
   if (text.startsWith('[POSSIBLE]')) return (
-    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textSecond,
-      backgroundColor: colors.bgSubtle, paddingHorizontal: 5, paddingVertical: 2,
+    <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.textSecond,
+      backgroundColor: COLORS.bgSubtle, paddingHorizontal: 5, paddingVertical: 2,
       borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>POSSIBLE -- verify</Text>
   );
   const [expanded, setExpanded] = useState(true);
@@ -113,6 +119,7 @@ function Section({
   onItemPress?: (item: string) => void;
 }) {
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -154,10 +161,10 @@ function Section({
                   {numbered ? String(i + 1) : '›'}
                 </Text>
               </View>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.itemText, { color: colors.textSecond }]} selectable={true}>{item}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.itemText, { color: COLORS.textSecond }]} selectable={true}>{item}</Text>
             </TouchableOpacity>
           ))}
-          <Text maxFontSizeMultiplier={1.4} style={[styles.tapToCopy, { color: colors.textMuted }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.tapToCopy, { color: COLORS.textMuted }]}>
             Tap any item to copy
           </Text>
         </View>
@@ -167,26 +174,26 @@ function Section({
 }
 
 // ── History item ──────────────────────────────────────────────────────────────
-function HistoryRow({ item, onOpen, onDelete }: Record<string,unknown>) {
+function HistoryRow({ item, onOpen, onDelete }: any) {
   const { colors } = useTheme();
   return (
     <TouchableOpacity
-      style={[styles.histRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
+      style={[styles.histRow, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
       onPress={() => onOpen(item)}
       accessibilityRole="button"
     >
-      <View style={[styles.histDocIcon, { backgroundColor: colors.bgSubtle }]}>
+      <View style={[styles.histDocIcon, { backgroundColor: COLORS.bgSubtle }]}>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>📄</Text>
       </View>
       <View style={{ flex: 1 }}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.histFilename, { color: colors.textPrimary }]}
+        <Text maxFontSizeMultiplier={1.4} style={[styles.histFilename, { color: COLORS.textPrimary }]}
           numberOfLines={1}>{item.filename}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.histMeta, { color: colors.textMuted }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.histMeta, { color: COLORS.textMuted }]}>
           {item.doc_type}
           {item.page_count > 0 ? `  ·  ${item.page_count}p` : ''}
           {item.inconsistencies_count > 0 ? `  ·  ${item.inconsistencies_count} flags` : ''}
         </Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.histDate, { color: colors.textMuted }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.histDate, { color: COLORS.textMuted }]}>
           {new Date(item.created_at).toLocaleDateString('en-US', {
             month: 'short', day: 'numeric', year: 'numeric'
           })}
@@ -198,7 +205,7 @@ function HistoryRow({ item, onOpen, onDelete }: Record<string,unknown>) {
         style={styles.histDelete}
         accessibilityLabel="Delete analysis"
       >
-        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 16 }}>✕</Text>
+        <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 16 }}>✕</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -220,7 +227,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
   }, []);
   const { colors, isDark } = useTheme();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
-  const { caseId, caseTitle } = route?.params ?? {};
+  const { caseId, caseTitle } = (route?.params as any) ?? {};
 
   const [phase,     setPhase]     = useState<Phase>('upload');
   const [file,      setFile]      = useState<{ name: string; uri: string; size: number } | null>(null);
@@ -288,7 +295,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
         return;
       }
       setFile({ name: asset.name, uri: asset.uri, size: asset.size || 0 });
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Could not open file', e.message);
     }
   }, []);
@@ -356,7 +363,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
 
       // Clean up cached PDF
       await FileSystem.deleteAsync(file.uri, { idempotent: true }).catch((e) => { __DEV__ && console.warn(e?.message); });
-    } catch (e) {
+    } catch (e: any) {
       const msg = e.response?.data?.error || e.message || 'Analysis failed.';
       Alert.alert('Analysis failed', msg + '\n\nTry a smaller PDF or check your connection.', [
         { text: 'Try again', onPress: () => setPhase('upload') },
@@ -374,7 +381,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
       const res = await api.get('/discovery/history');
       setHistory(res.data || []);
       setPhase('history');
-    } catch (e) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
     setHistLoad(false);
   }, []);
 
@@ -415,7 +422,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
     ].filter(Boolean).join('\n');
     try {
       await Share.share({ message: text, title: analysis.filename });
-    } catch (shareErr) {
+    } catch (shareErr: any) {
       // Share API unavailable on this browser/device — fail silently
     }
   }, [analysis]);
@@ -741,7 +748,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
 
   // Upload
@@ -851,3 +858,6 @@ const styles = StyleSheet.create({
   discussBtn:     { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', marginBottom: 8 },
   discussBtnText: { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: 0.3 },
   inconsistNote:  { fontSize: 11, fontStyle: 'italic', marginBottom: 6, paddingHorizontal: 4 } });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

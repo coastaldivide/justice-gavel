@@ -2,7 +2,7 @@
   "name": "justicegavel",
   "version": "5.89.11",
   "private": true,
-  "main": "electron/main.js",
+  "main": "index.js",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -16,7 +16,12 @@
     "electron:dev": "ELECTRON_START_URL=http://localhost:8081 electron electron/main.js",
     "electron:build": "expo export --platform web --output-dir web-build && electron-builder",
     "electron:pack": "electron-builder --dir",
-    "electron:dmg": "expo export --platform web --output-dir web-build && electron-builder --mac dmg"
+    "electron:dmg": "expo export --platform web --output-dir web-build && electron-builder --mac dmg",
+    "typecheck": "tsc --noEmit",
+    "typecheck:report": "bash ../scripts/tsc-error-report.sh --save",
+    "typecheck:ci": "bash ../scripts/typecheck.sh --summary",
+    "build:check": "bash ../scripts/build-check.sh web",
+    "ci": "bash ../scripts/check-all.sh"
   },
   "dependencies": {
     "@expo/metro-runtime": "^55.0.10",
@@ -61,7 +66,7 @@
     "react-native-svg": "^15.2.0",
     "react-native-web": "^0.21.2"
   },
-  "description": "Justice Gavel — Justice, in your hands.",
+  "description": "Justice Gavel \u2014 Justice, in your hands.",
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-typescript": "^7.28.5",
@@ -79,7 +84,7 @@
   "build": {
     "appId": "app.justicegavel.desktop",
     "productName": "Justice Gavel",
-    "copyright": "Copyright © 2026 Justice Gavel",
+    "copyright": "Copyright \u00a9 2026 Justice Gavel",
     "directories": {
       "output": "electron-dist",
       "buildResources": "assets"

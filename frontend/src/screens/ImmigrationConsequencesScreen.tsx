@@ -18,7 +18,7 @@ import React, { useState, useCallback } from 'react';
   const [fetchError, setFetchError] = useState<string>('');
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl , ActivityIndicator} from 'react-native';
-import { useTheme, RADIUS } from '../constants/theme';
+import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 
 type Tab = 'consequences' | 'status';
 
@@ -104,7 +104,7 @@ const STATUS_SECTIONS = [
   },
 ];
 
-export default function ImmigrationConsequencesScreen(): JSX.Element {
+export default function ImmigrationConsequencesScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -180,4 +180,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   ctaText:       { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   disclaimer:    { borderTopWidth: 1, paddingTop: 12 },
   disclaimerText:{ fontSize: 11, lineHeight: 17, textAlign: 'center' },
+  card: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  cardBody: { fontSize: 14, lineHeight: 20, color: colors.textSecond },
 });

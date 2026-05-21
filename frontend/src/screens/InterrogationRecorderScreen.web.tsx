@@ -1,3 +1,7 @@
+declare var window: any;
+declare var MediaRecorder: any;
+declare var navigator: any;
+
 /**
  * InterrogationRecorderScreen.web.tsx -- Web version
  *
@@ -16,7 +20,7 @@ import { api } from '../services/api';
 
 type Step = 'idle' | 'recording' | 'uploading' | 'done' | 'error';
 
-export default function InterrogationRecorderScreen(): JSX.Element {
+export default function InterrogationRecorderScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [step,       setStep]       = useState<Step>('idle');

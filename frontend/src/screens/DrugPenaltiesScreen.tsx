@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import {View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { api, cachedGet } from '../services/api';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 
 type Penalty = {
   id: number; state: string; drug_schedule: string; offense_type: string;

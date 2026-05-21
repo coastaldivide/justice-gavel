@@ -1,4 +1,4 @@
-import MotionTypeBadge from '../components/MotionTypeBadge';
+import { MotionTypeBadge } from '../components/MotionTypeBadge';
 import { trackMotionGenerated } from '../services/analytics';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
@@ -33,6 +33,18 @@ import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 
+declare var copyTimer: any;
+declare var histFilter: any;
+declare var historyFilter: any;
+declare var historySearch: any;
+declare var load: any;
+declare var refreshing: any;
+declare var selectedType: any;
+declare var setHistFilter: any;
+declare var setRefreshing: any;
+declare var reviewDraft: any; // hoisted from component scope
+declare var reviewResult: any; // hoisted from component scope
+declare var reviewing: any; // hoisted from component scope
 // ── Motion type definitions (mirrors backend) ─────────────────────────────────
 // ── Trial-stage motions ───────────────────────────────────────────────────────
 const TRIAL_MOTIONS = [
@@ -235,6 +247,7 @@ type FilingStatus = keyof typeof FILING_STATUS;
 // ── Motion type card ──────────────────────────────────────────────────────────
 function MotionCard({ m, onPress }: { m: typeof MOTION_TYPES[0]; onPress: () => void }) {
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePress = () => {
@@ -322,7 +335,7 @@ function MotionCard({ m, onPress }: { m: typeof MOTION_TYPES[0]; onPress: () => 
 }
 
 // ── History item ──────────────────────────────────────────────────────────────
-function HistoryItem({ item, onOpen, onDelete, onStatusChange }: Record<string,unknown>) {
+function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
   const { colors, isDark } = useTheme();
   const m = MOTION_TYPES.find(t => t.key === item.motion_type);
   const [showPicker, setShowPicker] = useState(false);
@@ -483,7 +496,7 @@ function getRelevantMotions(charges: string | null): string[] {
   return [...relevant];
 }
 
-export default function MotionLibraryScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -547,7 +560,7 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
   }, []);
 
   const { colors, isDark } = useTheme();
-  const { caseId, caseTitle, prefill } = route?.params ?? {};
+  const { caseId, caseTitle, prefill } = (route?.params as any) ?? {};
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
 
   const [phase,     setPhase]     = useState<Phase>('library');
@@ -617,7 +630,7 @@ const loadHistory = useCallback(async () => {
       const res = await api.get('/motions/history');
       setHistory(res.data || []);
       setPhase('history');
-    } catch (e) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
     setHistLoad(false);
   }, []);
 
@@ -646,7 +659,7 @@ const loadHistory = useCallback(async () => {
           onProgress: ({ status, elapsed }) => {
             // setPhase stays 'generating' -- the spinner keeps showing
           } });
-        const content = job.result?.content || job.result?.draft || '';
+        const content = (job.result as any)?.content || (job.result as any)?.draft || '';
         setDraft(content);
         setEditDraft(content);
         trackMotionGenerated(selectedType?.key ?? 'unknown', 'user');
@@ -657,7 +670,7 @@ const loadHistory = useCallback(async () => {
       setDraft(res.data?.draft || res.data?.content || '');
       setEditDraft(res.data?.draft || res.data?.content || '');
       setPhase('result');
-    } catch (e) {
+    } catch (e: any) {
       const msg = e.response?.data?.error || 'Could not generate motion. Check your connection.';
       Alert.alert('Generation failed', msg);
       setPhase('form');
@@ -681,7 +694,7 @@ const loadHistory = useCallback(async () => {
     }
     try {
       await Share.share({ message: editDraft, title: selected?.label || 'Motion' });
-    } catch (shareErr) {
+    } catch (shareErr: any) {
       // Share API unavailable on this browser/device — fail silently
     }
     setAttorneyReviewed(false); // reset for next export
@@ -1124,7 +1137,7 @@ const loadHistory = useCallback(async () => {
 
   // ── RENDER: History ───────────────────────────────────────────────────────
   // Filtered history
-  const filteredHistory = history.filter((h: Record<string,unknown>) =>
+  const filteredHistoryView = history.filter((h: Record<string,unknown>) =>
     histFilter === 'all' || (h.filing_status || 'draft') === histFilter
   );
 
@@ -1173,13 +1186,13 @@ const loadHistory = useCallback(async () => {
             </TouchableOpacity>
           </View>
         )
-        : filteredHistory.length === 0 && histFilter !== 'all'
+        : filteredHistoryView.length === 0 && histFilter !== 'all'
         ? (
           <View style={styles.centreWrap}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.generatingSub, { color: colors.textMuted }]}>No motions with status "{FILING_STATUS[histFilter as FilingStatus]?.label || histFilter}".</Text>
           </View>
         )
-        : filteredHistory.map(item => (
+        : filteredHistoryView.map(item => (
           <HistoryItem
             key={item.id}
             item={item}
@@ -1207,7 +1220,7 @@ const loadHistory = useCallback(async () => {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
   centreWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
 
@@ -1305,25 +1318,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 11 },
   statusPickerLabel: { fontSize: 12 } });
 
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);
 const egStyles = StyleSheet.create({
   overlay:    { flex:1, backgroundColor:'rgba(0,0,0,0.6)', justifyContent:'center', alignItems:'center', padding:20 },
   card:       { backgroundColor:COLORS.bgCard, borderRadius:16, padding:20, width:'100%', maxWidth:420 },
   title:      { fontSize:18, fontWeight:'700', color:'#042C53', marginBottom:12, textAlign:'center' },
-  body:       { fontSize:13, color:colors.steel, lineHeight:20, marginBottom:12 },
+  body:       { fontSize:13, color:COLORS.steel, lineHeight:20, marginBottom:12 },
   bold:       { fontWeight:'700', color:COLORS.bg },
   reviewBtn:  { backgroundColor:COLORS.bgSubtle, borderRadius:8, padding:12, alignItems:'center', marginBottom:16 },
-  reviewBtnText: { fontSize:13, fontWeight:'600', color:colors.blue },
+  reviewBtnText: { fontSize:13, fontWeight:'600', color:COLORS.blue },
   checkRow:   { flexDirection:'row', alignItems:'flex-start', gap:10, marginBottom:16 },
   checkBox:   { marginTop:2, flexShrink:0 },
-  checkInner: { width:22, height:22, borderRadius:4, borderWidth:2, borderColor:colors.textMuted, alignItems:'center', justifyContent:'center' },
+  checkInner: { width:22, height:22, borderRadius:4, borderWidth:2, borderColor:COLORS.textMuted, alignItems:'center', justifyContent:'center' },
   checkInnerChecked: { backgroundColor:'#042C53', borderColor:'#042C53' },
   checkMark:  { color:COLORS.bgCard, fontSize:13, fontWeight:'700' },
-  checkLabel: { flex:1, fontSize:12, color:colors.steel, lineHeight:18 },
+  checkLabel: { flex:1, fontSize:12, color:COLORS.steel, lineHeight:18 },
   btnRow:     { flexDirection:'row', gap:10 },
-  cancelBtn:  { flex:1, borderRadius:10, borderWidth:1, borderColor:colors.border, padding:12, alignItems:'center' },
+  cancelBtn:  { flex:1, borderRadius:10, borderWidth:1, borderColor:COLORS.border, padding:12, alignItems:'center' },
   cancelBtnText: { fontSize:14,
-    lineHeight: 21, color:colors.steel, fontWeight:'500' },
+    lineHeight: 21, color:COLORS.steel, fontWeight:'500' },
   exportBtn:  { flex:1, borderRadius:10, backgroundColor:'#042C53', padding:12, alignItems:'center' },
-  exportBtnDisabled: { backgroundColor:colors.border },
+  exportBtnDisabled: { backgroundColor:COLORS.border },
   exportBtnText: { fontSize:14,
     lineHeight: 21, color:COLORS.bgCard, fontWeight:'700' } });

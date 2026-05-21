@@ -22,6 +22,11 @@ import type, { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../c
 import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Share, KeyboardAvoidingView, Platform, RefreshControl} from 'react-native';
 import { getUserState } from '../utils/userState';
 
+declare var data: any;
+declare var setRemindLoading: any;
+declare var dl: any; // hoisted from component scope
+declare var scheduleReminder: any; // hoisted from component scope
+declare var state: any; // hoisted from component scope
 // ── Deadline rules per stage ──────────────────────────────────────────────────
 interface DeadlineRule {
   label:       string;
@@ -490,7 +495,7 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function DeadlineCalculatorScreen(): JSX.Element {
+export default function DeadlineCalculatorScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -533,6 +538,7 @@ export default function DeadlineCalculatorScreen(): JSX.Element {
   }, []);
 
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -706,7 +712,7 @@ export default function DeadlineCalculatorScreen(): JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen:       { flex: 1 },
   scroll:       { padding: 16, paddingBottom: 40 },
   header:       { marginBottom: 16 },
@@ -741,3 +747,6 @@ const styles = StyleSheet.create({
   daysBadgeText:{ color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   disclaimer:   { fontSize: 11, lineHeight: 17, textAlign: 'center', fontStyle: 'italic' } });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

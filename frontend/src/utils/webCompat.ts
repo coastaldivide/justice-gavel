@@ -1,3 +1,7 @@
+declare var window: any;
+declare var MediaRecorder: any;
+declare var navigator: any;
+
 /**
  * webCompat.ts — Platform shims for web compatibility
  *

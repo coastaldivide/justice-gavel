@@ -18,6 +18,9 @@ import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
 
+declare var loading: any;
+declare var setLoading: any;
+declare var load: any; // hoisted from component scope
 type DefendantRow = {
   id: number; defendant_name: string; defendant_phone: string;
   case_number: string; court_date: string; active: number;
@@ -35,7 +38,7 @@ function statusColor(row: DefendantRow): { color: string; bg: string; label: str
 }
 
 // ── Enroll Modal ──────────────────────────────────────────────────────────────
-function EnrollModal({ visible, onClose, onEnrolled }: Record<string,unknown>) {
+function EnrollModal({ visible, onClose, onEnrolled }: any) {
   const [mgmtError, setMgmtError] = React.useState<string|null>(null);
   const [name, setName]       = useState('');
   const [phone, setPhone]     = useState('');
@@ -60,7 +63,7 @@ function EnrollModal({ visible, onClose, onEnrolled }: Record<string,unknown>) {
       Alert.alert('✓ Enrolled', res.data?.message);
       reset();
       onEnrolled();
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Couldn\'t save', 'Check your internet and try again. Your information is not lost.');
     } finally {
       setSaving(false);
@@ -79,9 +82,9 @@ function EnrollModal({ visible, onClose, onEnrolled }: Record<string,unknown>) {
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet"
         onRequestClose={() => onClose()}>
     {mgmtError && (
-      <View style={{margin:16,padding:14,backgroundColor:colors.surface,
+      <View style={{margin:16,padding:14,backgroundColor:COLORS.surface,
         borderRadius:10,borderWidth:1,borderColor:COLORS.border}}>
-        <Text style={{color:colors.danger,fontWeight:'700',fontSize:14}}>⚠ {mgmtError}</Text>
+        <Text style={{color:COLORS.danger,fontWeight:'700',fontSize:14}}>⚠ {mgmtError}</Text>
       </View>
     )}
       <View style={styles.modalWrap}>
@@ -160,7 +163,7 @@ function EnrollModal({ visible, onClose, onEnrolled }: Record<string,unknown>) {
 }
 
 // ── History Modal ─────────────────────────────────────────────────────────────
-function HistoryModal({ enrollment, visible, onClose }: Record<string,unknown>) {
+function HistoryModal({ enrollment, visible, onClose }: any) {
   const [records, setRecords]   = useState<any[]>([]);
   const [compliance, setCompliance] = useState<any>(null);
   const [loading, setLoading]   = useState(false);
@@ -270,7 +273,7 @@ export default function CheckInManagerScreen({ route, navigation }: ScreenProps)
     try {
       const res = await api.get('/checkins/enrollments');
       setData(res.data || null);
-    } catch (e) {
+    } catch (e: any) {
       if (e.response?.status !== 401) {
         Alert.alert('Could not load', 'Check your connection and pull down to refresh.');
       }
@@ -528,3 +531,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   historyLocation: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
   historyNotes:    { fontSize: 12, color: COLORS.textSecond, marginTop: 2, fontStyle: 'italic' },
 });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

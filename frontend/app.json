@@ -188,15 +188,6 @@
         {
           "faceIDPermission": "Justice Gavel uses Face ID to protect your sensitive legal information."
         }
-      ],
-      [
-        "sentry-expo",
-        {
-          "organization": "justice-gavel",
-          "project": "justice-gavel-mobile",
-          "enableInExpoDevelopment": false,
-          "debug": false
-        }
       ]
     ],
     "description": "Legal help for people who need it most. Find bail agents, connect with lawyers, know your rights, and get AI-powered legal guidance \u2014 all in one place.",

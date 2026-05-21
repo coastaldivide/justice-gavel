@@ -1,7 +1,7 @@
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
+import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { getContacts } from '../services/storage';
@@ -13,12 +13,13 @@ import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webC
 import NetInfo from '@react-native-community/netinfo';
 import * as secureStorage from '../utils/secureStorage';
 
+declare var JusticeGavelLogo: any;
 // Tiles ordered by most urgent / most used first
 // Bail Bond Help and Find Lawyer are top-left -- zero ambiguity
 // Labels use plain 3rd-grade functional language -- what the button DOES, not what it IS
 const TILES = [
-  { key: 'just_arrested', icon: '🚨', label: 'Just Arrested?\nTap Here Now', nav: 'More:JustArrested', bg: COLORS.emergency, color: colors.surface, primary: true },
-  { key: 'Emergency', label: 'Emergency\nHelp Now', icon: '🆘', color: COLORS.emergency, bg: colors.errorBg, nav: 'More:HelpNow',   primary: false },
+  { key: 'just_arrested', icon: '🚨', label: 'Just Arrested?\nTap Here Now', nav: 'More:JustArrested', bg: COLORS.emergency, color: COLORS.surface, primary: true },
+  { key: 'Emergency', label: 'Emergency\nHelp Now', icon: '🆘', color: COLORS.emergency, bg: COLORS.errorBg, nav: 'More:HelpNow',   primary: false },
   // ── Primary 4 -- always visible -- answer: "what do you need right now?" ──────
   // Ordered by urgency. Most people arriving at this app need these in order.
   { key: 'Bail',      label: 'Get Out\nOf Jail',    icon: '🔓', color: COLORS.bail,      bg: COLORS.bgCard, nav: 'More:Bail',      primary: true },
@@ -32,7 +33,7 @@ const TILES = [
   { key: 'Expunge',   label: 'Clear My\nRecord',    icon: '🗂️', color: COLORS.legal,     bg: COLORS.legalBg, nav: 'More:Expungement', primary: false },
   { key: 'court_locator',  icon: '🏛️', label: 'Find\nCourthouse',       nav: 'More:CourtLocator',    bg: COLORS.bgCard, color: COLORS.blue, primary: false },
   { key: 'bail_calc',      icon: '💰', label: 'Bail\nCalculator',        nav: 'More:BailCalculator',  bg: COLORS.legalBg, color: COLORS.legal, primary: false },
-  { key: 'dui_laws',       icon: '🚗', label: 'DUI\nLaw Guide',          nav: 'More:DUILaws',         bg: colors.errorBg, color: COLORS.emergency, primary: false },
+  { key: 'dui_laws',       icon: '🚗', label: 'DUI\nLaw Guide',          nav: 'More:DUILaws',         bg: COLORS.errorBg, color: COLORS.emergency, primary: false },
   { key: 'specialty_courts',icon: '⚖️', label: 'Specialty\nCourts',     nav: 'More:SpecialtyCourts', bg: COLORS.bgCard, color: COLORS.navy, primary: false },
   { key: 'drug_penalties', icon: '💊', label: 'Drug Charge\nPenalties',  nav: 'More:DrugPenalties',   bg: COLORS.bgCard, color: COLORS.navy, primary: false },
 ,
@@ -56,7 +57,7 @@ const TILES = [
   { key: 'Search',        icon: '🔍', label: 'Search\nEverything',      nav: 'More:Search',                bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
 ];
 
-export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -178,7 +179,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
         'No emergency contacts',
         'Add contacts so they can be alerted when you need help.',
         [
-          { text: 'Add Now', onPress: () => navigation.navigate('MoreTab', { screen: 'Contacts' }) },
+          { text: 'Add Now', onPress: () => (navigation as any).navigate('MoreTab', { screen: 'Contacts' }) },
           { text: 'Later', style: 'cancel' },
         ]
       );
@@ -194,7 +195,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
           const user = userData ? JSON.parse(userData) : {};
           await api.post('/alerts', { userName: user.displayName || user.name || 'User', contacts: active, lat, lng });
           Alert.alert('Alert sent!', 'Your emergency contacts have been notified.');
-        } catch (e) {
+        } catch (e: any) {
           Alert.alert('Could not send', e.message || 'Check your connection and try again.');
         } finally { setSosSending(false); }
       }}
@@ -203,9 +204,9 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
 
   const navigate = (nav: string) => {
     if (nav.startsWith('More:')) {
-      navigation.navigate('MoreTab', { screen: nav.slice(5) });
+      (navigation as any).navigate('MoreTab', { screen: nav.slice(5) });
     } else {
-      navigation.navigate(nav);
+      (navigation as any).navigate(nav);
     }
   };
 
@@ -240,7 +241,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.helpNowBtn}
-            onPress={() => navigation.navigate('MoreTab', { screen: 'HelpNow' })}
+            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'HelpNow' })}
             accessibilityRole="button"
             accessibilityLabel="Get help now"
             activeOpacity={0.85}
@@ -248,7 +249,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
             <Text maxFontSizeMultiplier={1.4} style={styles.helpNowBtnText}>{t('help_now')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => navigation.navigate('MoreTab', { screen: 'Settings' })}
+            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             style={styles.settingsBtn}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.settingsIcon}>⚙️</Text>
@@ -274,7 +275,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
           {!isPro && (
             <TouchableOpacity
               accessibilityRole="button"
-              onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
+              onPress={() => (navigation as any).navigate('MoreTab', { screen: 'ConsumerSubscription' })}
               style={{
                 backgroundColor: colors.navy + '08',
                 borderRadius: 16, padding: 16,
@@ -316,7 +317,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.emergencyBanner}
-          onPress={() => navigation.navigate('MoreTab', { screen: 'Emergency' })}
+          onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Emergency' })}
           activeOpacity={0.85}
         >
           <View style={styles.emergencyIconWrap}>
@@ -333,7 +334,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.quickConnectBanner}
-          onPress={() => navigation.navigate('MoreTab', { screen: 'QuickConnect' })}
+          onPress={() => (navigation as any).navigate('MoreTab', { screen: 'QuickConnect' })}
           activeOpacity={0.85}
         >
           <View style={styles.quickConnectLeft}>
@@ -359,7 +360,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
                 ? { backgroundColor: COLORS.bail, borderColor: COLORS.bail }
                 : { backgroundColor: COLORS.navy, borderColor: COLORS.steel },
             ]}
-            onPress={() => navigation.navigate('HomeTab')}
+            onPress={() => (navigation as any).navigate('HomeTab')}
             activeOpacity={0.88}
             accessibilityLabel={`Court date in ${upcomingCase.daysLeft} days -- tap to review case`}
           >
@@ -387,7 +388,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
         {!!legalTip && (
           <TouchableOpacity
             style={styles.tipCard}
-            onPress={() => navigation.navigate('MoreTab', { screen: 'Education', params: { category: tipCategory, query: tipQuery } })}
+            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Education', params: { category: tipCategory, query: tipQuery } })}
             accessibilityRole="button"
             activeOpacity={0.85}
           >
@@ -445,7 +446,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
         {!displayName && (
           <TouchableOpacity
             style={styles.nudgeCard}
-            onPress={() => navigation.navigate('MoreTab', { screen: 'Settings' })}
+            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             accessibilityRole="button"
             activeOpacity={0.85}
           >
@@ -477,7 +478,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): JSX.Elem
         <TouchableOpacity
           style={{ backgroundColor: '#FFA726', borderBottomWidth: 1, borderBottomColor: '#FFA726',
             flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
-          onPress={() => navigation.navigate('OfflineStatus')}
+          onPress={() => (navigation as any).navigate('OfflineStatus')}
           accessibilityRole="button"
           accessibilityLabel="No internet connection -- tap to see what works offline"
         >

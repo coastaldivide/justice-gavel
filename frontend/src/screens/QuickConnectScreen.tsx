@@ -15,13 +15,16 @@ import { hapticSuccess, hapticWarn } from '../services/haptics';
  *   3. Result: bondsman card + lawyer card, both with direct Call buttons
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Linking, Platform, Alert, RefreshControl} from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getLocation } from '../services/location';
 import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import PracticeAreaSelector from '../components/PracticeAreaSelector';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 
+declare var credit: any;
+declare var data: any;
+declare var setCredit: any;
 function callPhone(phone: string) {
   Linking.openURL('tel:' + phone.replace(/\s/g, '')).catch(() => {}).catch(() => {});
 }
@@ -34,7 +37,7 @@ function openDirections(lat: number, lng: number, name: string) {
 }
 
 // ── Contact result card ────────────────────────────────────────────────────────
-function ResultCard({ contact, type, price }: { contact: Record<string,unknown>; type: 'bondsman' | 'lawyer'; price: string }) {
+function ResultCard({ contact, type, price }: { contact: Record<string,any>; type: 'bondsman' | 'lawyer'; price: string }) {
   const isBail  = type === 'bondsman';
   const accent  = isBail ? COLORS.bail : COLORS.legal;
   const bg      = isBail ? COLORS.bailBg   : COLORS.legalBg;
@@ -42,7 +45,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,unknown>;
 
   let specialties: string[] = [];
   if (contact.specialties) {
-    try { specialties = JSON.parse(contact.specialties); } catch (e) { __DEV__ && console.warn(e?.message); }
+    try { specialties = JSON.parse(contact.specialties); } catch (e: any) { __DEV__ && console.warn(e?.message); }
   }
 
   return (
@@ -121,7 +124,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,unknown>;
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function QuickConnectScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
@@ -174,15 +177,15 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
     setError('');
     try {
       const res = await api.post('/billing/quickconnect', {
-        lat:          coords?.lat,
-        lng:          coords?.lng,
-        state:        coords?.state || '',  // derived from GPS reverse-geocode in backend
+        lat:          (coords as any)?.lat,
+        lng:          (coords as any)?.lng,
+        state:        (coords as any)?.state || '',  // derived from GPS reverse-geocode in backend
         practice_area: practiceArea || undefined });
       setResult(res.data || null);
       hapticSuccess();
       // Fire post-purchase retention trigger (48hr arrest monitoring upsell)
       api.post('/push/retention/post-purchase', { purchase_type: 'quickconnect' }).catch((e) => { __DEV__ && console.warn(e?.message); });
-    } catch (e) {
+    } catch (e: any) {
       const errMsg   = e.response?.data?.error || e.message || '';
       const status   = e.response?.status;
       let userMsg = errMsg;
@@ -600,3 +603,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   homeBtn: { alignItems: 'center', paddingVertical: 16 },
   homeBtnText: { fontSize: 14, lineHeight: 21, color: COLORS.steel, ...FONTS.bold } });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

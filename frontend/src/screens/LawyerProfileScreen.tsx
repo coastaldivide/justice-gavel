@@ -10,7 +10,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, RefreshControl} from 'react-native';
 import { api } from '../services/api';
-import { useTheme, RADIUS, TYPE, FONTS } from '../constants/theme';
+import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
@@ -48,7 +48,10 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
 }
 
 import Analytics from '../services/analytics';
-export default function LawyerProfileScreen({ navigation, route }: ScreenProps): JSX.Element {
+declare var onRefresh: any;
+declare var refreshing: any;
+declare var load: any; // hoisted from component scope
+export default function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Element {
 
   const submitReview = async () => {
     if (userRating === 0) return;

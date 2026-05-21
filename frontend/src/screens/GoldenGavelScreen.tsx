@@ -1,10 +1,13 @@
-import SkeletonLoader from '../components/SkeletonLoader';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { api } from '../services/api';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 
+declare var hasAny: any;
+declare var level: any;
+declare var fetchError: any; // hoisted from component scope
 // ── Constants ─────────────────────────────────────────────────────────────────
 const GAVEL_EMOJI  = { 0: '',    1: '🥉', 2: '🥈', 3: '🏆' } as const;
 const GAVEL_LABEL  = { 0: 'None', 1: 'Bronze', 2: 'Silver', 3: 'Golden' } as const;
@@ -68,8 +71,8 @@ function CritRow({ label, met }: { label: string; met: boolean }) {
   return (
     <View style={styles.critRow}>
     {fetchError && (
-      <View style={{ margin: 16, padding: 14, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.danger || colors.error }}>
-        <Text style={{ color: colors.danger || colors.error, fontWeight: '700', fontSize: 14 }}>⚠ Unable to load</Text>
+      <View style={{ margin: 16, padding: 14, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.danger || colors.emergency }}>
+        <Text style={{ color: colors.danger || colors.emergency, fontWeight: '700', fontSize: 14 }}>⚠ Unable to load</Text>
         <Text style={{ color: COLORS.textMuted, fontSize: 13, marginTop: 4 }}>{fetchError}</Text>
       </View>
     )}
@@ -122,39 +125,39 @@ function CriteriaSection({ title, progress, criteria, earned }:
 
       {ut === 'attorney' && <>
         <CritRow
-          label={`Active ${progress.months_active} / ${criteria.months_active} months`}
-          met={progress.months_active >= criteria.months_active} />
+          label={`Active ${progress.months_active} / ${(criteria as any).months_active} months`}
+          met={progress.months_active >= (criteria as any).months_active} />
         <CritRow
-          label={`Consultations ${progress.consultations_booked ?? 0} / ${criteria.consultations_booked}`}
-          met={(progress.consultations_booked ?? 0) >= criteria.consultations_booked} />
+          label={`Consultations ${progress.consultations_booked ?? 0} / ${(criteria as any).consultations_booked}`}
+          met={(progress.consultations_booked ?? 0) >= (criteria as any).consultations_booked} />
         <CritRow
-          label={`Rating ${progress.avg_rating ?? 0} / ${criteria.avg_rating} min (${progress.review_count ?? 0} reviews, need ${criteria.min_reviews})`}
-          met={(progress.avg_rating ?? 0) >= criteria.avg_rating && (progress.review_count ?? 0) >= criteria.min_reviews} />
+          label={`Rating ${progress.avg_rating ?? 0} / ${(criteria as any).avg_rating} min (${progress.review_count ?? 0} reviews, need ${(criteria as any).min_reviews})`}
+          met={(progress.avg_rating ?? 0) >= (criteria as any).avg_rating && (progress.review_count ?? 0) >= (criteria as any).min_reviews} />
         <CritRow label="Bar license verified"  met={!!progress.bar_verified} />
         <CritRow label="Zero compliance flags" met={progress.compliance_flags === 0} />
       </>}
 
       {ut === 'consumer' && <>
         <CritRow
-          label={`Active ${progress.months_active} / ${criteria.months_active} months`}
-          met={progress.months_active >= criteria.months_active} />
+          label={`Active ${progress.months_active} / ${(criteria as any).months_active} months`}
+          met={progress.months_active >= (criteria as any).months_active} />
         <CritRow
-          label={`Paid referrals ${progress.paid_referrals ?? 0} / ${criteria.paid_referrals}`}
-          met={(progress.paid_referrals ?? 0) >= criteria.paid_referrals} />
-        {criteria.lessons_started && !criteria.lessons_completed &&
+          label={`Paid referrals ${progress.paid_referrals ?? 0} / ${(criteria as any).paid_referrals}`}
+          met={(progress.paid_referrals ?? 0) >= (criteria as any).paid_referrals} />
+        {(criteria as any).lessons_started && !(criteria as any).lessons_completed &&
           <CritRow label="Started at least one lesson" met={!!progress.lessons_started} />}
-        {criteria.lessons_completed &&
+        {(criteria as any).lessons_completed &&
           <CritRow label="All lessons completed" met={!!progress.lessons_completed} />}
         <CritRow label="Zero compliance flags" met={progress.compliance_flags === 0} />
       </>}
 
       {ut === 'bondsman' && <>
         <CritRow
-          label={`Active ${progress.months_active} / ${criteria.months_active} months`}
-          met={progress.months_active >= criteria.months_active} />
+          label={`Active ${progress.months_active} / ${(criteria as any).months_active} months`}
+          met={progress.months_active >= (criteria as any).months_active} />
         <CritRow
-          label={`Leads accepted ${progress.leads_accepted ?? 0} / ${criteria.leads_accepted}`}
-          met={(progress.leads_accepted ?? 0) >= criteria.leads_accepted} />
+          label={`Leads accepted ${progress.leads_accepted ?? 0} / ${(criteria as any).leads_accepted}`}
+          met={(progress.leads_accepted ?? 0) >= (criteria as any).leads_accepted} />
         <CritRow label="License verified"      met={!!progress.license_verified} />
         <CritRow label="Zero compliance flags" met={progress.compliance_flags === 0} />
       </>}
@@ -163,7 +166,7 @@ function CriteriaSection({ title, progress, criteria, earned }:
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function GoldenGavelScreen({ navigation }: ScreenProps): JSX.Element {
+export default function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -189,7 +192,7 @@ export default function GoldenGavelScreen({ navigation }: ScreenProps): JSX.Elem
       if (s.data) setStatus(s.data);
       if (e.data) setElig(e.data);
       if (h.data) setHall(h.data);
-    } catch (e) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
     refresh ? setRefreshing(false) : setLoading(false);
   }, []);
 
@@ -216,7 +219,7 @@ export default function GoldenGavelScreen({ navigation }: ScreenProps): JSX.Elem
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.gold} />}
     >
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <View style={[styles.header, { backgroundColor: hasAny ? gc.header : colors.navy }]}>
+      <View style={[styles.header, { backgroundColor: hasAny ? (gc as any).header : colors.navy }]}>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerIcon}>{hasAny ? GAVEL_EMOJI[level] : '⚖️'}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>Gavel Program</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>
@@ -268,7 +271,7 @@ export default function GoldenGavelScreen({ navigation }: ScreenProps): JSX.Elem
           )}
           <TouchableOpacity activeOpacity={0.6}
             accessibilityRole="button"
-            style={[styles.optInBtn, { backgroundColor: gc.header }, optingIn && { opacity: 0.6 }]}
+            style={[styles.optInBtn, { backgroundColor: (gc as any).header }, optingIn && { opacity: 0.6 }]}
             onPress={handleOptIn}
             disabled={optingIn}>
 
@@ -288,19 +291,19 @@ export default function GoldenGavelScreen({ navigation }: ScreenProps): JSX.Elem
           <CriteriaSection
             title="🥉  Bronze Gavel"
             progress={elig.progress}
-            criteria={elig.criteria?.[elig.user_type]?.bronze || elig.criteria?.bronze}
+            criteria={(elig as any).criteria?.[(elig as any).user_type]?.bronze || (elig as any).criteria?.bronze}
             earned={level >= 1}
           />
           <CriteriaSection
             title="🥈  Silver Gavel"
             progress={elig.progress}
-            criteria={elig.criteria?.[elig.user_type]?.silver || elig.criteria?.silver}
+            criteria={(elig as any).criteria?.[(elig as any).user_type]?.silver || (elig as any).criteria?.silver}
             earned={level >= 2}
           />
           <CriteriaSection
             title="🏆  Golden Gavel"
             progress={elig.progress}
-            criteria={elig.criteria?.[elig.user_type]?.golden || elig.criteria?.golden}
+            criteria={(elig as any).criteria?.[(elig as any).user_type]?.golden || (elig as any).criteria?.golden}
             earned={level >= 3}
           />
         </>
@@ -311,7 +314,7 @@ export default function GoldenGavelScreen({ navigation }: ScreenProps): JSX.Elem
         <>
           <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>Hall of Justice</Text>
           {hall.length === 0 ? (
-            <Text style={{color:colors.textSecondary,textAlign:'center',marginTop:24}}>No Hall of Fame entries yet — case evaluations will appear here after attorney review.</Text>
+            <Text style={{color:colors.textSecond,textAlign:'center',marginTop:24}}>No Hall of Fame entries yet — case evaluations will appear here after attorney review.</Text>
           ) : hall.map((entry, i) => (
             <View key={i} style={[styles.hallCard, {
               backgroundColor: entry.featured ? colors.warnBg : colors.bgCard,
@@ -392,3 +395,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   helpedNum:         { fontSize: 18, fontFamily: 'Inter_900Black', fontWeight: '900', color: '#F9A825' },
   helpedLabel:       { fontSize: 11, color: colors.steel, fontWeight: '600' },
 });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

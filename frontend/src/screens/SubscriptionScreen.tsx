@@ -7,12 +7,16 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform} from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
+declare var data: any;
+declare var error: any;
+declare var setError: any;
+declare var setSub: any;
 const TIERS = [
   {
     key: 'basic',
@@ -77,7 +81,7 @@ const INTEL_TIER = {
   description: 'Weekly arrest data breakdown for your counties -- charge trends, bail averages, unrepresented rates. Add-on to any tier.',
 };
 
-function TierCard({ tier, active, onSubscribe, loading }: Record<string,unknown>) {
+function TierCard({ tier, active, onSubscribe, loading }: any) {
   return (
     <View style={[styles.tierCard, tier.highlight && styles.tierCardHighlight]}>
       {tier.badge && (
@@ -132,7 +136,7 @@ function TierCard({ tier, active, onSubscribe, loading }: Record<string,unknown>
   );
 }
 
-export default function SubscriptionScreen({ navigation }: ScreenProps): JSX.Element {
+export default function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
@@ -159,7 +163,7 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): JSX.Ele
     try {
       const res = await api.get('/billing/subscription');
       setSubscription(res.data?.subscription);
-    } catch (e) {
+    } catch (e: any) {
       // subscription not available -- screen still renders with upgrade CTAs
       // not subscribed yet -- that's fine
     } finally {
@@ -196,7 +200,7 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): JSX.Ele
         [{ text: 'Got it' }]
       );
       loadSubscription();
-    } catch (e) {
+    } catch (e: any) {
       const msg = e.response?.data?.error || e.message;
       if (msg?.includes('Already subscribed')) {
         setError('You already have an active plan. Manage it in Settings.');
@@ -221,7 +225,7 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): JSX.Ele
               await api.post('/billing/cancel');
               setSubscription(null);
               Alert.alert('Plan Cancelled', 'Your plan has been cancelled. You\'ll still have access until the end of your billing period.');
-            } catch (e) {
+            } catch (e: any) {
               setError('Payment failed. Check your card details and try again.');
             }
           }
@@ -443,3 +447,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   footer: { fontSize: 11, color: colors.steel, textAlign: 'center', paddingHorizontal: 24, lineHeight: 16, marginTop: 16 },
 });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

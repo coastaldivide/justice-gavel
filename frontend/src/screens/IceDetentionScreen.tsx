@@ -36,7 +36,7 @@ const STEP_KEYS = [
   'ice_step6',
 ];
 
-export default function IceDetentionScreen(): JSX.Element {
+export default function IceDetentionScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -44,6 +44,7 @@ export default function IceDetentionScreen(): JSX.Element {
   }
   );
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [tab, setTab] = React.useState(0);
 
   const sections = RIGHTS_KEYS;
@@ -84,7 +85,7 @@ export default function IceDetentionScreen(): JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 0 },
 
@@ -113,4 +114,12 @@ const styles = StyleSheet.create({
 
   chatCta: { marginHorizontal: 16, borderRadius: RADIUS.md, borderWidth: 1, paddingVertical: 13, alignItems: 'center' },
   chatCtaText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  card: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  cardBody: { fontSize: 14, lineHeight: 20, color: colors.textSecond },
+  disclaimer:     { backgroundColor: colors.warnBg, borderRadius: 8, padding: 12, margin: 16, borderWidth: 1, borderColor: colors.warn },
+  disclaimerText: { fontSize: 12, color: colors.textSecond, lineHeight: 18 },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

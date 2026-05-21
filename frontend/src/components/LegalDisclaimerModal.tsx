@@ -70,7 +70,7 @@ interface Props {
 }
 
 function LegalDisclaimerModal({ visible, onAccept }: Props) {
-  const { COLORS, FONTS } = useTheme();
+  const { colors, isDark } = useTheme()
   const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
@@ -185,7 +185,7 @@ function LegalDisclaimerModal({ visible, onAccept }: Props) {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = (C: unknown, F: unknown) => StyleSheet.create({
+const styles = (C: any, F: any) => StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: C.bg,

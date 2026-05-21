@@ -8,7 +8,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform} from 'react-native';
 import { api } from '../services/api';
-import { useTheme, RADIUS, TYPE, FONTS } from '../constants/theme';
+import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { getUserState } from '../utils/userState';
 import {
@@ -47,7 +47,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function SearchScreen({ navigation }: ScreenProps): JSX.Element {
+export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const userStateRef = React.useRef<string>('');
   React.useEffect(() => {

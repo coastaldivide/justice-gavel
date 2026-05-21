@@ -28,7 +28,7 @@ function OfflineBanner() {
     }).start();
   }, [isOnline]);
 
-  if (isOnline && !opacity._value) return null;
+  if (isOnline && !(opacity as any)._value) return null;
 
   return (
     <Animated.View style={[styles.banner, { opacity }]} accessibilityRole="alert" accessibilityLabel="You are offline — showing cached data">

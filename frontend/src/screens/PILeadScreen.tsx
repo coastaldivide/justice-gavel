@@ -20,6 +20,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
+declare var data: any;
 type Step = 'type' | 'severity' | 'details' | 'submitted';
 
 const CASE_TYPES = [
@@ -40,8 +41,9 @@ const SEVERITIES = [
   { key: 'catastrophic', label: 'Catastrophic', sub: 'Permanent disability or death',      color: COLORS.emergencyDark, bg: COLORS.emergencyBg,  fee: '$499.99' },
 ];
 
-export default function PILeadScreen({ navigation, route }: ScreenProps): JSX.Element {
+export default function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -50,7 +52,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): JSX.El
 
   const { requireAuth } = useAuthGate();
 
-  const initType = route?.params?.caseType || '';
+  const initType = (route?.params as any)?.caseType || '';
 
   const [step, setStep]         = useState<Step>(initType ? 'severity' : 'type');
   const [caseType, setCaseType] = useState(initType);
@@ -274,7 +276,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): JSX.El
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 16, paddingBottom: 60 },
 
@@ -341,3 +343,6 @@ const styles = StyleSheet.create({
   homeBtnText:  { fontSize: 14,
     lineHeight: 21, },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

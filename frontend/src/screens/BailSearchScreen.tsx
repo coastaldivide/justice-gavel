@@ -1,11 +1,19 @@
 import { t, initLang } from '../i18n';
 import { hapticCall } from '../services/haptics';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Linking, Platform, TextInput, KeyboardAvoidingView, Animated} from 'react-native';
+import { ActivityIndicator, Alert, Animated, FlatList, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getLocation, formatDistance } from '../services/location';
 import { api }             from '../services/api';
 import { getUserState } from '../utils/userState';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
+declare var SkeletonBailList: any;
+declare var cityQuery: any;
+declare var filteredCities: any;
+declare var locationDenied: any;
+declare var setCity: any;
+declare var setCityQuery: any;
+declare var setLocationDenied: any;
 function callPhone(phone: string) { hapticCall(); Linking.openURL('tel:' + phone.replace(/\s/g, '')).catch(() => {}).catch(() => {}); }
 function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
@@ -48,7 +56,7 @@ function SkeletonCard({ colors }: { colors: ThemeColors }) {
   );
 }
 
-export default function BailSearchScreen(): JSX.Element {
+export default function BailSearchScreen(): React.JSX.Element {
 
   const userStateRef = React.useRef<string>('');
   React.useEffect(() => {
@@ -74,7 +82,7 @@ export default function BailSearchScreen(): JSX.Element {
   // Auto-search on mount -- no button tap required
   useEffect(() => { return () => { if (timerRef.current) clearTimeout(timerRef.current); }; }, []);
 
-  useEffect(() => { initLang().then(() => search()).catch(() => {}); }, []);
+  useEffect(() => { Promise.resolve(initLang()).then(() => search()).catch(() => {}); }, []);
 
   const [retryCount, setRetryCount] = useState(0);
   const [showFilters, setShowFilters]       = React.useState(false);
@@ -115,7 +123,7 @@ export default function BailSearchScreen(): JSX.Element {
         try {
           res = await api.get('/providers/bail', { params });
           break;
-        } catch (apiErr) {
+        } catch (apiErr: any) {
           attempt++;
           if (attempt >= 3) throw apiErr;
           setStatus(`Connection issue -- retrying (${attempt}/3)…`);
@@ -128,9 +136,9 @@ export default function BailSearchScreen(): JSX.Element {
       setSearched(true);
       setRetryCount(0);
       setStatus(res.data?.length === 0 ? 'No bail agents found in this area. Try a nearby city.' : '');
-    } catch (e) {
+    } catch (e: any) {
       // Try offline cache on failure
-      const { agents: cached } = await getCachedBailAgents().catch(() => ({ agents: [] }));
+      const { agents: cached } = (await getCachedBailAgents().catch(() => ({ agents: [] }))) as any;
       if (cached.length > 0) {
         setItems(cached);
         setStatus('Showing cached results -- check your connection for live data.');
@@ -381,7 +389,7 @@ export default function BailSearchScreen(): JSX.Element {
             onPress={async () => {
               try {
                 const loc = await import('../services/location').then(m => m.detectAndSaveUserState());
-                if (loc?.city) setCity(loc.city);
+                if ((loc as any)?.city) setCity(loc.city);
               } catch { /* location unavailable */ }
             }}
             style={{ flexDirection:'row', alignItems:'center', gap:6,

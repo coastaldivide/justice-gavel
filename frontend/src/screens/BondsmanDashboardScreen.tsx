@@ -9,16 +9,18 @@ import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, RefreshCo
  * Lead fee is tiered by bail amount ($25-$300).
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars, { useState, useEffect, useCallback } from 'react';
 
 import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 
+declare var _fetchError: any;
+declare var confirmAccept: any; // hoisted from component scope
 // ── Lead fee display helper ───────────────────────────────────────────────────
 function leadFeeLabel(bailAmount: number): string {
   if (!bailAmount || bailAmount <= 0) return '$25';
@@ -46,7 +48,7 @@ function timeAgo(dateStr: string): string {
 }
 
 // ── Lead card ─────────────────────────────────────────────────────────────────
-function LeadCard({ lead, onAccept }: { lead: Record<string,unknown>; onAccept: () => void }) {
+function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () => void }) {
   const [_fetchError, _setFetchError] = useState<string|null>(null);
   const [expanded, setExpanded] = useState(false);
   const tier = bailTier(lead.bail_amount);
@@ -157,7 +159,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,unknown>; onAccept: 
 }
 
 // ── Profile setup modal ───────────────────────────────────────────────────────
-function ProfileModal({ visible, onClose, onSaved }: Record<string,unknown>) {
+function ProfileModal({ visible, onClose, onSaved }: any) {
   const [company, setCompany] = useState('');
   const [license, setLicense]         = useState('');
   const [licenseState, setLicenseState] = useState('');
@@ -175,7 +177,7 @@ function ProfileModal({ visible, onClose, onSaved }: Record<string,unknown>) {
         counties: counties.split(',').map(c => c.trim().toLowerCase()).filter(Boolean),
         states: licenseState ? [licenseState.toUpperCase()] : []});
       onSaved();
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Connection issue', 'Check your internet and pull down to refresh.');
     } finally {
       setSaving(false);
@@ -248,7 +250,7 @@ function ProfileModal({ visible, onClose, onSaved }: Record<string,unknown>) {
 }
 
 // ── Accept confirmation modal ─────────────────────────────────────────────────
-function AcceptModal({ lead, visible, onClose, onConfirm, loading }: Record<string,unknown>) {
+function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
   if (!lead) return null;
   const tier = bailTier(lead.bail_amount);
   return (
@@ -307,7 +309,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: Record<stri
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function BondsmanDashboardScreen({ navigation }: ScreenProps): JSX.Element {
+export default function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
 
@@ -354,7 +356,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): JS
       if ((res.data?.leads || []).length === 0) {
         setStatusMsg('No new leads in the last ' + filterHours + ' hours.');
       }
-    } catch (e) {
+    } catch (e: any) {
       setStatusMsg('Could not load leads. Pull down to retry.');
     } finally {
       setLoading(false);
@@ -388,7 +390,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): JS
       const res = await api.post('/billing/bondsman/verified-badge/subscribe');
       setBadgeStatus({ active: true, verified_badge: true });
       Alert.alert('✅ Badge Activated!', res.data?.message);
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Connection issue', 'Check your internet and pull down to refresh.');
     } finally { setBadgeLoading(false); }
   });
@@ -401,7 +403,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): JS
           await api.post('/billing/bondsman/verified-badge/cancel');
           setBadgeStatus({ active: false, verified_badge: false });
           Alert.alert('Cancelled', 'Badge subscription cancelled.');
-        } catch (e) {
+        } catch (e: any) {
           Alert.alert('Connection issue', 'Check your internet and pull down to refresh.');
         }
       }},
@@ -420,7 +422,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): JS
         [{ text: 'OK' }]
       );
       loadLeads(true);
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Payment issue', 'Could not process payment. Check your card details and try again.');
     } finally {
       setAccepting(false);
@@ -741,3 +743,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#FFA726', borderRadius: 8, padding: 10,
     marginTop: 8, borderWidth: 1, borderColor: '#F9A825'},
   licenseWarningText: { fontSize: 12, color: '#FFA726', fontFamily: 'Inter_600SemiBold', fontWeight: '600' }});
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

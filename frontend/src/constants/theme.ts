@@ -135,6 +135,24 @@ export const DARK_COLORS = {
   // Overlay
   overlay:      'rgba(2,14,28,0.85)',
 
+  bailLight: '#2D1A15',
+  card: '#1E2A3A',
+  cardBody: '#B0C4DE',
+  danger: '#EF5350',
+  emergencyLight: '#2D1315',
+  errorBg: '#2D1B1B',
+  legalLight: '#1A2E1A',
+  navyLight: '#0D2A4A',
+  primary: '#4A8BC4',
+  steelDark: '#2D5A8E',
+  steelLight: '#4A7FB5',
+  surface: '#1E2A3A',
+  textDark: '#E0E7EF',
+  textLight: '#B0BEC5',
+  warnLight: '#2D1F0A',
+  cardTitle:   '#042C53',
+  borderSubtle:'rgba(255,255,255,0.08)',
+  text:        '#FFFFFF',
   isDark: true,
 };
 
@@ -202,7 +220,24 @@ export const LIGHT_COLORS = {
   // Overlay
   overlay:      'rgba(10,25,41,0.6)',
 
+
+  // Legacy aliases — kept for backward compat
+  surface:    '#FFFFFF',    // = bgCard
+  primary:    '#042C53',    // = navy
+  danger:     '#C62828',    // = emergency
+  errorBg:    '#FFEBEE',    // = emergencyBg
+  card:       '#FFFFFF',    // = bgCard
+  cardBody:   '#3D4F63',    // = textSecond
+  textLight:  '#8FA3B1',    // = textFaint
+  textDark:   '#0A1929',    // = textPrimary
   isDark: false,
+  steelDark:    '#3A6EA5',    // darker steel blue
+  steelLight:   '#B8D4F0',    // lighter steel
+  navyLight:    '#1A4A7A',    // lighter navy
+  legalLight:   '#E8F5E9',    // = legalBg
+  warnLight:    '#FFF3E0',    // = warnBg
+  bailLight:    '#FBE9E7',    // = bailBg
+  emergencyLight: '#FFEBEE',  // = emergencyBg
 };
 
 // Keep for legacy imports not yet migrated

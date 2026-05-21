@@ -32,6 +32,11 @@ import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
+declare var loadHistory: any; // hoisted from component scope
+declare var mountedRef: any; // hoisted from component scope
+declare var onDiscussWithAI: any; // hoisted from component scope
+declare var onRefresh: any; // hoisted from component scope
+declare var refreshing: any; // hoisted from component scope
 // ── Quick research prompts ────────────────────────────────────────────────────
 const QUICK_PROMPTS = [
   { label: 'Motion to suppress',  text: 'What are the legal standards for a successful motion to suppress? Cite key federal and state cases.' },
@@ -53,14 +58,14 @@ type Phase = 'paywall' | 'home' | 'searching' | 'thread' | 'history';
 function MarkdownText({ text, style }: { text: string; style?: object }) {
   const { colors, isDark } = useTheme();
   const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try { await loadHistory(); } catch {}
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
   }, []);
 
-  const citationBlue = isDark ? colors.steel : colors.blue;
-  const headingColor = colors.textPrimary;
+  const citationBlue = false ? COLORS.steel : COLORS.blue;
+  const headingColor = COLORS.textPrimary;
 
   const openVerify = (citation: string) => {
     const q = encodeURIComponent(citation.trim());
@@ -92,7 +97,7 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
     });
   };
 
-  const elements: React.ReactElement[] = [];
+  const elements: ReactElement[] = [];
   const lines = text.split('\n');
   lines.forEach((line: string, i: number) => {
     const key = 'line-' + i;
@@ -120,7 +125,7 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
         );
       }
     } else if (/^---+$/.test(line.trim())) {
-      elements.push(<View key={key} style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />);
+      elements.push(<View key={key} style={{ height: 1, backgroundColor: COLORS.border, marginVertical: 10 }} />);
     } else if (!line.trim()) {
       elements.push(<View key={key} style={{ height: 10 }} />);
     } else {
@@ -172,6 +177,7 @@ function HighlightedText({ text, style }: { text: string; style?: object }) {
 
 // ── Message bubble (research thread) ─────────────────────────────────────────
 function ResearchBubble({ msg }: { msg: Message }) {
+  const styles = makeStyles(COLORS);
   const { colors, isDark } = useTheme();
   const isUser = msg.role === 'user';
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -182,7 +188,7 @@ function ResearchBubble({ msg }: { msg: Message }) {
 
   if (isUser) return (
     <Animated.View style={[styles.userBubble, { opacity: fadeAnim,
-      backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle,
+      backgroundColor: false ? COLORS.bgElevated : COLORS.bgSubtle,
       borderColor: COLORS.navy + '33' }]}>
       <Text maxFontSizeMultiplier={1.4} style={[styles.userQuery, { color: COLORS.navy }]} selectable={true}>{msg.content}</Text>
     </Animated.View>
@@ -190,7 +196,7 @@ function ResearchBubble({ msg }: { msg: Message }) {
 
   return (
     <Animated.View style={[styles.assistantBubble, { opacity: fadeAnim,
-      backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+      backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
       {/* Research result header */}
       <View style={styles.resultHeader}>
         <View style={[styles.resultDot, { backgroundColor: COLORS.legal }]} />
@@ -198,9 +204,9 @@ function ResearchBubble({ msg }: { msg: Message }) {
       </View>
 
       {/* Knowledge cutoff banner -- every result, every time */}
-      <View style={[styles.cutoffBanner, { backgroundColor: isDark ? colors.warnBg : colors.warnBg,
-        borderColor: colors.gold + '70' }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.cutoffText, { color: isDark ? colors.gold : colors.warnDark }]}>
+      <View style={[styles.cutoffBanner, { backgroundColor: false ? COLORS.warnBg : COLORS.warnBg,
+        borderColor: COLORS.gold + '70' }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.cutoffText, { color: false ? COLORS.gold : COLORS.warnDark }]}>
           ⚠️  Knowledge cutoff: August 2025 -- verify all citations before relying on them in court.
           Tap any underlined citation to check on CourtListener.
         </Text>
@@ -208,18 +214,18 @@ function ResearchBubble({ msg }: { msg: Message }) {
 
       <MarkdownText
         text={msg.content}
-        style={[styles.assistantText, { color: colors.textPrimary }]}
+        style={[styles.assistantText, { color: COLORS.textPrimary }]}
       />
       {/* Copy button */}
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
         <TouchableOpacity
           activeOpacity={0.6}
-          style={[styles.copyBtn, { borderColor: colors.border, flex: 1 }]}
+          style={[styles.copyBtn, { borderColor: COLORS.border, flex: 1 }]}
           onPress={() => Clipboard.setString(msg.content)}
             accessibilityRole="button"
           accessibilityLabel="Copy research result"
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: colors.textMuted }]}>Copy</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.textMuted }]}>Copy</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
@@ -265,21 +271,22 @@ function ResearchBubble({ msg }: { msg: Message }) {
 }
 
 // ── Paywall screen ────────────────────────────────────────────────────────────
-function PaywallView({ onSubscribe, loading, colors, isDark }: Record<string,unknown>) {
+function PaywallView({ onSubscribe, loading, colors }: any) {
+  const styles = makeStyles(COLORS);
   return (
     <ScrollView contentContainerStyle={styles.paywallScroll}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
       <View style={[styles.paywallCard, {
-        backgroundColor: isDark ? colors.textPrimary : colors.bgSubtle,
+        backgroundColor: false ? COLORS.textPrimary : COLORS.bgSubtle,
         borderColor: COLORS.navy + '33'
       }]}>
         <Text maxFontSizeMultiplier={1.4} style={styles.paywallIcon}>⚖️</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallTitle, { color: colors.textPrimary }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallTitle, { color: COLORS.textPrimary }]}>
           AI Legal Research
         </Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallSub, { color: colors.textMuted }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallSub, { color: COLORS.textMuted }]}>
           Westlaw costs $100-500/mo and hasn't changed since 2005.
           Get case law, statutes, and legal standards in seconds.
         </Text>
@@ -293,19 +300,19 @@ function PaywallView({ onSubscribe, loading, colors, isDark }: Record<string,unk
         ].map(([name, price, check]) => (
           <View key={name} style={[styles.compareRow, {
             backgroundColor: check === '✅'
-              ? (isDark ? colors.legalBg : colors.legalBg)
-              : colors.bgCard,
-            borderColor: check === '✅' ? COLORS.legal + '55' : colors.border,
+              ? (false ? COLORS.legalBg : COLORS.legalBg)
+              : COLORS.bgCard,
+            borderColor: check === '✅' ? COLORS.legal + '55' : COLORS.border,
           }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.compareName, { color: check === '✅' ? COLORS.legal : colors.textSecond,
+            <Text maxFontSizeMultiplier={1.4} style={[styles.compareName, { color: check === '✅' ? COLORS.legal : COLORS.textSecond,
               fontWeight: check === '✅' ? '800' : '400' }]}>{name}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.comparePrice, { color: check === '✅' ? COLORS.legal : colors.textMuted }]}>{price}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.comparePrice, { color: check === '✅' ? COLORS.legal : COLORS.textMuted }]}>{price}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.compareCheck}>{check}</Text>
           </View>
         ))}
 
         {/* Features */}
-        <View style={[styles.featureList, { borderColor: colors.border }]}>
+        <View style={[styles.featureList, { borderColor: COLORS.border }]}>
           {[
             'Case law with full citations',
             'Jurisdiction-aware research',
@@ -317,7 +324,7 @@ function PaywallView({ onSubscribe, loading, colors, isDark }: Record<string,unk
           ].map(f => (
             <View key={f} style={styles.featureRow}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.featureCheck, { color: COLORS.legal }]}>✓</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.featureText, { color: colors.textSecond }]}>{f}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.featureText, { color: COLORS.textSecond }]}>{f}</Text>
             </View>
           ))}
         </View>
@@ -330,7 +337,7 @@ function PaywallView({ onSubscribe, loading, colors, isDark }: Record<string,unk
           accessibilityLabel="Subscribe to Legal Research for $49.99/mo"
         >
           {loading
-            ? <ActivityIndicator color={colors.bgCard} />
+            ? <ActivityIndicator color={COLORS.bgCard} />
             : <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>Start 14-Day Free Trial -- $49.99/mo</Text>}
         </TouchableOpacity>
         <TouchableOpacity
@@ -343,7 +350,7 @@ function PaywallView({ onSubscribe, loading, colors, isDark }: Record<string,unk
             Annual -- $374.99/yr · Save $224/yr
           </Text>
         </TouchableOpacity>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallDisclaimer, { color: colors.textMuted }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.paywallDisclaimer, { color: COLORS.textMuted }]}>
           Cancel anytime. Verify all citations independently before filing.
         </Text>
       </View>
@@ -352,6 +359,98 @@ function PaywallView({ onSubscribe, loading, colors, isDark }: Record<string,unk
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
+const makeStyles = (colors: any) => StyleSheet.create({
+  screen:  { flex: 1 },
+  centreWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
+  emptyTitle: { fontSize: 18, ...FONTS.heavy, marginBottom: 16 },
+
+  // Paywall
+  paywallScroll: { padding: 16, paddingBottom: 40 },
+  paywallCard:   { borderRadius: RADIUS.xl, borderWidth: 1, padding: 20, ...SHADOW.sm },
+  paywallIcon:   { fontSize: 44, textAlign: 'center', marginBottom: 10 },
+  paywallTitle:  { fontSize: 22, ...FONTS.black, textAlign: 'center', marginBottom: 8 },
+  paywallSub:    { fontSize: 12, textAlign: 'center', lineHeight: 20, marginBottom: 16 },
+  compareRow:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md,
+    borderWidth: 1, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 6 },
+  compareName:   { flex: 1, fontSize: 12 },
+  comparePrice:  { fontSize: 12, marginRight: 10 },
+  compareCheck:  { fontSize: 16,
+    lineHeight: 24, },
+  featureList:   { borderRadius: RADIUS.md, borderWidth: 0.5, padding: 16, marginVertical: 16 },
+  featureRow:    { flexDirection: 'row', gap: 8, marginBottom: 7, alignItems: 'flex-start' },
+  featureCheck:  { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', flexShrink: 0 },
+  featureText:   { flex: 1, fontSize: 12, lineHeight: 18 },
+  subscribeBtn:  { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center',
+    marginBottom: 8, ...SHADOW.sm },
+  subscribeBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
+  annualBtn:     { borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 11, alignItems: 'center', marginBottom: 10 },
+  annualBtnText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  paywallDisclaimer: { fontSize: 11, textAlign: 'center', lineHeight: 16 },
+
+  // Home
+  threadContent: { padding: 16, paddingBottom: 8 },
+  homeContent:   { flexGrow: 1 },
+  homeTitle:     { fontSize: 20, ...FONTS.black, marginBottom: 6 },
+  homeSub:       { fontSize: 12, lineHeight: 20, marginBottom: 14 },
+  contextPill:   { alignSelf: 'flex-start', borderRadius: 16, borderWidth: 1,
+    paddingHorizontal: 12, paddingVertical: 10, marginBottom: 16 },
+  contextPillText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  quickLabel:    { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase',
+    letterSpacing: 0.8, marginBottom: 8 },
+  quickScroll:   { marginBottom: 14 },
+  quickChip:     { paddingHorizontal: 16, paddingVertical: 9, borderRadius: RADIUS.pill,
+    borderWidth: 1.5, flexShrink: 0 },
+  quickChipText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  disclaimerBox: { borderRadius: RADIUS.md, borderWidth: 1, padding: 10, marginBottom: 16 },
+  disclaimerText:{ fontSize: 11, lineHeight: 16 },
+
+  // Thread
+  userBubble:    { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 10 },
+  userQuery:     { fontSize: 14, ...FONTS.heavy, lineHeight: 20 },
+  assistantBubble: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 14, ...SHADOW.sm },
+  resultHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  resultDot:     { width: 7, height: 7, borderRadius: 4.5 },
+  resultLabel:   { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8 },
+  assistantText: { fontSize: 15, lineHeight: 25, fontFamily: 'Inter_400Regular' },
+  copyBtn:       { alignSelf: 'flex-start', borderRadius: 8, borderWidth: 1,
+    paddingHorizontal: 10, paddingVertical: 10, marginTop: 10 },
+  copyBtnText:   { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+
+  // Searching indicator
+  searchingRow:  { flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderRadius: RADIUS.md, borderWidth: 1, padding: 12, marginBottom: 10 },
+  searchingText: { fontSize: 12 },
+
+  // Input bar
+  inputBar: {
+    flexDirection: 'row', alignItems: 'flex-end', gap: 8,
+    paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 0.5,
+  },
+  queryInput: {
+    flex: 1, borderWidth: 1.5, borderRadius: 20,
+    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10,
+    fontSize: 14, maxHeight: 120, lineHeight: 20,
+  },
+  searchBtn: {
+    width: 42, height: 42, borderRadius: 21,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  searchBtnText: { color: COLORS.bgCard, fontSize: 20, fontWeight: '300' },
+
+  // History
+  histRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg,
+    borderWidth: 1, padding: 16, marginBottom: 8 },
+  histIcon:  { fontSize: 20 },
+  histTitle: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 2, lineHeight: 18 },
+  histDate:  { fontSize: 11 },
+
+  // New search button
+  newSearchBtn:     { borderRadius: RADIUS.lg, paddingVertical: 13, paddingHorizontal: 24,
+    alignItems: 'center', marginTop: 12 },
+  newSearchBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
+  cutoffBanner:  { borderRadius: 8, borderWidth: 1, padding: 8, marginBottom: 10 },
+  cutoffText:    { fontSize: 11, lineHeight: 16 },
+});
 export default function LegalResearchScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -360,8 +459,9 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
   React.useEffect(() => { hasValidConsent().then(ok => { if (!ok) setDisclaimerVisible(true); }).catch(() => {}); }, []);
 
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
-  const { initialQuery, caseContext } = route?.params ?? {};
+  const { initialQuery, caseContext } = (route?.params as any) ?? {};
 
   const [phase,      setPhase]      = useState<Phase>('home');
   const [query,      setQuery]      = useState(initialQuery || '');
@@ -419,7 +519,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
         setHasAccess(true);
         setPhase('home');
         Alert.alert('Welcome!', 'Your Legal Research trial is active. Start searching.');
-      } catch (e) {
+      } catch (e: any) {
         const msg = e.response?.data?.error || 'Could not start subscription.';
         Alert.alert('Subscription error', msg);
       } finally {
@@ -434,7 +534,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
       const res = await api.get('/research/history');
       setHistory(res.data || []);
       setPhase('history');
-    } catch (e) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
     setHistLoad(false);
   }, []);
 
@@ -474,7 +574,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
       };
       setMessages(prev => [...prev, assistantMsg]);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-    } catch (e) {
+    } catch (e: any) {
       const errMsg = e.response?.data?.error || 'Research failed. Check your connection.';
       if (e.response?.status === 402) {
         setPhase('paywall');
@@ -695,97 +795,6 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
   );
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  screen:  { flex: 1 },
-  centreWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  emptyTitle: { fontSize: 18, ...FONTS.heavy, marginBottom: 16 },
 
-  // Paywall
-  paywallScroll: { padding: 16, paddingBottom: 40 },
-  paywallCard:   { borderRadius: RADIUS.xl, borderWidth: 1, padding: 20, ...SHADOW.sm },
-  paywallIcon:   { fontSize: 44, textAlign: 'center', marginBottom: 10 },
-  paywallTitle:  { fontSize: 22, ...FONTS.black, textAlign: 'center', marginBottom: 8 },
-  paywallSub:    { fontSize: 12, textAlign: 'center', lineHeight: 20, marginBottom: 16 },
-  compareRow:    { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.md,
-    borderWidth: 1, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 6 },
-  compareName:   { flex: 1, fontSize: 12 },
-  comparePrice:  { fontSize: 12, marginRight: 10 },
-  compareCheck:  { fontSize: 16,
-    lineHeight: 24, },
-  featureList:   { borderRadius: RADIUS.md, borderWidth: 0.5, padding: 16, marginVertical: 16 },
-  featureRow:    { flexDirection: 'row', gap: 8, marginBottom: 7, alignItems: 'flex-start' },
-  featureCheck:  { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', flexShrink: 0 },
-  featureText:   { flex: 1, fontSize: 12, lineHeight: 18 },
-  subscribeBtn:  { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center',
-    marginBottom: 8, ...SHADOW.sm },
-  subscribeBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
-  annualBtn:     { borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 11, alignItems: 'center', marginBottom: 10 },
-  annualBtnText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  paywallDisclaimer: { fontSize: 11, textAlign: 'center', lineHeight: 16 },
-
-  // Home
-  threadContent: { padding: 16, paddingBottom: 8 },
-  homeContent:   { flexGrow: 1 },
-  homeTitle:     { fontSize: 20, ...FONTS.black, marginBottom: 6 },
-  homeSub:       { fontSize: 12, lineHeight: 20, marginBottom: 14 },
-  contextPill:   { alignSelf: 'flex-start', borderRadius: 16, borderWidth: 1,
-    paddingHorizontal: 12, paddingVertical: 10, marginBottom: 16 },
-  contextPillText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  quickLabel:    { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', textTransform: 'uppercase',
-    letterSpacing: 0.8, marginBottom: 8 },
-  quickScroll:   { marginBottom: 14 },
-  quickChip:     { paddingHorizontal: 16, paddingVertical: 9, borderRadius: RADIUS.pill,
-    borderWidth: 1.5, flexShrink: 0 },
-  quickChipText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  disclaimerBox: { borderRadius: RADIUS.md, borderWidth: 1, padding: 10, marginBottom: 16 },
-  disclaimerText:{ fontSize: 11, lineHeight: 16 },
-
-  // Thread
-  userBubble:    { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 10 },
-  userQuery:     { fontSize: 14, ...FONTS.heavy, lineHeight: 20 },
-  assistantBubble: { borderRadius: RADIUS.lg, borderWidth: 1, padding: 16, marginBottom: 14, ...SHADOW.sm },
-  resultHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  resultDot:     { width: 7, height: 7, borderRadius: 4.5 },
-  resultLabel:   { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8 },
-  assistantText: { fontSize: 15, lineHeight: 25, fontFamily: 'Inter_400Regular' },
-  copyBtn:       { alignSelf: 'flex-start', borderRadius: 8, borderWidth: 1,
-    paddingHorizontal: 10, paddingVertical: 10, marginTop: 10 },
-  copyBtnText:   { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-
-  // Searching indicator
-  searchingRow:  { flexDirection: 'row', alignItems: 'center', gap: 8,
-    borderRadius: RADIUS.md, borderWidth: 1, padding: 12, marginBottom: 10 },
-  searchingText: { fontSize: 12 },
-
-  // Input bar
-  inputBar: {
-    flexDirection: 'row', alignItems: 'flex-end', gap: 8,
-    paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 0.5,
-  },
-  queryInput: {
-    flex: 1, borderWidth: 1.5, borderRadius: 20,
-    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10,
-    fontSize: 14, maxHeight: 120, lineHeight: 20,
-  },
-  searchBtn: {
-    width: 42, height: 42, borderRadius: 21,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  searchBtnText: { color: COLORS.bgCard, fontSize: 20, fontWeight: '300' },
-
-  // History
-  histRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg,
-    borderWidth: 1, padding: 16, marginBottom: 8 },
-  histIcon:  { fontSize: 20 },
-  histTitle: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 2, lineHeight: 18 },
-  histDate:  { fontSize: 11 },
-
-  // New search button
-  newSearchBtn:     { borderRadius: RADIUS.lg, paddingVertical: 13, paddingHorizontal: 24,
-    alignItems: 'center', marginTop: 12 },
-  newSearchBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
-  cutoffBanner:  { borderRadius: 8, borderWidth: 1, padding: 8, marginBottom: 10 },
-  cutoffText:    { fontSize: 11, lineHeight: 16 },
-});
-
+// Module-level fallback for helper components
 }

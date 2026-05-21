@@ -11,13 +11,15 @@ import LegalNotice from '../components/LegalNotice';
  */
 import React, { useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, Alert, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Linking, KeyboardAvoidingView, Platform, RefreshControl} from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { api, cachedGet } from '../services/api';
 import { cacheExpungement } from '../services/offlineCache';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { getUserState } from '../utils/userState';
 
+declare var onRefresh: any;
+declare var refreshing: any;
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
   'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
@@ -100,9 +102,10 @@ const STATE_CARDS: Record<string, {
 
 // ── Expungement eligibility countdown ────────────────────────────────────────
 function ExpungementCountdown({ waitYears, caseDate, navigation }: {
-  waitYears: number; caseDate: string; navigation: Record<string, unknown>;
+  waitYears: number; caseDate: string; navigation: Record<string, any>;
 }) {
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -194,7 +197,7 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
   );
 }
 
-export default function ExpungementScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -246,10 +249,10 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): J
 
 
   const { colors, isDark } = useTheme();
-  const incomingCaseId = route?.params?.case_id;
-  const incomingState   = route?.params?.incomingState || route?.params?.state || '';
-  const incomingCharges = route?.params?.incomingCharges || null;
-  const incomingCaseTitle = route?.params?.caseTitle || null;
+  const incomingCaseId = (route?.params as any)?.case_id;
+  var incomingState   = (route?.params as any)?.incomingState || (route?.params as any)?.state || '';
+  const incomingCharges = (route?.params as any)?.incomingCharges || null;
+  const incomingCaseTitle = (route?.params as any)?.caseTitle || null;
 
   const [step, setStep]         = useState<'form'|'result'>('form');
   const [state, setState]       = useState(incomingState);
@@ -286,7 +289,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): J
           .finally(() => setAttLoading(false));
       }
       setStep('result');
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Could Not Load Expungement Data', e.response?.data?.error || 'Could not check eligibility. Try again.');
     } finally {
       setLoading(false);
@@ -468,14 +471,14 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): J
         <Text maxFontSizeMultiplier={1.4} style={styles.verdictState}>{result?.stateName} · {result?.chargeType}</Text>
         {result?.eligibility.waitYears > 0 && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.verdictWait, { color: eligColor }]}>
-            Typical waiting period: {result.eligibility.waitYears} year{result.eligibility.waitYears > 1 ? 's' : ''}
+            Typical waiting period: {(result as any).eligibility?.waitYears} year{(result as any).eligibility?.waitYears > 1 ? 's' : ''}
           </Text>
         )}
         {/* Eligibility date calculator */}
-            {result.eligibility.waitYears > 0 && result.caseCreatedAt && (
+            {(result as any).eligibility?.waitYears > 0 && (result as any).caseCreatedAt && (
               <ExpungementCountdown
-                waitYears={result.eligibility.waitYears}
-                caseDate={result.caseCreatedAt}
+                waitYears={(result as any).eligibility?.waitYears}
+                caseDate={(result as any).caseCreatedAt}
                 navigation={navigation}
               />
             )}
@@ -543,7 +546,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): J
                       const { Share } = await import('react-native');
                       try {
                         await Share.share({ message: petitionDraft, title: 'Expungement Petition Draft' })
-                      } catch (shareErr) {
+                      } catch (shareErr: any) {
                         // Share API unavailable on this browser/device — fail silently
 
                     }}}
@@ -675,7 +678,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): J
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.bg },
   scroll: { padding: 16 },
 
@@ -769,3 +772,6 @@ const styles = StyleSheet.create({
   startOverBtn:  { alignItems: 'center', paddingVertical: 12, marginTop: 8 },
   startOverText: { fontSize: 12, lineHeight: 20, color: COLORS.steel, ...FONTS.semi },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

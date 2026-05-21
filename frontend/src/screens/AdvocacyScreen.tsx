@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { api } from '../services/api';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 
+declare var data: any;
 interface Stats {
   lawyerCount: number;
   bailCount: number;
@@ -23,7 +24,7 @@ function StatCard({ icon, value, label, color }: { icon: string; value: string |
   );
 }
 
-export default function AdvocacyScreen(): JSX.Element {
+export default function AdvocacyScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -43,7 +44,7 @@ export default function AdvocacyScreen(): JSX.Element {
     try {
       const r = await api.get('/advocacy/stats');
       setStats(r.data || {});
-    } catch (e) {
+    } catch (e: any) {
       setError(e.response?.data?.error || 'Could not load stats. Check your connection.');
     } finally {
       setLoading(false);
@@ -160,3 +161,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   retryBtn: { backgroundColor: '#EF5350', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 20 },
   retryText: { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
 });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

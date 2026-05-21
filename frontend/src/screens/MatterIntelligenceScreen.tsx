@@ -14,7 +14,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   StyleSheet, Alert, RefreshControl,
 } from 'react-native';
-import { useTheme, RADIUS, FONT, TYPE } from '../constants/theme';
+import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
 import type { ScreenProps } from '../types/navigation';
 
@@ -38,7 +38,7 @@ const PRIORITY_COLORS: Record<string, string> = {
   high: COLORS.emergency, normal: COLORS.blue, low: COLORS.textMuted,
 };
 
-export default function MatterIntelligenceScreen({ route, navigation }: ScreenProps<'MatterIntelligence'>) {
+export default function MatterIntelligenceScreen({ route, navigation }: any) {
   const { matterId, matterTitle } = route.params || {};
   const { colors } = useTheme();
   const s = styles(colors);
@@ -445,7 +445,7 @@ const styles = (c: any) => StyleSheet.create({
   confPct:          { fontSize: TYPE.lg, fontFamily: FONT.bold },
   confLabel:        { fontSize: 9, color: c.textMuted },
   // Error banner
-  errorBanner:      { backgroundColor: colors.warn, borderRadius: 8, padding: 12, margin: 8 },
+  errorBanner:      { backgroundColor: COLORS.warn, borderRadius: 8, padding: 12, margin: 8 },
   errorBannerText:  { color: '#fff', fontSize: 13, fontWeight: '600', textAlign: 'center' },
   // Analytics tab
   analyticsDisclaimer: { backgroundColor: c.surface, borderRadius: 10, padding: 14, margin: 8, borderLeftWidth: 3, borderLeftColor: c.gold },
@@ -459,11 +459,11 @@ const styles = (c: any) => StyleSheet.create({
   analysisInterp:   { fontSize: TYPE.xs, color: c.textMuted, lineHeight: 18, marginBottom: 4 },
   factorItem:       { fontSize: 11, color: c.textMuted, marginBottom: 2 },
   analysisSource:   { fontSize: 10, color: c.textMuted, fontStyle: 'italic', marginTop: 4 },
-  circuitSplitWarn: { fontSize: 11, color: colors.warn, marginTop: 4, fontFamily: FONT.bold },
+  circuitSplitWarn: { fontSize: 11, color: COLORS.warn, marginTop: 4, fontFamily: FONT.bold },
   precedentCard:    { backgroundColor: c.surface, borderRadius: 8, padding: 12, margin: 8, borderLeftWidth: 2, borderLeftColor: c.textMuted },
   precedentTitle:   { fontSize: TYPE.xs, fontFamily: FONT.bold, color: c.text, marginBottom: 4 },
   precedentHolding: { fontSize: 11, color: c.textMuted, lineHeight: 16 },
-  warnItem:         { fontSize: TYPE.xs, color: colors.warn, marginBottom: 4, marginHorizontal: 8 },
+  warnItem:         { fontSize: TYPE.xs, color: COLORS.warn, marginBottom: 4, marginHorizontal: 8 },
   // Signals
   signalRow:        { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, gap: 8 },
   signalDot:        { fontSize: 8, marginTop: 1 },  // color set inline

@@ -65,7 +65,7 @@ type Props = {
 };
 
 export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
-  const { colors, TYPE, FONT } = useTheme();
+  const { colors } = useTheme();
   const s = styles(colors, TYPE, FONT);
 
   const [scrolledToBottom, setScrolledToBottom] = useState(false);

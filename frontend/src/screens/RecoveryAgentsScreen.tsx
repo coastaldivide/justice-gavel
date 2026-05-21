@@ -54,7 +54,7 @@ const US_STATES = [
   // Not included: IL, KY, DC -- commercial bail effectively banned there
 ];
 
-export default function RecoveryAgentsScreen({ navigation }: ScreenProps): JSX.Element {
+export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
 
   const [agents, setAgents]       = useState<Agent[]>([]);
@@ -92,7 +92,7 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): JSX.E
     setRefreshing(false);
   }, [selectedState, search]);
 
-  const search = useCallback(async () => {
+  var search = useCallback(async () => {
     if (!selectedState) {
       Alert.alert('Select a state', 'Choose a state to search for recovery agents.');
       return;
@@ -136,7 +136,7 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): JSX.E
 
   const openWeb = (url: string) => {
     hapticImpact();
-    Linking.openURL(url.startsWith('http').catch(() => {}) ? url : `https://${url}`).catch(() => {});
+    Linking.openURL(url.startsWith('http') ? url : `https://${url}`).catch(() => {});
   };
 
   const renderAgent = useCallback(({ item }: { item: Agent }) => (

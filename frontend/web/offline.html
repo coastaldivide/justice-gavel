@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Justice Gavel — Offline</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #042C53; color: #fff; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .card {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px; padding: 40px; max-width: 440px; width: 100%; text-align: center;
+    }
+    .icon  { font-size: 56px; margin-bottom: 20px; }
+    h1     { font-size: 22px; font-weight: 700; color: #C9A84C; margin-bottom: 12px; }
+    p      { font-size: 15px; line-height: 1.6; color: rgba(255,255,255,0.8); margin-bottom: 20px; }
+    .note  { font-size: 13px; color: rgba(255,255,255,0.55); }
+    button {
+      background: #C9A84C; color: #042C53; border: none; border-radius: 8px;
+      padding: 12px 28px; font-size: 15px; font-weight: 700; cursor: pointer;
+      margin-top: 8px; transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">⚖️</div>
+    <h1>You Are Offline</h1>
+    <p>Justice Gavel needs an internet connection to load.<br>
+       Your case data and matter history are safely stored and will be available when you reconnect.</p>
+    <button onclick="window.location.reload()">Try Again</button>
+    <p class="note" style="margin-top:16px">
+      If you were in the middle of an active matter, it has been saved. Nothing was lost.
+    </p>
+  </div>
+</body>
+</html>

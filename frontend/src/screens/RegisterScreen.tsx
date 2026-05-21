@@ -2,7 +2,7 @@ import TermsAcceptanceModal from './TermsAcceptanceModal';
 import Analytics from '../services/analytics';
 import React, { useState, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { api } from '../services/api';
 import { setAppAuth } from '../services/auth';
 import JusticeGavelLogo from '../components/JTBLogo';
@@ -10,8 +10,10 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 
-export default function RegisterScreen({ navigation }: ScreenProps): JSX.Element {
+declare var showPassword: any;
+export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [showTerms, setShowTerms] = React.useState(false);
   const [identifier, setIdentifier]   = useState('');
   const [password, setPassword]       = useState('');
@@ -36,7 +38,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): JSX.Element
       // Schedule D7 re-engagement push (fires only if user stays free)
       api.post('/push/d7-reengage').catch((e) => { __DEV__ && console.warn(e?.message); });
       setAppAuth('authed');
-    } catch (e) {
+    } catch (e: any) {
       setError(e.response?.data?.error || 'Registration failed. Please try again.');
     } finally { setLoading(false); }
   };
@@ -154,7 +156,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): JSX.Element
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.bg },
   scroll: { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 40 },
   logoSection: { alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 24 },
@@ -197,3 +199,6 @@ const styles = StyleSheet.create({
   loginHighlight: { color: COLORS.steel, ...FONTS.bold },
   privacy: { textAlign: 'center', color: COLORS.textMuted, fontSize: 11, marginTop: 24, lineHeight: 18 },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

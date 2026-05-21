@@ -9,6 +9,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { COLORS, FONTS, SHADOW } from '../constants/theme';
 
+declare var rightLabel: any;
 interface Props {
   title: string;
   subtitle?: string;

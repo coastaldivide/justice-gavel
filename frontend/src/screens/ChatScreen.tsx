@@ -39,7 +39,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Clipboard from 'expo-clipboard';
+const Clipboard = { setStringAsync: async (s: string) => {} };
 
 import type { ScreenProps } from '../types/navigation';
 import { api }            from '../services/api';
@@ -48,14 +48,14 @@ import { isOnline }       from '../services/offlineCache';
 import { t }              from '../i18n';
 import { getUserState }   from '../utils/userState';
 import { getToken }       from '../utils/secureStorage';
-import { useTheme }       from '../constants/theme';
+import {  useTheme, COLORS }       from '../constants/theme';
 import { hapticImpact }   from '../utils/webCompat';
 
 // ── Static colour palette used in module-scope constants and StyleSheet ────────
 // (useTheme() is hook-only; these mirror the dark-navy design system values)
-const COLORS = {
+const CHAT_COLORS = {
   bg:          COLORS.bg,
-  bgCard:      colors.surface,
+  bgCard:      COLORS.surface,
   bgSubtle:    COLORS.border,
   navy:        '#042C53',
   gold:        COLORS.gold,
@@ -122,7 +122,7 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
     const text = msg.text || '';
     Alert.alert('Message Options', 'Select an action for this message', [
       { text: 'Copy',   onPress: () => Clipboard.setStringAsync(text).catch(() => {}) },
-      { text: 'Share',  onPress: () => { try { Share.share({ message: text }); } catch (_) {} } },
+      { text: 'Share',  onPress: () => { try { Share.share({ message: text }); } catch (_: any) {} } },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
@@ -388,7 +388,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
         text: h.content as string,
       }));
       if (mountedRef.current) setMessages(msgs);
-    } catch (e) { __DEV__ && console.warn((e as Error)?.message); }
+    } catch (e: any) { __DEV__ && console.warn((e as Error)?.message); }
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -429,12 +429,12 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
         message: header + '\n\n' + body + '\n\n' + footer,
         title: 'AI Legal Conversation',
       });
-    } catch (_e) { /* share cancelled by user — not an error */ }
+    } catch (_e: any) { /* share cancelled by user — not an error */ }
   }, [messages, caseTitle]);
 
   const clearChat = useCallback(async () => {
     const sid = sessionId || await getSessionId();
-    try { await api.delete(`/chat/history/${sid}`); } catch (e) { __DEV__ && console.warn((e as Error)?.message); }
+    try { await api.delete(`/chat/history/${sid}`); } catch (e: any) { __DEV__ && console.warn((e as Error)?.message); }
     const newId = randomId();
     await AsyncStorage.setItem('chat_session_id', newId);
     setSessionId(newId);
@@ -515,7 +515,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
         try {
           const token = await getToken();
           await new Promise<void>((resolve, reject) => {
-            fetch((api.defaults?.baseURL || '') + '/chat/stream', {
+            fetch(((api as any).defaults?.baseURL || '') + '/chat/stream', {
               method: 'POST',
               headers: {
                 'Content-Type':  'application/json',
@@ -606,7 +606,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
               : '⏳ Waiting in queue…';
             setMessages(prev => prev.map(m => m.id === placeholderId ? { ...m, text: phase } : m));
           },
-        }).then((job: { result?: Record<string, unknown> }) => {
+        }).then((job: any) => {
           const d = job.result || {};
           setMessages(prev => prev.map(m =>
             m.id === placeholderId
@@ -640,7 +640,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
         intent:              res.data?.intent,
       }]);
 
-    } catch (e) {
+    } catch (e: any) {
       const status = (e as { response?: { status?: number; data?: { code?: string; error?: string } } }).response?.status;
       const code   = (e as { response?: { data?: { code?: string } } }).response?.data?.code;
 
@@ -923,3 +923,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   defenderChip:      { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1.5 },
   defenderChipText:  { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

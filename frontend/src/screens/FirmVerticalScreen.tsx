@@ -14,16 +14,23 @@
  *   4. Deadlines   — live vertical deadline calculator
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator, Alert, RefreshControl,
   Switch, Platform, KeyboardAvoidingView,
 } from 'react-native';
-import { useTheme, RADIUS, FONT, TYPE } from '../constants/theme';
+import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
 import type { ScreenProps } from '../types/navigation';
 
+declare var graceUntil: any;
+declare var route: any;
+declare var setGraceUntil: any;
+declare var setRefreshing: any;
+declare var setSelectedVsetSelectedV: any;
+declare var setSubStatus: any;
+declare var subscriptionStatus: any;
 type Tab = 'setup' | 'pricing' | 'trackers' | 'deadlines';
 
 // ─── Vertical metadata ────────────────────────────────────────────────────────
@@ -97,7 +104,7 @@ const FEATURE_FLAGS: Record<string, { key: string; label: string; desc: string }
 const ISO_DATE_RE_FV = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const isValidDateFV  = (s: string) => ISO_DATE_RE_FV.test(s);
 
-export default function FirmVerticalScreen({ navigation }: ScreenProps<'FirmVertical'>) {
+export default function FirmVerticalScreen({ navigation }: any) {
   const { colors } = useTheme();
   const s = styles(colors);
 
@@ -895,7 +902,7 @@ const styles = (c: any) => StyleSheet.create({
   segBtnActive:     { backgroundColor: c.gold, borderColor: c.gold },
   segLabel:         { fontSize: TYPE.xs, color: c.textMuted, fontFamily: FONT.medium },
   segLabelActive:   { color: c.navy },
-  missionBtn:       { backgroundColor: colors.legal, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', marginTop: 14 },
+  missionBtn:       { backgroundColor: COLORS.legal, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', marginTop: 14 },
   missionBtnText:   { fontSize: TYPE.base, fontFamily: FONT.bold, color: '#fff' },
   // Sub tabs
   subTabRow:        { flexDirection: 'row', backgroundColor: c.bgElevated, borderRadius: RADIUS.md, padding: 4, marginBottom: 16 },
@@ -918,8 +925,8 @@ const styles = (c: any) => StyleSheet.create({
   clockFooter:      { flexDirection: 'row', justifyContent: 'space-between' },
   clockDays:        { fontSize: TYPE.sm, fontFamily: FONT.medium },
   clockPct:         { fontSize: TYPE.sm, color: c.textMuted },
-  detBadge:         { backgroundColor: colors.errorBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  detBadgeText:     { fontSize: TYPE.xs, color: colors.emergency, fontFamily: FONT.semiBold },
+  detBadge:         { backgroundColor: COLORS.errorBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  detBadgeText:     { fontSize: TYPE.xs, color: COLORS.emergency, fontFamily: FONT.semiBold },
   // DPA tracker
   dpaCard:          { backgroundColor: c.card, borderRadius: RADIUS.md, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 14, marginBottom: 10 },
   dpaName:          { fontSize: TYPE.md, fontFamily: FONT.semiBold, color: c.text, marginBottom: 2 },
@@ -935,10 +942,10 @@ const styles = (c: any) => StyleSheet.create({
   troName:          { fontSize: TYPE.md, fontFamily: FONT.semiBold, color: c.text, flex: 1 },
   troDue:           { fontSize: TYPE.sm, color: c.textMuted, marginBottom: 4 },
   troAsset:         { fontSize: TYPE.xs, color: c.textMuted },
-  dvBadge:          { backgroundColor: colors.errorBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  dvBadgeText:      { fontSize: TYPE.xs, color: colors.emergency, fontFamily: FONT.semiBold },
-  grantedBadge:     { backgroundColor: colors.legalBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  grantedBadgeText: { fontSize: TYPE.xs, color: colors.legal, fontFamily: FONT.semiBold },
+  dvBadge:          { backgroundColor: COLORS.errorBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  dvBadgeText:      { fontSize: TYPE.xs, color: COLORS.emergency, fontFamily: FONT.semiBold },
+  grantedBadge:     { backgroundColor: COLORS.legalBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  grantedBadgeText: { fontSize: TYPE.xs, color: COLORS.legal, fontFamily: FONT.semiBold },
   // Deadlines
   dlRow:            { backgroundColor: c.card, borderRadius: RADIUS.md, borderLeftWidth: 3, padding: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
   dlLabel:          { fontSize: TYPE.base, fontFamily: FONT.semiBold, color: c.text, marginBottom: 2 },

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 680" width="680" height="680"
+     role="img" aria-label="Justice Gavel logo">
+  <title>Justice Gavel</title>
+  <desc>Justice Gavel official logo — octagon in navy with JUSTICE in white and GAVEL in gold, separated by a gold rule, with a steel blue inner border ring.</desc>
+
+  <!-- Background -->
+  <rect width="680" height="680" fill="#042C53"/>
+
+  <!-- Outer octagon — navy fill, gold border -->
+  <polygon
+    points="448,141 579,211 579,469 448,539 232,539 101,469 101,211 232,141"
+    fill="#042C53"
+    stroke="#F9A825"
+    stroke-width="8"/>
+
+  <!-- Inner octagon — steel blue border ring -->
+  <polygon
+    points="448,141 579,211 579,469 448,539 232,539 101,469 101,211 232,141"
+    fill="none"
+    stroke="#185FA5"
+    stroke-width="3"
+    transform="scale(0.88) translate(46,46)"/>
+
+  <!-- JUSTICE wordmark -->
+  <text
+    x="340" y="308"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="72"
+    font-weight="700"
+    fill="#FFFFFF"
+    letter-spacing="6">JUSTICE</text>
+
+  <!-- Gold rule between words -->
+  <line x1="180" y1="340" x2="500" y2="340" stroke="#F9A825" stroke-width="2.5"/>
+
+  <!-- GAVEL wordmark -->
+  <text
+    x="340" y="378"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="72"
+    font-weight="700"
+    fill="#F9A825"
+    letter-spacing="6">GAVEL</text>
+
+</svg>

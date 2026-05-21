@@ -10,14 +10,18 @@
  */
 import React, { useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { KeyboardAvoidingView, View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Linking, ActivityIndicator, Platform } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 
+declare var amt: any;
+declare var data: any;
+declare var payment: any;
+declare var showMore: any; // hoisted from component scope
 // ── Payment purposes ──────────────────────────────────────────────────────────
 
 const PURPOSES = [
@@ -48,7 +52,7 @@ const MORE_METHODS = [
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function PurposeCard({ p, selected, onSelect }: Record<string,unknown>) {
+function PurposeCard({ p, selected, onSelect }: any) {
   return (
     <TouchableOpacity
       style={[styles.purposeCard, selected && styles.purposeCardSelected]}
@@ -68,7 +72,7 @@ function PurposeCard({ p, selected, onSelect }: Record<string,unknown>) {
   );
 }
 
-function MethodRow({ m, selected, onSelect }: Record<string,unknown>) {
+function MethodRow({ m, selected, onSelect }: any) {
   return (
     <TouchableOpacity
       accessibilityRole="button"
@@ -93,7 +97,7 @@ const allMethods = [
     ...(showMore ? MORE_METHODS : [])
   ];
 
-export default function PaymentsScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -225,7 +229,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): JSX.
       } else {
         setStatus('Payment initiated. Check your email for confirmation.');
       }
-    } catch (e) {
+    } catch (e: any) {
       const serverMsg = e.response?.data?.error || e.message || '';
       const statusCode = e.response?.status;
 
@@ -436,3 +440,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   statusError: { color: '#EF5350' },
   footerNote: { textAlign: 'center', color: colors.steel, fontSize: 12, marginTop: 8, paddingHorizontal: 24, lineHeight: 18 },
 });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

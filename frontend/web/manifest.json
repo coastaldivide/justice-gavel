@@ -1,0 +1,88 @@
+{
+  "name": "Justice Gavel",
+  "short_name": "Justice Gavel",
+  "description": "Free legal help if you get arrested. Find attorneys, bail bondsmen, and know your rights.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#042C53",
+  "theme_color": "#042C53",
+  "orientation": "any",
+  "categories": [
+    "legal",
+    "utilities"
+  ],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "shortcuts": [
+    {
+      "name": "Find Attorney",
+      "short_name": "Attorneys",
+      "description": "Search for a licensed attorney near you",
+      "url": "/attorneys",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Know Your Rights",
+      "short_name": "Your Rights",
+      "description": "Read your constitutional rights",
+      "url": "/rights",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Find Bail Bondsman",
+      "short_name": "Bail",
+      "description": "Find a licensed bail bondsman near you",
+      "url": "/bondsmen",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-narrow.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Justice Gavel \u2014 Free legal help"
+    },
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Justice Gavel \u2014 Attorney platform"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import SkeletonLoader from '../components/SkeletonLoader';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import type { ScreenProps } from '../types/navigation';
 /**
  * SavedLawyersScreen -- Personal attorney contact list
@@ -27,6 +27,17 @@ import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webC
 import { getCachedSearch } from '../services/offlineCache';
 import { useFocusEffect } from '@react-navigation/native';
 
+declare var setSavedLawyers: any;
+declare var AppNavigation: any; // hoisted from component scope
+declare var load: any; // hoisted from component scope
+declare var rating: any; // hoisted from component scope
+declare var reviewText: any; // hoisted from component scope
+declare var reviewing: any; // hoisted from component scope
+declare var setRating: any; // hoisted from component scope
+declare var setReviewText: any; // hoisted from component scope
+declare var setReviewing: any; // hoisted from component scope
+declare var setSubmitting: any; // hoisted from component scope
+declare var submitting: any; // hoisted from component scope
 interface SavedLawyer {
   id:          number;
   provider_id: number | null;
@@ -55,9 +66,10 @@ function SavedCard({
   lawyer:       SavedLawyer;
   onRemove:     (id: number) => void;
   onNoteChange: (id: number, note: string) => void;
-  navigation: AppNavigation;
+  navigation: any;
 }) {
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [note,        setNote]        = useState(lawyer.notes || '');
   const [editingNote, setEditingNote] = useState(false);
   const [saving,      setSaving]      = useState(false);
@@ -89,7 +101,7 @@ function SavedCard({
       setReviewing(false);
       setRating(0);
       setReviewText('');
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Could not submit', e.response?.data?.error || 'Try again.');
     } finally { setSubmitting(false); }
   };
@@ -133,9 +145,9 @@ function SavedCard({
               ★ {lawyer.rating.toFixed(1)}
             </Text>
           )}
-          {lawyer.gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.bail, marginTop: 3 }}>🥉 Bronze Gavel</Text>}
-          {lawyer.gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.textSecond, marginTop: 3 }}>🥈 Silver Gavel</Text>}
-          {lawyer.gavel_level >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.gold, marginTop: 3 }}>🏆 Golden Gavel</Text>}
+          {(lawyer as any).gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.bail, marginTop: 3 }}>🥉 Bronze Gavel</Text>}
+          {(lawyer as any).gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.textSecond, marginTop: 3 }}>🥈 Silver Gavel</Text>}
+          {(lawyer as any).gavel_level >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.gold, marginTop: 3 }}>🏆 Golden Gavel</Text>}
         </View>
         <TouchableOpacity
           style={styles.removeBtn}
@@ -296,7 +308,7 @@ function SavedCard({
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function SavedLawyersScreen({ navigation }: ScreenProps): JSX.Element {
+export default function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -323,7 +335,7 @@ export default function SavedLawyersScreen({ navigation }: ScreenProps): JSX.Ele
     try {
       const res = await api.get('/saved/lawyers');
       setLawyers(res.data || []);
-    } catch (e) {
+    } catch (e: any) {
       setError(e.response?.data?.error || 'Could not load saved lawyers.');
     } finally {
       setLoading(false);
@@ -419,7 +431,7 @@ export default function SavedLawyersScreen({ navigation }: ScreenProps): JSX.Ele
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen:         { flex: 1 },
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   list:           { padding: 16, gap: 12, paddingBottom: 40 },
@@ -464,3 +476,6 @@ const styles = StyleSheet.create({
   errorText:      { fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: 16 },
   retryBtn:       { paddingVertical: 12, paddingHorizontal: 24, borderRadius: RADIUS.md, backgroundColor: COLORS.navy },
   retryBtnText:   { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700' } });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

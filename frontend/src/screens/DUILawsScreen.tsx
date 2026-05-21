@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useState, useEffect, useCallback } from 'react';
 import {View, Text, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import { api, cachedGet } from '../services/api';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 
 type DUILaw = {
   id: number; state: string;
@@ -38,8 +38,7 @@ function fmtDays(d: number) {
 function fmtMoney(n: number) { return n ? '$'+n.toLocaleString() : 'None'; }
 function fmtBAC(n: number) { return n ? `${n.toFixed(2)}%` : '0.00%'; }
 
-export default function DUILawsScreen({ route, navigation }: ScreenProps): JSX.Element {
-  const navigation = useNavigation<any>();
+export default function DUILawsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -245,9 +244,9 @@ function Row({label,value,text,sub,card}:{label:string;value:string;text:string;
 }
 function InfoBox({text:t,isDark,color}:{text:string;isDark:boolean;color:string}) {
   return (
-    <View style={{ backgroundColor:isDark?colors.surface:colors.bgCard, borderRadius:10,
+    <View style={{ backgroundColor:isDark?COLORS.surface:COLORS.bgCard, borderRadius:10,
       padding:12, borderLeftWidth:3, borderLeftColor:color }}>
-      <Text maxFontSizeMultiplier={1.4} style={{ color:isDark?colors.bgCard:'#333', fontSize:12, lineHeight:18 }}>{t}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={{ color:isDark?COLORS.bgCard:'#333', fontSize:12, lineHeight:18 }}>{t}</Text>
     </View>
   );
 }

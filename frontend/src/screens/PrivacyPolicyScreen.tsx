@@ -237,7 +237,7 @@ const SECTIONS: Section[] = [
   },
 ];
 
-export default function PrivacyPolicyScreen({ navigation }: ScreenProps): JSX.Element {
+export default function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
   const [tableExpanded, setTableExpanded] = useState(false);

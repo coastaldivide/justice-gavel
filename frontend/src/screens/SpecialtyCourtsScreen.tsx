@@ -3,7 +3,7 @@ import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Linking, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import { api, cachedGet } from '../services/api';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 
 type SpecialtyCourt = {
   id: number; name: string; court_type: string;
@@ -19,7 +19,7 @@ const COURT_TYPES = [
   { key: 'Mental Health Court',label: 'Mental Health Courts', icon: '🧠',  color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
 ];
 
-export default function SpecialtyCourtsScreen(): JSX.Element {
+export default function SpecialtyCourtsScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;

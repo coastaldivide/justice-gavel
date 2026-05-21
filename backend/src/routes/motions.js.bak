@@ -1,0 +1,642 @@
+/**
+ * motions.js — AI motion template library
+ *
+ * POST /api/motions/generate        — generate a motion draft ($9.99)
+ * GET  /api/motions/history         — user's previously generated motions
+ * GET  /api/motions/history/:id     — single motion
+ * DELETE /api/motions/history/:id   — delete from history
+ *
+ * Pipeline:
+ *   1. User selects motion type + fills 6-10 case fields
+ *   2. Stripe charges $9.99 (or demo mode returns mock)
+ *   3. Claude generates a jurisdiction-aware motion draft
+ *   4. Draft saved to motion_history, returned to client
+ *   5. Client copies, edits, exports — done
+ *
+ * Cost per motion: ~$0.02 (Claude prompt + output)
+ * Revenue per motion: $9.99
+ * Margin: ~$9.97
+ */
+
+import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
+import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, API_URLS } from '../utils/routeHelpers.js';
+import express from 'express';
+import { getDb } from '../db/index.js';
+import { authRequired } from './auth.js';
+import { enqueue } from '../services/aiQueue.js';
+
+// ── AI-specific rate limiter (50 requests / 15 min per IP) ─────────────────
+import rateLimit from 'express-rate-limit';
+import logger from '../utils/logger.js';
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many AI requests — please wait before trying again.' },
+  keyGenerator: (req) => req.user?.id ? `user_${req.user.id}` : req.ip,
+});
+
+const router = express.Router();
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const STRIPE_SECRET  = process.env.STRIPE_SECRET;
+
+// ── Motion types with their required fields ───────────────────────────────────
+export const MOTION_TYPES = {
+  suppress: {
+    label:       'Motion to Suppress',
+    description: 'Challenge illegally obtained evidence — 4th, 5th, or 6th Amendment',
+    icon:        '🛡️',
+    fields: [
+      'defendant_name','case_number','court_name','state','charge',
+      'search_date','search_location','officer_name',
+      'amendment_theory','specific_violation',
+      'fruit_of_poisonous_tree','good_faith_exception',
+      'grounds',
+    ],
+    grounds_options: [
+      'No probable cause for stop or arrest',
+      'No warrant — warrantless search without exception',
+      'Warrant lacked particularity (overbroad)',
+      'Warrant issued without probable cause',
+      'Fruit of the poisonous tree — derivative evidence',
+      'Miranda violation — statement obtained without warnings',
+      'Sixth Amendment — interrogation after counsel invoked',
+      'Unlawful traffic stop — no reasonable suspicion',
+      'Unlawful search of home — no exigent circumstances',
+      'Unlawful search of vehicle — no probable cause or consent',
+    ],
+  },
+  continuance: {
+    label:       'Motion for Continuance',
+    description: 'Request additional time to prepare',
+    icon:        '📅',
+    fields: ['defendant_name','case_number','court_name','state','hearing_date','reason','requested_new_date'],
+    grounds_options: ['Insufficient time to prepare','New evidence received','Witness unavailable','Attorney conflict','Discovery incomplete'],
+  },
+  dismiss: {
+    label:       'Motion to Dismiss',
+    description: 'Seek dismissal of charges',
+    icon:        '⚖️',
+    fields: ['defendant_name','case_number','court_name','state','charge','grounds'],
+    grounds_options: ['Speedy trial violation','Insufficient evidence','Prosecutorial misconduct','Double jeopardy','Lack of jurisdiction','Statute of limitations'],
+  },
+  bail_reduction: {
+    label:       'Motion for Bail Reduction',
+    description: 'Argue for lower bail or release on recognizance',
+    icon:        '🔓',
+    fields: [
+      'defendant_name','case_number','court_name','state','charge',
+      'current_bail','length_in_custody','ability_to_pay',
+      'community_ties','employment','prior_record',
+      'travel_documents','voluntary_surrender','other_pending_charges',
+      'proposed_bail',
+    ],
+    grounds_options: [],
+  },
+  discovery: {
+    label:       'Motion for Discovery',
+    description: 'Compel prosecution to disclose evidence',
+    icon:        '📋',
+    fields: ['defendant_name','case_number','court_name','state','charge','items_requested'],
+    grounds_options: ['Brady material','Witness statements','Lab reports','Body camera footage','Police reports','Expert witness information'],
+  },
+  limine: {
+    label:       'Motion in Limine',
+    description: 'Exclude prejudicial evidence from trial',
+    icon:        '🚫',
+    fields: ['defendant_name','case_number','court_name','state','charge','evidence_to_exclude','grounds'],
+    grounds_options: ['Unfair prejudice outweighs probative value','Hearsay','Prior bad acts','Irrelevant','Improperly obtained'],
+  },
+  speedy_trial: {
+    label:       'Motion for Speedy Trial',
+    description: 'Assert 6th Amendment speedy trial right — Barker v. Wingo four-factor test',
+    icon:        '⏱️',
+    fields: [
+      'defendant_name','case_number','court_name','state','charge',
+      'arrest_date','current_date','delays_caused_by',
+      'date_right_asserted','prejudice_to_defendant',
+    ],
+    grounds_options: [],
+  },
+  compel: {
+    label:       'Motion to Compel',
+    description: 'Force prosecution to comply with discovery',
+    icon:        '📌',
+    fields: ['defendant_name','case_number','court_name','state','charge','items_withheld','request_date'],
+    grounds_options: [],
+  },
+
+  // ── Appeal-stage motions ──────────────────────────────────────────────────
+  notice_of_appeal: {
+    label:       'Notice of Appeal',
+    description: 'Preserve appellate rights — strict filing deadlines apply',
+    icon:        '📣',
+    fields: [
+      'defendant_name','case_number','trial_court','appellate_court',
+      'state','conviction_date','sentence','judgment_date',
+      'grounds_preview','counsel_name','counsel_bar_number',
+    ],
+    grounds_options: [
+      'Insufficient evidence to support conviction',
+      'Ineffective assistance of counsel',
+      'Prosecutorial misconduct',
+      'Improper jury instruction',
+      'Illegal search and seizure — 4th Amendment',
+      'Coerced confession — 5th Amendment',
+      'Confrontation Clause violation — 6th Amendment',
+      'Cruel and unusual punishment — 8th Amendment',
+      'Newly discovered evidence',
+      'Sentencing error or guidelines miscalculation',
+    ],
+    deadline_warning: 'CRITICAL: Federal — 14 days from judgment. Most states — 30 days. Missing this deadline permanently waives appellate rights.',
+  },
+
+  appeal_brief: {
+    label:       'Appellate Brief',
+    description: 'Full substantive brief arguing grounds for reversal',
+    icon:        '📜',
+    fields: [
+      'defendant_name','case_number','appellate_court','state',
+      'trial_court_name','conviction','sentence',
+      'standard_of_review','grounds_for_reversal',
+      'key_facts','preserved_objections','relief_requested',
+    ],
+    grounds_options: [
+      'De novo — legal error, question of law',
+      'Abuse of discretion — evidentiary rulings',
+      'Clearly erroneous — factual findings',
+      'Plain error — unpreserved but obvious error',
+      'Structural error — automatic reversal',
+    ],
+  },
+
+  sentence_reduction: {
+    label:       'Motion to Reduce Sentence',
+    description: 'Post-conviction sentence modification or compassionate release',
+    icon:        '🕊️',
+    fields: [
+      'defendant_name','case_number','court_name','state',
+      'conviction','original_sentence','time_served',
+      'rehabilitation','grounds','family_circumstances',
+      'community_support','proposed_sentence',
+    ],
+    grounds_options: [
+      'Retroactive guidelines amendment (18 U.S.C. § 3582)',
+      'Compassionate release — extraordinary and compelling circumstances',
+      'First Step Act eligibility',
+      'Substantial assistance to authorities',
+      'Changed circumstances since sentencing',
+      'Medical condition requiring specialized care',
+      'Caregiver of minor children or incapacitated spouse',
+    ],
+  },
+
+  habeas_corpus: {
+    label:       'Petition for Habeas Corpus',
+    description: 'Collateral attack on unlawful detention — constitutional violations',
+    icon:        '⚖️',
+    fields: [
+      'petitioner_name','case_number','court','state',
+      'conviction_date','sentence','current_custodian',
+      'constitutional_violation','grounds',
+      'aedpa_standard',
+      'prior_appeals','exhaustion_of_remedies',
+      'timeliness_explanation',
+    ],
+    grounds_options: [
+      'Ineffective assistance of counsel — Strickland v. Washington',
+      'Brady violation — suppression of material evidence',
+      'Actual innocence — newly discovered evidence',
+      'Unconstitutional guilty plea — not knowing and voluntary',
+      'Illegal sentence — exceeds statutory maximum',
+      'Jurisdictional defect — court lacked authority',
+      'Newly recognized constitutional right (retroactive)',
+    ],
+    deadline_warning: 'Federal habeas: 1-year statute of limitations from conviction becoming final (AEDPA, 28 U.S.C. § 2254/2255). State exhaustion required before federal filing.',
+  },
+};
+
+// ── Ensure tables ─────────────────────────────────────────────────────────────
+async function ensureTables(db) {
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS motion_history (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id      INTEGER NOT NULL,
+      motion_type  TEXT    NOT NULL,
+      case_fields  TEXT    NOT NULL,
+      draft        TEXT    NOT NULL,
+      filing_status TEXT   DEFAULT 'draft',
+      filed_at     TEXT,
+      paid_cents   INTEGER DEFAULT 999,
+      stripe_pi_id TEXT,
+      created_at   TEXT    DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_motion_user ON motion_history(user_id, created_at);
+    -- Add columns to existing tables if upgrading
+    BEGIN; ALTER TABLE motion_history ADD COLUMN filing_status TEXT DEFAULT 'draft'; COMMIT;
+    BEGIN; ALTER TABLE motion_history ADD COLUMN filed_at TEXT; COMMIT;
+  `);
+}
+
+// ── Claude motion generation ──────────────────────────────────────────────────
+async function generateMotion(motionType, fields) {
+  const motionDef = MOTION_TYPES[motionType];
+  if (!motionDef) throw new Error('Unknown motion type');
+
+  if (!ANTHROPIC_KEY) {
+    // Demo mode — return realistic mock
+    return `IN THE ${(fields.court_name || 'CIRCUIT COURT').toUpperCase()}
+${(fields.state || 'STATE').toUpperCase()}
+
+Case No. ${fields.case_number || 'XX-XXXX'}
+
+STATE OF ${(fields.state || 'STATE').toUpperCase()}
+v.
+${fields.defendant_name || 'DEFENDANT'}
+
+${motionDef.label.toUpperCase()}
+
+[DEMO MODE — Add ANTHROPIC_API_KEY to .env for live generation]
+
+Comes now the Defendant, ${fields.defendant_name || 'Defendant'}, by and through undersigned counsel, and respectfully moves this Court pursuant to the applicable rules of criminal procedure for the following relief:
+
+INTRODUCTION
+This motion is submitted in the above-captioned matter. The Defendant respectfully requests that this Court grant the relief requested herein based on the grounds set forth below.
+
+[Full motion would be generated here with ANTHROPIC_API_KEY configured]
+
+WHEREFORE, Defendant respectfully requests that this Court grant this motion.
+
+Respectfully submitted,
+
+_______________________________
+Defense Counsel
+Date: ${new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}`;
+  }
+
+  const fieldSummary = Object.entries(fields)
+    .filter(([k, v]) => v && String(v).trim())
+    .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
+    .join('\n');
+
+  // Appellate motions need different prompt guidance
+  const isAppellatMotion = ['notice_of_appeal','appeal_brief','sentence_reduction','habeas_corpus'].includes(motionType);
+
+  const deadlineWarning = motionDef.deadline_warning
+    ? `\n\nCRITICAL DEADLINE NOTICE: ${motionDef.deadline_warning}`
+    : '';
+
+  const prompt = isAppellatMotion
+    ? `You are an experienced appellate defense attorney drafting a ${motionDef.label}.
+This is appellate-stage work. The stakes are high — this document must be precise, persuasive, and procedurally correct\n\nCRITICAL: Do NOT invent or fabricate statute numbers, case citations, or legal deadlines. If the specific citation is unknown, write [CITATION NEEDED] — never guess a citation. A fabricated statute number filed in court causes irreparable harm..
+
+CASE INFORMATION:
+${fieldSummary}${deadlineWarning}
+
+REQUIREMENTS:
+- Use proper appellate court format for ${fields.state || 'US federal'} court
+- Include full caption with correct appellate court designation
+- For Notice of Appeal: include jurisdiction statement, timeliness statement, and specific judgments appealed
+- For Appellate Brief: include Table of Contents, Table of Authorities, Jurisdictional Statement, Statement of Issues Presented, Statement of the Case, Statement of Facts, Standard of Review for EACH issue, Argument (with point headings), Conclusion, and Certificate of Service
+- For Habeas Corpus: address exhaustion of state remedies, AEDPA timeliness, and procedural default where applicable
+- Cite controlling precedent precisely — case name, citation, court, year, and the specific holding that supports your argument
+- Apply the correct standard of review to each issue (de novo, abuse of discretion, clearly erroneous, plain error)
+- Preserve all issues — do not waive any argument by omission
+- Write in formal appellate legal language — persuasive but precise
+- End with signature block, bar number line, and certificate of service
+- Do NOT include any explanatory notes or meta-commentary — output the document only
+- Flag [ATTORNEY TO VERIFY] wherever specific local rules, recent case law, or jurisdiction-specific procedure must be confirmed
+
+Generate the complete document now:`
+    : `You are a criminal defense attorney drafting a legal motion.
+
+COURT FORMATTING REQUIREMENTS (apply to all generated motions):
+- Use proper legal caption: Case Name, Case Number, Court Name, Judge
+- Number all sections and paragraphs consecutively
+- Include: COMES NOW, STATEMENT OF FACTS, LEGAL ARGUMENT, CONCLUSION, PRAYER FOR RELIEF
+- End with signature block: "Respectfully submitted, [ATTORNEY NAME], [BAR NUMBER], [ADDRESS]"
+- Use double-spacing and 1-inch margins (note these — the attorney's word processor handles it)
+- All case citations must follow Bluebook format or the applicable jurisdiction's citation rules
+- Flag every citation with [ATTORNEY TO VERIFY: cite] per the hallucination guard above
+
+Generate a complete, court-ready ${motionDef.label} based on the following case information.\n\nCRITICAL: Do NOT invent statute numbers, case citations, or legal deadlines. Use [CITATION NEEDED] for unknown citations — never fabricate.
+
+CASE INFORMATION:
+${fieldSummary}
+
+MOTION-SPECIFIC REQUIREMENTS:
+${motionType === 'bail_reduction' ? `- Address all statutory bail factors: nature of offense, weight of evidence, personal history, criminal record, flight risk, danger to community, length of pre-trial detention, and ability to pay.
+- Cite the relevant state bail statute by name and section.` : ''}
+${motionType === 'speedy_trial' ? `- Apply the four-factor Barker v. Wingo, 407 U.S. 514 (1972) balancing test explicitly:
+  1. Length of delay (presumptively prejudicial threshold)
+  2. Reason for delay (attribute to prosecution or defense)
+  3. Defendant's assertion of the right (date and how asserted)
+  4. Prejudice to defendant (oppressive incarceration, anxiety, impaired defense)
+- State whether the delay meets the Doggett v. United States, 505 U.S. 647 (1992) threshold.` : ''}
+${motionType === 'habeas_corpus' ? `- Frame every claim under 28 U.S.C. § 2254(d): the state court's decision must have been (1) contrary to, or an unreasonable application of, clearly established federal law as determined by the Supreme Court (Williams v. Taylor, 529 U.S. 362 (2000)), OR (2) based on an unreasonable determination of the facts.
+- Address AEDPA exhaustion requirement: all claims must have been presented to the highest available state court.
+- Address statute of limitations: one year from when conviction became final under 28 U.S.C. § 2244(d).
+- For ineffective assistance claims: apply Strickland v. Washington, 466 U.S. 668 (1984) two-prong test explicitly.` : ''}
+${motionType === 'suppress' ? `- Identify the precise constitutional amendment and theory: 4th (unreasonable search/seizure), 5th (coerced statement), or 6th (interrogation without counsel).
+- Address the applicable exclusionary rule standard (Mapp v. Ohio for state; Weeks v. United States for federal).
+- If fruit of the poisonous tree is alleged, address whether independent source, inevitable discovery, or attenuation doctrine (Utah v. Strieff) applies.
+- If good faith exception is raised by prosecution, address United States v. Leon, 468 U.S. 897 (1984) and its exceptions.` : ''}
+
+GENERAL REQUIREMENTS:
+- Use proper legal motion format for ${fields.state || 'US'} state court
+- Include caption (court, case number, parties)
+- Include proper legal headings (Introduction, Statement of Facts, Legal Standard, Argument, Conclusion)
+- Cite relevant case law with full citations — case name, volume, reporter, page, court, year
+- Write in formal legal language
+- End with signature block with blanks for date and attorney signature
+- Flag [ATTORNEY TO VERIFY: local rule] wherever local court rules may differ
+- Flag [ATTORNEY TO VERIFY: cite] next to every case citation — AI citations must
+   NEVER be relied upon without verification. If uncertain of a citation,
+   write [CASE CITATION NEEDED] rather than guessing. Real harm results
+   from filing motions with fabricated case law. be independently verified
+- Do NOT include explanatory notes or meta-commentary — output the motion only
+
+Generate the complete motion now:`;
+
+  const res = await fetch(API_URLS.ANTHROPIC, {
+    method: 'POST',
+    headers: {
+      'Content-Type':      'application/json',
+      'x-api-key':         ANTHROPIC_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model:      'claude-sonnet-4-20250514',
+      temperature: 0.15,
+      max_tokens: isAppellatMotion ? 8000 : 2000, // appellate briefs need more room
+      messages:   [{ role: 'user', content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Claude error ${res.status}: ${err}`);
+  }
+  const data = await res.json();
+  return data.content?.[0]?.text || '';
+}
+
+// ── POST /api/motions/generate ────────────────────────────────────────────────
+// ── API key guard — fail fast with clear error rather than cryptic undefined ─
+if (!process.env.ANTHROPIC_API_KEY) {
+  logger.error('[motions.js] ANTHROPIC_API_KEY not set — all AI routes will fail');
+}
+
+router.post('/generate', aiLimiter, authRequired, async (req, res) => {
+  try {
+
+    // Pro/Intel subscribers get unlimited motions — bypass per-motion paywall
+    const db_m = await getDb();
+    const motionSub = await db_m.get(
+      `SELECT tier FROM subscriptions WHERE user_id=? AND status='active'
+       AND tier IN ('pro','intel','defender') LIMIT 1`,
+      [req.user.id]
+    ).catch(() => null);
+    const hasFreeMotions = !!motionSub || req.user?.role === 'defender';
+
+   const db = await getDb();
+    await ensureTables(db);
+
+    const { motion_type, fields = {}, payment_method_id } = req.body;
+
+    if (!motion_type || !MOTION_TYPES[motion_type]) {
+      return res.status(400).json({ error: 'Valid motion_type required', types: Object.keys(MOTION_TYPES) });
+    }
+
+    // ── Payment ───────────────────────────────────────────────────────────────
+    let stripe_pi_id = 'demo_' + Date.now();
+    if (STRIPE_SECRET) {
+      if (!payment_method_id) {
+        return res.status(402).json({
+          error: 'Payment method required',
+          code:  'payment_method_required',
+          amount_cents: 999,
+          amount_display: '$9.99',
+        });
+      }
+      try {
+        const Stripe = (await import('stripe')).default;
+        const stripe = new Stripe(STRIPE_SECRET);
+        const pi = await stripe.paymentIntents.create({
+          amount:   999,
+          currency: 'usd',
+          confirm:  true,
+          payment_method: payment_method_id,
+          automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+          description: `Justice Gavel — ${MOTION_TYPES[motion_type].label}`,
+          metadata:    { motion_type, user_id: String(req.user.id) },
+        });
+        if (pi.status !== 'succeeded') {
+          return res.status(402).json({ error: 'Payment failed', status: pi.status });
+        }
+        stripe_pi_id = pi.id;
+      } catch (e) {
+        return res.status(402).json({ error: 'Payment could not be processed. Please check your card details.' });
+      }
+    }
+
+    // ── Async: enqueue generation, return jobId immediately ─────────────────
+    const _uid = req.user.id; const _mt = motion_type; const _fields = fields;
+    const _pi  = stripe_pi_id;
+
+    const jobId = await enqueue('motion', async () => {
+      let draft;
+      try {
+        draft = await generateMotion(_mt, _fields);
+      } catch (e) {
+        throw new Error('Motion generation failed: ' + e.message);
+      }
+      const db2 = await getDb();
+      await ensureTables(db2);
+      const row = await db2.run(
+        `INSERT INTO motion_history (user_id, motion_type, case_fields, draft, paid_cents, stripe_pi_id)
+         VALUES (?,?,?,?,?,?)`,
+        [_uid, _mt, JSON.stringify(_fields), draft, 999, _pi]
+      );
+      return {
+        ok: true, motion_id: row.lastID, motion_type: _mt,
+        label: MOTION_TYPES[_mt].label, draft,
+        charged: _pi ? '$9.99' : '$9.99 (pending Stripe config)',
+        disclaimer: 'IMPORTANT: This motion is AI-generated and has NOT been reviewed by a licensed attorney. It may contain errors, omit required elements, or be inappropriate for your jurisdiction. Filing an incorrect motion can waive rights and harm your case. Have a licensed criminal defense attorney review before filing.',
+        not_legal_advice: true,
+      };
+    });
+
+    res.json({ jobId, status: 'pending', async: true, motion_type,
+      message: 'Motion is generating. Poll /api/jobs/' + jobId + ' for result.' });
+  } catch (e) {
+    logger.error('[motions/generate]', e.message);
+    res.status(500).json({ error: 'Could not generate motion. Try again.' });
+  }
+});
+
+// ── PATCH /api/motions/:id/status — update filing status ─────────────────────
+router.patch('/:id/status', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    await ensureTables(db);
+    const { status } = req.body;
+
+  // ── Input length limits for motion generation ─────────────────────────────────
+  // Motion fields: each field capped at 1,000 chars, total payload at 10,000 chars
+  if (fields && typeof fields === 'object') {
+    const total = Object.values(fields).join('').length;
+    if (total > 10000) {
+      return res.status(400).json({
+        error: 'Field data too long. Please keep total input under 10,000 characters.',
+      });
+    }
+    for (const [fk, fv] of Object.entries(fields)) {
+      if (typeof fv === 'string' && fv.length > 1000) {
+        return res.status(400).json({
+          error: `Field "${fk}" is too long. Maximum 1,000 characters per field.`,
+        });
+      }
+    }
+  }
+
+    const valid = ['draft','filed','granted','denied','pending'];
+    if (!valid.includes(status)) {
+      return res.status(400).json({ error: `Status must be one of: ${valid.join(', ')}` });
+    }
+    const filed_at = status === 'filed' ? new Date().toISOString() : null;
+    await db.run(
+      'UPDATE motion_history SET filing_status=?, filed_at=? WHERE id=? AND user_id=?',
+      [status, filed_at, safeInt(req.params.id), req.user.id]
+    );
+    res.json({ updated: true, status, filed_at });
+  } catch (e) { res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// ── GET /api/motions/history ──────────────────────────────────────────────────
+router.get('/history', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    await ensureTables(db);
+    const _histPage = Math.max(0, safeInt(req.query.page || '0'));
+    const rows = await db.all(
+      `SELECT id, motion_type, paid_cents, created_at,
+              substr(draft, 1, 200) as preview
+       FROM motion_history WHERE user_id=? ORDER BY created_at DESC LIMIT 20 OFFSET ${Math.max(0,safeInt(req.query.page||'0'))*20}`,
+      [req.user.id]
+    );
+    const enriched = rows.map(r => ({
+      ...r,
+      label: MOTION_TYPES[r.motion_type]?.label || r.motion_type,
+      icon:  MOTION_TYPES[r.motion_type]?.icon  || '📄',
+    }));
+    res.json(enriched);
+  } catch (e) {
+    res.status(500).json({ error: 'Could not load history' });
+  }
+});
+
+// ── GET /api/motions/history/:id ──────────────────────────────────────────────
+router.get('/history/:id', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    await ensureTables(db);
+    const row = await db.get(
+      'SELECT * FROM motion_history WHERE id=? AND user_id=?',
+      [safeInt(req.params.id), req.user.id]
+    );
+    if (!row) return err404(res, 'Motion not found');
+    res.json({ ...row, case_fields: JSON.parse(row.case_fields || '{}') });
+  } catch (e) {
+    res.status(500).json({ error: 'Could not load motion' });
+  }
+});
+
+// ── DELETE /api/motions/history/:id ──────────────────────────────────────────
+router.delete('/history/:id', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    await db.run('DELETE FROM motion_history WHERE id=? AND user_id=?', [safeInt(req.params.id), req.user.id]);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Could not delete motion' });
+  }
+});
+
+// POST /api/motions/review — AI legal-editor review of a motion draft
+// Checks: required fields, procedural correctness, statute citations, formatting.
+// Returns: { issues, suggestions, score }
+router.post('/review', authRequired, perUserAiLimit, async (req, res) => {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    logger.error('[motions/review] ANTHROPIC_API_KEY not set');
+    return res.status(503).json({ error: 'AI review temporarily unavailable.' });
+  }
+  try {
+    const { draft = '', motion_type = '', state = '' } = req.body;
+    if (!draft.trim()) {
+      return err400(res, 'Draft text is required.');
+    }
+
+    const REVIEW_PROMPT = `You are an experienced criminal defense attorney reviewing a motion draft for procedural correctness and completeness.
+
+Motion type: ${motion_type || 'Unknown'}
+Jurisdiction: ${state || 'Unknown state'}
+
+Review the following motion draft and respond ONLY with a JSON object in this exact format:
+{
+  "score": "pass" | "warn" | "fail",
+  "issues": ["list of specific problems found, if any"],
+  "suggestions": ["list of specific improvements recommended"],
+  "missing_fields": ["list of required fields that appear to be blank or placeholder"]
+}
+
+Score guide:
+- "pass": motion is procedurally sound and ready for attorney review
+- "warn": motion has minor issues but could be filed with corrections
+- "fail": motion has significant issues that must be addressed before filing
+
+Check specifically for:
+1. Blank or [PLACEHOLDER] fields (case number, defendant name, county, court)
+2. Correct caption format for ${state || 'the jurisdiction'}
+3. Proper certificate of service if required
+4. Statute citations that appear complete (not truncated)
+5. Argument sections that are substantive (not just headings)
+6. Signature block completeness
+
+Draft to review:
+---
+${draft.slice(0, 6000)}
+---
+
+Respond ONLY with the JSON object. No other text.`;
+
+    const response = await fetch(API_URLS.ANTHROPIC, {
+      method: 'POST',
+      headers: {
+        'Content-Type':      'application/json',
+        'x-api-key':         process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model:       'claude-sonnet-4-20250514',
+        temperature: 0.10,
+        max_tokens:  800,
+        messages: [{ role: 'user', content: REVIEW_PROMPT }],
+      }),
+    });
+    const data = await response.json();
+    const raw  = data.content?.[0]?.text || '{}';
+    let result;
+    try {
+      result = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    } catch {
+      result = { score: 'warn', issues: ['Review could not be parsed.'], suggestions: [], missing_fields: [] };
+    }
+    return res.json(result);
+  } catch (e) {
+    return res.status(500).json({ error: 'Motion review failed. Please try again.' });
+  }
+});
+
+export default router;

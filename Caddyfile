@@ -1,0 +1,53 @@
+# Caddyfile — Justice Gavel Production
+# Caddy automatically provisions and renews Let's Encrypt SSL certificates.
+#
+# Prerequisites:
+#   1. apt install caddy  (or brew install caddy on macOS)
+#   2. Replace justicegavel.app with your actual domain
+#   3. Ensure DNS A record points to this server's IP
+#   4. Backend must be running on port 4000 (PM2)
+#
+# Start:  sudo caddy start --config /path/to/Caddyfile
+# Reload: sudo caddy reload --config /path/to/Caddyfile
+
+justicegavel.app {
+    # ── Reverse proxy to Node.js backend ─────────────────────────────────────
+    reverse_proxy localhost:4000 {
+        # Health check
+        health_uri      /health
+        health_interval 30s
+        health_timeout  5s
+
+        # Headers forwarded to backend
+        header_up X-Real-IP          {remote_host}
+        header_up X-Forwarded-For    {remote_host}
+        header_up X-Forwarded-Proto  {scheme}
+    }
+
+    # ── Security headers ──────────────────────────────────────────────────────
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options    "nosniff"
+        X-Frame-Options           "DENY"
+        Referrer-Policy           "strict-origin-when-cross-origin"
+        -Server                   # remove Server header
+    }
+
+    # ── Compression (Caddy + Node both compress — Caddy wins at CDN layer) ────
+    encode zstd gzip
+
+    # ── Logging ───────────────────────────────────────────────────────────────
+    log {
+        output file /var/log/caddy/justicegavel.log {
+            roll_size     100mb
+            roll_keep     5
+            roll_keep_for 720h
+        }
+        format json
+    }
+}
+
+# Redirect bare domain to www (optional — remove if not using www)
+www.justicegavel.app {
+    redir https://justicegavel.app{uri} permanent
+}

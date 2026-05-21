@@ -24,12 +24,13 @@ const useCameraPermissions = Platform.OS === 'web'
   ? () => [{ granted: false }, async () => ({ granted: false })]
   : require('expo-camera').useCameraPermissions;
 import * as ImageManipulator from 'expo-image-manipulator';
-import { useTheme, RADIUS, FONTS, TYPE } from '../constants/theme';
+import {  useTheme, RADIUS, FONTS, TYPE, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { api } from '../services/api';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
-export default function DocumentScannerScreen({ navigation, route }: ScreenProps): JSX.Element {
+declare var CameraType: any;
+export default function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const { caseId, onCapture } = (route?.params ?? {}) as {
     caseId?: number;
     onCapture?: (uri: string) => void;
@@ -212,7 +213,7 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
 }
 
 const styles = (C: Record<string, string>) => StyleSheet.create({
-  screen:    { flex: 1, backgroundColor: colors.bgCard },
+  screen:    { flex: 1, backgroundColor: COLORS.bgCard },
   camera:    { flex: 1 },
   centered:  { backgroundColor: C.bg, justifyContent: 'center', alignItems: 'center', padding: 32 },
 

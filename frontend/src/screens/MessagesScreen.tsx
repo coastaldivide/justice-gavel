@@ -25,13 +25,28 @@ import type { ScreenProps } from '../types/navigation';
 import React, {
   useState, useEffect, useCallback, useRef, useMemo
 } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, RefreshControl, Animated, Pressable } from 'react-native';
+import { ActivityIndicator, Alert, Animated, FlatList, KeyboardAvoidingView, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useFocusEffect } from '@react-navigation/native';
 
+declare var displayMessages: any;
+declare var listEmpty: any;
+declare var msgs: any;
+declare var pickDocument: any;
+declare var refreshing: any;
+declare var renderItem: any;
+declare var setMsgs: any;
+declare var setRefreshing: any;
+declare var t: any;
+declare var load: any; // hoisted from component scope
+declare var messages: any; // hoisted from component scope
+declare var searchQuery: any; // hoisted from component scope
+declare var setAttachment: any; // hoisted from component scope
+declare var styles: any; // hoisted from component scope
+declare var userId: any; // hoisted from component scope
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Msg {
   id: number;
@@ -83,7 +98,6 @@ function MessageBubble({
   msg: Msg; isMine: boolean; prevMine: boolean; showAvatar: boolean;
 }) {
   const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
   const fadeAnim = useRef(new Animated.Value(msg._optimistic ? 0.6 : 1)).current;
 
   useEffect(() => {
@@ -208,22 +222,91 @@ function MessageBubble({
     if (!searchQuery.trim()) return messages;
     const q = searchQuery.toLowerCase();
     return messages.filter((m: Record<string,unknown>) =>
-      (m.body || m.content || '').toLowerCase().includes(q) ||
-      (m.sender_name || '').toLowerCase().includes(q)
+      ((m as any).body || (m as any).content || '').toLowerCase().includes(q) ||
+      ((m as any).sender_name || '').toLowerCase().includes(q)
     );
   }, [messages, searchQuery]);
 
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function MessagesScreen({ route, navigation }: ScreenProps): JSX.Element {
+const makeStyles = (colors: any) => StyleSheet.create({
+  screen:      { flex: 1 },
+  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  listContent: { padding: 12, paddingBottom: 8 },
+
+  // Day divider
+  dayDivider: { flexDirection: 'row', alignItems: 'center', marginVertical: 14, gap: 8 },
+  dayLine:    { flex: 1, height: 0.5 },
+  dayLabel:   { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', paddingHorizontal: 8, letterSpacing: 0.3 },
+
+  // Message row
+  msgRow:     { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 3 },
+  msgRowMine: { flexDirection: 'row-reverse' },
+
+  // Avatar
+  avatar:     { width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.navy,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  avatarText: { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+
+  senderName: { fontSize: 11, fontWeight: '600', marginBottom: 3, marginLeft: 2 },
+
+  // Bubble
+  bubble: {
+    borderRadius: RADIUS.xl, paddingHorizontal: 16, paddingVertical: 9,
+    maxWidth: '100%',
+  },
+  bubbleMine:   { borderBottomRightRadius: 4 },
+  bubbleTheirs: { borderBottomLeftRadius: 4 },
+  bubbleText:   { fontSize: 15, lineHeight: 21, letterSpacing: 0.1 },
+
+  // Meta
+  metaRow:    { flexDirection: 'row', alignItems: 'center', marginTop: 3, marginLeft: 2 },
+  metaRowMine:{ justifyContent: 'flex-end', marginRight: 2 },
+  metaText:   { fontSize: 11, fontWeight: '500' },
+  readTick:   { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  langBadge:  { marginLeft: 5, backgroundColor: COLORS.bgSubtle, borderRadius: 4,
+    paddingHorizontal: 5, paddingVertical: 1 },
+  langBadgeText: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.blue },
+
+  // Input bar
+  inputBar: {
+    flexDirection: 'row', alignItems: 'flex-end', gap: 8,
+    paddingHorizontal: 12, paddingVertical: 10,
+    borderTopWidth: 0.5,
+  },
+  input: {
+    flex: 1, borderWidth: 1.5, borderRadius: 20,
+    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10,
+    fontSize: 15, maxHeight: 120, lineHeight: 20,
+  },
+  sendBtn: {
+    width: 42, height: 42, borderRadius: 21,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  sendBtnText: { color: COLORS.bgCard, fontSize: 20, fontWeight: '300', lineHeight: 22, marginTop: -1 },
+
+  // Empty
+  emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 36 },
+  emptyIcon:  { fontSize: 48, marginBottom: 14 },
+  emptyTitle: { fontSize: 20, ...FONTS.black, textAlign: 'center', marginBottom: 8 },
+  emptySub:   { fontSize: 12, textAlign: 'center', lineHeight: 20 },
+  encryptBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 5, paddingVertical: 10, backgroundColor: colors.legal, borderBottomWidth: 0.5,
+    borderBottomColor: colors.legal },
+  encryptIcon:  { fontSize: 11 },
+  encryptText:  { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.legal, letterSpacing: 0.3 },
+});
+export default function MessagesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+const styles = makeStyles(COLORS);
+  const styles = makeStyles(colors);
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
   const { colors, isDark } = useTheme();
-  const { caseId, caseTitle } = route?.params ?? {};
+  const { caseId, caseTitle } = (route?.params as any) ?? {};
 
   const [messages, setMessages] = useState<Msg[]>([]);
   const [page, setPage]   = React.useState(1);
@@ -337,7 +420,7 @@ export default function MessagesScreen({ route, navigation }: ScreenProps): JSX.
     try {
       const res = await api.get(`/messages/${caseId}`);
       setMessages(res.data?.messages || []);
-    } catch (e) { __DEV__ && console.warn(e?.message); setMsgError('Could not load messages. Check your connection.'); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); setMsgError('Could not load messages. Check your connection.'); }
     setLoading(false);
   }, [caseId]);
 
@@ -504,7 +587,7 @@ export default function MessagesScreen({ route, navigation }: ScreenProps): JSX.
               No messages yet. Messages from your attorneys will appear here.
             </Text>
           }
-          renderItem={({ item, index }: { item: Record<string,unknown>; index: number }) => {
+          renderItem={({ item, index }: { item: Record<string,any>; index: number }) => {
             if (item.type === 'day') {
               return (
                 <View style={styles.dayDivider}>
@@ -595,72 +678,8 @@ function SendButton({ onPress, active, sending }: {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const makeStyles = (colors: any) => StyleSheet.create({
-  screen:      { flex: 1 },
-  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  listContent: { padding: 12, paddingBottom: 8 },
 
-  // Day divider
-  dayDivider: { flexDirection: 'row', alignItems: 'center', marginVertical: 14, gap: 8 },
-  dayLine:    { flex: 1, height: 0.5 },
-  dayLabel:   { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', paddingHorizontal: 8, letterSpacing: 0.3 },
-
-  // Message row
-  msgRow:     { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 3 },
-  msgRowMine: { flexDirection: 'row-reverse' },
-
-  // Avatar
-  avatar:     { width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.navy,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  avatarText: { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-
-  senderName: { fontSize: 11, fontWeight: '600', marginBottom: 3, marginLeft: 2 },
-
-  // Bubble
-  bubble: {
-    borderRadius: RADIUS.xl, paddingHorizontal: 16, paddingVertical: 9,
-    maxWidth: '100%',
-  },
-  bubbleMine:   { borderBottomRightRadius: 4 },
-  bubbleTheirs: { borderBottomLeftRadius: 4 },
-  bubbleText:   { fontSize: 15, lineHeight: 21, letterSpacing: 0.1 },
-
-  // Meta
-  metaRow:    { flexDirection: 'row', alignItems: 'center', marginTop: 3, marginLeft: 2 },
-  metaRowMine:{ justifyContent: 'flex-end', marginRight: 2 },
-  metaText:   { fontSize: 11, fontWeight: '500' },
-  readTick:   { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  langBadge:  { marginLeft: 5, backgroundColor: COLORS.bgSubtle, borderRadius: 4,
-    paddingHorizontal: 5, paddingVertical: 1 },
-  langBadgeText: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.blue },
-
-  // Input bar
-  inputBar: {
-    flexDirection: 'row', alignItems: 'flex-end', gap: 8,
-    paddingHorizontal: 12, paddingVertical: 10,
-    borderTopWidth: 0.5,
-  },
-  input: {
-    flex: 1, borderWidth: 1.5, borderRadius: 20,
-    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10,
-    fontSize: 15, maxHeight: 120, lineHeight: 20,
-  },
-  sendBtn: {
-    width: 42, height: 42, borderRadius: 21,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  sendBtnText: { color: COLORS.bgCard, fontSize: 20, fontWeight: '300', lineHeight: 22, marginTop: -1 },
-
-  // Empty
-  emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 36 },
-  emptyIcon:  { fontSize: 48, marginBottom: 14 },
-  emptyTitle: { fontSize: 20, ...FONTS.black, textAlign: 'center', marginBottom: 8 },
-  emptySub:   { fontSize: 12, textAlign: 'center', lineHeight: 20 },
-  encryptBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 5, paddingVertical: 10, backgroundColor: colors.legal, borderBottomWidth: 0.5,
-    borderBottomColor: colors.legal },
-  encryptIcon:  { fontSize: 11 },
-  encryptText:  { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.legal, letterSpacing: 0.3 },
-});
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);
 
 }

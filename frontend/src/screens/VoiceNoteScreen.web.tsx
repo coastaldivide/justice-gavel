@@ -1,3 +1,7 @@
+declare var window: any;
+declare var MediaRecorder: any;
+declare var navigator: any;
+
 /**
  * VoiceNoteScreen.web.tsx -- Web platform using MediaRecorder API
  *
@@ -10,7 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api } from '../services/api';
 
-export default function VoiceNoteScreen(): JSX.Element {
+export default function VoiceNoteScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [recording, setRecording] = useState(false);

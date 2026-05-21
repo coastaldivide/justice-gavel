@@ -4,12 +4,15 @@ import { View, Text, FlatList, RefreshControl, TouchableOpacity, StyleSheet, Act
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, cachedGet } from '../services/api';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
-import { useTheme } from '../constants/theme';
+import { COLORS, RADIUS, useTheme } from '../constants/theme';
 
+declare var load: any;
+declare var refreshing: any;
+declare var setRefreshing: any;
 interface Lesson { id: number; title: string; category: string; content: string; points: number; }
 
 const CAT_COLORS: Record<string, string> = {
-  Criminal: colors.emergencyDark, General: colors.blue, Civil: colors.legalDark, Constitutional: colors.blue,
+  Criminal: COLORS.emergencyDark, General: COLORS.blue, Civil: COLORS.legalDark, Constitutional: COLORS.blue,
 };
 
 export default function LessonsScreen({ navigation, route }: ScreenProps) {
@@ -19,8 +22,9 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
   const { colors, isDark } = useTheme();
-  const incomingCategory = route?.params?.category || null;
-  const incomingQuery    = route?.params?.query    || null;
+  const styles = makeStyles(colors);
+  const incomingCategory = (route?.params as any)?.category || null;
+  const incomingQuery    = (route?.params as any)?.query    || null;
   const [lessons, setLessons]   = useState<Lesson[]>([]);
   const [completed, setCompleted] = useState<Set<number>>(new Set());
   const [expanded, setExpanded]   = useState<number | null>(null);
@@ -63,7 +67,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
       const newPts = (parseInt(stored || '0') + pts);
       await AsyncStorage.setItem(`points_${userId}`, String(newPts));
       Alert.alert('✓ Completed!', `+${pts} points added to your rewards balance.`);
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Could Not Load Lessons', e.response?.data?.error || 'Could not mark complete.');
     }
   };
@@ -205,7 +209,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
   progressCard: { backgroundColor: '#042C53', padding: 20, margin: 12, borderRadius: 16 },
   progressTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
@@ -250,3 +254,6 @@ const styles = StyleSheet.create({
   streakCount: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#FFA726' },
   streakSub:   { fontSize: 11, color: colors.emergency },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

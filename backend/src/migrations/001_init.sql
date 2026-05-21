@@ -1,0 +1,3 @@
+CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT UNIQUE,password_hash TEXT,name TEXT,is_premium INTEGER DEFAULT 0,created_at TEXT DEFAULT (datetime('now')));
+CREATE TABLE IF NOT EXISTS cases (id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER,title TEXT,status TEXT,next_court_date TEXT,notes TEXT,created_at TEXT DEFAULT (datetime('now')));
+CREATE TABLE IF NOT EXISTS resources (id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT,category TEXT,body TEXT);

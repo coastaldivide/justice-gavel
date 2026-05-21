@@ -29,7 +29,7 @@ const TWO_PARTY_STATES = new Set([
   'CA','CT','FL','IL','MD','MA','MI','MT','NH','OR','PA','WA','WI'
 ]);
 
-export default function InterrogationRecorderScreen({ navigation }: ScreenProps): JSX.Element {
+export default function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -50,7 +50,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
   const [error, setError]         = useState('');
   const [location, setLocation]   = useState('');
 
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const recordingRef = useRef<any>(null);
   const timerRef     = useRef<any>(null);
   const mountedRef   = useRef(true);
 

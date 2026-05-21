@@ -86,7 +86,7 @@ instance.interceptors.request.use(async (config) => {
         const { data } = await instance.post('/auth/refresh', {}, {
           headers: { Authorization: 'Bearer ' + token },
         });
-        if (data?.token) await setToken(data.token);
+        if (data?.token) await storeToken(data.token)  // storeToken from secureStorage;
         _refreshing = false;
       }
     }
@@ -106,7 +106,7 @@ instance.interceptors.response.use(
 
     // ── Normalise API error messages ────────────────────────────────────
     // Extract the server's error string from the response body so screens
-    // can do `catch (e) { setError(e.message) }` and get a real message.
+    // can do `catch (e: any) { setError(e.message) }` and get a real message.
     // API returns { error: '...' } or occasionally { message: '...' }.
     const serverMsg: string | undefined =
       error?.response?.data?.error ??
@@ -148,7 +148,7 @@ async function withRetry<T>(
       return await fn();
     } catch (err: unknown) {
       lastErr = err;
-      const status = err?.response?.status;
+      const status = (err as any)?.response?.status;
       // Don't retry auth errors or bad requests
       if (status && !RETRY_CODES.has(status)) throw err;
       if (i < attempts - 1) await sleep(delayMs * 2 ** i);
@@ -183,7 +183,7 @@ async function request<T = any>(
 }
 
 // ── Cached GET (for static / rarely-changing data) ────────────────────────────
-async function cachedGet<T = any>(
+export async function cachedGet<T = any>(
   url: string,
   ttl = TTL_STATIC,
   config?: AxiosRequestConfig,

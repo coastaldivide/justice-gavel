@@ -23,7 +23,7 @@ import { setAppAuth } from '../services/auth';
 import { COLORS, FONTS, RADIUS, SHADOW } from '../constants/theme';
 import { getToken, setToken } from '../utils/secureStorage';
 
-export function useAuthGate(navigation: unknown, quickMode = false) {
+export function useAuthGate(navigation: any, quickMode = false) {
   const [visible, setVisible]     = useState(false);
   const [pendingFn, setPendingFn] = useState<(() => void) | null>(null);
 
@@ -220,5 +220,5 @@ const styles = StyleSheet.create({
 });
 
 // Memoize the modal component to prevent re-renders from hook callers
-const _AuthGateModalMemo = React.memo(AuthGateModal);
-export { useAuthGate, _AuthGateModalMemo as AuthGateModal };
+// AuthGateModal is a hook-scoped component, accessed via useAuthGate() return value
+// useAuthGate is already exported from its function declaration

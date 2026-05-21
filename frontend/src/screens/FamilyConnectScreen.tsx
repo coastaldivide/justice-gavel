@@ -12,9 +12,10 @@ import type { ScreenProps } from '../types/navigation';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Alert, Linking, KeyboardAvoidingView, Platform, RefreshControl} from 'react-native';
 import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
+declare var setContacts: any;
 function callPhone(phone: string) {
   Linking.openURL('tel:' + phone.replace(/\s/g, '')).catch(() => {}).catch(() => {});
 }
@@ -47,7 +48,7 @@ function StepBar({ step }: { step: number }) {
 }
 
 // ── Contact card ─────────────────────────────────────────────────────────────
-function ContactCard({ contact, type }: { contact: Record<string,unknown>; type: 'attorney' | 'bail' }) {
+function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'attorney' | 'bail' }) {
   const isAtty = type === 'attorney';
   const color = isAtty ? COLORS.navy : COLORS.bail;
   const bg = isAtty ? COLORS.bgSubtle : COLORS.emergencyBg;
@@ -106,7 +107,7 @@ function ContactCard({ contact, type }: { contact: Record<string,unknown>; type:
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function FamilyConnectScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -117,7 +118,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 600);
   }, []);
 
-  const passedArrestId = route?.params?.arrest_id;
+  const passedArrestId = (route?.params as any)?.arrest_id;
 
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -163,7 +164,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
       if ((res.data?.records || []).length === 0) {
         Alert.alert('No records found', 'We don\'t have a record matching that name yet. You can still connect with attorneys and bail agents by continuing without an arrest record.');
       }
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Search failed', 'Could not search right now. Check your connection and try again.');
     } finally {
       setSearching(false);
@@ -198,7 +199,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
         family_email: familyEmail.trim() || null,
       });
       setResult(res.data || null);
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Could not connect', 'Something went wrong. Check your connection and try again.');
       setStep(2);
     } finally {
@@ -601,3 +602,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   errorBlock: { alignItems: 'center', padding: 40 },
   errorText: { fontSize: 14, color: colors.steel, textAlign: 'center', lineHeight: 20, marginBottom: 16 },
 });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

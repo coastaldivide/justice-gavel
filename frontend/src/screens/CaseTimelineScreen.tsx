@@ -1,4 +1,4 @@
-import CaseStatusBadge from '../components/CaseStatusBadge';
+import { CaseStatusBadge } from '../components/CaseStatusBadge';
 /**
  * CaseTimelineScreen -- Chronological view of a case's events
  *
@@ -11,7 +11,7 @@ import CaseStatusBadge from '../components/CaseStatusBadge';
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, Alert, RefreshControl, Platform, ActivityIndicator, KeyboardAvoidingView} from 'react-native';
 import { api } from '../services/api';
-import { useTheme, RADIUS, SHADOW, TYPE, FONTS } from '../constants/theme';
+import {  useTheme, RADIUS, SHADOW, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { cacheTimeline, getCachedTimeline } from '../services/offlineCache';
@@ -100,7 +100,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function CaseTimelineScreen({ navigation, route }: ScreenProps): JSX.Element {
+export default function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Element {
 
   // Schedule push reminder for a timeline event
   const scheduleEventReminder = async (event: CaseEvent) => {

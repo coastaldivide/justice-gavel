@@ -21,22 +21,22 @@ import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../constants/theme';
-import { useNavigation } from '@react-navigation/native';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
+declare var ScreenProps: any;
+declare var onVerified: any;
 const CURRENT_YEAR = new Date().getFullYear();
 const MIN_YEAR     = CURRENT_YEAR - 100;   // 100 years old max
 const MAX_YEAR     = CURRENT_YEAR - 18;    // must be born ≤ 18 years ago
 
 type Phase = 'entry' | 'underage';
 
-export default function AgeGateScreen({ route, navigation }: ScreenProps) {
+export default function AgeGateScreen({ route, navigation }: any) {
   const { colors: COLORS } = useTheme();
+  const styles = makeStyles(colors);
   const [year, setYear]   = useState('');
   const [phase, setPhase] = useState<Phase>('entry');
-  const navigation = useNavigation();
   const [error, setError] = useState('');
 
   const handleYear = (text: string) => {
@@ -96,7 +96,7 @@ export default function AgeGateScreen({ route, navigation }: ScreenProps) {
             await AsyncStorage.setItem('age_verified', 'family_mode');
             if (onVerified) onVerified(); else navigation.navigate('Onboarding');
 
-    } catch (e) {
+    } catch (e: any) {
       __DEV__ && console.warn('[AgeGateScreen.tsx]', e?.message);
     }
   }}
@@ -192,7 +192,7 @@ export default function AgeGateScreen({ route, navigation }: ScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen:  { flex: 1, backgroundColor: COLORS.navy },
   centered: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
@@ -261,3 +261,6 @@ const styles = StyleSheet.create({
   backBtn:       { paddingVertical: 12 },
   backBtnText:   { color: COLORS.steel, fontSize: 14, lineHeight: 21, ...FONTS.semi },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

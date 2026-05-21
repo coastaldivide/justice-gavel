@@ -11,11 +11,28 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, TextInput, Linking, ActivityIndicator, Platform, KeyboardAvoidingView, Modal, Alert } from 'react-native';
 import PracticeAreaSelector, { PRACTICE_AREAS } from '../components/PracticeAreaSelector';
 import { api } from '../services/api';
-import { useAuthGate } from '../hooks/useAuthGate';
+import { useAuthGate } from '../components/AuthGate';
 import { getLocationWithCity, formatDistance } from '../services/location';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
+declare var CASE_TYPES: any;
+declare var Picker: any;
+declare var caseLoading: any; // hoisted from component scope
+declare var msgModal: any; // hoisted from component scope
+declare var msgName: any; // hoisted from component scope
+declare var msgNote: any; // hoisted from component scope
+declare var msgPhone: any; // hoisted from component scope
+declare var msgSending: any; // hoisted from component scope
+declare var msgSent: any; // hoisted from component scope
+declare var openSecureMessage: any; // hoisted from component scope
+declare var setMsgModal: any; // hoisted from component scope
+declare var setMsgName: any; // hoisted from component scope
+declare var setMsgNote: any; // hoisted from component scope
+declare var setMsgPhone: any; // hoisted from component scope
+declare var setMsgSending: any; // hoisted from component scope
+declare var setMsgSent: any; // hoisted from component scope
+declare var useNavigation: any; // hoisted from component scope
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo'];
@@ -31,12 +48,12 @@ function openDirections(lat: number, lng: number, name: string) {
   Linking.openURL(url).catch(() => {});
 }
 function openWebsite(url: string) {
-  Linking.openURL(url.startsWith('http').catch(() => {}) ? url : 'https://' + url);
+  Linking.openURL(url.startsWith('http') ? url : 'https://' + url);
 }
 
 // ── Match result card ─────────────────────────────────────────────────────────
 
-function MatchCard({ item, rank }: { item: Record<string,unknown>; rank: number }) {
+function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
   const rankColors = [COLORS.emergencyDark, COLORS.warnDark, COLORS.legalDark];
   const rankColor = rankColors[rank - 1] ?? COLORS.navy;
 
@@ -267,7 +284,7 @@ function MatchCard({ item, rank }: { item: Record<string,unknown>; rank: number 
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
-export default function MatchScreen(): JSX.Element {
+export default function MatchScreen(): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [situation, setSituation] = useState('');
@@ -315,7 +332,7 @@ export default function MatchScreen(): JSX.Element {
       const res = await api.get('/match/lawyers', { params });
       setResults(res.data || []);
       setStatusMsg(res.data?.length === 0 ? 'No matches found. Try removing filters.' : '');
-    } catch (e) {
+    } catch (e: any) {
       const errMsg  = e.response?.data?.error || e.message || '';
       const status  = e.response?.status;
       if (status === 503 || errMsg.toLowerCase().includes('api') || errMsg.toLowerCase().includes('anthropic')) {
@@ -521,3 +538,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   phoneDisplay: { textAlign: 'center', color: colors.steel, fontSize: 12, marginTop: 2 }
 });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

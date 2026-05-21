@@ -6,9 +6,10 @@
 import React, { useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { Share, View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet, Alert } from 'react-native';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
+declare var data: any;
 const STEPS = [
   {
     id: 1, icon: '🤐', title: 'STOP TALKING',
@@ -54,8 +55,9 @@ const STEPS = [
 
 import Analytics from '../services/analytics';
 import { PlaceholderIllustration } from '../components/PlaceholderIllustration';
-export default function JustArrestedScreen({ navigation }: ScreenProps): JSX.Element {
+export default function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [step, setStep] = useState(0);
   const current = STEPS[step];
 
@@ -203,7 +205,7 @@ export default function JustArrestedScreen({ navigation }: ScreenProps): JSX.Ele
             message: 'If you or someone you know ever gets arrested, use Justice Gavel -- it tells you exactly what to do and connects you with lawyers and bail bondsmen immediately. Get it free: https://justicegavel.app',
             title: 'Justice Gavel -- Free legal help if you get arrested',
           });
-        } catch (shareErr) {
+        } catch (shareErr: any) {
           // Share failed (unsupported browser) — silently ignore
         }}
         }
@@ -255,7 +257,7 @@ export default function JustArrestedScreen({ navigation }: ScreenProps): JSX.Ele
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   header:      { paddingHorizontal: 20, paddingTop: 48, paddingBottom: 20 },
   stepLabel:   { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
   titleRow:    { flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -290,3 +292,6 @@ const styles = StyleSheet.create({
   navBtn:    { borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
   navBtnText:{ fontSize: 18, fontWeight: '900' },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

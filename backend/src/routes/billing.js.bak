@@ -1,0 +1,1392 @@
+/**
+ * billing.js — All payment and subscription routes
+ *
+ * ┌─────────────────────────────────────────────────────┐
+ * │  SECTION 1 — Attorney / Provider subscriptions      │
+ * │    POST /subscribe          — start subscription     │
+ * │    GET  /subscription       — check status           │
+ * │    POST /cancel             — cancel subscription    │
+ * │                                                      │
+ * │  SECTION 2 — Bondsman                               │
+ * │    POST /bondsman/profile   — save profile           │
+ * │    GET  /bondsman/profile   — get profile            │
+ * │    GET  /leads              — available leads        │
+ * │    POST /leads/:id/accept   — purchase lead          │
+ * │    POST /bondsman/verified-badge/subscribe           │
+ * │    GET  /bondsman/verified-badge/status              │
+ * │    POST /bondsman/verified-badge/cancel              │
+ * │                                                      │
+ * │  SECTION 3 — Consumer                               │
+ * │    POST /family/connect     — $28.99 connection      │
+ * │    POST /quickconnect       — $19.99 package         │
+ * │    POST /consumer/subscribe — consumer subscription  │
+ * │    GET  /consumer/subscription                       │
+ * │                                                      │
+ * │  SECTION 4 — PI / Civil Rights Leads                │
+ * │    POST /pi-lead/submit     — user submits lead      │
+ * │    GET  /pi-leads           — attorney views leads   │
+ * │    POST /pi-lead/accept/:id — attorney accepts       │
+ * │                                                      │
+ * │  SECTION 5 — Admin                                  │
+ * │    GET  /admin/stats        — platform metrics       │
+ * └─────────────────────────────────────────────────────┘
+ */
+
+import { err400, truncateStr, BUSINESS_CONSTANTS, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { Router } from 'express';
+import { authRequired } from '../middleware/auth.js';
+import { getDb } from '../db/index.js';
+import Stripe from 'stripe';
+
+const router = Router();
+
+// ── Billing rate limiter — prevent Stripe abuse ────────────────────────────
+import rateLimit from 'express-rate-limit';
+const billingLimiter = rateLimit({
+  windowMs: 60 * 1000,     // 1 minute
+  max: 10,                  // 10 billing operations per minute per IP
+  message: { error: 'Too many payment requests. Please wait before trying again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const stripeKey = process.env.STRIPE_SECRET || '';
+const stripe = stripeKey ? new Stripe(stripeKey) : null;
+const LIVE = !!stripeKey;
+
+// ── Tier pricing ───────────────────────────────────────────────────────────────
+const TIERS = {
+  // ── Attorney / Bondsman tiers ──────────────────────────────────────────────
+  basic:    { label: 'Basic Listing',    cents: 7899,  type: 'provider', description: 'Directory profile, searchable by families' },
+  alert:    { label: 'Alert Tier',       cents: 19899, type: 'provider', description: 'Daily arrest alerts + directory' },
+  featured: { label: 'Featured',         cents: 34899, type: 'provider', description: 'Top placement + AI match priority + unlimited alerts' },
+  intel:    { label: 'Weekly Intel',     cents: 4899,  type: 'provider', description: 'Weekly county arrest data report add-on' },
+  // ── Consumer tiers ────────────────────────────────────────────────────────
+  starter:  { label: 'Starter',          cents: 999,   type: 'consumer', description: 'Unlimited AI chat + full lawyer/bail search + lessons + arrest search' },
+  pro:      { label: 'Pro',              cents: 1499,  type: 'consumer', description: 'Starter + arrest monitoring alerts for people you care about' },
+  consumer_intel: { label: 'Intel',      cents: 1999,  type: 'consumer', description: 'Pro + county arrest analytics + weekly intelligence reports' },
+  // ── Consumer Annual tiers (save ~33%) ───────────────────────────────────
+  starter_annual:       { label: 'Starter Annual',  cents: 7999,  type: 'consumer', billing: 'annual', description: 'Starter plan billed annually — save $21.89/year' },
+  pro_annual:           { label: 'Pro Annual',      cents: 11999, type: 'consumer', billing: 'annual', description: 'Pro plan billed annually — save $29.89/year' },
+  consumer_intel_annual:{ label: 'Intel Annual',    cents: 24999, type: 'consumer', billing: 'annual', description: 'Intel plan billed annually — save $39.89/year' },
+  // ── Defender add-ons ──────────────────────────────────────────────────────
+  legal_research: { label: 'Legal Research', cents: 4899, type: 'addon', description: 'AI-powered case law research — Westlaw alternative for public defenders' },
+  legal_research_annual: { label: 'Legal Research Annual', cents: 44999, type: 'addon', billing: 'annual', description: 'AI legal research — billed annually, save $43.89/yr' },
+  discovery_pro: { label: 'Discovery Pro', cents: 14999, type: 'addon', description: 'Unlimited AI discovery document analysis — police reports, lab reports, discovery PDFs' },
+  discovery_pro_annual: { label: 'Discovery Pro Annual', cents: 129999, type: 'addon', billing: 'annual', description: 'Unlimited discovery analysis — $1,299.99/yr, saves ~$500 vs monthly' },
+};
+
+// Lead fee by bail amount
+function calcLeadFee(bailAmount) {
+  if (!bailAmount || bailAmount <= 0) return 2500;
+  if (bailAmount < 5000)   return 2499;
+  if (bailAmount < 25000)  return 7499;
+  if (bailAmount < 100000) return 14999;
+  return 29999;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+async function getOrCreateStripeCustomer(user) {
+  if (!LIVE) return 'cus_mock_' + user.id;
+  const existing = await stripe.customers.list({ email: user.email, limit: 1 });
+  if (existing.data.length > 0) return existing.data[0].id;
+  const customer = await stripe.customers.create({
+    email: user.email,
+    name: user.name || user.display_name,
+    metadata: { user_id: String(user.id) }
+  });
+  return customer.id;
+}
+
+// ── Subscribe ─────────────────────────────────────────────────────────────────
+// ── Stripe key guard ──────────────────────────────────────────────────────────
+if (!process.env.STRIPE_SECRET && process.env.NODE_ENV === 'production') {
+  logger.error('[billing.js] STRIPE_SECRET not set — payment routes will fail in production');
+}
+
+router.post('/subscribe', billingLimiter, authRequired, async (req, res) => {
+  const { tier = 'alert', payment_method_id, provider_type = 'lawyer' } = req.body;
+  const tierConfig = TIERS[tier];
+  if (!tierConfig) return err400(res, 'Invalid tier. Options: basic, alert, featured, intel');
+
+  try {
+    const db = await getDb();
+
+    // Check existing subscription
+    const existing = await db.get(
+      'SELECT * FROM subscriptions WHERE user_id = ? AND status IN (?,?) AND provider_type = ?',
+      [req.user.id, 'active', 'trialing', provider_type]
+    );
+    if (existing) return res.status(409).json({ error: 'Already subscribed', subscription: existing });
+
+    if (!LIVE) {
+      // Demo mode — create mock subscription
+      const isAnnual = tierConfig.billing === 'annual';
+      const trialDays = isAnnual ? 7 : 30;
+      const trialEnd = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
+      const sub = await db.run(
+        `INSERT INTO subscriptions (user_id, provider_type, tier, status, amount_cents, trial_ends_at, stripe_sub_id, stripe_cus_id)
+         VALUES (?,?,?,?,?,?,?,?)`,
+        [req.user.id, provider_type, tier, 'demo', tierConfig.cents, trialEnd, 'sub_mock_demo', 'cus_mock_demo']
+      );
+      return res.json({
+        success: true,
+        mock: true,
+        subscription: { id: sub.lastID, tier, status: 'trialing', trial_ends_at: trialEnd, amount_cents: tierConfig.cents },
+        message: `${isAnnual ? '7' : '30'}-day free trial started for ${tierConfig.label}. No credit card charged in demo mode.`
+      });
+    }
+
+    // Live Stripe subscription
+    const customerId = await getOrCreateStripeCustomer(req.user);
+
+    if (payment_method_id) {
+      await stripe.paymentMethods.attach(payment_method_id, { customer: customerId });
+      await stripe.customers.update(customerId, { invoice_settings: { default_payment_method: payment_method_id } });
+    }
+
+    // Create subscription — annual tiers use yearly interval
+    const isAnnual = tierConfig.billing === 'annual';
+    const stripeSub = await stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price_data: { currency: 'usd', unit_amount: tierConfig.cents,
+        product_data: { name: `Justice Gavel — ${tierConfig.label}` },
+        recurring: { interval: isAnnual ? 'year' : 'month' }
+      }}],
+      trial_period_days: isAnnual ? 7 : 30,
+      metadata: { user_id: String(req.user.id), tier, provider_type }
+    });
+
+    const trialEnd = new Date(stripeSub.trial_end * 1000).toISOString();
+    const sub = await db.run(
+      `INSERT INTO subscriptions (user_id, provider_type, tier, status, amount_cents, trial_ends_at, stripe_sub_id, stripe_cus_id)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [req.user.id, provider_type, tier, 'trialing', tierConfig.cents, trialEnd, stripeSub.id, customerId]
+    );
+
+    res.json({
+      success: true,
+      subscription: { id: sub.lastID, tier, status: 'trialing', trial_ends_at: trialEnd },
+      message: `30-day free trial started. You won't be charged until ${new Date(trialEnd).toLocaleDateString()}.`
+    });
+  } catch (e) {
+    logger.error('[billing] subscribe error:', e.message);
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── Get subscription status ───────────────────────────────────────────────────
+router.get('/subscription', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const sub = await db.get(
+      `SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`,
+      [req.user.id]
+    );
+
+    const tiers = Object.entries(TIERS).map(([key, val]) => ({ key, ...val }));
+    res.json({ subscription: sub || null, tiers, mock: !LIVE });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── Cancel subscription ────────────────────────────────────────────────────────
+router.post('/cancel', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const sub = await db.get(
+      'SELECT * FROM subscriptions WHERE user_id = ? AND status IN (?,?)',
+      [req.user.id, 'active', 'trialing']
+    );
+    if (!sub) return err404(res, 'No active subscription found');
+
+    if (LIVE && sub.stripe_sub_id && !sub.stripe_sub_id.startsWith('sub_mock')) {
+      await stripe.subscriptions.cancel(sub.stripe_sub_id);
+    }
+
+    await db.run(
+      'UPDATE subscriptions SET status = ?, updated_at = datetime(\'now\') WHERE id = ?',
+      ['cancelled', sub.id]
+    );
+
+    res.json({ success: true, message: 'Subscription cancelled.' });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── POST /refund — Request a subscription refund ──────────────────────────────
+// Refund Policy (mirrors top legal services platforms):
+//   - Trial period (7 days): full refund, no questions asked
+//   - Within 48 hours of first charge: full refund
+//   - 3–30 days after charge: prorated refund, case-by-case review
+//   - After 30 days: no refund (subscription already provided access)
+//   - Per-document purchases (motions, discovery): no refund once generated
+//   - Exceptions: documented billing errors always refunded regardless of timing
+//
+// Refund processing: via Stripe refund API (stripe.refunds.create).
+// All refund requests logged for FTC compliance and dispute resolution.
+router.post('/refund', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const { reason, additional_info } = req.body || {};
+    if (!reason) {
+      return err400(res, 'reason required (billing_error | unsatisfied | accidental | other)');
+    }
+
+    const VALID_REASONS = ['billing_error','unsatisfied','accidental','duplicate','other'];
+    if (!VALID_REASONS.includes(reason)) {
+      return res.status(400).json({ error: `Invalid reason. Must be one of: ${VALID_REASONS.join(', ')}` });
+    }
+
+    // Get the user's most recent completed charge
+    const sub = await db.get(
+      `SELECT * FROM subscriptions WHERE user_id=? ORDER BY created_at DESC LIMIT 1`,
+      [req.user.id]
+    );
+    if (!sub) {
+      return err404(res, 'No subscription found for your account.');
+    }
+
+    // Determine eligibility
+    const chargedAt = sub.current_period_start
+      ? new Date(sub.current_period_start * 1000)
+      : new Date(sub.created_at);
+    const daysSinceCharge = (Date.now() - chargedAt.getTime()) / (1000 * 60 * 60 * 24);
+    const isInTrialWindow  = daysSinceCharge <= 7;
+    const isIn48HrWindow   = daysSinceCharge <= 2;
+    const isIn30DayWindow  = daysSinceCharge <= 30;
+    const isBillingError   = reason === 'billing_error';
+
+    // Automatic approval conditions
+    const autoApprove = isInTrialWindow || isIn48HrWindow || isBillingError;
+
+    // Log the request regardless of outcome
+    await db.run(
+      `INSERT INTO refund_requests
+         (user_id, subscription_id, stripe_sub_id, reason, additional_info,
+          days_since_charge, auto_approve, status, created_at)
+       VALUES (?,?,?,?,?,?,?,?,datetime('now'))`,
+      [
+        req.user.id,
+        sub.id,
+        sub.stripe_sub_id || null,
+        reason,
+        additional_info || null,
+        Math.round(daysSinceCharge),
+        autoApprove ? 1 : 0,
+        autoApprove ? 'pending_stripe' : 'pending_review',
+      ]
+    ).catch(() => {}); // don't fail the request if logging fails
+
+    // Process automatic refunds via Stripe
+    if (autoApprove && LIVE && sub.stripe_sub_id && !sub.stripe_sub_id.startsWith('sub_mock')) {
+      try {
+        // Retrieve the latest invoice to get the payment intent
+        const invoices = await stripe.invoices.list({
+          subscription: sub.stripe_sub_id,
+          limit: 1,
+        });
+        const latestInvoice = invoices.data?.[0];
+        const paymentIntentId = latestInvoice?.payment_intent;
+
+        if (paymentIntentId) {
+          // Issue full refund for trial/48hr/billing error; prorated for others
+          const refundAmount = isIn30DayWindow && !isIn48HrWindow && !isBillingError
+            ? Math.round((1 - daysSinceCharge / 30) * (latestInvoice?.amount_paid || 0))
+            : undefined; // undefined = full refund
+
+          const refund = await stripe.refunds.create({
+            payment_intent: paymentIntentId,
+            ...(refundAmount ? { amount: refundAmount } : {}),
+            reason:         reason === 'billing_error' ? 'duplicate' : 'requested_by_customer',
+            metadata: {
+              user_id:     String(req.user.id),
+              days_since:  String(Math.round(daysSinceCharge)),
+              jg_reason:   reason,
+            },
+          });
+
+          // Update refund log
+          await db.run(
+            `UPDATE refund_requests SET status='refunded', stripe_refund_id=? WHERE user_id=? ORDER BY id DESC LIMIT 1`,
+            [refund.id, req.user.id]
+          ).catch(() => {});
+
+          // Cancel the subscription
+          await stripe.subscriptions.cancel(sub.stripe_sub_id).catch(() => {});
+          await db.run(
+            `UPDATE subscriptions SET status='refunded' WHERE id=?`,
+            [sub.id]
+          );
+
+          // Notify user
+          const { sendEmail } = await import('../services/sendgrid.js');
+          const { sendPushToUser } = await import('../services/pushDelivery.js');
+          const user = await db.get('SELECT email FROM users WHERE id=?', [req.user.id]);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+          const refundDollars = ((refund.amount || latestInvoice?.amount_paid || 0) / 100).toFixed(2);
+
+          await sendPushToUser(req.user.id, {
+            title: '✅ Refund Approved',
+            body:  `$${refundDollars} will appear on your statement within 5–10 business days.`,
+            data:  { screen: 'Settings' },
+          }).catch(() => {});
+
+          await sendEmail({
+            to:      user?.email,
+            subject: 'Justice Gavel — Refund Confirmed',
+            text: [
+              `Your refund of $${refundDollars} has been approved and processed.`,
+              ``,
+              `Refund ID: ${refund.id}`,
+              `Reason: ${reason}`,
+              ``,
+              `Refunds typically appear on your statement within 5–10 business days,`,
+              `depending on your bank or card issuer.`,
+              ``,
+              `Your subscription has been cancelled. You can resubscribe at any time.`,
+              ``,
+              `Questions? Contact support@justicegavel.app`,
+              ``,
+              `— The Justice Gavel Team`,
+            ].join('\n'),
+          }).catch(() => {});
+
+          return res.json({
+            ok:             true,
+            status:         'refunded',
+            refund_id:      refund.id,
+            amount_dollars: refundDollars,
+            message:        `Refund of $${refundDollars} approved. Funds typically arrive within 5–10 business days.`,
+          });
+        }
+      } catch (stripeErr) {
+        logger.error('[billing/refund] Stripe error:', stripeErr.message);
+        // Fall through to manual review
+
+    if (res && !res.headersSent) err500(res, 'billing', e);
+  }
+    }
+
+    // Cases that require manual review (30+ days, prorated, or Stripe failure)
+    const { sendEmail } = await import('../services/sendgrid.js');
+    const user = await db.get('SELECT email FROM users WHERE id=?', [req.user.id]);
+    await sendEmail({
+      to:      process.env.ADMIN_EMAIL || 'admin@justicegavel.app',
+      subject: `[Refund Request] ${user?.email} — ${reason} — ${Math.round(daysSinceCharge)}d since charge`,
+      text: [
+        `User: ${user?.email} (ID: ${req.user.id})`,
+        `Subscription: ${sub.stripe_sub_id || 'N/A'}`,
+        `Reason: ${reason}`,
+        `Days since charge: ${Math.round(daysSinceCharge)}`,
+        `Auto-approve eligible: ${autoApprove}`,
+        `Additional info: ${additional_info || 'none'}`,
+        ``,
+        `Review and process at: ${process.env.ADMIN_PANEL_URL || 'https://admin.justicegavel.app'}/refunds`,
+      ].join('\n'),
+    }).catch(() => {});
+
+    const pendingMsg = isIn30DayWindow
+      ? 'Your refund request is under review. Our team will respond within 1–2 business days.'
+      : 'Your request has been received. Refunds are available within 30 days of charge. Our team will review your request and respond within 2 business days.';
+
+    return res.json({
+      ok:      true,
+      status:  'pending_review',
+      message: pendingMsg,
+    });
+  } catch (e) {
+    logger.error('[billing/refund]', e.message);
+    return res.status(500).json({ error: 'Could not process refund request. Please contact support@justicegavel.app.' });
+  }
+});
+
+// ── Bondsman: save profile ────────────────────────────────────────────────────
+router.post('/bondsman/profile', authRequired, async (req, res) => {
+  const { company_name, license_number, license_state = '', counties = [], states = [], min_bail = 0, max_bail = 999999 } = req.body;
+  if (company_name) company_name = truncateStr(String(company_name), 200);
+  try {
+    const db = await getDb();
+    await db.run(
+      `INSERT INTO bondsman_profiles (user_id, company_name, license_number, license_state, counties, states, min_bail_amount, max_bail_amount)
+       VALUES (?,?,?,?,?,?,?,?)
+       ON CONFLICT(user_id) DO UPDATE SET
+         company_name = excluded.company_name,
+         license_number = excluded.license_number,
+         license_state = excluded.license_state,
+         counties = excluded.counties,
+         states = excluded.states,
+         min_bail_amount = excluded.min_bail_amount,
+         max_bail_amount = excluded.max_bail_amount`,
+      [req.user.id, company_name, license_number, license_state, JSON.stringify(counties), JSON.stringify(states), min_bail, max_bail]
+    );
+    res.json({ success: true, message: 'Profile saved' });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+router.get('/bondsman/profile', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const profile = await db.get('SELECT * FROM bondsman_profiles WHERE user_id = ?', [req.user.id]);
+    res.json({ profile: profile || null });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── Bondsman: get available leads ─────────────────────────────────────────────
+router.get('/leads', authRequired, async (req, res) => {
+  const { county, state = 'TN', hours = 48, limit = 50 } = req.query;
+  try {
+    const db = await getDb();
+
+    // Build query for recent arrests without attorney, with bail set
+    const conditions = [
+      `ar.has_attorney = 0`,
+      `ar.bail_amount > 0`,
+      `ar.created_at >= datetime('now', '-${safeInt(hours)} hours')`
+    ];
+    const params = [];
+
+    if (county) { conditions.push('LOWER(ar.county) = LOWER(?)'); params.push(county); }
+    if (state)  { conditions.push('ar.state = ?'); params.push(state.toUpperCase()); }
+
+    const records = await db.all(
+      `SELECT
+        ar.id, ar.name, ar.booking_date, ar.charges, ar.bail_amount,
+        ar.county, ar.state, ar.jail_location,
+        lp.id as already_purchased
+       FROM arrest_records ar
+       LEFT JOIN lead_purchases lp ON lp.arrest_id = ar.id AND lp.bondsman_id = ? AND lp.status = 'charged'
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY ar.bail_amount DESC, ar.booking_date DESC
+       LIMIT ?`,
+      [req.user.id, ...params, safeInt(limit)]
+    );
+
+    // Add computed lead fee and mask contact info for unpurchased
+    const leads = records.map(r => ({
+      ...r,
+      lead_fee_cents: calcLeadFee(r.bail_amount),
+      lead_fee_display: `$${(calcLeadFee(r.bail_amount) / 100).toFixed(0)}`,
+      purchased: !!r.already_purchased,
+      // Only reveal full name and contact if purchased
+      name: r.already_purchased ? r.name : r.name.split(' ')[0] + ' ' + (r.name.split(' ')[1]?.[0] || '') + '.',
+    }));
+
+    res.json({ leads, count: leads.length, mock: !LIVE });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── Bondsman: accept lead (charge card) ───────────────────────────────────────
+router.post('/leads/:id/accept', authRequired, async (req, res) => {
+  const arrestId = safeInt(req.params.id);
+  const { payment_method_id } = req.body;
+
+  try {
+    const db = await getDb();
+    await db.exec("BEGIN IMMEDIATE");  // Atomic: charge + record together
+
+    // Get arrest record
+    const arrest = await db.get('SELECT * FROM arrest_records WHERE id = ?', [arrestId]);
+    if (!arrest) return err404(res, 'Arrest record not found');
+    if (!arrest.bail_amount || arrest.bail_amount <= 0) return err400(res, 'No bail set on this record');
+
+    // Check not already purchased
+    const existing = await db.get(
+      'SELECT id FROM lead_purchases WHERE bondsman_id = ? AND arrest_id = ? AND status = ?',
+      [req.user.id, arrestId, 'charged']
+    );
+    if (existing) return res.status(409).json({ error: 'Already purchased this lead', arrest });
+
+    const feeCents = calcLeadFee(arrest.bail_amount);
+
+    if (!LIVE) {
+      // Demo mode — mock purchase
+      await db.run(
+        `INSERT INTO lead_purchases (bondsman_id, arrest_id, bail_amount, lead_fee_cents, status, contact_revealed, stripe_pi_id)
+         VALUES (?,?,?,?,?,?,?)`,
+        [req.user.id, arrestId, arrest.bail_amount, feeCents, 'charged', 1, 'pi_mock_demo']
+      );
+      await db.run('UPDATE bondsman_profiles SET leads_accepted = leads_accepted + 1 WHERE user_id = ?', [req.user.id]);
+      return res.json({
+        success: true,
+        mock: true,
+        fee_charged: `$${(feeCents / 100).toFixed(0)}`,
+        arrest,  // Full record revealed
+        message: `Lead accepted (demo). In production, $${(feeCents/100).toFixed(0)} would be charged to your card.`
+      });
+    }
+
+    // Live Stripe charge
+    const customerId = await getOrCreateStripeCustomer(req.user);
+    if (payment_method_id) {
+      await stripe.paymentMethods.attach(payment_method_id, { customer: customerId });
+    }
+
+    const piIdempotencyKey = `pi_${req.user.id}_${plan}_${Date.now()}`;
+    const pi = await stripe.paymentIntents.create({
+      amount: feeCents,
+      currency: 'usd',
+      customer: customerId,
+      confirm: true,
+      automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+      description: `Lead: ${arrest.name} — Bail $${arrest.bail_amount?.toLocaleString()} — ${arrest.county} County`,
+      metadata: { bondsman_id: String(req.user.id), arrest_id: String(arrestId) }
+    });
+
+    if (pi.status !== 'succeeded') {
+      return res.status(402).json({ error: 'Payment failed', status: pi.status });
+    }
+
+    await db.run(
+      `INSERT INTO lead_purchases (bondsman_id, arrest_id, bail_amount, lead_fee_cents, status, contact_revealed, stripe_pi_id)
+       VALUES (?,?,?,?,?,?,?)`,
+      [req.user.id, arrestId, arrest.bail_amount, feeCents, 'charged', 1, pi.id]
+    );
+    await db.run('UPDATE bondsman_profiles SET leads_accepted = leads_accepted + 1 WHERE user_id = ?', [req.user.id]);
+    await db.exec('COMMIT');
+
+    await db.exec('COMMIT');
+    res.json({ success: true, fee_charged: `$${(feeCents/100).toFixed(0)}`, arrest });
+  } catch (e) {
+    await db.exec('ROLLBACK').catch(()=>{});
+    logger.error('[billing] accept lead error:', e.message);
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── Family: $29 emergency connection ─────────────────────────────────────────
+router.post('/family/connect', authRequired, async (req, res) => {
+  const { arrest_id, family_name, family_phone, family_email, payment_method_id } = req.body;
+  if (!family_name || !family_phone) return err400(res, 'Name and phone required');
+
+  try {
+    const db = await getDb();
+
+    // Get arrest (if provided) or use a default county
+    let arrest = null;
+    if (arrest_id) {
+      arrest = await db.get('SELECT * FROM arrest_records WHERE id = ?', [arrest_id]);
+    }
+
+    const county = arrest?.county || 'davidson';
+    const state  = arrest?.state  || 'TN';
+
+    // Find top 3 attorneys + 2 bail agents in county
+    // Try providers.sqlite via the arrests DB path
+    const attorneys = await db.all(
+      `SELECT id, name, phone, address, rating, specialties FROM lawyers
+       WHERE city LIKE ? OR city LIKE ?
+       AND active = 1
+       ORDER BY rating DESC, free_consultation DESC
+       LIMIT 3`,
+      [`%${county}%`, `%Nashville%`]
+    ).catch(() => []);
+
+    const agents = await db.all(
+      `SELECT id, name, phone, address, rating FROM bail_agents
+       WHERE city LIKE ? OR city LIKE ?
+       AND active = 1
+       ORDER BY rating DESC
+       LIMIT 2`,
+      [`%${county}%`, `%Nashville%`]
+    ).catch(() => []);
+
+    if (!LIVE) {
+      // Demo mode — return mock connection
+      const connection = await db.run(
+        `INSERT INTO family_connections (arrest_id, family_name, family_phone, family_email, status, attorneys_sent, agents_sent, stripe_pi_id)
+         VALUES (?,?,?,?,?,?,?,?)`,
+        [arrest_id || null, family_name, family_phone, family_email || null, 'paid',
+         JSON.stringify(attorneys.map(a => a.id)),
+         JSON.stringify(agents.map(a => a.id)),
+         'pi_mock_family']
+      );
+      return res.json({
+        success: true,
+        mock: true,
+        connection_id: connection.lastID,
+        attorneys,
+        bail_agents: agents,
+        arrest: arrest || null,
+        message: 'Demo mode: configure STRIPE_SECRET to enable live payments.'
+      });
+    }
+
+    // Live: charge $29 — require payment_method_id
+    if (!payment_method_id) {
+      return res.status(400).json({
+        error: 'Payment method required. Please add a card to complete this purchase.',
+        code: 'payment_method_required'
+      });
+    }
+
+    const pi = await stripe.paymentIntents.create({
+      amount: 2899,
+      currency: 'usd',
+      confirm: true,
+      payment_method: payment_method_id,
+      automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+      description: `Justice Gavel — Emergency Connection for ${family_name}`,
+      metadata: { family_name, arrest_id: String(arrest_id || 'unknown') }
+    });
+
+    if (pi.status !== 'succeeded') {
+      return res.status(402).json({ error: 'Payment failed', status: pi.status });
+    }
+
+    const connection = await db.run(
+      `INSERT INTO family_connections (arrest_id, family_name, family_phone, family_email, status, attorneys_sent, agents_sent, stripe_pi_id)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [arrest_id || null, family_name, family_phone, family_email || null, 'paid',
+       JSON.stringify(attorneys.map(a => a.id)),
+       JSON.stringify(agents.map(a => a.id)),
+       pi.id]
+    );
+
+    res.json({
+      success: true,
+      connection_id: connection.lastID,
+      attorneys,
+      bail_agents: agents,
+      arrest: arrest || null,
+      message: 'Payment successful. Contact information revealed below.'
+    });
+  } catch (e) {
+    logger.error('[billing] family connect error:', e.message);
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── Quick Connect Package — $10 bondsman + $10 lawyer = $20 total ─────────────
+// POST /api/billing/quickconnect
+// Returns one verified bail bondsman + one criminal defense lawyer near user.
+// Charged as a single $20 transaction. No subscription. One-time.
+router.post('/quickconnect', authRequired, async (req, res) => {
+  const { lat, lng, county, state = 'TN', payment_method_id } = req.body;
+  // Validate coordinates before use in SQL ORDER BY
+  const validLat = lat ? parseFloat(lat) : null;
+  const validLng = lng ? parseFloat(lng) : null;
+  const hasCoords = validLat !== null && !isNaN(validLat) && validLng !== null && !isNaN(validLng);
+  if (!lat && !county) return err400(res, 'Provide lat/lng or county');
+
+  try {
+    const db = await getDb();
+
+    // ── Check & apply referral credit ─────────────────────────────────────────
+    const userRow = await db.get('SELECT referral_credit_cents FROM users WHERE id=?', [req.user.id]).catch(()=>null);
+    const creditCents = userRow?.referral_credit_cents || 0;
+    const finalAmountCents = Math.max(0, BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS - creditCents);   // $20 minus credit, floor $0
+    const creditApplied    = Math.min(creditCents, 2000);        // never exceed the price
+
+    // Find nearest bondsman
+    let bondsmen = [];
+    if (lat && lng) {
+      bondsmen = await db.all(
+        `SELECT id, name, phone, address, rating, lat, lng, hours
+         FROM bail_agents
+         WHERE active = 1 AND phone IS NOT NULL
+         ORDER BY ((? - lat)*(? - lat) + (? - lng)*(? - lng))
+         LIMIT 3`
+      ).catch(() => []);
+    }
+    if (!bondsmen.length) {
+      bondsmen = await db.all(
+        `SELECT id, name, phone, address, rating, lat, lng, hours
+         FROM bail_agents WHERE active = 1 AND phone IS NOT NULL
+         ORDER BY rating DESC LIMIT 3`
+      ).catch(() => []);
+    }
+
+    // Find nearest criminal defense lawyer
+    let lawyers = [];
+    if (lat && lng) {
+      lawyers = await db.all(
+        `SELECT id, name, phone, address, rating, specialties, free_consultation, lat, lng
+         FROM lawyers
+         WHERE active = 1 AND phone IS NOT NULL
+         ORDER BY ((? - lat)*(? - lat) + (? - lng)*(? - lng))
+         LIMIT 3`
+      ).catch(() => []);
+    }
+    if (!lawyers.length) {
+      lawyers = await db.all(
+        `SELECT id, name, phone, address, rating, specialties, free_consultation, lat, lng
+         FROM lawyers WHERE active = 1 AND phone IS NOT NULL
+         ORDER BY rating DESC LIMIT 3`
+      ).catch(() => []);
+    }
+
+    const bondsman = bondsmen[0] || null;
+    const lawyer   = lawyers[0]   || null;
+
+    if (!LIVE) {
+      // Demo mode — mock charge (with credit applied)
+      const demoCharged = finalAmountCents / 100;
+      if (creditApplied > 0) {
+        await db.run('UPDATE users SET referral_credit_cents = referral_credit_cents - ? WHERE id=?',
+          [creditApplied, req.user.id]).catch(()=>{});
+      }
+      return res.json({
+        success: true,
+        mock: true,
+        charged: `$${demoCharged.toFixed(2)}`,
+        credit_applied_cents: creditApplied,
+        credit_applied_display: creditApplied > 0 ? `-$${(creditApplied/100).toFixed(2)} referral credit` : null,
+        breakdown: [
+          { item: '1 Bail Bondsman Contact', price: '$10.00' },
+          { item: '1 Criminal Defense Lawyer', price: '$10.00' },
+          ...(creditApplied > 0 ? [{ item: 'Referral Credit', price: `-$${(creditApplied/100).toFixed(2)}` }] : []),
+        ],
+        bondsman,
+        lawyer,
+        message: 'Demo mode: configure STRIPE_SECRET to enable live payments.',
+      });
+    }
+
+    // Live: single $20 Stripe charge
+    if (!payment_method_id) {
+      return res.status(400).json({
+        error: 'Payment method required.',
+        code: 'payment_method_required',
+      });
+    }
+
+    const customerId = await getOrCreateStripeCustomer(req.user);
+    if (payment_method_id) {
+      await stripe.paymentMethods.attach(payment_method_id, { customer: customerId }).catch(() => {});
+    }
+
+    const pi = await stripe.paymentIntents.create({
+      amount:   finalAmountCents,
+      currency: 'usd',
+      customer: customerId,
+      confirm:  true,
+      automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+      description: 'Justice Gavel — Quick Connect Package ($10 Bondsman + $10 Lawyer)',
+      metadata: {
+        user_id:    String(req.user.id),
+        bondsman_id: String(bondsman?.id || ''),
+        lawyer_id:   String(lawyer?.id   || ''),
+        package:    'quickconnect',
+      },
+    });
+
+    if (pi.status !== 'succeeded') {
+      return res.status(402).json({ error: 'Payment failed', status: pi.status });
+    }
+
+    // Deduct referral credit from user account
+    if (creditApplied > 0) {
+      await db.run('UPDATE users SET referral_credit_cents = referral_credit_cents - ? WHERE id=?',
+        [creditApplied, req.user.id]).catch(()=>{});
+    }
+
+    // Log revenue
+    await db.run(
+      `INSERT INTO revenue_log (source, recipient_type, gross_cents, stripe_fee_cents, net_cents, stripe_pi_id)
+       VALUES (?,?,?,?,?,?)`,
+      ['quickconnect', 'user', finalAmountCents, calcStripeFee(finalAmountCents),
+       finalAmountCents - calcStripeFee(finalAmountCents), pi.id]
+    ).catch(() => {});
+
+    res.json({
+      success: true,
+      charged: `$${(finalAmountCents/100).toFixed(2)}`,
+      credit_applied_cents: creditApplied,
+      credit_applied_display: creditApplied > 0 ? `-$${(creditApplied/100).toFixed(2)} referral credit` : null,
+      breakdown: [
+        { item: '1 Bail Bondsman Contact', price: '$10.00' },
+        { item: '1 Criminal Defense Lawyer', price: '$10.00' },
+        ...(creditApplied > 0 ? [{ item: 'Referral Credit', price: `-$${(creditApplied/100).toFixed(2)}` }] : []),
+      ],
+      bondsman,
+      lawyer,
+    });
+  } catch (e) {
+    logger.error('[billing] quickconnect error:', e.message);
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── Consumer subscribe ────────────────────────────────────────────────────────
+// POST /api/billing/consumer/subscribe
+router.post('/consumer/subscribe', billingLimiter, authRequired, async (req, res) => {
+  const { tier, payment_method_id } = req.body;
+  const consumerTiers = ['starter', 'pro', 'consumer_intel'];
+  if (!consumerTiers.includes(tier)) {
+    return err400(res, 'Invalid consumer tier. Options: starter, pro, consumer_intel');
+  }
+  const tierConfig = TIERS[tier];
+
+  try {
+    const db = await getDb();
+    const existing = await db.get(
+      'SELECT * FROM subscriptions WHERE user_id = ? AND status IN (?,?) AND provider_type = ?',
+      [req.user.id, 'active', 'trialing', 'consumer']
+    );
+    if (existing) return res.status(409).json({ error: 'Already subscribed', subscription: existing });
+
+    if (!LIVE) {
+      const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7-day trial
+      const sub = await db.run(
+        `INSERT INTO subscriptions (user_id, provider_type, tier, status, amount_cents, trial_ends_at, stripe_sub_id, stripe_cus_id)
+         VALUES (?,?,?,?,?,?,?,?)`,
+        [req.user.id, 'consumer', tier, 'demo', tierConfig.cents, trialEnd, 'sub_mock_consumer', 'cus_mock_consumer']
+      );
+      return res.json({
+        success: true, mock: true,
+        subscription: { id: sub.lastID, tier, status: 'trialing', trial_ends_at: trialEnd, amount_cents: tierConfig.cents },
+        message: `7-day free trial started for ${tierConfig.label} ($${(tierConfig.cents/100).toFixed(2)}/mo). Demo mode — no charge.`
+      });
+    }
+
+    const customerId = await getOrCreateStripeCustomer(req.user);
+    if (payment_method_id) {
+      await stripe.paymentMethods.attach(payment_method_id, { customer: customerId });
+      await stripe.customers.update(customerId, { invoice_settings: { default_payment_method: payment_method_id } });
+    }
+    const stripeSub = await stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price_data: { currency: 'usd', unit_amount: tierConfig.cents, product_data: { name: `Justice Gavel ${tierConfig.label}` }, recurring: { interval: 'month' } } }],
+      trial_period_days: 7,
+      metadata: { user_id: String(req.user.id), tier, provider_type: 'consumer' }
+    });
+    const trialEnd = new Date(stripeSub.trial_end * 1000).toISOString();
+    const sub = await db.run(
+      `INSERT INTO subscriptions (user_id, provider_type, tier, status, amount_cents, trial_ends_at, stripe_sub_id, stripe_cus_id)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [req.user.id, 'consumer', tier, 'trialing', tierConfig.cents, trialEnd, stripeSub.id, customerId]
+    );
+    res.json({
+      success: true,
+      subscription: { id: sub.lastID, tier, status: 'trialing', trial_ends_at: trialEnd },
+      message: `7-day free trial. Billed $${(tierConfig.cents/100).toFixed(2)}/mo after ${new Date(trialEnd).toLocaleDateString()}.`
+    });
+  } catch (e) {
+    logger.error('[billing] consumer subscribe:', e.message);
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// GET /api/billing/consumer/subscription
+router.get('/consumer/subscription', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const sub = await db.get(
+      `SELECT * FROM subscriptions WHERE user_id = ? AND provider_type = 'consumer' ORDER BY created_at DESC LIMIT 1`,
+      [req.user.id]
+    );
+    const consumerTiers = ['starter', 'pro', 'consumer_intel'].map(k => ({ key: k, ...TIERS[k] }));
+    res.json({ subscription: sub || null, tiers: consumerTiers, mock: !LIVE });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ── Admin stats ────────────────────────────────────────────────────────────────
+router.get('/admin/stats', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const [subs, leads, connections] = await Promise.all([
+      await db.get(`SELECT COUNT(*) as total, SUM(amount_cents) as mrr FROM subscriptions WHERE status IN ('active','trialing')`),
+      db.get(`SELECT COUNT(*) as total, SUM(lead_fee_cents) as revenue FROM lead_purchases WHERE status = 'charged'`),
+      db.get(`SELECT COUNT(*) as total, SUM(amount_cents) as revenue FROM family_connections WHERE status = 'paid'`),
+    ]);
+    res.json({ subscriptions: subs, leads, family_connections: connections });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VERIFIED BADGE PROGRAM — $49/month
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// POST /api/billing/bondsman/verified-badge/subscribe
+router.post('/bondsman/verified-badge/subscribe', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+
+    // Check existing
+    const existing = await db.get(
+      "SELECT * FROM verified_badge_subscriptions WHERE user_id=? AND status='active'",
+      [req.user.id]
+    );
+    if (existing) return res.status(409).json({ error: 'Already have an active Verified Badge subscription.' });
+
+    const feeCents = BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS; // $49/month
+    const renewsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    if (!LIVE) {
+      await db.run(
+        `INSERT INTO verified_badge_subscriptions
+           (user_id, status, stripe_sub_id, stripe_cus_id, amount_cents, renews_at)
+         VALUES (?,?,?,?,?,?)`,
+        [req.user.id, 'active', 'sub_mock_badge', 'cus_mock_badge', feeCents, renewsAt]
+      );
+      // Mark bondsman profile as verified
+      await db.run(
+        `UPDATE bondsman_profiles SET verified_badge=1, badge_expires_at=? WHERE user_id=?`,
+        [renewsAt, req.user.id]
+      );
+      return res.json({
+        success: true, mock: true,
+        message: '✓ Verified Badge activated! Your listings now show the "Verified by Justice Gavel" badge.',
+        renews_at: renewsAt,
+        fee: '$49/month',
+      });
+    }
+
+    // Live Stripe
+    const customerId = await getOrCreateStripeCustomer(req.user);
+    const stripeSub = await stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price_data: { currency: 'usd', unit_amount: feeCents,
+        product_data: { name: 'Justice Gavel — Verified Bondsman Badge' },
+        recurring: { interval: 'month' }
+      }}],
+      metadata: { user_id: String(req.user.id), type: 'verified_badge' }
+    });
+
+    await db.run(
+      `INSERT INTO verified_badge_subscriptions
+         (user_id, status, stripe_sub_id, stripe_cus_id, amount_cents, renews_at)
+       VALUES (?,?,?,?,?,?)`,
+      [req.user.id, 'active', stripeSub.id, customerId, feeCents, new Date(stripeSub.current_period_end * 1000).toISOString()]
+    );
+    await db.run(
+      `UPDATE bondsman_profiles SET verified_badge=1, badge_expires_at=? WHERE user_id=?`,
+      [new Date(stripeSub.current_period_end * 1000).toISOString(), req.user.id]
+    );
+
+    res.json({ success: true, message: '✓ Verified Badge activated!', fee: '$49/month' });
+  } catch (e) {
+    logger.error('[billing] verified-badge subscribe:', e.message);
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// GET /api/billing/bondsman/verified-badge/status
+router.get('/bondsman/verified-badge/status', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const sub = await db.get(
+      "SELECT * FROM verified_badge_subscriptions WHERE user_id=? ORDER BY created_at DESC LIMIT 1",
+      [req.user.id]
+    );
+    const profile = await db.get(
+      'SELECT verified_badge, badge_expires_at FROM bondsman_profiles WHERE user_id=?',
+      [req.user.id]
+    );
+    res.json({
+      active: sub?.status === 'active' || false,
+      subscription: sub || null,
+      verified_badge: !!profile?.verified_badge,
+      badge_expires_at: profile?.badge_expires_at || null,
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// POST /api/billing/bondsman/verified-badge/cancel
+router.post('/bondsman/verified-badge/cancel', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const sub = await db.get(
+      "SELECT * FROM verified_badge_subscriptions WHERE user_id=? AND status='active'",
+      [req.user.id]
+    );
+    if (!sub) return err404(res, 'No active badge subscription found.');
+
+    if (LIVE && sub.stripe_sub_id && !sub.stripe_sub_id.startsWith('sub_mock')) {
+      await stripe.subscriptions.cancel(sub.stripe_sub_id);
+    }
+    await db.run(
+      "UPDATE verified_badge_subscriptions SET status='cancelled', cancelled_at=datetime('now') WHERE id=?",
+      [sub.id]
+    );
+    await db.run(
+      "UPDATE bondsman_profiles SET verified_badge=0 WHERE user_id=?",
+      [req.user.id]
+    );
+    res.json({ success: true, message: 'Badge subscription cancelled. Badge removed from your listings.' });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════
+// PI / CIVIL RIGHTS ATTORNEY LEAD MARKETPLACE
+// Same model as bondsman leads — pay per qualified referral.
+// PI attorneys pay $50–$500 per lead based on case value estimate.
+// Civil rights attorneys pay flat $100/lead (contingency cases).
+// ════════════════════════════════════════════════════════════════════════
+
+// Lead fee tiers for PI/civil — based on reported severity
+function piLeadFee(caseType, severity) {
+  if (caseType === 'Civil Rights') return 9999; // $100
+  if (!severity) return 5000;
+  if (severity === 'minor')   return 4999;   // $50
+  if (severity === 'moderate')return 14999;  // $150
+  if (severity === 'serious') return 29999;  // $300
+  return 49999;                               // $499.99 catastrophic
+}
+
+// ── Submit a PI/Civil Rights lead (from user who tapped "I Was Injured" or civil rights) ──
+router.post('/pi-lead/submit', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const {
+      case_type,      // 'Personal Injury' | 'Civil Rights' | 'Employment'
+      incident_date,
+      description,
+      severity,       // 'minor' | 'moderate' | 'serious' | 'catastrophic'
+      city,
+      state,
+      lat,
+      lng,
+    } = req.body;
+  if (description) description = truncateStr(String(description), 500);
+
+    if (!case_type || !description) {
+      return err400(res, 'case_type and description are required');
+    }
+
+    // Ensure pi_leads table exists
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS pi_leads (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id        INTEGER,
+        case_type      TEXT NOT NULL,
+        incident_date  TEXT,
+        description    TEXT,
+        severity       TEXT DEFAULT 'moderate',
+        city           TEXT,
+        state          TEXT,
+        lat            REAL,
+        lng            REAL,
+        status         TEXT DEFAULT 'open',
+        accepted_by    INTEGER,
+        accepted_at    TEXT,
+        lead_fee_cents INTEGER,
+        created_at     TEXT DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_pi_leads_status ON pi_leads(status, created_at);
+      CREATE INDEX IF NOT EXISTS idx_pi_leads_type   ON pi_leads(case_type, status);
+    `);
+
+    const fee = piLeadFee(case_type, severity);
+    const r = await db.run(
+      `INSERT INTO pi_leads (user_id, case_type, incident_date, description, severity, city, state, lat, lng, lead_fee_cents)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [req.user.id, case_type, incident_date || null, description, severity || 'moderate',
+       city || null, state || null, lat || null, lng || null, fee]
+    );
+    const lead = await db.get('SELECT * FROM pi_leads WHERE id=?', [r.lastID]);
+    res.status(201).json({ ok: true, lead_id: r.lastID, lead });
+  } catch (e) {
+    logger.error('[pi-lead/submit]', e.message);
+    res.status(500).json({ error: 'Could not submit lead' });
+  }
+});
+
+// ── PI/Civil attorney views available leads in their area ──────────────────
+router.get('/pi-leads', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const { city, state, case_type, limit = 20 } = req.query;
+
+    // Ensure table exists before querying
+    await db.exec(`CREATE TABLE IF NOT EXISTS pi_leads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER,
+      case_type TEXT NOT NULL, incident_date TEXT, description TEXT,
+      severity TEXT DEFAULT 'moderate', city TEXT, state TEXT,
+      lat REAL, lng REAL, status TEXT DEFAULT 'open',
+      accepted_by INTEGER, accepted_at TEXT, lead_fee_cents INTEGER,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`);
+
+    let sql = `SELECT id, case_type, incident_date, severity, city, state,
+                      lead_fee_cents, created_at,
+                      -- Mask description until purchased
+                      CASE WHEN accepted_by = ? THEN description
+                           ELSE substr(description, 1, 60) || '…' END AS description,
+                      CASE WHEN accepted_by = ? THEN 'accepted' ELSE status END AS display_status
+               FROM pi_leads
+               WHERE status = 'open' OR accepted_by = ?`;
+    const params = [req.user.id, req.user.id, req.user.id];
+
+    if (city)      { sql += ' AND city = ?';      params.push(city); }
+    if (state)     { sql += ' AND state = ?';     params.push(state); }
+    if (case_type) { sql += ' AND case_type = ?'; params.push(case_type); }
+
+    sql += ` ORDER BY created_at DESC LIMIT ?`;
+    params.push(Number(limit));
+
+    const leads = await db.all(sql, params);
+    res.json(leads);
+  } catch (e) {
+    logger.error('[pi-leads GET]', e.message);
+    res.status(500).json({ error: 'Could not load leads' });
+  }
+});
+
+// ── PI attorney accepts a lead — charges their saved payment method ─────────
+router.post('/pi-lead/accept/:id', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const lead = await db.get(
+      'SELECT * FROM pi_leads WHERE id=? AND status=?',
+      [safeInt(req.params.id), 'open']
+    );
+    if (!lead) return err404(res, 'Lead not available');
+
+    // Charge the attorney's saved card via Stripe
+    const stripeKey = process.env.STRIPE_SECRET;
+    if (stripeKey) {
+      const profile = await db.get(
+        'SELECT stripe_cus_id, payment_method_id FROM attorney_profiles WHERE user_id=?',
+        [req.user.id]
+      );
+      if (!profile?.payment_method_id) {
+        return res.status(402).json({ error: 'No payment method on file. Add a card in your profile.' });
+      }
+      const Stripe = (await import('stripe')).default;
+      const stripe = new Stripe(stripeKey);
+      await stripe.paymentIntents.create({
+        amount: lead.lead_fee_cents,
+        currency: 'usd',
+        customer: profile.stripe_cus_id,
+        payment_method: profile.payment_method_id,
+        confirm: true,
+        off_session: true,
+        description: `PI Lead #${lead.id} — ${lead.case_type} — ${lead.city}, ${lead.state}`,
+      });
+    }
+
+    // Mark accepted + reveal full description
+    await db.run(
+      `UPDATE pi_leads SET status='accepted', accepted_by=?, accepted_at=datetime('now') WHERE id=?`,
+      [req.user.id, lead.id]
+    );
+
+    const full = await db.get('SELECT * FROM pi_leads WHERE id=?', [lead.id]);
+    res.json({ ok: true, lead: full });
+  } catch (e) {
+    logger.error('[pi-lead/accept]', e.message);
+    res.status(500).json({ error: 'Could not process lead acceptance. Check your payment method.' });
+  }
+});
+
+// ── POST /api/billing/webhook — Stripe webhook handler ────────────────────────
+// Verifies Stripe signature before processing events.
+// Set STRIPE_WEBHOOK_SECRET in .env from Stripe dashboard → Webhooks → signing secret.
+// Register: stripe listen --forward-to localhost:4000/api/billing/webhook
+import express from 'express';
+import { sendPushToUser } from '../services/pushDelivery.js';
+import { sendEmail } from '../services/sendgrid.js';
+import logger from '../utils/logger.js';
+
+
+// ── Stripe webhook handler — extracted for readability ───────────────────────
+async function handleStripeWebhook(event, db) {
+  const type = event.type;
+
+  if (type === 'customer.subscription.updated' || type === 'customer.subscription.deleted') {
+    const sub = event.data.object;
+    const status = sub.status; // 'active' | 'canceled' | 'past_due' | 'unpaid'
+    const userId = sub.metadata?.user_id;
+    if (userId) {
+      const active = ['active','trialing'].includes(status);
+      await db.run(
+        `UPDATE subscriptions SET status=?, stripe_status=?, updated_at=datetime('now') WHERE stripe_subscription_id=?`,
+        [active ? 'active' : 'canceled', status, sub.id]
+      ).catch(() => {});
+    }
+  }
+}
+
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig    = req.headers['stripe-signature'];
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!secret) {
+    logger.warn('[billing/webhook] STRIPE_WEBHOOK_SECRET not set — skipping verification');
+    return res.json({ received: true, mock: true });
+  }
+
+  let event;
+  try {
+    const StripeLib = (await import('stripe')).default;
+    const stripeVerify = new StripeLib(process.env.STRIPE_SECRET || '');
+    event = stripeVerify.webhooks.constructEvent(req.body, sig, secret);
+  } catch (err) {
+    logger.error('[billing/webhook] Signature verification failed:', err.message);
+    return err400(res, 'Webhook signature verification failed.');
+  }
+
+  try {
+    const db = await getDb();
+    switch (event.type) {
+      case 'customer.subscription.deleted':
+      case 'customer.subscription.updated': {
+        const sub = event.data.object;
+        const status = sub.status; // 'active' | 'canceled' | 'past_due' | 'unpaid'
+        if (sub.metadata?.user_id) {
+          await db.run(
+            `UPDATE subscriptions SET status=?, updated_at=datetime('now')
+             WHERE user_id=? AND stripe_subscription_id=?`,
+            [status, sub.metadata.user_id, sub.id]
+          ).catch(() => {});
+        }
+        break;
+      }
+      case 'invoice.payment_failed': {
+        const inv = event.data.object;
+        const userId = inv.subscription_details?.metadata?.user_id || null;
+        logger.warn('[billing/webhook] Payment failed:', inv.customer_email, 'sub:', inv.subscription);
+
+        // Push notification to user
+        if (userId) {
+          await sendPushToUser(userId, {
+            title: '⚠️ Payment Failed',
+            body: 'Your Justice Gavel payment failed. Please update your payment method to keep your subscription.',
+            data: { screen: 'Settings', tab: 'billing' },
+          }).catch(() => {});
+        }
+
+        // Email notification
+        if (inv.customer_email) {
+          await sendEmail({
+            to: inv.customer_email,
+            subject: 'Action Required: Justice Gavel Payment Failed',
+            text: [
+              'Hi there,',
+              '',
+              'Your Justice Gavel subscription payment did not go through.',
+              'Please update your payment method to continue accessing your legal tools.',
+              '',
+              'Update at: https://justicegavel.app/settings/billing',
+              '',
+              'If you have questions, reply to this email.',
+              '',
+              '— The Justice Gavel Team',
+            ].join('\n'),
+            html: `<p>Hi there,</p>
+<p>Your Justice Gavel subscription payment did not go through.</p>
+<p><strong><a href="https://justicegavel.app/settings/billing">Update your payment method →</a></strong></p>
+<p>If you have questions, reply to this email.</p>
+<p>— The Justice Gavel Team</p>`,
+          }).catch(() => {});
+        }
+        break;
+      }
+      case 'checkout.session.completed': {
+        // One-time payments: Quick Connect, Family Connect, per-doc analysis
+        const session = event.data.object;
+        const userId = session.metadata?.user_id || null;
+        const amountDollars = ((session.amount_total || 0) / 100).toFixed(2);
+        const productName = session.metadata?.product_name || 'Justice Gavel Service';
+
+        // checkout.session.completed handled — push/email sent above
+
+        // Push: immediate confirmation
+        if (userId) {
+          await sendPushToUser(userId, {
+            title: '✅ Payment Confirmed',
+            body: `${productName} — $${amountDollars} received. Thank you!`,
+            data: { screen: 'Home' },
+          }).catch(() => {});
+        }
+
+        // Email receipt
+        if (session.customer_email || session.customer_details?.email) {
+          const toEmail = session.customer_email || session.customer_details.email;
+          await sendEmail({
+            to: toEmail,
+            subject: `Receipt: ${productName} — Justice Gavel`,
+            text: [
+              `Your payment of $${amountDollars} for ${productName} was successful.`,
+              '',
+              `Reference: ${session.id}`,
+              '',
+              'Thank you for using Justice Gavel.',
+              '— The Justice Gavel Team',
+            ].join('\n'),
+            html: `<p>Your payment of <strong>$${amountDollars}</strong> for <strong>${productName}</strong> was successful.</p>
+<p style="color:#666;font-size:12px">Reference: ${session.id}</p>
+<p>Thank you for using Justice Gavel.</p>
+<p>— The Justice Gavel Team</p>`,
+          }).catch(() => {});
+        }
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        // Successful subscription renewal — confirm access and send receipt
+        const inv = event.data.object;
+        const userId = inv.subscription_details?.metadata?.user_id
+          || inv.lines?.data?.[0]?.metadata?.user_id || null;
+        const amountDollars = ((inv.amount_paid || 0) / 100).toFixed(2);
+        const planName = inv.lines?.data?.[0]?.description || 'Justice Gavel Subscription';
+
+        // Update subscription status to active (handles recovery from past_due)
+        if (inv.subscription && userId) {
+          await db.run(
+            `UPDATE subscriptions SET status='active', updated_at=datetime('now')
+             WHERE user_id=? AND stripe_subscription_id=?`,
+            [userId, inv.subscription]
+          ).catch(() => {});
+        }
+
+        // Push confirmation
+        if (userId) {
+          await sendPushToUser(userId, {
+            title: '✅ Subscription Renewed',
+            body: `${planName} — $${amountDollars}. Your access continues uninterrupted.`,
+            data: { screen: 'Home' },
+          }).catch(() => {});
+        }
+
+        // Email receipt
+        if (inv.customer_email) {
+          await sendEmail({
+            to: inv.customer_email,
+            subject: `Receipt: ${planName} renewal — Justice Gavel`,
+            text: [
+              `Your ${planName} has been renewed for $${amountDollars}.`,
+              '',
+              `Billing period: ${new Date(inv.period_start * 1000).toLocaleDateString()} — ${new Date(inv.period_end * 1000).toLocaleDateString()}`,
+              `Invoice: ${inv.id}`,
+              '',
+              'Manage your subscription at: https://justicegavel.app/settings/billing',
+              '',
+              '— The Justice Gavel Team',
+            ].join('\n'),
+            html: `<p>Your <strong>${planName}</strong> has been renewed for <strong>$${amountDollars}</strong>.</p>
+<p style="color:#666;font-size:12px">Billing period: ${new Date(inv.period_start * 1000).toLocaleDateString()} — ${new Date(inv.period_end * 1000).toLocaleDateString()}<br>Invoice: ${inv.id}</p>
+<p><a href="https://justicegavel.app/settings/billing">Manage subscription →</a></p>
+<p>— The Justice Gavel Team</p>`,
+          }).catch(() => {});
+        }
+        break;
+      }
+      default:
+        // unhandled event type — ignored (expected for new Stripe events)
+    }
+    res.json({ received: true, type: event.type });
+  } catch (e) {
+    res.status(500).json({ error: 'Webhook handler error. Please try again.' });
+  }
+});
+
+export default router;

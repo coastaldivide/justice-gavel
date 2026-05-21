@@ -1,0 +1,11 @@
+
+google-services.json
+GoogleService-Info.plist
+*.pem
+*.p12
+*.key
+*.cert
+.env.production
+.env.local
+.env.staging
+pc-api-key.json

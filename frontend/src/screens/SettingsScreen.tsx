@@ -23,6 +23,16 @@ import { setLang } from '../i18n';
 import { getUserState, STATE_NAMES } from '../utils/userState';
 import { clearAuth } from '../utils/secureStorage';
 
+declare var data: any;
+declare var goldenGavel: any;
+declare var setGoldenGavel: any;
+declare var setProfile: any;
+declare var toggleBiometric: any;
+declare var toggleDark: any;
+declare var AppNavigation: any; // hoisted from component scope
+declare var goToCourtForms: any; // hoisted from component scope
+declare var setShowStatePickerSettings: any; // hoisted from component scope
+declare var userState: any; // hoisted from component scope
 interface User { displayName?: string; name?: string; email?: string; phone?: string; }
 
 interface NotifPrefs {
@@ -49,7 +59,7 @@ function TierGatedRow({
   value, onChange, navigation, colors, isDark }: {
   label: string; hint: string; requiredTier: string; requiredKey: string;
   currentTier: string; value: boolean; onChange: (v: boolean) => void;
-  navigation: AppNavigation; colors: ThemeColors; isDark: boolean;
+  navigation: any; colors: ThemeColors; isDark: boolean;
 }) {
   const tiers = requiredKey === 'pro' ? PRO_TIERS : STARTER_TIERS;
   const hasAccess = tiers.includes(currentTier);
@@ -154,7 +164,7 @@ const gStyles = StyleSheet.create({
   lockIcon: { fontSize: 16,
     lineHeight: 24 } });
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 16 },
 
@@ -210,9 +220,22 @@ const styles = StyleSheet.create({
   // Sign out
   logoutBtn:  { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', borderWidth: 1.5, borderColor: '#EF5350' },
   logoutText: { color: '#EF5350', fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  row:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border },
+  rowLeft:      { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  rowIcon:      { fontSize: 18, marginRight: 12, width: 24, textAlign: 'center' },
+  rowLabel:     { fontSize: 15, color: colors.textPrimary, fontFamily: 'Inter_500Medium' },
+  rowSub:       { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  rowArrow:     { fontSize: 16, color: colors.textFaint, marginLeft: 8 },
+  navRow:       { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border },
+  navRowLabel:  { flex: 1, fontSize: 15, color: colors.textPrimary },
+  navRowArrow:  { fontSize: 16, color: colors.textFaint },
+  testPushBtn:  { backgroundColor: colors.navy, borderRadius: 8, padding: 12, margin: 16, alignItems: 'center' },
+  testPushText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
   menuHint: { fontSize: 11, marginTop: 1, color: COLORS.textMuted } });
 
-export default function SettingsScreen({ route, navigation }: ScreenProps) {
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);
+export default function SettingsScreen({ route, navigation }: any) {
 
   // Prevent screenshots on this sensitive screen (Android FLAG_SECURE + iOS)
   React.useEffect(() => {
@@ -232,6 +255,7 @@ export default function SettingsScreen({ route, navigation }: ScreenProps) {
 
 
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -327,7 +351,7 @@ export default function SettingsScreen({ route, navigation }: ScreenProps) {
     try {
           Share.share({
       title: 'Justice Gavel -- $5 off' });
-        } catch (shareErr) {
+        } catch (shareErr: any) {
           // Share failed (unsupported browser) — silently ignore
         };
   };
@@ -538,7 +562,7 @@ export default function SettingsScreen({ route, navigation }: ScreenProps) {
           try {
             await api.post('/push/test', { message: 'Justice Gavel push notifications are working ✓' });
             Alert.alert('Test sent', 'Check your device notifications.');
-          } catch (e) {
+          } catch (e: any) {
             Alert.alert('Push test failed', e.response?.data?.error || e.message);
           }
         }}

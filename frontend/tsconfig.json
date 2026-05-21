@@ -14,7 +14,16 @@
     "target": "ESNext",
     "ignoreDeprecations": "5.0",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "types": [
+      "react",
+      "react-native"
+    ],
+    "lib": [
+      "ESNext"
+    ]
   }
 }

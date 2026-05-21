@@ -14,7 +14,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, ActivityIndicator } from 'react-native';
 import { api }      from '../services/api';
-import { useTheme, RADIUS } from '../constants/theme';
+import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 
 interface PendingAtty {
   user_id:      number;
@@ -26,7 +26,7 @@ interface PendingAtty {
   provider_id:  number | null;
 }
 
-export default function AdminVerificationScreen({ navigation }: ScreenProps): JSX.Element {
+export default function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -45,7 +45,7 @@ export default function AdminVerificationScreen({ navigation }: ScreenProps): JS
     try {
       const res = await api.get('/attorney/pending-verification');
       setPending(res.data?.pending || []);
-    } catch (e) {
+    } catch (e: any) {
       setError(e.response?.data?.error || 'Could not load pending verifications.');
     } finally {
       setLoading(false);
@@ -69,7 +69,7 @@ export default function AdminVerificationScreen({ navigation }: ScreenProps): JS
               await api.post('/attorney/approve-verification', { user_id: userId, approved: true });
               setPending(p => p.filter(a => a.user_id !== userId));
               Alert.alert('Approved ✓', `${name} is now bar verified.`);
-            } catch (e) {
+            } catch (e: any) {
               Alert.alert('Verification Failed', e.response?.data?.error || 'Could not approve the application.');
             } finally { setActing(null); }
           },
@@ -92,7 +92,7 @@ export default function AdminVerificationScreen({ navigation }: ScreenProps): JS
             try {
               await api.post('/attorney/approve-verification', { user_id: userId, approved: false });
               setPending(p => p.filter(a => a.user_id !== userId));
-            } catch (e) {
+            } catch (e: any) {
               Alert.alert('Verification Failed', e.response?.data?.error || 'Could not reject the application.');
             } finally { setActing(null); }
           },

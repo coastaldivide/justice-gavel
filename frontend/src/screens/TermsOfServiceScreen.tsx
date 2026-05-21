@@ -199,7 +199,7 @@ const SECTIONS: Section[] = [
   },
 ];
 
-export default function TermsOfServiceScreen({ navigation }: ScreenProps): JSX.Element {
+export default function TermsOfServiceScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
 

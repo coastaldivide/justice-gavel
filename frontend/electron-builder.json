@@ -1,0 +1,51 @@
+{
+  "appId": "app.justicegavel.desktop",
+  "productName": "Justice Gavel",
+  "copyright": "Copyright \u00a9 2025 Justice Gavel",
+  "directories": {
+    "output": "electron-dist",
+    "buildResources": "assets"
+  },
+  "files": [
+    "web-build/**/*",
+    "electron/**/*",
+    "assets/icon.png"
+  ],
+  "mac": {
+    "category": "public.app-category.utilities",
+    "icon": "assets/icon.png",
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "electron/entitlements.mac.plist",
+    "entitlementsInherit": "electron/entitlements.mac.plist",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      },
+      {
+        "target": "zip",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      }
+    ]
+  },
+  "win": {
+    "icon": "assets/icon.png",
+    "target": "nsis"
+  },
+  "linux": {
+    "icon": "assets",
+    "target": "AppImage"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "justicegavel",
+    "repo": "justice-gavel-desktop"
+  }
+}

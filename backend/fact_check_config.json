@@ -1,0 +1,72 @@
+{
+  "fact_check_schedule": {
+    "description": "Schedule for running fact_check_monitor.js",
+    "recommended_frequency": {
+      "crisis_hotlines": "weekly — wrong number during a crisis causes direct harm",
+      "expungement_laws": "monthly — these change through legislature and executive action",
+      "dui_laws": "quarterly — BAC limits and penalties are relatively stable",
+      "drug_penalties": "quarterly — scheduling changes are infrequent but impactful",
+      "victim_compensation": "semi-annually — program changes, funding cuts, URL changes",
+      "state_bar_complaints": "annually — bar websites restructure occasionally",
+      "courthouses": "annually — addresses and hours change, not the existence",
+      "specialty_courts": "semi-annually — programs open and close"
+    },
+    "commands": {
+      "quick_weekly": "node src/scripts/fact_check_monitor.js --quick",
+      "monthly_full": "node src/scripts/fact_check_monitor.js --full",
+      "specific_type": "node src/scripts/fact_check_monitor.js --type=expungement",
+      "specific_state": "node src/scripts/fact_check_monitor.js --state=VA",
+      "update_record": "node src/scripts/update_legal_data.js --type=dui --state=TN"
+    },
+    "railway_cron": {
+      "weekly_quick":   "0 9 * * 1",
+      "monthly_full":   "0 9 1 * *",
+      "comment": "Add to Railway: Settings → Cron Jobs → New Cron Job"
+    },
+    "alert_on_flag": {
+      "method": "Check exit code: if script exits with code 1, at least one source flagged",
+      "notify_to": "support@justicegavel.app",
+      "action_required": "Review flagged items, verify against official source, run update_legal_data.js"
+    },
+    "data_sources_by_category": {
+      "dui_laws": {
+        "primary": "NHTSA — https://www.nhtsa.gov/risky-driving/drunk-driving",
+        "secondary": "MADD — https://www.madd.org/the-solution/advocacy/state-laws/",
+        "tertiary": "State DMV websites (see url in each state record)",
+        "last_verified": "2026-04-29",
+        "verify_by": "2026-07-29"
+      },
+      "drug_penalties": {
+        "primary": "DEA — https://www.dea.gov/drug-information/drug-scheduling",
+        "secondary": "NORML — https://norml.org/laws/",
+        "tertiary": "State legislature websites",
+        "last_verified": "2026-04-29",
+        "verify_by": "2026-10-29"
+      },
+      "expungement": {
+        "primary": "CCRC — https://ccresourcecenter.org/state-restoration-profiles/",
+        "secondary": "Clean Slate Initiative — https://www.cleanslateinitiative.org/states",
+        "tertiary": "State legislature bill tracking",
+        "last_verified": "2026-05-01",
+        "verify_by": "2026-08-01",
+        "high_volatility_states": ["VA","MD","CO","OK","DC","CT","MN","MT"]
+      },
+      "victim_compensation": {
+        "primary": "OVC Directory — https://ovc.ojp.gov/program/vca/state-victim-compensation-programs",
+        "secondary": "Each state program URL (see url column in victim_compensation table)",
+        "last_verified": "2026-04-29",
+        "verify_by": "2027-04-29"
+      },
+      "crisis_hotlines": {
+        "988_lifeline": "https://988lifeline.org — verify number is still 988",
+        "samhsa": "https://www.samhsa.gov/find-help/national-helpline — verify 1-800-662-4357",
+        "dv_hotline": "https://www.thehotline.org — verify 1-800-799-7233",
+        "veterans": "https://www.veteranscrisisline.net — verify dial 988 press 1",
+        "trevor": "https://www.thetrevorproject.org — verify 1-866-488-7386",
+        "last_verified": "2026-05-03",
+        "verify_by": "2026-06-03",
+        "note": "NEVER let these go more than 30 days without verification"
+      }
+    }
+  }
+}

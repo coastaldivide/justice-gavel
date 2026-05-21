@@ -15,7 +15,7 @@ import React, { useState, useCallback } from 'react';
   const [fetchError, setFetchError] = useState<string>('');
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl , ActivityIndicator} from 'react-native';
-import { useTheme, RADIUS } from '../constants/theme';
+import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 
 type Tab = 'custody' | 'orders' | 'support';
 
@@ -128,7 +128,7 @@ const SUPPORT_SECTIONS = [
   },
 ];
 
-export default function FamilyCourtScreen(): JSX.Element {
+export default function FamilyCourtScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;

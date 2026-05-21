@@ -6,7 +6,7 @@
  *  - "Browse Without Account" visible on EVERY slide (not just last)
  *  - Simple 3rd-grade language
  */
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, FlatList, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -125,7 +125,7 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
 
   // P2 FIX: Browse goes directly to app -- NOT to Login
   useEffect(() => {
-    initLang().then(() => {
+    Promise.resolve(initLang()).then(() => {
       // Auto-detect system language and offer Spanish if not already set
       try {
         const { NativeModules, Platform } = require('react-native');
@@ -149,7 +149,7 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
             if (!stored) { setLang('vi'); }
           });
         }
-      } catch (e) { __DEV__ && console.warn(e?.message); }
+      } catch (e: any) { __DEV__ && console.warn(e?.message); }
     }).catch(() => {});
   }, []);
 

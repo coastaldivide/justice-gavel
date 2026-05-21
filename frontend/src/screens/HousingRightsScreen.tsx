@@ -18,7 +18,7 @@ import React, { useState, useRef, useCallback } from 'react';
   const [fetchError, setFetchError] = useState<string>('');
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl , ActivityIndicator} from 'react-native';
-import { useTheme, RADIUS } from '../constants/theme';
+import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
 type Tab = 'record' | 'eviction';
@@ -94,7 +94,7 @@ const EVICTION_SECTIONS = [
   },
 ];
 
-export default function HousingRightsScreen(): JSX.Element {
+export default function HousingRightsScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;

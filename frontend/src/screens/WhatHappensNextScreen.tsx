@@ -21,6 +21,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { getUserState } from '../utils/userState';
 
+declare var isLoading: any; // hoisted from component scope
 const { width: SW } = Dimensions.get('window');
 
 // ── Charge-type walkthrough data ─────────────────────────────────────────────
@@ -368,7 +369,7 @@ const STATE_PROCESS_NOTES: Record<string, { title: string; body: string; color: 
   },
 };
 
-export default function WhatHappensNextScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function WhatHappensNextScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -396,7 +397,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
     setTimeout(() => setRefreshing(false), 1200)
   }, []);
 
-  const chargeKey   = route?.params?.chargeType || '';
+  const chargeKey   = (route?.params as any)?.chargeType || '';
   const walkthroughKey = CHARGE_TO_WALKTHROUGH[chargeKey] || 'General Criminal';
   const data        = WALKTHROUGHS[walkthroughKey] || WALKTHROUGHS['General Criminal'];
 
@@ -538,7 +539,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
       </View>
 
       {/* Empty state */}
-      {data?.length === 0 && (
+      {(data as any)?.length === 0 && (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
           <Text style={{ fontSize: 40 }}>📝</Text>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>Content loading...</Text>
@@ -608,3 +609,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   ctaLabel: { fontSize: 12, ...FONTS.heavy, color: COLORS.navy },
   ctaSub:   { fontSize: 11, color: COLORS.textMuted, marginTop: 1 },
 });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

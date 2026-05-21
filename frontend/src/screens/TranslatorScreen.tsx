@@ -35,6 +35,8 @@ import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
+declare var events: any;
+declare var load: any; // hoisted from component scope
 // ── Language config ────────────────────────────────────────────────────────
 const LANGUAGES = [
   { code: 'en', label: 'English',    native: 'English',    flag: '🇺🇸' },
@@ -68,6 +70,7 @@ function TurnBubble({
   msg: TurnMessage; isA: boolean; langA: string; langB: string;
 }) {
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -172,7 +175,7 @@ function LangPicker({
 }
 
 // ── Main screen ────────────────────────────────────────────────────────────
-export default function TranslatorScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -181,7 +184,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): JS
   }, []);
   const { colors, isDark } = useTheme();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
-  const { initialSide } = route?.params ?? {}; // 'b' for client join flow
+  const { initialSide } = (route?.params as any) ?? {}; // 'b' for client join flow
 
   const abortRef = useRef<AbortController | null>(null);
   const [phase,     setPhase]     = useState<Phase>(initialSide === 'b' ? 'join' : 'setup');
@@ -234,7 +237,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): JS
           lastMsgIdRef.current = newId;
           setLastMsgId(newId);
         }
-      } catch (e) { __DEV__ && console.warn(e?.message); }
+      } catch (e: any) { __DEV__ && console.warn(e?.message); }
     }, 2000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [phase, mode, sessionCode]); // lastMsgId via ref -- no restart on each message
@@ -250,7 +253,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): JS
         setCode(res.data?.code);
         setMessages([]);
         setPhase('session');
-      } catch (e) {
+      } catch (e: any) {
         Alert.alert('Could not start session', e.response?.data?.error || e.message);
       } finally {
         setCreating(false);
@@ -286,7 +289,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): JS
       }
 
       setPhase('session');
-    } catch (e) {
+    } catch (e: any) {
       setJoinError('Session not found. Check the code and try again.');
     }
   }, [joinCode]);
@@ -331,7 +334,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): JS
       };
       setMessages(prev => prev.map(m => m._pending && m.id === optimistic.id ? confirmed : m));
       if (res.data?.id) { lastMsgIdRef.current = res.data?.id; setLastMsgId(res.data?.id); }
-    } catch (e) {
+    } catch (e: any) {
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
       if (side === 'a') setInputA(text);
       else              setInputB(text);
@@ -348,7 +351,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): JS
       message: `Join my translation session on Justice Gavel.\n\nCode: ${sessionCode}\n\nDownload the app and tap "Interpreter" → "Join with code".`,
       title: 'Join Translation Session',
     });
-    } catch (shareErr) {
+    } catch (shareErr: any) {
       // Share API unavailable on this browser/device — fail silently
     }
   }, [sessionCode]);
@@ -654,7 +657,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): JS
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
 
   // Setup
@@ -747,3 +750,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center' },
   sendBtnText:   { color: COLORS.bgCard, fontSize: 18, fontWeight: '300' },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

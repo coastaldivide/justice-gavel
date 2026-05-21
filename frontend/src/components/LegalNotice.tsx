@@ -16,7 +16,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
-import { useTheme } from '../constants/theme';
+import { useTheme, COLORS, FONTS } from '../constants/theme';
 
 type Context = 'general' | 'motions' | 'research' | 'forms' | 'expungement';
 
@@ -34,7 +34,7 @@ const NOTICES: Record<Context, string> = {
 };
 
 function LegalNotice({ context = 'general', style }: Props) {
-  const { COLORS, FONTS } = useTheme();
+  const { colors, isDark } = useTheme()
   const s = styles(COLORS, FONTS);
 
   return (
@@ -54,7 +54,7 @@ function LegalNotice({ context = 'general', style }: Props) {
   );
 }
 
-const styles = (C: unknown, F: unknown) => StyleSheet.create({
+const styles = (C: any, F: any) => StyleSheet.create({
   container: {
     backgroundColor: C.bgSubtle,
     borderTopWidth: 1,

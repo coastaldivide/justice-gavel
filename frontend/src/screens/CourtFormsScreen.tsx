@@ -23,7 +23,7 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, FlatList, Linking, StyleSheet, TextInput, Platform, ActivityIndicator, Alert, KeyboardAvoidingView, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 import {
   STATE_COURT_FORMS,
   FEDERAL_SOURCES,
@@ -31,6 +31,10 @@ import {
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { api } from '../services/api';
 
+declare var FONTS: any;
+declare var ScreenProps: any;
+declare var onRefresh: any;
+declare var refreshing: any;
 // ── Form categories ───────────────────────────────────────────────────────────
 const FORM_CATEGORIES = [
   {
@@ -67,9 +71,8 @@ const FORM_CATEGORIES = [
 
 type Phase = 'state_select' | 'category_select' | 'form_display' | 'ai_guide';
 
-export default function CourtFormsScreen({ route, navigation }: ScreenProps): JSX.Element {
-  const navigation = useNavigation();
-  const { COLORS, FONTS , colors} = useTheme();
+export default function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null {
+  const { colors } = useTheme();
   const s = styles(COLORS, FONTS);
 
   const [phase, setPhase] = useState<Phase>('state_select');
@@ -543,11 +546,11 @@ export default function CourtFormsScreen({ route, navigation }: ScreenProps): JS
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = (C: Record<string, unknown>, F: Record<string, unknown>) => StyleSheet.create({
+const styles = (C: any, F: any) => StyleSheet.create({
   root:            { flex: 1, backgroundColor: C.bg },
   header:          { backgroundColor: C.navy, paddingTop: Platform.OS === 'ios' ? 56 : 32, paddingBottom: 16, paddingHorizontal: 20 },
   headerTitle:     { fontSize: 22, fontFamily: F.bold, color: COLORS.bgCard, marginBottom: 4 },
-  headerSub:       { fontSize: 12, fontFamily: F.regular, color: colors.border },
+  headerSub:       { fontSize: 12, fontFamily: F.regular, color: COLORS.border },
   subHeader:       { backgroundColor: C.bgCard, paddingTop: Platform.OS === 'ios' ? 56 : 32, paddingBottom: 12, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: C.border },
   backBtn:         { marginBottom: 4 },
   backBtnText:     { fontSize: 14,
@@ -591,21 +594,21 @@ const styles = (C: Record<string, unknown>, F: Record<string, unknown>) => Style
   formLinkUrl:     { fontSize: 11, fontFamily: F.regular, color: C.blue, marginBottom: 2 },
   formLinkSource:  { fontSize: 11, fontFamily: F.regular, color: C.textMuted },
   formLinkSub:     { fontSize: 12, fontFamily: F.regular, color: C.textMuted, marginTop: 2 },
-  govBadge:        { backgroundColor: colors.legal, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  govBadgeText:    { fontSize: 11, fontFamily: F.bold, color: colors.legal },
+  govBadge:        { backgroundColor: COLORS.legal, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  govBadgeText:    { fontSize: 11, fontFamily: F.bold, color: COLORS.legal },
   aiGuideBtn:      { flexDirection: 'row', alignItems: 'center', backgroundColor: C.navy, borderRadius: 12, padding: 16, gap: 12, marginBottom: 10 },
   aiGuideBtnIcon:  { fontSize: 22 },
   aiGuideBtnInfo:  { flex: 1 },
   aiGuideBtnTitle: { fontSize: 14,
     lineHeight: 21, fontFamily: F.semiBold, color: COLORS.bgCard },
-  aiGuideBtnSub:   { fontSize: 12, fontFamily: F.regular, color: colors.border, marginTop: 2 },
+  aiGuideBtnSub:   { fontSize: 12, fontFamily: F.regular, color: COLORS.border, marginTop: 2 },
   filingReminder:  { backgroundColor: C.bgCard, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border, marginTop: 10 },
   filingReminderTitle: { fontSize: 14,
     lineHeight: 21, fontFamily: F.bold, color: C.textPrimary, marginBottom: 8 },
   filingReminderText: { fontSize: 12, fontFamily: F.regular, color: C.textSecond, lineHeight: 22 },
   link:            { color: C.blue, textDecorationLine: 'underline' },
   aiDisclaimerBanner: { backgroundColor: '#FFA726', borderRadius: 8, padding: 16, borderLeftWidth: 3, borderLeftColor: '#FFA726', marginBottom: 16 },
-  aiDisclaimerTitle: { fontSize: 12, fontFamily: F.bold, color: colors.emergency, marginBottom: 4 },
+  aiDisclaimerTitle: { fontSize: 12, fontFamily: F.bold, color: COLORS.emergency, marginBottom: 4 },
   aiDisclaimerText: { fontSize: 12, fontFamily: F.regular, color: '#FFA726', lineHeight: 18 },
   loadingBox:      { alignItems: 'center', paddingVertical: 40, gap: 12 },
   loadingText:     { fontSize: 14,

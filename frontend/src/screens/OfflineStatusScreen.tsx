@@ -14,6 +14,7 @@ import {
   isOnline, getLastOnlineAt, cacheAgeLabel,
   getCachedCases, getCachedMotions, getCachedLawyers, getCachedLessons,
 } from '../services/offlineCache';
+declare var data: any;
 
 type Feature = {
   label: string;
@@ -56,7 +57,7 @@ const ONLINE_ONLY = [
   { icon: '🔓', label: 'Quick Connect / Emergency',  note: 'Provider matching requires connection.' },
 ];
 
-export default function OfflineStatusScreen({ navigation }: ScreenProps): JSX.Element {
+export default function OfflineStatusScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);

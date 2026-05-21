@@ -88,7 +88,7 @@ export async function processSyncQueue(
           onCaseSynced(item.temp_id, res.data.id);
         }
         synced++;
-      } catch (e) {
+      } catch (e: any) {
         failed++;
         const d2 = await getDb();
         await d2.runAsync('UPDATE sync_queue SET status=?,error=? WHERE id=?',

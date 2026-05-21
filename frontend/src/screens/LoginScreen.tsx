@@ -3,7 +3,7 @@
  */
 import React, { useState, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import {  } from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { setAppAuth } from '../services/auth';
@@ -12,7 +12,9 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 
-export default function LoginScreen({ navigation }: ScreenProps): JSX.Element {
+declare var JusticeGavelLogo: any;
+declare var showPassword: any;
+export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [identifier, setIdentifier] = useState('');
@@ -30,9 +32,9 @@ export default function LoginScreen({ navigation }: ScreenProps): JSX.Element {
       const res = await api.post('/auth/login', { identifier: identifier.trim(), password });
       await secureStorage.setToken( res.data?.token);
       await secureStorage.setItem('user', JSON.stringify(res.data?.user));
-      try { const t = await registerForPush(); await api.post('/push/token', { expoPushToken: t }); } catch (e) { __DEV__ && console.warn(e?.message); }
+      try { const t = await registerForPush(); await api.post('/push/token', { expoPushToken: t }); } catch (e: any) { __DEV__ && console.warn(e?.message); }
       setAppAuth('authed');
-    } catch (e) {
+    } catch (e: any) {
       setError(e.response?.data?.error || 'Login failed. Check your details and try again.');
     } finally { setLoading(false); }
   };

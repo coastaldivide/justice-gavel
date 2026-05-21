@@ -11,6 +11,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 
+declare var setError: any;
+declare var setWallTapCount: any;
+declare var wallTapCount: any;
 const MAX_WATCHES = 5;
 
 interface Watch {
@@ -23,8 +26,7 @@ interface Watch {
   active: number;
 }
 
-export default function ArrestMonitorScreen({ route, navigation }: ScreenProps): JSX.Element {
-  const navigation = useNavigation<any>();
+export default function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -37,9 +39,9 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
     const seen = new Map<string, any>();
     for (const arrest of arrests) {
       const key = [
-        (arrest.name || '').toLowerCase().trim(),
-        (arrest.charge || arrest.charges || '').toLowerCase().slice(0, 30),
-        (arrest.booking_date || arrest.date || '').slice(0, 10),
+        ((arrest as any).name || '').toLowerCase().trim(),
+        ((arrest as any).charge || (arrest as any).charges || '').toLowerCase().slice(0, 30),
+        ((arrest as any).booking_date || (arrest as any).date || '').slice(0, 10),
       ].join('|');
       if (!seen.has(key)) {
         seen.set(key, arrest);
@@ -82,7 +84,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
       // Load existing watches
       const res = await api.get('/arrests/monitors').catch(() => ({ data: [] }));
       setWatches(res.data || []);
-    } catch (e) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
     setLoading(false);
   }, []);
 
@@ -101,7 +103,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
         state:      state.trim().toUpperCase().slice(0,2) || 'ALL'});
       setName(''); setCounty(''); setShowForm(false);
       await load();
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Could Not Load Alerts', e.response?.data?.error || 'Could not add monitor.');
     }
     setAdding(false);

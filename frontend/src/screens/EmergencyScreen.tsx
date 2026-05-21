@@ -14,7 +14,7 @@ import { getLocation } from '../services/location';
 import { getContacts } from '../services/storage';
 import { api } from '../services/api';
 import { t } from '../i18n';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 
 type Phase = 'ready' | 'countdown' | 'sending' | 'done' | 'error';
 
@@ -33,6 +33,7 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
   }, []);
 
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -288,7 +289,7 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   scroll: { paddingBottom: 40 },
 
   emergencyStrip: {
@@ -364,3 +365,6 @@ const styles = StyleSheet.create({
   rightsTitle: { fontSize: 14, fontWeight: '800', marginBottom: 4 },
   rightsBody: { fontSize: 12, lineHeight: 18 },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

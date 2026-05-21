@@ -2,7 +2,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import React, { useState, useEffect, useCallback } from 'react';
 import {View, Text, FlatList, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView} from 'react-native';
 import {api} from '../services/api';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 
 type Courthouse = {
   id: number;
@@ -29,7 +29,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function CourtLocatorScreen(): JSX.Element {
+export default function CourtLocatorScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -56,7 +56,7 @@ export default function CourtLocatorScreen(): JSX.Element {
     setRefreshing(false);
   }, [search, doSearch]);
 
-  const doSearch = useCallback(async (q: string) => {
+  var doSearch = useCallback(async (q: string) => {
     if (q.trim().length < 2) { setResults([]); return; }
     setLoading(true); setError('');
     try {

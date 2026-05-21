@@ -24,6 +24,7 @@ import { useTheme } from '../constants/theme';
 import { hapticCall, hapticSuccess, hapticWarn, hapticSelect } from '../services/haptics';
 import api from '../services/api';
 
+declare var Platform: any;
 // ── Member state list (subset — full list from API) ─────────────────────────
 const QUICK_COUNTRIES = [
   { code:'GB', name:'United Kingdom' },
@@ -313,7 +314,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           <View style={s.card}>
             <Text style={s.sectionTitle}>{authorityData.country_name}</Text>
             <Text style={[s.noteText, {
-              color: authorityData.contracting_state ? colors.success : colors.warn
+              color: authorityData.contracting_state ? colors.legal : colors.warn
             }]}>
               {authorityData.note}
             </Text>
@@ -495,7 +496,7 @@ const styles = (colors: any) => StyleSheet.create({
   linkText:           { fontSize: 13, color: colors.primary, textDecorationLine: 'underline', marginBottom: 14 },
   successBanner:      { alignItems: 'center', marginBottom: 24 },
   successIcon:        { fontSize: 40, marginBottom: 8 },
-  successTitle:       { fontSize: 20, fontWeight: '700', color: colors.success },
+  successTitle:       { fontSize: 20, fontWeight: '700', color: colors.legal },
   successSub:         { fontSize: 14, color: colors.textMuted, marginTop: 4 },
   stepRow:            { flexDirection: 'row', marginBottom: 10, alignItems: 'flex-start' },
   stepNum:            { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, textAlign: 'center', color: '#fff', fontWeight: '700', fontSize: 12, lineHeight: 22, marginRight: 10 },

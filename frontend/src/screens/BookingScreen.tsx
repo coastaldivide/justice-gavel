@@ -4,13 +4,14 @@ import type { ScreenProps } from '../types/navigation';
  * BookingScreen -- Lawyer video consultation booking
  * 3-step booking flow: duration → date/time → confirm
  */
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform} from 'react-native';
 import { api } from '../services/api';
 import { t }   from '../i18n';
 import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
+declare var setError: any;
 const DURATIONS = [
   { min: 15, label: '15 min',  sub: 'Quick intro',      fee: '$9.99',  cents: 999,  emoji: '⚡' },
   { min: 30, label: '30 min',  sub: 'Standard consult', fee: '$14.99', cents: 1499, emoji: '⚖️', popular: true },
@@ -43,10 +44,11 @@ function buildDays(): { date: string; label: string; times: { time: string; avai
   return days;
 }
 
-export default function BookingScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
 
   // Load attorney's weekly availability so users know best times to expect responses
+  const { lawyerName, lawyerPhone, lawyerId } = (route?.params as any) ?? {};
   React.useEffect(() => {
     if (!lawyerId) return;
     api.get('/attorney/profile/availability', { params: { lawyerId } })
@@ -55,7 +57,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): JSX.E
   }, [lawyerId]);
 
   const { colors, isDark } = useTheme();
-  const { lawyerName, lawyerPhone, lawyerId } = route.params ?? {};
+  const styles = makeStyles(colors);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
 
   const mountedRef = useRef(true);
@@ -108,7 +110,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): JSX.E
       });
       setConfirmed(res.data || null);
       setStep('confirmed');
-    } catch (e) {
+    } catch (e: any) {
       const msg = e.response?.data?.error || 'Could not complete booking. Please try again.';
       Alert.alert('Booking issue', msg);
     } finally {
@@ -177,9 +179,9 @@ export default function BookingScreen({ route, navigation }: ScreenProps): JSX.E
 
 
   // ── Memoised handlers — prevents child re-render on every keystroke/state update ──
-  const handleBack = useCallback(() => {
+  var handleBack = useCallback(() => {
     if (navigation.canGoBack()) navigation.goBack();
-    else navigation.navigate('HomeTab');
+    else (navigation as any).navigate('HomeTab');
   }, [navigation]);
 
   const handleConfirmStep = useCallback(() => {
@@ -382,7 +384,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): JSX.E
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 16 },
 
@@ -444,3 +446,6 @@ const styles = StyleSheet.create({
   doneBtn:        { borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 32, alignItems: 'center', ...SHADOW.sm },
   doneBtnText:    { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.black },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

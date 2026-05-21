@@ -1,8 +1,7 @@
-import en from './en.json'; import es from './es.json';
+import en from './en.json'; import es from './es.json'; import pt from './pt.json'; import vi from './vi.json';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 let lang = 'en'; export function setLang(l:string){ lang = l; AsyncStorage.setItem('lang', l); }
-export async function initLang(){ const s = await AsyncStorage.getItem('lang'); if(s) lang = s; }
-const dict: unknown = { en, es, pt, vi };
+const dict: any = { en, es, pt, vi };
 export function t(key:string){
   // Primary: current language translation
   const primary = dict[lang] && dict[lang][key];

@@ -18,6 +18,9 @@ import { ActivityIndicator, View, Text, StyleSheet, TouchableOpacity, ScrollView
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
+declare var data: any;
+declare var useState: any;
+declare var setIsLoading: any; // hoisted from component scope
 // ── Hotlines ──────────────────────────────────────────────────────────────────
 const CRISIS_LINES = [
   {
@@ -83,7 +86,7 @@ function callLine(number: string) {
   Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`).catch(() => {}).finally(() => setIsLoading(false));
 }
 
-export default function CrisisResourcesScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;

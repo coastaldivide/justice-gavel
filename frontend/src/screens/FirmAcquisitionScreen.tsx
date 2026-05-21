@@ -12,13 +12,13 @@
  *   - SettingsScreen My Tools
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator, Alert, RefreshControl,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { useTheme, RADIUS, FONT, TYPE } from '../constants/theme';
+import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import type { ScreenProps } from '../types/navigation';
@@ -51,7 +51,7 @@ const TIER_COLORS: Record<string, string> = {
   enterprise: COLORS.emergency,
 };
 
-export default function FirmAcquisitionScreen({ navigation }: ScreenProps<'FirmAcquisition'>) {
+export default function FirmAcquisitionScreen({ navigation }: any) {
   const { colors } = useTheme();
   const s = styles(colors);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
@@ -213,7 +213,7 @@ export default function FirmAcquisitionScreen({ navigation }: ScreenProps<'FirmA
                   </Text>
                 </View>
               ) : status.firm?.plan === 'trial' && !status.trial_active ? (
-                <View style={[s.trialBadge, { backgroundColor: colors.errorLight }]}>
+                <View style={[s.trialBadge, { backgroundColor: colors.emergencyBg }]}>
                   <Text style={[s.trialBadgeText, { color: colors.emergency }]}>⚠️ Trial expired — upgrade to continue</Text>
                 </View>
               ) : null}
@@ -522,9 +522,9 @@ const styles = (c: any) => StyleSheet.create({
   actionBtn:        { width: '47%', backgroundColor: c.card, borderRadius: RADIUS.md, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 14, alignItems: 'center' },
   actionEmoji:      { fontSize: 24, marginBottom: 6 },
   actionLabel:      { fontSize: TYPE.xs, fontFamily: FONT.medium, color: c.text, textAlign: 'center' },
-  upgradeCard:    { backgroundColor: c.bgElevated || colors.bgCard, borderRadius: RADIUS.md, padding: 16, marginTop: 12, borderWidth: 0.5, borderColor: c.borderSubtle },
+  upgradeCard:    { backgroundColor: c.bgElevated || COLORS.bgCard, borderRadius: RADIUS.md, padding: 16, marginTop: 12, borderWidth: 0.5, borderColor: c.borderSubtle },
   upgradeTitle:   { fontSize: TYPE.base, fontFamily: FONT.semiBold, color: c.text, marginBottom: 4 },
   upgradeBody:    { fontSize: TYPE.sm, color: c.textMuted, lineHeight: 18 },
   upgradeBtn:     { flex: 1, paddingVertical: 10, borderRadius: RADIUS.sm, alignItems: 'center' },
-  upgradeBtnText: { fontSize: TYPE.sm, fontFamily: FONT.semiBold, color: colors.surface },
+  upgradeBtnText: { fontSize: TYPE.sm, fontFamily: FONT.semiBold, color: COLORS.surface },
 });

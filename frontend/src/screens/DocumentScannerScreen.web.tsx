@@ -14,7 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api } from '../services/api';
 
-export default function DocumentScannerScreen(): JSX.Element {
+export default function DocumentScannerScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [scanning,  setScanning]  = useState(false);
@@ -22,7 +22,7 @@ export default function DocumentScannerScreen(): JSX.Element {
   const [error,     setError]     = useState('');
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = (e.target as any).files?.[0];
     if (!file) return;
     setScanning(true);
     setError('');

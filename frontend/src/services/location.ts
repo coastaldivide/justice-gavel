@@ -108,7 +108,7 @@ export async function detectAndSaveUserState(): Promise<string | null> {
     if (status !== 'granted') return null;
 
     const loc = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Reduced,  // coarse is enough for state-level
+      accuracy: (Location.Accuracy as any).Reduced,  // coarse is enough for state-level
     });
 
     const [geo] = await Location.reverseGeocodeAsync({

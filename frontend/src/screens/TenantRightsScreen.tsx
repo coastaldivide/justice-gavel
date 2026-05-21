@@ -109,7 +109,7 @@ const GUIDANCE: Record<string, { urgent: string[]; rights: string[]; deadline?: 
   },
 };
 
-export default function TenantRightsScreen(): JSX.Element {
+export default function TenantRightsScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -117,6 +117,7 @@ export default function TenantRightsScreen(): JSX.Element {
   }
   );
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [tab, setTab] = React.useState(0);
 
   const sections = SITUATIONS;
@@ -157,7 +158,7 @@ export default function TenantRightsScreen(): JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 0, paddingBottom: 40 },
 
@@ -193,4 +194,10 @@ const styles = StyleSheet.create({
   legalAidText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   disclaimer: { fontSize: 11, textAlign: 'center', lineHeight: 17, paddingHorizontal: 20, marginBottom: 10 },
+  card: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  cardBody: { fontSize: 14, lineHeight: 20, color: colors.textSecond },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

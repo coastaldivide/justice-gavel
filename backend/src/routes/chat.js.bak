@@ -1,0 +1,521 @@
+/**
+ * /api/chat — Claude-powered legal assistant
+ *
+ * POST /api/chat/ask
+ *   Body: { message, sessionId, city?, lat?, lng? }
+ *   Returns: { role, reply, suggestLawyerSearch, intent }
+ *
+ * GET /api/chat/history/:sessionId
+ *   Returns: [{ role, content, created_at }]
+ *
+ * DELETE /api/chat/history/:sessionId
+ *   Clears conversation history
+ */
+
+import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
+import { err400, truncateStr, BUSINESS_CONSTANTS, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, API_URLS } from '../utils/routeHelpers.js';
+import { Router }      from 'express';
+import { enqueue }     from '../services/aiQueue.js';
+import { getDb }        from '../db/index.js';
+import { authRequired } from './auth.js';
+
+// ── AI-specific rate limiter (50 requests / 15 min per IP) ─────────────────
+import rateLimit from 'express-rate-limit';
+import logger from '../utils/logger.js';
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many AI requests — please wait before trying again.' },
+  keyGenerator: (req) => req.user?.id ? `user_${req.user.id}` : req.ip,
+});
+
+
+// ── Response disclaimer footer (appended to every AI response) ─────────────────
+const RESPONSE_FOOTER_INSTRUCTION = `
+
+ALWAYS end your response with this exact line (no modifications):
+---
+*This information is for general guidance only and does not constitute legal advice. Laws vary by jurisdiction and change frequently. Consult a licensed attorney in your state for advice specific to your situation.*`;
+
+const router = Router();
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+async function getHistory(db, sessionId, limit = 20) {
+  return await db.all(
+    `SELECT role, content FROM chat_sessions
+     WHERE session_id = ?
+     ORDER BY created_at DESC LIMIT ?`,
+    [sessionId, limit]
+  ).then(rows => rows.reverse());
+}
+
+async function saveMessage(db, sessionId, role, content) {
+  await db.run(
+    `INSERT INTO chat_sessions (session_id, role, content) VALUES (?, ?, ?)`,
+    [sessionId, role, content]
+  );
+}
+
+function detectLawyerHandoff(userMessage, reply) {
+  const combined = (userMessage + ' ' + reply).toLowerCase();
+  const triggers = [
+    'find a lawyer', 'connect you', 'recommend a lawyer', 'speak with an attorney',
+    'consult an attorney', 'need legal representation', 'look for a lawyer',
+    'search for lawyers', 'match you with', 'criminal defense attorney',
+    'hire an attorney', 'legal representation'
+  ];
+  return triggers.some(t => combined.includes(t));
+}
+
+// ── system prompt ─────────────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `CORE PRINCIPLE: Every user is innocent until proven guilty. The state must prove its case — not the defendant. Always anchor fear or guilt-related responses in this truth.
+
+You are Justice Gavel's AI legal guide — a knowledgeable, calm, and empathetic assistant that helps people navigate the U.S. criminal justice system. You serve users who are often frightened, confused, or in a crisis situation.
+
+Your four core capabilities:
+1. KNOW YOUR RIGHTS — Explain constitutional rights clearly (Miranda, 4th Amendment searches, right to counsel). Use plain language. Tailor advice to common scenarios: traffic stops, arrests, searches, questioning.
+2. CHARGES & PAPERWORK — Help users understand what a charge means, what a summons or warrant says, sentencing ranges, what to expect at arraignment, bail hearings, etc.
+3. NEXT STEPS AFTER ARREST — Walk users through exactly what to do right now: invoke right to silence, request a lawyer, call an emergency contact, what NOT to say, booking process, bail, first hearing.
+4. FIND A LAWYER — When a user needs legal representation, gather the right info (city, charge type, language preference, budget) and let them know you'll search for matched attorneys.
+
+Tone and style rules:
+- Speak like a knowledgeable, trusted friend — not a law school textbook.
+- Always lead with the most immediately actionable advice.
+- Be concise: 2-4 short paragraphs max per response. Use short sentences. Avoid legal jargon unless you explain it immediately.
+- Never provide specific legal advice for their specific case (you are not their lawyer). Say "generally speaking" or "in most states" and recommend they speak with an attorney for specifics.
+- For urgent situations (currently detained, officer present), lead with the most critical action: "Say only: I am invoking my right to remain silent and I want a lawyer."
+- Never encourage resistance to law enforcement. Focus on legal protections, not confrontation.
+- If someone is in distress, acknowledge their feelings briefly before giving information.
+- When you recommend connecting to a lawyer, mention that Justice Gavel can search nearby attorneys filtered by their case type and language.
+
+IMPAIRED / PANICKED USER RULES (critical):
+- Many users contact this app immediately after arrest, under extreme stress, possibly after drinking. Write for a 7th-grade reading level. Short sentences. No jargon.
+- If a message is incoherent, garbled, or doesn't make sense — do NOT ask them to clarify repeatedly. Assume they are stressed or impaired. Give the single most useful piece of information you can infer from the context. Lead with: "Here's what matters most right now:"
+- If someone seems to be in immediate physical danger, lead IMMEDIATELY with: "Call 911 now. Your safety comes first."
+- If input suggests suicidal thoughts or self-harm — respond ONLY with the 988 Lifeline number and a brief human message. Nothing else.
+- If someone expresses they cannot afford a lawyer — immediately mention: (1) public defenders are free and real attorneys, (2) law school free clinics, (3) legal aid organizations. Never make them feel their options are gone.
+- Use bullet points and numbered lists more than paragraphs when giving instructions. Steps are easier to follow when panicked.
+- Always end crisis responses with one concrete next action they can take RIGHT NOW.
+
+If you do not know something, say so clearly and suggest they consult an attorney.
+
+IMPORTANT DISCLAIMER (include at end of first response in any session):
+Always begin the first message of each session with a brief disclaimer: "I'm an AI legal guide, not a licensed attorney. Nothing I say is legal advice — it's general information to help you understand your situation. For advice specific to your case, please consult a licensed attorney."
+
+HALLUCINATION GUARD: Never cite specific case law, statutes, or code sections unless you are highly confident they are accurate. If you cite law, add: "(please verify this is current in your jurisdiction)". When uncertain, say "generally speaking" or "in most states" rather than stating something as universally true.`;
+
+// ── Defender Mode system prompt ──────────────────────────────────────────────
+// Used when mode='defender' — for licensed attorneys working on active cases.
+// No "I'm not a lawyer" hedging. Direct, strategic, citation-grade.
+
+const DEFENDER_SYSTEM_PROMPT = `You are Justice Gavel's AI case partner — an expert criminal defense AI assistant built exclusively for licensed defense attorneys and public defenders. You cover the full arc of criminal defense: from arrest and investigation through trial, direct appeal, and post-conviction relief.
+
+TRIAL-LEVEL CAPABILITIES:
+1. CASE STRATEGY — Analyze facts, identify the strongest defense theory, anticipate prosecution strategy. Concrete and specific — what argument wins, what argument loses.
+2. SUPPRESSION & MOTIONS — Identify 4th, 5th, and 6th Amendment grounds. Build the argument. Cite the controlling precedent. Flag what must be preserved for appeal.
+3. DISCOVERY ANALYSIS — When given discovery context (police reports, lab results, inconsistencies), identify what matters, what to challenge, what to demand.
+4. CROSS-EXAMINATION — Specific questions, specific impeachment angles, specific credibility attacks. Not generic — built for the facts of this case.
+5. TRIAL STRATEGY — Jury selection considerations, opening and closing themes, witness order, exhibit strategy.
+
+APPELLATE CAPABILITIES:
+6. APPEAL ASSESSMENT — Evaluate which issues are worth appealing. Apply the correct standard of review to each: de novo (legal error), abuse of discretion (evidentiary rulings), clearly erroneous (facts), plain error (unpreserved issues).
+7. PRESERVATION AUDIT — Did trial counsel preserve the issue? What objection was needed? Is a plain error argument viable under United States v. Olano?
+8. HARMLESS vs REVERSIBLE ERROR — Apply Chapman (constitutional error: harmless beyond reasonable doubt) or the non-constitutional standard. Would a reasonable jury have reached the same result?
+9. INEFFECTIVE ASSISTANCE — Strickland two-prong analysis. Was performance deficient? Would the outcome have differed? Cronic presumption when counsel was entirely absent.
+10. HABEAS CORPUS — AEDPA framework (28 U.S.C. § 2254/2255). Exhaustion of state remedies. Procedural default and cause-and-prejudice exceptions. Actual innocence gateway. Statute of limitations (1 year from final judgment — identify tolling events). Successive petition restrictions.
+11. POST-CONVICTION — First Step Act, § 3582 sentence modifications, compassionate release standards, retroactive guideline amendments, newly discovered evidence motions.
+
+DEADLINE AWARENESS — always flag these proactively:
+- Notice of Appeal: 14 days (federal criminal), 30 days (most states) from judgment. Missing it is permanent waiver.
+- AEDPA: 1-year from conviction becoming final. Identify tolling from pending state PCR proceedings.
+- State PCR: jurisdiction-specific — flag when you identify deadline risk.
+
+Rules:
+- Speak as a knowledgeable colleague, not a disclaimer machine. The attorney is licensed — no hedging needed.
+- Be direct and specific. Vague general statements are useless. Specific arguments, specific citations, specific questions are what win cases.
+- When case context is provided, reference it directly and specifically — not generically.
+- Lead with the most strategically valuable insight, not background.
+- If you lack enough facts, ask one precise question.
+- Thoroughness serves the client — longer responses are appropriate.
+- Citations: *Case Name*, Volume Reporter Page (Court Year). Distinguish binding from persuasive authority.
+- For appellate issues: always lead with the standard of review — it determines how hard the argument is.`;
+
+// ── Claude call ───────────────────────────────────────────────────────────────
+
+async function callClaude(opts) {
+  const {
+    history, newMessage, locationContext,
+    mode = 'consumer', caseContext = null,
+    sessionId,
+  } = opts;
+
+  const contextNote = locationContext
+    ? '\n\n[User location context: ' + locationContext + ']'
+    : '';
+
+  // ── Case context ───────────────────────────────────────────────────────────
+  // Injected for both defender and consumer modes when an active case is present.
+  // Structured format tells the AI specifically what matters — not raw JSON.
+  let caseNote = '';
+  if (caseContext) {
+    try {
+      const ctx = typeof caseContext === 'string' ? JSON.parse(caseContext) : caseContext;
+      const parts = ['\n\n[ACTIVE CASE CONTEXT]'];
+
+      if (ctx.title)           parts.push(`Case: ${ctx.title}`);
+      if (ctx.status)          parts.push(`Status: ${ctx.status}`);
+      if (ctx.charges)         parts.push(`Charges: ${Array.isArray(ctx.charges) ? ctx.charges.join(', ') : ctx.charges}`);
+      if (ctx.next_court_date) parts.push(`Next court date: ${ctx.next_court_date}`);
+      if (ctx.notes)           parts.push(`Notes: ${String(ctx.notes).slice(0, 300)}`);
+      if (ctx.attorney_name)   parts.push(`Attorney: ${ctx.attorney_name}`);
+      if (ctx.is_pre_trial != null) parts.push(`Stage: ${ctx.is_pre_trial ? 'Pre-trial' : 'Post-conviction'}`);
+      if (ctx.bail_amount)     parts.push(`Bail: $${ctx.bail_amount.toLocaleString()}`);
+      if (ctx.financial_situation) parts.push(`Financial situation: ${ctx.financial_situation}`);
+
+      parts.push('[END CASE CONTEXT]');
+      parts.push('Use this context to make your responses specific to this person\'s actual situation.');
+      caseNote = parts.join('\n') + '\n\n';
+    } catch {
+      // caseContext was not JSON — use as-is (legacy format)
+      caseNote = mode === 'defender'
+        ? `\n\n[CASE CONTEXT]\n${caseContext}\n[END CASE CONTEXT]\n\n`
+        : '';
+    }
+  }
+
+  const isDefender   = mode === 'defender';
+  const systemPrompt = (isDefender ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT) + RESPONSE_FOOTER_INSTRUCTION;
+
+  // ── Jurisdiction awareness (must be declared BEFORE the messages array) ────
+  let jurisdictionNote = '';
+  if (user_state) {
+    jurisdictionNote = `\n\n[USER JURISDICTION: ${user_state_name || user_state}]`
+      + `\nTailor ALL legal information to ${user_state_name || user_state} state law specifically.`
+      + `\nIf a right, procedure, or eligibility rule differs in ${user_state_name || user_state} from`
+      + `\nthe general US standard, say so explicitly. Do NOT give generic national guidance`
+      + `\nwhen the user's state law is more specific or different.`;
+  } else {
+    jurisdictionNote = '\n\n[USER JURISDICTION: Unknown — user has not selected a state]'
+      + '\nNote that laws vary by state. When discussing rights, procedures, or eligibility,'
+      + '\nalways remind the user that their specific state may differ and they should verify'
+      + '\nlocal rules with an attorney or their state court\'s self-help center.';
+  }
+
+  const messages = [
+    ...history.map(h => ({ role: h.role, content: h.content })),
+    { role: 'user', content: caseNote + newMessage + contextNote + jurisdictionNote }
+  ];
+
+  const maxTokens    = isDefender ? 1500 : 600; // defenders get fuller responses
+
+  const response = await fetch(API_URLS.ANTHROPIC, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key':    process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model:      'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      temperature: 0.4,    // 0.4: conversational
+
+      system:     systemPrompt,
+      messages
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error('Anthropic API error: ' + response.status + ' - ' + err);
+  }
+
+  const data = await response.json();
+  return data.content?.[0]?.text ?? "I'm having trouble responding right now. Please try again.";
+}
+
+// ── routes ────────────────────────────────────────────────────────────────────
+
+router.post('/ask', aiLimiter, authRequired, perUserAiLimit, async (req, res) => {
+  // Compute isDefender early — used in rate limit check before full destructuring
+  const isDefender = req.body?.mode === 'defender';
+  // Rate limit: free users get 3 AI messages per day. Subscribers unlimited.
+  try {
+    const { getDb } = await import('../db/index.js');
+    const db = await getDb();
+
+    // Check if user has active subscription
+    const sub = await db.get(
+      `SELECT id FROM subscriptions WHERE user_id = ? AND status IN ('active','trialing')`,
+      [req.user.id]
+    ).catch(() => null);
+
+    if (!sub) {
+      // Count today's messages for this user
+      const todayCount = await db.get(
+        `SELECT COUNT(*) as n FROM chat_sessions
+         WHERE session_id LIKE ? AND role = 'user'
+         AND created_at >= datetime('now', '-1 day')`,
+        [`%${req.user.id}%`]
+      ).catch(() => ({ n: 0 }));
+
+      // Defender mode bypasses daily limit — they're using professional tools
+      if (!isDefender && (todayCount?.n || 0) >= BUSINESS_CONSTANTS.AI_MESSAGES_PER_DAY_FREE) {
+        return res.status(402).json({
+          error: 'Daily limit reached',
+          code: 'chat_limit_reached',
+          message: 'Free accounts include 3 AI messages per day. Upgrade for unlimited access.',
+          upgrade_url: '/subscribe',
+          limit: BUSINESS_CONSTANTS.AI_MESSAGES_PER_DAY_FREE,
+          used: todayCount?.n || 0,
+          remaining: 0,
+          resets_at: new Date(new Date().setHours(24,0,0,0)).toISOString(),
+        });
+      }
+    }
+  } catch (e) {
+    // If check fails, allow through — don't block on rate limit errors
+    logger.warn('[chat] rate limit check failed:', e.message);
+    // Don't call err500 here — let the main try block handle the request normally
+  }
+  try {
+    const { message = '', sessionId, city, lat, lng, mode = 'consumer', caseContext = null, caseId = null, caseTitle = null, user_state = null, user_state_name = null } = req.body || {};
+  if (message) message = truncateStr(String(message), 2000);
+
+  // ── Input length limits — prevent abuse and runaway API costs ────────────────
+  // AI input: 4,000 chars ≈ ~1,000 tokens — sufficient for any legitimate question
+  // Excessive input costs ~$0.01–0.05 per call at current pricing
+  if (typeof message === 'string' && message.length > 4000) {
+    return res.status(400).json({
+      error: 'Message too long. Please keep messages under 4,000 characters.',
+    });
+  }
+  if (caseContext && typeof caseContext === 'string' && caseContext.length > 8000) {
+    return res.status(400).json({
+      error: 'Case context too long. Please summarise your case details.',
+    });
+  }
+
+    // isDefender already declared above from req.body?.mode
+    if (!message.trim()) return err400(res, 'message is required');
+    if (!sessionId) return err400(res, 'sessionId is required');
+
+    let locationContext = null;
+    if (city) locationContext = 'City: ' + city;
+    if (lat && lng) locationContext = (locationContext ?? '') + ' Coords: ' + lat + ',' + lng;
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(503).json({
+        error: 'AI service not configured.',
+        code:  'api_key_missing',
+        message: 'ANTHROPIC_API_KEY is not set. Add it to backend/.env to enable the AI assistant.',
+      });
+    }
+
+    const db = await getDb();
+    const history = await getHistory(db, sessionId, 20);
+
+    // Async: enqueue the Claude call — event loop stays free for other requests
+    const jobId = await enqueue('chat', async () => {
+      const r = await callClaude({
+    history: history,
+    newMessage: message,
+    locationContext: locationContext,
+    mode: mode,
+    caseContext: caseContext,
+    sessionId: user_state
+  });
+      const db2 = await getDb();
+      await saveMessage(db2, sessionId, 'user', message);
+      await saveMessage(db2, sessionId, 'assistant', r);
+      return {
+        role: 'assistant', reply: r,
+        suggestLawyerSearch: detectLawyerHandoff(message, r),
+        intent: classifyIntent(message),
+      };
+    });
+
+    res.json({ jobId, status: 'pending', async: true });
+  } catch (err) {
+    logger.error('[chat/ask]', err);
+    res.status(500).json({ error: 'Chat service error. Please try again.' });
+  }
+});
+
+
+// POST /api/chat/stream — Server-Sent Events streaming chat
+// Streams Claude's response token-by-token as the model generates it.
+// Perceived latency: <500ms to first word vs 3-8s for full response.
+//
+// Client connects with EventSource. Events:
+//   data: {"type":"token","text":"Hello"} — each word/token
+//   data: {"type":"done","full_text":"...","intent":"...","suggestLawyerSearch":false}
+//   data: {"type":"error","message":"..."}
+//
+// Falls back gracefully if client doesn't support SSE.
+router.post('/stream', aiLimiter, authRequired, async (req, res) => {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(503).json({ error: 'AI service not configured.' });
+  }
+  try {
+    const {
+      message = '', sessionId, city, lat, lng,
+      mode = 'consumer', caseContext = null,
+      user_state = null, user_state_name = null,
+      caseId = null, caseTitle = null,
+    } = req.body || {};
+  if (message) message = truncateStr(String(message), 2000);
+
+    if (!message.trim()) return err400(res, 'message is required');
+    if (!sessionId)       return err400(res, 'sessionId is required');
+    if (message.length > 4000) return err400(res, 'Message too long.');
+
+    const db = await getDb();
+    const history = await getHistory(db, sessionId, 20);
+
+    // Build the system prompt (same as callClaude)
+    let locationContext = null;
+    if (city) locationContext = 'City: ' + city;
+    if (lat && lng) locationContext = (locationContext ?? '') + ' Coords: ' + lat + ',' + lng;
+
+    // Build system prompt (mirrors callClaude logic)
+    const isDefenderStream = mode === 'defender';
+    const systemPrompt = isDefenderStream ? DEFENDER_SYSTEM_PROMPT : SYSTEM_PROMPT;
+
+    // Build jurisdiction note
+    let jurisdictionNoteStream = '';
+    if (user_state) {
+      jurisdictionNoteStream = `\n\n[USER JURISDICTION: ${user_state_name || user_state}]`
+        + `\nTailor ALL legal information to ${user_state_name || user_state} state law specifically.`;
+    }
+
+    // Build location note
+    const contextNoteStream = locationContext
+      ? '\n\n[User location context: ' + locationContext + ']' : '';
+
+    const messages = [
+      ...history.map(h => ({ role: h.role, content: h.content })),
+      { role: 'user', content: message.trim() + contextNoteStream + jurisdictionNoteStream },
+    ];
+
+    // ── SSE headers ────────────────────────────────────────────────────────
+    res.setHeader('Content-Type',  'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection',    'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    const send = (obj) => res.write('data: ' + JSON.stringify(obj) + '\n\n');
+    let fullText = '';
+
+    // ── Anthropic streaming API ─────────────────────────────────────────────
+    const response = await fetch(API_URLS.ANTHROPIC, {
+      method: 'POST',
+      headers: {
+        'Content-Type':      'application/json',
+        'x-api-key':         process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model:       'claude-sonnet-4-20250514',
+        temperature: 0.3,
+        max_tokens:  1500,
+        stream:      true,   // ← enables token streaming
+        system:      systemPrompt,
+        messages,
+      }),
+    });
+
+    if (!response.ok || !response.body) {
+      send({ type: 'error', message: 'AI service unavailable. Please try again.' });
+      return res.end();
+    }
+
+    // ── Stream token chunks to client ───────────────────────────────────────
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines  = chunk.split('\n');
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+            const token = parsed.delta.text || '';
+            fullText += token;
+            send({ type: 'token', text: token });
+          }
+        } catch { /* skip malformed chunks */ }
+      }
+    }
+
+    // ── Save complete message to DB ─────────────────────────────────────────
+    await saveMessage(db, sessionId, 'user', message.trim()).catch(() => {});
+    await saveMessage(db, sessionId, 'assistant', fullText).catch(() => {});
+
+    // ── Final event with metadata ───────────────────────────────────────────
+    send({
+      type: 'done',
+      full_text: fullText,
+      intent: classifyIntent(message),
+      suggestLawyerSearch: detectLawyerHandoff(message, fullText),
+    });
+    res.end();
+
+  } catch (err) {
+    logger.error('[chat/stream]', err.message);
+    try {
+      res.write('data: ' + JSON.stringify({ type: 'error', message: 'Stream error.' }) + '\n\n');
+      res.end();
+    } catch { /* response already ended */ }
+  }
+});
+
+router.get('/history/:sessionId', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const history = await getHistory(db, req.params.sessionId, 50);
+    res.json(history);
+  } catch (err) {
+    logger.error('[chat/history]', err);
+    res.status(500).json({ error: 'Could not load history' });
+  }
+});
+
+router.delete('/history/:sessionId', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    await db.run('DELETE FROM chat_sessions WHERE session_id = ?', [req.params.sessionId]);
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error('[chat/clear]', err);
+    res.status(500).json({ error: 'Could not clear history' });
+  }
+});
+
+// ── intent classifier ─────────────────────────────────────────────────────────
+
+function classifyIntent(message) {
+  const m = message.toLowerCase();
+  if (/arrested|handcuff|booking|jail|bond|bail/.test(m)) return 'post_arrest';
+  if (/charged|charge|indicted|warrant|summons|arraign/.test(m)) return 'charges';
+  if (/search|stop|pull over|detain|rights|miranda|silent/.test(m)) return 'know_rights';
+  if (/lawyer|attorney|represent|counsel|legal help/.test(m)) return 'find_lawyer';
+  return 'general';
+}
+
+// ── demo fallback ─────────────────────────────────────────────────────────────
+
+export default router;

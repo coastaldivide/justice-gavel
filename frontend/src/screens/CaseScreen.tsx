@@ -1,4 +1,4 @@
-import CaseStatusBadge from '../components/CaseStatusBadge';
+import { CaseStatusBadge } from '../components/CaseStatusBadge';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { FileSystem, ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
@@ -16,6 +16,20 @@ import { saveCaseOffline, getOfflineCases, startSyncListener } from '../services
 import Markdown from 'react-native-markdown-display';
 import { useFocusEffect } from '@react-navigation/native';
 
+declare var ScreenProps: any;
+declare var caseData: any;
+declare var loadCases: any;
+declare var mountedRef: any;
+declare var newNotes: any;
+declare var newTitle: any;
+declare var refreshing: any;
+declare var selectedCase: any;
+declare var setNewNotes: any;
+declare var setNewTitle: any;
+declare var setRefreshing: any;
+declare var setShowAdd: any;
+declare var userState: any;
+declare var exportCasePDF: any; // hoisted from component scope
 const STATUS_COLORS: Record<string, string> = {
   Open: COLORS.blue, Active: COLORS.legalDark, Pending: COLORS.warnDark,
   Closed: COLORS.textMuted, Dismissed: COLORS.blue};
@@ -29,7 +43,7 @@ interface Case {
   next_court_date: string | null; notes: string; created_at: string;
 }
 
-const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCalendar, onShare, onInvite }) {
+const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCalendar, onShare, onInvite }: any) {
   const color = STATUS_COLORS[item.status] || COLORS.textMuted;
   const hasDate = !!item.next_court_date;
   const daysUntil = hasDate
@@ -204,7 +218,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
   );
 })
 
-export default function CaseScreen({ route, navigation }: ScreenProps) {
+export default function CaseScreen({ route, navigation }: any) {
   React.useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
@@ -314,7 +328,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
       setSavedLawyers(res.data || []);
       cacheCases(res.data).catch(() => {});  // write-through cache for offline use
       cacheSavedLawyers(res.data); // save to offline cache
-    } catch (e) {
+    } catch (e: any) {
       const status = e.response?.status;
       if (status === 401 || status === 403) {
         setIsGuest(true);
@@ -352,7 +366,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
       ]);
       if (myRes.status === 'fulfilled') setCases(myRes.value.data);
       if (famRes.status === 'fulfilled') setFamilyCases(famRes.value.data || []);
-    } catch (e) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
     api.get('/push/reminders').then(r => setUpcomingReminders(r.data || [])).catch((e) => { __DEV__ && console.warn(e?.message); });
     setLoading(false);
   }, []);
@@ -395,7 +409,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
       }
       setModal(false);
       await load();
-    } catch (e) {
+    } catch (e: any) {
       // Offline fallback -- save locally and sync when reconnected
       try {
         const caseData = { title: newTitle.trim(), status: 'Active',
@@ -427,7 +441,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
           { text: 'Cancel', style: 'cancel' },
         ]
       );
-    } catch (e) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
   }, []);
 
   const pickScanSource = useCallback(async (source: 'camera' | 'library') => {
@@ -472,7 +486,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
       const asset = result.assets[0];
       setScanning(true);
       await runDocumentScan(asset.uri);
-    } catch (e) {
+    } catch (e: any) {
       __DEV__ && console.warn(e?.message);
       setScanning(false);
     }
@@ -527,7 +541,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
           [{ text: 'OK' }]
         );
       }
-    } catch (e) {
+    } catch (e: any) {
       __DEV__ && console.warn(e?.message);
       Alert.alert(
         'Scan failed',
@@ -548,7 +562,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
     if (data._intake) {
       const i = data._intake;
       return {
-        title:     i.title || i.charge || '',
+        title:     (i as any).title || (i as any).charge || '',
         state:     (i.state || '').toUpperCase().slice(0, 2),
         courtDate: i.court_date || '',
         notes:     [i.defendant_name ? `Defendant: ${i.defendant_name}` : '', i.notes].filter(Boolean).join('')};
@@ -560,7 +574,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
         state:     (json.state || json.jurisdiction || '').toUpperCase().slice(0, 2),
         courtDate: json.court_date || json.hearing_date || '',
         notes:     json.notes || json.summary || raw};
-    } catch (e) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
 
     // Fallback: pull key fields from free text
     const title     = (raw.match(/charge[d]?\s*(?:with|:)?\s*([^.]+)/i)?.[1] || '').slice(0, 80).trim();
@@ -585,7 +599,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
         (cas.next_court_date ? `📅 Court date: ${new Date(cas.next_court_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\n` : '') +
         `\nView this case (read-only, expires in 7 days):\n${url}\n\nSent via Justice Gavel`;
       await Share.share({ message: msg, title: cas.title });
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Could not share', e.response?.data?.error || 'Check your connection and try again.');
     }
   }, [selectedCase]);
@@ -606,7 +620,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
       const res = await api.post(`/cases/${invitingCase.id}/invite`, { email: inviteEmail.trim().toLowerCase() });
       setInviteModal(false);
       Alert.alert('Access granted ✓', res.data?.message || 'Family member can now see this case.');
-    } catch (e) {
+    } catch (e: any) {
       setInviteError(e.response?.data?.error || 'Could not invite. Check the email address.');
     } finally { setInviting(false); }
   }, [selectedCase, inviteEmail]);
@@ -643,7 +657,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
         notes: cas.notes || '',
         location: ''});
       Alert.alert('Added to Calendar ✓', `"${cas.title}" court date added with reminders 1 day and 2 hours before.`);
-    } catch (e) {
+    } catch (e: any) {
       __DEV__ && console.warn(e?.message);
       Alert.alert('Could not add to calendar', 'Check your calendar permissions in Settings.');
     }
@@ -1309,4 +1323,20 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   generateMotionBtn: { marginHorizontal: 16, marginTop: 12, borderRadius: RADIUS.lg,
     paddingVertical: 16, alignItems: 'center' },
+  toolCard:      { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(4,44,83,0.15)' },
+  toolCardIcon:  { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  toolCardTitle: { fontSize: 14, fontWeight: '700', color: '#0A1929', lineHeight: 18 },
+  toolCardSub:   { fontSize: 12, color: '#5C6F82', lineHeight: 16, marginTop: 2 },
+  toolCardArrow: { marginLeft: 'auto', fontSize: 16, color: '#8FA3B1' },
+  discoveryBtn:      { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.infoBg, borderRadius: 10, padding: 12, marginTop: 8, borderWidth: 1, borderColor: colors.info },
+  discoveryBtnText:  { fontSize: 14, color: colors.info, fontWeight: '600', marginLeft: 8 },
+  toolsSectionLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, marginTop: 4 },
+  caseToolRow:       { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
+  caseToolTitle:     { fontSize: 15, fontWeight: '600', color: colors.textPrimary, flex: 1 },
+  caseToolCta:       { fontSize: 13, color: colors.navy, fontWeight: '700' },
+  privilegeNote:     { backgroundColor: colors.infoBg, borderRadius: 8, padding: 12, marginTop: 8, borderWidth: 1, borderColor: colors.info + '44' },
+  privilegeNoteText: { fontSize: 12, color: colors.info, lineHeight: 18 },
   generateMotionBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }});
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

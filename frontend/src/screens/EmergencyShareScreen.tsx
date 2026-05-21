@@ -28,6 +28,8 @@ import { getContacts } from '../services/storage';
 import { hapticCall, hapticSuccess, hapticWarn } from '../services/haptics';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 
+declare var load: any;
+declare var mapsLink: any; // hoisted from component scope
 type Phase = 'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' | 'error';
 
 const lines = [
@@ -168,7 +170,7 @@ export default function EmergencyShareScreen({ route, navigation }: ScreenProps)
       ]);
       bail = Array.isArray(bailRes.data)   ? bailRes.data?.[0]   : null;
       law  = Array.isArray(lawyerRes.data) ? lawyerRes.data?.[0] : null;
-    } catch (e) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
 
     setBondsman(bail);
     setLawyer(law);
@@ -217,7 +219,7 @@ export default function EmergencyShareScreen({ route, navigation }: ScreenProps)
       let result;
       try {
         result = await Share.share({ message, title: `${userName} needs help` });
-      } catch (shareErr) {
+      } catch (shareErr: any) {
         // Share sheet unavailable — fallback already handled above
       }
       if (result.action === Share.sharedAction) {
@@ -227,7 +229,7 @@ export default function EmergencyShareScreen({ route, navigation }: ScreenProps)
       } else {
         setPhase('confirm');
       }
-    } catch (e) {
+    } catch (e: any) {
       setErrorMsg(e.message || 'Could not send message.');
       setPhase('error');
       hapticWarn();

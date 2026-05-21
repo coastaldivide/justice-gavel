@@ -1,10 +1,11 @@
 import ScreenHeader from '../components/ScreenHeader';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {View, Text, FlatList, RefreshControl, TouchableOpacity, TextInput, Linking, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
-import { api }           from '../services/api';
+import { api, cachedGet }           from '../services/api';
 import { cacheResources, getCachedResources } from '../services/offlineCache';
-import { useTheme }      from '../constants/theme';
+import {  useTheme, COLORS }      from '../constants/theme';
 
+declare var fetchBoth: any;
 const CATEGORIES = [
   { key: 'ALL',                label: 'All',              icon: '📚' },
   { key: 'PUBLIC_DEFENDER',   label: 'Public Defender',  icon: '⚖️'  },
@@ -53,7 +54,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function ResourcesScreen(): JSX.Element {
+export default function ResourcesScreen(): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);

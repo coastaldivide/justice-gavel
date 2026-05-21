@@ -2,9 +2,11 @@ import type { ScreenProps } from '../types/navigation';
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, RefreshControl} from 'react-native';
 import { api } from '../services/api';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
+declare var data: any;
+declare var load: any;
 const PLANS = [
   { key: 'basic',  label: 'Basic',  icon: '🛡️', desc: 'Consultations, document review, Q&A hotline',     color: COLORS.blue },
   { key: 'pro',    label: 'Pro',    icon: '⚖️', desc: 'Basic + court date reminders, attorney matching', color: COLORS.blue },
@@ -20,7 +22,7 @@ const FEATURES = [
   { label: 'Covers family members',   basic: false, pro: false, family: true },
 ];
 
-export default function InsuranceScreen({ navigation }: ScreenProps): JSX.Element {
+export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);

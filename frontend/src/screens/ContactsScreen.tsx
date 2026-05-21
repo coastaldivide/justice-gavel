@@ -2,11 +2,11 @@ import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setContacts, getContacts } from '../services/storage';
-import { useTheme } from '../constants/theme';
+import {  useTheme, COLORS } from '../constants/theme';
 
 interface Contact { value: string; label: string; }
 
-export default function ContactsScreen(): JSX.Element {
+export default function ContactsScreen(): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);

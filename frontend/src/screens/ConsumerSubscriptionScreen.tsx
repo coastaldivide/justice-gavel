@@ -10,13 +10,16 @@
  */
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform} from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { api } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
+declare var data: any;
+declare var setError: any;
+declare var setSub: any;
 // Billing period toggle data
 const MONTHLY_TIERS = [
   {
@@ -117,7 +120,7 @@ const TIERS = [
   },
 ];
 
-function TierCard({ tier, active, onSubscribe, loading, annual }: Record<string,unknown>) {
+function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
   return (
     <View style={[styles.card, tier.highlight && styles.cardHighlight]}>
       {tier.badge && (
@@ -183,7 +186,7 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: Record<string,
   );
 }
 
-export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps): JSX.Element {
+export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
@@ -208,7 +211,7 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
     try {
       const res = await api.get('/billing/consumer/subscription');
       setSubscription(res.data?.subscription);
-    } catch (e) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
     finally { setLoading(false); }
   };
 
@@ -239,7 +242,7 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
       Alert.alert('🎉 Free Trial Started!', res.data?.message || '7-day free trial activated.');
       setTimeout(() => navigation.navigate('HomeTab'), 2000);
       loadSub();
-    } catch (e) {
+    } catch (e: any) {
       const msg = e.response?.data?.error || e.message;
       if (msg?.includes('Already subscribed')) {
         setError('You already have an active plan. Manage it in Settings.');
@@ -257,7 +260,7 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
           await api.post('/billing/cancel');
           setSubscription(null);
           Alert.alert('Cancelled', 'Your plan has been cancelled.');
-        } catch (e) {
+        } catch (e: any) {
           Alert.alert('Payment could not be processed. Please check your payment details and try again, or contact support.', 'Please try again. If this keeps happening, check your internet connection.');
         }
       }},
@@ -478,3 +481,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   tierPriceSub: { fontSize: 12, color: COLORS.legal, fontWeight: '700', marginTop: 1 },
   footer: { fontSize: 11, color: COLORS.textMuted, textAlign: 'center', paddingHorizontal: 24, lineHeight: 16, marginTop: 16 },
 });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

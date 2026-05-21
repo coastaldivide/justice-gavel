@@ -12,13 +12,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import React, { useCallback, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Linking, Platform, TextInput, Modal, Share, KeyboardAvoidingView, RefreshControl} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Linking, Modal, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getLocation } from '../services/location';
 import { t, initLang } from '../i18n';
 import { hapticCall } from '../services/haptics';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
+declare var onRefresh: any;
+declare var refreshing: any;
+declare var sort: any;
+declare var load: any; // hoisted from component scope
 function callPhone(p: string) { hapticCall(); Linking.openURL('tel:' + p.replace(/\s/g, '')).catch(() => {}).catch(() => {}); }
 function openDir(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
@@ -27,7 +31,7 @@ function openDir(lat: number, lng: number, name: string) {
   Linking.openURL(url).catch(() => {});
 }
 
-function ContactCard({ contact, type }: { contact: Record<string,unknown>; type: 'bail' | 'lawyer' }) {
+function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'bail' | 'lawyer' }) {
   const isBail  = type === 'bail';
   const color   = isBail ? COLORS.bail   : COLORS.legal;
   const { colors, isDark } = useTheme();
@@ -37,12 +41,11 @@ function ContactCard({ contact, type }: { contact: Record<string,unknown>; type:
     setRefreshing(true);
     load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
   }, []);
-  const { colors, isDark, cardColors } = useTheme();
-  const bg = isBail ? cardColors.bailBg : cardColors.legalBg;
+  const bg = isBail ? colors.bailBg : colors.legalBg;
   const label   = isBail ? t('help_now_bail_label') : t('help_now_lawyer_label');
 
   return (
-    <View style={[{ backgroundColor: cardColors.bgCard, borderRadius: 16, padding: 16, marginBottom: 14, borderLeftColor: color, borderLeftWidth: 5 }]}>
+    <View style={[{ backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, marginBottom: 14, borderLeftColor: color, borderLeftWidth: 5 }]}>
       {/* ── ALWAYS VISIBLE emergency strip -- top of every state ────── */}
       <View style={{
         flexDirection: 'row', gap: 8, padding: 10,
@@ -158,7 +161,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function HelpNowScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [isOffline, setIsOffline] = React.useState(false);
 
   // ── Offline detection ──────────────────────────────────────
@@ -212,7 +215,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): JSX.E
     ? TOP_CITIES.filter(city => city.toLowerCase().includes(cityQuery.toLowerCase())).slice(0, 8)
     : TOP_CITIES.slice(0, 10);
 
-  useEffect(() => { initLang().then(() => fetchBoth()).catch(() => {}); }, []);
+  useEffect(() => { Promise.resolve(initLang()).then(() => fetchBoth()).catch(() => {}); }, []);
 
   const fetchBoth = async () => {
     setPhase('loading');
@@ -270,7 +273,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): JSX.E
       } catch { /* non-fatal */ }
 
       setPhase('results');
-    } catch (e) {
+    } catch (e: any) {
       setErrorMsg(e.message || 'Could not load contacts. Check your connection.');
       setPhase('error');
     }
@@ -290,7 +293,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): JSX.E
       setBail(Array.isArray(bailRes2.data)   ? bailRes2.data[0]   : null);
       setLawyer(Array.isArray(lawyerRes.data) ? lawyerRes.data[0] : null);
       setPhase('results');
-    } catch (e) {
+    } catch (e: any) {
       setErrorMsg(e.message || 'Could not load. Check your connection.');
       setPhase('error');
     }
@@ -571,7 +574,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): JSX.E
                           Share.share({
               message: 'I found legal help fast with Justice Gavel -- bail agents and lawyers in seconds. Download it free: https://justicegavel.com',
               title: 'Justice Gavel' });
-                        } catch (shareErr) {
+                        } catch (shareErr: any) {
                           // Share API unavailable on this browser/device — fail silently
                         }
           }}
@@ -684,3 +687,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   missingCard:     { borderRadius: 12, borderWidth: 1.5, padding: 12, marginBottom: 12 },
   missingCardText: { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   noResultsWrap: { alignItems: 'center', padding: 8, paddingBottom: 16 } });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

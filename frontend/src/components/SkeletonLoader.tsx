@@ -151,3 +151,5 @@ export const MemoizedSkeletonBailList = React.memo(SkeletonBailList);
 export const MemoizedSkeletonRow = React.memo(SkeletonRow);
 
 export { SkeletonLawyerCard, SkeletonLawyerList, SkeletonBailCard, SkeletonBailList, SkeletonRow };
+
+export { SkeletonLawyerCard as SkeletonLoader };

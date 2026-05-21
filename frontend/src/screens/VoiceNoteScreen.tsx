@@ -27,6 +27,8 @@ import { FileSystem } from '../utils/webCompat';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
+declare var data: any;
+declare var load: any;
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Phase = 'idle' | 'recording' | 'processing' | 'result' | 'text_input';
 
@@ -95,7 +97,7 @@ function useTimer(running: boolean) {
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function VoiceNoteScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -103,13 +105,14 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): JSX
     return () => { mountedRef.current = false; };
   }, []);
   const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
   }, []);
 
-  const { caseId, caseTitle, existingNotes = '', onSave } = route?.params ?? {};
+  const { caseId, caseTitle, existingNotes = '', onSave } = (route?.params as any) ?? {};
 
   const [phase,    setPhase]    = useState<Phase>('idle');
   const [note,     setNote]     = useState<StructuredNote | null>(null);
@@ -164,7 +167,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): JSX
       );
       recordingRef.current = recording;
       setPhase('recording');
-    } catch (e) {
+    } catch (e: any) {
       Alert.alert('Could not start recording', e.message || 'Try typing your note instead.');
       setPhase('text_input');
     }
@@ -203,7 +206,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): JSX
 
       // Clean up temp file
       await FileSystem.deleteAsync(uri, { idempotent: true });
-    } catch (e) {
+    } catch (e: any) {
       const msg = e.response?.data?.error || e.message || 'Could not process audio.';
       Alert.alert('Processing error', msg + '\n\nWould you like to type your note instead?', [
         { text: 'Type instead', onPress: () => setPhase('text_input') },
@@ -489,7 +492,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): JSX
           style={[styles.shareNoteBtn, { borderColor: COLORS.navy + '55' }]}
           onPress={async () => { try {
             await Share.share({ message: editText, title: 'Case Note' });
-          } catch (shareErr) { /* ignore */ }
+          } catch (shareErr: any) { /* ignore */ }
           }}
           accessibilityLabel="Share note"
         >
@@ -520,7 +523,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): JSX
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen:    { flex: 1 },
   centreWrap:{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
 
@@ -589,3 +592,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginBottom: 10 },
   shareNoteBtnText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 });
+
+// Module-level fallback for helper components
+const styles = makeStyles(COLORS);

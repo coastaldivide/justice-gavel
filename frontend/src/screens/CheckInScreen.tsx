@@ -1,6 +1,6 @@
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
-import SkeletonLoader from '../components/SkeletonLoader';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 /**
  * CheckInScreen -- Daily defendant check-in
  *
@@ -20,6 +20,11 @@ import { getLocation } from '../services/location';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import * as Location from 'expo-location';
 
+declare var defNameRef: any;
+declare var defName_val: any;
+declare var load: any;
+declare var locationData: any;
+declare var setError: any;
 type CheckInPhase = 'loading' | 'ready' | 'gps' | 'submitting' | 'done' | 'already_done' | 'error' | 'no_enrollment';
 
 
@@ -31,7 +36,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function CheckInScreen({ route, navigation }: ScreenProps): JSX.Element {
+export default function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -40,7 +45,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): JSX.E
     load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
   }, []);
 
-  const enrollmentId = route?.params?.enrollmentId;
+  const enrollmentId = (route?.params as any)?.enrollmentId;
 
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -94,7 +99,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): JSX.E
           .then(loc => { setCoords(loc); setGpsReady(true); })
           .catch(() => { setGpsReady(false); });
       }
-    } catch (e) {
+    } catch (e: any) {
       setPhase('error');
       setErrorMsg(e.response?.data?.error || 'Could not load your check-in. Check your internet.');
     }
@@ -138,7 +143,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): JSX.E
       setStreak(s => s + 1);
       setPhase('done');
       hapticSuccess();
-    } catch (e) {
+    } catch (e: any) {
       if (e.response?.data?.already_done) {
         setPhase('already_done');
       } else {

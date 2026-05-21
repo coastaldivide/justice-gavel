@@ -17,7 +17,7 @@ import React, { useState, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { t }      from '../i18n';
-import { useTheme, RADIUS } from '../constants/theme';
+import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Tab = 'rights' | 'process' | 'sealing';
@@ -184,7 +184,7 @@ const SEALING_DATA: SealingEntry[] = [
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export default function JuvenileJusticeScreen(): JSX.Element {
+export default function JuvenileJusticeScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -285,4 +285,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   sealingNotes:     { fontSize: 12, lineHeight: 17 },
   disclaimer:       { borderTopWidth: 1, paddingTop: 12, marginTop: 8, marginBottom: 8 },
   disclaimerText:   { fontSize: 11, lineHeight: 17, textAlign: 'center' },
+  card: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  cardBody: { fontSize: 14, lineHeight: 20, color: colors.textSecond },
 });

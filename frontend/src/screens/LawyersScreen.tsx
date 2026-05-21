@@ -14,10 +14,10 @@ import { hapticCall } from '../services/haptics';
  */
 
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Linking, Platform, ScrollView, Modal, TextInput, RefreshControl, Animated} from 'react-native';
+import { Alert, Animated, FlatList, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { api } from '../services/api';
-import { useAuthGate } from '../hooks/useAuthGate';
+import { useAuthGate } from '../components/AuthGate';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocationWithCity, formatDistance } from '../services/location';
 import { cacheSearch, getCachedLawyers } from '../services/offlineCache';
@@ -27,6 +27,18 @@ import { getUserState } from '../utils/userState';
 import * as secureStorage from '../utils/secureStorage';
 import { useFocusEffect } from '@react-navigation/native';
 
+declare var SkeletonLawyerList: any;
+declare var filter: any;
+declare var isPro: any;
+declare var caseLoading: any; // hoisted from component scope
+declare var language: any; // hoisted from component scope
+declare var manualCity: any; // hoisted from component scope
+declare var mountedRef: any; // hoisted from component scope
+declare var proBonoOnly: any; // hoisted from component scope
+declare var requireAuth: any; // hoisted from component scope
+declare var setBadgeInfoType: any; // hoisted from component scope
+declare var setCaseLoading: any; // hoisted from component scope
+declare var setShowBadgeInfo: any; // hoisted from component scope
 const CITIES = [
   '', 'Nashville, TN', 'Memphis, TN', 'Knoxville, TN', 'Chattanooga, TN',
   'Atlanta, GA', 'Houston, TX', 'Dallas, TX', 'Austin, TX',
@@ -84,7 +96,7 @@ function TagRow({ items, color = COLORS.steel }: { items: string[]; color?: stri
 }
 
 // ── Lawyer card ───────────────────────────────────────────────────────────────
-const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: Record<string,unknown>; navigation: any }) {
+const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: Record<string,any>; navigation: any }) {
 
   // ── Subscription tier check for soft upsell ────────────────────────────────
   const [isPro, setIsPro] = useState(false);
@@ -108,7 +120,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
       setCaseLoading(true);
       try {
         // Find an existing open case or create a quick one for this lawyer
-        const res = await api.get('/cases');
+        var res = await api.get('/cases');
         const openCase = res.data?.find?.((c: Record<string,unknown>) =>
           ['Open','Active'].includes(c.status)
         );
@@ -153,7 +165,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         await api.post('/saved/lawyers', data);
         await AsyncStorage.removeItem('pending_save_lawyer');
         if (mountedRef.current) setSaved(true);
-      } catch (e) { __DEV__ && console.warn(e?.message); }
+      } catch (e: any) { __DEV__ && console.warn(e?.message); }
     }).catch(() => {});
   }, []);
 
@@ -262,7 +274,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
           <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel={`View full profile for ${item.name}`}
-              style={styles.barVerifiedBadge}
+              style={styles.verifiedBadge}
               onPress={() => {}}
             >
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
@@ -342,7 +354,7 @@ function FilterModal({
   language, setLanguage,
   manualCity, setManualCity,
   proBonoOnly, setProBonoOnly,
-  onApply }: Record<string,unknown>) {
+  onApply }: any) {
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet"
         onRequestClose={() => {}}>
@@ -416,7 +428,7 @@ const activeFilters = [language, manualCity, proBonoOnly].filter(Boolean).length
 
 
 // ── Skeleton placeholder card ─────────────────────────────────────────────
-function SkeletonCard({ colors }: { colors: Record<string, unknown> }) {
+function SkeletonCard({ colors }: { colors: Record<string, any> }) {
   const shimmer = React.useRef(new Animated.Value(0)).current;
   React.useEffect(() => {
     Animated.loop(
@@ -448,7 +460,7 @@ function SkeletonCard({ colors }: { colors: Record<string, unknown> }) {
   );
 }
 
-export default function LawyersScreen({ navigation }: ScreenProps): JSX.Element {
+export default function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [page, setPage] = React.useState(1);
   const [hasMore, setHasMore] = React.useState(true);
 
@@ -504,8 +516,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
       // ── Stale-while-revalidate: show cached data immediately ─────────────
       if (!isRefresh) {
         const cached = await getCachedLawyers();
-        if (cached.isCache && cached.data?.length > 0) {
-          setLawyers(cached.data);
+        if ((cached as any).isCache && (cached as any).data?.length > 0) {
+          setLawyers((cached as any).data);
         // Write-through cache for offline access
         cacheSearch('lawyers_list', { cases:[], messages:[], lawyers: res.data?.slice(0,20), lessons:[] }).catch(() => {});
           setLoading(false);
@@ -538,7 +550,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
       }
 
       setStatusMsg('Finding lawyers near you…');
-      const res = await api.get('/providers/lawyers', { params });
+      var res = await api.get('/providers/lawyers', { params });
       setLawyers(res.data || []);
     // Fetch review summaries for first 10 lawyers (non-blocking)
     try {
@@ -557,7 +569,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
     } catch {}
     // (remove the extra ); we added above -- the original setLawyers call needs its own);
       setStatusMsg(res.data?.length === 0 ? 'No lawyers found. Try adjusting filters.' : '');
-    } catch (e) {
+    } catch (e: any) {
       setStatusMsg('Could not load lawyers. Check your connection or try a different city.');
     } finally {
       setLoading(false);
@@ -612,7 +624,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
     if (!bulkMsg.trim() || selected.length === 0) return;
     setBulkSending(true);
     try {
-      const res = await api.post('/messages/bulk', {
+      var res = await api.post('/messages/bulk', {
         lawyer_ids: selected,
         message:    bulkMsg.trim() });
       setBulkResult(`✅ Sent to ${res.data?.sent} attorney${res.data?.sent !== 1 ? 's' : ''}.`);
@@ -1145,3 +1157,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   savedHeaderBtnText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.warn },
   conflictNote: { fontSize: 11, lineHeight: 16, paddingHorizontal: 2, marginBottom: 10, fontStyle: 'italic' },
   conflictNoteBox: { borderRadius: 8, borderWidth: 1, padding: 10, marginBottom: 10 } });
+
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);

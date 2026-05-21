@@ -16,11 +16,14 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, KeyboardAvoidingView, Platform} from 'react-native';
 import { api }      from '../services/api';
-import { useTheme, RADIUS } from '../constants/theme';
+import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import OfflineBanner from '../components/OfflineBanner';
 import NetInfo from '@react-native-community/netinfo';
 import { ScreenCapture } from '../utils/webCompat';
 
+declare var profile: any;
+declare var setError: any;
+declare var setTab: any;
 type Tab = 'cases' | 'templates' | 'cle' | 'profile';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -163,7 +166,7 @@ function AvailabilityGrid({ userId }: { userId: number }) {
   );
 }
 
-export default function AttorneyDashboardScreen({ navigation }: ScreenProps): JSX.Element {
+export default function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element | null {
 
   // Prevent screenshots on this sensitive screen (Android FLAG_SECURE + iOS)
   React.useEffect(() => {
@@ -243,7 +246,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): JS
         setBarInput(profileRes.value.data?.bar_number || '');
         setOfficeInput(profileRes.value.data?.office_id || '');
       }
-    } catch (e) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
     setLoading(false);
     setRefreshing(false);
   }, []);
@@ -261,7 +264,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): JS
         : `✓ ${res.data?.message}`;
       Alert.alert('CLE Credit', msg);
       loadAll();
-    } catch (e) { Alert.alert('Dashboard Error', e.response?.data?.error || 'Could not complete course'); }
+    } catch (e: any) { Alert.alert('Dashboard Error', e.response?.data?.error || 'Could not complete course'); }
     setCompleting(null);
   };
 
@@ -278,7 +281,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): JS
       }
       Alert.alert('Saved', 'Profile updated.');
       loadAll();
-    } catch (e) { Alert.alert('Dashboard Error', e.response?.data?.error || 'Could not save'); }
+    } catch (e: any) { Alert.alert('Dashboard Error', e.response?.data?.error || 'Could not save'); }
     setSavingProfile(false);
   };
 
@@ -756,7 +759,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): JS
                 try {
                   await api.post('/attorney/verify-bar', { bar_number: barInput, state: officeInput.slice(0,2) || 'TN' });
                   Alert.alert('Verification submitted ✓', 'Your bar number has been submitted for verification. You will be notified when approved. Verified attorneys appear first in search results.');
-                } catch (e) {
+                } catch (e: any) {
                   Alert.alert('Could not submit', e.response?.data?.error || 'Try again.');
                 }
               }}
@@ -870,14 +873,17 @@ const makeStyles = (colors: any) => StyleSheet.create({
   completionHint:  { fontSize:11, lineHeight:17 },
 });
 
+// Module-level styles for helper components (uses static COLORS, not dynamic theme)
+const styles = makeStyles(COLORS);
+
             {/* Bar Verification Status */}
             <View style={[styles.barStatusCard, {
-              backgroundColor: profile.bar_verified ? colors.legal : '#FFA726',
-              borderColor: profile.bar_verified ? colors.legal : colors.warn,
+              backgroundColor: profile.bar_verified ? COLORS.legal : '#FFA726',
+              borderColor: profile.bar_verified ? COLORS.legal : COLORS.warn,
             }]}>
               <View style={{ flex: 1 }}>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.barStatusTitle, {
-                  color: profile.bar_verified ? colors.legal : '#FFA726'
+                  color: profile.bar_verified ? COLORS.legal : '#FFA726'
                 }]}>
                   {profile.bar_verified ? '✓ Bar Verified -- JTB Badge Active' : '⏳ Bar Verification Pending'}
                 </Text>
