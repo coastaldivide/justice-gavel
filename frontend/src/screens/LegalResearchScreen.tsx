@@ -64,7 +64,7 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
   }, []);
 
-  const citationBlue = false ? COLORS.steel : COLORS.blue;
+  const citationBlue = COLORS.blue;
   const headingColor = COLORS.textPrimary;
 
   const openVerify = (citation: string) => {
@@ -188,7 +188,7 @@ function ResearchBubble({ msg }: { msg: Message }) {
 
   if (isUser) return (
     <Animated.View style={[styles.userBubble, { opacity: fadeAnim,
-      backgroundColor: false ? COLORS.bgElevated : COLORS.bgSubtle,
+      backgroundColor: COLORS.bgSubtle,
       borderColor: COLORS.navy + '33' }]}>
       <Text maxFontSizeMultiplier={1.4} style={[styles.userQuery, { color: COLORS.navy }]} selectable={true}>{msg.content}</Text>
     </Animated.View>
@@ -204,9 +204,9 @@ function ResearchBubble({ msg }: { msg: Message }) {
       </View>
 
       {/* Knowledge cutoff banner -- every result, every time */}
-      <View style={[styles.cutoffBanner, { backgroundColor: false ? COLORS.warnBg : COLORS.warnBg,
+      <View style={[styles.cutoffBanner, { backgroundColor: COLORS.warnBg,
         borderColor: COLORS.gold + '70' }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.cutoffText, { color: false ? COLORS.gold : COLORS.warnDark }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.cutoffText, { color: COLORS.warnDark }]}>
           ⚠️  Knowledge cutoff: August 2025 -- verify all citations before relying on them in court.
           Tap any underlined citation to check on CourtListener.
         </Text>
@@ -279,7 +279,7 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
       <View style={[styles.paywallCard, {
-        backgroundColor: false ? COLORS.textPrimary : COLORS.bgSubtle,
+        backgroundColor: COLORS.bgSubtle,
         borderColor: COLORS.navy + '33'
       }]}>
         <Text maxFontSizeMultiplier={1.4} style={styles.paywallIcon}>⚖️</Text>
@@ -300,7 +300,7 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
         ].map(([name, price, check]) => (
           <View key={name} style={[styles.compareRow, {
             backgroundColor: check === '✅'
-              ? (false ? COLORS.legalBg : COLORS.legalBg)
+              ? (COLORS.legalBg)
               : COLORS.bgCard,
             borderColor: check === '✅' ? COLORS.legal + '55' : COLORS.border,
           }]}>

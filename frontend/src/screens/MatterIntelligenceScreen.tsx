@@ -72,7 +72,7 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
         api.get(`/matter-intelligence/${matterId}/signals`),
         api.get(`/matter-intelligence/${matterId}/motions`),
         api.get(`/matter-intelligence/${matterId}/diversion`),
-        api.get(`/matter-intelligence/${matterId}/escalation`),,
+        api.get(`/matter-intelligence/${matterId}/escalation`),
         api.get(`/matter-intelligence/${matterId}/analytics`),
       ]);
       if (!isMounted.current) return;

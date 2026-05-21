@@ -134,6 +134,18 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
     }
   };
 
+  // ── Memoised handlers — prevents child re-render on every keystroke/state update ──
+  var handleBack = useCallback(() => {
+    if (navigation.canGoBack()) navigation.goBack();
+    else (navigation as any).navigate('HomeTab');
+  }, [navigation]);
+
+  const handleConfirmStep = useCallback(() => {
+    if (selTime) setStep('confirm');
+  }, [selTime]);
+
+  const handleDatetimeStep = useCallback(() => setStep('datetime'), []);
+
   // ── Confirmed ────────────────────────────────────────────────────────────
   if (step === 'confirmed') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -160,6 +172,8 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
   );
 
   // ── Callback sent ─────────────────────────────────────────────────────────
+
+
   if (step === 'callback_sent') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.confirmedWrap}>
@@ -178,19 +192,6 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
       </View>
     </View>
   );
-
-
-  // ── Memoised handlers — prevents child re-render on every keystroke/state update ──
-  var handleBack = useCallback(() => {
-    if (navigation.canGoBack()) navigation.goBack();
-    else (navigation as any).navigate('HomeTab');
-  }, [navigation]);
-
-  const handleConfirmStep = useCallback(() => {
-    if (selTime) setStep('confirm');
-  }, [selTime]);
-
-  const handleDatetimeStep = useCallback(() => setStep('datetime'), []);
 
   return (
     <KeyboardAvoidingView

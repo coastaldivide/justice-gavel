@@ -68,12 +68,6 @@ function DistanceBadge({ distanceKm }: { distanceKm: number | null }) {
   const label = formatDistance(distanceKm);
   const color = distanceKm < 50 ? COLORS.legal : distanceKm < 200 ? COLORS.warn : COLORS.textMuted;
 
-  // Refresh data whenever user navigates back to this screen
-  useFocusEffect(
-    useCallback(() => {
-      getUserState();
-    }, [])
-  );
 
   return (
     <View style={[styles.badge, { backgroundColor: color + '18', borderColor: color + '55' }]}>

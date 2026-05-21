@@ -281,7 +281,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
   }, []);
 
   const { gated, unlocking, unlock } = useBiometricGate('case_screen');
-  if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
 
   // Prevent screenshots on this sensitive screen (Android FLAG_SECURE + iOS)
   React.useEffect(() => {
@@ -632,6 +631,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
       return;
     }
     try {
+
+  if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
       const { status } = await Calendar.requestCalendarPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Allow calendar access in Settings to add court dates.');

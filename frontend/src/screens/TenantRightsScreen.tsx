@@ -20,7 +20,6 @@
  */
 import { api } from '../services/api';
 import React, { useState } from 'react';
-  const [fetchError, setFetchError] = useState<string>('');
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking , ActivityIndicator, RefreshControl} from 'react-native';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';

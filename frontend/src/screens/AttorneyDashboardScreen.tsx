@@ -198,8 +198,6 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
     }).catch(() => { (navigation as any).replace('HomeTab'); });
   }, [navigation]);
 
-  if (!roleChecked) return null;
-  if (!isAuthorized) return null;
 
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -285,14 +283,6 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
     setSavingProfile(false);
   };
 
-  if (loading) return (
-    <View style={[styles.screen, { backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }]}>
-      <ActivityIndicator size="large" color={colors.steel} />
-    </View>
-  );
-
-  // Bar license renewal reminder
-  // Most state bars renew annually or biennially. Remind after 10 months.
   const barRenewalReminder = React.useMemo(() => {
     const verifiedAt = profile?.bar_verified_at || profile?.bar_verified_date;
     if (!verifiedAt) return null;
@@ -311,6 +301,14 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
     }
     return null;
   }, [profile]);
+  if (loading) return (
+    <View style={[styles.screen, { backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }]}>
+      <ActivityIndicator size="large" color={colors.steel} />
+    </View>
+  );
+
+  // Bar license renewal reminder
+  // Most state bars renew annually or biennially. Remind after 10 months.
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       {/* ── Dashboard greeting header ──────────────────────────────────── */}
@@ -341,6 +339,9 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
           </TouchableOpacity>
         </View>
       </View>
+
+  if (!roleChecked) return null;
+  if (!isAuthorized) return null;
 
       {/* Tab bar */}
       <View style={[styles.tabBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>

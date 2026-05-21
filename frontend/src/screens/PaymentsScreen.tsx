@@ -161,7 +161,6 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
   }, []);
 
   const { gated, unlocking, unlock } = useBiometricGate('payments');
-  if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
 
   // Prevent screenshots on this sensitive screen (Android FLAG_SECURE + iOS)
   React.useEffect(() => {
@@ -190,6 +189,8 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
   useEffect(() => {
     AsyncStorage.getItem('last_payment_method').then(m => { if (m) setLastMethod(m); });
   }, []);
+
+  if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
 
   const onSelectPurpose = (p: typeof PURPOSES[0]) => {
     setPurpose(p);

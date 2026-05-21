@@ -11,7 +11,6 @@ import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, RefreshCo
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, { useState, useEffect, useCallback } from 'react';
 
 import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';

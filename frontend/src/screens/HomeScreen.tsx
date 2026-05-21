@@ -36,8 +36,6 @@ const TILES = [
   { key: 'dui_laws',       icon: '🚗', label: 'DUI\nLaw Guide',          nav: 'More:DUILaws',         bg: COLORS.errorBg, color: COLORS.emergency, primary: false },
   { key: 'specialty_courts',icon: '⚖️', label: 'Specialty\nCourts',     nav: 'More:SpecialtyCourts', bg: COLORS.bgCard, color: COLORS.navy, primary: false },
   { key: 'drug_penalties', icon: '💊', label: 'Drug Charge\nPenalties',  nav: 'More:DrugPenalties',   bg: COLORS.bgCard, color: COLORS.navy, primary: false },
-,
-
   // ── Extended features — professional / specialty ──────────────────────────
   { key: 'Advocacy',      icon: '📢', label: 'Policy\n& Advocacy',     nav: 'More:Advocacy',              bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
   { key: 'ArrestMonitor', icon: '🔔', label: 'Arrest\nAlerts',          nav: 'More:ArrestMonitor',         bg: COLORS.bgCard, color: COLORS.navy,   primary: false },

@@ -15,7 +15,6 @@
  */
 import { api } from '../services/api';
 import React, { useState, useCallback } from 'react';
-  const [fetchError, setFetchError] = useState<string>('');
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl , ActivityIndicator} from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';

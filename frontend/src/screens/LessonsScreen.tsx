@@ -80,6 +80,56 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
   const earnedPts = lessons.filter(l => completed.has(l.id)).reduce((s, l) => s + l.points, 0);
   const pct = totalPts > 0 ? earnedPts / totalPts : 0;
 
+  const renderLesson = useCallback(({ item }: { item: any }) => {
+            const done = completed.has(item.id);
+            const open = expanded === item.id;
+            const color = CAT_COLORS[item.category] || colors.blue;
+            return (
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={[styles.card, done && styles.cardDone]}
+                onPress={() => setExpanded(open ? null : item.id)}
+                activeOpacity={0.85}
+              >
+                <View style={styles.cardTop}>
+                  <View style={[styles.doneCircle, done && styles.doneCircleDone]}>
+                    {done && <Text maxFontSizeMultiplier={1.4} style={styles.doneCheck}>✓</Text>}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text maxFontSizeMultiplier={1.4} style={[styles.cardTitle, done && styles.cardTitleDone]}>{item.title}</Text>
+                    <View style={styles.metaRow}>
+                      <View style={[styles.catBadge, { backgroundColor: color + '18', borderColor: color + '55' }]}>
+                        <Text maxFontSizeMultiplier={1.4} style={[styles.catText, { color }]}>{item.category}</Text>
+                      </View>
+                      <Text maxFontSizeMultiplier={1.4} style={styles.ptsText}>+{item.points} pts</Text>
+                    </View>
+                  </View>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.chevron}>{open ? '▲' : '▼'}</Text>
+                </View>
+
+                {open && (
+                  <View style={styles.contentArea}>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.contentText}>{item.content}</Text>
+                    {!done && (
+                      <TouchableOpacity style={styles.completeBtn}
+                        accessibilityRole="button"
+                        onPress={async () => {
+                        try {
+                          await api.post(`/lessons/${item.id}/complete`);
+                          setCompleted(prev => new Set([...prev, item.id]));
+                        } catch { /* mark complete locally even if API fails */ }
+                      }}
+                        >
+                        <Text maxFontSizeMultiplier={1.4} style={styles.completeBtnText}>✓  Mark as complete  (+{item.points} pts)</Text>
+                      </TouchableOpacity>
+                    )}
+                    {done && <Text maxFontSizeMultiplier={1.4} style={styles.completedLabel}>✓ Completed -- {item.points} points earned</Text>}
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+  }, [colors, completed, expanded]);
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       {/* Progress banner */}
@@ -152,55 +202,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
               No lessons found. Check your connection.
             </Text>
           }
-          renderItem={useCallback(({ item }) => {
-            const done = completed.has(item.id);
-            const open = expanded === item.id;
-            const color = CAT_COLORS[item.category] || colors.blue;
-            return (
-              <TouchableOpacity
-                accessibilityRole="button"
-                style={[styles.card, done && styles.cardDone]}
-                onPress={() => setExpanded(open ? null : item.id)}
-                activeOpacity={0.85}
-              >
-                <View style={styles.cardTop}>
-                  <View style={[styles.doneCircle, done && styles.doneCircleDone]}>
-                    {done && <Text maxFontSizeMultiplier={1.4} style={styles.doneCheck}>✓</Text>}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.cardTitle, done && styles.cardTitleDone]}>{item.title}</Text>
-                    <View style={styles.metaRow}>
-                      <View style={[styles.catBadge, { backgroundColor: color + '18', borderColor: color + '55' }]}>
-                        <Text maxFontSizeMultiplier={1.4} style={[styles.catText, { color }]}>{item.category}</Text>
-                      </View>
-                      <Text maxFontSizeMultiplier={1.4} style={styles.ptsText}>+{item.points} pts</Text>
-                    </View>
-                  </View>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.chevron}>{open ? '▲' : '▼'}</Text>
-                </View>
-
-                {open && (
-                  <View style={styles.contentArea}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.contentText}>{item.content}</Text>
-                    {!done && (
-                      <TouchableOpacity style={styles.completeBtn}
-                        accessibilityRole="button"
-                        onPress={async () => {
-                        try {
-                          await api.post(`/lessons/${item.id}/complete`);
-                          setCompleted(prev => new Set([...prev, item.id]));
-                        } catch { /* mark complete locally even if API fails */ }
-                      }}
-                        >
-                        <Text maxFontSizeMultiplier={1.4} style={styles.completeBtnText}>✓  Mark as complete  (+{item.points} pts)</Text>
-                      </TouchableOpacity>
-                    )}
-                    {done && <Text maxFontSizeMultiplier={1.4} style={styles.completedLabel}>✓ Completed -- {item.points} points earned</Text>}
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          }, [colors, completed, expanded])}
+          renderItem={renderLesson}
         />
       </>
       )

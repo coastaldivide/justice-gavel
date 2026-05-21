@@ -528,7 +528,6 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
   };
 
   const { gated, unlocking, unlock } = useBiometricGate('motion_library');
-  if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
 
   // Receive charges from CaseScreen for charge-aware filtering
   const incomingCharges = (route?.params as any)?.charges || null;
@@ -765,6 +764,8 @@ const loadHistory = useCallback(async () => {
       }},
     ]);
   }, []);
+
+  if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
 
   const fieldDefs = selected ? (FIELD_DEFS[selected.key] || []) : [];
   const filledCount = fieldDefs.filter(f => fields[f.key]?.trim()).length;

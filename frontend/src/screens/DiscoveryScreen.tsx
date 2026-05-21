@@ -101,11 +101,6 @@ function ConfidenceTag({ text }: { text: string }) {
       backgroundColor: COLORS.bgSubtle, paddingHorizontal: 5, paddingVertical: 2,
       borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>POSSIBLE -- verify</Text>
   );
-  const [expanded, setExpanded] = useState(true);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => { mountedRef.current = false; };
-  }, []);
 }
 function stripTag(text: string): string {
   return text.replace(/^\[(STRONG|NOTABLE|POSSIBLE)\]\s*/, '');
