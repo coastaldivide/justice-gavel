@@ -120,7 +120,7 @@ export default function TenantRightsScreen(): React.JSX.Element {
   const [tab, setTab] = React.useState(0);
 
   const sections = SITUATIONS;
-  const section  = Array.isArray(sections) ? sections[tab] : null;
+  const _section  = Array.isArray(sections) ? sections[tab] : null;
   const allSections = Array.isArray(sections) ? sections : [];
 
   return (

@@ -331,7 +331,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
     <View style={styles.screen}>
 
       {/* City picker modal -- shown when GPS is denied */}
-      <Modal visible={showCityPicker} transparent animationType="slide"
+      <Modal accessibilityViewIsModal={true} visible={showCityPicker} transparent animationType="slide"
         onRequestClose={() => {}}>
         <View style={styles.cityOverlay}>
           <View style={styles.citySheet}>

@@ -65,7 +65,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
               value={identifier}
               onChangeText={v => { setIdentifier(v); setError(''); }}
               autoCapitalize="none"
-          testID="register-email-input" autoComplete="email"
+          testID="register-email-input" accessibilityLabel="Email address or phone number" autoComplete="email"
           importantForAutofill="yes" keyboardType={identifier.includes("@") || (!identifier.match(/^[0-9]/) && identifier.length > 0) ? "email-address" : "phone-pad"}
               textContentType="username" returnKeyType="next"
               onSubmitEditing={() => passRef.current?.focus()}
@@ -80,7 +80,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
               style={[styles.input, { flex: 1 }]}
               placeholder="At least 6 characters"
               placeholderTextColor={COLORS.textSecond}
-              testID="register-password-input" secureTextEntry={!showPassword}
+              testID="register-password-input" accessibilityLabel="Password" secureTextEntry={!showPassword}
               value={password}
               onChangeText={v => { setPassword(v); setError(''); }}
               textContentType="newPassword" returnKeyType="next"

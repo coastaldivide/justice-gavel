@@ -163,7 +163,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         </TouchableOpacity>
 
         {/* Leave a Message modal */}
-        <Modal visible={msgModal} transparent animationType="slide" onRequestClose={() => setMsgModal(false)}>
+        <Modal accessibilityViewIsModal={true} visible={msgModal} transparent animationType="slide" onRequestClose={() => setMsgModal(false)}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
             <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMsgModal(false)}
               accessibilityRole="button"

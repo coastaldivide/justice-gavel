@@ -379,7 +379,7 @@ export default function CaseTimelineScreen({ navigation, route }: ScreenProps): 
       </TouchableOpacity>
 
       {/* Add event modal */}
-      <Modal visible={showAdd} animationType="slide" transparent presentationStyle="overFullScreen"
+      <Modal accessibilityViewIsModal={true} visible={showAdd} animationType="slide" transparent presentationStyle="overFullScreen"
         onRequestClose={() => setShowAdd(false)}>
         <View style={s.modalOverlay}>
           <View style={[s.modalSheet, { backgroundColor: colors.bgCard }]}>

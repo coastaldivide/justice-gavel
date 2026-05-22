@@ -196,7 +196,7 @@ export default function JuvenileJusticeScreen(): React.JSX.Element {
   const [tab, setTab] = React.useState(0);
 
   const sections = RIGHTS_SECTIONS;
-  const section  = Array.isArray(sections) ? sections[tab] : null;
+  const _section  = Array.isArray(sections) ? sections[tab] : null;
   const allSections = Array.isArray(sections) ? sections : [];
 
   return (

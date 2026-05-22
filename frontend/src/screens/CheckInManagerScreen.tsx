@@ -80,7 +80,7 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
   );
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet"
+    <Modal accessibilityViewIsModal={true} visible={visible} animationType="slide" presentationStyle="pageSheet"
         onRequestClose={() => onClose()}>
     {mgmtError && (
       <View style={{margin:16,padding:14,backgroundColor:COLORS.surface,
@@ -182,7 +182,7 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
   if (!enrollment) return null;
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet"
+    <Modal accessibilityViewIsModal={true} visible={visible} animationType="slide" presentationStyle="pageSheet"
         onRequestClose={() => onClose()}>
       <View style={styles.modalWrap}>
         <View style={[styles.modalHeader, { backgroundColor: COLORS.navy }]}>

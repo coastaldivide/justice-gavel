@@ -184,7 +184,7 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet"
+    <Modal accessibilityViewIsModal={true} visible={visible} animationType="slide" presentationStyle="pageSheet"
         onRequestClose={() => {}}>
       <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
@@ -253,7 +253,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
   if (!lead) return null;
   const tier = bailTier(lead.bail_amount);
   return (
-    <Modal visible={visible} animationType="fade" transparent
+    <Modal accessibilityViewIsModal={true} visible={visible} animationType="fade" transparent
         onRequestClose={() => {}}>
       <View style={styles.overlay}>
         <View style={styles.confirmCard}>

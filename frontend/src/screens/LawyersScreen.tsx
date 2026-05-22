@@ -350,7 +350,7 @@ function FilterModal({
   proBonoOnly, setProBonoOnly,
   onApply }: any) {
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet"
+    <Modal accessibilityViewIsModal={true} visible={visible} animationType="slide" presentationStyle="pageSheet"
         onRequestClose={() => {}}>
       <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
@@ -775,7 +775,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
     }
 
       {/* First-load "What do you need?" modal */}
-      <Modal visible={showNeedModal} transparent animationType="fade"
+      <Modal accessibilityViewIsModal={true} visible={showNeedModal} transparent animationType="fade"
         onRequestClose={() => {}}>
         <View style={styles.needOverlay}>
           <View style={styles.needSheet}>
@@ -830,7 +830,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
       />
 
       {/* Verified badge explainer modal */}
-      <Modal visible={showBadgeInfo} transparent animationType="fade"
+      <Modal accessibilityViewIsModal={true} visible={showBadgeInfo} transparent animationType="fade"
         onRequestClose={() => setShowBadgeInfo(false)}>
         <TouchableOpacity style={{ flex:1, backgroundColor:'rgba(0,0,0,0.5)',
           justifyContent:'center', padding:24 }}
@@ -913,7 +913,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
       )}
 
       {/* Bulk message modal */}
-      <Modal visible={showBulk} transparent animationType="slide"
+      <Modal accessibilityViewIsModal={true} visible={showBulk} transparent animationType="slide"
         onRequestClose={() => setShowBulk(false)}>
         <View style={{ flex:1, backgroundColor:'rgba(0,0,0,0.5)',
           justifyContent:'flex-end' }}>

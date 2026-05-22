@@ -461,7 +461,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
                       <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>{fl.label}</Text>
                       <Text maxFontSizeMultiplier={1.4} style={s.flagDesc}>{fl.desc}</Text>
                     </View>
-                    <Switch
+                    <Switch accessibilityLabel="{fl.label}"
                       value={!!features[fl.key]}
                       onValueChange={v => setFeatures(prev => ({ ...prev, [fl.key]: v }))}
                       trackColor={{ false: colors.borderSubtle, true: colors.gold }}
@@ -603,7 +603,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
                       </View>
                       <View style={s.flagRow}>
                         <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>Client is detained</Text>
-                        <Switch value={acDetained} onValueChange={setACDet} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />
+                        <Switch accessibilityLabel="Client is detained" value={acDetained} onValueChange={setACDet} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />
                       </View>
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Country conditions (optional)</Text>
                       <View style={s.segRow}>
@@ -743,7 +743,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
                       <TextInput style={s.input} value={troName} onChangeText={setTROName} placeholder="Client name" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
                       <View style={s.flagRow}>
                         <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>Domestic violence flag</Text>
-                        <Switch value={troDV} onValueChange={setTRODV} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />
+                        <Switch accessibilityLabel="Add TRO tracker" value={troDV} onValueChange={setTRODV} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />
                       </View>
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Asset tier</Text>
                       <View style={s.segRow}>

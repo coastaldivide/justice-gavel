@@ -236,7 +236,8 @@ export default function CaseScreen({ route, navigation }: any) {
       const date = new Date().toLocaleDateString('en-US', {
         year:'numeric', month:'long', day:'numeric'
       });
-      const html = `<!DOCTYPE html>
+      const escapeHtml = (s?: string | null) => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>
   body { font-family: Georgia, serif; padding: 40px; max-width: 680px; margin:0 auto; color: #1a1a2e; }
@@ -249,15 +250,15 @@ export default function CaseScreen({ route, navigation }: any) {
     font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
   .footer { margin-top: 48px; font-size: 11px; color: #9CA3AF; border-top: 1px solid #E5E7EB; padding-top: 12px; }
 </style></head><body>
-<h1>${cas.title || 'Case Summary'}</h1>
+<h1>${escapeHtml(String(cas.title || '')) || 'Case Summary'}</h1>
 <div class="meta">Exported ${date} · Justice Gavel</div>
 <h2>Case Details</h2>
 <div class="field"><span class="label">Status:</span> ${cas.status || 'Active'}</div>
 <div class="field"><span class="label">Next Court Date:</span> ${cas.next_court_date ? new Date(String(cas.next_court_date)).toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}) : 'Not set'}</div>
 <div class="field"><span class="label">State:</span> ${cas.state || 'Not specified'}</div>
-${cas.charges ? `<div class="field"><span class="label">Charges:</span> \${cas.charges}</div>` : ''}
+${cas.charges ? `<div class="field"><span class="label">Charges:</span> \${escapeHtml(String(cas.charges || ''))}</div>` : ''}
 ${cas.bail_amount ? `<div class="field"><span class="label">Bail Amount:</span> $\${Number(cas.bail_amount).toLocaleString()}</div>` : ''}
-${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
+${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes || ''))}</div>` : ''}
 <div class="footer">Justice Gavel, Inc. · Not a law firm · Confidential case document</div>
 </body></html>`;
       const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -811,7 +812,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
       )}
 
       {/* ── Invite family member modal ───────────────────────────────────── */}
-      <Modal testID="case-detail-screen" visible={inviteModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setInviteModal(false)}>
+      <Modal accessibilityViewIsModal={true} testID="case-detail-screen" visible={inviteModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setInviteModal(false)}>
         <View style={[styles.modal, { backgroundColor: colors.bg }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setInviteModal(false)}
@@ -856,7 +857,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
         </View>
       </Modal>
 
-      <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModal(false)}>
+      <Modal accessibilityViewIsModal={true} visible={modalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModal(false)}>
               <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex:1 }}>
         <ScrollView style={styles.modal} keyboardShouldPersistTaps="handled">
           <View style={styles.modalHeader}>

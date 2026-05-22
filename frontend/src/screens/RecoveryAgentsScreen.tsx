@@ -291,7 +291,7 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
             { color: colors.textSecond }]}>
             Armed certified only
           </Text>
-          <Switch
+          <Switch accessibilityLabel="Toggle setting"
             value={armedOnly}
             onValueChange={setArmedOnly}
             trackColor={{ false: colors.border, true: colors.emergencyDark }}

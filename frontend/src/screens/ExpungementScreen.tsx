@@ -442,7 +442,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
         ))}
       </View>
       <TextInput
-              testID="expungement-charges-input"
+              testID="expungement-charges-input" accessibilityLabel="Describe your charges"
         style={styles.chargeInput}
         placeholder="Or type your charge (e.g. 'possession of marijuana 2020')"
         placeholderTextColor={COLORS.textSecond}
@@ -536,7 +536,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
             )}
 
             {/* Petition modal */}
-            <Modal visible={showPetition} animationType="slide"
+            <Modal accessibilityViewIsModal={true} visible={showPetition} animationType="slide"
               onRequestClose={() => setShowPetition(false)}>
               <View style={{ flex: 1, backgroundColor: colors.bg }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16,

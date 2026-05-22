@@ -56,76 +56,76 @@ const CUSTODY_SECTIONS = [
   },
 ];
 
-const ORDERS_SECTIONS = [
-  {
-    icon: '🚨',
-    title: 'Emergency protective order (EPO)',
-    body: 'Issued by police on the scene -- usually the same night as an incident. Lasts 3-7 days. Requires no court hearing. If you have been assaulted or threatened and police respond, ask the officer for an EPO before they leave. This automatically gets you into court within a week for a longer order.',
-  },
-  {
-    icon: '📋',
-    title: 'Temporary restraining order (TRO)',
-    body: 'Filed at the courthouse, usually the same day or next business day. A judge reviews your written declaration without the other person present (ex parte). If granted, the TRO typically lasts 20-25 days until the full hearing. You do not need a police report to file a TRO -- your sworn statement is sufficient.',
-  },
-  {
-    icon: '⚖️',
-    title: 'Permanent protective order',
-    body: 'Issued after a full court hearing where both parties can present evidence. Despite the name, "permanent" usually means 1-5 years, renewable. The order can include: no contact provisions, stay-away distances, move-out orders (requiring abuser to leave shared home), custody and visitation terms, and firearm surrender requirements.',
-  },
-  {
-    icon: '📝',
-    title: 'How to file',
-    body: 'Go to the family court or civil court clerk\'s office. Ask for the protective order packet. Fill out the petition describing specific incidents with dates, locations, and what was said or done. Be specific -- vague descriptions like "he was threatening" are weaker than "on [date] at [location] he said he would kill me and showed me a knife." File for free -- there is no filing fee for domestic violence protective orders in any state.',
-  },
-  {
-    icon: '🔒',
-    title: 'What a protective order covers',
-    body: 'A protective order can protect you, your children, other family members, and even your pets. It can prohibit all contact (phone, text, email, through third parties), require the abuser to stay a specific distance from your home, workplace, and children\'s school, and require surrender of firearms. Violation of a protective order is a crime -- call 911 immediately if the order is violated.',
-  },
-  {
-    icon: '⚠️',
-    title: 'If you have a criminal record',
-    body: 'Your criminal history does not affect your right to obtain a protective order as a victim. Courts issue protective orders based on what the respondent did to you, not your history. However, if there are active custody proceedings, the protective order will affect custody and visitation arrangements.',
-  },
-  {
-    icon: '🌐',
-    title: 'National resources',
-    body: 'National Domestic Violence Hotline: 1-800-799-7233 (TTY: 1-800-787-3224). Text START to 88788. WomensLaw.org has state-specific protective order information for all 50 states. Law enforcement, hospitals, and domestic violence shelters can all help connect you to emergency protective order processes.',
-  },
-];
+// const ORDERS_SECTIONS = [  // unused
+//   {
+//     icon: '🚨',
+//     title: 'Emergency protective order (EPO)',
+//     body: 'Issued by police on the scene -- usually the same night as an incident. Lasts 3-7 days. Requires no court hearing. If you have been assaulted or threatened and police respond, ask the officer for an EPO before they leave. This automatically gets you into court within a week for a longer order.',
+//   },
+//   {
+//     icon: '📋',
+//     title: 'Temporary restraining order (TRO)',
+//     body: 'Filed at the courthouse, usually the same day or next business day. A judge reviews your written declaration without the other person present (ex parte). If granted, the TRO typically lasts 20-25 days until the full hearing. You do not need a police report to file a TRO -- your sworn statement is sufficient.',
+//   },
+//   {
+//     icon: '⚖️',
+//     title: 'Permanent protective order',
+//     body: 'Issued after a full court hearing where both parties can present evidence. Despite the name, "permanent" usually means 1-5 years, renewable. The order can include: no contact provisions, stay-away distances, move-out orders (requiring abuser to leave shared home), custody and visitation terms, and firearm surrender requirements.',
+//   },
+//   {
+//     icon: '📝',
+//     title: 'How to file',
+//     body: 'Go to the family court or civil court clerk\'s office. Ask for the protective order packet. Fill out the petition describing specific incidents with dates, locations, and what was said or done. Be specific -- vague descriptions like "he was threatening" are weaker than "on [date] at [location] he said he would kill me and showed me a knife." File for free -- there is no filing fee for domestic violence protective orders in any state.',
+//   },
+//   {
+//     icon: '🔒',
+//     title: 'What a protective order covers',
+//     body: 'A protective order can protect you, your children, other family members, and even your pets. It can prohibit all contact (phone, text, email, through third parties), require the abuser to stay a specific distance from your home, workplace, and children\'s school, and require surrender of firearms. Violation of a protective order is a crime -- call 911 immediately if the order is violated.',
+//   },
+//   {
+//     icon: '⚠️',
+//     title: 'If you have a criminal record',
+//     body: 'Your criminal history does not affect your right to obtain a protective order as a victim. Courts issue protective orders based on what the respondent did to you, not your history. However, if there are active custody proceedings, the protective order will affect custody and visitation arrangements.',
+//   },
+//   {
+//     icon: '🌐',
+//     title: 'National resources',
+//     body: 'National Domestic Violence Hotline: 1-800-799-7233 (TTY: 1-800-787-3224). Text START to 88788. WomensLaw.org has state-specific protective order information for all 50 states. Law enforcement, hospitals, and domestic violence shelters can all help connect you to emergency protective order processes.',
+//   },
+// ];
 
-const SUPPORT_SECTIONS = [
-  {
-    icon: '🧮',
-    title: 'How child support is calculated',
-    body: 'Every state uses a formula. Most states use an income shares model -- both parents\' incomes are combined, the total child support obligation is calculated based on the combined income and number of children, then each parent pays their proportional share. The parent who pays child support (the non-custodial parent) typically pays their share to the other parent. Calculators are available on every state\'s family court website.',
-  },
-  {
-    icon: '💼',
-    title: 'Income and unemployment',
-    body: 'If you are unemployed or underemployed, courts will often impute income -- calculate support based on what you could earn, not what you currently earn. This is based on your work history, education, and local job market. If you are genuinely unable to work due to incarceration, disability, or documented job loss, this can be presented. Self-employed income is harder to hide than many believe -- courts look at tax returns, bank statements, and lifestyle.',
-  },
-  {
-    icon: '🔒',
-    title: 'Child support and criminal record',
-    body: 'If you are incarcerated, you are still legally obligated to pay child support unless you petition the court for a modification. Arrears (unpaid support) accumulate during incarceration in most states. Some states automatically suspend support during incarceration -- most do not. File a modification petition immediately upon incarceration. The court can set a nominal amount ($0 or minimal) until release. Failure to do this results in large arrears that are very difficult to discharge.',
-  },
-  {
-    icon: '📝',
-    title: 'Modifying a support order',
-    body: 'Child support can be modified when there is a substantial change in circumstances -- typically a 15-25% change in income, a significant change in the child\'s needs, or a change in custody arrangement. Either parent can request a modification. File promptly -- modifications are rarely retroactive. If you lose your job, file for modification the same week, not months later.',
-  },
-  {
-    icon: '⚠️',
-    title: 'Non-payment consequences',
-    body: 'Unpaid child support is treated very seriously. Consequences include: driver\'s license suspension, professional license suspension, passport denial, tax refund interception, bank account levy, wage garnishment, and ultimately contempt of court which can result in jail. None of these consequences are suspended during a pending modification -- file the modification first.',
-  },
-  {
-    icon: '📞',
-    title: 'Getting help',
-    body: 'Every state has a Child Support Enforcement (CSE) agency -- free service that helps establish, enforce, and modify support orders. If you are the custodial parent trying to collect, contact your state\'s CSE agency. If you are the paying parent who needs a modification, consult a family law attorney or your county\'s self-help center.',
-  },
-];
+// const SUPPORT_SECTIONS = [  // unused
+//   {
+//     icon: '🧮',
+//     title: 'How child support is calculated',
+//     body: 'Every state uses a formula. Most states use an income shares model -- both parents\' incomes are combined, the total child support obligation is calculated based on the combined income and number of children, then each parent pays their proportional share. The parent who pays child support (the non-custodial parent) typically pays their share to the other parent. Calculators are available on every state\'s family court website.',
+//   },
+//   {
+//     icon: '💼',
+//     title: 'Income and unemployment',
+//     body: 'If you are unemployed or underemployed, courts will often impute income -- calculate support based on what you could earn, not what you currently earn. This is based on your work history, education, and local job market. If you are genuinely unable to work due to incarceration, disability, or documented job loss, this can be presented. Self-employed income is harder to hide than many believe -- courts look at tax returns, bank statements, and lifestyle.',
+//   },
+//   {
+//     icon: '🔒',
+//     title: 'Child support and criminal record',
+//     body: 'If you are incarcerated, you are still legally obligated to pay child support unless you petition the court for a modification. Arrears (unpaid support) accumulate during incarceration in most states. Some states automatically suspend support during incarceration -- most do not. File a modification petition immediately upon incarceration. The court can set a nominal amount ($0 or minimal) until release. Failure to do this results in large arrears that are very difficult to discharge.',
+//   },
+//   {
+//     icon: '📝',
+//     title: 'Modifying a support order',
+//     body: 'Child support can be modified when there is a substantial change in circumstances -- typically a 15-25% change in income, a significant change in the child\'s needs, or a change in custody arrangement. Either parent can request a modification. File promptly -- modifications are rarely retroactive. If you lose your job, file for modification the same week, not months later.',
+//   },
+//   {
+//     icon: '⚠️',
+//     title: 'Non-payment consequences',
+//     body: 'Unpaid child support is treated very seriously. Consequences include: driver\'s license suspension, professional license suspension, passport denial, tax refund interception, bank account levy, wage garnishment, and ultimately contempt of court which can result in jail. None of these consequences are suspended during a pending modification -- file the modification first.',
+//   },
+//   {
+//     icon: '📞',
+//     title: 'Getting help',
+//     body: 'Every state has a Child Support Enforcement (CSE) agency -- free service that helps establish, enforce, and modify support orders. If you are the custodial parent trying to collect, contact your state\'s CSE agency. If you are the paying parent who needs a modification, consult a family law attorney or your county\'s self-help center.',
+//   },
+// ];
 
 export default function FamilyCourtScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
@@ -139,7 +139,7 @@ export default function FamilyCourtScreen(): React.JSX.Element {
   const [tab, setTab] = React.useState(0);
 
   const sections = CUSTODY_SECTIONS;
-  const section  = Array.isArray(sections) ? sections[tab] : null;
+  const _section  = Array.isArray(sections) ? sections[tab] : null;
   const allSections = Array.isArray(sections) ? sections : [];
 
   return (

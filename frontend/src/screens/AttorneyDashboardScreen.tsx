@@ -642,7 +642,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
                 profile.phone, profile.office_name || profile.office_id,
               ];
               const done = fields.filter(Boolean).length;
-              const pct  = Math.round((done / fields.length) * 100);
+              const pct  = fields.length ? Math.round((done / fields.length) * 100) : 0;
               return pct < 100 ? (
                 <View style={[styles.completionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -704,7 +704,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
               onChangeText={setBarInput}
               placeholder="State bar number"
               placeholderTextColor={colors.textMuted}
-              accessibilityLabel="Bar number"
+              accessibilityLabel="State bar number"
           returnKeyType="next"
           blurOnSubmit
         />

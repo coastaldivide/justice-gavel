@@ -119,6 +119,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
       if (!coords) {
         const loc = await getLocation();
         lat = loc.lat; lng = loc.lng;
+        if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) throw new Error('GPS coordinates unavailable');
       } else {
         lat = coords.lat; lng = coords.lng;
       }
@@ -375,7 +376,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
       <View style={styles.section}>
         <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>Any notes? <Text maxFontSizeMultiplier={1.4} style={styles.optional}>(optional)</Text></Text>
         <TextInput
-              testID="checkin-notes-input"
+              testID="checkin-notes-input" accessibilityLabel="Optional check-in notes"
           style={[styles.input, { height: 72, textAlignVertical: 'top' }]}
           placeholder="e.g. At home -- waiting for attorney callback"
           placeholderTextColor={COLORS.textSecond}
