@@ -45,7 +45,7 @@ export default function DocumentScannerScreen(): React.JSX.Element {
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{ padding: 24, gap: 20 }}>
       <TouchableOpacity
-        onPress={() => navigation.goBack()}
+        onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home')}
         style={{ marginBottom: 8 }}
         accessibilityRole="button"
       >

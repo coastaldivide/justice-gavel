@@ -113,7 +113,7 @@ function TurnBubble({
       </View>
 
       {/* Original */}
-      <TouchableOpacity onPress={() => Clipboard.setString(msg.original)}
+      <TouchableOpacity onPress={() => { hapticSelection(); Clipboard.setString(msg.original); }}
         accessibilityRole="button"
       >
         <Text maxFontSizeMultiplier={1.4} style={[styles.bubbleOriginal, { color: COLORS.textPrimary }]}>
@@ -132,7 +132,7 @@ function TurnBubble({
           <Text maxFontSizeMultiplier={1.4} style={[styles.translationLang, { color: isA ? aColor : bColor }]}>
             {tgtLang.flag} {tgtLang.native}
           </Text>
-          <TouchableOpacity onPress={() => Clipboard.setString(msg.translated)}
+          <TouchableOpacity onPress={() => { hapticSelection(); Clipboard.setString(msg.translated); }}
             accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.translationText, { color: COLORS.textPrimary }]}>

@@ -223,7 +223,7 @@ function ResearchBubble({ msg }: { msg: Message }) {
         <TouchableOpacity
           activeOpacity={0.6}
           style={[styles.copyBtn, { borderColor: COLORS.border, flex: 1 }]}
-          onPress={() => Clipboard.setString(msg.content)}
+          onPress={() => { hapticSelection(); Clipboard.setString(msg.content); }}
             accessibilityRole="button"
           accessibilityLabel="Copy research result"
         >

@@ -50,11 +50,11 @@ export default function AgeGateScreen({ route, navigation }: any) {
     const y = parseInt(year, 10);
 
     if (!year || year.length < 4 || isNaN(y)) {
-      setError('Please enter your 4-digit birth year.');
+      setError('Please enter your birth year (4 digits).');
       return;
     }
     if (y < MIN_YEAR || y > CURRENT_YEAR) {
-      setError('Please enter a valid birth year.');
+      setError('Please enter a valid year (1900–present).');
       return;
     }
 

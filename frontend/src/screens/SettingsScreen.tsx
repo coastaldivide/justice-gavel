@@ -735,7 +735,7 @@ export default function SettingsScreen({ route, navigation }: any) {
                           if (!password) return;
                           try {
                             await api.delete('/auth/account', { data: { password } });
-                            Alert.alert('Account Deleted',
+                            hapticNotification('Warning'); Alert.alert('Account Deleted',
                               'Your account has been permanently deleted.',
                               [{ text: 'OK', onPress: () => navigation.reset({
                                 index: 0, routes: [{ name: 'Login' }]

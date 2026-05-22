@@ -281,7 +281,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
       {!!coords && (
         <View style={styles.locationConfirm}>
           <Text maxFontSizeMultiplier={1.4} style={styles.locationConfirmText}>
-            📍 Location recorded: {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+            📍 Location recorded: {(coords.lat ?? 0).toFixed(4)}, {(coords.lng ?? 0).toFixed(4)}
           </Text>
         </View>
       )}

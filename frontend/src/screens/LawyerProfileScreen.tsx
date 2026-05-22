@@ -262,7 +262,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
         {lawyer.rating > 0 && (
           <View style={s.stat}>
             <Text maxFontSizeMultiplier={1.4} style={[s.statValue, { color:colors.textPrimary }]}>
-              {lawyer.rating.toFixed(1)}★
+              {(lawyer.rating ?? 0).toFixed(1)}★
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.statLabel, { color:colors.textMuted }]}>
               Rating
