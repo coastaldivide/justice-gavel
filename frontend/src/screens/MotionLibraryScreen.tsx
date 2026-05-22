@@ -883,6 +883,7 @@ const loadHistory = useCallback(async () => {
           <View key={f.key} style={styles.fieldWrap}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textSecond }]}>{f.label}</Text>
             <TextInput
+              maxLength={3000}
               style={[
                 styles.fieldInput,
                 f.multiline && styles.fieldTextArea,

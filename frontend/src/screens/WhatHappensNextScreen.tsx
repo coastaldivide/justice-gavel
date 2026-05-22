@@ -410,7 +410,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
 
   useEffect(() => {
     Animated.timing(progressAnim, {
-      toValue: activeStep / data.steps.length,
+      toValue: activeStep / (data?.steps ?? []).length,
       duration: 350,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -456,11 +456,11 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
         <View style={styles.progressTrack}>
           <Animated.View style={[styles.progressFill, { width: progressWidth, backgroundColor: data.color }]} />
         </View>
-        <Text maxFontSizeMultiplier={1.4} style={styles.progressLabel}>Step {activeStep} of {data.steps.length}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.progressLabel}>Step {activeStep} of {(data?.steps ?? []).length}</Text>
       </View>
 
       {/* Step cards */}
-      {data.steps.map(step => (
+      {(data?.steps ?? []).map(step => (
         <StepCard
           key={step.id}
           step={step}
@@ -481,11 +481,11 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
             <Text maxFontSizeMultiplier={1.4} style={styles.navBtnSecondaryText}>← Previous</Text>
           </TouchableOpacity>
         )}
-        {activeStep < data.steps.length ? (
+        {activeStep < (data?.steps ?? []).length ? (
           <TouchableOpacity
             style={[styles.navBtn, { backgroundColor: data.color, flex: 2 }]}
           accessibilityRole="button"
-            onPress={() => setActiveStep(s => Math.min(data.steps.length, s + 1))}
+            onPress={() => setActiveStep(s => Math.min((data?.steps ?? []).length, s + 1))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.navBtnText}>Next Step →</Text>
           </TouchableOpacity>

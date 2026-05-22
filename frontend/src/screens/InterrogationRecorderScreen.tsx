@@ -197,7 +197,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
 
     } catch (e: any) {
       if (!mountedRef.current) return;
-      setError(e.message || 'Could not process recording. Make sure you have internet access and try again.');
+      setError('Could not process recording. Make sure you have internet access and try again.');
       setPhase('error');
     }
   };

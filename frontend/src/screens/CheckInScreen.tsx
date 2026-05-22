@@ -358,7 +358,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
         <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>Where are you? <Text maxFontSizeMultiplier={1.4} style={styles.optional}>(optional)</Text></Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. Home -- Nashville, TN"
+          accessibilityLabel="Location note (optional)" placeholder="e.g. Home -- Nashville, TN"
           placeholderTextColor={COLORS.textSecond}
           value={locationLabel}
           onChangeText={setLocationLabel}

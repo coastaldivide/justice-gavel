@@ -186,7 +186,7 @@ export default function ResourcesScreen(): React.JSX.Element {
           removeClippedSubviews
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color:sub, textAlign:'center', marginTop:40 }}>
-              No resources found{q ? ` for "${q}"` : ''}.
+              🔍 No resources found{q ? ` for "${q}"` : ''}.
             </Text>
           }
           renderItem={({ item }) => {

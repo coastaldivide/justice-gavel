@@ -231,7 +231,7 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
           ListEmptyComponent={
             <View style={{ padding:40, alignItems:'center' }}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, color:COLORS.textMuted, textAlign:'center' }}>
-                No states match your search. Try a different name or abbreviation.
+                📄 No states match your search. Try a different name or abbreviation.
               </Text>
             </View>
           }

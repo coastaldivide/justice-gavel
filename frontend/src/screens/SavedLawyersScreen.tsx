@@ -411,7 +411,7 @@ export default function SavedLawyersScreen({ navigation }: any): React.JSX.Eleme
           }
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
-              No saved attorneys. Browse attorneys and tap ⭐ to save them here.
+              💼 No saved attorneys. Browse attorneys and tap ⭐ to save them here.
             </Text>
           }
           renderItem={({ item }) => (

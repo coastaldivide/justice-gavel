@@ -165,7 +165,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           onPress={handleBack}
             accessibilityRole="button"
           >
-          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Back to Home</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -187,7 +187,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           onPress={handleBack}
             accessibilityRole="button"
           >
-          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Back to Home</Text>
         </TouchableOpacity>
       </View>
     </View>

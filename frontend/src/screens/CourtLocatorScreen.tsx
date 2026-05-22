@@ -149,9 +149,10 @@ export default function CourtLocatorScreen(): React.JSX.Element {
       {loading && (
         <ActivityIndicator style={{ marginTop: 20 }} color={colors.primary} />
       )}
-      {error ? (
+      {error ? (<>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign: 'center', margin: 20 }}>{error}</Text>
-      ) : null}
+        <TouchableOpacity accessibilityRole="button" onPress={() => doSearch('Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:'#fff',fontWeight:'700'}}>Retry</Text></TouchableOpacity>
+      </>) : null}
       <FlatList
           keyboardShouldPersistTaps="handled"
         initialNumToRender={10}
@@ -166,7 +167,7 @@ export default function CourtLocatorScreen(): React.JSX.Element {
         ListEmptyComponent={
           !loading ? (
             <Text maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginTop: 40 }}>
-              Search for a city or county to find the courthouse.
+              📋 Search for a city or county to find the courthouse.
             </Text>
           ) : null
         }

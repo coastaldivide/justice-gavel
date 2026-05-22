@@ -458,7 +458,7 @@ if (phase === 'ready') return (
       <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
         accessibilityRole="button"
         >
-        <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done Sharing</Text>
       </TouchableOpacity>
     </View>
   );

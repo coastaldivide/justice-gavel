@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
 import * as Sentry from '@sentry/react-native';
 
-export async function registerForPushNotificationsAsync() {
+export async function registerForPushNotificationsAsync(): Promise<string | null | undefined> {
   try {
     const Notifications = await import('expo-notifications');
     const { status: existingStatus } = await Notifications.getPermissionsAsync();

@@ -245,7 +245,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
                 <Text maxFontSizeMultiplier={1.4} style={styles.addFormTitle}>Add Monitor</Text>
                 <TextInput
                   style={styles.formInput}
-                  placeholder="Full name (e.g. John Smith)"
+                  accessibilityLabel="Full name to monitor" placeholder="Full name (e.g. John Smith)"
                   placeholderTextColor={COLORS.textSecond}
                   value={name}
                   onChangeText={setName}
@@ -256,7 +256,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TextInput
                     style={[styles.formInput, { flex: 1 }]}
-                    placeholder="County (optional)"
+                    accessibilityLabel="County (optional)" placeholder="County (optional)"
                     placeholderTextColor={COLORS.textSecond}
                     value={county}
                     onChangeText={setCounty}

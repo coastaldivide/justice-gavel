@@ -135,9 +135,12 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
         {state ? ` · ${state}` : ''}
       </Text>
 
-      {loading ? <ActivityIndicator style={{ marginTop: 30 }} color={colors.primary} /> :
-      error ? <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign: 'center', margin: 20 }}>{error}</Text> : (
-        <FlatList
+      {loading && <ActivityIndicator style={{ marginTop: 30 }} color={colors.primary} />}
+      {error ? (
+        <><Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign:"center", margin:16 }}>{error}</Text>
+        <TouchableOpacity accessibilityRole="button" onPress={load} style={{marginTop:8,padding:10,backgroundColor:'#1A237E',borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:'#fff',fontWeight:'700'}}>Retry</Text></TouchableOpacity></> 
+      ) : null}
+      {!loading && !error && <FlatList
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); }} />}
           keyboardShouldPersistTaps="handled"
           data={filtered}
@@ -244,7 +247,8 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
             </Text>
           }
         />
-      )}
+      }
+
     </View>
   );
 }

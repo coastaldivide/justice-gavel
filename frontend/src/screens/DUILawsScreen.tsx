@@ -91,7 +91,7 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
         <View style={{ width:90, borderRightWidth:1, borderRightColor:border }}>
           <TextInput
             value={search} onChangeText={setSearch}
-            placeholder="Filter" placeholderTextColor={sub}
+            accessibilityLabel="Filter DUI laws" placeholder="Filter" placeholderTextColor={sub}
             style={{ margin:6, padding:6, backgroundColor:card, borderRadius:8,
               color:text, fontSize:12, borderWidth:1, borderColor:border }}
             autoCapitalize="characters" maxLength={2}

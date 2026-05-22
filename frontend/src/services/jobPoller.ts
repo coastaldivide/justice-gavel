@@ -133,7 +133,7 @@ export function useJobPoller<T = any>() {
       }
     } catch (e: any) {
       if (!abortRef.current) {
-        setError(e.message || 'Something went wrong.');
+        setError('Something went wrong. Please try again.');
         setPhase('');
       }
     } finally {
