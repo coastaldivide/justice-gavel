@@ -71,7 +71,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
       {/* Top row */}
       <View style={styles.cardTop}>
         <View style={{ flex: 1 }}>
-          <Text testID="lead-defendant-name" maxFontSizeMultiplier={1.4} style={styles.leadName}>{lead.name}</Text>
+          <Text testID="lead-defendant-name" numberOfLines={1} ellipsizeMode="tail" maxFontSizeMultiplier={1.4} style={styles.leadName}>{lead.name}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.leadLocation}>
             {lead.county ? `${lead.county} County` : ''}{lead.state ? `, ${lead.state}` : ''}
           </Text>

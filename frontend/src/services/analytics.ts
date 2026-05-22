@@ -85,7 +85,8 @@ export async function track(event: EventName, props: EventProps = {}): Promise<v
 
     // ── Fallback: send to own backend for basic event logging ─────────────────
     const token = await AsyncStorage.getItem('token').catch(() => null);
-    fetch((process.env.EXPO_PUBLIC_API_BASE || '') + '/analytics/event', {
+    const _ac = new AbortController(); setTimeout(() => _ac.abort(), 5000);
+    fetch((process.env.EXPO_PUBLIC_API_BASE || '') + '/analytics/event', { signal: _ac.signal,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -367,11 +367,11 @@ export default function FirmVerticalScreen({ navigation }: any) {
   if (config?._unconfigured) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
-        <Text style={{ fontSize: 24, marginBottom: 12 }}>⚖️</Text>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: colors?.primary ?? '#042C53', marginBottom: 8, textAlign: 'center' }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 24, marginBottom: 12 }}>⚖️</Text>
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 18, fontWeight: '700', color: colors?.primary ?? '#042C53', marginBottom: 8, textAlign: 'center' }}>
           Set Up Your Legal Vertical
         </Text>
-        <Text style={{ fontSize: 14, color: colors?.textMuted ?? '#666', textAlign: 'center', marginBottom: 24 }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: colors?.textMuted ?? '#666', textAlign: 'center', marginBottom: 24 }}>
           Your firm hasn't configured a practice area yet. Contact your firm administrator to get started.
         </Text>
       </View>
@@ -387,10 +387,10 @@ export default function FirmVerticalScreen({ navigation }: any) {
       {/* Subscription grace period / read-only mode banner */}
       {(subscriptionStatus === 'grace' || subscriptionStatus === 'lapsed') && (
         <View style={s.graceBanner}>
-          <Text style={s.graceBannerTitle}>
+          <Text maxFontSizeMultiplier={1.4} style={s.graceBannerTitle}>
             {subscriptionStatus === 'grace' ? '⚠ Account Read-Only Mode' : '🔴 Subscription Inactive'}
           </Text>
-          <Text style={s.graceBannerBody}>
+          <Text maxFontSizeMultiplier={1.4} style={s.graceBannerBody}>
             {subscriptionStatus === 'grace' && graceUntil
               ? `You can view all data until ${graceUntil}. Renew to create or update matters.`
               : 'Your subscription is inactive. All data is preserved — renew to regain full access.'}
@@ -405,7 +405,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
                     accessibilityRole="button"
             accessibilityLabel='Switch tab'
           >
-            <Text style={[s.tabLabel, tab===t && s.tabLabelActive]}>
+            <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===t && s.tabLabelActive]}>
               {t === 'setup' ? '⚙️ Setup' : t === 'pricing' ? '💳 Pricing' : t === 'trackers' ? '🔍 Trackers' : '📅 Deadlines'}
             </Text>
           </TouchableOpacity>
@@ -422,8 +422,8 @@ export default function FirmVerticalScreen({ navigation }: any) {
         {/* ──── SETUP TAB ──────────────────────────────────────────────────── */}
         {tab === 'setup' && (
           <>
-            <Text style={s.sectionTitle}>Choose your practice vertical</Text>
-            <Text style={s.hint}>This unlocks the correct feature set, deadline rules, and matcher weighting for your firm.</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Choose your practice vertical</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.hint}>This unlocks the correct feature set, deadline rules, and matcher weighting for your firm.</Text>
 
             {VERTICALS.map(v => (
               <TouchableOpacity
@@ -442,24 +442,24 @@ export default function FirmVerticalScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={s.vertHeader}>
-                  <Text style={s.vertEmoji}>{v.emoji}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.vertEmoji}>{v.emoji}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.vertLabel, selectedV === v.key && s.vertLabelSelected]}>{v.label}</Text>
-                    <Text style={s.vertPitch}>{v.pitch}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={[s.vertLabel, selectedV === v.key && s.vertLabelSelected]}>{v.label}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.vertPitch}>{v.pitch}</Text>
                   </View>
-                  {selectedV === v.key && <Text style={{ color: colors.gold, fontSize: 18 }}>✓</Text>}
+                  {selectedV === v.key && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.gold, fontSize: 18 }}>✓</Text>}
                 </View>
               </TouchableOpacity>
             ))}
 
             {(FEATURE_FLAGS[selectedV] || []).length > 0 && (
               <>
-                <Text style={[s.sectionTitle, { marginTop: 24 }]}>Feature flags — {VERTICALS.find(v => v.key === selectedV)?.label}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 24 }]}>Feature flags — {VERTICALS.find(v => v.key === selectedV)?.label}</Text>
                 {(FEATURE_FLAGS[selectedV] || []).map(fl => (
                   <View key={fl.key} style={s.flagRow}>
                     <View style={{ flex: 1, marginRight: 12 }}>
-                      <Text style={s.flagLabel}>{fl.label}</Text>
-                      <Text style={s.flagDesc}>{fl.desc}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>{fl.label}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.flagDesc}>{fl.desc}</Text>
                     </View>
                     <Switch
                       value={!!features[fl.key]}
@@ -476,7 +476,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
             accessibilityRole="button">
               {saving
                 ? <ActivityIndicator color={colors.navy} />
-                : <Text style={s.saveBtnText}>Save configuration</Text>
+                : <Text maxFontSizeMultiplier={1.4} style={s.saveBtnText}>Save configuration</Text>
               }
             </TouchableOpacity>
           </>
@@ -485,32 +485,32 @@ export default function FirmVerticalScreen({ navigation }: any) {
         {/* ──── PRICING TAB ────────────────────────────────────────────────── */}
         {tab === 'pricing' && (
           <>
-            <Text style={s.sectionTitle}>Pricing tiers</Text>
-            <Text style={s.hint}>Choose the tier that matches your firm. Mission and Government pricing require verification.</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Pricing tiers</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.hint}>Choose the tier that matches your firm. Mission and Government pricing require verification.</Text>
 
             {tiers.map((t: any) => (
               <View key={t.tier_key} style={[s.tierCard, { borderLeftColor: PRICING_COLORS[t.tier_key] || colors.steel }]}>
                 <View style={s.tierHeader}>
-                  <Text style={[s.tierName, { color: PRICING_COLORS[t.tier_key] || colors.text }]}>{t.display_name}</Text>
-                  <Text style={s.tierPrice}>${((t.monthly_cents ?? 0) / 100).toFixed(0)}<Text style={s.tierPriceSub}>/mo</Text></Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[s.tierName, { color: PRICING_COLORS[t.tier_key] || colors.text }]}>{t.display_name}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.tierPrice}>${((t.monthly_cents ?? 0) / 100).toFixed(0)}<Text maxFontSizeMultiplier={1.4} style={s.tierPriceSub}>/mo</Text></Text>
                 </View>
-                <Text style={s.tierDesc}>{t.description}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.tierDesc}>{t.description}</Text>
                 <View style={s.tierStats}>
-                  <Text style={s.tierStat}>🪑 {t.seat_limit === 999 ? 'Unlimited' : t.seat_limit} seats</Text>
-                  <Text style={s.tierStat}>📁 {t.matter_limit >= 99999 ? 'Unlimited' : t.matter_limit} matters</Text>
-                  <Text style={s.tierStat}>🤖 {t.ai_calls_daily}/day AI calls</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>🪑 {t.seat_limit === 999 ? 'Unlimited' : t.seat_limit} seats</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>📁 {t.matter_limit >= 99999 ? 'Unlimited' : t.matter_limit} matters</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.tierStat}>🤖 {t.ai_calls_daily}/day AI calls</Text>
                 </View>
                 {firm?.pricing_tier === t.tier_key && (
-                  <View style={s.currentBadge}><Text style={s.currentBadgeText}>Current plan</Text></View>
+                  <View style={s.currentBadge}><Text maxFontSizeMultiplier={1.4} style={s.currentBadgeText}>Current plan</Text></View>
                 )}
               </View>
             ))}
 
             <View style={s.missionBox}>
-              <Text style={s.sectionTitle}>Apply for mission pricing</Text>
-              <Text style={s.hint}>Nonprofit 501(c)(3), public defender offices, and legal aid organizations qualify for 75% off standard pricing.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Apply for mission pricing</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.hint}>Nonprofit 501(c)(3), public defender offices, and legal aid organizations qualify for 75% off standard pricing.</Text>
 
-              <Text style={s.inputLabel}>Organization type</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Organization type</Text>
               <View style={s.segRow}>
                 {['nonprofit','public_defender','government','legal_aid'].map(ot => (
                   <TouchableOpacity
@@ -519,14 +519,14 @@ export default function FirmVerticalScreen({ navigation }: any) {
                     onPress={() => setMissionOrg(ot)}
             accessibilityRole="button"
                   >
-                    <Text style={[s.segLabel, missionOrg === ot && s.segLabelActive]}>
+                    <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, missionOrg === ot && s.segLabelActive]}>
                       {ot === 'nonprofit' ? 'Nonprofit' : ot === 'public_defender' ? 'Public Def.' : ot === 'government' ? 'Government' : 'Legal Aid'}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={s.inputLabel}>EIN / Tax ID</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>EIN / Tax ID</Text>
               <TextInput
                 style={s.input}
                 value={missionEIN}
@@ -535,7 +535,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
                 placeholderTextColor={colors.textMuted}
                 keyboardType="numbers-and-punctuation"
               />
-              <Text style={s.inputLabel}>Organization website</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Organization website</Text>
               <TextInput
                 style={s.input}
                 value={missionWeb}
@@ -551,7 +551,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
             accessibilityRole="button">
                 {submittingMV
                   ? <ActivityIndicator color="#fff" />
-                  : <Text style={s.missionBtnText}>Submit verification request</Text>
+                  : <Text maxFontSizeMultiplier={1.4} style={s.missionBtnText}>Submit verification request</Text>
                 }
               </TouchableOpacity>
             </View>
@@ -567,7 +567,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
                 <TouchableOpacity key={tt} style={[s.subTab, trackerTab===tt && s.subTabActive]} onPress={() => setTrackerTab(tt)}
                           accessibilityRole="button"
                         >
-                  <Text style={[s.subTabLabel, trackerTab===tt && s.subTabLabelActive]}>
+                  <Text maxFontSizeMultiplier={1.4} style={[s.subTabLabel, trackerTab===tt && s.subTabLabelActive]}>
                     {tt === 'asylum' ? '🕐 Asylum Clock' : tt === 'dpa' ? '💰 DPA Tracker' : '🚨 TRO Tracker'}
                   </Text>
                 </TouchableOpacity>
@@ -581,14 +581,14 @@ export default function FirmVerticalScreen({ navigation }: any) {
                 {/* ASYLUM CLOCK */}
                 {trackerTab === 'asylum' && (
                   <>
-                    <Text style={s.hint}>Track the 1-year asylum filing deadline for each client. Clients who pass 365 days without filing may be barred from asylum relief.</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.hint}>Track the 1-year asylum filing deadline for each client. Clients who pass 365 days without filing may be barred from asylum relief.</Text>
 
                     <View style={s.formBox}>
-                      <Text style={s.formTitle}>Add asylum clock</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>Add asylum clock</Text>
                       <TextInput style={s.input} value={acName} onChangeText={setACName} placeholder="Client name" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
-                      <Text style={s.inputLabel}>Clock start date (when asylum application filed)</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Clock start date (when asylum application filed)</Text>
                       <TextInput style={s.input} value={acStart} onChangeText={setACStart} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
-                      <Text style={s.inputLabel}>Relief type</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Relief type</Text>
                       <View style={s.segRow}>
                         {[
         'asylum', 'cancellation', 'DACA', 'VAWA', 'U_visa',
@@ -597,21 +597,21 @@ export default function FirmVerticalScreen({ navigation }: any) {
                           <TouchableOpacity key={rt} style={[s.segBtn, acRelief===rt && s.segBtnActive]} onPress={() => setACRelief(rt)}
                                     accessibilityRole="button"
                                   >
-                            <Text style={[s.segLabel, acRelief===rt && s.segLabelActive]}>{rt}</Text>
+                            <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, acRelief===rt && s.segLabelActive]}>{rt}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
                       <View style={s.flagRow}>
-                        <Text style={s.flagLabel}>Client is detained</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>Client is detained</Text>
                         <Switch value={acDetained} onValueChange={setACDet} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />
                       </View>
-                      <Text style={s.inputLabel}>Country conditions (optional)</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Country conditions (optional)</Text>
                       <View style={s.segRow}>
                         {(['crisis','deteriorating','stable'] as const).map(cc => (
                           <TouchableOpacity key={cc} style={[s.segBtn, acCountry===cc && s.segBtnActive]} onPress={() => setACCountry(acCountry===cc ? '' : cc)}
                                     accessibilityRole="button"
                                   >
-                            <Text style={[s.segLabel, acCountry===cc && s.segLabelActive]}>
+                            <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, acCountry===cc && s.segLabelActive]}>
                               {cc==='crisis'?'🔴 Crisis':cc==='deteriorating'?'🟡 Deteriorating':'🟢 Stable'}
                             </Text>
                           </TouchableOpacity>
@@ -620,7 +620,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
                       <TextInput style={[s.input,{minHeight:56}]} value={acNotes} onChangeText={setACNotes} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} multiline
               maxLength={2000} />
                       <TouchableOpacity style={[s.addBtn, creatingAC && { opacity: 0.6 }]} onPress={createAC} disabled={creatingAC}
-            accessibilityRole="button"><Text style={s.addBtnText}>{creatingAC ? 'Adding…' : 'Add clock'}</Text></TouchableOpacity>
+            accessibilityRole="button"><Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{creatingAC ? 'Adding…' : 'Add clock'}</Text></TouchableOpacity>
                     </View>
 
                     {asylumClocks.map((c: any) => {
@@ -629,57 +629,57 @@ export default function FirmVerticalScreen({ navigation }: any) {
                       return (
                         <View key={c.id} style={s.clockCard}>
                           <View style={s.clockHeader}>
-                            <Text style={s.clockName}>{c.client_name}</Text>
-                            {c.detained && <View style={s.detBadge}><Text style={s.detBadgeText}>Detained</Text></View>}
+                            <Text maxFontSizeMultiplier={1.4} style={s.clockName}>{c.client_name}</Text>
+                            {c.detained && <View style={s.detBadge}><Text maxFontSizeMultiplier={1.4} style={s.detBadgeText}>Detained</Text></View>}
                           </View>
-                          <Text style={s.clockSub}>{c.relief_type} · started {c.clock_start}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={s.clockSub}>{c.relief_type} · started {c.clock_start}</Text>
                           <View style={s.progressTrack}>
                             <View style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: barColor }]} />
                           </View>
                           <View style={s.clockFooter}>
-                            <Text style={[s.clockDays, { color: barColor }]}>
+                            <Text maxFontSizeMultiplier={1.4} style={[s.clockDays, { color: barColor }]}>
                               {c.one_year_barred
                               ? '⚠️ 1-YEAR BAR EXCEEDED — verify with attorney'
                               : c.approaching_bar
                                 ? `🟡 APPROACHING BAR — ${c.days_until_bar} days remaining`
                                 : `${c.elapsed_days} days elapsed · ${c.days_until_bar} days until bar`}
                             </Text>
-                            <Text style={s.clockPct}>{pct}%</Text>
+                            <Text maxFontSizeMultiplier={1.4} style={s.clockPct}>{pct}%</Text>
                           </View>
                         </View>
                       );
                     })}
-                    {asylumClocks.length === 0 && <Text style={s.empty}>No asylum clocks yet. Add one above.</Text>}
+                    {asylumClocks.length === 0 && <Text maxFontSizeMultiplier={1.4} style={s.empty}>No asylum clocks yet. Add one above.</Text>}
                   </>
                 )}
 
                 {/* DPA TRACKER */}
                 {trackerTab === 'dpa' && (
                   <>
-                    <Text style={s.hint}>Model fine reductions through DOJ/SEC cooperation credit and deferred prosecution agreements.</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.hint}>Model fine reductions through DOJ/SEC cooperation credit and deferred prosecution agreements.</Text>
 
                     <View style={s.formBox}>
-                      <Text style={s.formTitle}>Add DPA tracker</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>Add DPA tracker</Text>
                       <TextInput style={s.input} value={dpaName} onChangeText={setDPAName} placeholder="Client / entity name" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
                       <TextInput style={s.input} value={dpaAgency} onChangeText={setDPAAgency} placeholder="Agency (DOJ / SEC / FinCEN...)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
                       <TextInput style={s.input} value={dpaFineM} onChangeText={setDPAFineM} placeholder="Base fine ($M, e.g. 12.5)" placeholderTextColor={colors.textMuted} keyboardType="numeric"  returnKeyType="next" />
                       <TextInput style={s.input} value={dpaWellsDue} onChangeText={setDPAWellsDue} placeholder="Wells notice due (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
                       <TextInput style={s.input} value={dpaSubDue} onChangeText={setDPASubDue} placeholder="Subpoena response due (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
                       <TextInput style={s.input} value={dpaSignDue} onChangeText={setDPASignDue} placeholder="DPA signing deadline (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
-                      <Text style={s.inputLabel}>Cooperation level</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Cooperation level</Text>
                       <View style={s.segRow}>
                         {['full_cooperation','limited_cooperation','proffer_agreement','no_cooperation'].map(cl => (
                           <TouchableOpacity key={cl} style={[s.segBtn, dpaCoop===cl && s.segBtnActive]} onPress={() => setDPACoop(cl)}
                                     accessibilityRole="button"
                                   >
-                            <Text style={[s.segLabel, dpaCoop===cl && s.segLabelActive]}>
+                            <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, dpaCoop===cl && s.segLabelActive]}>
                               {cl === 'full_cooperation' ? 'Full' : cl === 'limited_cooperation' ? 'Limited' : cl === 'proffer_agreement' ? 'Proffer' : 'None'}
                             </Text>
                           </TouchableOpacity>
                         ))}
                       </View>
                       <TouchableOpacity style={[s.addBtn, creatingDPA && { opacity: 0.6 }]} onPress={createDPA} disabled={creatingDPA}
-            accessibilityRole="button"><Text style={s.addBtnText}>{creatingDPA ? 'Adding…' : 'Add tracker'}</Text></TouchableOpacity>
+            accessibilityRole="button"><Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{creatingDPA ? 'Adding…' : 'Add tracker'}</Text></TouchableOpacity>
                     </View>
 
                     {dpaList.map((d: any) => {
@@ -688,39 +688,39 @@ export default function FirmVerticalScreen({ navigation }: any) {
                       const saved = base > 0 ? Math.round((1 - eff / base) * 100) : 0;
                       return (
                         <View key={d.id} style={s.dpaCard}>
-                          <Text style={s.dpaName}>{d.client_name}</Text>
-                          <Text style={s.dpaSub}>{d.agency || 'Agency TBD'} · {d.dpa_status}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={s.dpaName}>{d.client_name}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={s.dpaSub}>{d.agency || 'Agency TBD'} · {d.dpa_status}</Text>
                           <View style={s.dpaRow}>
                             <View style={s.dpaMetric}>
-                              <Text style={s.dpaMetricLabel}>Base fine</Text>
-                              <Text style={s.dpaMetricVal}>${(base/1000000).toFixed(1)}M</Text>
+                              <Text maxFontSizeMultiplier={1.4} style={s.dpaMetricLabel}>Base fine</Text>
+                              <Text maxFontSizeMultiplier={1.4} style={s.dpaMetricVal}>${(base/1000000).toFixed(1)}M</Text>
                             </View>
                             <View style={s.dpaMetric}>
-                              <Text style={s.dpaMetricLabel}>Effective fine</Text>
-                              <Text style={[s.dpaMetricVal, { color: colors.legal }]}>${(eff/1000000).toFixed(1)}M</Text>
+                              <Text maxFontSizeMultiplier={1.4} style={s.dpaMetricLabel}>Effective fine</Text>
+                              <Text maxFontSizeMultiplier={1.4} style={[s.dpaMetricVal, { color: colors.legal }]}>${(eff/1000000).toFixed(1)}M</Text>
                             </View>
                             <View style={s.dpaMetric}>
-                              <Text style={s.dpaMetricLabel}>Saved</Text>
-                              <Text style={[s.dpaMetricVal, { color: colors.gold }]}>{saved}%</Text>
+                              <Text maxFontSizeMultiplier={1.4} style={s.dpaMetricLabel}>Saved</Text>
+                              <Text maxFontSizeMultiplier={1.4} style={[s.dpaMetricVal, { color: colors.gold }]}>{saved}%</Text>
                             </View>
                           </View>
-                          <Text style={s.coopLabel}>Cooperation: {d.cooperation_level.replace(/_/g, ' ')}</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={s.coopLabel}>Cooperation: {d.cooperation_level.replace(/_/g, ' ')}</Text>
                           {d.wells_due && (
-                            <Text style={[s.troDue, d.wells_overdue && { color: colors.emergency }]}>
+                            <Text maxFontSizeMultiplier={1.4} style={[s.troDue, d.wells_overdue && { color: colors.emergency }]}>
                               📋 Wells: {d.wells_overdue
                                 ? `OVERDUE by ${Math.abs(d.days_until_wells)}d`
                                 : `${d.days_until_wells}d remaining (${d.wells_due})`}
                             </Text>
                           )}
                           {d.subpoena_due && (
-                            <Text style={[s.troDue, d.subpoena_overdue && { color: colors.emergency }]}>
+                            <Text maxFontSizeMultiplier={1.4} style={[s.troDue, d.subpoena_overdue && { color: colors.emergency }]}>
                               📎 Subpoena: {d.subpoena_overdue
                                 ? `OVERDUE by ${Math.abs(d.days_until_subpoena)}d`
                                 : `${d.days_until_subpoena}d remaining (${d.subpoena_due})`}
                             </Text>
                           )}
                           {d.dpa_sign_due && (
-                            <Text style={[s.troDue, d.sign_overdue && { color: colors.emergency }]}>
+                            <Text maxFontSizeMultiplier={1.4} style={[s.troDue, d.sign_overdue && { color: colors.emergency }]}>
                               ✍️ Sign: {d.sign_overdue
                                 ? `OVERDUE by ${Math.abs(d.days_until_sign)}d`
                                 : `${d.days_until_sign}d remaining (${d.dpa_sign_due})`}
@@ -729,29 +729,29 @@ export default function FirmVerticalScreen({ navigation }: any) {
                         </View>
                       );
                     })}
-                    {dpaList.length === 0 && <Text style={s.empty}>No DPA trackers yet.</Text>}
+                    {dpaList.length === 0 && <Text maxFontSizeMultiplier={1.4} style={s.empty}>No DPA trackers yet.</Text>}
                   </>
                 )}
 
                 {/* TRO TRACKER */}
                 {trackerTab === 'tro' && (
                   <>
-                    <Text style={s.hint}>Emergency TRO tracking for domestic violence matters. Filing triggers a 3-business-day hearing deadline.</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.hint}>Emergency TRO tracking for domestic violence matters. Filing triggers a 3-business-day hearing deadline.</Text>
 
                     <View style={s.formBox}>
-                      <Text style={s.formTitle}>Add TRO tracker</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>Add TRO tracker</Text>
                       <TextInput style={s.input} value={troName} onChangeText={setTROName} placeholder="Client name" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
                       <View style={s.flagRow}>
-                        <Text style={s.flagLabel}>Domestic violence flag</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>Domestic violence flag</Text>
                         <Switch value={troDV} onValueChange={setTRODV} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />
                       </View>
-                      <Text style={s.inputLabel}>Asset tier</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Asset tier</Text>
                       <View style={s.segRow}>
                         {(['under_100k','100k_500k','500k_2m','2m_10m','over_10m'] as const).map(at => (
                           <TouchableOpacity key={at} style={[s.segBtn, troAsset===at && s.segBtnActive]} onPress={() => setTROAsset(at)}
                                     accessibilityRole="button"
                                   >
-                            <Text style={[s.segLabel, troAsset===at && s.segLabelActive]}>
+                            <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, troAsset===at && s.segLabelActive]}>
                               {at === 'under_100k' ? '<100k'
                                 : at === '100k_500k' ? '100k–500k'
                                 : at === '500k_2m'  ? '500k–2M'
@@ -764,19 +764,19 @@ export default function FirmVerticalScreen({ navigation }: any) {
                       <TouchableOpacity style={[s.addBtn, troDV && { backgroundColor: colors.emergency }]} onPress={createTRO}
             accessibilityRole="button"
           >
-                        <Text style={s.addBtnText}>{troDV ? '🚨 File emergency TRO' : 'Add TRO tracker'}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{troDV ? '🚨 File emergency TRO' : 'Add TRO tracker'}</Text>
                       </TouchableOpacity>
                     </View>
 
                     {troList.map((t: any) => (
                       <View key={t.id} style={s.troCard}>
                         <View style={s.troHeader}>
-                          <Text style={s.troName}>{t.client_name}</Text>
-                          {t.dv_flag ? <View style={s.dvBadge}><Text style={s.dvBadgeText}>DV</Text></View> : null}
-                          {t.tro_granted ? <View style={s.grantedBadge}><Text style={s.grantedBadgeText}>Granted</Text></View> : null}
+                          <Text maxFontSizeMultiplier={1.4} style={s.troName}>{t.client_name}</Text>
+                          {t.dv_flag ? <View style={s.dvBadge}><Text maxFontSizeMultiplier={1.4} style={s.dvBadgeText}>DV</Text></View> : null}
+                          {t.tro_granted ? <View style={s.grantedBadge}><Text maxFontSizeMultiplier={1.4} style={s.grantedBadgeText}>Granted</Text></View> : null}
                         </View>
                         {t.tro_hearing_due && (
-                          <Text style={[
+                          <Text maxFontSizeMultiplier={1.4} style={[
                             s.troDue,
                             t.hearing_overdue && { color: colors.emergency }
                           ]}>
@@ -789,7 +789,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
                           </Text>
                         )}
                         {t.protective_order_due && (
-                          <Text style={[s.troDue, t.po_overdue && { color: colors.emergency }]}>
+                          <Text maxFontSizeMultiplier={1.4} style={[s.troDue, t.po_overdue && { color: colors.emergency }]}>
                             📋 PO: {t.po_overdue
                               ? `OVERDUE by ${Math.abs(t.days_until_po)}d`
                               : t.days_until_po !== null
@@ -797,10 +797,10 @@ export default function FirmVerticalScreen({ navigation }: any) {
                                 : t.protective_order_due}
                           </Text>
                         )}
-                        <Text style={s.troAsset}>Asset tier: {t.asset_tier.replace(/_/g, ' ')}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={s.troAsset}>Asset tier: {t.asset_tier.replace(/_/g, ' ')}</Text>
                       </View>
                     ))}
-                    {troList.length === 0 && <Text style={s.empty}>No TRO trackers yet.</Text>}
+                    {troList.length === 0 && <Text maxFontSizeMultiplier={1.4} style={s.empty}>No TRO trackers yet.</Text>}
                   </>
                 )}
               </>
@@ -811,10 +811,10 @@ export default function FirmVerticalScreen({ navigation }: any) {
         {/* ──── DEADLINES TAB ──────────────────────────────────────────────── */}
         {tab === 'deadlines' && (
           <>
-            <Text style={s.sectionTitle}>Vertical deadline calculator</Text>
-            <Text style={s.hint}>Enter a trigger date (arrest, filing, or notice date) to compute all deadlines for your vertical.</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Vertical deadline calculator</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.hint}>Enter a trigger date (arrest, filing, or notice date) to compute all deadlines for your vertical.</Text>
 
-            <Text style={s.inputLabel}>Trigger date</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Trigger date</Text>
             <TextInput
               style={s.input}
               value={trigDate}
@@ -823,7 +823,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
               placeholderTextColor={colors.textMuted} returnKeyType="next" />
             <TouchableOpacity style={s.saveBtn} onPress={loadDeadlines} disabled={dlLoading}
             accessibilityRole="button">
-              {dlLoading ? <ActivityIndicator color={colors.navy} /> : <Text style={s.saveBtnText}>Calculate deadlines</Text>}
+              {dlLoading ? <ActivityIndicator color={colors.navy} /> : <Text maxFontSizeMultiplier={1.4} style={s.saveBtnText}>Calculate deadlines</Text>}
             </TouchableOpacity>
 
             {deadlines.map((d: any) => {
@@ -834,12 +834,12 @@ export default function FirmVerticalScreen({ navigation }: any) {
 return (
                 <View key={d.rule_key} style={[s.dlRow, { borderLeftColor: prioColor(d.priority) }]}>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.dlLabel}>{d.label}</Text>
-                    <Text style={s.dlDesc}>{d.description}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.dlLabel}>{d.label}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.dlDesc}>{d.description}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={[s.dlDue, overdue && { color: colors.emergency }]}>{d.due}</Text>
-                    <Text style={[s.dlDays, urgent && !overdue && { color: colors.warn }, overdue && { color: colors.emergency }]}>
+                    <Text maxFontSizeMultiplier={1.4} style={[s.dlDue, overdue && { color: colors.emergency }]}>{d.due}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={[s.dlDays, urgent && !overdue && { color: colors.warn }, overdue && { color: colors.emergency }]}>
                       {overdue ? `${Math.abs(daysUntil)}d overdue` : `${daysUntil}d`}
                     </Text>
                   </View>
@@ -847,7 +847,7 @@ return (
               );
             })}
             {deadlines.length === 0 && !dlLoading && (
-              <Text style={s.empty}>Enter a trigger date and press Calculate to see deadlines for the {selectedV.replace(/_/g, ' ')} vertical.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.empty}>Enter a trigger date and press Calculate to see deadlines for the {selectedV.replace(/_/g, ' ')} vertical.</Text>
             )}
           </>
         )}

@@ -5,6 +5,18 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 
+interface GavelCriteria {
+  avg_rating?: number;
+  consultations_booked?: number;
+  leads_accepted?: number;
+  lessons_completed?: boolean | number;
+  lessons_started?: boolean | number;
+  min_reviews?: number;
+  months_active?: number;
+  paid_referrals?: number;
+}
+
+
 declare var hasAny: any;
 declare var level: any;
 declare var fetchError: any; // hoisted from component scope
@@ -125,39 +137,39 @@ function CriteriaSection({ title, progress, criteria, earned }:
 
       {ut === 'attorney' && <>
         <CritRow
-          label={`Active ${progress.months_active} / ${(criteria as any).months_active} months`}
-          met={progress.months_active >= (criteria as any).months_active} />
+          label={`Active ${progress.months_active} / ${((criteria as GavelCriteria).months_active ?? 0)} months`}
+          met={progress.months_active >= ((criteria as GavelCriteria).months_active ?? 0)} />
         <CritRow
-          label={`Consultations ${progress.consultations_booked ?? 0} / ${(criteria as any).consultations_booked}`}
-          met={(progress.consultations_booked ?? 0) >= (criteria as any).consultations_booked} />
+          label={`Consultations ${progress.consultations_booked ?? 0} / ${((criteria as GavelCriteria).consultations_booked ?? 0)}`}
+          met={(progress.consultations_booked ?? 0) >= ((criteria as GavelCriteria).consultations_booked ?? 0)} />
         <CritRow
-          label={`Rating ${progress.avg_rating ?? 0} / ${(criteria as any).avg_rating} min (${progress.review_count ?? 0} reviews, need ${(criteria as any).min_reviews})`}
-          met={(progress.avg_rating ?? 0) >= (criteria as any).avg_rating && (progress.review_count ?? 0) >= (criteria as any).min_reviews} />
+          label={`Rating ${progress.avg_rating ?? 0} / ${((criteria as GavelCriteria).avg_rating ?? 0)} min (${progress.review_count ?? 0} reviews, need ${((criteria as GavelCriteria).min_reviews ?? 0)})`}
+          met={(progress.avg_rating ?? 0) >= ((criteria as GavelCriteria).avg_rating ?? 0) && (progress.review_count ?? 0) >= ((criteria as GavelCriteria).min_reviews ?? 0)} />
         <CritRow label="Bar license verified"  met={!!progress.bar_verified} />
         <CritRow label="Zero compliance flags" met={progress.compliance_flags === 0} />
       </>}
 
       {ut === 'consumer' && <>
         <CritRow
-          label={`Active ${progress.months_active} / ${(criteria as any).months_active} months`}
-          met={progress.months_active >= (criteria as any).months_active} />
+          label={`Active ${progress.months_active} / ${((criteria as GavelCriteria).months_active ?? 0)} months`}
+          met={progress.months_active >= ((criteria as GavelCriteria).months_active ?? 0)} />
         <CritRow
-          label={`Paid referrals ${progress.paid_referrals ?? 0} / ${(criteria as any).paid_referrals}`}
-          met={(progress.paid_referrals ?? 0) >= (criteria as any).paid_referrals} />
-        {(criteria as any).lessons_started && !(criteria as any).lessons_completed &&
+          label={`Paid referrals ${progress.paid_referrals ?? 0} / ${((criteria as GavelCriteria).paid_referrals ?? 0)}`}
+          met={(progress.paid_referrals ?? 0) >= ((criteria as GavelCriteria).paid_referrals ?? 0)} />
+        {((criteria as GavelCriteria).lessons_started ?? 0) && !((criteria as GavelCriteria).lessons_completed ?? 0) &&
           <CritRow label="Started at least one lesson" met={!!progress.lessons_started} />}
-        {(criteria as any).lessons_completed &&
+        {((criteria as GavelCriteria).lessons_completed ?? 0) &&
           <CritRow label="All lessons completed" met={!!progress.lessons_completed} />}
         <CritRow label="Zero compliance flags" met={progress.compliance_flags === 0} />
       </>}
 
       {ut === 'bondsman' && <>
         <CritRow
-          label={`Active ${progress.months_active} / ${(criteria as any).months_active} months`}
-          met={progress.months_active >= (criteria as any).months_active} />
+          label={`Active ${progress.months_active} / ${((criteria as GavelCriteria).months_active ?? 0)} months`}
+          met={progress.months_active >= ((criteria as GavelCriteria).months_active ?? 0)} />
         <CritRow
-          label={`Leads accepted ${progress.leads_accepted ?? 0} / ${(criteria as any).leads_accepted}`}
-          met={(progress.leads_accepted ?? 0) >= (criteria as any).leads_accepted} />
+          label={`Leads accepted ${progress.leads_accepted ?? 0} / ${((criteria as GavelCriteria).leads_accepted ?? 0)}`}
+          met={(progress.leads_accepted ?? 0) >= ((criteria as GavelCriteria).leads_accepted ?? 0)} />
         <CritRow label="License verified"      met={!!progress.license_verified} />
         <CritRow label="Zero compliance flags" met={progress.compliance_flags === 0} />
       </>}

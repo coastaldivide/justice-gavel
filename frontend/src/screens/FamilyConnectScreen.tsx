@@ -118,7 +118,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 600);
   }, []);
 
-  const passedArrestId = (route?.params as any)?.arrest_id;
+  const passedArrestId = (route?.params as import('../types/api').RouteParams)?.arrest_id;
 
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);

@@ -203,7 +203,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
       <View style={styles.cardHeader}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, flexWrap:'wrap' }}>
-            <Text testID="lawyer-name" maxFontSizeMultiplier={1.4} style={styles.cardName}>{item?.name}</Text>
+            <Text testID="lawyer-name" numberOfLines={1} ellipsizeMode="tail" maxFontSizeMultiplier={1.4} style={styles.cardName}>{item?.name}</Text>
             {item.availability === 'accepting' && (
               <View style={{ backgroundColor:COLORS.legalBg, borderRadius:10, paddingHorizontal:7, paddingVertical:2 }}>
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontWeight:'700', color:COLORS.legalDark }}>✓ Accepting</Text>

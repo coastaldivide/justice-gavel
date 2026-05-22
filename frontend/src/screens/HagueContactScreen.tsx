@@ -157,31 +157,31 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
       style={{ flex: 1 }}>
       <ScrollView keyboardShouldPersistTaps='handled' style={s.container} contentContainerStyle={s.content}>
         <View style={s.successBanner}>
-          <Text style={s.successIcon}>✅</Text>
-          <Text style={s.successTitle}>Intake Recorded</Text>
-          <Text style={s.successSub}>Attached to your case for tracking</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.successIcon}>✅</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.successTitle}>Intake Recorded</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.successSub}>Attached to your case for tracking</Text>
         </View>
 
         <View style={s.card}>
-          <Text style={s.sectionTitle}>Next Steps</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Next Steps</Text>
           {(intakeResult.next_steps || []).map((step: string, i: number) => (
             <View key={i} style={s.stepRow}>
-              <Text style={s.stepNum}>{i + 1}</Text>
-              <Text style={s.stepText}>{step}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.stepNum}>{i + 1}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.stepText}>{step}</Text>
             </View>
           ))}
         </View>
 
         <View style={s.card}>
-          <Text style={s.sectionTitle}>Emergency Contacts</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Emergency Contacts</Text>
           <TouchableOpacity
             style={s.contactRow}
             onPress={() => callNumber('+18884074747')}
             accessibilityRole="button"
             accessibilityLabel="Call Office of Children's Issues emergency line"
           >
-            <Text style={s.contactName}>🏛 OCI Emergency Line</Text>
-            <Text style={s.contactDetail}>1-888-407-4747</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🏛 OCI Emergency Line</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>1-888-407-4747</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={s.contactRow}
@@ -189,8 +189,8 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
             accessibilityRole="button"
             accessibilityLabel="Call NCMEC"
           >
-            <Text style={s.contactName}>🔴 NCMEC 24/7</Text>
-            <Text style={s.contactDetail}>1-800-843-5678</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🔴 NCMEC 24/7</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>1-800-843-5678</Text>
           </TouchableOpacity>
         </View>
 
@@ -199,7 +199,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
           accessibilityRole="button"
         >
-          <Text style={s.btnPrimaryText}>Back to Case</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Back to Case</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -210,12 +210,12 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
   if (phase === 'intake') {
     return (
       <ScrollView style={s.container} contentContainerStyle={s.content}>
-        <Text style={s.heading}>Record Intake</Text>
-        <Text style={s.subheading}>
+        <Text maxFontSizeMultiplier={1.4} style={s.heading}>Record Intake</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.subheading}>
           For case tracking only. Your attorney files the application directly with the U.S. Central Authority.
         </Text>
 
-        <Text style={s.label}>Child's Full Name *</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.label}>Child's Full Name *</Text>
         <TextInput
           style={s.input}
           value={childName}
@@ -226,7 +226,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           maxLength={100}
           returnKeyType="next" />
 
-        <Text style={s.label}>Child's Age</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.label}>Child's Age</Text>
         <TextInput
           style={s.input}
           value={childAge}
@@ -237,7 +237,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           maxLength={3} returnKeyType="next" />
 
 
-        <Text style={s.label}>Date of Abduction / Wrongful Retention *</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.label}>Date of Abduction / Wrongful Retention *</Text>
         <TextInput
           style={s.input}
           value={abductionDate}
@@ -247,16 +247,16 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           maxLength={10} returnKeyType="next" />
 
 
-        <Text style={s.label}>Destination Country</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.label}>Destination Country</Text>
         <View style={s.countryTag}>
-          <Text style={s.countryTagText}>
+          <Text maxFontSizeMultiplier={1.4} style={s.countryTagText}>
             {selectedCountry
               ? QUICK_COUNTRIES.find(c => c.code === selectedCountry)?.name || selectedCountry
               : 'Not selected — go back to select country'}
           </Text>
         </View>
 
-        <Text style={s.label}>Notes (facts, witnesses, documentation available)</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.label}>Notes (facts, witnesses, documentation available)</Text>
         <TextInput
           style={[s.input, { height: 100, textAlignVertical: 'top' }]}
           value={intakeNotes}
@@ -275,7 +275,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         >
           {submitting
             ? <ActivityIndicator color="#fff" />
-            : <Text style={s.btnPrimaryText}>Record Intake</Text>}
+            : <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Record Intake</Text>}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -283,7 +283,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           onPress={() => setPhase('lookup')}
           accessibilityRole="button"
         >
-          <Text style={s.btnSecondaryText}>Back</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.btnSecondaryText}>Back</Text>
         </TouchableOpacity>
       </ScrollView>
     );
@@ -293,8 +293,8 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
   if (phase === 'lookup') {
     return (
       <ScrollView style={s.container} contentContainerStyle={s.content}>
-        <Text style={s.heading}>Central Authorities</Text>
-        <Text style={s.subheading}>Select destination country</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.heading}>Central Authorities</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.subheading}>Select destination country</Text>
 
         {QUICK_COUNTRIES.map(c => (
           <TouchableOpacity
@@ -304,7 +304,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
             accessibilityRole="button"
             accessibilityLabel={`Select ${c.name}`}
           >
-            <Text style={[s.countryBtnText, selectedCountry === c.code && s.countryBtnTextActive]}>
+            <Text maxFontSizeMultiplier={1.4} style={[s.countryBtnText, selectedCountry === c.code && s.countryBtnTextActive]}>
               {c.name}
             </Text>
           </TouchableOpacity>
@@ -313,21 +313,21 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         {loadingAuth && <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />}
         {authorityData && !loadingAuth && (
           <View style={s.card}>
-            <Text style={s.sectionTitle}>{authorityData.country_name}</Text>
-            <Text style={[s.noteText, {
+            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>{authorityData.country_name}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[s.noteText, {
               color: authorityData.contracting_state ? colors.legal : colors.warn
             }]}>
               {authorityData.note}
             </Text>
             {authorityData.central_authority && (
               <>
-                <Text style={s.authName}>{authorityData.central_authority.name}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.authName}>{authorityData.central_authority.name}</Text>
                 <TouchableOpacity
                   onPress={() => openUrl(authorityData.central_authority.website)}
                   accessibilityRole="button"
                   accessibilityLabel="Open central authority website"
                 >
-                  <Text style={s.linkText}>{authorityData.central_authority.website}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.linkText}>{authorityData.central_authority.website}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -336,14 +336,14 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
               onPress={() => setPhase('intake')}
               accessibilityRole="button"
             >
-              <Text style={s.btnPrimaryText}>Record Intake for Case</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Record Intake for Case</Text>
             </TouchableOpacity>
           </View>
         )}
 
         <TouchableOpacity accessibilityRole="button" style={s.btnSecondary} onPress={() => setPhase('home')}
         >
-          <Text style={s.btnSecondaryText}>← Back</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.btnSecondaryText}>← Back</Text>
         </TouchableOpacity>
       </ScrollView>
     );
@@ -352,20 +352,20 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
   // ── PHASE: Home ────────────────────────────────────────────────────────────
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>
-      <Text style={s.heading}>🌐 Hague Convention</Text>
-      <Text style={s.subheading}>
+      <Text maxFontSizeMultiplier={1.4} style={s.heading}>🌐 Hague Convention</Text>
+      <Text maxFontSizeMultiplier={1.4} style={s.subheading}>
         International Child Abduction — Central Authority Contacts & Reporting
       </Text>
 
       {caseName && (
         <View style={s.caseBadge}>
-          <Text style={s.caseBadgeText}>📁 {caseName}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.caseBadgeText}>📁 {caseName}</Text>
         </View>
       )}
 
       {/* Emergency Section */}
       <View style={[s.card, s.emergencyCard]}>
-        <Text style={s.emergencyTitle}>🚨 Emergency Contacts</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.emergencyTitle}>🚨 Emergency Contacts</Text>
 
         <TouchableOpacity
           style={s.contactRow}
@@ -375,10 +375,10 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           accessibilityHint="24/7 emergency line for US citizens abroad"
         >
           <View style={s.contactInfo}>
-            <Text style={s.contactName}>🏛 Office of Children's Issues (OCI)</Text>
-            <Text style={s.contactSub}>U.S. Central Authority — State Dept</Text>
-            <Text style={s.contactDetail}>1-888-407-4747 (24/7 emergency)</Text>
-            <Text style={s.contactDetail}>Mon–Fri 8am–8pm: +1-202-501-4444</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🏛 Office of Children's Issues (OCI)</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactSub}>U.S. Central Authority — State Dept</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>1-888-407-4747 (24/7 emergency)</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>Mon–Fri 8am–8pm: +1-202-501-4444</Text>
           </View>
         </TouchableOpacity>
 
@@ -391,16 +391,16 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           accessibilityLabel="Call NCMEC 24/7 hotline"
         >
           <View style={s.contactInfo}>
-            <Text style={s.contactName}>🔴 NCMEC — 24/7 Hotline</Text>
-            <Text style={s.contactSub}>National Center for Missing & Exploited Children</Text>
-            <Text style={s.contactDetail}>1-800-THE-LOST (1-800-843-5678)</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🔴 NCMEC — 24/7 Hotline</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactSub}>National Center for Missing & Exploited Children</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>1-800-THE-LOST (1-800-843-5678)</Text>
           </View>
         </TouchableOpacity>
       </View>
 
       {/* Reporting Paths */}
       <View style={s.card}>
-        <Text style={s.sectionTitle}>Federal Reporting Paths</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Federal Reporting Paths</Text>
 
         <TouchableOpacity
           style={s.reportRow}
@@ -408,10 +408,10 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           accessibilityRole="button"
           accessibilityLabel="Open FBI IC3 reporting portal"
         >
-          <Text style={s.reportIcon}>🏛</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.reportIcon}>🏛</Text>
           <View style={s.reportInfo}>
-            <Text style={s.reportTitle}>FBI IC3 — Federal Report</Text>
-            <Text style={s.reportSub}>International Parental Kidnapping (18 U.S.C. § 1204)</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportTitle}>FBI IC3 — Federal Report</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportSub}>International Parental Kidnapping (18 U.S.C. § 1204)</Text>
           </View>
         </TouchableOpacity>
 
@@ -421,10 +421,10 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           accessibilityRole="button"
           accessibilityLabel="Open State Department Hague application"
         >
-          <Text style={s.reportIcon}>📋</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.reportIcon}>📋</Text>
           <View style={s.reportInfo}>
-            <Text style={s.reportTitle}>File Hague Application</Text>
-            <Text style={s.reportSub}>Submit to OCI — travel.state.gov</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportTitle}>File Hague Application</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportSub}>Submit to OCI — travel.state.gov</Text>
           </View>
         </TouchableOpacity>
 
@@ -434,10 +434,10 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           accessibilityRole="button"
           accessibilityLabel="Open INTERPOL child abduction information"
         >
-          <Text style={s.reportIcon}>🌐</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.reportIcon}>🌐</Text>
           <View style={s.reportInfo}>
-            <Text style={s.reportTitle}>INTERPOL — Yellow Notice</Text>
-            <Text style={s.reportSub}>Via FBI or local law enforcement</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportTitle}>INTERPOL — Yellow Notice</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.reportSub}>Via FBI or local law enforcement</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -449,11 +449,11 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         accessibilityRole="button"
         accessibilityLabel="Look up destination country central authority"
       >
-        <Text style={s.btnPrimaryText}>Find Destination Country Authority →</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Find Destination Country Authority →</Text>
       </TouchableOpacity>
 
       <View style={s.legalNotice}>
-        <Text style={s.legalNoticeText}>
+        <Text maxFontSizeMultiplier={1.4} style={s.legalNoticeText}>
           Justice Gavel provides contact information and case intake tracking.
           Hague applications must be filed directly by attorneys with the U.S. Central Authority.
           This is not legal advice. Consult a licensed family law attorney.

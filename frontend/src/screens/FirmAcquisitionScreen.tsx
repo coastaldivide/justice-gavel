@@ -182,7 +182,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                       accessibilityRole="button"
               accessibilityLabel='Select firm vertical'
             >
-              <Text style={[s.flowLabel, flow===f && s.flowLabelActive]}>
+              <Text maxFontSizeMultiplier={1.4} style={[s.flowLabel, flow===f && s.flowLabelActive]}>
                 {f === 'browse' ? '🔍 Explore' : '🚀 Start Free Trial'}
               </Text>
             </TouchableOpacity>
@@ -201,57 +201,57 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
         {flow === 'status' && status?.has_firm && (
           <>
             <View style={s.heroCard}>
-              <Text style={s.heroTitle}>{status.firm?.name}</Text>
-              <Text style={s.heroSub}>
+              <Text maxFontSizeMultiplier={1.4} style={s.heroTitle}>{status.firm?.name}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.heroSub}>
                 {VERTICALS.find(v => v.key === status.firm?.vertical)?.emoji}{' '}
                 {VERTICALS.find(v => v.key === status.firm?.vertical)?.label}
               </Text>
               {status.trial_active && status.trial_days_left > 0 ? (
                 <View style={s.trialBadge}>
-                  <Text style={s.trialBadgeText}>
+                  <Text maxFontSizeMultiplier={1.4} style={s.trialBadgeText}>
                     🕐 Trial — {status.trial_days_left} day{status.trial_days_left === 1 ? '' : 's'} remaining
                   </Text>
                 </View>
               ) : status.firm?.plan === 'trial' && !status.trial_active ? (
                 <View style={[s.trialBadge, { backgroundColor: colors.emergencyBg }]}>
-                  <Text style={[s.trialBadgeText, { color: colors.emergency }]}>⚠️ Trial expired — upgrade to continue</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[s.trialBadgeText, { color: colors.emergency }]}>⚠️ Trial expired — upgrade to continue</Text>
                 </View>
               ) : null}
             </View>
 
             {/* Stats row */}
             <View style={s.statsRow}>
-              <View style={s.stat}><Text style={s.statVal}>{status.member_count}</Text><Text style={s.statLabel}>Team members</Text></View>
-              <View style={s.stat}><Text style={s.statVal}>{status.matter_count}</Text><Text style={s.statLabel}>Matters</Text></View>
+              <View style={s.stat}><Text maxFontSizeMultiplier={1.4} style={s.statVal}>{status.member_count}</Text><Text maxFontSizeMultiplier={1.4} style={s.statLabel}>Team members</Text></View>
+              <View style={s.stat}><Text maxFontSizeMultiplier={1.4} style={s.statVal}>{status.matter_count}</Text><Text maxFontSizeMultiplier={1.4} style={s.statLabel}>Matters</Text></View>
               <View style={s.stat}>
-                <Text style={[s.statVal, { color: TIER_COLORS[status.firm?.pricing_tier] || colors.steel }]}>
+                <Text maxFontSizeMultiplier={1.4} style={[s.statVal, { color: TIER_COLORS[status.firm?.pricing_tier] || colors.steel }]}>
                   {status.firm?.pricing_tier}
                 </Text>
-                <Text style={s.statLabel}>Billing tier</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.statLabel}>Billing tier</Text>
               </View>
             </View>
 
             {/* Onboarding checklist */}
-            <Text style={s.sectionTitle}>Getting started</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Getting started</Text>
             <View style={s.progressTrack}>
               <View style={[s.progressFill, { width: `${checkPct}%` as any }]} />
             </View>
-            <Text style={s.progressLabel}>{checkPct}% complete</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.progressLabel}>{checkPct}% complete</Text>
 
             {checklist.length === 0 ? (
               // Skeleton placeholder while checklist loads
               [0,1,2].map(i => (
                 <View key={`skel-${i}`} style={[s.checkRow, { opacity: 0.3 }]}>
-                  <Text style={s.checkIcon}>⬜</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.checkIcon}>⬜</Text>
                   <View style={{ flex: 1, height: 14, backgroundColor: colors.bgElevated, borderRadius: 4 }} />
                 </View>
               ))
             ) : checklist.map((c: any) => (
               <View key={c.key} style={[s.checkRow, c.done && s.checkRowDone]}>
-                <Text style={s.checkIcon}>{c.done ? '✅' : c.required ? '⬜' : '◽'}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.checkIcon}>{c.done ? '✅' : c.required ? '⬜' : '◽'}</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={[s.checkLabel, c.done && { color: colors.textMuted }]}>{c.label}</Text>
-                  {c.required && !c.done && <Text style={s.checkRequired}>Required</Text>}
+                  <Text maxFontSizeMultiplier={1.4} style={[s.checkLabel, c.done && { color: colors.textMuted }]}>{c.label}</Text>
+                  {c.required && !c.done && <Text maxFontSizeMultiplier={1.4} style={s.checkRequired}>Required</Text>}
                 </View>
               </View>
             ))}
@@ -259,8 +259,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
             {/* Upgrade CTA — shown when on trial or standard tier */}
             {status?.firm && ['trial','standard'].includes(status.firm.plan) && (
               <View style={s.upgradeCard}>
-                <Text style={s.upgradeTitle}>Ready to upgrade?</Text>
-                <Text style={s.upgradeBody}>Mission pricing (75% off) available for nonprofits, public defenders, and government offices.</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.upgradeTitle}>Ready to upgrade?</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.upgradeBody}>Mission pricing (75% off) available for nonprofits, public defenders, and government offices.</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                   <TouchableOpacity
                     style={[s.upgradeBtn, { backgroundColor: colors.legal }]}
@@ -268,7 +268,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
             accessibilityRole="button"
                     disabled={upgrading}
                   >
-                    <Text style={s.upgradeBtnText}>{upgrading ? 'Submitting…' : 'Enterprise'}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.upgradeBtnText}>{upgrading ? 'Submitting…' : 'Enterprise'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[s.upgradeBtn, { backgroundColor: colors.gold }]}
@@ -276,36 +276,36 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                     onPress={() => requestUpgrade('mission')}
                     disabled={upgrading}
                   >
-                    <Text style={s.upgradeBtnText}>{upgrading ? '…' : 'Mission (75% off)'}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.upgradeBtnText}>{upgrading ? '…' : 'Mission (75% off)'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
 
             {/* Quick actions */}
-            <Text style={[s.sectionTitle, { marginTop: 20 }]}>Quick actions</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 20 }]}>Quick actions</Text>
             <View style={s.actionGrid}>
               <TouchableOpacity style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical')}
                         accessibilityRole="button"
                       >
-                <Text style={s.actionEmoji}>⚙️</Text>
-                <Text style={s.actionLabel}>Configure vertical</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>⚙️</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Configure vertical</Text>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('DeadlineCalculator')}
                       >
-                <Text style={s.actionEmoji}>📅</Text>
-                <Text style={s.actionLabel}>Deadline calculator</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📅</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Deadline calculator</Text>
               </TouchableOpacity>
               <TouchableOpacity style={s.actionBtn} onPress={() => navigation.navigate('MatterIntelligence')}
                         accessibilityRole="button"
                       >
-                <Text style={s.actionEmoji}>📁</Text>
-                <Text style={s.actionLabel}>Create matter</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📁</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Create matter</Text>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical', { tab: 'pricing' })}
                       >
-                <Text style={s.actionEmoji}>💳</Text>
-                <Text style={s.actionLabel}>Upgrade plan</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>💳</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Upgrade plan</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -314,8 +314,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
         {/* ── BROWSE FLOW ──────────────────────────────────────────────────── */}
         {flow === 'browse' && (
           <>
-            <Text style={s.pageTitle}>Find your vertical</Text>
-            <Text style={s.pageHint}>Justice Gavel adapts its feature set, deadline rules, and AI matching to your specific practice area.</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.pageTitle}>Find your vertical</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.pageHint}>Justice Gavel adapts its feature set, deadline rules, and AI matching to your specific practice area.</Text>
 
             {/* Vertical grid */}
             <View style={s.vertGrid}>
@@ -327,8 +327,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
             accessibilityRole="button"
                   activeOpacity={0.75}
                 >
-                  <Text style={s.vertEmoji}>{v.emoji}</Text>
-                  <Text style={[s.vertLabel, selectedV === v.key && { color: v.color }]} numberOfLines={2}>{v.label}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.vertEmoji}>{v.emoji}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[s.vertLabel, selectedV === v.key && { color: v.color }]} numberOfLines={2}>{v.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -338,17 +338,17 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
               <ActivityIndicator color={colors.gold} style={{ marginTop: 20 }} />
             ) : pitch ? (
               <View style={[s.pitchCard, { borderLeftColor: vertObj?.color || colors.steel }]}>
-                <Text style={s.pitchHeadline}>{pitch.headline}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.pitchHeadline}>{pitch.headline}</Text>
                 {(pitch.stats || []).map((stat: string, i: number) => (
                   <View key={`stat-${i}`} style={s.pitchStat}>
-                    <Text style={{ color: vertObj?.color || colors.steel, fontSize: 14, marginRight: 8 }}>→</Text>
-                    <Text style={s.pitchStatText}>{stat}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={{ color: vertObj?.color || colors.steel, fontSize: 14, marginRight: 8 }}>→</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.pitchStatText}>{stat}</Text>
                   </View>
                 ))}
                 {pitch.roi && (
                   <View style={s.roiBox}>
-                    <Text style={s.roiLabel}>ROI</Text>
-                    <Text style={s.roiText}>{pitch.roi}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.roiLabel}>ROI</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.roiText}>{pitch.roi}</Text>
                   </View>
                 )}
               </View>
@@ -357,20 +357,20 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
             {/* Pricing cards */}
             {plans.length > 0 && (
               <>
-                <Text style={[s.sectionTitle, { marginTop: 24 }]}>Pricing</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 24 }]}>Pricing</Text>
                 {plans.map((p: any) => (
                   <View key={p.tier_key} style={[s.tierCard, { borderLeftColor: TIER_COLORS[p.tier_key] || colors.steel }]}>
                     <View style={s.tierHeader}>
                       <View>
-                        <Text style={[s.tierName, { color: TIER_COLORS[p.tier_key] }]}>{p.display_name}</Text>
-                        <Text style={s.tierDesc}>{p.description}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={[s.tierName, { color: TIER_COLORS[p.tier_key] }]}>{p.display_name}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={s.tierDesc}>{p.description}</Text>
                       </View>
-                      <Text style={s.tierPrice}>${((p.monthly_cents ?? 0) / 100).toFixed(0)}<Text style={s.tierPriceSub}>/mo</Text></Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.tierPrice}>${((p.monthly_cents ?? 0) / 100).toFixed(0)}<Text maxFontSizeMultiplier={1.4} style={s.tierPriceSub}>/mo</Text></Text>
                     </View>
                     <View style={s.tierMeta}>
-                      <Text style={s.tierMetaItem}>🪑 {p.seat_limit >= 999 ? '∞' : p.seat_limit} seats</Text>
-                      <Text style={s.tierMetaItem}>📁 {p.matter_limit >= 99999 ? '∞' : p.matter_limit} matters</Text>
-                      <Text style={s.tierMetaItem}>🤖 {p.ai_calls_daily}/day</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>🪑 {p.seat_limit >= 999 ? '∞' : p.seat_limit} seats</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>📁 {p.matter_limit >= 99999 ? '∞' : p.matter_limit} matters</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.tierMetaItem}>🤖 {p.ai_calls_daily}/day</Text>
                     </View>
                   </View>
                 ))}
@@ -380,7 +380,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
             <TouchableOpacity style={s.ctaBtn} onPress={() => setFlow('activate')}
                       accessibilityRole="button"
                     >
-              <Text style={s.ctaBtnText}>Start {TRIAL_DAYS}-day free trial →</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.ctaBtnText}>Start {TRIAL_DAYS}-day free trial →</Text>
             </TouchableOpacity>
           </>
         )}
@@ -388,24 +388,24 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
         {/* ── ACTIVATE FLOW ─────────────────────────────────────────────────── */}
         {flow === 'activate' && (
           <>
-            <Text style={s.pageTitle}>Activate your trial</Text>
-            <Text style={s.pageHint}>{TRIAL_DAYS} days free. No credit card required. Cancel any time.</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.pageTitle}>Activate your trial</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.pageHint}>{TRIAL_DAYS} days free. No credit card required. Cancel any time.</Text>
 
             {/* Selected vertical recap */}
             <View style={[s.vertRecap, { borderColor: vertObj?.color || colors.steel }]}>
-              <Text style={s.vertRecapEmoji}>{vertObj?.emoji}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.vertRecapEmoji}>{vertObj?.emoji}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={s.vertRecapLabel}>{vertObj?.label}</Text>
-                <Text style={s.vertRecapHint}>Tap Explore to change vertical</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.vertRecapLabel}>{vertObj?.label}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.vertRecapHint}>Tap Explore to change vertical</Text>
               </View>
               <TouchableOpacity onPress={() => setFlow('browse')}
                         accessibilityRole="button"
                       >
-                <Text style={{ color: colors.steel, fontSize: TYPE.sm }}>Change</Text>
+                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.steel, fontSize: TYPE.sm }}>Change</Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={s.inputLabel}>Firm name</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Firm name</Text>
             <TextInput
               style={[s.input, activating && { opacity: 0.5 }]}
               value={firmName}
@@ -425,8 +425,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                 'Switch vertical any time',
               ].map((p, i) => (
                 <View key={`perk-${i}`} style={s.perkRow}>
-                  <Text style={{ color: colors.legal, marginRight: 8 }}>✓</Text>
-                  <Text style={s.perkText}>{p}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={{ color: colors.legal, marginRight: 8 }}>✓</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.perkText}>{p}</Text>
                 </View>
               ))}
             </View>
@@ -435,11 +435,11 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
             accessibilityRole="button">
               {activating
                 ? <ActivityIndicator color={colors.navy} />
-                : <Text style={s.activateBtnText}>Activate free trial</Text>
+                : <Text maxFontSizeMultiplier={1.4} style={s.activateBtnText}>Activate free trial</Text>
               }
             </TouchableOpacity>
 
-            <Text style={s.legalNote}>
+            <Text maxFontSizeMultiplier={1.4} style={s.legalNote}>
               By activating a trial you agree to the Justice Gavel Terms of Service.
               Your trial converts to the Standard plan ({STANDARD_PRICE_DISPLAY}) after {TRIAL_DAYS} days unless you cancel.
               Mission and Government pricing requires verification.

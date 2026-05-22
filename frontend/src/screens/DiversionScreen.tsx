@@ -179,7 +179,7 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
 
 
   const [step, setStep]       = useState<'form' | 'result'>('form');
-  const [state, setState]     = useState((route?.params as any)?.state || '');
+  const [state, setState]     = useState((route?.params as import('../types/api').RouteParams)?.state || '');
   const [charge, setCharge]   = useState('');
   const [prior, setPrior]     = useState('none');
   const [showState, setShowState] = useState(false);
@@ -192,7 +192,7 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
   const programs    = (chargeData?.programs ?? [])
     .map(name => DIVERSION_PROGRAMS.find(p => p.name === name))
     .filter(Boolean) as DiversionType[];
-  const stateNote   = STATE_NOTES[state] || DEFAULT_STATE_NOTE;
+  const stateNote   = STATE_NOTES[state as string] || DEFAULT_STATE_NOTE;
 
   // ── Form ─────────────────────────────────────────────────────────────────
   if (step === 'form') return (
@@ -223,9 +223,9 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
         style={[styles.stateBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
         onPress={() => setShowState(p => !p)}
             accessibilityRole="button"
-        accessibilityLabel={`Select state, currently ${state}`}
+        accessibilityLabel={`Select state, currently ${state as string}`}
       >
-        <Text maxFontSizeMultiplier={1.4} style={[styles.stateBtnText, { color: colors.textPrimary }]}>{state}  ▾</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.stateBtnText, { color: colors.textPrimary }]}>{state as string}  ▾</Text>
       </TouchableOpacity>
       {showState && (
         <ScrollView
@@ -346,7 +346,7 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
       {/* State-specific note */}
       <View style={[styles.stateNote, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.stateNoteLabel, { color: colors.textMuted }]}>
-          {STATE_NOTES[state] ? `${state} -- State rules` : 'General guidance'}
+          {STATE_NOTES[state as string] ? `${state} -- State rules` : 'General guidance'}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.stateNoteBody, { color: colors.textSecond }]}>{stateNote}</Text>
       </View>

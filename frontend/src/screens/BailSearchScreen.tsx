@@ -306,7 +306,7 @@ export default function BailSearchScreen(): React.JSX.Element {
           <View style={styles.cardTop}>
           <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.cardName}>{item?.name}</Text>
+          <Text maxFontSizeMultiplier={1.4} numberOfLines={1} ellipsizeMode="tail" style={styles.cardName}>{item?.name}</Text>
           {item.jtb_verified && (
           <View style={styles.verifiedBadge}>
           <Text maxFontSizeMultiplier={1.4} style={styles.verifiedBadgeText}>✓ Verified</Text>

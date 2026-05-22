@@ -186,7 +186,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
   }, []);
   const { colors, isDark } = useTheme();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
-  const { initialSide } = (route?.params as any) ?? {}; // 'b' for client join flow
+  const { initialSide } = (route?.params as import('../types/api').RouteParams) ?? {}; // 'b' for client join flow
 
   const abortRef = useRef<AbortController | null>(null);
   const [phase,     setPhase]     = useState<Phase>(initialSide === 'b' ? 'join' : 'setup');

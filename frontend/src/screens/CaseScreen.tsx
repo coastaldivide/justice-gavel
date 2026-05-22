@@ -15,6 +15,7 @@ import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 import { saveCaseOffline, getOfflineCases, startSyncListener } from '../services/offlineSync';
 import Markdown from 'react-native-markdown-display';
 import { useFocusEffect } from '@react-navigation/native';
+import { daysUntil, formatDate, MS_PER_DAY } from '../utils/dateUtils';
 
 declare var ScreenProps: any;
 declare var caseData: any;
@@ -46,8 +47,8 @@ interface Case {
 const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCalendar, onShare, onInvite }: any) {
   const color = STATUS_COLORS[item.status] || COLORS.textMuted;
   const hasDate = !!item.next_court_date;
-  const daysUntil = hasDate
-    ? Math.ceil(((new Date(item.next_court_date ?? 0).getTime() || Infinity) - Date.now()) / 86400000)
+  const days = hasDate
+    ? daysUntil(item.next_court_date) ?? Infinity
     : null;
 
   return (
@@ -92,11 +93,11 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
         </View>
       </View>
       {hasDate && (
-        <View style={[styles.courtDateRow, daysUntil !== null && daysUntil <= 7 && styles.courtDateUrgent]}>
+        <View style={[styles.courtDateRow, days !== null && (days as number) <= 7 && styles.courtDateUrgent]}>
           <Text maxFontSizeMultiplier={1.4} style={styles.courtDateIcon}>📅</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.courtDateText}>
             Court: {new Date(item.next_court_date!).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            {daysUntil !== null && daysUntil >= 0 && <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}>  ({daysUntil === 0 ? 'Today!' : daysUntil === 1 ? 'Tomorrow!' : `${daysUntil} days`})</Text>}
+            {days !== null && (days as number) >= 0 && <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}>  ({(days as number) === 0 ? 'Today!' : (days as number) === 1 ? 'Tomorrow!' : `${days} days`})</Text>}
           </Text>
         </View>
       )}

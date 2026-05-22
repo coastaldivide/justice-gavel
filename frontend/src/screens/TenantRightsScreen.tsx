@@ -130,25 +130,25 @@ export default function TenantRightsScreen(): React.JSX.Element {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <Text style={{ fontSize: 32 }}>🏘️</Text>
-        <Text style={[styles.headerTitle, { color: colors.bgCard }]}>Tenant Rights</Text>
-        <Text style={[styles.headerSub, { color: colors.steel }]}>Housing & landlord-tenant law</Text>
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 32 }}>🏘️</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.bgCard }]}>Tenant Rights</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>Housing & landlord-tenant law</Text>
       </View>
 
       {/* Section cards */}
       {allSections.map((sec: any, idx: number) => (
         <View key={idx} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          {sec.title ? <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{sec.title}</Text> : null}
-          {sec.body  ? <Text style={[styles.cardBody,  { color: colors.textMuted  }]}>{sec.body}</Text>  : null}
+          {sec.title ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardTitle, { color: colors.textPrimary }]}>{sec.title}</Text> : null}
+          {sec.body  ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardBody,  { color: colors.textMuted  }]}>{sec.body}</Text>  : null}
           {sec.steps ? sec.steps.map((step: string, si: number) => (
-            <Text key={si} style={[styles.cardBody, { color: colors.textMuted }]}>• {step}</Text>
+            <Text maxFontSizeMultiplier={1.4} key={si} style={[styles.cardBody, { color: colors.textMuted }]}>• {step}</Text>
           )) : null}
         </View>
       ))}
 
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
-        <Text style={[styles.disclaimer, { color: colors.textFaint }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimer, { color: colors.textFaint }]}>
           This information is for general education only and is not legal advice.
           Laws vary by state. Consult a licensed attorney for advice about your situation.
         </Text>

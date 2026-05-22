@@ -20,6 +20,7 @@ import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import OfflineBanner from '../components/OfflineBanner';
 import NetInfo from '@react-native-community/netinfo';
 import { ScreenCapture } from '../utils/webCompat';
+import { daysUntil, formatDate, MS_PER_DAY } from '../utils/dateUtils';
 
 declare var profile: any;
 declare var setError: any;
@@ -27,10 +28,6 @@ declare var setTab: any;
 type Tab = 'cases' | 'templates' | 'cle' | 'profile';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const daysUntil = (dateStr: string | null) => {
-  if (!dateStr) return null;
-  return Math.ceil(((new Date(dateStr ?? 0).getTime() || Infinity) - Date.now()) / 86400000);
-};
 const urgencyColor = (days: number | null) => {
   if (days === null) return COLORS.textMuted;
   if (days <= 7)  return COLORS.emergency;
@@ -524,7 +521,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
               <View key={tpl.id} style={[styles.tplCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
                 <View style={styles.tplHeader}>
                   <View style={{ flex: 1 }}>
-                    <Text maxFontSizeMultiplier={1.4} style={[styles.tplTitle, { color: colors.textPrimary }]}>{tpl.title}</Text>
+                    <Text maxFontSizeMultiplier={1.4} numberOfLines={2} ellipsizeMode="tail" style={[styles.tplTitle, { color: colors.textPrimary }]}>{tpl.title}</Text>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.tplMeta, { color: colors.textMuted }]}>
                       {tpl.motion_type} · {tpl.created_by_name || 'Unknown'}
                       {tpl.approved_by_name ? ` · ✓ ${tpl.approved_by_name}` : ''}

@@ -119,7 +119,7 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
   // Guard: screen must receive a valid matterId
   if (!matterId) return (
     <View style={s.center}>
-      <Text style={{ color: colors.textMuted, fontSize: TYPE.base }}>No matter selected.</Text>
+      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: TYPE.base }}>No matter selected.</Text>
     </View>
   );
 
@@ -131,24 +131,24 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
     <View style={s.root}>
       {/* Header */}
       <View style={s.header}>
-        <Text style={s.headerTitle} numberOfLines={1}>{matterTitle || 'Matter Intelligence'}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={s.headerTitle} numberOfLines={1}>{matterTitle || 'Matter Intelligence'}</Text>
         {partialLoad && (
           <TouchableOpacity
             onPress={() => { setErrorMsg(null); load(); }}
             accessibilityRole="button"
             style={[s.metaPill, { backgroundColor: colors.errorBg }]}
           >
-            <Text style={{ color: colors.emergency, fontSize: TYPE.xs }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: TYPE.xs }}>
               ⚠️ Partial data — tap to retry
             </Text>
           </TouchableOpacity>
         )}
         {signals && (
           <View style={s.headerMeta}>
-            <Text style={s.metaPill}>{signals.vertical?.replace(/_/g, ' ')}</Text>
-            <Text style={s.metaPill}>{signals.taxonomy?.replace(/_/g, ' ')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.metaPill}>{signals.vertical?.replace(/_/g, ' ')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.metaPill}>{signals.taxonomy?.replace(/_/g, ' ')}</Text>
             <View style={[s.escalBadge, { backgroundColor: (ESCALATION_COLORS[escalation?.level] || colors.steel) + '22' }]}>
-              <Text style={[s.escalBadgeText, { color: ESCALATION_COLORS[escalation?.level] || colors.steel }]}>
+              <Text maxFontSizeMultiplier={1.4} style={[s.escalBadgeText, { color: ESCALATION_COLORS[escalation?.level] || colors.steel }]}>
                 {escalation?.level || 'normal'}
               </Text>
             </View>
@@ -166,7 +166,7 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
             accessibilityRole="tab"
             accessibilityState={{ selected: tab === t }}
             accessibilityLabel={`${t.charAt(0).toUpperCase() + t.slice(1)} tab`}>
-            <Text style={[s.tabLabel, tab===t && s.tabLabelActive]}>
+            <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===t && s.tabLabelActive]}>
               {t === 'outcome' ? '📊' : t === 'motions' ? '⚖️' : t === 'diversion' ? '🔄' : t === 'analytics' ? '🧠' : t === 'escalation' ? '🚨' : '📋'}
               {' '}{t.charAt(0).toUpperCase() + t.slice(1)}
             </Text>
@@ -193,19 +193,19 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
             {signals && (
               <View style={s.summaryRow}>
                 <View style={s.summaryCard}>
-                  <Text style={s.summaryLabel}>Evidence</Text>
-                  <Text style={s.summaryVal}>{signals.evidence?.score}</Text>
-                  <Text style={s.summaryBucket}>{signals.evidence?.bucket}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.summaryLabel}>Evidence</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.summaryVal}>{signals.evidence?.score}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.summaryBucket}>{signals.evidence?.bucket}</Text>
                 </View>
                 <View style={s.summaryCard}>
-                  <Text style={s.summaryLabel}>Vulnerability</Text>
-                  <Text style={[s.summaryVal, { color: signals.vulnerability === 'crisis' ? colors.emergency : colors.text }]}>
+                  <Text maxFontSizeMultiplier={1.4} style={s.summaryLabel}>Vulnerability</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[s.summaryVal, { color: signals.vulnerability === 'crisis' ? colors.emergency : colors.text }]}>
                     {signals.vulnerability}
                   </Text>
                 </View>
                 <View style={s.summaryCard}>
-                  <Text style={s.summaryLabel}>Pressure</Text>
-                  <Text style={[s.summaryVal, { color: signals.time_pressure === 'emergency' ? colors.emergency : colors.text }]}>
+                  <Text maxFontSizeMultiplier={1.4} style={s.summaryLabel}>Pressure</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[s.summaryVal, { color: signals.time_pressure === 'emergency' ? colors.emergency : colors.text }]}>
                     {signals.time_pressure}
                   </Text>
                 </View>
@@ -215,40 +215,40 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
             {/* Outcome indicators */}
             {outcome?.outcome_indicators?.length > 0 ? (
               <>
-                <Text style={s.sectionTitle}>Outcome indicators</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Outcome indicators</Text>
                 {outcome.outcome_indicators.map((ind: any, i: number) => (
                   <View key={`${ind.type}-${i}`} style={s.indicatorCard}>
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         {NEGATIVE_INDICATOR_TYPES.has(ind.type) && (
-                          <Text style={{ color: colors.emergency, fontSize: 12 }}>⚠️</Text>
+                          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: 12 }}>⚠️</Text>
                         )}
-                        <Text style={s.indLabel}>{ind.label}</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={s.indLabel}>{ind.label}</Text>
                       </View>
-                      <Text style={s.indSource}>{ind.source}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.indSource}>{ind.source}</Text>
                       {ind.advisory && (
-                        <Text style={[s.indSource, { color: colors.warn, marginTop: 2 }]}>
+                        <Text maxFontSizeMultiplier={1.4} style={[s.indSource, { color: colors.warn, marginTop: 2 }]}>
                           Advisory — verify with attorney
                         </Text>
                       )}
                     </View>
                     <View style={s.confBox}>
-                      <Text style={[s.confPct, { color: confColor(ind.confidence, ind.type) }]}>
+                      <Text maxFontSizeMultiplier={1.4} style={[s.confPct, { color: confColor(ind.confidence, ind.type) }]}>
                         {confPct(ind.confidence)}
                       </Text>
-                      <Text style={s.confLabel}>confidence</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.confLabel}>confidence</Text>
                     </View>
                   </View>
                 ))}
               </>
             ) : (
-              <Text style={s.empty}>No outcome indicators computed. Add evidence score and vulnerability to see predictions.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.empty}>No outcome indicators computed. Add evidence score and vulnerability to see predictions.</Text>
             )}
 
             {/* Vertical signals summary */}
             {signals?.vertical_signals && (
               <>
-                <Text style={[s.sectionTitle, { marginTop: 20 }]}>Active signals</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 20 }]}>Active signals</Text>
                 {Object.entries(signals.vertical_signals)
                   .filter(([k, v]) =>
                     !ADVISORY_ALWAYS_ON.has(k) &&
@@ -258,8 +258,8 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
                   )
                   .map(([k, v]) => (
                     <View key={k} style={s.signalRow}>
-                      <Text style={[s.signalDot, { color: colors.legal }]}>●</Text>
-                      <Text style={s.signalKey}>
+                      <Text maxFontSizeMultiplier={1.4} style={[s.signalDot, { color: colors.legal }]}>●</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.signalKey}>
                         {k.replace(/([A-Z])/g, ' $1').toLowerCase()}
                         {typeof v === 'number' ? `: ${Number.isInteger(v) ? v : v.toFixed(2)}` : ''}
                       </Text>
@@ -270,7 +270,7 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
                     (typeof v === 'string' && v.length === 0) ||
                     (typeof v === 'number' && !isFinite(v))
                   ) && (
-                  <Text style={s.empty}>No active signals. Update matter fields to compute vertical intelligence.</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.empty}>No active signals. Update matter fields to compute vertical intelligence.</Text>
                 )}
               </>
             )}
@@ -280,19 +280,19 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
         {/* ── MOTIONS TAB ──────────────────────────────────────────────────── */}
         {tab === 'motions' && (
           <>
-            <Text style={s.sectionTitle}>Motion recommendations</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Motion recommendations</Text>
             {motions.length > 0 ? motions.map((m: any, i: number) => (
               <View key={`${m.type ?? 'motion'}-${i}`} style={[s.motionCard, { borderLeftColor: PRIORITY_COLORS[m.priority] || colors.steel }]}>
                 <View style={s.motionHeader}>
-                  <Text style={s.motionLabel}>{m.label}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.motionLabel}>{m.label}</Text>
                   <View style={[s.prioBadge, { backgroundColor: (PRIORITY_COLORS[m.priority] || colors.steel) + '22' }]}>
-                    <Text style={[s.prioBadgeText, { color: PRIORITY_COLORS[m.priority] || colors.steel }]}>{m.priority}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={[s.prioBadgeText, { color: PRIORITY_COLORS[m.priority] || colors.steel }]}>{m.priority}</Text>
                   </View>
                 </View>
-                <Text style={s.motionReason}>{m.reason}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.motionReason}>{m.reason}</Text>
               </View>
             )) : (
-              <Text style={s.empty}>No motions recommended based on current matter signals. Update charge, evidence score, or jurisdiction to generate recommendations.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.empty}>No motions recommended based on current matter signals. Update charge, evidence score, or jurisdiction to generate recommendations.</Text>
             )}
           </>
         )}
@@ -300,48 +300,48 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
         {/* ── DIVERSION TAB ────────────────────────────────────────────────── */}
         {tab === 'diversion' && (
           <>
-            <Text style={s.sectionTitle}>Diversion tracks</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Diversion tracks</Text>
             {diversion.length > 0 ? diversion.map((d: any, i: number) => {
               const elig = Math.round(d.eligibility_score * 100);
               const eligColor = elig >= 75 ? colors.legal : elig >= 50 ? colors.warn : colors.steel;
               return (
                 <View key={d.track ?? i} style={s.diversionCard}>
                   <View style={s.diversionHeader}>
-                    <Text style={s.diversionLabel}>{d.label}</Text>
-                    <Text style={[s.diversionElig, { color: eligColor }]}>{elig}% eligible</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.diversionLabel}>{d.label}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={[s.diversionElig, { color: eligColor }]}>{elig}% eligible</Text>
                   </View>
-                  <Text style={s.diversionReason}>{d.reason}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={s.diversionReason}>{d.reason}</Text>
                   <View style={s.eligBar}>
                     <View style={[s.eligFill, { width: `${elig}%` as any, backgroundColor: eligColor }]} />
                   </View>
                 </View>
               );
             }) : (
-              <Text style={s.empty}>No diversion tracks available. Client may have prior adjudications or be charged with an excluded offense.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.empty}>No diversion tracks available. Client may have prior adjudications or be charged with an excluded offense.</Text>
             )}
           </>
         )}
 
         {/* ── ESCALATION TAB ───────────────────────────────────────────────── */}
         {tab === 'escalation' && !escalation && (
-          <Text style={s.empty}>Escalation data unavailable. This may require paralegal+ access.</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.empty}>Escalation data unavailable. This may require paralegal+ access.</Text>
         )}
         {tab === 'escalation' && escalation && (
           <>
             <View style={[s.escalCard, { borderColor: ESCALATION_COLORS[escalation.level] || colors.steel }]}>
-              <Text style={[s.escalLevel, { color: ESCALATION_COLORS[escalation.level] || colors.steel }]}>
+              <Text maxFontSizeMultiplier={1.4} style={[s.escalLevel, { color: ESCALATION_COLORS[escalation.level] || colors.steel }]}>
                 {escalation.level?.toUpperCase() || 'NORMAL'}
               </Text>
-              <Text style={s.escalSLA}>{escalation.recommended_sla}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.escalSLA}>{escalation.recommended_sla}</Text>
             </View>
 
             {escalation.triggers?.length > 0 && (
               <>
-                <Text style={s.sectionTitle}>Escalation triggers</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Escalation triggers</Text>
                 {escalation.triggers.map((t: string, i: number) => (
                   <View key={`trigger-${t}`} style={s.triggerRow}>
-                    <Text style={{ color: ESCALATION_COLORS[escalation.level], marginRight: 8 }}>⚡</Text>
-                    <Text style={s.triggerText}>{t.replace(/_/g, ' ')}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={{ color: ESCALATION_COLORS[escalation.level], marginRight: 8 }}>⚡</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.triggerText}>{t.replace(/_/g, ' ')}</Text>
                   </View>
                 ))}
               </>
@@ -349,14 +349,14 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
 
             <View style={s.escalFlags}>
               <View style={[s.escalFlag, escalation.notify_partner && { ...s.escalFlagActive, borderColor: colors.emergency }]}>
-                <Text style={s.escalFlagLabel}>Notify partner</Text>
-                <Text style={[s.escalFlagVal, escalation.notify_partner && { color: colors.emergency }]}>
+                <Text maxFontSizeMultiplier={1.4} style={s.escalFlagLabel}>Notify partner</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[s.escalFlagVal, escalation.notify_partner && { color: colors.emergency }]}>
                   {escalation.notify_partner ? 'YES' : 'no'}
                 </Text>
               </View>
               <View style={[s.escalFlag, escalation.recommended_match_boost && { ...s.escalFlagActive, borderColor: colors.emergency }]}>
-                <Text style={s.escalFlagLabel}>Match boost</Text>
-                <Text style={[s.escalFlagVal, escalation.recommended_match_boost && { color: colors.emergency }]}>
+                <Text maxFontSizeMultiplier={1.4} style={s.escalFlagLabel}>Match boost</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[s.escalFlagVal, escalation.recommended_match_boost && { color: colors.emergency }]}>
                   {escalation.recommended_match_boost ? 'YES' : 'no'}
                 </Text>
               </View>
@@ -368,41 +368,41 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
         {tab === 'analytics' && (
           <>
             {!analytics ? (
-              <Text style={s.empty}>Analytics not available for this matter. Ensure the matter vertical and jurisdiction are set.</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.empty}>Analytics not available for this matter. Ensure the matter vertical and jurisdiction are set.</Text>
             ) : (
               <>
                 {analytics.disclaimer && (
                   <View style={s.analyticsDisclaimer}>
-                    <Text style={s.analyticsDTitle}>⚖️ {analytics.disclaimer.title || 'Statistical Analysis'}</Text>
-                    <Text style={s.analyticsDText}>{analytics.disclaimer.text}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.analyticsDTitle}>⚖️ {analytics.disclaimer.title || 'Statistical Analysis'}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.analyticsDText}>{analytics.disclaimer.text}</Text>
                   </View>
                 )}
                 {(analytics.analyses || []).map((a: any, i: number) => (
                   <View key={`analysis-${i}`} style={s.analysisCard}>
                     <View style={s.analysisTierRow}>
-                      <Text style={[s.analysisTier, { color: colors.gold }]}>{a.signal_tier}</Text>
-                      <Text style={s.analysisRange}>
+                      <Text maxFontSizeMultiplier={1.4} style={[s.analysisTier, { color: colors.gold }]}>{a.signal_tier}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.analysisRange}>
                         {a.range?.low != null ? `${Math.round(a.range.low * 100)}–${Math.round(a.range.high * 100)}%` : ''}
                       </Text>
                     </View>
-                    <Text style={s.analysisTitle}>{a.title}</Text>
-                    <Text style={s.analysisInterp}>{a.interpretation}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.analysisTitle}>{a.title}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={s.analysisInterp}>{a.interpretation}</Text>
                     {a.circuit_split_warning && (
-                      <Text style={s.circuitSplitWarn}>⚠ {a.circuit_split_warning}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.circuitSplitWarn}>⚠ {a.circuit_split_warning}</Text>
                     )}
                     {(a.factors_applied || []).length === 0 && (
-                      <Text style={s.analysisSource}>Base rate estimate — no specific factors matched.</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.analysisSource}>Base rate estimate — no specific factors matched.</Text>
                     )}
                     {(a.factors_applied || []).map((f: string, fi: number) => (
-                      <Text key={fi} style={s.factorItem}>• {f}</Text>
+                      <Text maxFontSizeMultiplier={1.4} key={fi} style={s.factorItem}>• {f}</Text>
                     ))}
                     {a.source_url ? (
-                      <Text style={s.analysisSource}>Source: {a.source_label || a.source_url}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={s.analysisSource}>Source: {a.source_label || a.source_url}</Text>
                     ) : null}
                   </View>
                 ))}
                 {(analytics.analyses || []).length === 0 && (
-                  <Text style={s.empty}>No analyses available for this vertical.
+                  <Text maxFontSizeMultiplier={1.4} style={s.empty}>No analyses available for this vertical.
 Update the matter's vertical, jurisdiction, and evidence score to generate analysis.</Text>
                 )}
               </>

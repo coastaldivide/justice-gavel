@@ -141,7 +141,7 @@ export default function AdminVerificationScreen({ navigation }: ScreenProps): Re
         >
           <View style={styles.cardTop}>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.attyName, { color: colors.textPrimary }]}>{atty.name}</Text>
+              <Text maxFontSizeMultiplier={1.4} numberOfLines={1} ellipsizeMode="tail" style={[styles.attyName, { color: colors.textPrimary }]}>{atty.name}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.attyEmail, { color: colors.textMuted }]}>{atty.email}</Text>
             </View>
             <View style={[styles.barBadge, { backgroundColor: colors.bgElevated }]}>

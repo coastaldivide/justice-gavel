@@ -23,8 +23,8 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
 
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
-  const incomingCategory = (route?.params as any)?.category || null;
-  const incomingQuery    = (route?.params as any)?.query    || null;
+  const incomingCategory = (route?.params as import('../types/api').RouteParams)?.category || null;
+  const incomingQuery    = (route?.params as import('../types/api').RouteParams)?.query    || null;
   const [lessons, setLessons]   = useState<Lesson[]>([]);
   const [completed, setCompleted] = useState<Set<number>>(new Set());
   const [expanded, setExpanded]   = useState<number | null>(null);
@@ -39,7 +39,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
       if (u) { try { const user = JSON.parse(u); if (user?.id) setUserId(user.id); } catch {} }
       const done = await AsyncStorage.getItem('completed_lessons');
       if (done) { try { setCompleted(new Set(JSON.parse(done))); } catch {} }
-      if (incomingCategory) setFilterCat(incomingCategory);
+      if (incomingCategory) setFilterCat(incomingCategory as string);
       try {
         const r = await cachedGet('/lessons');
         setLessons(r.data || []);

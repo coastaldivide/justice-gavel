@@ -17,6 +17,7 @@ import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
+import { daysUntil, formatDate, MS_PER_DAY } from '../utils/dateUtils';
 
 declare var loading: any;
 declare var setLoading: any;
@@ -32,7 +33,7 @@ function statusColor(row: DefendantRow): { color: string; bg: string; label: str
   if (!row.active) return { color: COLORS.textMuted, bg: COLORS.bg, label: 'Inactive' };
   if (row.checkins_today > 0) return { color: COLORS.legal, bg: COLORS.legalBg, label: '✓ Checked in today' };
   const courtSoon = row.court_date &&
-    Math.ceil(((new Date(row.court_date ?? 0).getTime() || Infinity) - Date.now()) / 86400000) <= 3;
+    (daysUntil(row.court_date) ?? Infinity) <= 3;
   if (courtSoon) return { color: COLORS.emergency, bg: COLORS.emergencyBg, label: '⚠ Court soon -- not checked in' };
   return { color: COLORS.warn, bg: COLORS.warnBg, label: '⏳ Not checked in today' };
 }

@@ -116,8 +116,8 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
 
         {/* Header */}
         <View style={s.header}>
-          <Text style={s.headerTitle}>Before You Continue</Text>
-          <Text style={s.headerSub}>
+          <Text maxFontSizeMultiplier={1.4} style={s.headerTitle}>Before You Continue</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.headerSub}>
             Please read and agree to our Terms of Service.{'\n'}
             You only need to do this once.
           </Text>
@@ -133,13 +133,13 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
           showsVerticalScrollIndicator={true}>
 
           {/* Key points in plain language */}
-          <Text style={s.sectionLabel}>What You Need to Know</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>What You Need to Know</Text>
           {SUMMARY_POINTS.map((pt, i) => (
             <View key={i} style={s.point}>
-              <Text style={s.pointIcon}>{pt.icon}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.pointIcon}>{pt.icon}</Text>
               <View style={s.pointBody}>
-                <Text style={s.pointTitle}>{pt.title}</Text>
-                <Text style={s.pointText}>{pt.body}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.pointTitle}>{pt.title}</Text>
+                <Text maxFontSizeMultiplier={1.4} style={s.pointText}>{pt.body}</Text>
               </View>
             </View>
           ))}
@@ -151,13 +151,13 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
             accessibilityRole="link"
             accessibilityLabel="Read the full Terms of Service"
           >
-            <Text style={s.fullTosLinkText}>📄 Read the full Terms of Service →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.fullTosLinkText}>📄 Read the full Terms of Service →</Text>
           </TouchableOpacity>
 
           {/* Scroll indicator */}
           {!scrolledToBottom && (
             <View style={s.scrollHint}>
-              <Text style={s.scrollHintText}>↓ Scroll to continue ↓</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.scrollHintText}>↓ Scroll to continue ↓</Text>
             </View>
           )}
 
@@ -176,11 +176,11 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
             accessibilityState={{ checked: checkToS }}
             accessibilityLabel="I have read and agree to the Terms of Service">
             <View style={[s.checkbox, checkToS && s.checkboxChecked]}>
-              {checkToS && <Text style={s.checkmark}>✓</Text>}
+              {checkToS && <Text maxFontSizeMultiplier={1.4} style={s.checkmark}>✓</Text>}
             </View>
-            <Text style={s.checkLabel}>
+            <Text maxFontSizeMultiplier={1.4} style={s.checkLabel}>
               I have read and agree to the{' '}
-              <Text style={s.link}
+              <Text maxFontSizeMultiplier={1.4} style={s.link}
                 onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => {})}>
                 Terms of Service
               </Text>
@@ -195,25 +195,25 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
             accessibilityState={{ checked: checkNoAdvice }}
             accessibilityLabel="I understand Justice Gavel is not a law firm and does not provide legal advice">
             <View style={[s.checkbox, checkNoAdvice && s.checkboxChecked]}>
-              {checkNoAdvice && <Text style={s.checkmark}>✓</Text>}
+              {checkNoAdvice && <Text maxFontSizeMultiplier={1.4} style={s.checkmark}>✓</Text>}
             </View>
-            <Text style={s.checkLabel}>
+            <Text maxFontSizeMultiplier={1.4} style={s.checkLabel}>
               I understand that{' '}
-              <Text style={s.bold}>Justice Gavel is not a law firm</Text>
+              <Text maxFontSizeMultiplier={1.4} style={s.bold}>Justice Gavel is not a law firm</Text>
               {' '}and nothing on this platform is legal advice. I will consult a licensed attorney for advice specific to my situation.
             </Text>
           </TouchableOpacity>
 
           {/* Scroll prompt when not yet at bottom */}
           {!scrolledToBottom && (
-            <Text style={s.scrollToUnlock}>
+            <Text maxFontSizeMultiplier={1.4} style={s.scrollToUnlock}>
               Scroll through the summary above to unlock "I Agree"
             </Text>
           )}
 
           {/* Error */}
           {error && (
-            <Text style={s.errorText}>{error}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={s.errorText}>{error}</Text>
           )}
 
           {/* Accept button */}
@@ -226,11 +226,11 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
             accessibilityState={{ disabled: !canAccept || submitting }}>
             {submitting
               ? <ActivityIndicator color="#fff" />
-              : <Text style={s.acceptBtnText}>I Agree — Continue to Justice Gavel</Text>
+              : <Text maxFontSizeMultiplier={1.4} style={s.acceptBtnText}>I Agree — Continue to Justice Gavel</Text>
             }
           </TouchableOpacity>
 
-          <Text style={s.versionNote}>Terms of Service v{TOS_VERSION} · Effective May 1, 2026</Text>
+          <Text maxFontSizeMultiplier={1.4} style={s.versionNote}>Terms of Service v{TOS_VERSION} · Effective May 1, 2026</Text>
         </View>
 
       </View>

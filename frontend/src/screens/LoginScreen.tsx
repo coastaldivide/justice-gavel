@@ -2,6 +2,7 @@
  * LoginScreen -- Redesigned with JTB logo, dark brand aesthetic
  */
 import React, { useState, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import {  } from '@react-native-async-storage/async-storage';

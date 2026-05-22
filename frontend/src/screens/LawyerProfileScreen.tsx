@@ -202,7 +202,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
             {lawyer.name ? lawyer.name.charAt(0).toUpperCase() : '⚖'}
           </Text>
         </View>
-        <Text maxFontSizeMultiplier={1.4} style={s.name}>{lawyer.name}</Text>
+        <Text maxFontSizeMultiplier={1.4} numberOfLines={2} ellipsizeMode="tail" style={s.name}>{lawyer.name}</Text>
         {lawyer.address && (
           <Text maxFontSizeMultiplier={1.4} style={s.address}>{lawyer.address}</Text>
         )}
