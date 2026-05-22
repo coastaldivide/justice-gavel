@@ -112,6 +112,7 @@ export default function BailSearchScreen(): React.JSX.Element {
           params.lng = lng;
           setStatus('Finding nearby bail agents…');
         } catch {
+          setLoading(false);
           // GPS denied -- show city picker instantly
           setLoading(false);
           setLocationDenied(true);

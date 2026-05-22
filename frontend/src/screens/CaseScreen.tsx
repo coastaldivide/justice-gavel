@@ -102,7 +102,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
         </View>
       )}
       {!!item.notes && <Markdown style={{ body: { fontSize:14, lineHeight:21, color:COLORS.textSecond } }}>{item.notes}</Markdown>}
-      <Text maxFontSizeMultiplier={1.4}>Created {new Date(item.created_at).toLocaleDateString()}</Text>
+      <Text maxFontSizeMultiplier={1.4}>Created {new Date(item.created_at ?? 0).toLocaleDateString()}</Text>
       <TouchableOpacity testID="case-share-sheet"
         style={styles.shareBtn}
         onPress={() => onShare(item)}

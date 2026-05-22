@@ -162,7 +162,7 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
                 <View style={{ backgroundColor:cc.bg, borderRadius:6,
                   paddingHorizontal:8, paddingVertical:3 }}>
                   <Text maxFontSizeMultiplier={1.4} style={{ color:cc.text, fontWeight:'700', fontSize:10 }}>
-                    {p.offense_type.toUpperCase()}
+                    {(p.offense_type || "").toUpperCase()}
                   </Text>
                 </View>
                 <View style={{ backgroundColor:isFelony?colors.emergencyBg:colors.legalBg, borderRadius:6,
@@ -172,7 +172,7 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
                   </Text>
                 </View>
                 <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:11, marginLeft:'auto' }}>
-                  {p.drug_schedule.toUpperCase()}
+                  {(p.drug_schedule || "").toUpperCase()}
                 </Text>
               </View>
 

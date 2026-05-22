@@ -56,7 +56,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
   }, [state]);
 
   const filtered = schedules.filter(s =>
-    !filter || s.charge.toLowerCase().includes(filter.toLowerCase())
+    !filter || (s.charge || "").toLowerCase().includes(filter.toLowerCase())
   );
 
   const bondCost = (bail: number) => Math.round(bail * bondPct / 100);
@@ -142,7 +142,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
                   paddingHorizontal: 7, paddingVertical: 3,
                 }}>
                   <Text maxFontSizeMultiplier={1.4} style={{ color: typeColor.text, fontWeight: '700', fontSize: 10 }}>
-                    {s.charge_type.toUpperCase()}
+                    {(s.charge_type || "").toUpperCase()}
                   </Text>
                 </View>
                 <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontWeight: '600', fontSize: 13, flex: 1 }}>

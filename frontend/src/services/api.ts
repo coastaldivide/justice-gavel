@@ -22,7 +22,7 @@ const BASE_URL =
   (__DEV__ ? 'http://localhost:4000/api' : '');  // empty string will surface API errors fast in prod
 
 if (!process.env.EXPO_PUBLIC_API_BASE && !__DEV__) {
-  console.error('[api] CRITICAL: EXPO_PUBLIC_API_BASE is not set. Add it to your EAS secrets.');
+  if (__DEV__) console.error('[api] CRITICAL: EXPO_PUBLIC_API_BASE is not set. Add it to your EAS secrets.');
   // In prod without BASE_URL every request will fail — surface this clearly
 }
 

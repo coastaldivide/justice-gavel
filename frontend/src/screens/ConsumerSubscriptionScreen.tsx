@@ -352,7 +352,7 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
             </Text>
             {subscription.trial_ends_at && subscription.status === 'trialing' && (
               <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerSub}>
-                Free trial ends {new Date(subscription.trial_ends_at).toLocaleDateString()}
+                Free trial ends {new Date(subscription.trial_ends_at ?? 0).toLocaleDateString()}
               </Text>
             )}
           </View>

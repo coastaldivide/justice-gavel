@@ -1,7 +1,7 @@
 import ScreenHeader from '../components/ScreenHeader';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Linking, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, Linking, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import { api, cachedGet } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 
@@ -27,6 +27,7 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
   }, []);
   const { colors, isDark } = useTheme();
   const [all, setAll]         = useState<SpecialtyCourt[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const [type, setType]       = useState('ALL');
   const [state, setState]     = useState('');
   const [loading, setLoading] = useState(true);
@@ -137,6 +138,7 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
       {loading ? <ActivityIndicator style={{ marginTop: 30 }} color={colors.primary} /> :
       error ? <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign: 'center', margin: 20 }}>{error}</Text> : (
         <FlatList
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); }} />}
           keyboardShouldPersistTaps="handled"
           data={filtered}
           keyExtractor={i => String(i.id)}
@@ -163,7 +165,7 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
                   <View style={{ backgroundColor: ct.bg, borderRadius: 8,
                     paddingHorizontal: 8, paddingVertical: 3 }}>
                     <Text maxFontSizeMultiplier={1.4} style={{ color: ct.color, fontWeight: '700', fontSize: 10 }}>
-                      {ct.icon} {item.court_type.toUpperCase()}
+                      {ct.icon} {(item.court_type || "").toUpperCase()}
                     </Text>
                   </View>
                   <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 11, paddingTop: 2 }}>

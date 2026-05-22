@@ -193,7 +193,7 @@ function HistoryRow({ item, onOpen, onDelete }: any) {
           {item.inconsistencies_count > 0 ? `  ·  ${item.inconsistencies_count} flags` : ''}
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.histDate, { color: COLORS.textMuted }]}>
-          {new Date(item.created_at).toLocaleDateString('en-US', {
+          {new Date(item.created_at ?? 0).toLocaleDateString('en-US', {
             month: 'short', day: 'numeric', year: 'numeric'
           })}
         </Text>

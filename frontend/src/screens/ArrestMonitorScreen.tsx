@@ -105,6 +105,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
       setName(''); setCounty(''); setShowForm(false);
       await load();
     } catch (e: any) {
+      setLoading(false);
       Alert.alert('Could Not Load Alerts', e.response?.data?.error || 'Could not add monitor.');
     }
     setAdding(false);

@@ -229,7 +229,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
           <Text maxFontSizeMultiplier={1.4} style={styles.enrollmentName}>{enrollment.defendant_name}</Text>
           {enrollment.court_date && (
             <Text maxFontSizeMultiplier={1.4} style={styles.enrollmentDetail}>
-              📅 Court date: {new Date(enrollment.court_date).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}
+              📅 Court date: {new Date(enrollment.court_date ?? 0).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}
             </Text>
           )}
         </View>

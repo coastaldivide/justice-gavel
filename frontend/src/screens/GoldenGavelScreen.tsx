@@ -217,6 +217,7 @@ export default function GoldenGavelScreen({ navigation }: ScreenProps): React.JS
       Alert.alert('Added to Hall of Justice', 'Your name and impact are now publicly listed.');
       load(true);
     } catch {
+      setLoading(false);
       Alert.alert('Could not opt in', 'Check your connection and try again.');
     }
     setOptingIn(false);
@@ -264,21 +265,21 @@ export default function GoldenGavelScreen({ navigation }: ScreenProps): React.JS
             <View style={styles.dateRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.dateEmoji}>🥉</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>Bronze awarded</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.bronze_at).toLocaleDateString()}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.bronze_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
           {status?.silver_at && (
             <View style={styles.dateRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.dateEmoji}>🥈</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>Silver awarded</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.silver_at).toLocaleDateString()}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.silver_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
           {status?.golden_at && (
             <View style={styles.dateRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.dateEmoji}>🏆</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateLabel, { color: colors.textPrimary }]}>Golden awarded</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.golden_at).toLocaleDateString()}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.golden_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
           <TouchableOpacity activeOpacity={0.6}

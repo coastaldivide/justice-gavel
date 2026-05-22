@@ -374,7 +374,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
                   </Text>
                   <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, lineHeight:16,
                     color:colors.textFaint }}>
-                    {new Date(r.created_at).toLocaleDateString('en-US', { month:'short', year:'numeric' })}
+                    {new Date(r.created_at ?? 0).toLocaleDateString('en-US', { month:'short', year:'numeric' })}
                   </Text>
                 </View>
                 {r.comment ? (

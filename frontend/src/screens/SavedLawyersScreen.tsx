@@ -351,6 +351,7 @@ export default function SavedLawyersScreen({ navigation }: any): React.JSX.Eleme
       await api.delete(`/saved/lawyers/${id}`);
       setLawyers(prev => prev.filter(l => l.id !== id));
     } catch {
+      setRefreshing(false);
       Alert.alert('Could not remove', 'Check your connection and try again.');
     }
   }, []);

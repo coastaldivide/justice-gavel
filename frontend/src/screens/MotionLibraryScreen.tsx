@@ -374,7 +374,7 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
             {m?.label || item.motion_type}
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.historyDate, { color: COLORS.textMuted }]}>
-            {new Date(item.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}
+            {new Date(item.created_at ?? 0).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}
             {item.filed_at && status === 'filed'
               ? ` · Filed ${new Date(item.filed_at).toLocaleDateString('en-US', { month:'short', day:'numeric' })}`
               : ''}

@@ -234,7 +234,7 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
                     </Text>
                     <View style={{ flex: 1 }}>
                       <Text maxFontSizeMultiplier={1.4} style={styles.historyDate}>
-                        {new Date(item.checked_in_at).toLocaleDateString('en-US',
+                        {new Date(item.checked_in_at ?? 0).toLocaleDateString('en-US',
                           { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
                         )}
                       </Text>

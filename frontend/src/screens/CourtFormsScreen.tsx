@@ -97,9 +97,9 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
       { state: 'FED', stateName: 'Federal Courts (All Districts)', aocName: FEDERAL_SOURCES.aocName, formsPortalUrl: FEDERAL_SOURCES.formsPortalUrl, fillablePdf: true, eFiling: true },
       ...STATE_COURT_FORMS,
     ].filter(s =>
-      s.stateName.toLowerCase().includes(q) ||
-      s.state.toLowerCase().includes(q) ||
-      s.aocName.toLowerCase().includes(q)
+      (s.stateName || "").toLowerCase().includes(q) ||
+      (s.state || "").toLowerCase().includes(q) ||
+      (s.aocName || "").toLowerCase().includes(q)
     );
   }, [searchQuery]);
 

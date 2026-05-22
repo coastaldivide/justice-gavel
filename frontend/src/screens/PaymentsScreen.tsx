@@ -231,6 +231,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
         setStatus('Payment initiated. Check your email for confirmation.');
       }
     } catch (e: any) {
+      setLoading(false);
       const serverMsg = e.response?.data?.error || e.message || '';
       const statusCode = e.response?.status;
 

@@ -642,7 +642,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
               <Text maxFontSizeMultiplier={1.4} style={[styles.histTitle, { color: colors.textPrimary }]}
                 numberOfLines={2}>{sess.title}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.histDate, { color: colors.textMuted }]}>
-                {new Date(sess.updated_at).toLocaleDateString('en-US', {
+                {new Date(sess.updated_at ?? 0).toLocaleDateString('en-US', {
                   month: 'short', day: 'numeric', year: 'numeric'
                 })}
               </Text>
