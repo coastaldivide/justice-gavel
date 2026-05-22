@@ -1191,10 +1191,10 @@ const loadHistory = useCallback(async () => {
             </TouchableOpacity>
           </View>
         )
-        : filteredHistoryView.length === 0 && histFilter !== 'all'
+        : filteredHistoryView.length === 0
         ? (
           <View style={styles.centreWrap}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.generatingSub, { color: colors.textMuted }]}>No motions with status "{FILING_STATUS[histFilter as FilingStatus]?.label || histFilter}".</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.generatingSub, { color: colors.textMuted }]}>{histFilter === 'all' ? '📄 No saved motions yet.\nGenerate your first motion to get started.' : `No motions with status "${FILING_STATUS[histFilter as FilingStatus]?.label || histFilter}".`}</Text>
           </View>
         )
         : filteredHistoryView.map(item => (

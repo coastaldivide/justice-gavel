@@ -141,7 +141,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
     (async () => {
       try {
         const v = await AsyncStorage.getItem('home_visit_count');
-        const n = parseInt(v || '0') + 1;
+        const n = parseInt(v || '0', 10) + 1;
         setVisitCount(n);
         await AsyncStorage.setItem('home_visit_count', String(n));
       } catch {} // Non-critical — visit count is UI-only

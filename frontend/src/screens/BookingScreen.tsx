@@ -160,6 +160,17 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>Duration   <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{duration.label}</Text></Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>Platform fee  <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{duration.fee}</Text></Text>
         </View>
+        <TouchableOpacity
+          accessibilityRole="button"
+          style={[styles.doneBtn, { backgroundColor: COLORS.legal, marginBottom: 10 }]}
+          onPress={() => {
+            const RN = require('react-native');
+            RN.Linking.openURL('calshow://').catch(() =>
+              RN.Linking.openURL('content://com.android.calendar/time/').catch(() => {}));
+          }}
+        >
+          <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>📅 Add to Calendar</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
           // @ts-ignore — handleBack is declared via var and is assigned before first user interaction
           onPress={handleBack}

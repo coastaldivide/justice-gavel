@@ -269,7 +269,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
               accessibilityRole="button"
               accessibilityLabel={`View full profile for ${item.name}`}
               style={styles.verifiedBadge}
-              onPress={() => {}}
+              onPress={() => navigation.navigate('MoreTab', { screen: 'LawyerProfile', params: { id: item.id, lawyerId: item.id } })}
             >
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
                 color:COLORS.navy, fontWeight:'600' }}>

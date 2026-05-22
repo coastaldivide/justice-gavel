@@ -132,7 +132,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         caseId,
         countryCode: selectedCountry,
         childName: childName.trim(),
-        childAge: parseInt(childAge) || undefined,
+        childAge: parseInt(childAge, 10) || undefined,
         abductionDate: abductionDate.trim(),
         notes: intakeNotes.trim(),
       });

@@ -141,7 +141,7 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
         <TouchableOpacity accessibilityRole="button" onPress={load} style={{marginTop:8,padding:10,backgroundColor:'#1A237E',borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:'#fff',fontWeight:'700'}}>Retry</Text></TouchableOpacity></> 
       ) : null}
       {!loading && !error && <FlatList
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load().catch(() => {}); setRefreshing(false); }} />}
           keyboardShouldPersistTaps="handled"
           data={filtered}
           keyExtractor={i => String(i.id)}

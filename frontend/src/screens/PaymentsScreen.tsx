@@ -293,7 +293,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
         <Text maxFontSizeMultiplier={1.4} style={styles.stepLabel}>Step 3 -- How would you like to pay?</Text>
 
         {lastMethod && lastMethod !== method && (
-          <TouchableOpacity style={styles.lastUsedBanner} onPress={() => {}}
+          <TouchableOpacity style={styles.lastUsedBanner} onPress={() => setMethod(lastMethod)}
             accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.lastUsedText}>
@@ -320,7 +320,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
         {allMethods.map(m => (
           <MethodRow key={m.key} m={m} selected={method === m.key} onSelect={setMethod} />
         ))}
-        <TouchableOpacity style={styles.moreToggle} onPress={() => {}}
+        <TouchableOpacity style={styles.moreToggle} onPress={() => setShowMore(m => !m)}
           accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.moreToggleText}>

@@ -64,7 +64,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
       await AsyncStorage.setItem('completed_lessons', JSON.stringify(Array.from(next)));
       // Update local points
       const stored = await AsyncStorage.getItem(`points_${userId}`);
-      const newPts = (parseInt(stored || '0') + pts);
+      const newPts = (parseInt(stored || '0', 10) + pts);
       await AsyncStorage.setItem(`points_${userId}`, String(newPts));
       Alert.alert('✓ Completed!', `+${pts} points added to your rewards balance.`);
     } catch (e: any) {
