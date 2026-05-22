@@ -114,7 +114,7 @@ export default function EmergencyShareScreen({ route, navigation }: ScreenProps)
     // Pre-load user data
     AsyncStorage.getItem('user').then(u => {
       if (u) {
-        const user = JSON.parse(u);
+        const user = (() => { try { return JSON.parse(u); } catch { return null; } })();
         setUserName(user.displayName || user.name || 'Someone');
       }
     }).catch(() => {});

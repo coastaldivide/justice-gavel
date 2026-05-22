@@ -32,7 +32,7 @@ export default function ContactsScreen(): React.JSX.Element {
       ]);
       const userData = await AsyncStorage.getItem('user');
       if (userData) {
-        const user = JSON.parse(userData);
+        const user = (() => { try { return JSON.parse(userData); } catch { return null; } })();
         setDisplayName(user.displayName || user.name || '');
       }
     })();

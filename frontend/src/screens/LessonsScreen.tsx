@@ -36,9 +36,9 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
   useEffect(() => {
     (async () => {
       const u = await AsyncStorage.getItem('user');
-      if (u) { const user = JSON.parse(u); if (user.id) setUserId(user.id); }
+      if (u) { try { const user = JSON.parse(u); if (user?.id) setUserId(user.id); } catch {} }
       const done = await AsyncStorage.getItem('completed_lessons');
-      if (done) setCompleted(new Set(JSON.parse(done)));
+      if (done) { try { setCompleted(new Set(JSON.parse(done))); } catch {} }
       if (incomingCategory) setFilterCat(incomingCategory);
       try {
         const r = await cachedGet('/lessons');

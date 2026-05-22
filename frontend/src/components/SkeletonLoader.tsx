@@ -36,6 +36,7 @@ function Shimmer({ width, height, borderRadius = 8, style }: {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
     ).start();
+    return () => { anim.stopAnimation(); };
   }, []);
 
   const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.7] });

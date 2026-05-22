@@ -12,8 +12,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import {
   View, Text, TouchableOpacity, ScrollView, Alert,
-  ActivityIndicator, StyleSheet, Linking, Share, RefreshControl} from 'react-native';
-import { Platform } from 'react-native';
+  ActivityIndicator, StyleSheet, Linking, Share, RefreshControl, Platform} from 'react-native';
 // Audio -- native only. Web uses MediaRecorder API (see handleWebRecord below)
 const Audio = Platform.OS === 'web' ? null : require('expo-av').Audio;
 import * as Location from 'expo-location';
@@ -118,7 +117,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
       hapticImpact();
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Microphone access needed', 'Go to Settings → Justice Gavel → Microphone and enable access.');
+        Alert.alert('Microphone access needed', 'Go to Settings → Justice Gavel → Microphone and enable access.', [{ text: 'Open Settings', onPress: () => Linking.openSettings() }, { text: 'Cancel', style: 'cancel' }]);
         return;
       }
 
@@ -161,7 +160,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      const userData = JSON.parse(await AsyncStorage.getItem('user') || '{}');
+      let userData: any = {}; try { const _u = await AsyncStorage.getItem('user'); if (_u) userData = JSON.parse(_u); } catch {}
 
       // Build FormData
       const formData = new FormData();

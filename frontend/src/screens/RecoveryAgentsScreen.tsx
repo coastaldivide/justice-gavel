@@ -130,7 +130,7 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
       phone,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Call', onPress: () => Linking.openURL(`tel:${phone}`).catch(() => {}) },
+        { text: 'Call', onPress: () => Linking.openURL(`tel:${phone.replace(/\D/g, "")}`).catch(() => {}) },
       ]
     );
   };

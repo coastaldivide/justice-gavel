@@ -84,7 +84,7 @@ export default function JustArrestedScreen({ navigation }: ScreenProps): React.J
   };
   const call = (num: string) => {
     hapticImpact();
-    Linking.openURL(`tel:${num}`).catch(() =>
+    Linking.openURL(`tel:${num.replace(/\D/g, "")}`).catch(() =>
       Alert.alert('Cannot call', `Please dial ${num} manually.`)
     );
   };

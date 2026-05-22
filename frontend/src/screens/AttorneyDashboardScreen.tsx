@@ -184,7 +184,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
   React.useEffect(() => {
     AsyncStorage.getItem('user').then(raw => {
       if (raw) {
-        const u = JSON.parse(raw);
+        const u = (() => { try { return JSON.parse(raw); } catch { return null; } })();
         const allowed = ['attorney','defender','admin'].includes(u.role);
         setIsAuthorized(allowed);
         if (!allowed) {

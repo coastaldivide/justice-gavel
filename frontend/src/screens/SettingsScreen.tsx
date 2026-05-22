@@ -285,7 +285,7 @@ export default function SettingsScreen({ route, navigation }: any) {
   useEffect(() => {
     (async () => {
       const u = await AsyncStorage.getItem('user');
-      if (u) setUser(JSON.parse(u));
+      if (u) { try { setUser(JSON.parse(u)); } catch {} }
       const lang = await AsyncStorage.getItem('lang');
       if (lang) setLanguage(lang);
       const n = await AsyncStorage.getItem('notifs');

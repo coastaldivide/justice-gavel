@@ -76,6 +76,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
     ).start();
+    return () => { pulse.stopAnimation(); };
   }, []);
 
   useEffect(() => {

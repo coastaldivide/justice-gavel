@@ -26,6 +26,7 @@ let backgroundTime: number | null = null;
 const RELOCK_AFTER_MS = 60_000; // 60 seconds in background = re-lock all screens
 
 import { AppState } from 'react-native';
+// Module-level AppState listener — intentionally lives for app lifetime (re-lock gate)
 AppState.addEventListener('change', (nextState) => {
   if (nextState === 'background' || nextState === 'inactive') {
     backgroundTime = Date.now();
