@@ -205,7 +205,7 @@ export const STATE_COURT_FORMS: CourtFormSource[] = [
     state: 'LA', stateName: 'Louisiana',
     aocName: 'Louisiana Judicial Administration',
     formsPortalUrl: 'https://www.lasc.org/rules?p=Rules_and_Forms',
-    selfHelpUrl: 'http://www.lsba.org/PublicResources/',
+    selfHelpUrl: 'https://www.lsba.org/PublicResources/',
     fillablePdf: false, eFiling: false,
     notes: 'Louisiana uses Civil Code (not Common Law). Criminal forms vary heavily by parish. Recommend Louisiana Civil Code § references in disclaimers.',
   },

@@ -344,7 +344,7 @@ export default function BailSearchScreen(): React.JSX.Element {
           {item?.phone ? (
           <TouchableOpacity testID="bail-agent-card"
           accessibilityRole="button"
-          accessibilityLabel="No phone number on file"
+          accessibilityLabel="Call bail agent"
           style={styles.callBtnBig}
           onPress={() => callPhone(item?.phone)}
           activeOpacity={0.85}

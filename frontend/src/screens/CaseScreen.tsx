@@ -1003,6 +1003,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${cas.notes}</div>` : ''}
             value={editCase.notes || ''}
             onChangeText={v => { setEditCase(p => ({ ...p, notes: v })); autoSaveNotes(v); }}
             multiline
+            maxLength={2000}
             numberOfLines={5}
           />
 

@@ -705,5 +705,18 @@
   "rights_arrest_heading": "5. DURANTE EL ARRESTO",
   "rights_arrest_body": "No se resista — aunque sea ilegal.\nMantenga la calma. Impugne el arresto en el tribunal.",
   "rights_phrases_heading": "7. SUS FRASES CLAVE",
-  "rights_phrases_body": "\"Ejerzo mi derecho a guardar silencio.\"\n\"Quiero un abogado.\"\n\"No doy mi consentimiento para un registro.\""
+  "rights_phrases_body": "\"Ejerzo mi derecho a guardar silencio.\"\n\"Quiero un abogado.\"\n\"No doy mi consentimiento para un registro.\"",
+  "checkin_how_to_enroll": "Cómo inscribirse:",
+  "checkin_find_bondsman": "Encontrar un fiador →",
+  "checkin_loading": "Cargando…",
+  "checkin_unavailable": "Registro no disponible",
+  "checkin_already_done": "Ya registró hoy",
+  "checkin_come_back": "Vuelva mañana",
+  "checkin_complete": "¡Registro Completo!",
+  "checkin_bondsman_notified": "Su fiador ha sido notificado",
+  "checkin_next_due": "Próximo registro: mañana antes de las 11:59 PM",
+  "checkin_need_help": "¿Necesita ayuda legal?",
+  "checkin_gps_note": "GPS capturado · Tarda 3 segundos",
+  "bail_no_phone": "Sin número de teléfono",
+  "bail_no_agents": "No se encontraron fiadores aquí."
 }

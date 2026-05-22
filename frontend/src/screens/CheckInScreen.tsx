@@ -19,6 +19,7 @@ import { hapticSuccess } from '../services/haptics';
 import { getLocation } from '../services/location';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import * as Location from 'expo-location';
+import { t } from '../i18n';
 
 declare var defNameRef: any;
 declare var defName_val: any;
@@ -182,11 +183,11 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
       </View>
       <TouchableOpacity
         accessibilityRole="button"
-        testID="checkin-enroll-button" accessibilityLabel="Find a Bail Bondsman →"
+        testID="checkin-enroll-button" accessibilityLabel="Find a Bail Bondsman"
         style={{ backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 32, ...SHADOW.md }}
         onPress={() => navigation.navigate('BailTab')}
       >
-        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, ...FONTS.heavy, fontSize: 14 }}>Find a Bail Bondsman →</Text>
+        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, ...FONTS.heavy, fontSize: 14 }}>{t('checkin_find_bondsman')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -424,7 +425,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
         accessibilityRole="button"
         accessibilityLabel="Check In Now"
         style={styles.checkInBtn}
-        testID="checkin-submit-button" onPress={doCheckIn}
+        testID="checkin-submit-button" disabled={(phase as string) === 'submitting' || (phase as string) === 'gps'} onPress={doCheckIn}
         activeOpacity={0.88}
       >
           <Text maxFontSizeMultiplier={1.4} style={styles.checkInBtnIcon}>✓</Text>

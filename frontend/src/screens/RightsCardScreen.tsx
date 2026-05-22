@@ -90,7 +90,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
         fetchCard('');
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [state]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const fetchCard = async (st: string) => {

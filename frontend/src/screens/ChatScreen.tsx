@@ -516,7 +516,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
         try {
           const token = await getToken();
           await new Promise<void>((resolve, reject) => {
-            fetch(((api as any).defaults?.baseURL || '') + '/chat/stream', {
+            fetch((process.env.EXPO_PUBLIC_API_BASE || (api as any).defaults?.baseURL || 'http://localhost:4000/api') + '/chat/stream', {
               method: 'POST',
               headers: {
                 'Content-Type':  'application/json',

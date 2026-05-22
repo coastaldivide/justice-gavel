@@ -11,6 +11,7 @@
  *   {loading
  *     ? <SkeletonLawyerList count={4} />
  *     : <FlatList data={lawyers} ... />
+      keyExtractor={(_, idx) => String(idx)}
  *   }
  */
 import React, { useEffect, useRef } from 'react';

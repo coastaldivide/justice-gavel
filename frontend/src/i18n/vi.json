@@ -705,5 +705,18 @@
   "rights_arrest_heading": "5. TRONG KHI BỊ BẮT",
   "rights_arrest_body": "Đừng kháng cự — ngay cả khi là bất hợp pháp.\nBình tĩnh. Khiếu nại về vụ bắt giữ tại tòa án.",
   "rights_phrases_heading": "7. CÁC CÂU QUAN TRỌNG",
-  "rights_phrases_body": "\"Tôi thực hiện quyền im lặng của mình.\"\n\"Tôi muốn một luật sư.\"\n\"Tôi không đồng ý cho khám xét.\""
+  "rights_phrases_body": "\"Tôi thực hiện quyền im lặng của mình.\"\n\"Tôi muốn một luật sư.\"\n\"Tôi không đồng ý cho khám xét.\"",
+  "checkin_how_to_enroll": "Cách đăng ký:",
+  "checkin_find_bondsman": "Tìm người bảo lãnh →",
+  "checkin_loading": "Đang tải…",
+  "checkin_unavailable": "Điểm danh không khả dụng",
+  "checkin_already_done": "Đã điểm danh hôm nay",
+  "checkin_come_back": "Hãy quay lại ngày mai",
+  "checkin_complete": "Điểm danh Hoàn tất!",
+  "checkin_bondsman_notified": "Người bảo lãnh đã được thông báo",
+  "checkin_next_due": "Điểm danh tiếp theo: ngày mai trước 11:59 CH",
+  "checkin_need_help": "Cần giúp đỡ pháp lý?",
+  "checkin_gps_note": "GPS đã ghi lại · Mất 3 giây",
+  "bail_no_phone": "Không có số điện thoại",
+  "bail_no_agents": "Không tìm thấy người bảo lãnh ở đây."
 }

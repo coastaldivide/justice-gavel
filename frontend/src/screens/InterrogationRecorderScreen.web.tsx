@@ -209,6 +209,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
             placeholder="Add your own notes…"
             placeholderTextColor={colors.textMuted}
             multiline
+              maxLength={4000}
             style={{ backgroundColor: colors.bg, borderRadius: 8, padding: 12,
               color: colors.textPrimary, fontSize: 13, borderWidth: 1, borderColor: colors.border,
               minHeight: 80 }}

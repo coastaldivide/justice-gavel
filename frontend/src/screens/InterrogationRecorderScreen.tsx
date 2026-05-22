@@ -176,7 +176,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
       formData.append('dateTime', new Date().toLocaleString('en-US', { timeZoneName: 'short' }));
 
       const res = await fetch(
-        'http://localhost:4000/api' + '/interrogation/transcribe',
+        (process.env.EXPO_PUBLIC_API_BASE || 'http://localhost:4000/api') + '/interrogation/transcribe',
         {
           method: 'POST',
           headers: {
