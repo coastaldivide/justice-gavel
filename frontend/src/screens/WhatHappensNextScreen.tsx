@@ -206,6 +206,7 @@ function StepCard({ step, color, isActive, onPress }: {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
     }).start();
+    return () => anim.stopAnimation();
   }, [isActive]);
 
   const maxHeight = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 600] });
@@ -416,6 +417,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
     // eslint-disable-next-line react-hooks/exhaustive-deps
       useNativeDriver: false,
     }).start();
+    return () => progressAnim.stopAnimation();
   }, [activeStep]);
 
   const progressWidth = progressAnim.interpolate({

@@ -105,6 +105,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
         if (mountedRef.current) {
           if (lawyerRes.status==='fulfilled' && lawyerRes.value?.data) {
             setLawyer(lawyerRes.value.data);
+            navigation.setOptions({ title: lawyerRes.value.data?.name || 'Attorney Profile' });
           }
           if (reviewRes.status==='fulfilled') {
             setReviews(reviewRes.value.data?.slice(0,5) || []);

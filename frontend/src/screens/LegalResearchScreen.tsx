@@ -186,6 +186,7 @@ function ResearchBubble({ msg }: { msg: Message }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
     Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+    return () => fadeAnim.stopAnimation();
   }, []);
 
   if (isUser) return (

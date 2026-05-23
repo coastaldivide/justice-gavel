@@ -87,6 +87,7 @@ function TurnBubble({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
     ]).start();
+    return () => slide.stopAnimation();
   }, []);
 
   const srcLang = getLang(msg.src_lang);

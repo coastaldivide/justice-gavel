@@ -228,6 +228,13 @@ export default function CaseScreen({ route, navigation }: any) {
   }, []);
 
 
+  // Set navigation header title from route params
+  React.useEffect(() => {
+    const p = (route as any)?.params;
+    if (p?.caseTitle) navigation.setOptions({ title: p.caseTitle });
+  }, [navigation, route]);
+
+
   // Export full case summary as PDF
   const exportCasePDF = async (cas: Record<string, unknown>) => {
     try {
