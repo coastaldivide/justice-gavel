@@ -45,12 +45,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
     setLoading(true);
     cachedGet(`/legaldata/bail?state=${state}&limit=200`)
       .then(r => { if (!cancel) setSchedules(r.data || []); })
-      .catch(() => {})
-      .catch(() => {
-        if (!cancel) {
-          setSchedules([]);
-        }
-      })
+      .catch(() => { if (!cancel) setSchedules([]); })
       .finally(() => { if (!cancel) setLoading(false); });
     return () => { cancel = true; };
   }, [state]);

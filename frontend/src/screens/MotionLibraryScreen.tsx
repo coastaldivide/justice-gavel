@@ -515,7 +515,7 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
     setReviewResult(null);
     try {
       const res = await api.post('/motions/review', {
-        draft:       editDraft,
+        draft:       editDraft.trim(),
         motion_type: selected?.label || '',
         state:       userStateRef?.current || '' });
       setReviewResult(res.data || null);

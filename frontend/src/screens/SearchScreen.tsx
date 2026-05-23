@@ -82,6 +82,7 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
 
   const { colors } = useTheme();
   const [query, setQuery]       = useState('');
+  const [searchError, setSearchError] = useState('');
   const [results, setResults]   = useState<SearchResult[]>([]);
   const [loading, setLoading]   = useState(false);
   const [fetchError, setFetchError] = useState<string>('');
@@ -115,7 +116,7 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
         ).catch(() => {});
       setSearched(true);
     } catch {
-      if (mountedRef.current) { setResults([]); setSearched(true); }
+      if (mountedRef.current) { setResults([]); setSearched(true); setSearchError('Search failed. Check your connection.'); }
     } finally {
       if (mountedRef.current) setLoading(false);
     }
@@ -183,7 +184,9 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
           searched && !loading ? (
             <View style={s.empty}>
               <Text maxFontSizeMultiplier={1.4} style={[s.emptyTitle, { color: colors.textPrimary }]}>
-                No results for "{query}"
+{searchError
+                  ? searchError
+                  : `No results for "${query}"`}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[s.emptySub, { color: colors.textMuted }]}>
                 Try different words or check the spelling.

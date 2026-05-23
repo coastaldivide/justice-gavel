@@ -61,7 +61,7 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
   useEffect(() => {
     cachedGet('/legaldata/dui?limit=60')
       .then(r => { setLaws(r.data || []); if (r.data?.length) setSelected(r.data[0]); })
-      .catch(() => {})
+      .catch(() => { setLaws([]); })
       .finally(() => setLoading(false));
   }, []);
 
