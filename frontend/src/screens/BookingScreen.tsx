@@ -10,6 +10,7 @@ import { api } from '../services/api';
 import { t }   from '../i18n';
 import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { track } from '../services/analytics';
 
 declare var setError: any;
 const DURATIONS = [
@@ -110,6 +111,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
       });
       setConfirmed(res.data || null);
       setStep('confirmed');
+    track('consultation_booked', { lawyerId: lawyerId ?? null, slot: selTime, type: step }).catch(()=>{})
     } catch (e: any) {
       const msg = e.response?.data?.error || 'Could not complete booking. Please try again.';
       Alert.alert('Booking issue', msg);

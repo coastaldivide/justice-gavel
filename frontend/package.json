@@ -32,6 +32,7 @@
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.10.1",
     "@sentry/react-native": "~5.26.0",
+    "@stripe/stripe-react-native": "^0.66.0",
     "axios": "^1.7.2",
     "expo": "~51.0.14",
     "expo-av": "~14.0.7",
@@ -56,6 +57,7 @@
     "expo-status-bar": "~1.12.1",
     "expo-store-review": "~7.0.0",
     "expo-updates": "~0.25.27",
+    "mixpanel-react-native": "^3.3.0",
     "posthog-react-native": "~3.3.7",
     "react": "18.2.0",
     "react-dom": "^19.2.5",
@@ -66,7 +68,7 @@
     "react-native-svg": "^15.2.0",
     "react-native-web": "^0.21.2"
   },
-  "description": "Justice Gavel \u2014 Justice, in your hands.",
+  "description": "Justice Gavel — Justice, in your hands.",
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-typescript": "^7.28.5",
@@ -74,9 +76,15 @@
     "@testing-library/react-native": "^12.9.0",
     "@types/react": "^19.2.15",
     "@types/react-native": "^0.72.8",
+    "@typescript-eslint/eslint-plugin": "^8.59.4",
+    "@typescript-eslint/parser": "^8.59.4",
     "babel-jest": "^30.3.0",
     "electron": "^31.0.0",
     "electron-builder": "^24.13.0",
+    "eslint": "^10.4.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-native": "^5.0.0",
     "jest": "^29.7.0",
     "jest-expo": "^55.0.16",
     "react-test-renderer": "^18.2.0"
@@ -84,7 +92,7 @@
   "build": {
     "appId": "app.justicegavel.desktop",
     "productName": "Justice Gavel",
-    "copyright": "Copyright \u00a9 2026 Justice Gavel",
+    "copyright": "Copyright © 2026 Justice Gavel",
     "directories": {
       "output": "electron-dist",
       "buildResources": "assets"

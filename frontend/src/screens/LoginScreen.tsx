@@ -12,6 +12,7 @@ import { registerForPush } from '../services/push';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
+import { track, identify } from '../services/analytics';
 
 declare var JusticeGavelLogo: any;
 declare var showPassword: any;

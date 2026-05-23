@@ -38,6 +38,7 @@ import {
   TouchableOpacity, View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { track } from '../services/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const Clipboard = { setStringAsync: async (s: string) => {} };
 
@@ -434,7 +435,8 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
   }, [messages, caseTitle]);
 
   const clearChat = useCallback(async () => {
-    const sid = sessionId || await getSessionId();
+    const isFirstMsg = messages.length === 0;
+  const sid = sessionId || await getSessionId();
     try { await api.delete(`/chat/history/${sid}`); } catch (e: any) { __DEV__ && console.warn((e as Error)?.message); }
     const newId = randomId();
     await AsyncStorage.setItem('chat_session_id', newId);
@@ -505,7 +507,8 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
       }
 
       // T1-M: single sid resolution; inner re-declaration removed
-      const sid = sessionId || await getSessionId();
+      const isFirstMsg = messages.length === 0;
+  const sid = sessionId || await getSessionId();
 
       // ── Streaming path (preferred) ────────────────────────────────────────
       const useStream = typeof EventSource !== 'undefined';

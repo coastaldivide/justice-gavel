@@ -11,6 +11,23 @@ import { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
 import * as Sentry from '@sentry/react-native';
+// ── Sentry error monitoring ────────────────────────────────────────────────────
+
+const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: __DEV__ ? 'development' : 'production',
+    enableAutoSessionTracking: true,
+    sessionTrackingIntervalMillis: 30000,
+    // Ignore common non-errors
+    ignoreErrors: [
+      'Network request failed',
+      'TypeError: Network request failed',
+      'AbortError',
+    ],
+  });
+}
 
 export async function registerForPushNotificationsAsync(): Promise<string | null | undefined> {
   try {

@@ -17,6 +17,7 @@ import { useAuthGate } from '../components/AuthGate';
 import {  useTheme, COLORS } from '../constants/theme';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
+import { useStripe } from '@stripe/stripe-react-native';
 
 declare var amt: any;
 declare var data: any;
@@ -97,6 +98,7 @@ const allMethods = [
     ...(showMore ? MORE_METHODS : [])
   ];
 
+// Stripe PaymentSheet hook — enables native card sheet instead of browser redirect
 export default function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -180,6 +182,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
   const [amount, setAmount]       = useState(PURPOSES[0].defaultAmount);
   const [method, setMethod]       = useState(PRIMARY_METHODS[0].key);
   const [showMore, setShowMore]   = useState(false);
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [loading, setLoading]     = useState(false);
   const [status, setStatus]       = useState('');
   const [lastMethod, setLastMethod] = useState<string | null>(null);
@@ -222,7 +225,22 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
       await AsyncStorage.setItem('last_payment_method', method);
       setLastMethod(method);
 
-      if (res.data?.url) {
+      if (res.data?.clientSecret) {
+        // Native Stripe PaymentSheet — no browser redirect needed
+        const { error: initError } = await initPaymentSheet({
+          paymentIntentClientSecret: res.data.clientSecret,
+          merchantDisplayName: 'Justice Gavel',
+          allowsDelayedPaymentMethods: false,
+        });
+        if (!initError) {
+          const { error: presentError } = await presentPaymentSheet();
+          if (!presentError) {
+            setStatus('Payment complete ✓');
+          } else if (presentError.code !== 'Canceled') {
+            setStatus(presentError.message || 'Payment failed. Please try again.');
+          }
+        }
+      } else if (res.data?.url) {
         Linking.openURL(res.data?.url).catch(() => {});
         setStatus('Payment page opened. Complete your payment in the browser.');
       } else if (res.data?.instructions) {

@@ -74,17 +74,16 @@ export async function track(event: EventName, props: EventProps = {}): Promise<v
       return;
     }
 
-    // ── Mixpanel (uncomment after: npx expo install mixpanel-react-native) ────
-    // import { Mixpanel } from 'mixpanel-react-native';
-    // const mp = new Mixpanel(process.env.EXPO_PUBLIC_MIXPANEL_TOKEN!, true);
-    // mp.track(event, props);
-
-    // ── PostHog (uncomment after: npx expo install posthog-react-native) ──────
-    // import PostHog from 'posthog-react-native';
-    // posthog.capture(event, props);
+    // ── Mixpanel (SDK installed: mixpanel-react-native) ──────────────────────
+    const token = process.env.EXPO_PUBLIC_MIXPANEL_TOKEN;
+    if (token) {
+      const { Mixpanel } = require('mixpanel-react-native');
+      const mp = new Mixpanel(token, /* trackAutomaticEvents */ true);
+      mp.init().then(() => mp.track(event, payload)).catch(() => {});
+    }
 
     // ── Fallback: send to own backend for basic event logging ─────────────────
-    const token = await AsyncStorage.getItem('token').catch(() => null);
+    const _eventToken = await AsyncStorage.getItem('token').catch(() => null);
     const _ac = new AbortController(); setTimeout(() => _ac.abort(), 5000);
     fetch((process.env.EXPO_PUBLIC_API_BASE || '') + '/analytics/event', { signal: _ac.signal,
       method: 'POST',

@@ -1,3 +1,4 @@
+import { StripeProvider } from '@stripe/stripe-react-native';
 /**
  * App.tsx — Justice Gavel root
  *
@@ -363,12 +364,17 @@ function AppInner() {
 function App() {
   return (
     <ErrorBoundary>
+      <StripeProvider
+      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
+      merchantIdentifier="merchant.com.justicegavel"
+    >
       <SafeAreaProvider>
         <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ThemeProvider>
         <AppInner />
       </ThemeProvider>
     </SafeAreaProvider>
+    </StripeProvider>
     </ErrorBoundary>
   );
 }
