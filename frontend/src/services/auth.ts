@@ -12,11 +12,11 @@ export type AuthState = 'loading' | 'guest' | 'browsing' | 'authed';
 
 let _setter: ((s: AuthState) => void) | null = null;
 
-export function registerAuthSetter(fn: (s: AuthState) => void) {
+export function registerAuthSetter(fn: (s: AuthState) => void): void {
   _setter = fn;
 }
 
-export function setAppAuth(s: AuthState) {
+export function setAppAuth(s: AuthState): void {
   if (_setter) {
     _setter(s);
   } else {

@@ -46,7 +46,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
         cacheLessons(r.data); // save for offline
       } catch {
         // Offline -- load from cache
-        const { lessons: cached, cachedAt, isCache } = await getCachedLessons();
+        const { lessons: cached, cachedAt, isCache } = (await getCachedLessons()) as any;
         if (isCache) {
           setLessons(cached);
         }

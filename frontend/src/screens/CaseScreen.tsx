@@ -344,7 +344,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
         setIsGuest(true);
       } else {
         // Network error -- try offline cache
-        const { lawyers, cachedAt, isCache } = await getCachedLawyers();
+        const { lawyers, cachedAt, isCache } = (await getCachedLawyers()) as any;
         if (isCache) {
           setSavedLawyers(lawyers);
           setIsOffline(true);

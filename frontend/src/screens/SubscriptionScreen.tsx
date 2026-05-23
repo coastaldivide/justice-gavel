@@ -103,7 +103,7 @@ function TierCard({ tier, active, onSubscribe, loading }: any) {
       </View>
 
       <View style={styles.featureList}>
-        {tier.features.map((f: string) => (
+        {(tier.features || []).map((f: string) => (
           <View key={f} style={styles.featureRow}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.featureCheck, { color: tier.color }]}>✓</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.featureText}>{f}</Text>

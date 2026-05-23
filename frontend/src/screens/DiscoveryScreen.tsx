@@ -147,7 +147,7 @@ function Section({
 
       {expanded && (
         <View style={styles.sectionBody}>
-          {items.map((item, i) => (
+          {(items || []).map((item, i) => (
             <TouchableOpacity
               key={i}
               style={styles.itemRow}

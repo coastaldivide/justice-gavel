@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export async function setContacts(c: string[]) {
+export async function setContacts(c: string[]): Promise<void> {
   await AsyncStorage.setItem('contacts', JSON.stringify(c));
 }
 
@@ -11,7 +11,7 @@ export async function getContacts(): Promise<string[]> {
   return [stored[0] || '', stored[1] || '', stored[2] || ''];
 }
 
-export async function setUserName(n: string) {
+export async function setUserName(n: string): Promise<void> {
   await AsyncStorage.setItem('userName', n);
 }
 

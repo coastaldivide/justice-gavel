@@ -56,7 +56,7 @@ export async function isOnline(): Promise<boolean> {
   }
 }
 
-export async function markOnline() {
+export async function markOnline(): Promise<void> {
   try {
     await AsyncStorage.setItem(CACHE_KEYS.lastOnlineAt, new Date().toISOString());
   } catch {}
@@ -94,25 +94,25 @@ async function read<T>(
 }
 
 // ── Saved lawyers ─────────────────────────────────────────────────────────────
-export async function cacheSavedLawyers(lawyers: unknown[]) {
+export async function cacheSavedLawyers(lawyers: unknown[]): Promise<void> {
   await write(CACHE_KEYS.savedLawyers, lawyers, CACHE_KEYS.savedLawyersAt);
 }
-export async function getCachedLawyers() {
+export async function getCachedLawyers(): Promise<unknown> {
   const r = await read<any[]>(CACHE_KEYS.savedLawyers, CACHE_KEYS.savedLawyersAt, TTL_7_DAYS);
   return { lawyers: r.data ?? [], cachedAt: r.cachedAt, isCache: r.isCache, stale: r.stale };
 }
 
 // ── Lessons ───────────────────────────────────────────────────────────────────
-export async function cacheLessons(lessons: unknown[]) {
+export async function cacheLessons(lessons: unknown[]): Promise<void> {
   await write(CACHE_KEYS.lessons, lessons, CACHE_KEYS.lessonsAt);
 }
-export async function getCachedLessons() {
+export async function getCachedLessons(): Promise<unknown> {
   const r = await read<any[]>(CACHE_KEYS.lessons, CACHE_KEYS.lessonsAt, TTL_7_DAYS);
   return { lessons: r.data ?? [], cachedAt: r.cachedAt, isCache: r.isCache };
 }
 
 // ── Cases (last 30 days) ──────────────────────────────────────────────────────
-export async function cacheCases(cases: unknown[]) {
+export async function cacheCases(cases: unknown[]): Promise<void> {
   // Only cache cases from the last 30 days to bound storage size
   const cutoff = Date.now() - TTL_30_DAYS;
   const recent = cases.filter(c => {
@@ -121,23 +121,23 @@ export async function cacheCases(cases: unknown[]) {
   });
   await write(CACHE_KEYS.cases, recent, CACHE_KEYS.casesAt);
 }
-export async function getCachedCases() {
+export async function getCachedCases(): Promise<unknown> {
   const r = await read<any[]>(CACHE_KEYS.cases, CACHE_KEYS.casesAt, TTL_30_DAYS);
   return { cases: r.data ?? [], cachedAt: r.cachedAt, isCache: r.isCache, stale: r.stale };
 }
 
 // ── Generated motions (last 30) ───────────────────────────────────────────────
-export async function cacheMotions(motions: unknown[]) {
+export async function cacheMotions(motions: unknown[]): Promise<void> {
   const latest = motions.slice(0, 30); // cap at 30 most recent
   await write(CACHE_KEYS.motions, latest, CACHE_KEYS.motionsAt);
 }
-export async function getCachedMotions() {
+export async function getCachedMotions(): Promise<unknown> {
   const r = await read<any[]>(CACHE_KEYS.motions, CACHE_KEYS.motionsAt, TTL_30_DAYS);
   return { motions: r.data ?? [], cachedAt: r.cachedAt, isCache: r.isCache };
 }
-export async function addMotionToCache(motion: unknown) {
+export async function addMotionToCache(motion: unknown): Promise<void> {
   try {
-    const { motions } = await getCachedMotions();
+    const { motions } = (await getCachedMotions()) as any;
     // Prepend new motion, dedupe by id, keep last 30
     const updated = [(motion as any), ...motions.filter((m: any) => m.id !== (motion as any).id)].slice(0, 30);
     await cacheMotions(updated);
@@ -145,7 +145,7 @@ export async function addMotionToCache(motion: unknown) {
 }
 
 // ── Expungement results (per state) ──────────────────────────────────────────
-export async function cacheExpungement(state: string, result: unknown) {
+export async function cacheExpungement(state: string, result: unknown): Promise<void> {
   if (!state) return;
   await write(
     CACHE_KEYS.expungementPrefix + state,
@@ -153,7 +153,7 @@ export async function cacheExpungement(state: string, result: unknown) {
     CACHE_KEYS.expungementPrefix + state + '_at'
   );
 }
-export async function getCachedExpungement(state: string) {
+export async function getCachedExpungement(state: string): Promise<unknown> {
   if (!state) return { data: null, isCache: false };
   const r = await read<Record<string, unknown>>(
     CACHE_KEYS.expungementPrefix + state,
@@ -177,7 +177,7 @@ export function cacheAgeLabel(cachedAt: string | null): string {
 }
 
 // ── Clear all caches (on logout) ──────────────────────────────────────────────
-export async function clearAllCaches() {
+export async function clearAllCaches(): Promise<void> {
   try {
     const allKeys = await AsyncStorage.getAllKeys();
     const cacheKeys = allKeys.filter(k => k.startsWith('cache_'));

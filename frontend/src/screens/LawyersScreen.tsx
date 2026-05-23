@@ -80,7 +80,7 @@ function TagRow({ items, color = COLORS.steel }: { items: string[]; color?: stri
   if (!items?.length) return null;
   return (
     <View style={styles.tagRow}>
-      {items.map(t => (
+      {(items || []).map(t => (
         <View key={t} style={[styles.tag, { backgroundColor: color + '18', borderColor: color + '55' }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.tagText, { color }]}>{t}</Text>
         </View>
@@ -532,7 +532,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
         // Write-through cache for offline access
         cacheSearch('lawyers_list', { cases:[], messages:[], lawyers: [], lessons:[] }).catch(() => {});
           setLoading(false);
-          if (!cached.stale) return; // fresh cache -- skip network call
+          if (!(cached as any).stale) return; // fresh cache -- skip network call
           // Stale: continue fetch in background without showing spinner
         }
       }

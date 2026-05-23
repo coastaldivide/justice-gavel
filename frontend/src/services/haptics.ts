@@ -17,35 +17,35 @@
 import * as Haptics from 'expo-haptics';
 
 // Heavy impact — for CALL NOW, SOS, emergency actions
-export async function hapticCall() {
+export async function hapticCall(): Promise<void> {
   try {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
   } catch {}
 }
 
 // Success notification — for Pay Now success, booking confirmed, check-in done
-export async function hapticSuccess() {
+export async function hapticSuccess(): Promise<void> {
   try {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   } catch {}
 }
 
 // Warning notification — for errors, failed actions
-export async function hapticWarn() {
+export async function hapticWarn(): Promise<void> {
   try {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
   } catch {}
 }
 
 // Light selection — for tab switches, filter taps, chip selections
-export async function hapticSelect() {
+export async function hapticSelect(): Promise<void> {
   try {
     await Haptics.selectionAsync();
   } catch {}
 }
 
 // Medium impact — for save, confirm, secondary actions
-export async function hapticMedium() {
+export async function hapticMedium(): Promise<void> {
   try {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   } catch {}

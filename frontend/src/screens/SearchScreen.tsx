@@ -272,11 +272,11 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
               style={[s.sectionLabel, { color: colors.textMuted }]}>
               {TYPE_ICONS[section.type]} {TYPE_LABELS[section.type]}
             </Text>
-            {section.items.map((result, i) => (
+            {(section.items || []).map((result, i) => (
               <TouchableOpacity
                 key={result.id}
                 style={[s.resultRow, { backgroundColor: colors.bgCard, borderColor: colors.border },
-                  i < section.items.length-1 && { borderBottomWidth:0, borderBottomLeftRadius:0, borderBottomRightRadius:0 }]}
+                  i < (section.items || []).length-1 && { borderBottomWidth:0, borderBottomLeftRadius:0, borderBottomRightRadius:0 }]}
                 onPress={() => handleTap(result)}
                 accessibilityRole="button"
                 accessibilityLabel={result.title}
