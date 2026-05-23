@@ -5,7 +5,7 @@ import { api, cachedGet }           from '../services/api';
 import { cacheResources, getCachedResources } from '../services/offlineCache';
 import {  useTheme, COLORS }      from '../constants/theme';
 
-declare var fetchBoth: any;
+
 const CATEGORIES = [
   { key: 'ALL',                label: 'All',              icon: '📚' },
   { key: 'PUBLIC_DEFENDER',   label: 'Public Defender',  icon: '⚖️'  },
@@ -171,7 +171,7 @@ export default function ResourcesScreen(): React.JSX.Element {
       {error ? (
         <View>
         <Text maxFontSizeMultiplier={1.4} style={{ color:colors.emergencyDark, textAlign:'center', margin:20 }}>{error}</Text>
-          <TouchableOpacity onPress={fetchBoth} style={{ marginTop:12, backgroundColor:colors.navy, borderRadius:10, paddingVertical:12, paddingHorizontal:24, alignSelf:'center' }} accessibilityRole="button" accessibilityLabel="Try again"><Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, fontWeight:'700' }}>Try Again</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => load()} style={{ marginTop:12, backgroundColor:colors.navy, borderRadius:10, paddingVertical:12, paddingHorizontal:24, alignSelf:'center' }} accessibilityRole="button" accessibilityLabel="Try again"><Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, fontWeight:'700' }}>Try Again</Text></TouchableOpacity>
         </View>
       ) : (
         <FlatList

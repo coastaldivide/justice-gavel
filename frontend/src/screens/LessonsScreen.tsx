@@ -113,12 +113,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
                     {!done && (
                       <TouchableOpacity style={styles.completeBtn}
                         accessibilityRole="button"
-                        onPress={async () => {
-                        try {
-                          await api.post(`/lessons/${item.id}/complete`);
-                          setCompleted(prev => new Set([...prev, item.id]));
-                        } catch { /* mark complete locally even if API fails */ }
-                      }}
+                        onPress={() => markComplete(item.id, item.points || 0)}
                         >
                         <Text maxFontSizeMultiplier={1.4} style={styles.completeBtnText}>✓  Mark as complete  (+{item.points} pts)</Text>
                       </TouchableOpacity>

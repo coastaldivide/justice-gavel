@@ -312,6 +312,19 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.secondaryBtnText}>{expanded ? t('lawyers_less') : t('lawyers_more')}</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={saved ? `Unsave ${item?.name}` : `Save ${item?.name} to saved list`}
+          style={[styles.secondaryBtn, { minWidth: 44 }]}
+          onPress={toggleSave}
+          disabled={saving}
+          activeOpacity={0.75}
+          testID="lawyer-card-save"
+        >
+          <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, { color: saved ? COLORS.gold : undefined }]}>
+            {saving ? '…' : saved ? '★' : '☆'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Expandable: bio, experience */}

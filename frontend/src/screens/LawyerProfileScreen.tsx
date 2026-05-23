@@ -8,7 +8,7 @@
  * Navigation params: { lawyerId: number, lawyerData?: object }
  */
 import React, { useState, useCallback, useEffect } from 'react';
-import { ActivityIndicator, Alert, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, RefreshControl} from 'react-native';
+import { TextInput, ActivityIndicator, Alert, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, RefreshControl } from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
