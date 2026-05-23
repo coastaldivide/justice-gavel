@@ -45,6 +45,8 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
+  const mountedRef = React.useRef(true);
+  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1200)
@@ -68,18 +70,18 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
       Alert.alert('Add a bit more detail', 'Please describe what happened in a few sentences so attorneys can evaluate your case.');
       return;
     }
-    setLoading(true);
+    if (mountedRef.current) setLoading(true);
     try {
       await api.post('/billing/pi-lead/submit', {
         case_type:   caseType,
         severity,
         description: description.trim(),
       });
-      setStep('submitted');
+      if (mountedRef.current) setStep('submitted');
     } catch {
       Alert.alert('Could not submit', 'Check your connection and try again.');
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   });
 

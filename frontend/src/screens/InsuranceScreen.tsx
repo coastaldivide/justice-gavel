@@ -26,6 +26,8 @@ export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
+  const mountedRef = React.useRef(true);
+  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
@@ -38,15 +40,15 @@ export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.
   const [getting, setGetting] = useState(false);
 
   const getQuote = async () => {
-    setGetting(true);
-    setQuote(null);
+    if (mountedRef.current) setGetting(true);
+    if (mountedRef.current) setQuote(null);
     try {
       const r = await api.post('/insurance/quote', { plan, city: 'your area' });
-      setQuote(r.data || null);
+      if (mountedRef.current) setQuote(r.data || null);
     } catch {
-      setError('Could not load insurance quote. Check your connection and try again.');
+      if (mountedRef.current) setError('Could not load insurance quote. Check your connection and try again.');
     }
-    setGetting(false);
+    if (mountedRef.current) setGetting(false);
   };
 
   const selected = PLANS.find(p => p.key === plan)!;

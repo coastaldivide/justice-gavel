@@ -57,6 +57,8 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
   const { caseId, caseName } = route?.params || {};
 
   const [phase, setPhase] = useState<'home'|'lookup'|'intake'|'result'>('home');
+  const mountedRef = React.useRef(true);
+  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
   const [usResources, setUsResources] = useState<any>(null);
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [authorityData, setAuthorityData] = useState<any>(null);
@@ -78,29 +80,29 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
   const loadUsResources = useCallback(async () => {
     try {
       const res = await api.get('/hague-contacts/us-resources');
-      setUsResources(res.data?.resources);
+      if (mountedRef.current) setUsResources(res.data?.resources);
     } catch { /* non-critical */ }
   }, []);
 
   const lookupAuthority = useCallback(async (code: string) => {
-    setLoadingAuth(true);
-    setAuthorityData(null);
+    if (mountedRef.current) setLoadingAuth(true);
+    if (mountedRef.current) setAuthorityData(null);
     try {
       hapticSelect();
       const res = await api.get(`/hague-contacts/central-authority/${code}`);
-      setAuthorityData(res.data || null);
+      if (mountedRef.current) setAuthorityData(res.data || null);
     } catch {
       hapticWarn();
       Alert.alert('Lookup Failed', 'Could not load authority information. Check HCCH at hcch.net directly.');
     } finally {
-      setLoadingAuth(false);
+      if (mountedRef.current) setLoadingAuth(false);
     }
   }, []);
 
   const onSelectCountry = useCallback((code: string) => {
-    setSelectedCountry(code);
+    if (mountedRef.current) setSelectedCountry(code);
     lookupAuthority(code);
-    setPhase('lookup');
+    if (mountedRef.current) setPhase('lookup');
   }, [lookupAuthority]);
 
   const openUrl = useCallback((url: string) => {
@@ -125,7 +127,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
     if (!selectedCountry) return Alert.alert('Required', 'Select destination country first.');
     if (!abductionDate.trim()) return Alert.alert('Required', 'Abduction date is required.');
 
-    setSubmitting(true);
+    if (mountedRef.current) setSubmitting(true);
     try {
       hapticSelect();
       const res = await api.post('/hague-contacts/report-intake', {
@@ -137,13 +139,13 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         notes: intakeNotes.trim(),
       });
       hapticSuccess();
-      setIntakeResult(res.data || null);
-      setPhase('result');
+      if (mountedRef.current) setIntakeResult(res.data || null);
+      if (mountedRef.current) setPhase('result');
     } catch {
       hapticWarn();
       Alert.alert('Error', 'Failed to record intake. Please try again.');
     } finally {
-      setSubmitting(false);
+      if (mountedRef.current) setSubmitting(false);
     }
   }, [caseId, childName, selectedCountry, abductionDate, childAge, intakeNotes]);
 

@@ -19,7 +19,6 @@ import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webC
 declare var CASE_TYPES: any;
 declare var Picker: any;
 declare var caseLoading: any; // hoisted from component scope
-declare var openSecureMessage: any; // hoisted from component scope
 declare var useNavigation: any; // hoisted from component scope
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -47,6 +46,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
 
   const navigation = useNavigation();
   const [msgModal,   setMsgModal]   = useState(false);
+  const openSecureMessage = () => { setMsgSent(false); setMsgModal(true); };
   const [msgName,    setMsgName]    = useState('');
   const [msgPhone,   setMsgPhone]   = useState('');
   const [msgNote,    setMsgNote]    = useState('');
@@ -202,7 +202,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                     placeholderTextColor={COLORS.textSecond}
                     value={msgPhone}
                     onChangeText={setMsgPhone}
-                    keyboardType="default"
+                    keyboardType="email-address"
                     autoCapitalize="none"
           returnKeyType="next"
           blurOnSubmit
