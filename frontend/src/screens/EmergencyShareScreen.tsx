@@ -33,13 +33,7 @@ declare var load: any;
 declare var mapsLink: any; // hoisted from component scope
 type Phase = 'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' | 'error';
 
-const lines = [
-      `🚨 ${name} needs legal help right now.`,
-      ``,
-      `📍 Their location:`,
-      mapsLink,
-      ``,
-    ];
+// Message template lines are built inside buildMessage()
 
 export default function EmergencyShareScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
@@ -129,7 +123,14 @@ export default function EmergencyShareScreen({ route, navigation }: ScreenProps)
     lawyerPhone: string | null,
   ): string => {
     const mapsLink = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
-        if (bondsmanPhone) {
+    const lines: string[] = [
+      `🚨 ${name} needs legal help right now.`,
+      ``,
+      `📍 Their location:`,
+      mapsLink,
+      ``,
+    ];
+    if (bondsmanPhone) {
       lines.push(`🔓 Bail bondsman (call now):`);
       lines.push(bondsmanPhone);
       lines.push(``);

@@ -245,7 +245,7 @@ const FILING_STATUS = {
 type FilingStatus = keyof typeof FILING_STATUS;
 
 // ── Motion type card ──────────────────────────────────────────────────────────
-function MotionCard({ m, onPress }: { m: typeof MOTION_TYPES[0]; onPress: () => void }) {
+function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPES[0]; onPress: () => void; onReview?: () => void; reviewing?: boolean }) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -266,7 +266,7 @@ function MotionCard({ m, onPress }: { m: typeof MOTION_TYPES[0]; onPress: () => 
                   paddingHorizontal:16, borderRadius:10, borderWidth:1,
                   borderColor:COLORS.border, backgroundColor:COLORS.bgSubtle,
                   marginBottom:8 }}
-                onPress={reviewDraft}
+                onPress={onReview || (() => {})}
                 disabled={reviewing}
                 accessibilityLabel="Run AI review of this motion draft"
               >
