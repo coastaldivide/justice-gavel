@@ -32,7 +32,7 @@ export default function DocumentScannerScreen(): React.JSX.Element {
       const res = await api.post('/messages/attachment', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setResult(res.data.url || res.data.path || 'File uploaded successfully');
+      setResult(res.data?.url || res.data.path || 'File uploaded successfully');
     } catch {
       setError('Could not process document. Try a clearer photo.');
     } finally {

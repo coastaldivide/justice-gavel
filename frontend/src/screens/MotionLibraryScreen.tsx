@@ -775,7 +775,7 @@ const loadHistory = useCallback(async () => {
   if (phase === 'library') return (
     <ScrollView
       refreshControl={<RefreshControl refreshing={refreshing}
-        onRefresh={() => { setRefreshing(true); load().finally(() => setRefreshing(false)); }}
+        onRefresh={() => { setRefreshing(true); setLoadError(''); load().finally(() => setRefreshing(false)); }}
         tintColor={colors.textSecond} />}>
       <View style={{ backgroundColor: colors.warnBg, borderRadius: 8, padding: 12, margin: 12,
         marginBottom: 0, borderLeftWidth: 4, borderLeftColor: colors.gold }}>

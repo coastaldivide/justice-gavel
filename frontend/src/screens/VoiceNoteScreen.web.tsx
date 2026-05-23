@@ -60,7 +60,7 @@ export default function VoiceNoteScreen(): React.JSX.Element {
       const res = await api.post('/transcribe/audio', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setTranscript(res.data.text || '');
+      setTranscript(res.data?.text || '');
     } catch {
       setError('Transcription failed. Please try again.');
     } finally {

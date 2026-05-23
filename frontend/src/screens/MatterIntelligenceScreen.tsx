@@ -180,7 +180,7 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => { setRefreshing(true); load().finally(() => setRefreshing(false)); }}
+            onRefresh={() => { setRefreshing(true); setErrorMsg(null); load().finally(() => setRefreshing(false)); }}
             tintColor={colors.gold}
           />
         }

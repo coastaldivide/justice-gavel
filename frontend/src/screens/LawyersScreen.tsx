@@ -518,6 +518,7 @@ export default function LawyersScreen({ navigation }: ScreenProps): React.JSX.El
   }, [lawyers]);
 
 const fetchLawyers = useCallback(async (isRefresh = false) => {
+    setStatusMsg('');
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setStatusMsg('Searching…');

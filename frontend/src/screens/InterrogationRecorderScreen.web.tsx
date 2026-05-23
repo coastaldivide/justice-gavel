@@ -83,7 +83,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
       const res = await api.post('/interrogation/transcribe', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setTranscript(res.data.transcript || res.data.text || '');
+      setTranscript(res.data?.transcript || res.data.text || '');
       setStep('done');
     } catch {
       setError('Processing failed. Your recording was not lost -- try again.');
