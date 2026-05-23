@@ -30,14 +30,6 @@ import { useFocusEffect } from '@react-navigation/native';
 declare var setSavedLawyers: any;
 declare var AppNavigation: any; // hoisted from component scope
 declare var load: any; // hoisted from component scope
-declare var rating: any; // hoisted from component scope
-declare var reviewText: any; // hoisted from component scope
-declare var reviewing: any; // hoisted from component scope
-declare var setRating: any; // hoisted from component scope
-declare var setReviewText: any; // hoisted from component scope
-declare var setReviewing: any; // hoisted from component scope
-declare var setSubmitting: any; // hoisted from component scope
-declare var submitting: any; // hoisted from component scope
 interface SavedLawyer {
   id:          number;
   provider_id: number | null;
@@ -73,6 +65,10 @@ function SavedCard({
   const [note,        setNote]        = useState(lawyer.notes || '');
   const [editingNote, setEditingNote] = useState(false);
   const [saving,      setSaving]      = useState(false);
+  const [reviewing,    setReviewing]    = useState(false);
+  const [rating,       setRating]       = useState(0);
+  const [reviewText,   setReviewText]   = useState('');
+  const [submitting,   setSubmitting]   = useState(false);
 
   const saveNote = useCallback(async () => {
     setSaving(true);

@@ -19,19 +19,7 @@ import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webC
 declare var CASE_TYPES: any;
 declare var Picker: any;
 declare var caseLoading: any; // hoisted from component scope
-declare var msgModal: any; // hoisted from component scope
-declare var msgName: any; // hoisted from component scope
-declare var msgNote: any; // hoisted from component scope
-declare var msgPhone: any; // hoisted from component scope
-declare var msgSending: any; // hoisted from component scope
-declare var msgSent: any; // hoisted from component scope
 declare var openSecureMessage: any; // hoisted from component scope
-declare var setMsgModal: any; // hoisted from component scope
-declare var setMsgName: any; // hoisted from component scope
-declare var setMsgNote: any; // hoisted from component scope
-declare var setMsgPhone: any; // hoisted from component scope
-declare var setMsgSending: any; // hoisted from component scope
-declare var setMsgSent: any; // hoisted from component scope
 declare var useNavigation: any; // hoisted from component scope
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -58,6 +46,12 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
   const rankColor = rankColors[rank - 1] ?? COLORS.navy;
 
   const navigation = useNavigation();
+  const [msgModal,   setMsgModal]   = useState(false);
+  const [msgName,    setMsgName]    = useState('');
+  const [msgPhone,   setMsgPhone]   = useState('');
+  const [msgNote,    setMsgNote]    = useState('');
+  const [msgSending, setMsgSending] = useState(false);
+  const [msgSent,    setMsgSent]    = useState(false);
   return (
     <TouchableOpacity
       accessibilityRole="button"
