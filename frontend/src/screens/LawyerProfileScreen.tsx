@@ -186,7 +186,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
     : (lawyer.specialties || []);
 
   const langs = typeof lawyer.languages === 'string'
-    ? lawyer.languages.split(',').map((l: string) => l.trim()).filter(Boolean)
+    ? (lawyer.languages || '').split(',').map((l: string) => l.trim()).filter(Boolean)
     : (lawyer.languages || []);
 
   return (

@@ -45,7 +45,7 @@ export default function ContactsScreen(): React.JSX.Element {
 
   const save = async () => {
     setSaving(true);
-    const values = contacts.map(c => c.value.trim());
+    const values = contacts.map(c => c.value?.trim() || '');
     await setContacts(values);
     setSaving(false);
     setSaved(true);

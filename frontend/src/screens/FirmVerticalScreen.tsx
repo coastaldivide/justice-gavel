@@ -415,7 +415,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); Promise.resolve(setRefresh(true)).finally(() => setRefreshing(false)); }}  />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadAll().catch(()=>{}).finally(() => { setRefreshing(false); }); }}  />}
         keyboardShouldPersistTaps="handled"
       >
 
@@ -683,8 +683,8 @@ export default function FirmVerticalScreen({ navigation }: any) {
                     </View>
 
                     {dpaList.map((d: any) => {
-                      const base = d.base_fine_cents / 100;
-                      const eff  = d.effective_fine_cents / 100;
+                      const base = (d.base_fine_cents ?? 0) / 100;
+                      const eff  = (d.effective_fine_cents ?? 0) / 100;
                       const saved = base > 0 ? Math.round((1 - eff / base) * 100) : 0;
                       return (
                         <View key={d.id} style={s.dpaCard}>
