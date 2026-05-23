@@ -1,9 +1,10 @@
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import type { ScreenProps } from '../types/navigation';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface GavelCriteria {
   avg_rating?: number;
@@ -209,6 +210,8 @@ export default function GoldenGavelScreen({ navigation }: ScreenProps): React.JS
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  // Reload when screen comes into focus (catches points earned elsewhere)
+  useFocusEffect(useCallback(() => { load(true); }, [load]));
 
   const handleOptIn = async () => {
     setOptingIn(true);
