@@ -37,9 +37,10 @@ async function getDb(): Promise<SQLite.SQLiteDatabase> {
 }
 
 /** Save a case locally when offline. Returns a temp ID string. */
+let _offlineSeq = 0;
 export async function saveCaseOffline(caseData: Record<string, unknown>): Promise<string> {
   const d = await getDb();
-  const tempId = `offline_${Date.now()}`;
+  const tempId = `offline_${Date.now()}_${++_offlineSeq}`;
   const full = { ...caseData, id: tempId, _offline: true, created_at: new Date().toISOString() };
   await d.runAsync('INSERT INTO offline_cases (id, data) VALUES (?, ?)',
     [tempId, JSON.stringify(full)]);

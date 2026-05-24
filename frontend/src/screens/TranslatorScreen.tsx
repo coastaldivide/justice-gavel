@@ -316,7 +316,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
       src_lang:   side === 'a' ? langA : langB,
       tgt_lang:   side === 'a' ? langB : langA,
       _pending:   true,
-      id: Date.now(),
+      id: Date.now() + Math.floor(Math.random() * 10000),
     };
     setMessages(prev => [...prev, optimistic]);
 

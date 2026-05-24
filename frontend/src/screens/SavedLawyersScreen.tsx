@@ -343,14 +343,25 @@ export default function SavedLawyersScreen({ navigation }: any): React.JSX.Eleme
 
   useEffect(() => { load(); }, [load]);
 
-  const handleRemove = useCallback(async (id: number) => {
-    try {
-      await api.delete(`/saved/lawyers/${id}`);
-      setLawyers(prev => prev.filter(l => l.id !== id));
-    } catch {
-      setRefreshing(false);
-      Alert.alert('Could not remove', 'Check your connection and try again.');
-    }
+  const handleRemove = useCallback((id: number) => {
+    Alert.alert(
+      'Remove Attorney',
+      'Remove this attorney from your saved list?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove', style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.delete(`/saved/lawyers/${id}`);
+              setLawyers(prev => prev.filter(l => l.id !== id));
+            } catch {
+              Alert.alert('Could not remove', 'Check your connection and try again.');
+            }
+          },
+        },
+      ]
+    );
   }, []);
 
   const handleNoteChange = useCallback((id: number, note: string) => {
