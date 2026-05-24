@@ -21,6 +21,7 @@ import OfflineBanner from '../components/OfflineBanner';
 
 import { ScreenCapture } from '../utils/webCompat';
 import { daysUntil, formatDate} from '../utils/dateUtils';
+import { useFocusEffect } from '@react-navigation/native';
 
 declare var profile: any;
 declare var setError: any;
@@ -247,6 +248,8 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+  // Reload when returning from CaseScreen, BookingScreen, etc.
+  useFocusEffect(React.useCallback(() => { loadAll(); }, [loadAll]));
 
   const onRefresh = useCallback(() => { setRefreshing(true); loadAll(); }, [loadAll]);
 

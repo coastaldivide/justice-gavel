@@ -110,6 +110,8 @@ export function usePushNotificationTap(navigationRef: React.RefObject<any>) {
           nav.navigate('MoreTab', { screen: 'CaseScreen', params: { caseId: data.caseId } });
         } else if (data?.type === 'message' && data?.threadId) {
           nav.navigate('HomeTab', { screen: 'Chat' });
+        } else if (data?.type === 'expungement_eligible') {
+          nav.navigate('MoreTab', { screen: 'Expungement' });
         } else if (data?.type === 'cle_reminder') {
           nav.navigate('MoreTab', { screen: 'AttorneyDashboard' });
         }

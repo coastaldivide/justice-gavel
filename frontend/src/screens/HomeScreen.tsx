@@ -12,6 +12,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import NetInfo from '@react-native-community/netinfo';
 import * as secureStorage from '../utils/secureStorage';
+import { useFocusEffect } from '@react-navigation/native';
 
 declare var JusticeGavelLogo: any;
 // Tiles ordered by most urgent / most used first

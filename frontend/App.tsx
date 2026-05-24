@@ -20,6 +20,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sentry from '@sentry/react-native';
 import NetInfo from '@react-native-community/netinfo';
+import { processSyncQueue } from './src/services/offlineSync';
 
 import { initLang } from './src/i18n';
 import { registerAuthSetter, AuthState, canBrowse } from './src/services/auth';
@@ -160,8 +161,15 @@ function AppInner() {
 
   // ── Network status ──────────────────────────────────────────────────────────
   useEffect(() => {
+    let wasOffline = false;
     const unsub = NetInfo.addEventListener(state => {
-      setIsOffline(state.isConnected === false);
+      const offline = state.isConnected === false;
+      setIsOffline(offline);
+      // Process sync queue when connectivity is restored
+      if (wasOffline && !offline) {
+        processSyncQueue(require('./src/services/api').api).catch(() => {});
+      }
+      wasOffline = offline;
     });
     return unsub;
   }, []);

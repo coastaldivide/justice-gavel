@@ -49,7 +49,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
   const [submitting, setSubmitting] = React.useState(false);
 
   // Load attorney's weekly availability so users know best times to expect responses
-  const { lawyerName, lawyerPhone, lawyerId } = (route?.params as import('../types/api').RouteParams) ?? {};
+  const { lawyerName, lawyerId } = (route?.params as import('../types/api').RouteParams) ?? {};
   React.useEffect(() => {
     if (!lawyerId) return;
     api.get('/attorney/profile/availability', { params: { lawyerId } })
