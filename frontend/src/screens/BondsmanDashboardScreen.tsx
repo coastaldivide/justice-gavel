@@ -17,7 +17,6 @@ import {  useTheme, COLORS } from '../constants/theme';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 import { useAuthGate } from '../components/AuthGate';
-import { SkeletonLoader } from '../components/SkeletonLoader';
 
 declare var _fetchError: any;
 declare var confirmAccept: any; // hoisted from component scope

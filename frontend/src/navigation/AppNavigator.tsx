@@ -17,7 +17,6 @@ import JTBLogo from '../components/JTBLogo';
 // ── Screen imports — all 65 screens ──────────────────────────────────────────
 import AdminVerificationScreen from '../screens/AdminVerificationScreen';
 import AdvocacyScreen from '../screens/AdvocacyScreen';
-import AgeGateScreen from '../screens/AgeGateScreen';
 import ArrestMonitorScreen from '../screens/ArrestMonitorScreen';
 import AttorneyDashboardScreen from '../screens/AttorneyDashboardScreen';
 import JustArrestedScreen   from '../screens/JustArrestedScreen';

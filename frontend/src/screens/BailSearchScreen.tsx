@@ -5,7 +5,7 @@ import { ActivityIndicator, Alert, Animated, FlatList, KeyboardAvoidingView, Lin
 import { getLocation, formatDistance } from '../services/location';
 import { api }             from '../services/api';
 import { getUserState } from '../utils/userState';
-import { COLORS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { COLORS, useTheme } from '../constants/theme';
 
 declare var SkeletonBailList: any;
 declare var cityQuery: any;

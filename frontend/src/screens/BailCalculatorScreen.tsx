@@ -1,4 +1,3 @@
-import ScreenHeader from '../components/ScreenHeader';
 import EmergencyStrip from '../components/EmergencyStrip';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect } from 'react';
