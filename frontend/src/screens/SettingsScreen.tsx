@@ -13,10 +13,10 @@
  */
 import React, { useRef, useEffect, useState } from 'react';
 import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
-import type { ScreenProps } from '../types/navigation';
-import { Linking, View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert, Share, ActivityIndicator, RefreshControl} from 'react-native';
+import type {} from '../types/navigation';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert, Share, ActivityIndicator, RefreshControl} from 'react-native';
 import AsyncStorage          from '@react-native-async-storage/async-storage';
-import { LocalAuth as LocalAuthentication, ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import Constants   from 'expo-constants';
 import { api } from '../services/api';
 import { setLang } from '../i18n';

@@ -1,5 +1,5 @@
 import { SkeletonLoader } from '../components/SkeletonLoader';
-import type { ScreenProps } from '../types/navigation';
+import type {} from '../types/navigation';
 /**
  * SavedLawyersScreen -- Personal attorney contact list
  *

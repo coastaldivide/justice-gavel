@@ -18,9 +18,9 @@ import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Activi
 import { api }      from '../services/api';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import OfflineBanner from '../components/OfflineBanner';
-import NetInfo from '@react-native-community/netinfo';
+
 import { ScreenCapture } from '../utils/webCompat';
-import { daysUntil, formatDate, MS_PER_DAY } from '../utils/dateUtils';
+import { daysUntil, formatDate} from '../utils/dateUtils';
 
 declare var profile: any;
 declare var setError: any;

@@ -15,8 +15,8 @@
  */
 import { api } from '../services/api';
 import React, { useState, useCallback } from 'react';
-import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl , ActivityIndicator} from 'react-native';
+
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator} from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 
 type Tab = 'consequences' | 'status';

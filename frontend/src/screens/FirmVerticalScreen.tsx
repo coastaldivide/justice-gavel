@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
-import type { ScreenProps } from '../types/navigation';
+import type {} from '../types/navigation';
 
 declare var graceUntil: any;
 declare var route: any;

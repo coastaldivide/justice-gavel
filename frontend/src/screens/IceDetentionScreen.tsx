@@ -14,8 +14,8 @@
  *   4. HomeScreen tile (future)
  */
 import React from 'react';
-import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Linking } from 'react-native';
+import type {} from '../types/navigation';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Linking } from 'react-native';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { t } from '../i18n';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';

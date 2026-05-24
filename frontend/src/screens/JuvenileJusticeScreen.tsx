@@ -14,8 +14,8 @@
  *   - Automatic sealing timelines by state
  */
 import React, { useState, useCallback } from 'react';
-import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import type {} from '../types/navigation';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { t }      from '../i18n';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 

@@ -18,9 +18,9 @@ import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getLocation } from '../services/location';
 import { api } from '../services/api';
-import { useAuthGate } from '../components/AuthGate';
 import PracticeAreaSelector from '../components/PracticeAreaSelector';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+import { useAuthGate } from '../components/AuthGate';
 
 declare var credit: any;
 declare var data: any;

@@ -9,9 +9,9 @@ import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { api } from '../services/api';
-import { useAuthGate } from '../components/AuthGate';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { useAuthGate } from '../components/AuthGate';
 
 declare var data: any;
 declare var error: any;

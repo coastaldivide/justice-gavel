@@ -14,7 +14,7 @@
 import { api } from '../services/api';
 import React, { useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshControl} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshControl} from 'react-native';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 

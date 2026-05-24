@@ -11,9 +11,9 @@ import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Alert, Linking, KeyboardAvoidingView, Platform, RefreshControl} from 'react-native';
 import { api } from '../services/api';
-import { useAuthGate } from '../components/AuthGate';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { useAuthGate } from '../components/AuthGate';
 
 declare var setContacts: any;
 function callPhone(phone: string) {

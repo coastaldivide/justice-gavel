@@ -13,11 +13,11 @@ import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
-import { useAuthGate } from '../components/AuthGate';
 import {  useTheme, COLORS } from '../constants/theme';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 import { useStripe } from '@stripe/stripe-react-native';
+import { useAuthGate } from '../components/AuthGate';
 
 declare var amt: any;
 declare var data: any;

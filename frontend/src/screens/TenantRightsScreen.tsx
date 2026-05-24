@@ -20,8 +20,8 @@
  */
 import { api } from '../services/api';
 import React, { useState } from 'react';
-import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking , ActivityIndicator, RefreshControl} from 'react-native';
+
+import { View, Text, StyleSheet, ScrollView, Linking , ActivityIndicator, RefreshControl} from 'react-native';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 

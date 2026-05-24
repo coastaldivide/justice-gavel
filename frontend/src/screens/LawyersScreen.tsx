@@ -17,7 +17,6 @@ import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react'
 import { Alert, Animated, FlatList, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { api } from '../services/api';
-import { useAuthGate } from '../components/AuthGate';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocationWithCity, formatDistance } from '../services/location';
 import { cacheSearch, getCachedLawyers } from '../services/offlineCache';

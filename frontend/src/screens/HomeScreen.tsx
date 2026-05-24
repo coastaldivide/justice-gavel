@@ -1,7 +1,7 @@
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { getContacts } from '../services/storage';

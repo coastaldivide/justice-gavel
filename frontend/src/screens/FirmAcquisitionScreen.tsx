@@ -20,8 +20,8 @@ import {
 } from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
+import type {} from '../types/navigation';
 import { useAuthGate } from '../components/AuthGate';
-import type { ScreenProps } from '../types/navigation';
 
 type Flow = 'browse' | 'activate' | 'status';
 

@@ -14,10 +14,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, FlatList, TextInput, Modal, ActivityIndicator, Alert, RefreshControl, KeyboardAvoidingView} from 'react-native';
 import { api } from '../services/api';
-import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
-import { daysUntil, formatDate, MS_PER_DAY } from '../utils/dateUtils';
+import { daysUntil, formatDate} from '../utils/dateUtils';
+import { useAuthGate } from '../components/AuthGate';
 
 declare var loading: any;
 declare var setLoading: any;

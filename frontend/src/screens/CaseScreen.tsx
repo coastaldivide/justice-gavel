@@ -2,7 +2,7 @@ import { CaseStatusBadge } from '../components/CaseStatusBadge';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { FileSystem, ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
-import type { AppNavigation } from '../types/navigation';
+import type {} from '../types/navigation';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList, Modal, ScrollView, Linking, ActivityIndicator, RefreshControl, Share, KeyboardAvoidingView, Platform} from 'react-native';
 import { api } from '../services/api';
 import { cacheAgeLabel, cacheCases, cacheSavedLawyers, getCachedLawyers } from '../services/offlineCache';
@@ -15,7 +15,7 @@ import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 import { saveCaseOffline, getOfflineCases, startSyncListener } from '../services/offlineSync';
 import Markdown from 'react-native-markdown-display';
 import { useFocusEffect } from '@react-navigation/native';
-import { daysUntil, formatDate, MS_PER_DAY } from '../utils/dateUtils';
+import { daysUntil, formatDate} from '../utils/dateUtils';
 
 declare var ScreenProps: any;
 declare var caseData: any;

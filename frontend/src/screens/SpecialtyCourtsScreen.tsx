@@ -1,5 +1,5 @@
 import ScreenHeader from '../components/ScreenHeader';
-import type { ScreenProps } from '../types/navigation';
+import type {} from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, Linking, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import { api, cachedGet } from '../services/api';

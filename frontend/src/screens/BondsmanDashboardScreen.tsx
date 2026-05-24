@@ -13,10 +13,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { api } from '../services/api';
-import { useAuthGate } from '../components/AuthGate';
 import {  useTheme, COLORS } from '../constants/theme';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
+import { useAuthGate } from '../components/AuthGate';
 
 declare var _fetchError: any;
 declare var confirmAccept: any; // hoisted from component scope
@@ -422,7 +422,6 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
         `Charged ${res.data?.fee_charged}. Contact info revealed below.`,
         [{ text: 'OK' }]
       );
-      setAcceptedMsg(`Lead accepted. ${res.data?.fee_charged || ''} charged.`);
       loadLeads(true);
       setAcceptedMsg(`Lead accepted. ${res.data?.fee_charged || ''} charged.`);
     } catch (e: any) {

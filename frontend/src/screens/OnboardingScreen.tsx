@@ -10,12 +10,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, FlatList, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import JusticeGavelLogo from '../components/JTBLogo';
 import { setAppAuth } from '../services/auth';
 import { t, initLang } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { setUserState} from '../utils/userState';
 import { detectAndSaveUserState } from '../services/location';
+import JTBLogo from '../components/JTBLogo';
 
 const { width } = Dimensions.get('window');
 
@@ -180,7 +180,7 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
 
       {/* Logo + Social proof */}
       <View style={styles.logoWrap}>
-        <JusticeGavelLogo size={50} />
+        <JTBLogo size={50} />
       </View>
       <View style={{
         flexDirection:'row', alignItems:'center', justifyContent:'center',

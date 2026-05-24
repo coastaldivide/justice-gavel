@@ -8,9 +8,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { api } from '../services/api';
 import { t }   from '../i18n';
-import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { track } from '../services/analytics';
+import { useAuthGate } from '../components/AuthGate';
 
 declare var setError: any;
 const DURATIONS = [

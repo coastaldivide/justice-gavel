@@ -17,8 +17,8 @@ import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, RefreshControl} from 'react-native';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
-import { useAuthGate } from '../components/AuthGate';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { useAuthGate } from '../components/AuthGate';
 
 declare var data: any;
 type Step = 'type' | 'severity' | 'details' | 'submitted';

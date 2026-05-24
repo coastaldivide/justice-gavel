@@ -1,14 +1,14 @@
 import TermsAcceptanceModal from './TermsAcceptanceModal';
-import Analytics from '../services/analytics';
+
 import React, { useState, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { api } from '../services/api';
 import { setAppAuth } from '../services/auth';
-import JusticeGavelLogo from '../components/JTBLogo';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
+import JTBLogo from '../components/JTBLogo';
 
 declare var showPassword: any;
 export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
@@ -49,7 +49,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
 
         <View style={styles.logoSection}>
           <View style={styles.logoWrap}>
-            <JusticeGavelLogo size={72} />
+            <JTBLogo size={72} />
           </View>
           <Text maxFontSizeMultiplier={1.4} style={styles.wordmark}>Create Account</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.tagline}>Free to use  ·  Legal help for everyone</Text>

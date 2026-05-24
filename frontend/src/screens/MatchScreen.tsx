@@ -9,9 +9,8 @@
 
 import React, { useState, useCallback } from 'react';
 import { View, Text, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, TextInput, Linking, ActivityIndicator, Platform, KeyboardAvoidingView, Modal, Alert } from 'react-native';
-import PracticeAreaSelector, { PRACTICE_AREAS } from '../components/PracticeAreaSelector';
+import PracticeAreaSelector, {} from '../components/PracticeAreaSelector';
 import { api } from '../services/api';
-import { useAuthGate } from '../components/AuthGate';
 import { getLocationWithCity, formatDistance } from '../services/location';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';

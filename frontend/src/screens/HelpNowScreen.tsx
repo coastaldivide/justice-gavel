@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import React, { useCallback, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, KeyboardAvoidingView, Linking, Modal, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, Modal, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getLocation } from '../services/location';
 import { t, initLang } from '../i18n';
 import { hapticCall } from '../services/haptics';
