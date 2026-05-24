@@ -166,3 +166,9 @@ function SkeletonLoaderGeneric({ rows = 3, label }: { rows?: number; label?: str
 }
 
 export { SkeletonLawyerCard, SkeletonLoaderGeneric as SkeletonLoader };
+
+(MemoizedSkeletonLawyerCard as any).displayName = "SkeletonLawyerCard";
+(MemoizedSkeletonLawyerList as any).displayName = "SkeletonLawyerList";
+(MemoizedSkeletonBailCard as any).displayName = "SkeletonBailCard";
+(MemoizedSkeletonBailList as any).displayName = "SkeletonBailList";
+(MemoizedSkeletonRow as any).displayName = "SkeletonRow";
