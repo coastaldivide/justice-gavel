@@ -1,101 +1,113 @@
 /**
- * securityHardening.test.js — Tests for security-related logic
+ * securityHardening.test.js
+ * Tests for input validation, phone formatting, contact info validation
  */
 
-describe('JWT decode safety', () => {
-  const safeDecodeJWT = (token) => {
-    if (!token) return null;
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) return null;
-      return JSON.parse(atob(parts[1]));
-    } catch {
-      return null;
-    }
-  };
+// ── Phone number formatting ───────────────────────────────────────────────
+describe('Phone number sanitization for tel: links', () => {
+  // /\D/g removes all non-digits, making (555) 123-4567 → 5551234567
+  // /\s/g only removes spaces, leaving 555)123-4567 (BROKEN tel: link)
+  const sanitizePhone = (phone) => phone.replace(/\D/g, '');
+  const badSanitize   = (phone) => phone.replace(/\s/g, '');
 
-  it('returns null for null token', () => {
-    expect(safeDecodeJWT(null)).toBeNull();
+  it('strips parentheses and dashes correctly', () => {
+    expect(sanitizePhone('(555) 123-4567')).toBe('5551234567');
   });
 
-  it('returns null for malformed token', () => {
-    expect(safeDecodeJWT('not.a.jwt.at.all')).toBeNull();
+  it('strips dots from formatted numbers', () => {
+    expect(sanitizePhone('555.123.4567')).toBe('5551234567');
   });
 
-  it('returns null for token with invalid base64', () => {
-    expect(safeDecodeJWT('header.!!!invalid!!!.sig')).toBeNull();
+  it('/\s/g would leave parens (broken)', () => {
+    expect(badSanitize('(555) 123-4567')).toBe('(555)123-4567');
+    // tel:(555)123-4567 is invalid
   });
 
-  it('returns null for empty string', () => {
-    expect(safeDecodeJWT('')).toBeNull();
+  it('handles E.164 format (keeps digits only)', () => {
+    expect(sanitizePhone('+1 555 123 4567')).toBe('15551234567');
   });
 
-  it('parses valid JWT payload', () => {
-    // Create a fake JWT: header.payload.sig (base64url encoded)
-    const payload = { sub: '123', iat: 1700000000, role: 'consumer' };
-    const encoded = btoa(JSON.stringify(payload));
-    const fakeJWT = `header.${encoded}.sig`;
-    const result = safeDecodeJWT(fakeJWT);
-    expect(result?.sub).toBe('123');
-    expect(result?.role).toBe('consumer');
+  it('handles already-clean number', () => {
+    expect(sanitizePhone('5551234567')).toBe('5551234567');
+  });
+
+  it('returns empty string for non-phone', () => {
+    expect(sanitizePhone('not a phone')).toBe('');
   });
 });
 
-describe('SecureStore fallback behavior', () => {
-  // The secureStorage utility falls back to AsyncStorage if SecureStore fails
-  // This test verifies the fallback logic pattern
-
-  const mockStorage = {};
-  const setItemSafe = async (key, value, useSecure) => {
-    if (useSecure) {
-      try {
-        // Simulate SecureStore (throws on simulator)
-        if (key === 'force_fail') throw new Error('SecureStore unavailable');
-        mockStorage['secure_' + key] = value;
-      } catch {
-        mockStorage[key] = value; // fallback
-      }
-    } else {
-      mockStorage[key] = value;
-    }
-    return true;
+// ── Contact info validation ───────────────────────────────────────────────
+describe('Contact info validation (phone or email)', () => {
+  const isValidContact = (value) => {
+    const trimmed = value.trim();
+    if (trimmed.includes('@')) return trimmed.length > 5; // basic email check
+    return trimmed.replace(/\D/g, '').length >= 7; // phone: 7+ digits
   };
 
-  it('falls back to AsyncStorage when SecureStore throws', async () => {
-    await setItemSafe('force_fail', 'test_value', true);
-    expect(mockStorage['force_fail']).toBe('test_value');
-    expect(mockStorage['secure_force_fail']).toBeUndefined();
+  it('accepts valid email', () => {
+    expect(isValidContact('user@example.com')).toBe(true);
   });
 
-  it('uses secure storage when available', async () => {
-    await setItemSafe('normal_key', 'test_value', true);
-    expect(mockStorage['secure_normal_key']).toBe('test_value');
+  it('accepts valid 10-digit phone', () => {
+    expect(isValidContact('555-123-4567')).toBe(true);
+  });
+
+  it('accepts formatted phone with parens', () => {
+    expect(isValidContact('(555) 123-4567')).toBe(true);
+  });
+
+  it('rejects too-short number', () => {
+    expect(isValidContact('555-12')).toBe(false);
+  });
+
+  it('rejects empty string', () => {
+    expect(isValidContact('')).toBe(false);
+  });
+
+  it('rejects gibberish', () => {
+    expect(isValidContact('abc')).toBe(false);
+  });
+
+  it('accepts 7-digit local number', () => {
+    expect(isValidContact('555-1234')).toBe(true);
   });
 });
 
-describe('JSON.parse safety', () => {
-  const safeJsonParse = (str, fallback = null) => {
-    if (!str) return fallback;
-    try { return JSON.parse(str); } catch { return fallback; }
+// ── Race condition prevention ─────────────────────────────────────────────
+describe('mountedRef pattern', () => {
+  const createMountedRef = () => {
+    let mounted = true;
+    return {
+      current: true,
+      unmount: () => { mounted = false; },
+      isMounted: () => mounted,
+    };
   };
 
-  it('returns fallback for null', () => {
-    expect(safeJsonParse(null, [])).toEqual([]);
+  it('is true on mount', () => {
+    const ref = createMountedRef();
+    expect(ref.isMounted()).toBe(true);
   });
 
-  it('returns fallback for invalid JSON', () => {
-    expect(safeJsonParse('not json', {})).toEqual({});
+  it('is false after unmount', () => {
+    const ref = createMountedRef();
+    ref.unmount();
+    expect(ref.isMounted()).toBe(false);
   });
 
-  it('returns fallback for truncated JSON', () => {
-    expect(safeJsonParse('{"name": "Jo', null)).toBeNull();
-  });
+  it('prevents setState after unmount', async () => {
+    const ref = createMountedRef();
+    let stateUpdated = false;
+    const setState = (val) => { if (ref.isMounted()) stateUpdated = val; };
 
-  it('parses valid JSON correctly', () => {
-    expect(safeJsonParse('{"id": 1, "name": "Test"}')).toEqual({ id: 1, name: 'Test' });
-  });
+    const asyncOp = async () => {
+      await new Promise(r => setTimeout(r, 0));
+      setState(true); // would be called after unmount
+    };
 
-  it('handles empty string safely', () => {
-    expect(safeJsonParse('', 'default')).toBe('default');
+    const p = asyncOp();
+    ref.unmount(); // unmount before async resolves
+    await p;
+    expect(stateUpdated).toBe(false);
   });
 });

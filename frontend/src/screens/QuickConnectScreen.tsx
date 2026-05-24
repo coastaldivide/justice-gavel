@@ -26,7 +26,7 @@ declare var credit: any;
 declare var data: any;
 declare var setCredit: any;
 function callPhone(phone: string) {
-  Linking.openURL('tel:' + phone.replace(/\s/g, '')).catch(() => {}).catch(() => {});
+  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
 }
 
 function openDirections(lat: number, lng: number, name: string) {

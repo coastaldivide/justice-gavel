@@ -27,8 +27,8 @@ const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 
 // ── Contact helpers ───────────────────────────────────────────────────────────
 
-function callPhone(phone: string) { Linking.openURL('tel:' + phone.replace(/\s/g, '')).catch(() => {}).catch(() => {}); }
-function sendSMS(phone: string)   { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => {}).catch(() => {}); }
+function callPhone(phone: string) { Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
+function sendSMS(phone: string)   { Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
 function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
@@ -222,12 +222,11 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                   <TouchableOpacity
                     accessibilityRole="button"
                     style={[styles.msgSendBtn, (!msgName.trim() || !msgPhone.trim()) && { opacity: 0.45 }]}
-                    disabled={!msgName.trim() || !msgPhone.trim() || msgSending}
+                    disabled={!msgName.trim() || !msgPhone.trim() || msgSending || (!msgPhone.trim().includes('@') && msgPhone.trim().replace(/\D/g,'').length < 7)}
                     activeOpacity={0.85}
                     onPress={async () => {
                       setMsgSending(true);
                       try {
-                        const { api } = require('../services/api');
                         await api.post('/consultations/callback-request', {
                           lawyer_id: item.id,
                           phone:     msgPhone.trim(),
@@ -282,6 +281,8 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
 export default function MatchScreen(): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
+  const mountedRef = React.useRef(true);
+  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
   const [situation, setSituation] = useState('');
   const [caseType, setCaseType] = useState('');
   const [language, setLanguage] = useState('');

@@ -14,7 +14,7 @@ declare var locationDenied: any;
 declare var setCity: any;
 declare var setCityQuery: any;
 declare var setLocationDenied: any;
-function callPhone(phone: string) { hapticCall(); Linking.openURL('tel:' + phone.replace(/\s/g, '')).catch(() => {}).catch(() => {}); }
+function callPhone(phone: string) { hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
 function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`

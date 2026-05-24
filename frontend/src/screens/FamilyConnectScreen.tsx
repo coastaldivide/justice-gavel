@@ -17,7 +17,7 @@ import { useAuthGate } from '../components/AuthGate';
 
 declare var setContacts: any;
 function callPhone(phone: string) {
-  Linking.openURL('tel:' + phone.replace(/\s/g, '')).catch(() => {}).catch(() => {});
+  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
 }
 
 // ── Step indicator ────────────────────────────────────────────────────────────

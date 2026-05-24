@@ -50,7 +50,7 @@ const CITIES_FILTERED = CITIES.filter(Boolean);
 const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo'];
 const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 
-function callPhone(phone: string) { hapticCall(); Linking.openURL('tel:' + phone.replace(/\s/g, '')).catch(() => {}); }
+function callPhone(phone: string) { hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}); }
 function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => {}); }
 function openDirections(lat: number, lng: number, name: string) {
   const encoded = encodeURIComponent(name);

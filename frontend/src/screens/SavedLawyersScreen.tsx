@@ -43,10 +43,10 @@ interface SavedLawyer {
 }
 
 function callPhone(phone: string) {
-  Linking.openURL('tel:' + phone.replace(/\s/g, '')).catch(() => {}).catch(() => {});
+  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
 }
 function sendSMS(phone: string) {
-  Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => {}).catch(() => {});
+  Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
 }
 
 // ── Saved lawyer card ─────────────────────────────────────────────────────────

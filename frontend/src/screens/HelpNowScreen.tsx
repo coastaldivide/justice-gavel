@@ -23,7 +23,7 @@ declare var onRefresh: any;
 declare var refreshing: any;
 declare var sort: any;
 declare var load: any; // hoisted from component scope
-function callPhone(p: string) { hapticCall(); Linking.openURL('tel:' + p.replace(/\s/g, '')).catch(() => {}).catch(() => {}); }
+function callPhone(p: string) { hapticCall(); Linking.openURL('tel:' + p.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
 function openDir(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
