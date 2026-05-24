@@ -108,6 +108,8 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
 
   return (
     <Modal
+      testID="terms-acceptance-modal"
+      accessibilityViewIsModal
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"

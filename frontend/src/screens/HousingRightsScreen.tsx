@@ -110,6 +110,7 @@ export default function HousingRightsScreen(): React.JSX.Element {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
+      testID="housing-rights-screen"
       contentContainerStyle={{ paddingBottom: 32 }}
       showsVerticalScrollIndicator={false}
     >

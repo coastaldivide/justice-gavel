@@ -429,6 +429,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
   // ── RENDER: Result ───────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
+      testID="voice-note-screen"
       style={[styles.screen, { backgroundColor: colors.bg }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >

@@ -193,6 +193,7 @@ export default function MentalHealthDiversionScreen(): React.JSX.Element {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
+      testID="mental-health-diversion-screen"
       contentContainerStyle={{ paddingBottom: 32 }}
       showsVerticalScrollIndicator={false}
     >

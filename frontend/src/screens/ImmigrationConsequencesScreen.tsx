@@ -120,6 +120,7 @@ export default function ImmigrationConsequencesScreen(): React.JSX.Element {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
+      testID="immigration-consequences-screen"
       contentContainerStyle={{ paddingBottom: 32 }}
       showsVerticalScrollIndicator={false}
     >

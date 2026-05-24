@@ -63,6 +63,7 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
+      testID="specialty-courts-screen"
       {/* Hero */}
       <View style={{ backgroundColor: colors.blue, padding: 16 }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, fontWeight: '800', fontSize: 17 }}>

@@ -144,6 +144,7 @@ export default function FamilyCourtScreen(): React.JSX.Element {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
+      testID="family-court-screen"
       contentContainerStyle={{ paddingBottom: 32 }}
       showsVerticalScrollIndicator={false}
     >

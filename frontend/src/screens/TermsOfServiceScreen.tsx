@@ -210,6 +210,7 @@ export default function TermsOfServiceScreen({ navigation }: ScreenProps): React
 
   return (
     <ScrollView
+      testID="terms-of-service-screen"
       ref={scrollRef}
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={styles.scroll}

@@ -53,6 +53,7 @@ export default function IceDetentionScreen(): React.JSX.Element {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
+      testID="ice-detention-screen"
       contentContainerStyle={{ paddingBottom: 32 }}
       showsVerticalScrollIndicator={false}
     >

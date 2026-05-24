@@ -263,6 +263,7 @@ export default function PrivacyPolicyScreen({ navigation }: ScreenProps): React.
 
   return (
     <ScrollView
+      testID="privacy-policy-screen"
       ref={scrollRef}
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={styles.scroll}
