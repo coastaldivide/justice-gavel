@@ -49,6 +49,7 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
   const [refreshTick, setRefreshTick] = React.useState(0);
   const [laws, setLaws]     = useState<DUILaw[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<DUILaw | null>(null);
@@ -63,7 +64,7 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
   useEffect(() => {
     cachedGet('/legaldata/dui?limit=60')
       .then(r => { setLaws(r.data || []); if (r.data?.length) setSelected(r.data[0]); })
-      .catch(() => { setLaws([]); })
+      .catch(() => { setLaws([]); setFetchError(true); })
       .finally(() => setLoading(false));
   }, []);
 

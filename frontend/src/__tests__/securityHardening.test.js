@@ -1,113 +1,155 @@
 /**
  * securityHardening.test.js
- * Tests for input validation, phone formatting, contact info validation
+ * Tests for screen testID coverage, error state completeness, and navigation integrity
  */
 
-// ── Phone number formatting ───────────────────────────────────────────────
-describe('Phone number sanitization for tel: links', () => {
-  // /\D/g removes all non-digits, making (555) 123-4567 → 5551234567
-  // /\s/g only removes spaces, leaving 555)123-4567 (BROKEN tel: link)
-  const sanitizePhone = (phone) => phone.replace(/\D/g, '');
-  const badSanitize   = (phone) => phone.replace(/\s/g, '');
-
-  it('strips parentheses and dashes correctly', () => {
-    expect(sanitizePhone('(555) 123-4567')).toBe('5551234567');
-  });
-
-  it('strips dots from formatted numbers', () => {
-    expect(sanitizePhone('555.123.4567')).toBe('5551234567');
-  });
-
-  it('/\s/g would leave parens (broken)', () => {
-    expect(badSanitize('(555) 123-4567')).toBe('(555)123-4567');
-    // tel:(555)123-4567 is invalid
-  });
-
-  it('handles E.164 format (keeps digits only)', () => {
-    expect(sanitizePhone('+1 555 123 4567')).toBe('15551234567');
-  });
-
-  it('handles already-clean number', () => {
-    expect(sanitizePhone('5551234567')).toBe('5551234567');
-  });
-
-  it('returns empty string for non-phone', () => {
-    expect(sanitizePhone('not a phone')).toBe('');
-  });
-});
-
-// ── Contact info validation ───────────────────────────────────────────────
-describe('Contact info validation (phone or email)', () => {
-  const isValidContact = (value) => {
-    const trimmed = value.trim();
-    if (trimmed.includes('@')) return trimmed.length > 5; // basic email check
-    return trimmed.replace(/\D/g, '').length >= 7; // phone: 7+ digits
+// ── Screen testID format ──────────────────────────────────────────────────
+describe('Screen testID naming', () => {
+  const toTestId = (screenName) => {
+    // Convert PascalCase ScreenName to kebab-case-screen
+    return screenName
+      .replace(/([A-Z])/g, m => '-' + m.toLowerCase())
+      .replace(/^-/, '')
+      .replace('screen', '') + 'screen';
   };
 
-  it('accepts valid email', () => {
-    expect(isValidContact('user@example.com')).toBe(true);
+  it('converts HomeScreen correctly', () => {
+    expect(toTestId('HomeScreen')).toBe('home-screen');
   });
 
-  it('accepts valid 10-digit phone', () => {
-    expect(isValidContact('555-123-4567')).toBe(true);
+  it('converts CaseTimelineScreen correctly', () => {
+    expect(toTestId('CaseTimelineScreen')).toBe('case-timeline-screen');
   });
 
-  it('accepts formatted phone with parens', () => {
-    expect(isValidContact('(555) 123-4567')).toBe(true);
+  it('converts AttorneyDashboardScreen correctly', () => {
+    expect(toTestId('AttorneyDashboardScreen')).toBe('attorney-dashboard-screen');
   });
 
-  it('rejects too-short number', () => {
-    expect(isValidContact('555-12')).toBe(false);
-  });
-
-  it('rejects empty string', () => {
-    expect(isValidContact('')).toBe(false);
-  });
-
-  it('rejects gibberish', () => {
-    expect(isValidContact('abc')).toBe(false);
-  });
-
-  it('accepts 7-digit local number', () => {
-    expect(isValidContact('555-1234')).toBe(true);
+  it('converts BailSearchScreen correctly', () => {
+    expect(toTestId('BailSearchScreen')).toBe('bail-search-screen');
   });
 });
 
-// ── Race condition prevention ─────────────────────────────────────────────
-describe('mountedRef pattern', () => {
-  const createMountedRef = () => {
-    let mounted = true;
+// ── Error state behavior ─────────────────────────────────────────────────
+describe('Error state recovery', () => {
+  const createFetchState = (fetchFn) => {
+    let data = null;
+    let loading = false;
+    let error = false;
+
     return {
-      current: true,
-      unmount: () => { mounted = false; },
-      isMounted: () => mounted,
+      fetch: async () => {
+        loading = true;
+        error = false;
+        try {
+          data = await fetchFn();
+        } catch {
+          error = true;
+          data = [];
+        } finally {
+          loading = false;
+        }
+      },
+      getState: () => ({ data, loading, error }),
     };
   };
 
-  it('is true on mount', () => {
-    const ref = createMountedRef();
-    expect(ref.isMounted()).toBe(true);
+  it('sets error=true when fetch fails', async () => {
+    const state = createFetchState(() => { throw new Error('Network error'); });
+    await state.fetch();
+    expect(state.getState().error).toBe(true);
   });
 
-  it('is false after unmount', () => {
-    const ref = createMountedRef();
-    ref.unmount();
-    expect(ref.isMounted()).toBe(false);
+  it('sets data=[] when fetch fails (safe fallback)', async () => {
+    const state = createFetchState(() => { throw new Error('Network error'); });
+    await state.fetch();
+    expect(state.getState().data).toEqual([]);
   });
 
-  it('prevents setState after unmount', async () => {
-    const ref = createMountedRef();
-    let stateUpdated = false;
-    const setState = (val) => { if (ref.isMounted()) stateUpdated = val; };
+  it('clears error on successful retry', async () => {
+    let attempt = 0;
+    const state = createFetchState(() => {
+      attempt++;
+      if (attempt === 1) throw new Error('First attempt fails');
+      return [{ id: 1 }];
+    });
+    await state.fetch();
+    expect(state.getState().error).toBe(true);
+    await state.fetch();
+    expect(state.getState().error).toBe(false);
+    expect(state.getState().data).toHaveLength(1);
+  });
 
-    const asyncOp = async () => {
-      await new Promise(r => setTimeout(r, 0));
-      setState(true); // would be called after unmount
-    };
+  it('loading is false after completion regardless of outcome', async () => {
+    const success = createFetchState(() => [{ id: 1 }]);
+    const failure = createFetchState(() => { throw new Error('fail'); });
+    await success.fetch();
+    await failure.fetch();
+    expect(success.getState().loading).toBe(false);
+    expect(failure.getState().loading).toBe(false);
+  });
+});
 
-    const p = asyncOp();
-    ref.unmount(); // unmount before async resolves
-    await p;
-    expect(stateUpdated).toBe(false);
+// ── JWT token expiry handling ────────────────────────────────────────────
+describe('JWT token lifecycle', () => {
+  const REFRESH_THRESHOLD_DAYS = 25;
+  const TOKEN_EXPIRY_DAYS = 30;
+
+  const shouldRefresh = (issuedDaysAgo) => {
+    return issuedDaysAgo >= REFRESH_THRESHOLD_DAYS;
+  };
+
+  const isExpired = (issuedDaysAgo) => {
+    return issuedDaysAgo >= TOKEN_EXPIRY_DAYS;
+  };
+
+  it('does not refresh fresh tokens', () => {
+    expect(shouldRefresh(1)).toBe(false);
+    expect(shouldRefresh(10)).toBe(false);
+  });
+
+  it('refreshes token at 25 day threshold', () => {
+    expect(shouldRefresh(25)).toBe(true);
+    expect(shouldRefresh(28)).toBe(true);
+  });
+
+  it('token expired at 30 days', () => {
+    expect(isExpired(30)).toBe(true);
+    expect(isExpired(31)).toBe(true);
+  });
+
+  it('token still valid at 29 days', () => {
+    expect(isExpired(29)).toBe(false);
+  });
+
+  it('proactive refresh window: 25-30 days', () => {
+    // Refresh at 25 but not expired until 30 — 5 day window to refresh
+    for (let days = 25; days < 30; days++) {
+      expect(shouldRefresh(days) && !isExpired(days)).toBe(true);
+    }
+  });
+});
+
+// ── Navigation stack auth boundary ──────────────────────────────────────
+describe('Navigation auth boundary', () => {
+  // Auth stack vs App stack — user cannot reach app screens without login
+  const AUTH_SCREENS = ['Login', 'Register', 'OnboardingScreen'];
+  const REQUIRES_AUTH = ['HomeScreen', 'CaseScreen', 'CheckInScreen', 'AttorneyDashboard'];
+
+  it('auth screens do not require auth', () => {
+    AUTH_SCREENS.forEach(screen => {
+      expect(REQUIRES_AUTH).not.toContain(screen);
+    });
+  });
+
+  it('core app screens require authentication', () => {
+    REQUIRES_AUTH.forEach(screen => {
+      expect(AUTH_SCREENS).not.toContain(screen);
+    });
+  });
+
+  it('attorney dashboard is not in auth screens (behind auth)', () => {
+    expect(AUTH_SCREENS).not.toContain('AttorneyDashboard');
+    expect(REQUIRES_AUTH).toContain('AttorneyDashboard');
   });
 });

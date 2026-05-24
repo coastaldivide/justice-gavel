@@ -201,7 +201,8 @@ function ResearchBubble({ msg }: { msg: Message }) {
     <Animated.View style={[styles.assistantBubble, { opacity: fadeAnim,
       backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
       {/* Research result header */}
-      <View style={styles.resultHeader}>
+      <View style={styles.resultHeader}
+        testID="legal-research-screen">
         <View style={[styles.resultDot, { backgroundColor: COLORS.legal }]} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.resultLabel, { color: COLORS.legal }]}>Research Result</Text>
       </View>

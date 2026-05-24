@@ -168,6 +168,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
+      testID="rights-card-screen"
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
     {cardError && (

@@ -130,7 +130,8 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
   }, [colors, completed, expanded]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+    <View style={[styles.screen, { backgroundColor: colors.bg }]}
+      testID="lessons-screen">
       {/* Progress banner */}
       <View style={styles.progressCard}>
         <View style={styles.progressTop}>

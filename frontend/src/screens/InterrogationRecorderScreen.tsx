@@ -238,6 +238,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
 
   return (
     <ScrollView
+      testID="interrogation-recorder-screen"
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
       keyboardShouldPersistTaps="handled"

@@ -312,7 +312,8 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
   // Bar license renewal reminder
   // Most state bars renew annually or biennially. Remind after 10 months.
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+    <View style={[styles.screen, { backgroundColor: colors.bg }]}
+      testID="attorney-dashboard-screen">
       {/* ── Dashboard greeting header ──────────────────────────────────── */}
       <View style={{ paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 52 : 36,
         paddingBottom: 12, backgroundColor: colors.bg,

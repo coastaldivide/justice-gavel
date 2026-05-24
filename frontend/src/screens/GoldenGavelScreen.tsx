@@ -101,7 +101,8 @@ function CritRow({ label, met }: { label: string; met: boolean }) {
 function JourneyBar({ level }: { level: GavelLevel }) {
   const steps: GavelLevel[] = [1, 2, 3];
   return (
-    <View style={styles.journeyRow}>
+    <View style={styles.journeyRow}
+      testID="golden-gavel-screen">
       {steps.map((s, i) => (
         <React.Fragment key={s}>
           {i > 0 && (

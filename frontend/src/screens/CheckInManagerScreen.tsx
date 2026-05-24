@@ -184,7 +184,8 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
   return (
     <Modal accessibilityViewIsModal={true} visible={visible} animationType="slide" presentationStyle="pageSheet"
         onRequestClose={() => onClose()}>
-      <View style={styles.modalWrap}>
+      <View style={styles.modalWrap}
+        testID="check-in-manager-screen">
         <View style={[styles.modalHeader, { backgroundColor: COLORS.navy }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.modalTitle, { color: COLORS.bgCard }]}>{enrollment.defendant_name}</Text>
           <TouchableOpacity onPress={onClose}

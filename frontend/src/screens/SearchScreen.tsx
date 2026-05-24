@@ -147,7 +147,8 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}>
-    <View style={[s.screen, { backgroundColor: colors.bg }]}>
+    <View style={[s.screen, { backgroundColor: colors.bg }]}
+      testID="search-screen">
       {/* Search input */}
       <View style={[s.searchBar, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
         <Text maxFontSizeMultiplier={1.4} style={s.searchIcon}>🔍</Text>

@@ -428,6 +428,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
+      testID="what-happens-next-screen"
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <EmergencyStrip compact={true} />

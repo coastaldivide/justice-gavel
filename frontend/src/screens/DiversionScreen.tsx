@@ -321,6 +321,7 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
 
   return (
     <ScrollView
+      testID="diversion-screen"
       style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={styles.scroll}
       showsVerticalScrollIndicator={false}

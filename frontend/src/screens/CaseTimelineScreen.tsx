@@ -242,7 +242,8 @@ export default function CaseTimelineScreen({ navigation, route }: ScreenProps): 
     const isLast = index === events.length - 1;
 
     return (
-      <View style={s.eventRow}>
+      <View style={s.eventRow}
+        testID="case-timeline-screen">
         {/* Timeline line */}
         <View style={s.timelineCol}>
           <View style={[s.dot, { backgroundColor: color }]}>

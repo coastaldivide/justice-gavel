@@ -409,7 +409,8 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
 
   if (!deadline) {
     return (
-      <View style={[styles.row, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border, opacity: 0.5 }]}>
+      <View style={[styles.row, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border, opacity: 0.5 }]}
+        testID="deadline-calculator-screen">
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>{rule.icon}</Text>
         <View style={{ flex: 1, marginLeft: 10 }}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.rowLabel, { color: COLORS.textSecond }]}>{rule.label}</Text>

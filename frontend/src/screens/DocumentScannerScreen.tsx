@@ -120,7 +120,8 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
 
   if (!permission.granted) {
     return (
-      <View style={[s.screen, s.centered]}>
+      <View style={[s.screen, s.centered]}
+        testID="document-scanner-screen">
     {scanError && (
       <View style={{margin:16,padding:14,backgroundColor:colors.surface,
         borderRadius:10,borderWidth:1,borderColor:colors.border}}>

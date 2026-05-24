@@ -118,6 +118,7 @@ export default function AdminVerificationScreen({ navigation }: ScreenProps): Re
   if (!isAuthorized) return <></>;
   return (
     <ScrollView
+      testID="admin-verification-screen"
       style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={styles.scroll}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.steel} />}

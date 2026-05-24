@@ -111,6 +111,7 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
 
   return (
     <ScrollView
+      testID="emergency-screen"
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={styles.scroll}
     

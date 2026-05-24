@@ -210,7 +210,8 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
   // ── Pre-payment view ───────────────────────────────────────────────────────
   if (!result) {
     return (
-      <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      <View style={[styles.screen, { backgroundColor: colors.bg }]}
+        testID="quick-connect-screen">
         <AuthGateModal />
 
         {/* Header */}

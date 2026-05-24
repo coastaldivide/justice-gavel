@@ -202,7 +202,8 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
   // ── Phase: State selection ─────────────────────────────────────────────────
   if (phase === 'state_select') {
     return (
-      <View style={s.root}>
+      <View style={s.root}
+        testID="court-forms-screen">
         <View style={s.header}>
           <Text maxFontSizeMultiplier={1.4} style={s.headerTitle}>Official Court Forms</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.headerSub}>

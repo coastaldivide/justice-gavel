@@ -126,7 +126,8 @@ function SavedCard({
   );
 
   return (
-    <View style={[styles.card, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
+    <View style={[styles.card, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
+      testID="saved-lawyers-screen">
       {/* Header */}
       <View style={styles.cardHeader}>
         <View style={styles.cardHeaderLeft}>

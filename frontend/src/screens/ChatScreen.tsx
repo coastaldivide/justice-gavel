@@ -129,7 +129,8 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
   };
 
   return (
-    <View style={[styles.bubbleWrap, isUser && styles.bubbleWrapUser]}>
+    <View style={[styles.bubbleWrap, isUser && styles.bubbleWrapUser]}
+      testID="chat-screen">
       {!isUser && (
         <View style={[styles.avatarDot, isDefender && styles.avatarDotDefender]}>
           <Text maxFontSizeMultiplier={1.4} style={styles.avatarText}>

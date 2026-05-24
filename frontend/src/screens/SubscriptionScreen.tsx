@@ -236,7 +236,8 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): React.J
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={styles.center}
+        testID="subscription-screen">
         <ActivityIndicator size="large" color={colors.navy} />
       </View>
     );

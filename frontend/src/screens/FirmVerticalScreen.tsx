@@ -376,7 +376,8 @@ export default function FirmVerticalScreen({ navigation }: any) {
   // Firm hasn't configured verticals yet — show setup prompt instead of empty/error
   if (config?._unconfigured) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}
+        testID="firm-vertical-screen">
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 24, marginBottom: 12 }}>⚖️</Text>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 18, fontWeight: '700', color: colors?.primary ?? '#042C53', marginBottom: 8, textAlign: 'center' }}>
           Set Up Your Legal Vertical

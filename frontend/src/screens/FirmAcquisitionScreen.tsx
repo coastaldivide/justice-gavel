@@ -173,7 +173,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
   const vertObj = VERTICALS.find(v => v.key === selectedV);
 
   return (
-    <View style={s.root}>
+    <View style={s.root}
+      testID="firm-acquisition-screen">
       {/* Flow toggle — only show if no firm yet */}
       {!status?.has_firm && (
         <View style={s.flowBar}>

@@ -302,7 +302,8 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
   // ── Loading ────────────────────────────────────────────────────────────────
   if (phase === 'loading') {
     return (
-      <View style={styles.loadingScreen}>
+      <View style={styles.loadingScreen}
+        testID="help-now-screen">
         <ActivityIndicator size="large" color={COLORS.steel} />
         <Text maxFontSizeMultiplier={1.4} style={styles.loadingText}>{loadMsg}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.loadingSub}>This takes 2-3 seconds</Text>

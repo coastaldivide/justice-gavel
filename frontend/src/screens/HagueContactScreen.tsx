@@ -157,7 +157,8 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}>
-      <ScrollView keyboardShouldPersistTaps='handled' style={s.container} contentContainerStyle={s.content}>
+      <ScrollView keyboardShouldPersistTaps='handled' style={s.container} contentContainerStyle={s.content}
+        testID="hague-contact-screen">
         <View style={s.successBanner}>
           <Text maxFontSizeMultiplier={1.4} style={s.successIcon}>✅</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.successTitle}>Intake Recorded</Text>

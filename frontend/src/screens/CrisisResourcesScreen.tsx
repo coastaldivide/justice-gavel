@@ -112,6 +112,7 @@ export default function CrisisResourcesScreen({ route, navigation }: ScreenProps
 
   return (
     <ScrollView
+      testID="crisis-resources-screen"
       style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={styles.scroll}
       showsVerticalScrollIndicator={false}

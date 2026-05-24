@@ -251,7 +251,8 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
   ), [colors]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}
+      testID="recovery-agents-screen">
       {/* Search controls */}
       <View style={[styles.searchBox, { backgroundColor: colors.bgCard,
         borderBottomColor: colors.border }]}>

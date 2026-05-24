@@ -108,7 +108,8 @@ export default function CourtLocatorScreen(): React.JSX.Element {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}>
-    <View style={{ flex: 1, backgroundColor: bg }}>
+    <View style={{ flex: 1, backgroundColor: bg }}
+      testID="court-locator-screen">
       {/* Mode toggle */}
       <View style={{ flexDirection:'row', margin:16, marginBottom:4, gap:8 }}>
         {(['state','federal'] as const).map(mode => (

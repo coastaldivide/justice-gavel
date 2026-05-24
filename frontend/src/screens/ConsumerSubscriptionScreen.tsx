@@ -122,7 +122,8 @@ const TIERS = [
 
 function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
   return (
-    <View style={[styles.card, tier.highlight && styles.cardHighlight]}>
+    <View style={[styles.card, tier.highlight && styles.cardHighlight]}
+      testID="consumer-subscription-screen">
       {tier.badge && (
         <View style={[styles.badge, { backgroundColor: tier.color }]}>
           <Text maxFontSizeMultiplier={1.4} style={styles.badgeText}>{tier.badge}</Text>

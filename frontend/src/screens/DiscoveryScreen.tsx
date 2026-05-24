@@ -638,6 +638,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
   // ── RENDER: Result ────────────────────────────────────────────────────────
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
+      testID="discovery-screen"
       contentContainerStyle={styles.resultScroll}
       showsVerticalScrollIndicator={false}>
 

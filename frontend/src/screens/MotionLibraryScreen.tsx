@@ -361,7 +361,8 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
   };
 
   return (
-    <View style={[styles.historyRow, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
+    <View style={[styles.historyRow, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
+      testID="motion-library-screen">
       {/* Open motion */}
       <TouchableOpacity
         style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}

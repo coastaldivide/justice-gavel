@@ -128,7 +128,8 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
   );
 
   return (
-    <View style={s.root}>
+    <View style={s.root}
+      testID="matter-intelligence-screen">
       {/* Header */}
       <View style={s.header}>
         <Text maxFontSizeMultiplier={1.4} style={s.headerTitle} numberOfLines={1}>{matterTitle || 'Matter Intelligence'}</Text>

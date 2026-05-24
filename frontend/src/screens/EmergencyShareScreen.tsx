@@ -247,7 +247,8 @@ export default function EmergencyShareScreen({ route, navigation }: ScreenProps)
   // Quick exit cover -- neutral screen shown during transition
   if (showCoverScreen) {
     return (
-      <View style={{ flex:1, backgroundColor:colors.bgSubtle, alignItems:'center', justifyContent:'center' }}>
+      <View style={{ flex:1, backgroundColor:colors.bgSubtle, alignItems:'center', justifyContent:'center' }}
+        testID="emergency-share-screen">
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize:24 }}>🌤️</Text>
       </View>
     );

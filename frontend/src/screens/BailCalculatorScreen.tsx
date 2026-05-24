@@ -31,6 +31,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
   const [state, setState] = useState('TN');
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const [selected, setSelected] = useState<Schedule | null>(null);
   const [bondPct] = useState(10);
@@ -46,7 +47,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
     setLoading(true);
     cachedGet(`/legaldata/bail?state=${state}&limit=200`)
       .then(r => { if (!cancel) setSchedules(r.data || []); })
-      .catch(() => { if (!cancel) setSchedules([]); })
+      .catch(() => { if (!cancel) { setSchedules([]); setFetchError(true); } })
       .finally(() => { if (!cancel) setLoading(false); });
     return () => { cancel = true; };
   }, [state, refreshTick]);

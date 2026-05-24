@@ -154,7 +154,8 @@ function LangPicker({
   exclude?: string; colors: ThemeColors;
 }) {
   return (
-    <View style={styles.langPickerRow}>
+    <View style={styles.langPickerRow}
+      testID="translator-screen">
       {LANGUAGES.filter(l => l.code !== exclude).map(l => (
         <TouchableOpacity
           accessibilityRole="button"

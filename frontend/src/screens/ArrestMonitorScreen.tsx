@@ -124,7 +124,8 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
   // ── Not Pro -- upsell wall ────────────────────────────────────────────────
   if (!loading && !isPro) {
     return (
-      <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      <View style={[styles.screen, { backgroundColor: colors.bg }]}
+        testID="arrest-monitor-screen">
         <View style={styles.upsellCard}>
           <Text maxFontSizeMultiplier={1.4} style={styles.upsellIcon}>🔔</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.upsellTitle}>Arrest Monitoring</Text>

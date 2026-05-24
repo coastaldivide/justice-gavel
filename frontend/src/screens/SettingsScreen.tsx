@@ -402,6 +402,7 @@ export default function SettingsScreen({ route, navigation }: any) {
 
   return (
     <ScrollView
+      testID="settings-screen"
       style={[styles.screen, { backgroundColor: COLORS.bg }]}
       contentContainerStyle={styles.scroll}
       showsVerticalScrollIndicator={false}
