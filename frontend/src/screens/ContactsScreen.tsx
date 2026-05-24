@@ -66,6 +66,7 @@ export default function ContactsScreen(): React.JSX.Element {
 
   return (
     <KeyboardAvoidingView
+      testID="contacts-screen"
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}>
         <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">

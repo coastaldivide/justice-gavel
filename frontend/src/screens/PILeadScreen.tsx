@@ -116,6 +116,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
 
   return (
     <KeyboardAvoidingView
+      testID="p-i-lead-screen"
       style={[styles.screen, { backgroundColor: colors.bg }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >

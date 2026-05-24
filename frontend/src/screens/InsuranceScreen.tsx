@@ -55,6 +55,7 @@ export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll}
+      testID="insurance-screen"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>

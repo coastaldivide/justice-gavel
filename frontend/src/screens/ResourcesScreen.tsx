@@ -115,7 +115,8 @@ export default function ResourcesScreen(): React.JSX.Element {
   );
 
   return (
-    <View style={{ flex:1, backgroundColor:bg }}>
+    <View style={{ flex:1, backgroundColor:bg }}
+      testID="resources-screen">
       {/* Search bar */}
       <View style={{ paddingHorizontal:16, paddingTop:12, paddingBottom:8 }}>
         <TextInput

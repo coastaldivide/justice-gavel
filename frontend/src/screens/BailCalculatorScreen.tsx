@@ -62,6 +62,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
   const onRefresh = () => { setRefreshing(true); setRefreshTick(t => t + 1); };
   return (
     <KeyboardAvoidingView
+      testID="bail-calculator-screen"
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1, backgroundColor: bg }} keyboardShouldPersistTaps="handled">

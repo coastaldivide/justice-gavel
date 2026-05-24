@@ -86,7 +86,8 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
     : penalties.filter(p => p.offense_type === offenseFilter);
 
   return (
-    <ScrollView style={{ flex:1, backgroundColor:bg }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ flex:1, backgroundColor:bg }} keyboardShouldPersistTaps="handled"
+      testID="drug-penalties-screen">
       {/* Hero */}
       <View style={{ backgroundColor:colors.navy, padding:16 }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'800', fontSize:17 }}>💊 Drug Charge Penalties</Text>

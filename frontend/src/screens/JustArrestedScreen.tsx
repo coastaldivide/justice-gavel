@@ -90,7 +90,8 @@ export default function JustArrestedScreen({ navigation }: ScreenProps): React.J
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: bg }}>
+    <View style={{ flex: 1, backgroundColor: bg }}
+      testID="just-arrested-screen">
       {/* ── Header ─────────────────────────────── */}
       <View style={[styles.header, { backgroundColor: current.color }]}>
         <Text maxFontSizeMultiplier={1.2} style={styles.stepLabel}>

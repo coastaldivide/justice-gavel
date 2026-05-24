@@ -104,6 +104,7 @@ export default function OfflineStatusScreen({ navigation }: ScreenProps): React.
 
   return (
     <ScrollView
+      testID="offline-status-screen"
       style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={styles.scroll}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.steel} />}

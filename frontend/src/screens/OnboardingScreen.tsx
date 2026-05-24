@@ -176,7 +176,8 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
   const isLast = activeIndex === activeSlides.length - 1;
 
   return (
-    <View style={styles.screen}>
+    <View style={styles.screen}
+      testID="onboarding-screen">
 
       {/* Logo + Social proof */}
       <View style={styles.logoWrap}>

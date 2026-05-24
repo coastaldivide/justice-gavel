@@ -61,6 +61,7 @@ export default function AdvocacyScreen(): React.JSX.Element {
 
   return (
     <ScrollView
+      testID="advocacy-screen"
       style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={styles.scroll}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} colors={[colors.navy]} />}

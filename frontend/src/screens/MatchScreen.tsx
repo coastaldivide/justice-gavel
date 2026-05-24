@@ -36,7 +36,11 @@ function openDirections(lat: number, lng: number, name: string) {
   Linking.openURL(url).catch(() => {});
 }
 function openWebsite(url: string) {
-  Linking.openURL(url.startsWith('http') ? url : 'https://' + url);
+  const BLOCKED_SCHEMES = ['javascript:', 'data:', 'vbscript:', 'file:'];
+        const safeUrl = url.startsWith('http') ? url : 'https://' + url;
+        if (!BLOCKED_SCHEMES.some(s => url.toLowerCase().startsWith(s))) {
+          Linking.openURL(safeUrl).catch(() => {});
+        }
 }
 
 // ── Match result card ─────────────────────────────────────────────────────────

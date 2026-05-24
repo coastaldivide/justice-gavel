@@ -121,6 +121,7 @@ export default function AgeGateScreen({ route, navigation }: any) {
   // ── Entry screen ───────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
+      testID="age-gate-screen"
       style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >

@@ -81,7 +81,8 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
   );
 
   return (
-    <View style={{ flex:1, backgroundColor:bg }}>
+    <View style={{ flex:1, backgroundColor:bg }}
+      testID="d-u-i-laws-screen">
       {/* Hero */}
       <View style={{ backgroundColor:colors.emergencyDark, padding:16 }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'800', fontSize:17 }}>🚗 DUI / DWI Laws by State</Text>
