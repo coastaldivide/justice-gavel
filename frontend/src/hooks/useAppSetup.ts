@@ -7,7 +7,7 @@
  *   useOTAUpdates()    — checks for JS bundle updates on mount
  *   usePushTokenRefresh() — re-registers push token when app comes to foreground
  */
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
 import * as Sentry from '@sentry/react-native';
@@ -89,3 +89,32 @@ export function useOTAUpdates() {
 }
 
 
+
+/** Hook that navigates to relevant screen when user taps a push notification */
+export function usePushNotificationTap(navigationRef: React.RefObject<any>) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    let sub: { remove: () => void } | null = null;
+    import('expo-notifications').then(Notifications => {
+      sub = Notifications.addNotificationResponseReceivedListener(response => {
+        const data = response.notification.request.content.data as Record<string, string>;
+        if (!navigationRef.current) return;
+        const nav = navigationRef.current;
+
+        // Route to relevant screen based on notification type
+        if (data?.type === 'checkin_reminder') {
+          nav.navigate('HomeTab', { screen: 'CheckIn' });
+        } else if (data?.type === 'arrest_alert' && data?.watchId) {
+          nav.navigate('HomeTab', { screen: 'ArrestMonitor' });
+        } else if (data?.type === 'court_reminder' && data?.caseId) {
+          nav.navigate('MoreTab', { screen: 'CaseScreen', params: { caseId: data.caseId } });
+        } else if (data?.type === 'message' && data?.threadId) {
+          nav.navigate('HomeTab', { screen: 'Chat' });
+        } else if (data?.type === 'cle_reminder') {
+          nav.navigate('MoreTab', { screen: 'AttorneyDashboard' });
+        }
+      });
+    }).catch(() => {});
+    return () => { sub?.remove(); };
+  }, [navigationRef]);
+}

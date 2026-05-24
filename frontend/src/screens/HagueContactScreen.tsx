@@ -232,7 +232,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         <TextInput
           style={s.input}
           value={childAge}
-          onChangeText={setChildAge}
+          onChangeText={v => setChildAge(v.replace(/[^0-9]/g, '').slice(0, 2))}
           placeholder="Years"
           keyboardType="number-pad"
           maxFontSizeMultiplier={1.4}

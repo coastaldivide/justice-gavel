@@ -22,6 +22,8 @@ import { api } from '../services/api';
 import { setLang } from '../i18n';
 import { getUserState, STATE_NAMES } from '../utils/userState';
 import { clearAuth } from '../utils/secureStorage';
+import { setAppAuth } from '../services/auth';
+import { clearAllCaches } from '../services/offlineCache';
 
 declare var data: any;
 declare var goldenGavel: any;
@@ -341,7 +343,11 @@ export default function SettingsScreen({ route, navigation }: any) {
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign out', style: 'destructive', onPress: async () => {
-          await clearAuth(), AsyncStorage.multiRemove(['user', 'chat_session_id']);
+          await clearAuth();
+          setAppAuth('guest');
+          await clearAllCaches().catch(() => {});
+          import('../services/analytics').then(m => m.reset?.()).catch(() => {});
+          await AsyncStorage.multiRemove(['user', 'chat_session_id']);
           navigation.getParent()?.getParent()?.reset({ index: 0, routes: [{ name: 'Login' }] }, [])
             ?? navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         } },

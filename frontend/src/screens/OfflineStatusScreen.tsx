@@ -70,14 +70,15 @@ export default function OfflineStatusScreen({ navigation }: ScreenProps): React.
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const [on, lastAt, cases, motions, lawyers, lessons] = (await Promise.all([
+    let [on, lastAt, cases, motions, lawyers, lessons]: any[] = [false, null, {}, {}, {}, {}];
+    try { [on, lastAt, cases, motions, lawyers, lessons] = (await Promise.all([
       isOnline(),
       getLastOnlineAt(),
       getCachedCases(),
       getCachedMotions(),
       getCachedLawyers(),
       getCachedLessons(),
-    ])) as any[];
+    ])) as any[]; } catch { /* use defaults above */ }
     setOnline(on);
     setLastOnline(lastAt);
     setCacheStatus({

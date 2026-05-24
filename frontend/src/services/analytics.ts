@@ -144,3 +144,11 @@ export const Analytics = {
 };
 
 export default Analytics;
+
+/** Call on logout to reset analytics user identity */
+export async function reset(): Promise<void> {
+  try {
+    const { AsyncStorage } = require('@react-native-async-storage/async-storage');
+    await AsyncStorage.removeItem('analytics_id').catch(() => {});
+  } catch { /* non-fatal */ }
+}

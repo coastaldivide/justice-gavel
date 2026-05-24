@@ -28,7 +28,7 @@ import { COLORS, ThemeProvider, useTheme } from './src/constants/theme';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { Analytics } from './src/services/analytics';
 import { MainTabs, GuestNavigator, SplashScreen } from './src/navigation/AppNavigator';
-import { registerForPushNotificationsAsync, useOTAUpdates, usePushTokenRefresh } from './src/hooks/useAppSetup';
+import { registerForPushNotificationsAsync, useOTAUpdates, usePushTokenRefresh, usePushNotificationTap } from './src/hooks/useAppSetup';
 import AgeGateScreen from './src/screens/AgeGateScreen';
 import TermsAcceptanceModal from './src/screens/TermsAcceptanceModal';
 import { api } from './src/services/api';
@@ -156,6 +156,7 @@ function AppInner() {
   // ── OTA updates + push token refresh ───────────────────────────────────────
   useOTAUpdates();
   usePushTokenRefresh();
+  usePushNotificationTap(navigationRef);
 
   // ── Network status ──────────────────────────────────────────────────────────
   useEffect(() => {
