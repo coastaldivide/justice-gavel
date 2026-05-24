@@ -90,7 +90,9 @@ function AvailabilityGrid({ userId }: { userId: number }) {
       await api.put('/attorney/profile/availability', { schedule, note });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {}
+    } catch (e: any) {
+      Alert.alert('Save Failed', e?.response?.data?.error || 'Could not save availability. Try again.');
+    }
     finally { setSaving(false); }
   };
 

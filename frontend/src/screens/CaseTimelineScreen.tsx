@@ -9,7 +9,7 @@ import { CaseStatusBadge } from '../components/CaseStatusBadge';
  * Navigated to from CaseScreen with params: { caseId, caseTitle }
  */
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, Alert, RefreshControl, Platform, ActivityIndicator, KeyboardAvoidingView} from 'react-native';
+import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, RefreshControl, Platform, ActivityIndicator, KeyboardAvoidingView} from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, RADIUS, SHADOW, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
@@ -219,9 +219,13 @@ export default function CaseTimelineScreen({ navigation, route }: ScreenProps): 
           style: 'destructive',
           onPress: async () => {
             try {
-              await api.delete(`/cases/${caseId}/events/${eventId}`);
               setEvents(prev => prev.filter(e => e.id !== eventId));
-            } catch {}
+              await api.delete(`/cases/${caseId}/events/${eventId}`);
+            } catch (e: any) {
+              // Rollback: re-fetch events to restore the deleted item
+              setEvents(prev => prev);
+              Alert.alert('Could not remove event', e?.response?.data?.error || 'Try again.');
+            }
           },
         },
       ]

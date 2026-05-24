@@ -195,7 +195,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         setSaved(true);
         setSavedId(saveRes?.data?.id ?? null);
       }
-    } catch { setSaved(true); } // optimistic
+    } catch (e) { setSaved(true); if (__DEV__) console.warn('[LawyersScreen] save failed:', e); } // optimistic UI
     finally { setSaving(false); }
   };
   return (
