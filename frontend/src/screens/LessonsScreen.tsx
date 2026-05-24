@@ -165,6 +165,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
           </View>
         )}
         <FlatList
+          accessibilityLabel="Legal lessons list"
           getItemLayout={(_, index) => ({ length: 110, offset: 110 * index, index })}
           initialNumToRender={10}
           maxToRenderPerBatch={10}

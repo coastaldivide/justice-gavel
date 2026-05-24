@@ -22,6 +22,8 @@ declare var useNavigation: any; // hoisted from component scope
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo'];
+const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
+
 
 // ── Contact helpers ───────────────────────────────────────────────────────────
 
@@ -399,7 +401,7 @@ export default function MatchScreen(): React.JSX.Element {
           <View style={styles.pickerWrap}>
             <Picker selectedValue={language} onValueChange={v => setLanguage(String(v))} style={styles.picker}>
               <Picker.Item label="English (or any)" value="" />
-              {LANGUAGES.filter(Boolean).map(l => <Picker.Item key={l} label={l} value={l} />)}
+              {LANGUAGES_FILTERED.map(l => <Picker.Item key={l} label={l} value={l} />)}
             </Picker>
           </View>
         </View>

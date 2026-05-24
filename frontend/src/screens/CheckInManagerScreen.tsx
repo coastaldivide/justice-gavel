@@ -217,6 +217,7 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
             ? <View style={styles.emptyCenter}><Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>No check-ins yet.</Text></View>
             : (
               <FlatList
+          accessibilityLabel="Check-in schedule list"
                 getItemLayout={(_, index) => ({ length: 80, offset: 80 * index, index })}
           initialNumToRender={10}
           maxToRenderPerBatch={10}

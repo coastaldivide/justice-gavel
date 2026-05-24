@@ -45,8 +45,10 @@ const CITIES = [
   'Detroit, MI', 'Baltimore, MD', 'Kansas City, MO', 'Milwaukee, WI',
   'Albuquerque, NM', 'Louisville, KY', 'Indianapolis, IN',
 ];
+const CITIES_FILTERED = CITIES.filter(Boolean);
 
 const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo'];
+const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 
 function callPhone(phone: string) { hapticCall(); Linking.openURL('tel:' + phone.replace(/\s/g, '')).catch(() => {}); }
 function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => {}); }
@@ -380,7 +382,7 @@ function FilterModal({
           <View style={styles.pickerWrap}>
             <Picker selectedValue={language} onValueChange={v => setLanguage(String(v))} style={styles.picker}>
               <Picker.Item label="Any language" value="" />
-              {LANGUAGES.filter(Boolean).map(l => <Picker.Item key={l} label={l} value={l} />)}
+              {LANGUAGES_FILTERED.map(l => <Picker.Item key={l} label={l} value={l} />)}
             </Picker>
           </View>
 
@@ -388,7 +390,7 @@ function FilterModal({
           <View style={styles.pickerWrap}>
             <Picker selectedValue={manualCity} onValueChange={v => setManualCity(String(v))} style={styles.picker}>
               <Picker.Item label="Use my GPS location" value="" />
-              {CITIES.filter(Boolean).map(c => <Picker.Item key={c} label={c} value={c} />)}
+              {CITIES_FILTERED.map(c => <Picker.Item key={c} label={c} value={c} />)}
             </Picker>
           </View>
 

@@ -21,13 +21,12 @@ function OfflineBanner() {
   const [opacity] = useState(new Animated.Value(0));
 
   useEffect(() => {
-    Animated.timing(opacity, {
-      toValue:         isOnline ? 0 : 1,
-      duration:        300,
-      useNativeDriver: true,
+    const anim = Animated.timing(opacity, {
+      toValue: isOnline ? 0 : 1, duration: 300, useNativeDriver: true,
+    });
+    anim.start();
+    return () => anim.stop();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-    }).start();
   }, [isOnline]);
 
   if (isOnline && !(opacity as any)._value) return null;
