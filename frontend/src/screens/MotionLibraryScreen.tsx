@@ -28,6 +28,7 @@ import { Linking, Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, T
 import { api }         from '../services/api';
 import { pollJob } from '../services/jobPoller';
 import { cacheMotions, markOnline } from '../services/offlineCache';
+import { getUserState } from '../utils/userState';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
@@ -505,7 +506,6 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
 
   const userStateRef = React.useRef<string>('');
   React.useEffect(() => {
-    const { getUserState } = require('../utils/userState');
     getUserState().then((s: any) => { if (s?.code) userStateRef.current = s.code; }).catch(() => {});
   }, []);
 

@@ -444,7 +444,7 @@ const styles = (c: any) => StyleSheet.create({
   indSource:        { fontSize: TYPE.xs, color: c.textMuted, lineHeight: 15 },
   confBox:          { alignItems: 'center', flex: 0 },
   confPct:          { fontSize: TYPE.lg, fontFamily: FONT.bold },
-  confLabel:        { fontSize: 9, color: c.textMuted },
+  confLabel:        { fontSize: 10, color: c.textMuted },
   // Error banner
   errorBanner:      { backgroundColor: COLORS.warn, borderRadius: 8, padding: 12, margin: 8 },
   errorBannerText:  { color: '#fff', fontSize: 13, fontWeight: '600', textAlign: 'center' },
@@ -467,7 +467,7 @@ const styles = (c: any) => StyleSheet.create({
   warnItem:         { fontSize: TYPE.xs, color: COLORS.warn, marginBottom: 4, marginHorizontal: 8 },
   // Signals
   signalRow:        { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, gap: 8 },
-  signalDot:        { fontSize: 8, marginTop: 1 },  // color set inline
+  signalDot:        { fontSize: 10, marginTop: 1 },  // color set inline
   signalKey:        { fontSize: TYPE.sm, color: c.text, flex: 1 },
   // Motions
   motionCard:       { backgroundColor: c.card, borderRadius: RADIUS.md, borderLeftWidth: 2, borderWidth: 0.5, borderColor: c.borderSubtle, padding: 12, marginBottom: 8 },

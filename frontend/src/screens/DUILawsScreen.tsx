@@ -114,7 +114,7 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
                   <Text maxFontSizeMultiplier={1.4} style={{ color: sel ? colors.bgCard : text, fontWeight:'700', fontSize:14,
                     textAlign:'center' }}>{l.state}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={{ color: sel ? 'rgba(255,255,255,0.8)' : sub,
-                    fontSize:9, textAlign:'center' }} numberOfLines={1}>
+                    fontSize:10, textAlign:'center' }} numberOfLines={1}>
                     {(STATE_NAMES[l.state]||'').split(' ')[0]}
                   </Text>
                 </TouchableOpacity>
@@ -142,7 +142,7 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
                   padding:10, borderTopWidth:3, borderTopColor:color }}>
                   <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:10, fontWeight:'600' }}>{label}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={{ color:color, fontWeight:'800', fontSize:18 }}>{val}</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:9 }}>BAC limit</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:10 }}>BAC limit</Text>
                 </View>
               ))}
             </View>

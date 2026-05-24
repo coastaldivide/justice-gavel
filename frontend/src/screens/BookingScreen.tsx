@@ -5,7 +5,7 @@ import type { ScreenProps } from '../types/navigation';
  * 3-step booking flow: duration → date/time → confirm
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { api } from '../services/api';
 import { t }   from '../i18n';
 import { useAuthGate } from '../components/AuthGate';
@@ -166,9 +166,8 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           accessibilityRole="button"
           style={[styles.doneBtn, { backgroundColor: COLORS.legal, marginBottom: 10 }]}
           onPress={() => {
-            const RN = require('react-native');
-            RN.Linking.openURL('calshow://').catch(() =>
-              RN.Linking.openURL('content://com.android.calendar/time/').catch(() => {}));
+            Linking.openURL('calshow://').catch(() =>
+              Linking.openURL('content://com.android.calendar/time/').catch(() => {}));
           }}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>📅 Add to Calendar</Text>

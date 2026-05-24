@@ -116,7 +116,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
             <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>📎 Case #{lead.case_number}</Text>
           )}
           {lead.court_date && (
-            <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>📅 Court: {lead.court_date}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.detailRow}>📅 Court: {lead.court_date ? new Date(lead.court_date).toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"}) : ""}</Text>
           )}
 
           {lead.purchased ? (
