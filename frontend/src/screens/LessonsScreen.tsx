@@ -76,9 +76,11 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
     ? lessons.filter(l => l.category === filterCat)
     : lessons;
 
-  const totalPts  = lessons.reduce((s, l) => s + l.points, 0);
-  const earnedPts = lessons.filter(l => completed.has(l.id)).reduce((s, l) => s + l.points, 0);
-  const pct = totalPts > 0 ? earnedPts / totalPts : 0;
+  const { totalPts, earnedPts, pct } = React.useMemo(() => {
+    const total  = lessons.reduce((s, l) => s + l.points, 0);
+    const earned = lessons.filter(l => completed.has(l.id)).reduce((s, l) => s + l.points, 0);
+    return { totalPts: total, earnedPts: earned, pct: total > 0 ? earned / total : 0 };
+  }, [lessons, completed]);
 
   const renderLesson = useCallback(({ item }: { item: any }) => {
             const done = completed.has(item.id);
