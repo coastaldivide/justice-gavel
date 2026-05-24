@@ -121,6 +121,13 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
             ? { bg: colors.emergencyBg, border: colors.emergencyDark, text: colors.emergencyDark }
             : { bg: colors.legalBg, border: colors.legalDark, text: colors.legalDark };
 
+  if (fetchError && !schedules.length) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <TouchableOpacity onPress={() => { setFetchError(false); setRefreshTick(t => t+1); }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary }}>Tap to retry</Text>
+      </TouchableOpacity>
+    </View>
+  );
           return (
             <TouchableOpacity
               accessibilityRole="button"

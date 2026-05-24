@@ -56,6 +56,7 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
 
   const { colors, isDark } = useTheme();
   const [refreshTick, setRefreshTick] = React.useState(0);
+  const [fetchError, setFetchError] = useState(false);
   const [state, setState]   = useState('TN');
   const [penalties, setPenalties] = useState<Penalty[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,7 +76,7 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
     const params = state === 'ALL' ? '?limit=200' : `?state=${state}&limit=50`;
     cachedGet(`/legaldata/drugs${params}`)
       .then(r => { if (!cancel) { setPenalties(r.data || []); setExpanded(null); }})
-      .catch(() => {})
+      .catch(() => { if (!cancel) setFetchError(true); })
       .finally(() => { if (!cancel) setLoading(false); });
     return () => { cancel = true; };
   }, [state, refreshTick]);
