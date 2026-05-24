@@ -15,11 +15,12 @@
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Dimensions, RefreshControl} from 'react-native';
+import { Alert, ActivityIndicator, View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Dimensions, RefreshControl} from 'react-native';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { getUserState } from '../utils/userState';
+import { api } from '../services/api';
 
 declare var isLoading: any; // hoisted from component scope
 const { width: SW } = Dimensions.get('window');
@@ -271,7 +272,6 @@ function StepCard({ step, color, isActive, onPress }: {
               alignSelf:'flex-start' }}
             onPress={async () => {
               try {
-                const { api } = require('../services/api');
                 const remind = new Date();
                 remind.setDate(remind.getDate() + 1);
                 await api.post('/push/reminders', {
@@ -280,9 +280,10 @@ function StepCard({ step, color, isActive, onPress }: {
                   scheduled_for: remind.toISOString(),
                   notification_type: 'court_reminder',
                 });
-                const Alert = require('react-native').Alert;
                 Alert.alert('Reminder set ✓', 'We\'ll remind you about this step tomorrow.');
-              } catch { /* silent */ }
+              } catch {
+                Alert.alert('Could not set reminder', 'Make sure notifications are enabled in Settings and you are signed in.');
+              }
             }}
             accessibilityLabel="Set a reminder for this step"
           >

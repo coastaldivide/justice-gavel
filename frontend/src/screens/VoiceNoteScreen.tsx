@@ -104,7 +104,14 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+      // Stop any active recording on unmount to release microphone
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(() => {});
+        recordingRef.current = null;
+      }
+    };
   }, []);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);

@@ -105,7 +105,7 @@ export default function CrisisResourcesScreen({ route, navigation }: ScreenProps
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    api.get('/resources?category=CRISIS_LINE&limit=20').then(r => { if (r.data) setDbLines(r.data || []); }).catch(()=>{})
+    api.get('/resources?category=CRISIS_LINE&limit=20').then(r => { if (r.data) setDbLines(r.data); }).catch(() => {});//setDbLines(r.data || []); }).catch(()=>{}).catch(() => {})
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 600);
   }, []);
 
