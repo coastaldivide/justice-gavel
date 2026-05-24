@@ -50,13 +50,16 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
+  const onRefresh = () => { setRefreshing(true); setRefreshTick(t => t + 1); };
     return () => { mountedRef.current = false; };
   }, []);
 
   const { colors, isDark } = useTheme();
+  const [refreshTick, setRefreshTick] = React.useState(0);
   const [state, setState]   = useState('TN');
   const [penalties, setPenalties] = useState<Penalty[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = React.useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [offenseFilter, setOffenseFilter] = useState('ALL');
 
@@ -75,7 +78,7 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
       .catch(() => {})
       .finally(() => { if (!cancel) setLoading(false); });
     return () => { cancel = true; };
-  }, [state]);
+  }, [state, refreshTick]);
 
   const offenseTypes = ['ALL', ...Array.from(new Set(penalties.map(p => p.offense_type)))];
   const filtered = offenseFilter === 'ALL' ? penalties

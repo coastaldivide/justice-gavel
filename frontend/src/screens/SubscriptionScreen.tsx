@@ -129,7 +129,7 @@ function TierCard({ tier, active, onSubscribe, loading }: any) {
         </TouchableOpacity>
       ) : (
         <View style={styles.activeBlock}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.activeText}>✓ You're on this plan</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerSub}>✓ You're on this plan</Text>
         </View>
       )}
     </View>
@@ -243,6 +243,10 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): React.J
   }
 
   const activeTier = subscription?.tier;
+  const isCanceled  = subscription?.status === 'canceled' || subscription?.cancel_at_period_end;
+  const periodEnd   = subscription?.current_period_end
+    ? new Date(subscription.current_period_end).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
+    : null;
   const trialEnd = subscription?.trial_ends_at
     ? new Date(subscription.trial_ends_at).toLocaleDateString()
     : null;
@@ -267,6 +271,14 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): React.J
         </Text>
       </View>
 
+      {/* Grace period / canceled but still active notice */}
+      {isCanceled && periodEnd && (
+        <View style={[styles.activeBanner, { borderColor: COLORS.textSecond, backgroundColor: isDark ? '#2a1a00' : '#fff8f0' }]}>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.activeBannerSub, { color: COLORS.textSecond }]}>
+            ⚠️  Subscription canceled — access continues until {periodEnd}
+          </Text>
+        </View>
+      )}
       {/* Active subscription banner */}
       {subscription && (
         <View style={styles.activeBanner}>

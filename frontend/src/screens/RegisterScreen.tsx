@@ -24,13 +24,22 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
   const passRef = useRef<TextInput>(null);
   const nameRef = useRef<TextInput>(null);
 
+  const normalizedIdentifier = (() => {
+    const trimmed = identifier.trim();
+    const digits = trimmed.replace(/\D/g, '');
+    // Normalize 10-digit US phone to E.164
+    if (digits.length === 10 && !trimmed.includes('@')) return '+1' + digits;
+    if (digits.length === 11 && digits.startsWith('1') && !trimmed.includes('@')) return '+' + digits;
+    return trimmed;
+  })();
+
   const onRegister = async () => {
-    if (!identifier.trim()) { setError('Enter your email or phone number to create your account.'); return; }
+    if (!normalizedIdentifier) { setError('Enter your email or phone number to create your account.'); return; }
     if (!password || password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setError(''); setLoading(true);
     try {
       const res = await api.post('/auth/register', {
-        identifier: identifier.trim(), password,
+        identifier: normalizedIdentifier, password,
         displayName: displayName.trim() || undefined,
       });
       await secureStorage.setToken( res.data?.token);
@@ -78,7 +87,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
             <TextInput
               ref={passRef}
               style={[styles.input, { flex: 1 }]}
-              placeholder="At least 6 characters"
+              placeholder="At least 8 characters"
               placeholderTextColor={COLORS.textSecond}
               testID="register-password-input" accessibilityLabel="Password" secureTextEntry={!showPassword}
               value={password}

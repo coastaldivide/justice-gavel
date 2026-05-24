@@ -28,9 +28,11 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
   }, []);
 
   const { colors, isDark } = useTheme();
+  const [refreshTick, setRefreshTick] = React.useState(0);
   const [state, setState] = useState('TN');
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = React.useState(false);
   const [selected, setSelected] = useState<Schedule | null>(null);
   const [bondPct] = useState(10);
   const [filter, setFilter] = useState('');
@@ -48,7 +50,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
       .catch(() => { if (!cancel) setSchedules([]); })
       .finally(() => { if (!cancel) setLoading(false); });
     return () => { cancel = true; };
-  }, [state]);
+  }, [state, refreshTick]);
 
   const filtered = schedules.filter(s =>
     !filter || (s.charge || "").toLowerCase().includes(filter.toLowerCase())
@@ -57,6 +59,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
   const bondCost = (bail: number) => Math.round(bail * bondPct / 100);
   const fmt = (n: number) => '$' + n.toLocaleString();
 
+  const onRefresh = () => { setRefreshing(true); setRefreshTick(t => t + 1); };
   return (
     <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

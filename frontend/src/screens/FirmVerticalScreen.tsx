@@ -218,6 +218,16 @@ export default function FirmVerticalScreen({ navigation }: any) {
   useEffect(() => { loadAll(); }, [loadAll]);
 
   // ── Load trackers ──────────────────────────────────────────────────────────
+  const closeTracker = async (type: string, id: number, name: string) => {
+    Alert.alert('Mark as Resolved',
+      `Mark "${name}" as resolved? This will archive the tracker.`,
+      [{ text: 'Cancel', style: 'cancel' },
+       { text: 'Mark Resolved', style: 'destructive', onPress: async () => {
+         try { await api.patch(`/firm-verticals/${type}/${id}/resolve`, {}); loadTrackers(); }
+         catch (e: any) { Alert.alert('Error', e?.response?.data?.error || 'Could not resolve.'); }
+       }}]);
+  };
+
   const loadTrackers = useCallback(async () => {
     if (!firm) return;
     setTL(true);
@@ -705,6 +715,14 @@ export default function FirmVerticalScreen({ navigation }: any) {
                             </View>
                           </View>
                           <Text maxFontSizeMultiplier={1.4} style={s.coopLabel}>Cooperation: {d.cooperation_level.replace(/_/g, ' ')}</Text>
+                          <TouchableOpacity
+                            accessibilityRole="button"
+                            onPress={() => closeTracker('dpa', d.id, d.client_name)}
+                            style={{ alignSelf: 'flex-end', paddingVertical: 4, paddingHorizontal: 10,
+                              backgroundColor: COLORS.infoBg, borderRadius: 6, marginTop: 8 }}
+                          >
+                            <Text style={{ fontSize: 12, color: COLORS.navy }}>✓ Mark Resolved</Text>
+                          </TouchableOpacity>
                           {d.wells_due && (
                             <Text maxFontSizeMultiplier={1.4} style={[s.troDue, d.wells_overdue && { color: colors.emergency }]}>
                               📋 Wells: {d.wells_overdue

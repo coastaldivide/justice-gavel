@@ -46,8 +46,10 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
   }, []);
 
   const { colors, isDark } = useTheme();
+  const [refreshTick, setRefreshTick] = React.useState(0);
   const [laws, setLaws]     = useState<DUILaw[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = React.useState(false);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<DUILaw | null>(null);
   const [tab, setTab]       = useState<'first'|'second'|'rules'>('first');
@@ -70,6 +72,7 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
     (STATE_NAMES[l.state]||'').toLowerCase().includes(search.toLowerCase())
   );
 
+  const onRefresh = () => { setRefreshing(true); setRefreshTick(t => t + 1); };
   if (loading) return (
     <View style={{ flex:1, justifyContent:'center', alignItems:'center', backgroundColor:bg }}>
       <ActivityIndicator size="large" color={colors.primary} />

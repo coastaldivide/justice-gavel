@@ -38,6 +38,11 @@ export default function ContactsScreen(): React.JSX.Element {
     })();
   }, []);
 
+  const removeContact = (i: number) => {
+    if (contacts.length <= 1) { setLocalContacts([{ value: '', label: '' }]); }
+    else { setLocalContacts(prev => prev.filter((_, idx) => idx !== i)); }
+  };
+
   const updateContact = (idx: number, val: string) => {
     setLocalContacts(prev => prev.map((c, i) => i === idx ? { ...c, value: val } : c));
     setSaved(false);
@@ -105,6 +110,14 @@ export default function ContactsScreen(): React.JSX.Element {
               autoCapitalize="none"
             />
           </View>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Remove contact ${i + 1}`}
+            onPress={() => removeContact(i)}
+            style={{ padding: 8 }}
+          >
+            <Text style={{ color: COLORS.emergency, fontSize: 18, fontWeight: '700' }}>✕</Text>
+          </TouchableOpacity>
           {!!typeHint(c.value) && <Text maxFontSizeMultiplier={1.4} style={styles.typeHint}>{typeHint(c.value)}</Text>}
         </View>
       ))}

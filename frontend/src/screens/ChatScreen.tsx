@@ -517,7 +517,8 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
 
       // T1-M: single sid resolution; inner re-declaration removed
       const isFirstMsg = messages.length === 0;
-  const sid = sessionId || await getSessionId();
+      if (isFirstMsg) track('first_ai_message', {}).catch(() => {});
+      const sid = sessionId || await getSessionId();
 
       // ── Streaming path (preferred) ────────────────────────────────────────
       const useStream = typeof EventSource !== 'undefined';
