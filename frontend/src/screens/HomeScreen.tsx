@@ -124,47 +124,6 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
         .catch(() => {});
     }).catch(() => {});
 
-    // Court date countdown -- fetch soonest upcoming case
-    secureStorage.getToken().then(token => {
-      if (!token) return;
-      api.get('/cases').then(res => {
-        const open = (res.data || []).filter((ca: Record<string,unknown>) => ca.next_court_date);
-        if (!open.length) return;
-        const sorted = open.sort((a: Record<string,unknown>, b: Record<string,unknown>) =>
-          new Date(String(a.next_court_date ?? 0)).getTime() - new Date(String(b.next_court_date ?? 0)).getTime());
-        const next = sorted[0];
-        const diff = Math.ceil((new Date(next.next_court_date).getTime() - Date.now()) / 86400000);
-        if (diff >= 0 && diff <= 30) setUpcomingCase({ title: next.title, date: next.next_court_date, daysLeft: diff });
-      }).catch(() => {});
-    }).catch(() => {});
-
-    // Track visits for personalised greeting
-    (async () => {
-      try {
-        const v = await AsyncStorage.getItem('home_visit_count');
-        const n = parseInt(v || '0', 10) + 1;
-        setVisitCount(n);
-        await AsyncStorage.setItem('home_visit_count', String(n));
-      } catch {} // Non-critical — visit count is UI-only
-    })();
-    // Fetch legal tip of the day
-    api.get('/push/tip').then(r => {
-      setLegalTip(r.data?.tip || '');
-      setTipCategory(r.data?.category || '');
-      setTipQuery(r.data?.lesson_query || '');
-    }).catch((e) => { __DEV__ && console.warn(e?.message); });
-    // Fetch nearby counts to show on tiles (non-blocking — doesn't gate loading)
-    import('../services/location').then(({ getLocation }) => {
-      getLocation().then(({ lat, lng }) => {
-        api.get('/providers/bail', { params: { lat, lng, radiusKm: 80 } })
-          .then(r => setNearbyCounts(prev => ({ ...prev, bail: r.data?.length ?? 0 })))
-          .catch(() => {});
-        api.get('/providers/lawyers', { params: { lat, lng, limit: 20 } })
-          .then(r => setNearbyCounts(prev => ({ ...prev, lawyers: r.data?.length ?? 0 })))
-          .catch(() => {});
-      }).catch(() => {});
-    });
-
     // Resolve loading state once primary data arrives
     Promise.allSettled(primaryFetches).finally(() => {
       if (mountedRef.current) { setIsLoading(false); setRefreshing(false); }
