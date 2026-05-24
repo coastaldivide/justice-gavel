@@ -147,6 +147,8 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
       hapticNotification().catch(()=>{});
       setStreak(s => s + 1);
       setPhase('done');
+      setNotes('');
+      setLocationLabel('');
       hapticSuccess();
     } catch (e: any) {
       if (e.response?.data?.already_done) {

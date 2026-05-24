@@ -16,6 +16,7 @@ import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { cacheTimeline, getCachedTimeline } from '../services/offlineCache';
 import { useFocusEffect } from '@react-navigation/native';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 
 const EVENT_ICONS: Record<string, string> = {
   arrest:          '🔒',

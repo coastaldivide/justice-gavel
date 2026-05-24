@@ -330,7 +330,7 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
               styles.payNowBtn,
               (!locReady || paying) && styles.payNowBtnDisabled,
             ]}
-            onPress={handlePay}
+            testID="pay-button" onPress={handlePay}
             disabled={!locReady || paying}
             activeOpacity={0.88}
           >
