@@ -15,7 +15,7 @@
  *   onCapture? -- callback with the captured image URI
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View, AppState } from 'react-native';
 // Camera -- native only. Web uses <input type="file" accept="image/*"> fallback
 const CameraView = Platform.OS === 'web'
   ? null
@@ -37,6 +37,13 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
   };
 
   const { colors }                      = useTheme();
+  const [isCameraActive, setIsCameraActive] = React.useState(true);
+  React.useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      setIsCameraActive(state === 'active');
+    });
+    return () => sub.remove();
+  }, []);
   const [scanError, setScanError] = React.useState<string|null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [facing]                        = useState<'back' | 'front'>('back');
@@ -182,7 +189,7 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
   // ── Camera viewfinder ─────────────────────────────────────────────────────
   return (
     <View style={s.screen}>
-      <CameraView ref={cameraRef} style={s.camera} facing={facing}>
+      <CameraView ref={cameraRef} style={s.camera} facing={facing} active={isCameraActive}>
         {/* Document frame guide */}
         <View style={s.frameGuide}>
           <View style={[s.corner, s.cornerTL]} />

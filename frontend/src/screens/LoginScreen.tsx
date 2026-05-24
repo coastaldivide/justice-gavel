@@ -97,6 +97,7 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
               textContentType="username"
               returnKeyType="next"
               testID="login-email-input"
+              accessibilityLabel="Email address or phone number"
               onSubmitEditing={() => passRef.current?.focus()}
               selectionColor={COLORS.steel}
             />

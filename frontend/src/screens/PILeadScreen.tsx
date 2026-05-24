@@ -66,6 +66,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
   const selectedSeverity = SEVERITIES.find(s => s.key === severity);
 
   const submit = () => requireAuth(async () => {
+    hapticImpact();
     if (!description.trim() || description.trim().length < 20) {
       Alert.alert('Add a bit more detail', 'Please describe what happened in a few sentences so attorneys can evaluate your case.');
       return;

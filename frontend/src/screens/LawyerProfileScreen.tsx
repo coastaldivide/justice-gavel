@@ -145,6 +145,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
   };
 
   const handleSave = async () => {
+    hapticImpact();
     if (!lawyer) return;
     try {
       await api.post('/saved/lawyers', { lawyer_id: lawyer.id });
