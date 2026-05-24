@@ -134,7 +134,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
       Alert.alert('Request submitted', res.data?.message);
       await loadStatus();
     } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.error || 'Could not submit upgrade request.');
+      Alert.alert('Action Failed', e?.response?.data?.error || 'Could not submit upgrade request.');
     } finally { setUpgrading(false); }
   };
 
@@ -160,7 +160,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
       setFlow('status');  // navigate first — loadStatus failure must not trap user on trial form
       loadStatus().catch(() => null);  // refresh status in background
     } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.error || 'Could not activate trial.');
+      Alert.alert('Action Failed', e?.response?.data?.error || 'Could not activate trial.');
     } finally { setActiv(false); }
   };
 

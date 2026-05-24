@@ -208,7 +208,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
         setTiers(pricingResult.value.data?.tiers || []);
       }
     } catch (e: any) {
-      if (e?.response?.status !== 400) Alert.alert('Error', 'Could not load firm configuration.');
+      if (e?.response?.status !== 400) Alert.alert('Could not Load', 'Could not load firm configuration.');
     } finally {
       setLoading(false);
       setRefresh(false);
@@ -224,7 +224,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
       [{ text: 'Cancel', style: 'cancel' },
        { text: 'Mark Resolved', style: 'destructive', onPress: async () => {
          try { await api.patch(`/firm-verticals/${type}/${id}/resolve`, {}); loadTrackers(); }
-         catch (e: any) { Alert.alert('Error', e?.response?.data?.error || 'Could not resolve.'); }
+         catch (e: any) { Alert.alert('Action Failed', e?.response?.data?.error || 'Could not resolve.'); }
        }}]);
   };
 
@@ -259,7 +259,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
     try {
       const res = await api.get(`/firm-verticals/deadlines?trigger_date=${trigDate}`);
       setDeadlines(res.data?.deadlines || []);
-    } catch { Alert.alert('Error', 'Could not compute deadlines.'); }
+    } catch { Alert.alert('Calculation Error', 'Could not compute deadlines.'); }
     finally { setDLLoading(false); }
   }, [firm, trigDate]);
 
@@ -275,7 +275,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
       await api.put('/firm-verticals/mine', payload);
       Alert.alert('Saved', 'Vertical configuration updated.');
       loadAll();
-    } catch { Alert.alert('Error', 'Could not save configuration.'); }
+    } catch { Alert.alert('Save Failed', 'Could not save configuration.'); }
     finally { setSaving(false); }
   };
 
@@ -293,7 +293,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
       Alert.alert('Submitted', 'Mission pricing request received. Review takes 1–3 business days.');
       setMissionEIN(''); setMissionWeb('');
     } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.error || 'Could not submit request.');
+      Alert.alert('Submission Failed', e?.response?.data?.error || 'Could not submit request.');
     } finally { setSubMV(false); }
   };
 
@@ -313,7 +313,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
       setACName(''); setACStart(new Date().toISOString().slice(0, 10));
       setACDet(false); setACCountry(''); setACNotes('');
       loadTrackers();
-    } catch (e: any) { Alert.alert('Error', e?.response?.data?.error || 'Could not create clock.'); }
+    } catch (e: any) { Alert.alert('Action Failed', e?.response?.data?.error || 'Could not create clock.'); }
     finally { setCreatingAC(false); }
   };
 
@@ -340,7 +340,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
       setDPAName(''); setDPAAgency(''); setDPACoop('unknown'); setDPAFineM('');
       setDPASignDue(''); setDPAWellsDue(''); setDPASubDue('');
       loadTrackers();
-    } catch (e: any) { Alert.alert('Error', e?.response?.data?.error || 'Could not create tracker.'); }
+    } catch (e: any) { Alert.alert('Action Failed', e?.response?.data?.error || 'Could not create tracker.'); }
     finally { setCreatingDPA(false); }
   };
 
@@ -355,7 +355,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
       });
       setTROName(''); setTRODV(false); setTROAsset('under_100k');
       loadTrackers();
-    } catch (e: any) { Alert.alert('Error', e?.response?.data?.error || 'Could not create TRO tracker.'); }
+    } catch (e: any) { Alert.alert('Action Failed', e?.response?.data?.error || 'Could not create TRO tracker.'); }
     finally { setCreatingTRO(false); }
   };
 

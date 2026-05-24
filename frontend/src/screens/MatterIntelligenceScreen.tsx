@@ -91,7 +91,7 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
         // Non-blocking: let the user see what loaded, surface incomplete state in header
         setPartialLoad(true);
       } else if (failures.length === 6) {
-        Alert.alert('Error', 'Could not load matter intelligence.');
+        Alert.alert('Load Failed', 'Could not load matter intelligence.');
       }
     } catch (e: any) {
       if (isMounted.current) setErrorMsg('Could not load data. Pull to retry.');

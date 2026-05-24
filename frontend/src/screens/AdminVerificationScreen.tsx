@@ -10,6 +10,7 @@
  *
  * Works offline: shows cached pending list from last load.
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, ActivityIndicator } from 'react-native';
@@ -30,6 +31,19 @@ export default function AdminVerificationScreen({ navigation }: ScreenProps): Re
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
+  // Admin-only gate
+  const [isAuthorized, setIsAuthorized] = React.useState<boolean>(false);
+  React.useEffect(() => {
+    AsyncStorage.getItem('user').then(raw => {
+      if (raw) {
+        const u = (() => { try { return JSON.parse(raw); } catch { return null; } })();
+        if (u?.is_admin || u?.role === 'admin') { setIsAuthorized(true); return; }
+      }
+      navigation.navigate('HomeTab' as never);
+    }).catch(() => { (navigation as any).replace('HomeTab'); });
+  }, [navigation]);
+  // Note: isAuthorized gate renders nothing until auth is checked
+
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
   const { colors } = useTheme();
@@ -101,6 +115,7 @@ export default function AdminVerificationScreen({ navigation }: ScreenProps): Re
     );
   };
 
+  if (!isAuthorized) return <></>;
   return (
     <ScrollView
       style={[styles.screen, { backgroundColor: colors.bg }]}

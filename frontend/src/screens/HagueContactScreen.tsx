@@ -143,7 +143,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
       if (mountedRef.current) setPhase('result');
     } catch {
       hapticWarn();
-      Alert.alert('Error', 'Failed to record intake. Please try again.');
+      Alert.alert('Could not Load', 'Failed to record intake. Please try again.');
     } finally {
       if (mountedRef.current) setSubmitting(false);
     }
