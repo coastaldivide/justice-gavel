@@ -434,7 +434,13 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
     } catch (_e: any) { /* share cancelled by user — not an error */ }
   }, [messages, caseTitle]);
 
-  const clearChat = useCallback(async () => {
+  const clearChat = useCallback(() => {
+    Alert.alert(
+      'Clear Conversation',
+      'Delete all messages in this session? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear', style: 'destructive', onPress: async () => {
     const isFirstMsg = messages.length === 0;
   const sid = sessionId || await getSessionId();
     try { await api.delete(`/chat/history/${sid}`); } catch (e: any) { __DEV__ && console.warn((e as Error)?.message); }
@@ -442,6 +448,9 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
     await AsyncStorage.setItem('chat_session_id', newId);
     setSessionId(newId);
     setMessages([]);
+    } },
+      ],
+    );
   }, [sessionId]);
 
   // ── Send ──────────────────────────────────────────────────────────────────────

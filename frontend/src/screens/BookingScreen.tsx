@@ -382,7 +382,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           <TouchableOpacity activeOpacity={0.6}
             accessibilityRole="button"
             style={[styles.confirmBtn, { backgroundColor: COLORS.navy }, booking && { opacity: 0.6 }]}
-            onPress={confirmBooking} disabled={booking}>
+            testID="booking-confirm" onPress={confirmBooking} disabled={booking}>
             {booking
               ? <ActivityIndicator color={colors.bgCard} />
               : <Text maxFontSizeMultiplier={1.4} style={styles.confirmBtnText}>Confirm & Pay {duration.fee} →</Text>}

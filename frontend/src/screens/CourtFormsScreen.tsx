@@ -107,7 +107,7 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
   const onSelectState = useCallback((state: CourtFormSource) => {
     setSelectedState(state);
     setPhase('category_select');
-  }, []);
+  }, [selectedState]);
 
   // ── Category selection ─────────────────────────────────────────────────────
   const onSelectCategory = useCallback(async (categoryKey: string) => {
@@ -119,13 +119,13 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
       setConsentGranted(true);
       setPhase('form_display');
     }
-  }, []);
+  }, [selectedState]);
 
   const onConsentAccepted = useCallback(() => {
     setShowDisclaimer(false);
     setConsentGranted(true);
     setPhase('form_display');
-  }, []);
+  }, [selectedState]);
 
   // ── Open official form URL ─────────────────────────────────────────────────
   const openFormUrl = useCallback((url: string) => {
@@ -136,7 +136,7 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
         [{ text: 'OK' }]
       );
     });
-  }, []);
+  }, [selectedState]);
 
   // ── Get best URL for selected state + category ────────────────────────────
   const getBestUrl = useCallback((state: CourtFormSource, category: string): string => {
@@ -144,7 +144,7 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
     if (category === 'bail_bond') return state.bailFormsUrl ?? state.criminalFormsUrl ?? state.formsPortalUrl;
     if (category === 'criminal_defense') return state.criminalFormsUrl ?? state.formsPortalUrl;
     return state.selfHelpUrl ?? state.formsPortalUrl;
-  }, []);
+  }, [selectedState]);
 
   // ── AI field guide (information only) ─────────────────────────────────────
   const loadAiGuide = useCallback(async () => {
