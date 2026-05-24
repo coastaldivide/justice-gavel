@@ -36,12 +36,10 @@ const SECURE_KEYS = new Set(['token', 'refresh_token', 'user']);
  */
 export async function setItem(key: string, value: string): Promise<void> {
   if (SECURE_KEYS.has(key)) {
-    await SecureStore.setItemAsync(key, value, {
-      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-    });
-  } else {
-    await AsyncStorage.setItem(key, value);
-  }
+    try {
+      await SecureStore.setItemAsync(key, value, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+    } catch { await AsyncStorage.setItem(key, value); }
+  } else { await AsyncStorage.setItem(key, value); }
 }
 
 /**
@@ -49,7 +47,7 @@ export async function setItem(key: string, value: string): Promise<void> {
  */
 export async function getItem(key: string): Promise<string | null> {
   if (SECURE_KEYS.has(key)) {
-    return await SecureStore.getItemAsync(key);
+    try { return await SecureStore.getItemAsync(key); } catch { /* fall through to AsyncStorage */ }
   }
   return await AsyncStorage.getItem(key);
 }
@@ -59,7 +57,7 @@ export async function getItem(key: string): Promise<string | null> {
  */
 export async function removeItem(key: string): Promise<void> {
   if (SECURE_KEYS.has(key)) {
-    await SecureStore.deleteItemAsync(key);
+    await SecureStore.deleteItemAsync(key).catch(() => {});
   } else {
     await AsyncStorage.removeItem(key);
   }

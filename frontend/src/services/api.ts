@@ -80,8 +80,8 @@ instance.interceptors.request.use(async (config) => {
     if (token) {
       // Decode JWT payload (base64) to check iat
       // Decode payload only for iat (issued-at) check — signature verified server-side
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const ageMs = Date.now() - payload.iat * 1000;
+      let ageMs = 0;
+      try { const payload = JSON.parse(atob(token.split('.')[1])); ageMs = Date.now() - (payload.iat ?? 0) * 1000; } catch { /* malformed token — skip iat check */ }
       if (ageMs > REFRESH_THRESHOLD_MS && !_refreshing) {
         _refreshing = true;
         const { data } = await instance.post('/auth/refresh', {}, {

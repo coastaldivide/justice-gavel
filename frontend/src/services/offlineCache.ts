@@ -87,7 +87,7 @@ async function read<T>(
     if (!raw) return { data: null, cachedAt: null, stale: false, isCache: false };
     const age   = at ? Date.now() - new Date(at).getTime() : Infinity;
     const stale = age > maxAge;
-    return { data: JSON.parse(raw) as T, cachedAt: at, stale, isCache: true };
+    return { data: JSON.parse(raw ?? "null") as T, cachedAt: at, stale, isCache: true };
   } catch {
     return { data: null, cachedAt: null, stale: false, isCache: false };
   }
@@ -217,7 +217,7 @@ export async function getCachedResources(): Promise<any[]> {
     const raw = await AsyncStorage.getItem(CACHE_KEYS.resources);
     const at  = await AsyncStorage.getItem(CACHE_KEYS.resourcesAt);
     if (!raw || !at || Date.now() - Number(at) > TTL_24_HOURS) return [];
-    return JSON.parse(raw);
+    return JSON.parse(raw ?? "null");
   } catch { return []; }
 }
 
