@@ -395,3 +395,23 @@ router.get('/coverage', async (req, res) => {
 });
 
 export default router;
+
+// GET /api/providers/lawyers/:id — single attorney profile
+router.get('/lawyers/:id', async (req, res) => {
+  try {
+    const db = await openDb();
+    if (!db) return res.status(503).json({ error: 'Provider service unavailable.' });
+    const id = parseInt(req.params.id, 10);
+    if (!id) return res.status(400).json({ error: 'Invalid id' });
+    const lawyer = await db.get('SELECT * FROM lawyers WHERE id = ?', [id]);
+    if (!lawyer) return res.status(404).json({ error: 'Attorney not found' });
+    // Parse specialties if stored as JSON string
+    try { lawyer.specialties = JSON.parse(lawyer.specialties); } catch {}
+    // Fetch reviews
+    const reviews = await db.all(
+      'SELECT id, rating, comment, created_at FROM reviews_app WHERE provider_id = ? ORDER BY created_at DESC LIMIT 20',
+      [id]
+    ).catch(() => []);
+    res.json({ ...lawyer, reviews });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});

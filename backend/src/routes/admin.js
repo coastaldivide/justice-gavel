@@ -501,3 +501,19 @@ router.get('/health-scan/history', authRequired, async (req, res) => {
 
 
 export default router;
+
+// GET /api/attorney/pending-verification — admin: attorneys awaiting bar verification
+router.get('/attorney/pending-verification', authRequired, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
+    const db = await getDb();
+    const pending = await db.all(
+      `SELECT u.id as user_id, u.display_name, u.email,
+              u.bar_number, u.bar_verified, u.created_at
+       FROM users u
+       WHERE u.bar_verified = 0 AND u.bar_number IS NOT NULL
+       ORDER BY u.created_at DESC LIMIT 50`
+    ).catch(() => []);
+    res.json({ pending });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});

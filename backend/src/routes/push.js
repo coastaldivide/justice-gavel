@@ -107,6 +107,34 @@ router.post('/retention/post-purchase', authRequired, async (req, res) => {
 // POST /api/push/token — saves Expo push token for this user
 // ── List upcoming court reminders for user ─────────────────────────────────────
 // GET /api/push/reminders — returns pending court date reminders
+
+// POST /api/push/reminders — schedule a reminder notification
+router.post('/reminders', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const { title, body, deliver_at, notification_type, case_id, data } = req.body || {};
+    if (!title || !deliver_at) {
+      return res.status(400).json({ error: 'title and deliver_at are required' });
+    }
+    // Get user push token
+    const user = await db.get('SELECT push_token FROM users WHERE id = ?', [req.user.id]);
+    const push_token = user?.push_token || null;
+    
+    const r = await db.run(
+      `INSERT INTO scheduled_pushes 
+       (user_id, push_token, title, body, deliver_at, notification_type, case_id, data, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [req.user.id, push_token, title, body || '', deliver_at,
+       notification_type || 'reminder', case_id || null,
+       data ? JSON.stringify(data) : null]
+    );
+    res.json({ id: r.lastID, scheduled: true, deliver_at });
+  } catch(e) { 
+    logger.error('[push/reminders]', e.message);
+    res.status(500).json({ error: 'Could not schedule reminder' }); 
+  }
+});
+
 router.get('/reminders', authRequired, async (req, res) => {
   try {
     const db = await getDb();

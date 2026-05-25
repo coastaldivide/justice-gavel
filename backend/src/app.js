@@ -40,6 +40,7 @@ import adminRouter      from './routes/admin.js';
 import savedRouter        from './routes/saved.js';
 import consultationsRouter from './routes/consultations.js';
 import checkinsRouter      from './routes/checkins.js';
+import familyRouter       from './routes/family.js';
 import expungementRouter   from './routes/expungement/index.js';
 import piLeadsRouter    from './routes/pi_leads.js';
 import billingRouter    from './routes/billing/index.js';
@@ -127,7 +128,9 @@ function corsOriginResolver(origin, callback) {
   if (_allowedOrigins.includes(origin) || _allowedOrigins.includes('*')) return callback(null, true);
   return callback(new Error('CORS: origin not allowed: ' + origin), false);
 }
-const CORS_ORIGIN = corsOriginResolver;
+const CORS_ORIGINS = (process.env.CORS_ORIGIN || 'http://localhost:19006')
+  .split(',').map(o => o.trim()).filter(Boolean);
+const CORS_ORIGIN = CORS_ORIGINS.length === 1 ? CORS_ORIGINS[0] : CORS_ORIGINS;
 
 // ── Stripe webhook MUST use raw body — mount BEFORE json middleware ────────────
 app.post(
@@ -369,6 +372,7 @@ app.use('/api/translate',  translateRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/saved',        savedRouter);
 app.use('/api/consultations', consultationsRouter);
+app.use('/api/family', familyRouter);
 app.use('/api/checkins',      checkinsRouter);
 app.use('/api/expungement',   expungementRouter);
 app.use('/api/contracts',     contractsRouter);

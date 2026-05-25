@@ -323,3 +323,15 @@ router.get('/my/:enrollmentId', async (req, res) => {
 });
 
 export default router;
+
+// GET /api/family/contacts — list user's emergency contacts
+router.get('/family-contacts', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const contacts = await db.all(
+      'SELECT * FROM family_contacts WHERE user_id = ? ORDER BY created_at ASC',
+      [req.user.id]
+    ).catch(() => []);
+    res.json({ contacts });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});

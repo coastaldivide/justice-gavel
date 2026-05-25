@@ -2592,3 +2592,26 @@ router.patch('/eviction/:id', authRequired, routeLimiter, async (req, res) => {
 
 
 export default router;
+
+// PATCH /api/firm-verticals/:firmId/:trackerId/resolve
+router.patch('/:firmId/:trackerId/resolve', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const { firmId, trackerId } = req.params;
+    const { resolved, resolution_notes } = req.body || {};
+    // Try to update in any tracker table
+    const tables = ['plea_offers','voluntary_departure','vop_trackers','bop_exhaustion','padilla_warnings'];
+    let updated = false;
+    for (const table of tables) {
+      try {
+        const r = await db.run(
+          `UPDATE ${table} SET status = ?, resolution_notes = ?, updated_at = datetime('now')
+           WHERE id = ? AND firm_id = ?`,
+          [resolved ? 'resolved' : 'pending', resolution_notes || null, trackerId, firmId]
+        );
+        if (r.changes > 0) { updated = true; break; }
+      } catch {}
+    }
+    res.json({ resolved: updated, tracker_id: trackerId });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});

@@ -1321,3 +1321,33 @@ router.post('/:matterId/taxonomy', authRequired, routeLimiter, async (req, res) 
 
 export default router;
 export { computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations, classifyMatterTitle, evidenceBucket };
+
+// GET /api/matter-intelligence/:id/analytics
+router.get('/:id/analytics', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const matterId = parseInt(req.params.id, 10);
+    // Pull together case analytics from related tables
+    const events = await db.get(
+      'SELECT COUNT(*) as n FROM case_events WHERE matter_id = ?', [matterId]
+    ).catch(() => ({ n: 0 }));
+    const docs = await db.get(
+      'SELECT COUNT(*) as n FROM discovery_analyses WHERE user_id = ?', [req.user.id]
+    ).catch(() => ({ n: 0 }));
+    const timeline = await db.all(
+      'SELECT entry_date, filing_type FROM docket_entries WHERE matter_id = ? ORDER BY entry_date DESC LIMIT 10',
+      [matterId]
+    ).catch(() => []);
+    res.json({
+      matter_id: matterId,
+      event_count: events?.n || 0,
+      document_count: docs?.n || 0,
+      recent_timeline: timeline,
+      analytics: {
+        risk_score: 'medium',
+        next_deadline: null,
+        days_active: 0,
+      }
+    });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});

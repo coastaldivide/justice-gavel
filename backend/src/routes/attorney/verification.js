@@ -265,3 +265,17 @@ router.post('/approve-verification', authRequired, routeLimiter, async (req, res
 
 
 export default router;
+
+// GET /api/attorney/pending-verification (admin view)
+router.get('/pending-verification', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
+    const pending = await db.all(
+      `SELECT u.id as user_id, u.display_name, u.email, u.bar_number, u.created_at
+       FROM users u WHERE u.bar_verified = 0 AND u.bar_number IS NOT NULL
+       ORDER BY u.created_at DESC LIMIT 50`
+    ).catch(() => []);
+    res.json({ pending });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
