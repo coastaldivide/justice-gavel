@@ -12,19 +12,14 @@ import { Router } from 'express';
 import attorneysRouter  from './attorneys.js';
 import checkRouter      from './check.js';
 import petitionRouter   from './petition.js';
+import { authRequired }    from '../../middleware/auth.js';
+import { getDb }           from '../../db/index.js';
+import { err400 }          from '../../utils/routeHelpers.js';
 
 const router = Router();
 router.use('/', attorneysRouter);
 router.use('/', checkRouter);
 router.use('/', petitionRouter);
-
-export default router;
-
-// Re-export helpers so test files and other modules can import from the index
-export { classifyCharge, getEligibility, STATE_RULES, DEFAULT_RULES } from './rules.js';
-import { authRequired }    from '../../middleware/auth.js';
-import { getDb }           from '../../db/index.js';
-import { err400 }          from '../../utils/routeHelpers.js';
 
 // POST /referral — track partner referral clicks
 router.post('/referral', authRequired, async (req, res) => {

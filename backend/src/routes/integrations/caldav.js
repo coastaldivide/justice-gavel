@@ -213,8 +213,8 @@ async function caldavDelete(conn, href) {
 
 // ── Main sync dispatcher ──────────────────────────────────────────────────────
 
-export async function syncCalendar({
-  conn = await refreshTokenIfNeeded(db, conn); db, conn, ctx, entity_type, direction, matter_id, user }) {
+export async function syncCalendar({ db, conn: _conn, ctx, entity_type, direction, matter_id, user }) {
+  const conn = await refreshTokenIfNeeded(db, _conn);
   try {
     if (entity_type !== 'event') {
       return { status: 'skipped', message: 'Calendar sync only supports entity_type=event.' };

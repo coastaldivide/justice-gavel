@@ -25,7 +25,7 @@ import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt
 import express         from 'express';
 import { enqueue }     from '../services/aiQueue.js';
 import { getDb } from '../db/index.js';
-import { authRequired } from './auth.js';
+import { authRequired } from '../middleware/auth.js';
 
 // ── AI-specific rate limiter (50 requests / 15 min per user/IP) ─────────────
 import rateLimit from 'express-rate-limit';

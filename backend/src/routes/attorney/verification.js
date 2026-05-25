@@ -7,11 +7,10 @@ import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger           from '../../utils/logger.js';
-import { sanitiseField, sanitiseProfileFields, requireDefender, STATE_BAR_LOOKUP }
+import { sanitiseField, sanitiseProfileFields, STATE_BAR_LOOKUP } from './_helpers.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 
 const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
-  from './_helpers.js';
 
 const router = Router();
 
@@ -37,7 +36,7 @@ router.post('/verify-bar', authRequired, routeLimiter, async (req, res) => {
    * and expose the company to FTC enforcement and state bar complaints.
    */
   try {
-    const ctx = await requireDefender(req, res);
+    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
     if (!ctx) return;
 
     const { bar_number, state } = req.body || {};
@@ -263,7 +262,6 @@ router.post('/approve-verification', authRequired, routeLimiter, async (req, res
     return res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
-
 
 
 export default router;

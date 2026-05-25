@@ -14,7 +14,7 @@ import { checkStaleness, runBiasAudit, run as runMonitor } from '../analytics/pr
 import { PRECEDENT_REGISTRY, getRelevantEntries } from '../analytics/precedentRegistry.js';
 import { getDb }              from '../db/index.js';
 import { authRequired }       from '../middleware/auth.js';
-import { getFirmMembership }  from '../routes/firm_verticals.js';
+// getFirmMembership — resolved via rbac middleware instead
 import { hasMinRole }         from '../middleware/rbac.js';
 import logger                 from '../utils/logger.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';

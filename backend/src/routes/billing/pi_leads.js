@@ -121,10 +121,8 @@ router.post('/pi-lead/accept/:id', authRequired, async (req, res) => {
         payment_method: profile.payment_method_id,
         confirm: true,
         off_session: true,
-        description: `PI Lead #${lead.id,
+        description: `PI Lead #${lead.id} — ${lead.case_type} — ${lead.city}, ${lead.state}`,
         metadata: { user_id: String(req.user.id), source: 'pi_leads' },
-      } — ${lead.case_type} — ${lead.city}, ${lead.state}`,
-      ,
       metadata: { user_id: String(req.user.id), lead_id: String(lead.id) },
     });
     }

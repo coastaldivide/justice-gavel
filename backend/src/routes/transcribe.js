@@ -21,7 +21,7 @@ import express    from 'express';
 import multer     from 'multer';
 import FormData   from 'form-data';
 import fetch      from 'node-fetch';
-import { authRequired } from './auth.js';
+import { authRequired } from '../middleware/auth.js';
 import { enqueue } from '../services/aiQueue.js';
 import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';

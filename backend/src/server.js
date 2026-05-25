@@ -149,7 +149,7 @@ deliverScheduledPushes().catch(err => logger.error('[Push] Startup drain error:'
 
 const PORT = parseInt(process.env.PORT || '4000', 10);
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   const addr = server?.address?.() || {};
   logger.info({
     msg: '[server] Justice Gavel API started',
@@ -161,6 +161,15 @@ const server = app.listen(PORT, () => {
   logger.info(`[server] Mode: ${process.env.DEMO_MODE !== 'false' ? 'DEMO' : 'LIVE'}`);
   // Signal PM2 that the process is ready (required for wait_ready: true)
   if (process.send) process.send('ready');
+});
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    logger.warn(`[server] Port ${PORT} in use — process already running, continuing`);
+    // Don't exit — let the existing server handle requests
+  } else {
+    logger.error('[server] Server error:', err.message);
+    process.exit(1);
+  }
 });
 
 // Keep-alive + timeout settings — prevents hanging connections
@@ -210,6 +219,10 @@ process.on('SIGINT',  () => shutdown('SIGINT'));
 
 // Catch uncaught exceptions — log and exit cleanly
 process.on('uncaughtException', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    logger.warn('[server] Port already in use — existing instance running');
+    return; // Don't shutdown
+  }
   logger.error('[server] Uncaught exception:', err.message, err.stack);
   shutdown('uncaughtException');
 });

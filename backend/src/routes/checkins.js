@@ -23,6 +23,24 @@ import Stripe from 'stripe';
 import logger from '../utils/logger.js';
 
 const router = Router();
+
+// GET /status — current user's check-in status (no enrollment ID required)
+router.get('/status', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const today = new Date().toISOString().slice(0,10);
+    const checked_in = await db.get(
+      'SELECT id FROM checkins WHERE user_id=? AND date(created_at)=?',
+      [req.user.id, today]
+    );
+    const streak = await db.get(
+      'SELECT COUNT(*) as n FROM checkins WHERE user_id=? AND created_at >= datetime(\'now\',\'-30 days\')',
+      [req.user.id]
+    );
+    res.json({ checked_in_today: !!checked_in, streak: streak?.n || 0 });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 const checkinsLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 30, message: 'Check-in limit reached. Try again later.' });
 
 const stripeKey = process.env.STRIPE_SECRET || '';

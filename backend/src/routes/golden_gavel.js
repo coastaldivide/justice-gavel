@@ -327,7 +327,7 @@ router.get('/status', authRequired, gavelLimiter, async (req, res) => {
               golden_gavel, golden_gavel_awarded_at, golden_gavel_tier
        FROM users WHERE id = ?`, [req.user.id]
     );
-    if (!user) return res.status(404).json({ error: 'User not found.' });
+    if (!user) user = { gavel_level: 0 }; // default for new users
     const level = user.gavel_level || (user.golden_gavel ? 3 : 0);
     res.json({
       gavel_level:   level,

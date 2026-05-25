@@ -31,7 +31,7 @@ export function sanitiseProfileFields(obj) {
 const router = Router();
 
 // ── Helper: ensure user is a defender ────────────────────────────────────────
-async function requireDefender(req, res) {
+export async function requireDefender(req, res) {
   const db   = await getDb();
   const user = await db.get('SELECT id, display_name, email, bar_number, bar_verified, jtb_verified, is_admin FROM users WHERE id=? LIMIT 50', [req.user.id]);
   if (!user) { err401(res, 'Not found'); return null; }

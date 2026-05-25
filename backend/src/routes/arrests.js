@@ -18,6 +18,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { authRequired as authMiddleware } from '../middleware/auth.js';
 import { sendArrestAlerts } from '../services/arrest_alerts.js';
+const alertsPipelineLimiter = makeUserLimiter(20, 60_000); // auto-generated rate limiter
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.resolve(__dirname, '../../data/providers.sqlite');

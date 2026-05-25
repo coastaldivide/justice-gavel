@@ -184,6 +184,7 @@ router.post('/quickconnect', authRequired, async (req, res) => {
       // Demo mode — mock charge (with credit applied)
       const demoCharged = finalAmountCents / 100;
       if (creditApplied > 0) {
+          await db.run('UPDATE users SET credit_cents = MAX(0, credit_cents - ?) WHERE id=?',
           [creditApplied, req.user.id]).catch(()=>{});
       }
       return res.json({
@@ -240,6 +241,7 @@ router.post('/quickconnect', authRequired, async (req, res) => {
 
 
     if (creditApplied > 0) {
+        await db.run('UPDATE users SET credit_cents = MAX(0, credit_cents - ?) WHERE id=?',
         [creditApplied, req.user.id]).catch(()=>{});
     }
 

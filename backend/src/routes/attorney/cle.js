@@ -27,7 +27,7 @@ const cleLimiter   = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'CLE 
 // ── GET /api/attorney/cle — course catalogue with completion status ────────────
 router.get('/cle', authRequired, cleLimiter, async (req, res) => {
   try {
-    const ctx = await requireDefender(req, res);
+    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
     if (!ctx) return;
     const { db } = ctx;
 
@@ -64,7 +64,7 @@ router.get('/cle', authRequired, cleLimiter, async (req, res) => {
 // ── GET /api/attorney/cle/transcript ─────────────────────────────────────────
 router.get('/cle/transcript', authRequired, cleLimiter, async (req, res) => {
   try {
-    const ctx = await requireDefender(req, res);
+    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
     if (!ctx) return;
     const { db, user } = ctx;
 
@@ -100,7 +100,7 @@ router.get('/cle/transcript', authRequired, cleLimiter, async (req, res) => {
 // ── GET /api/attorney/cle/:id — single course detail ─────────────────────────
 router.get('/cle/:id', authRequired, cleLimiter, async (req, res) => {
   try {
-    const ctx = await requireDefender(req, res);
+    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
     if (!ctx) return;
     const { db } = ctx;
 
@@ -128,7 +128,7 @@ router.get('/cle/:id', authRequired, cleLimiter, async (req, res) => {
 // ── POST /api/attorney/cle/:id/complete — mark complete, award credit ─────────
 router.post('/cle/:id/complete', authRequired, cleLimiter, async (req, res) => {
   try {
-    const ctx = await requireDefender(req, res);
+    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
     if (!ctx) return;
     const { db, user } = ctx;
 

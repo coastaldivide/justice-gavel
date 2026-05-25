@@ -7,6 +7,7 @@
 import { getDb }        from '../../db/index.js';
 import { enqueue }      from '../../services/aiQueue.js';
 import logger             from '../../utils/logger.js';
+import { Router }         from 'express';
 import multer             from 'multer';
 import rateLimit          from 'express-rate-limit';
 
@@ -23,7 +24,7 @@ const aiLimiter = rateLimit({
   keyGenerator: (req) => req.user?.id ? `user_${req.user.id}` : req.ip,
 });
 
-const router = express.Router();
+const router = Router();
 
 // ── Accepted file types ───────────────────────────────────────────────────────
 export const ACCEPTED_MIME = new Set([

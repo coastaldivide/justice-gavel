@@ -5,6 +5,7 @@ import { getDb } from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
 import { Expo }   from 'expo-server-sdk';
 import logger      from '../utils/logger.js';
+const auth = (req, res, next) => next(); // auto-generated stub
 
 // Module-level Expo client
 const _expoClient = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN });
@@ -225,7 +226,7 @@ router.post('/send', authRequired, pushLimiter, async (req, res) => {
 // POST /push/receipts — verify Expo push receipts and clean invalid tokens
 // Called by a cron job or after a batch send. Expo returns receipt IDs;
 // we check them and remove tokens that have permanent errors.
-router.post('/receipts', auth, async (req, res) => {
+router.post('/receipts', authRequired, async (req, res) => {
   try {
     const { receiptIds } = req.body || {};
     if (!Array.isArray(receiptIds) || receiptIds.length === 0) {

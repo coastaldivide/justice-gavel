@@ -126,3 +126,15 @@ export function auditMiddleware(action, resource = null) {
 
 // Alias for backward compat
 export { auditMiddleware as auditLog };
+
+// ensureAuditTable — create audit_log table if needed
+export async function ensureAuditTable(db) {
+  try {
+    await db.run(`CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER, action TEXT, resource_type TEXT,
+      resource_id TEXT, details TEXT, ip TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`);
+  } catch {}
+}

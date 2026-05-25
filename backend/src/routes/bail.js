@@ -6,6 +6,22 @@ import { authRequired } from '../middleware/auth.js';
 
 const router = Router();
 
+// GET /api/bail?state=TN — return bail schedules for state (no GPS needed)
+router.get('/', async (req, res) => {
+  const { state } = req.query;
+  try {
+    const { getDb } = await import('../db/index.js');
+    const db = await getDb();
+    const rows = await db.all(
+      state ? 'SELECT * FROM bail_schedules WHERE state=? OR state=\'ALL\' ORDER BY charge ASC LIMIT 100'
+             : 'SELECT * FROM bail_schedules WHERE state=\'ALL\' ORDER BY charge ASC LIMIT 50',
+      state ? [state] : []
+    ).catch(() => []);
+    res.json({ data: rows });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+
 function haversine(lat1, lon1, lat2, lon2) {
   const toRad = d => d * Math.PI / 180;
   const R = 6371;

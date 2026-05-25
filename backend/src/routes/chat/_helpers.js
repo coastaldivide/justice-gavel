@@ -151,10 +151,11 @@ export async function callClaude(opts) {
     })
   });
 
-  if (!response.ok) {
-    const errText = await response.text();
   } finally { clearTimeout(_chatTO); }
-      throw new Error(`Anthropic API error: ${response.status} — ${errText.slice(0, 200)}`);
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    throw new Error(`Anthropic API error: ${response.status} — ${errText.slice(0, 200)}`);
   }
 
   const data = await response.json();

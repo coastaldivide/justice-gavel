@@ -14,7 +14,6 @@ import logger from '../utils/logger.js';
  * Can also be triggered via POST /api/admin/send-arrest-alerts
  */
 
-import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';

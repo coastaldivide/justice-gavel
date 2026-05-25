@@ -72,8 +72,8 @@ const PRIVILEGE_BASES = {
 };
 
 // ── Auto-number doc numbers ───────────────────────────────────────────────────
-async // nextDocNumber: counter is passed to avoid N+1 per entry
-function nextDocNumber(counter) {
+// nextDocNumber: counter is passed to avoid N+1 per entry
+async function nextDocNumber(counter) {
   counter.n += 1;
   return `PRIV-${String(counter.n).padStart(4, '0')}`;
 }

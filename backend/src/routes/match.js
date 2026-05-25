@@ -24,7 +24,7 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import { authRequired } from './auth.js';
+import { authRequired } from '../middleware/auth.js';
 import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
 

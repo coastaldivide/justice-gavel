@@ -76,6 +76,9 @@ import caldavRouter       from './routes/integrations/caldav.js';
 import recapRouter        from './routes/integrations/recap.js';
 import webpushRouter      from './routes/webpush.js';
 import outboundWHRouter   from './routes/webhooks/outbound.js';
+import analyticsRouter     from './routes/analytics.js';
+import searchRouter                 from './routes/search.js';
+import res                          from './routes/resources.js';
 
 // ── Startup configuration check ───────────────────────────────────────────────
 // Warns about missing keys on boot — does NOT crash. App runs in demo mode.
@@ -350,7 +353,7 @@ app.use('/api/push',       pushRouter);
 app.use('/api/providers',  providersRouter);
 app.use('/api/insurance',  insuranceRouter);
 app.use('/api/match',      matchRouter);
-app.use('/api/analytics',    analyticsRoutes);
+app.use('/api/analytics',    analyticsRouter);
 app.use('/api/advocacy',   advocacyRouter);
 app.use('/api/chat',       chatRouter);
 app.use('/api/lessons',    lessonsRouter);

@@ -44,6 +44,8 @@ async function getProvidersDb() {
 }
 
 // ── GET /api/advocacy/stats ───────────────────────────────────────────────────
+router.get('/', async (req, res, next) => next());
+router.get('/', async (req, res) => res.json({ advocacy: true }));
 router.get('/stats', authRequired, statsLimiter, async (req, res) => {
   try {
     const db  = await getDb();

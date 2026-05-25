@@ -20,13 +20,13 @@ import { getDb }        from '../db/index.js';
 import { loadFirmContext, hasMinRole } from '../middleware/rbac.js';
 import { writeAuditLog } from '../middleware/audit.js';
 import logger            from '../utils/logger.js';
-import {
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
-
-const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
+import {
   err400, err403, err404, err409,
   safeInt, sanitizeStr, truncateStr,
 } from '../utils/routeHelpers.js';
+
+const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
 
 const router = Router();
 

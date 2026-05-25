@@ -28,17 +28,19 @@ const optionalAuth = (req, res, next) => {
   if (!auth.startsWith('Bearer ')) return next();
   authRequired(req, res, next);
 };
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
-import { fileURLToPath } from 'url';
 import path from 'path';
 import logger              from '../utils/logger.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import rateLimit           from 'express-rate-limit';
-const __dirname_r = path.dirname(fileURLToPath(import.meta.url));
-const PROVIDERS_DB = path.resolve(__dirname_r, '../../data/providers.sqlite');
 
 const router = Router();
+
+// Alias: /list → /lawyers
+router.get('/list', async (req, res, next) => {
+  req.url = '/lawyers' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '');
+  router.handle(req, res, next);
+});
+
 
 const MIN_RESULTS    = 3;
 const RADIUS_STEPS_KM = [50, 100, 200, 500, 99999]; // expand until MIN_RESULTS found
@@ -48,19 +50,12 @@ const searchLimiter = makeUserLimiter({ windowMs: 60_000, max: 60, message: 'Pro
 
 // ── Module-level singleton — one providers.sqlite connection per process ───────
 // Re-opening on every request causes file descriptor leaks under load.
-let _pdb = null;
+// Redirected to use main sql.js DB (no native sqlite3 required)
 async function openDb() {
-  if (_pdb) return _pdb;
-  try {
-    _pdb = await open({ filename: PROVIDERS_DB, driver: sqlite3.Database });
-    await _pdb.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;');
-    logger.info('[providers] providers.sqlite connection opened');
-  } catch (e) {
-    logger.warn('[providers] Could not open providers.sqlite:', e.message);
-    _pdb = null;
-  }
-  return _pdb;
+  const { getDb } = await import('../db/index.js');
+  return getDb();
 }
+
 
 // ── Haversine distance ────────────────────────────────────────────────────────
 

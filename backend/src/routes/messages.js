@@ -20,7 +20,7 @@ import { err400, truncateStr, err401, err403, err404, err409, err422, err500, er
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import express          from 'express';
 import { getDb }        from '../db/index.js';
-import { authRequired } from './auth.js';
+import { authRequired } from '../middleware/auth.js';
 import { encrypt, decrypt } from '../services/encryption.js';
 
 const router = express.Router();
@@ -102,6 +102,7 @@ router.get('/:caseId', authRequired, async (req, res) => {
 });
 
 // ── POST /api/messages/:caseId ────────────────────────────────────────────────
+const messagesLimiter = makeUserLimiter({ windowMs: 60000, max: 30, message: 'Message rate limit reached. Please slow down.' });
 router.post('/:caseId', authRequired, messagesLimiter, async (req, res) => {
   try {
     const db = await getDb();
@@ -199,7 +200,6 @@ import fs from 'fs';
 import crypto from 'crypto';
 import logger from '../utils/logger.js';
 
-const messagesLimiter = makeUserLimiter({ windowMs: 60000, max: 30, message: 'Message rate limit reached. Please slow down.' });
 // Lazy Expo push client — initialized on first use, consistent with cases.js pattern
 let _expo = null;
 async function getExpo() {

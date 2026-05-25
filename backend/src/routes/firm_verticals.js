@@ -48,12 +48,12 @@ import { hasMinRole }      from '../middleware/rbac.js';
 import { writeAuditLog }   from '../middleware/audit.js';
 import logger              from '../utils/logger.js';
 import {
-import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
-
-const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
   err400, err403, err404, safeInt,
   sanitizeStr, truncateStr,
 }                          from '../utils/routeHelpers.js';
+import { makeUserLimiter }   from '../middleware/sharedAiLimiter.js';
+
+const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
 
 const router = Router();
 
@@ -276,7 +276,7 @@ router.put('/mine', authRequired, routeLimiter, async (req, res) => {
     // to current values for any flag not included in this PUT request.
     // SELECT * is intentional here — we need every feature flag column.
     const existing = await db.get(
-      'SELECT * FROM firm_vertical_config WHERE firm_id=?', [memb.firm_id]  -- intentional: full record for vertical UI
+      'SELECT * FROM firm_vertical_config WHERE firm_id=?', [memb.firm_id]  /* full record needed for boolField fallback */
     ).catch(() => null);
 
     // boolField: explicit true/false/1/0 overrides; undefined falls back to existing value
@@ -1016,7 +1016,7 @@ router.get('/plea-offers', authRequired, async (req, res) => {
     const offset = safeInt(req.query.offset, 0);
     const status = req.query.status ? sanitizeStr(req.query.status, 30) : null;
 
-    let sql    = 'SELECT * FROM plea_offers WHERE firm_id=?';  -- intentional: full record for vertical UI
+    let sql    = 'SELECT * FROM plea_offers WHERE firm_id=?'; /* intentional: full record for vertical UI */
     const args = [memb.firm_id];
     if (status) { sql += ' AND status=?'; args.push(status); }
     sql += ' ORDER BY expires_date ASC NULLS LAST, offered_date DESC LIMIT ? OFFSET ?';
@@ -1113,7 +1113,7 @@ router.patch('/plea-offers/:id', authRequired, routeLimiter, async (req, res) =>
     if (!memb) return err403(res, 'Not a firm member.');
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
-    const row = await db.get('SELECT * FROM plea_offers WHERE id=? AND firm_id=?', [offerId, memb.firm_id]);  -- intentional: full record for vertical UI
+    const row = await db.get('SELECT * FROM plea_offers WHERE id=? AND firm_id=?', [offerId, memb.firm_id]);  /* intentional: full record for vertical UI */
     if (!row) return err404(res, 'Plea offer not found.');
 
     const updates = [], params = [];
@@ -1152,7 +1152,7 @@ router.patch('/plea-offers/:id', authRequired, routeLimiter, async (req, res) =>
       ).catch(() => {});
     }
 
-    const updated = await db.get('SELECT * FROM plea_offers WHERE id=?', [offerId]);  -- intentional: full record for vertical UI
+    const updated = await db.get('SELECT * FROM plea_offers WHERE id=?', [offerId]);  /* intentional: full record for vertical UI */
     res.json({ updated: true, offer: updated || { id: offerId, updated_at: new Date().toISOString() } });
   } catch (e) {
     logger.error('[plea-offers PATCH]', e.message);
@@ -1170,7 +1170,7 @@ router.get('/voluntary-departure', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const rows = await db.all(
-      "SELECT * FROM voluntary_departure WHERE firm_id=? ORDER BY departure_deadline ASC",  -- intentional: full record for vertical UI
+      "SELECT * FROM voluntary_departure WHERE firm_id=? ORDER BY departure_deadline ASC",  /* intentional: full record for vertical UI */
       [memb.firm_id]
     ).catch(() => []);
 
@@ -1250,7 +1250,7 @@ router.patch('/voluntary-departure/:id', authRequired, routeLimiter, async (req,
     if (!memb) return err403(res, 'Not a firm member.');
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
-    const row = await db.get('SELECT * FROM voluntary_departure WHERE id=? AND firm_id=?', [vdId, memb.firm_id]);  -- intentional: full record for vertical UI
+    const row = await db.get('SELECT * FROM voluntary_departure WHERE id=? AND firm_id=?', [vdId, memb.firm_id]);  /* intentional: full record for vertical UI */
     if (!row) return err404(res, 'Voluntary departure record not found.');
 
     const VALID_VD_STATUS = ['pending','departed','missed','extended','withdrawn'];
@@ -1289,7 +1289,7 @@ router.get('/vop', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const rows = await db.all(
-      "SELECT * FROM vop_trackers WHERE firm_id=? ORDER BY vop_hearing_date ASC NULLS LAST, violation_date DESC",  -- intentional: full record for vertical UI
+      "SELECT * FROM vop_trackers WHERE firm_id=? ORDER BY vop_hearing_date ASC NULLS LAST, violation_date DESC",  /* intentional: full record for vertical UI */
       [memb.firm_id]
     ).catch(() => []);
 
@@ -1416,7 +1416,7 @@ router.get('/dv-firearms', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const rows = await db.all(
-      "SELECT * FROM dv_firearm_surrender WHERE firm_id=? ORDER BY surrender_deadline ASC",  -- intentional: full record for vertical UI
+      "SELECT * FROM dv_firearm_surrender WHERE firm_id=? ORDER BY surrender_deadline ASC",  /* intentional: full record for vertical UI */
       [memb.firm_id]
     ).catch(() => []);
 
@@ -1521,7 +1521,7 @@ router.get('/bop-exhaustion', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const rows = await db.all(
-      "SELECT * FROM bop_exhaustion WHERE firm_id=? ORDER BY thirty_day_lapse_date ASC NULLS LAST",  -- intentional: full record for vertical UI
+      "SELECT * FROM bop_exhaustion WHERE firm_id=? ORDER BY thirty_day_lapse_date ASC NULLS LAST",  /* intentional: full record for vertical UI */
       [memb.firm_id]
     ).catch(() => []);
 
@@ -1606,7 +1606,7 @@ router.patch('/bop-exhaustion/:id', authRequired, routeLimiter, async (req, res)
     if (!memb) return err403(res, 'Not a firm member.');
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
-    const row = await db.get('SELECT * FROM bop_exhaustion WHERE id=? AND firm_id=?', [bopId, memb.firm_id]);  -- intentional: full record for vertical UI
+    const row = await db.get('SELECT * FROM bop_exhaustion WHERE id=? AND firm_id=?', [bopId, memb.firm_id]);  /* intentional: full record for vertical UI */
     if (!row) return err404(res, 'BOP exhaustion record not found.');
 
     const VALID_BOP_STATUS = ['pending','warden_submitted','30_day_lapsed','court_filed','granted','denied','appeal'];
@@ -1646,7 +1646,7 @@ router.get('/codefendants', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const matter_id = req.query.matter_id ? safeInt(req.query.matter_id) : null;
-    let sql    = 'SELECT * FROM codefendant_links WHERE firm_id=?';  -- intentional: full record for vertical UI
+    let sql    = 'SELECT * FROM codefendant_links WHERE firm_id=?'; /* intentional: full record for vertical UI */
     const args = [memb.firm_id];
     if (matter_id) { sql += ' AND (matter_id_a=? OR matter_id_b=?)'; args.push(matter_id, matter_id); }
     sql += ' ORDER BY created_at DESC';
@@ -1860,7 +1860,7 @@ router.get('/padilla-warnings/:id', authRequired, async (req, res) => {
     const db   = await getDb();
     const memb = await getFirmMembership(db, req.user.id);
     if (!memb) return err403(res, 'Not a firm member.');
-    const row = await db.get('SELECT * FROM padilla_warnings WHERE id=? AND firm_id=?', [safeInt(req.params.id), memb.firm_id]);  -- intentional: full record for vertical UI
+    const row = await db.get('SELECT * FROM padilla_warnings WHERE id=? AND firm_id=?', [safeInt(req.params.id), memb.firm_id]);  /* intentional: full record for vertical UI */
     if (!row) return err404(res, 'Warning record not found.');
     res.json(row);
   } catch (e) {
@@ -1882,7 +1882,7 @@ router.get('/collateral-consequences', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const matterId = req.query.matter_id ? safeInt(req.query.matter_id) : null;
-    let sql = 'SELECT * FROM collateral_consequences WHERE firm_id=?';  -- intentional: full record for vertical UI
+    let sql = 'SELECT * FROM collateral_consequences WHERE firm_id=?'; /* intentional: full record for vertical UI */
     const args = [memb.firm_id];
     if (matterId) { sql += ' AND matter_id=?'; args.push(matterId); }
     sql += ' ORDER BY created_at DESC LIMIT 100';
@@ -2004,7 +2004,7 @@ router.get('/ability-to-pay', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const matterId = req.query.matter_id ? safeInt(req.query.matter_id) : null;
-    let sql = 'SELECT * FROM ability_to_pay WHERE firm_id=?';  -- intentional: full record for vertical UI
+    let sql = 'SELECT * FROM ability_to_pay WHERE firm_id=?'; /* intentional: full record for vertical UI */
     const args = [memb.firm_id];
     if (matterId) { sql += ' AND matter_id=?'; args.push(matterId); }
     sql += ' ORDER BY assessment_date DESC LIMIT 100';
@@ -2250,7 +2250,7 @@ router.get('/material-support', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const matterId = req.query.matter_id ? safeInt(req.query.matter_id) : null;
-    let sql = 'SELECT * FROM material_support_screening WHERE firm_id=?';  -- intentional: full record for vertical UI
+    let sql = 'SELECT * FROM material_support_screening WHERE firm_id=?'; /* intentional: full record for vertical UI */
     const args = [memb.firm_id];
     if (matterId) { sql += ' AND matter_id=?'; args.push(matterId); }
     sql += ' ORDER BY screening_date DESC LIMIT 100';
@@ -2361,7 +2361,7 @@ router.get('/dual-sovereignty', authRequired, async (req, res) => {
     if (!hasMinRole(memb.role, 'associate')) return err403(res, 'Requires associate+.');
 
     const matterId = req.query.matter_id ? safeInt(req.query.matter_id) : null;
-    let sql = 'SELECT * FROM dual_sovereignty_flags WHERE firm_id=?';  -- intentional: full record for vertical UI
+    let sql = 'SELECT * FROM dual_sovereignty_flags WHERE firm_id=?'; /* intentional: full record for vertical UI */
     const args = [memb.firm_id];
     if (matterId) { sql += ' AND matter_id=?'; args.push(matterId); }
     sql += ' ORDER BY flagged_at DESC LIMIT 100';
@@ -2473,7 +2473,7 @@ router.get('/eviction', authRequired, async (req, res) => {
     const offset = safeInt(req.query.offset, 0);
     const status = req.query.status ? sanitizeStr(req.query.status, 30) : null;
 
-    let sql = 'SELECT * FROM eviction_trackers WHERE firm_id=?';  -- intentional: full record for vertical UI
+    let sql = 'SELECT * FROM eviction_trackers WHERE firm_id=?'; /* intentional: full record for vertical UI */
     const args = [memb.firm_id];
     if (status) { sql += ' AND status=?'; args.push(status); }
     sql += ' ORDER BY answer_deadline ASC NULLS LAST, created_at DESC LIMIT ? OFFSET ?';

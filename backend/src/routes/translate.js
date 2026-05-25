@@ -27,7 +27,7 @@ import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
 import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, API_URLS } from '../utils/routeHelpers.js';
 import express from 'express';
 import { getDb } from '../db/index.js';
-import { authRequired } from './auth.js';
+import { authRequired } from '../middleware/auth.js';
 import { enqueue } from '../services/aiQueue.js';
 import logger from '../utils/logger.js';
 

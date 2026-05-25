@@ -28,7 +28,7 @@ const assignLimiter = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'Too
 // ── GET /api/attorney/cases ───────────────────────────────────────────────────
 router.get('/cases', authRequired, async (req, res) => {
   try {
-    const ctx = await requireDefender(req, res);
+    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
     if (!ctx) return;
     const { db } = ctx;
 
@@ -77,7 +77,7 @@ router.get('/cases', authRequired, async (req, res) => {
 // ── POST /api/attorney/cases/:caseId/assign ───────────────────────────────────
 router.post('/cases/:caseId/assign', authRequired, assignLimiter, async (req, res) => {
   try {
-    const ctx = await requireDefender(req, res);
+    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
     if (!ctx) return;
     const { db }       = ctx;
     const caseId       = safeInt(req.params.caseId);
@@ -107,7 +107,7 @@ router.post('/cases/:caseId/assign', authRequired, assignLimiter, async (req, re
 // ── GET /api/attorney/office ──────────────────────────────────────────────────
 router.get('/office', authRequired, async (req, res) => {
   try {
-    const ctx = await requireDefender(req, res);
+    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
     if (!ctx) return;
     const { db, user } = ctx;
     if (!user.office_id) return res.json({ members: [], office_id: null });
@@ -136,7 +136,7 @@ router.get('/office', authRequired, async (req, res) => {
 // ── POST /api/attorney/office/join ────────────────────────────────────────────
 router.post('/office/join', authRequired, assignLimiter, async (req, res) => {
   try {
-    const ctx = await requireDefender(req, res);
+    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
     if (!ctx) return;
     const { db }                      = ctx;
     const { office_id, office_name, role = 'attorney' } = req.body || {};

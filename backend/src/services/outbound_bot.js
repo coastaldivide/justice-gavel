@@ -25,7 +25,6 @@ import logger from '../utils/logger.js';
  *  - Safe to run multiple times — no double-sends
  */
 
-import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';

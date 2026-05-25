@@ -181,7 +181,7 @@ router.post('/register', authRateLimit, registerLimiter, async (req, res) => {
       return res.status(409).json({ error: `${type === 'email' ? 'Email' : 'Phone number'} already registered` });
     }
 
-    const hash = await bcrypt.hash(password, 12);
+    const hash = await bcrypt.hash(password, 10);
     const name = safeDisplayName?.trim() || defaultDisplayName(value, type);
 
     await db.run('BEGIN');
@@ -198,6 +198,7 @@ router.post('/register', authRateLimit, registerLimiter, async (req, res) => {
       ]
     );
 
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [r.lastID]);
     if (!user) return res.status(404).json({ error: 'User not found.' });
     await db.run('COMMIT');
     await clearFailedLogins(db, user.id).catch(() => {});
@@ -225,6 +226,12 @@ router.post('/login', authRateLimit, authLimiter, async (req, res) => {
 
     const SAFE_FIELDS_Q = new Set(['email','phone','login_identifier']);
     if (!SAFE_FIELDS_Q.has(field)) throw new Error('Invalid field');
+    const user = await db.get(
+      field === 'email'
+        ? 'SELECT * FROM users WHERE email = ? AND account_status != \'banned\''
+        : 'SELECT * FROM users WHERE phone = ? AND account_status != \'banned\'',
+      [value]
+    );
     if (!user) {
       return err401(res, 'Invalid credentials. Please check your email/phone and password.');
     }

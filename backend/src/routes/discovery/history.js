@@ -27,7 +27,7 @@ const upload = multer({
 import {
   safeJsonParse, isAccepted, isPdf, isImage, isDocx, isText,
   imageMediaType, getFileExt, ACCEPTED_MIME, ACCEPTED_EXT,
-  ensureTables, hasDiscoveryPro, analyzeDocument, upload,
+  ensureTables, hasDiscoveryPro, analyzeDocument
 } from './_helpers.js';
 
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;

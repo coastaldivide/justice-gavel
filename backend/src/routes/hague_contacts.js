@@ -39,7 +39,7 @@ import { err400, err401, err403, err404, err422, err500, safeInt, sanitizeStr }
   from '../utils/routeHelpers.js';
 import { Router }        from 'express';
 import { getDb }         from '../db/index.js';
-import { authRequired }  from './auth.js';
+import { authRequired }  from '../middleware/auth.js';
 import logger            from '../utils/logger.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 
