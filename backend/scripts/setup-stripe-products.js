@@ -58,12 +58,12 @@ const PRODUCTS = [
     aEnv:        "STRIPE_LEGAL_RADAR_ANNUAL_ID",
   },
   {
-    name:        "Justice Gavel Attorney",
+    name:        "Justice Gavel Esquire",
     desc:        "Full attorney dashboard, client & case management, AI motion library, firm verticals, CLE tracking",
     monthly:     4900,  // $49.00
     annual:      39900, // $399.00
-    mEnv:        "STRIPE_ATTORNEY_PRICE_ID",
-    aEnv:        "STRIPE_ATTORNEY_ANNUAL_ID",
+    mEnv:        "STRIPE_ESQUIRE_PRICE_ID",
+    aEnv:        "STRIPE_ESQUIRE_ANNUAL_ID",
   },
 ];
 

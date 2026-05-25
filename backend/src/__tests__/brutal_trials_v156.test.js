@@ -45,7 +45,7 @@ describe('I1. config.js — ALL_ENV_VARS Complete (83 vars)', () => {
     expect(src).toContain('STRIPE_LEGAL_PRO_PRICE_ID');
     expect(src).toContain('STRIPE_LEGAL_PRO_ANNUAL_ID');
     expect(src).toContain('STRIPE_STARTER_PRICE_ID');
-    expect(src).toContain('STRIPE_ATTORNEY_PRICE_ID');
+    expect(src).toContain('STRIPE_ESQUIRE_PRICE_ID');
     expect(src).toContain('STRIPE_LEGAL_RADAR_ID');
   });
   test('I1-03: alt payment provider keys documented', async () => {

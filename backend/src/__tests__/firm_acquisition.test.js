@@ -422,7 +422,7 @@ describe('VALID_ORG_TYPES module-level constant', () => {
 describe('upgrade POST — RBAC partner+ requirement', () => {
   const ROLE_HIERARCHY = ['viewer','client','paralegal','associate','partner','firm_admin','super_admin'];
   const ROLE_ALIASES = {
-    managing_partner:'partner', lead_attorney:'partner', supervising_pd:'partner',
+    managing_partner:'partner', lead_esquire:'partner', supervising_pd:'partner',
     co_counsel:'associate', law_clerk:'paralegal',
   };
   function resolveRole(r) { return ROLE_ALIASES[r] ?? r; }

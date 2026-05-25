@@ -55,7 +55,7 @@ function sampleVars(rng) {
 
 // ─── RBAC ─────────────────────────────────────────────────────────────────────
 const RANKS = {
-  super_admin:7, firm_admin:6, partner:5, lead_attorney:5,
+  super_admin:7, firm_admin:6, partner:5, lead_esquire:5,
   co_counsel:4, senior_associate:4, associate:4,
   paralegal:3, law_clerk:3, investigator:3, compliance_analyst:3,
   forensic_accountant:3, guardian_ad_litem:3, case_manager:3, mitigation_specialist:3,

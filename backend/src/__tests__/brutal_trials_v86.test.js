@@ -100,7 +100,7 @@ describe('TIR. Billing TIERS — Subscription Plan Structure', () => {
     const fs = await import('fs');
     const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/_shared.js','utf8');
     expect(src).toContain('attorney');
-    expect(src).toContain('STRIPE_ATTORNEY_PRICE_ID');
+    expect(src).toContain('STRIPE_ESQUIRE_PRICE_ID');
     expect(src).toContain('Attorney Pro');
   });
   test('TIR-03: billingLimiter + getOrCreateStripeCustomer shared by all billing routes', async () => {

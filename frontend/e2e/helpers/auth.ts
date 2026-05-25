@@ -6,7 +6,7 @@ import { device, element, by, expect as detoxExpect } from 'detox';
 
 export const TEST_CREDENTIALS = {
   consumer: { email: 'e2e.consumer@justicegavel.test', password: 'E2E_Test_2025!' },
-  attorney: { email: 'e2e.attorney@justicegavel.test', password: 'E2E_Test_2025!' },
+  esquire: { email: 'e2e.attorney@justicegavel.test', password: 'E2E_Test_2025!' },
   bondsman: { email: 'e2e.bondsman@justicegavel.test', password: 'E2E_Test_2025!' },
 };
 

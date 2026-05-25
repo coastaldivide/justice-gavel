@@ -84,8 +84,8 @@ Subscription billing for all three user types: firms, attorneys, consumers.
 | Starter Plan | Annual | `STRIPE_ADVISOR_ANNUAL_ID` |
 | Pro Plan | Monthly | `STRIPE_LEGAL_PRO_PRICE_ID` |
 | Pro Plan | Annual | `STRIPE_LEGAL_PRO_ANNUAL_ID` |
-| Attorney Plan | Monthly | `STRIPE_ATTORNEY_PRICE_ID` |
-| Attorney Plan | Annual | `STRIPE_ATTORNEY_ANNUAL_ID` |
+| Attorney Plan | Monthly | `STRIPE_ESQUIRE_PRICE_ID` |
+| Attorney Plan | Annual | `STRIPE_ESQUIRE_ANNUAL_ID` |
 | Consumer Intelligence | One-time | `STRIPE_LEGAL_RADAR_ID` |
 
 4. Set up Stripe Webhook:
@@ -101,10 +101,10 @@ STRIPE_SECRET=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_ADVISOR_PRICE_ID=price_...
 STRIPE_LEGAL_PRO_PRICE_ID=price_...
-STRIPE_ATTORNEY_PRICE_ID=price_...
+STRIPE_ESQUIRE_PRICE_ID=price_...
 STRIPE_ADVISOR_ANNUAL_ID=price_...
 STRIPE_LEGAL_PRO_ANNUAL_ID=price_...
-STRIPE_ATTORNEY_ANNUAL_ID=price_...
+STRIPE_ESQUIRE_ANNUAL_ID=price_...
 STRIPE_LEGAL_RADAR_ID=price_...
 STRIPE_SUCCESS_URL=https://yourdomain.com/success
 STRIPE_CANCEL_URL=https://yourdomain.com/cancel
@@ -373,10 +373,10 @@ STRIPE_SECRET=
 STRIPE_WEBHOOK_SECRET=
 STRIPE_ADVISOR_PRICE_ID=
 STRIPE_LEGAL_PRO_PRICE_ID=
-STRIPE_ATTORNEY_PRICE_ID=
+STRIPE_ESQUIRE_PRICE_ID=
 STRIPE_ADVISOR_ANNUAL_ID=
 STRIPE_LEGAL_PRO_ANNUAL_ID=
-STRIPE_ATTORNEY_ANNUAL_ID=
+STRIPE_ESQUIRE_ANNUAL_ID=
 STRIPE_LEGAL_RADAR_ID=
 STRIPE_SUCCESS_URL=https://yourdomain.com/success
 STRIPE_CANCEL_URL=https://yourdomain.com/cancel

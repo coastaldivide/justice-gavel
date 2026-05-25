@@ -1033,9 +1033,9 @@ describe('ROLE_ALIASES — simulation roles resolve through ROLE_HIERARCHY', () 
   const ROLE_HIERARCHY = ['viewer','client','paralegal','associate','partner','firm_admin','super_admin'];
   const ROLE_ALIASES = {
     managing_partner:'partner', senior_partner:'partner', lead_partner:'partner',
-    lead_attorney:'partner', lead_trial_attorney:'partner', lead_appellate:'partner',
-    supervising_pd:'partner', supervising_attorney:'partner',
-    senior_family_attorney:'partner', senior_military_attorney:'partner',
+    lead_esquire:'partner', lead_trial_esquire:'partner', lead_appellate:'partner',
+    supervising_pd:'partner', supervising_esquire:'partner',
+    senior_family_esquire:'partner', senior_military_esquire:'partner',
     co_counsel:'associate', senior_associate:'associate', junior_associate:'associate',
     associate_juvenile:'associate', military_associate:'associate',
     staff_pd:'associate', law_student_intern:'associate',

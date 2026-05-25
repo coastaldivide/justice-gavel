@@ -324,7 +324,7 @@ router.get('/matter/:matterId', authRequired, async (req, res) => {
         total_hours:  Math.round(totals.total_hours * 10) / 10,
         unbilled_hours: Math.round(totals.unbilled_hours * 10) / 10,
       },
-      by_attorney: Object.entries(byAttorney).map(([name, v]) => ({ name, ...v })),
+      by_esquire: Object.entries(byAttorney).map(([name, v]) => ({ name, ...v })),
     });
   } catch (e) {
     res.status(500).json({ error: 'Could not load matter time.' });

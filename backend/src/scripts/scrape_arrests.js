@@ -105,7 +105,7 @@ function parseHTML(html, county, state, limit = 500) {
         bail_amount: bailM ? parseBail(bailM[1]) : null,
         court_date: courtM ? parseDate(courtM[1]) : null,
         attorney_of_record: attyM ? attyM[1].trim() : null,
-        has_attorney: !!attyM,
+        has_esquire: !!attyM,
         case_number: caseM ? caseM[1] : null,
         jail_location: `${county} County Jail, ${state}`,
         county, state,
@@ -134,7 +134,7 @@ function mapJsonRoster(data, county, state) {
       bail_amount: parseBail(r.bail || r.bond || r.bailAmount || r.BAIL || r.bondAmount),
       court_date: parseDate(r.courtDate || r.court_date || r.COURT_DATE || r.nextCourtDate),
       attorney_of_record: r.attorney || r.counsel || r.ATTORNEY || null,
-      has_attorney: !!(r.attorney || r.counsel || r.ATTORNEY),
+      has_esquire: !!(r.attorney || r.counsel || r.ATTORNEY),
       case_number: (r.caseNumber || r.bookingNumber || r.CASE_NUMBER || r.id || '').toString().substring(0, 30),
       jail_location: `${county} County Jail, ${state}`,
       county, state,
@@ -908,7 +908,7 @@ async function upsertArrest(db, arrest, dryRun) {
     console.log(`✅ Harvest complete`);
     console.log(`   This run:   +${inserted} new | ${updated} updated | ${skipped} skipped | ${failed} errors`);
     console.log(`   DB totals:  ${stats.total} arrests | ${stats.states} states | ${stats.counties} counties`);
-    console.log(`   No attorney: ${stats.no_attorney} | Has bail: ${stats.has_bail}`);
+    console.log(`   No esquire: ${stats.no_attorney} | Has bail: ${stats.has_bail}`);
     console.log(`   Pending alerts: ${stats.pending_alerts}`);
   }
 

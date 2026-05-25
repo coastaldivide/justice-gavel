@@ -158,8 +158,8 @@ export const ALL_ENV_VARS = {
   STRIPE_LEGAL_PRO_ANNUAL_ID:     process.env.STRIPE_LEGAL_PRO_ANNUAL_ID       || '',
   STRIPE_ADVISOR_PRICE_ID:  process.env.STRIPE_ADVISOR_PRICE_ID    || '',
   STRIPE_ADVISOR_ANNUAL_ID: process.env.STRIPE_ADVISOR_ANNUAL_ID   || '',
-  STRIPE_ATTORNEY_PRICE_ID: process.env.STRIPE_ATTORNEY_PRICE_ID   || '',
-  STRIPE_ATTORNEY_ANNUAL_ID:process.env.STRIPE_ATTORNEY_ANNUAL_ID  || '',
+  STRIPE_ESQUIRE_PRICE_ID: process.env.STRIPE_ESQUIRE_PRICE_ID   || '',
+  STRIPE_ESQUIRE_ANNUAL_ID:process.env.STRIPE_ESQUIRE_ANNUAL_ID  || '',
   STRIPE_LEGAL_RADAR_ID: process.env.STRIPE_LEGAL_RADAR_ID   || '',
 
   // ── Twilio ───────────────────────────────────────────────────────────────

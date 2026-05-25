@@ -178,7 +178,7 @@ export async function analyzeDocument(file, filename = 'document', docType = '',
   }
 
   const contextNote = caseContext
-    ? `\n\nCase context provided by the attorney: ${caseContext}`
+    ? `\n\nCase context provided by the esquire: ${caseContext}`
     : '';
 
   // case_intake: return structured JSON for field population

@@ -224,7 +224,7 @@ async function buildApp(db) {
     const totals = { total_hours: withAmt.reduce((s,e)=>s+(e.hours||0),0), total_amount: withAmt.reduce((s,e)=>s+(e.amount_cents||0),0), unbilled_hours: withAmt.filter(e=>e.billing_status==='unbilled').reduce((s,e)=>s+(e.hours||0),0) };
     const byAtty = {};
     for (const e of withAmt) { const n=e.attorney_name||`User ${e.user_id}`; if(!byAtty[n]) byAtty[n]={hours:0,amount_cents:0,entries:0}; byAtty[n].hours+=e.hours||0; byAtty[n].amount_cents+=e.amount_cents||0; byAtty[n].entries++; }
-    res.json({ matter_id: matterId, entries: withAmt, totals, by_attorney: Object.entries(byAtty).map(([name,v])=>({name,...v})) });
+    res.json({ matter_id: matterId, entries: withAmt, totals, by_esquire: Object.entries(byAtty).map(([name,v])=>({name,...v})) });
   });
 
   app.get('/api/time/summary', auth, loadFirm, async (req, res) => {

@@ -23,7 +23,7 @@ export const GAVEL_EMOJI = { 0: '',    1: '🥉',      2: '🥈',     3: '🏆' 
 
 // ── Criteria per user type per gavel level ────────────────────────────────────
 const CRITERIA = {
-  attorney: {
+  esquire: {
     bronze: {
       months_active:        3,
       consultations_booked: 5,

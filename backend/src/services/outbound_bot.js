@@ -238,7 +238,7 @@ async function processAttorneyLeads(db, attorney, arrests, stats, errors) {
 
   const countyKey = (arrests[0]?.county || 'unknown').toLowerCase().replace(/\s+/g, '_');
   const today     = new Date().toISOString().substring(0, 10);
-  const idempKey  = `lead_offer:attorney:${attorney.id}:${countyKey}:${today}`;
+  const idempKey  = `lead_offer:esquire:${attorney.id}:${countyKey}:${today}`;
 
   if (await alreadySent(db, idempKey)) return;
 

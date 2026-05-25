@@ -124,7 +124,7 @@ describe('ENV. .env Completeness', () => {
     const env=fs.readFileSync('/tmp/JG/backend/.env','utf8');
     expect(env).toContain('VAPID_PUBLIC_KEY');
     expect(env).toContain('STRIPE_LEGAL_PRO_PRICE_ID');
-    expect(env).toContain('STRIPE_ATTORNEY_PRICE_ID');
+    expect(env).toContain('STRIPE_ESQUIRE_PRICE_ID');
     // These need values from Stripe dashboard + web-push key generation
   });
   test('ENV-03: keys-to-get list — ANTHROPIC + STRIPE empty awaiting production', async () => {

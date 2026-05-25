@@ -266,7 +266,7 @@ async function buildApp(db) {
   // ══════════════════════════════════════════════════════════════════════════
 
   async function requireMatterAccess(matterId, userId, minRole = 'viewer') {
-    const RANKS = { lead_attorney:8, co_counsel:7, super_admin:7, firm_admin:6, partner:5, associate:4, paralegal:3, client:2, viewer:1 };
+    const RANKS = { lead_esquire:8, co_counsel:7, super_admin:7, firm_admin:6, partner:5, associate:4, paralegal:3, client:2, viewer:1 };
     const matter = await db.get('SELECT * FROM matters WHERE id=?', [matterId]);
     if (!matter) return null;
     // Check team

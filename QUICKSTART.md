@@ -73,7 +73,7 @@ node backend/src/scripts/seed_demo.js
 | STRIPE_WEBHOOK_SECRET | ⚠️ EMPTY | Stripe event verification |
 | STRIPE_LEGAL_PRO_PRICE_ID | ⚠️ EMPTY | Create product in Stripe dashboard |
 | STRIPE_ADVISOR_PRICE_ID | ⚠️ EMPTY | Create product in Stripe dashboard |
-| STRIPE_ATTORNEY_PRICE_ID | ⚠️ EMPTY | Create product in Stripe dashboard |
+| STRIPE_ESQUIRE_PRICE_ID | ⚠️ EMPTY | Create product in Stripe dashboard |
 | TWILIO_ACCOUNT_SID | ⚠️ EMPTY | SMS arrest alerts |
 | TWILIO_AUTH_TOKEN | ⚠️ EMPTY | SMS verification |
 | SENDGRID_API_KEY | ⚠️ EMPTY | Transactional email |

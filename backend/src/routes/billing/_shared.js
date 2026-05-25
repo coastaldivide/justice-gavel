@@ -25,10 +25,10 @@ const billingLimiter = rateLimit({
 const TIERS = {
   advisor:         { name: '24 Hour Advisor',           price_id: process.env.STRIPE_ADVISOR_PRICE_ID,     monthly_cents: 2999, billing: 'monthly' },
   legal_pro:       { name: 'Legal Pro',          price_id: process.env.STRIPE_LEGAL_PRO_PRICE_ID,     monthly_cents: 2900, billing: 'monthly' },
-  attorney:        { name: 'Attorney',           price_id: process.env.STRIPE_ATTORNEY_PRICE_ID,    monthly_cents: 4900, billing: 'monthly' },
+  esquire:        { name: 'Esquire',           price_id: process.env.STRIPE_ESQUIRE_PRICE_ID,    monthly_cents: 4900, billing: 'monthly' },
   starter_annual:  { name: 'Advisor Annual',   price_id: process.env.STRIPE_ADVISOR_ANNUAL_ID,    monthly_cents: 799,  billing: 'annual'  },
   pro_annual:      { name: 'Pro Annual',        price_id: process.env.STRIPE_LEGAL_PRO_ANNUAL_ID,        monthly_cents: 1599, billing: 'annual'  },
-  attorney_annual: { name: 'Attorney Annual',   price_id: process.env.STRIPE_ATTORNEY_ANNUAL_ID,  monthly_cents: 3999, billing: 'annual'  },
+  attorney_annual: { name: 'Attorney Annual',   price_id: process.env.STRIPE_ESQUIRE_ANNUAL_ID,  monthly_cents: 3999, billing: 'annual'  },
   legal_radar:     { name: 'Legal Radar',        price_id: process.env.STRIPE_LEGAL_RADAR_ID,        monthly_cents: 1999, billing: 'monthly' },
 };
 

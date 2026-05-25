@@ -659,7 +659,7 @@ describe('CROSS-CUSTOMER: Bail and Legal Education (free-tier access)', () => {
   test('BAIL-3: Miranda rights content is present and non-empty', () => {
     const rights = {
       right_to_silence: 'You have the right to remain silent.',
-      right_to_attorney: 'You have the right to an attorney.',
+      right_to_esquire: 'You have the right to an attorney.',
       appointed_counsel: 'If you cannot afford an attorney, one will be appointed for you.',
       waiver_warning: 'Anything you say can and will be used against you in a court of law.',
     };
