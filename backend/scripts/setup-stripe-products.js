@@ -36,7 +36,7 @@ const PRODUCTS = [
   {
     name:        "Justice Gavel Advisor",
     desc:        "Find lawyers & bail agents, unlimited AI legal chat, all Know Your Rights lessons, search arrest records",
-    monthly:     999,   // $9.99
+    monthly:     2999,   // $9.99
     annual:      7999,  // $79.99
     mEnv:        "STRIPE_ADVISOR_PRICE_ID",
     aEnv:        "STRIPE_ADVISOR_ANNUAL_ID",

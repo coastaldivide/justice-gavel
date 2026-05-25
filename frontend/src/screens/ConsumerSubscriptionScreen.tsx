@@ -2,7 +2,7 @@
  * ConsumerSubscriptionScreen -- User-facing subscription plans
  *
  * Three tiers for individuals / families:
- *   Advisor  $9.99/mo -- full search, unlimited AI, lessons, arrest search
+ *   Advisor  $29.99/mo -- full search, unlimited AI, lessons, arrest search
  *   Pro      $14.99/mo -- Advisor + arrest monitoring alerts
  *   Intel    $19.99/mo ($249.99/yr) -- Pro + county analytics + weekly reports
  *
@@ -23,9 +23,9 @@ declare var setSub: any;
 // Billing period toggle data
 const MONTHLY_TIERS = [
   {
-    key: 'advisor', label: 'Advisor', price: '$9.99/mo', annualKey: 'starter_annual',
+    key: 'advisor', label: 'Advisor', price: '$29.99/mo', annualKey: 'starter_annual',
     annualPrice: '$79.99/yr', annualMonthly: '$6.67/mo', savings: 'Save $40',
-    cents: 999, icon: '🔓', color: COLORS.legal, bg: COLORS.legalBg,
+    cents: 2999, icon: '🔓', color: COLORS.legal, bg: COLORS.legalBg,
     trial: '30-day free trial', highlight: false,
     features: [
       'Find lawyers & bail agents -- full contact info',
@@ -66,8 +66,8 @@ const TIERS = [
   {
     key: 'advisor',
     label: 'Advisor',
-    price: '$9.99/mo',
-    cents: 999,
+    price: '$29.99/mo',
+    cents: 2999,
     icon: '🔓',
     color: COLORS.legal,
     bg: COLORS.legalBg,
@@ -287,7 +287,7 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
 
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Choose Your Plan</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>Full access to everything -- starting at $9.99/mo</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>Full access to everything -- starting at $29.99/mo</Text>
       </View>
 
       {/* Monthly / Annual billing toggle */}

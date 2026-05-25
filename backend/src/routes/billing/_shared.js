@@ -23,13 +23,13 @@ const billingLimiter = rateLimit({
 
 // ── Tier pricing (shared across all billing sub-routers) ──────────────────────
 const TIERS = {
-  starter:         { name: 'Advisor',          price_id: process.env.STRIPE_ADVISOR_PRICE_ID,     monthly_cents: 999,  billing: 'monthly' },
-  pro:             { name: 'Legal Pro',               price_id: process.env.STRIPE_LEGAL_PRO_PRICE_ID,         monthly_cents: 1999, billing: 'monthly' },
-  attorney:        { name: 'Attorney Pro',      price_id: process.env.STRIPE_ATTORNEY_PRICE_ID,    monthly_cents: 4999, billing: 'monthly' },
+  advisor:         { name: 'Advisor',           price_id: process.env.STRIPE_ADVISOR_PRICE_ID,     monthly_cents: 2999, billing: 'monthly' },
+  legal_pro:       { name: 'Legal Pro',          price_id: process.env.STRIPE_LEGAL_PRO_PRICE_ID,     monthly_cents: 2900, billing: 'monthly' },
+  attorney:        { name: 'Attorney',           price_id: process.env.STRIPE_ATTORNEY_PRICE_ID,    monthly_cents: 4900, billing: 'monthly' },
   starter_annual:  { name: 'Advisor Annual',   price_id: process.env.STRIPE_ADVISOR_ANNUAL_ID,    monthly_cents: 799,  billing: 'annual'  },
   pro_annual:      { name: 'Pro Annual',        price_id: process.env.STRIPE_LEGAL_PRO_ANNUAL_ID,        monthly_cents: 1599, billing: 'annual'  },
   attorney_annual: { name: 'Attorney Annual',   price_id: process.env.STRIPE_ATTORNEY_ANNUAL_ID,  monthly_cents: 3999, billing: 'annual'  },
-  legal_radar:  { name: 'Legal Radar',    price_id: process.env.STRIPE_LEGAL_RADAR_ID,    monthly_cents: 1999, billing: 'monthly' },
+  legal_radar:     { name: 'Legal Radar',        price_id: process.env.STRIPE_LEGAL_RADAR_ID,        monthly_cents: 1999, billing: 'monthly' },
 };
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
