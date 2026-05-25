@@ -272,6 +272,7 @@ app.get('/health', healthLimiter, async (req, res) => {
     live_email:    process.env.LIVE_EMAIL    === 'true',
     live_payments: process.env.LIVE_PAYMENTS === 'true',
     anthropic:     !!process.env.ANTHROPIC_API_KEY,
+    supabase:     !!process.env.SUPABASE_URL,
     stripe:        !!process.env.STRIPE_SECRET,
   });
 })
