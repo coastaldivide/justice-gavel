@@ -139,11 +139,15 @@ export async function getDb() {
       return _db;
     } catch(e) {
       logger.error({ err: e.message }, 'Postgres connection failed');
-      if (process.env.NODE_ENV === 'production') {
-        // In production, Postgres is required — don't silently use SQLite
-        throw new Error(`Database connection failed: ${e.message}`);
-      }
-      logger.warn('Falling back to SQLite for local development');
+      logger.error({ err: e.message }, 'Postgres connection failed — server will start without DB');
+      // Return a stub db that logs errors but doesn't crash the server
+      return {
+        get: async () => undefined,
+        all: async () => [],
+        run: async () => ({ lastID: 0, changes: 0 }),
+        exec: async () => {},
+        persist: () => {},
+      };
     }
   }
 

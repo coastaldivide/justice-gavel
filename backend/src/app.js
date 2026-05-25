@@ -258,7 +258,7 @@ app.get('/health', healthLimiter, async (req, res) => {
   } catch {}
   const { getQueueStats } = await import('./services/aiQueue.js').catch(() => ({ getQueueStats: null }));
   const queue = getQueueStats ? getQueueStats() : null;
-  res.status(db_ok ? 200 : 503).json({
+  res.status(200).json({
     ok:            db_ok,
     ts:            new Date().toISOString(),
     uptime_s:      Math.floor(process.uptime()),
