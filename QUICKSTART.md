@@ -72,7 +72,7 @@ node backend/src/scripts/seed_demo.js
 | STRIPE_SECRET | ⚠️ EMPTY | Payments — get from dashboard.stripe.com |
 | STRIPE_WEBHOOK_SECRET | ⚠️ EMPTY | Stripe event verification |
 | STRIPE_PRO_PRICE_ID | ⚠️ EMPTY | Create product in Stripe dashboard |
-| STRIPE_STARTER_PRICE_ID | ⚠️ EMPTY | Create product in Stripe dashboard |
+| STRIPE_ADVISOR_PRICE_ID | ⚠️ EMPTY | Create product in Stripe dashboard |
 | STRIPE_ATTORNEY_PRICE_ID | ⚠️ EMPTY | Create product in Stripe dashboard |
 | TWILIO_ACCOUNT_SID | ⚠️ EMPTY | SMS arrest alerts |
 | TWILIO_AUTH_TOKEN | ⚠️ EMPTY | SMS verification |

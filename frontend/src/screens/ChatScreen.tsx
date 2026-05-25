@@ -662,7 +662,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
       if (status === 402 || code === 'chat_limit_reached') {
         setMessages(prev => [...prev, {
           id: randomId(), role: 'assistant',
-          text: "You've used your 3 free AI questions for today.\n\nUpgrade to Starter ($9.99/mo) for unlimited chat, full lawyer search, arrest records, and all Know Your Rights lessons.",
+          text: "You've used your 3 free AI questions for today.\n\nUpgrade to Advisor ($9.99/mo) for unlimited chat, full lawyer search, arrest records, and all Know Your Rights lessons.",
           suggestLawyerSearch: false,
           showUpgrade: true,
         }]);

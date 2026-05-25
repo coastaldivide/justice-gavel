@@ -30,12 +30,12 @@ const products = [
     env_annual: "STRIPE_PRO_ANNUAL_ID",
   },
   {
-    name: "Justice Gavel Starter", 
+    name: "Justice Gavel Advisor", 
     description: "Basic legal education, bail calculator, and resource finder",
-    env_key: "STRIPE_STARTER_PRICE_ID",
+    env_key: "STRIPE_ADVISOR_PRICE_ID",
     monthly: 999, // $9.99/month
     annual: 7999, // $79.99/year
-    env_annual: "STRIPE_STARTER_ANNUAL_ID",
+    env_annual: "STRIPE_ADVISOR_ANNUAL_ID",
   },
   {
     name: "Justice Gavel Attorney",

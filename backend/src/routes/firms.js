@@ -60,7 +60,7 @@ router.post('/', authRequired, firmLimiter, async (req, res) => {
 
     const r = await db.run(
       'INSERT INTO firms (name, owner_id, plan) VALUES (?,?,?)',
-      [truncateStr(name.trim(), 200), req.user.id, 'starter']
+      [truncateStr(name.trim(), 200), req.user.id, 'advisor']
     );
     const firmId = r.lastID;
 
@@ -91,7 +91,7 @@ router.post('/', authRequired, firmLimiter, async (req, res) => {
       request_id: req.requestId,
     });
 
-    res.status(201).json({ id: firmId, name: name.trim(), owner_id: req.user.id, plan: 'starter', your_role: 'firm_admin' });
+    res.status(201).json({ id: firmId, name: name.trim(), owner_id: req.user.id, plan: 'advisor', your_role: 'firm_admin' });
   } catch (e) {
     logger.error('[firms/create]', e.message);
     res.status(500).json({ error: 'Could not create firm.' });

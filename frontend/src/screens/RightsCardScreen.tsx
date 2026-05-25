@@ -8,7 +8,7 @@
  *   4. User taps "Share" → native share sheet (image + text)
  *   5. Also "Save to Camera Roll" option
  *
- * Free for Starter+ subscribers. Unsubscribed users see a preview + upgrade prompt.
+ * Free for Advisor+ subscribers. Unsubscribed users see a preview + upgrade prompt.
  * Designed for TikTok virality: "Print this before you go out tonight"
  */
 import EmergencyStrip from '../components/EmergencyStrip';
@@ -67,7 +67,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
       try {
         const res = await api.get('/billing/consumer/subscription');
         const sub = res.data?.subscription;
-        if (sub && ['starter','pro','consumer_intel',
+        if (sub && ['advisor','pro','consumer_intel',
                     'starter_annual','pro_annual','consumer_intel_annual'].includes(sub.tier)) {
           setIsSubscriber(true);
         }

@@ -18,7 +18,7 @@ const router = Router();
 // POST /api/billing/consumer/subscribe
 router.post('/consumer/subscribe', billingLimiter, authRequired, async (req, res) => {
   const { tier, payment_method_id } = req.body;
-  const consumerTiers = ['starter', 'pro', 'consumer_intel'];
+  const consumerTiers = ['advisor', 'pro', 'consumer_intel'];
   if (!consumerTiers.includes(tier)) {
     return err400(res, 'Invalid consumer tier. Options: starter, pro, consumer_intel');
   }
@@ -82,7 +82,7 @@ router.get('/consumer/subscription', authRequired, async (req, res) => {
       `SELECT id, user_id, status, stripe_sub_id, stripe_customer_id, tier, provider_type, created_at, current_period_start, cancel_at_period_end FROM subscriptions WHERE user_id = ? AND provider_type = 'consumer' ORDER BY created_at DESC LIMIT 1`,
       [req.user.id]
     );
-    const consumerTiers = ['starter', 'pro', 'consumer_intel'].map(k => ({ key: k, ...TIERS[k] }));
+    const consumerTiers = ['advisor', 'pro', 'consumer_intel'].map(k => ({ key: k, ...TIERS[k] }));
     res.json({ subscription: sub || null, tiers: consumerTiers, mock: !LIVE });
   } catch (e) {
     res.status(500).json({ error: 'Server error. Please try again.' });

@@ -80,8 +80,8 @@ Subscription billing for all three user types: firms, attorneys, consumers.
 
 | Product | Billing | Env var |
 |---|---|---|
-| Starter Plan | Monthly | `STRIPE_STARTER_PRICE_ID` |
-| Starter Plan | Annual | `STRIPE_STARTER_ANNUAL_ID` |
+| Starter Plan | Monthly | `STRIPE_ADVISOR_PRICE_ID` |
+| Starter Plan | Annual | `STRIPE_ADVISOR_ANNUAL_ID` |
 | Pro Plan | Monthly | `STRIPE_PRO_PRICE_ID` |
 | Pro Plan | Annual | `STRIPE_PRO_ANNUAL_ID` |
 | Attorney Plan | Monthly | `STRIPE_ATTORNEY_PRICE_ID` |
@@ -99,10 +99,10 @@ Subscription billing for all three user types: firms, attorneys, consumers.
 ```env
 STRIPE_SECRET=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_STARTER_PRICE_ID=price_...
+STRIPE_ADVISOR_PRICE_ID=price_...
 STRIPE_PRO_PRICE_ID=price_...
 STRIPE_ATTORNEY_PRICE_ID=price_...
-STRIPE_STARTER_ANNUAL_ID=price_...
+STRIPE_ADVISOR_ANNUAL_ID=price_...
 STRIPE_PRO_ANNUAL_ID=price_...
 STRIPE_ATTORNEY_ANNUAL_ID=price_...
 STRIPE_CONSUMER_INTEL_ID=price_...
@@ -371,10 +371,10 @@ ANTHROPIC_API_KEY=
 # ── Payments ──
 STRIPE_SECRET=
 STRIPE_WEBHOOK_SECRET=
-STRIPE_STARTER_PRICE_ID=
+STRIPE_ADVISOR_PRICE_ID=
 STRIPE_PRO_PRICE_ID=
 STRIPE_ATTORNEY_PRICE_ID=
-STRIPE_STARTER_ANNUAL_ID=
+STRIPE_ADVISOR_ANNUAL_ID=
 STRIPE_PRO_ANNUAL_ID=
 STRIPE_ATTORNEY_ANNUAL_ID=
 STRIPE_CONSUMER_INTEL_ID=

@@ -2,8 +2,8 @@
  * ConsumerSubscriptionScreen -- User-facing subscription plans
  *
  * Three tiers for individuals / families:
- *   Starter  $9.99/mo -- full search, unlimited AI, lessons, arrest search
- *   Pro      $14.99/mo -- Starter + arrest monitoring alerts
+ *   Advisor  $9.99/mo -- full search, unlimited AI, lessons, arrest search
+ *   Pro      $14.99/mo -- Advisor + arrest monitoring alerts
  *   Intel    $19.99/mo ($249.99/yr) -- Pro + county analytics + weekly reports
  *
  * 7-day free trial on all tiers.
@@ -23,7 +23,7 @@ declare var setSub: any;
 // Billing period toggle data
 const MONTHLY_TIERS = [
   {
-    key: 'starter', label: 'Starter', price: '$9.99/mo', annualKey: 'starter_annual',
+    key: 'advisor', label: 'Advisor', price: '$9.99/mo', annualKey: 'starter_annual',
     annualPrice: '$79.99/yr', annualMonthly: '$6.67/mo', savings: 'Save $40',
     cents: 999, icon: '🔓', color: COLORS.legal, bg: COLORS.legalBg,
     trial: '30-day free trial', highlight: false,
@@ -41,7 +41,7 @@ const MONTHLY_TIERS = [
     cents: 1499, icon: '⭐', color: COLORS.navy, bg: COLORS.bgSubtle,
     trial: '30-day free trial', highlight: true, badge: 'Most Popular',
     features: [
-      'Everything in Starter',
+      'Everything in Advisor',
       '24/7 arrest monitoring -- push alerts when someone is booked',
       'Priority lawyer search results',
       'AI Lawyer Match report',
@@ -63,8 +63,8 @@ const MONTHLY_TIERS = [
 
 const TIERS = [
   {
-    key: 'starter',
-    label: 'Starter',
+    key: 'advisor',
+    label: 'Advisor',
     price: '$9.99/mo',
     cents: 999,
     icon: '🔓',
@@ -91,7 +91,7 @@ const TIERS = [
     bg: COLORS.bgSubtle,
     trial: '7-day free trial',
     features: [
-      'Everything in Starter',
+      'Everything in Advisor',
       'Arrest monitoring -- get alerted if someone you know is booked',
       'Priority results in lawyer search',
       'SOS emergency alert to contacts',

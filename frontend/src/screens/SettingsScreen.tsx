@@ -53,7 +53,7 @@ const DEFAULT_PREFS: NotifPrefs = {
   notif_marketing:         true };
 
 // ── Tier-gated notification row ──────────────────────────────────────────────
-const STARTER_TIERS = ['starter','pro','consumer_intel','starter_annual','pro_annual','consumer_intel_annual','attorney_basic','attorney_alert','attorney_featured'];
+const STARTER_TIERS = ['advisor','pro','consumer_intel','starter_annual','pro_annual','consumer_intel_annual','attorney_basic','attorney_alert','attorney_featured'];
 const PRO_TIERS     = ['pro','consumer_intel','pro_annual','consumer_intel_annual','attorney_alert','attorney_featured'];
 
 function TierGatedRow({

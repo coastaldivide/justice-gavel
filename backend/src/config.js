@@ -156,8 +156,8 @@ export const ALL_ENV_VARS = {
   // Subscription price IDs (create in Stripe dashboard)
   STRIPE_PRO_PRICE_ID:      process.env.STRIPE_PRO_PRICE_ID        || '',
   STRIPE_PRO_ANNUAL_ID:     process.env.STRIPE_PRO_ANNUAL_ID       || '',
-  STRIPE_STARTER_PRICE_ID:  process.env.STRIPE_STARTER_PRICE_ID    || '',
-  STRIPE_STARTER_ANNUAL_ID: process.env.STRIPE_STARTER_ANNUAL_ID   || '',
+  STRIPE_ADVISOR_PRICE_ID:  process.env.STRIPE_ADVISOR_PRICE_ID    || '',
+  STRIPE_ADVISOR_ANNUAL_ID: process.env.STRIPE_ADVISOR_ANNUAL_ID   || '',
   STRIPE_ATTORNEY_PRICE_ID: process.env.STRIPE_ATTORNEY_PRICE_ID   || '',
   STRIPE_ATTORNEY_ANNUAL_ID:process.env.STRIPE_ATTORNEY_ANNUAL_ID  || '',
   STRIPE_CONSUMER_INTEL_ID: process.env.STRIPE_CONSUMER_INTEL_ID   || '',
