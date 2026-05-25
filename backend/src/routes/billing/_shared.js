@@ -23,7 +23,7 @@ const billingLimiter = rateLimit({
 
 // ── Tier pricing (shared across all billing sub-routers) ──────────────────────
 const TIERS = {
-  advisor:         { name: 'Advisor',           price_id: process.env.STRIPE_ADVISOR_PRICE_ID,     monthly_cents: 2999, billing: 'monthly' },
+  advisor:         { name: '24 Hour Advisor',           price_id: process.env.STRIPE_ADVISOR_PRICE_ID,     monthly_cents: 2999, billing: 'monthly' },
   legal_pro:       { name: 'Legal Pro',          price_id: process.env.STRIPE_LEGAL_PRO_PRICE_ID,     monthly_cents: 2900, billing: 'monthly' },
   attorney:        { name: 'Attorney',           price_id: process.env.STRIPE_ATTORNEY_PRICE_ID,    monthly_cents: 4900, billing: 'monthly' },
   starter_annual:  { name: 'Advisor Annual',   price_id: process.env.STRIPE_ADVISOR_ANNUAL_ID,    monthly_cents: 799,  billing: 'annual'  },

@@ -23,7 +23,7 @@ declare var setSub: any;
 // Billing period toggle data
 const MONTHLY_TIERS = [
   {
-    key: 'advisor', label: 'Advisor', price: '$29.99/mo', annualKey: 'starter_annual',
+    key: 'advisor', label: '24 Hour Advisor', price: '$29.99/mo', annualKey: 'starter_annual',
     annualPrice: '$79.99/yr', annualMonthly: '$6.67/mo', savings: 'Save $40',
     cents: 2999, icon: '🔓', color: COLORS.legal, bg: COLORS.legalBg,
     trial: '30-day free trial', highlight: false,
@@ -65,7 +65,7 @@ const MONTHLY_TIERS = [
 const TIERS = [
   {
     key: 'advisor',
-    label: 'Advisor',
+    label: '24 Hour Advisor',
     price: '$29.99/mo',
     cents: 2999,
     icon: '🔓',

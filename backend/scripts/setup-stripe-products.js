@@ -34,7 +34,7 @@ const stripe = async (method, path, body) => {
 
 const PRODUCTS = [
   {
-    name:        "Justice Gavel Advisor",
+    name:        "Justice Gavel 24 Hour Advisor",
     desc:        "Find lawyers & bail agents, unlimited AI legal chat, all Know Your Rights lessons, search arrest records",
     monthly:     2999,   // $9.99
     annual:      7999,  // $79.99

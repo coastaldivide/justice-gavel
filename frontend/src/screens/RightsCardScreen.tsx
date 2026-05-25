@@ -8,7 +8,7 @@
  *   4. User taps "Share" → native share sheet (image + text)
  *   5. Also "Save to Camera Roll" option
  *
- * Free for Advisor+ subscribers. Unsubscribed users see a preview + upgrade prompt.
+ * Free for 24 Hour Advisor+ subscribers. Unsubscribed users see a preview + upgrade prompt.
  * Designed for TikTok virality: "Print this before you go out tonight"
  */
 import EmergencyStrip from '../components/EmergencyStrip';
