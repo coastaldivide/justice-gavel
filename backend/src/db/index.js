@@ -1,6 +1,7 @@
 /**
  * db/index.js — Database adapter
- * Uses Postgres (via pg) when DATABASE_URL is set, sql.js SQLite otherwise
+ * Uses Postgres when DATABASE_URL is set (production/Railway)
+ * Falls back to sql.js SQLite for local development
  */
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -13,29 +14,25 @@ const DB_PATH   = path.resolve(__dirname, '../../demo.db');
 let _db = null;
 
 // ── Postgres adapter ──────────────────────────────────────────────────────────
-async function initPostgres() {
+async function initPostgres(url) {
   const { default: pg } = await import('pg');
   const pool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
+    connectionString: url,
+    ssl: url.includes('localhost') ? false : { rejectUnauthorized: false },
     max: 10,
+    connectionTimeoutMillis: 10000,
   });
 
-  // Test connection
-  try {
-    await pool.query('SELECT 1');
-    logger.info('[db] Postgres connected');
-  } catch(e) {
-    logger.error({ err: e.message }, 'Postgres connection failed — falling back to SQLite');
-    return null;
-  }
-
-  const rowToObj = (row) => row || undefined;
+  await pool.query('SELECT 1'); // test connection
+  logger.info('[db] Postgres connected');
 
   return {
     get: async (sql, params = []) => {
       try {
-        const { rows } = await pool.query(sql, params);
+        // Convert SQLite ? placeholders to Postgres $1, $2...
+        let i = 0;
+        const pgSql = sql.replace(/\?/g, () => `$${++i}`);
+        const { rows } = await pool.query(pgSql, params);
         return rows[0] || undefined;
       } catch(e) {
         logger.error({ err: e.message, sql: sql.slice(0,80) }, 'db.get error');
@@ -44,7 +41,9 @@ async function initPostgres() {
     },
     all: async (sql, params = []) => {
       try {
-        const { rows } = await pool.query(sql, params);
+        let i = 0;
+        const pgSql = sql.replace(/\?/g, () => `$${++i}`);
+        const { rows } = await pool.query(pgSql, params);
         return rows;
       } catch(e) {
         logger.error({ err: e.message, sql: sql.slice(0,80) }, 'db.all error');
@@ -53,15 +52,15 @@ async function initPostgres() {
     },
     run: async (sql, params = []) => {
       try {
-        const result = await pool.query(sql, params);
-        // Get lastID for INSERT
-        let lastID = 0;
-        if (sql.trim().toUpperCase().startsWith('INSERT')) {
-          try {
-            const r2 = await pool.query('SELECT lastval()');
-            lastID = r2.rows[0]?.lastval || 0;
-          } catch {}
-        }
+        let i = 0;
+        const pgSql = sql.replace(/\?/g, () => `$${++i}`);
+        // For INSERT, append RETURNING id to get lastID
+        const isInsert = sql.trim().toUpperCase().startsWith('INSERT');
+        const finalSql = isInsert && !pgSql.includes('RETURNING') 
+          ? pgSql + ' RETURNING id' 
+          : pgSql;
+        const result = await pool.query(finalSql, params);
+        const lastID = isInsert ? (result.rows[0]?.id || 0) : 0;
         return { lastID: Number(lastID), changes: result.rowCount || 0 };
       } catch(e) {
         logger.error({ err: e.message, sql: sql.slice(0,80) }, 'db.run error');
@@ -69,24 +68,24 @@ async function initPostgres() {
       }
     },
     exec: async (sql) => {
-      try { await pool.query(sql); } catch(e) {
-        // Throw so migrations can catch
-        throw e;
-      }
+      try { await pool.query(sql); } catch(e) { throw e; }
     },
-    runAsync: async (sql, params = []) => {
-      const pg_sql = sql;
-      return _db.run(pg_sql, params);
-    },
-    persist: () => {}, // no-op for Postgres
+    persist: () => {},
     _pool: pool,
   };
 }
 
-// ── SQL.js (SQLite) adapter ───────────────────────────────────────────────────
-function wrapSqlJs(sqlDb) {
+// ── SQL.js (SQLite) adapter — local dev only ──────────────────────────────────
+async function initSqlite() {
+  const initSqlJs = (await import('sql.js')).default;
+  const SQL = await initSqlJs();
+  const dbData = fs.existsSync(DB_PATH) ? fs.readFileSync(DB_PATH) : null;
+  const sqlDb = dbData ? new SQL.Database(dbData) : new SQL.Database();
+  try { sqlDb.run('PRAGMA journal_mode=WAL'); } catch {}
+  try { sqlDb.run('PRAGMA foreign_keys=ON'); } catch {}
+
   let lastID = 0;
-  return {
+  const adapter = {
     get: async (sql, params = []) => {
       try {
         const stmt = sqlDb.prepare(sql);
@@ -122,35 +121,34 @@ function wrapSqlJs(sqlDb) {
       }
     },
     exec: async (sql) => { try { sqlDb.exec(sql); } catch(e) { throw e; } },
-    runAsync: async (sql, params) => wrapSqlJs(sqlDb).run(sql, params),
     persist: () => {
       try { fs.writeFileSync(DB_PATH, Buffer.from(sqlDb.export())); } catch {}
     },
-    _raw: sqlDb,
   };
+  setInterval(() => adapter.persist(), 30_000);
+  logger.info({ path: DB_PATH }, 'SQLite (sql.js) ready');
+  return adapter;
 }
 
 export async function getDb() {
   if (_db) return _db;
 
-  // Try Postgres first
   if (process.env.DATABASE_URL) {
-    const pg = await initPostgres();
-    if (pg) { _db = pg; return _db; }
+    try {
+      _db = await initPostgres(process.env.DATABASE_URL);
+      return _db;
+    } catch(e) {
+      logger.error({ err: e.message }, 'Postgres connection failed');
+      if (process.env.NODE_ENV === 'production') {
+        // In production, Postgres is required — don't silently use SQLite
+        throw new Error(`Database connection failed: ${e.message}`);
+      }
+      logger.warn('Falling back to SQLite for local development');
+    }
   }
 
-  // Fall back to sql.js SQLite
-  const initSqlJs = (await import('sql.js')).default;
-  const SQL = await initSqlJs();
-  const dbData = fs.existsSync(DB_PATH) ? fs.readFileSync(DB_PATH) : null;
-  const sqlDb = dbData ? new SQL.Database(dbData) : new SQL.Database();
-  try { sqlDb.run('PRAGMA journal_mode=WAL'); } catch {}
-  try { sqlDb.run('PRAGMA foreign_keys=ON'); } catch {}
-  _db = wrapSqlJs(sqlDb);
-  setInterval(() => _db.persist(), 30_000);
-  logger.info({ path: DB_PATH }, 'SQLite (sql.js) ready');
+  _db = await initSqlite();
   return _db;
 }
 
-// initDb — alias used by app.js startup
 export async function initDb() { return getDb(); }
