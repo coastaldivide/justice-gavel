@@ -123,7 +123,7 @@ describe('ENV. .env Completeness', () => {
     const fs=await import('fs');
     const env=fs.readFileSync('/tmp/JG/backend/.env','utf8');
     expect(env).toContain('VAPID_PUBLIC_KEY');
-    expect(env).toContain('STRIPE_PRO_PRICE_ID');
+    expect(env).toContain('STRIPE_LEGAL_PRO_PRICE_ID');
     expect(env).toContain('STRIPE_ATTORNEY_PRICE_ID');
     // These need values from Stripe dashboard + web-push key generation
   });

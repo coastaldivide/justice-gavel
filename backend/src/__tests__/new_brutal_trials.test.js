@@ -1446,7 +1446,7 @@ describe('HH. Frontend UX Contracts — API Shape Validation', () => {
 
   test('HH-08: subscription response shape', () => {
     const sub = {
-      plan: 'pro',
+      plan: 'legal_pro',
       status: 'active',
       current_period_end: '2024-12-31',
       cancel_at_period_end: false,

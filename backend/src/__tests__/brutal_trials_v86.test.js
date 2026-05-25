@@ -94,7 +94,7 @@ describe('TIR. Billing TIERS — Subscription Plan Structure', () => {
     expect(src).toContain('monthly_cents: 999');   // starter = $9.99/mo
     expect(src).toContain('monthly_cents: 1999');  // pro = $19.99/mo
     expect(src).toContain('STRIPE_STARTER_PRICE_ID');
-    expect(src).toContain('STRIPE_PRO_PRICE_ID');
+    expect(src).toContain('STRIPE_LEGAL_PRO_PRICE_ID');
   });
   test('TIR-02: TIERS has attorney plan with higher monthly rate', async () => {
     const fs = await import('fs');

@@ -17,7 +17,7 @@ const router = Router();
 router.post('/subscribe', billingLimiter, authRequired, async (req, res) => {
   const { tier = 'advisor', payment_method_id, provider_type = 'lawyer' } = req.body;
   const tierConfig = TIERS[tier];
-  if (!tierConfig) return err400(res, 'Invalid tier. Options: starter, pro, attorney, starter_annual, pro_annual, attorney_annual, consumer_intel');
+  if (!tierConfig) return err400(res, 'Invalid tier. Options: starter, pro, attorney, starter_annual, pro_annual, attorney_annual, legal_radar');
 
   try {
     const db = await getDb();

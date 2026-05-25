@@ -16,7 +16,7 @@ export interface AuthUser {
   name:         string;
   role:         'consumer' | 'attorney' | 'bondsman' | 'admin' | 'guest';
   state?:       string;       // e.g. "TN"
-  subscription?: 'free' | 'basic' | 'pro' | 'firm';
+  subscription?: 'free' | 'basic' | 'legal_pro' | 'firm';
   tos_accepted?: boolean;
   created_at?:  string;       // ISO 8601
 }

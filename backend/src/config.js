@@ -154,13 +154,13 @@ export const ALL_ENV_VARS = {
   STRIPE_SUCCESS_URL:       process.env.STRIPE_SUCCESS_URL         || 'https://justicegavel.app/payment/success',
   STRIPE_CANCEL_URL:        process.env.STRIPE_CANCEL_URL          || 'https://justicegavel.app/payment/cancel',
   // Subscription price IDs (create in Stripe dashboard)
-  STRIPE_PRO_PRICE_ID:      process.env.STRIPE_PRO_PRICE_ID        || '',
-  STRIPE_PRO_ANNUAL_ID:     process.env.STRIPE_PRO_ANNUAL_ID       || '',
+  STRIPE_LEGAL_PRO_PRICE_ID:      process.env.STRIPE_LEGAL_PRO_PRICE_ID        || '',
+  STRIPE_LEGAL_PRO_ANNUAL_ID:     process.env.STRIPE_LEGAL_PRO_ANNUAL_ID       || '',
   STRIPE_ADVISOR_PRICE_ID:  process.env.STRIPE_ADVISOR_PRICE_ID    || '',
   STRIPE_ADVISOR_ANNUAL_ID: process.env.STRIPE_ADVISOR_ANNUAL_ID   || '',
   STRIPE_ATTORNEY_PRICE_ID: process.env.STRIPE_ATTORNEY_PRICE_ID   || '',
   STRIPE_ATTORNEY_ANNUAL_ID:process.env.STRIPE_ATTORNEY_ANNUAL_ID  || '',
-  STRIPE_CONSUMER_INTEL_ID: process.env.STRIPE_CONSUMER_INTEL_ID   || '',
+  STRIPE_LEGAL_RADAR_ID: process.env.STRIPE_LEGAL_RADAR_ID   || '',
 
   // ── Twilio ───────────────────────────────────────────────────────────────
   TWILIO_ACCOUNT_SID:       process.env.TWILIO_ACCOUNT_SID         || '',

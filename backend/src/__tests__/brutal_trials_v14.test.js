@@ -514,7 +514,7 @@ describe('9. ConsumerSubscriptionScreen — Individual Tiers', () => {
   test('9-06: tier pricing model is correct', () => {
     const TIERS = [
       { key: 'starter', price: 9.99 },
-      { key: 'pro',     price: 14.99 },
+      { key: 'legal_pro',     price: 14.99 },
       { key: 'intel',   price: 19.99 },
     ];
     for (const tier of TIERS) {

@@ -53,8 +53,8 @@ const DEFAULT_PREFS: NotifPrefs = {
   notif_marketing:         true };
 
 // ── Tier-gated notification row ──────────────────────────────────────────────
-const STARTER_TIERS = ['advisor','pro','consumer_intel','starter_annual','pro_annual','consumer_intel_annual','attorney_basic','attorney_alert','attorney_featured'];
-const PRO_TIERS     = ['pro','consumer_intel','pro_annual','consumer_intel_annual','attorney_alert','attorney_featured'];
+const STARTER_TIERS = ['advisor','legal_pro','legal_radar','starter_annual','pro_annual','legal_radar_annual','attorney_basic','attorney_alert','attorney_featured'];
+const PRO_TIERS     = ['legal_pro','legal_radar','pro_annual','legal_radar_annual','attorney_alert','attorney_featured'];
 
 function TierGatedRow({
   label, hint, requiredTier, requiredKey, currentTier,
@@ -63,7 +63,7 @@ function TierGatedRow({
   currentTier: string; value: boolean; onChange: (v: boolean) => void;
   navigation: any; colors: ThemeColors; isDark: boolean;
 }) {
-  const tiers = requiredKey === 'pro' ? PRO_TIERS : STARTER_TIERS;
+  const tiers = requiredKey === 'legal_pro' ? PRO_TIERS : STARTER_TIERS;
   const hasAccess = tiers.includes(currentTier);
 
   if (hasAccess) {
@@ -135,11 +135,11 @@ function TierGatedRow({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
           <Text maxFontSizeMultiplier={1.4} style={[gStyles.label, { color: COLORS.textMuted }]}>{label}</Text>
           <View style={[gStyles.tierPill, {
-            backgroundColor: requiredKey === 'pro'
+            backgroundColor: requiredKey === 'legal_pro'
               ? (isDark ? COLORS.bgElevated : COLORS.bgSubtle)
               : (isDark ? COLORS.legalBg : COLORS.legalBg) }]}>
             <Text maxFontSizeMultiplier={1.4} style={[gStyles.tierPillText, {
-              color: requiredKey === 'pro' ? COLORS.blue : COLORS.legal }]}>
+              color: requiredKey === 'legal_pro' ? COLORS.blue : COLORS.legal }]}>
               {requiredTier}+
             </Text>
           </View>

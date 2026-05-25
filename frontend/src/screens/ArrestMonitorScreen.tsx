@@ -80,7 +80,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
       // Check subscription tier
       const subRes = await api.get('/billing/subscription').catch(() => ({ data: { tier: 'free' } }));
       const tier = subRes.data?.tier || 'free';
-      setIsPro(['pro', 'intel', 'attorney_alert', 'attorney_featured'].includes(tier));
+      setIsPro(['legal_pro', 'intel', 'attorney_alert', 'attorney_featured'].includes(tier));
 
       // Load existing watches
       const res = await api.get('/arrests/monitors').catch(() => ({ data: [] }));
@@ -167,7 +167,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
               }
             })()}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.upsellBtnText}>Upgrade to Pro -- $14.99/mo</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.upsellBtnText}>Upgrade to Legal Pro -- $14.99/mo</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.upsellSkip} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
             accessibilityRole="button"

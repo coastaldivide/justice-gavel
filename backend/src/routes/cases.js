@@ -549,7 +549,7 @@ async function triggerExpungementPush(db, userId, caseRow) {
 
 async function scheduleCourtReminders(db, userId, caseId, caseTitle, courtDateStr) {
   if (!courtDateStr) return;
-  const STARTER_TIERS = new Set(['advisor','pro','consumer_intel','starter_annual','pro_annual','consumer_intel_annual']);
+  const STARTER_TIERS = new Set(['advisor','legal_pro','legal_radar','starter_annual','pro_annual','legal_radar_annual']);
   try {
     const sub = await db.get(
       "SELECT tier FROM subscriptions WHERE user_id=? AND status IN ('active','trialing') ORDER BY id DESC LIMIT 1",

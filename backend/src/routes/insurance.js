@@ -9,7 +9,7 @@ const insuranceLimiter = rateLimit({ windowMs: 60*1000,    max: 20, message: { e
 
 const PLANS = {
   basic:  { monthly: 9.99,  annual: 99.99,  name: 'Basic',  features: ['Unlimited Q&A', 'Document review (2/mo)', 'Legal hotline'] },
-  pro:    { monthly: 19.99, annual: 199.99, name: 'Pro',    features: ['Everything in Basic', 'Attorney consultations', 'Court date reminders', 'AI lawyer matching'] },
+  pro:    { monthly: 19.99, annual: 199.99, name: 'Legal Pro',    features: ['Everything in Basic', 'Attorney consultations', 'Court date reminders', 'AI lawyer matching'] },
   family: { monthly: 24.99, annual: 249.99, name: 'Family', features: ['Everything in Pro', 'Covers spouse + dependents', 'Priority support'] },
 };
 

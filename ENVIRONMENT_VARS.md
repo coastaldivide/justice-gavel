@@ -14,13 +14,13 @@ PORT=3000
 ```
 STRIPE_SECRET=             # Core Stripe integration
 STRIPE_WEBHOOK_SECRET=     # Stripe event verification (HMAC)
-STRIPE_PRO_PRICE_ID=       # Pro subscription monthly
-STRIPE_PRO_ANNUAL_ID=      # Pro subscription annual
+STRIPE_LEGAL_PRO_PRICE_ID=       # Pro subscription monthly
+STRIPE_LEGAL_PRO_ANNUAL_ID=      # Pro subscription annual
 STRIPE_ADVISOR_PRICE_ID=   # Starter subscription monthly
 STRIPE_ADVISOR_ANNUAL_ID=  # Starter subscription annual
 STRIPE_ATTORNEY_PRICE_ID=  # Attorney subscription monthly
 STRIPE_ATTORNEY_ANNUAL_ID= # Attorney subscription annual
-STRIPE_CONSUMER_INTEL_ID=  # Consumer intelligence add-on
+STRIPE_LEGAL_RADAR_ID=  # Consumer intelligence add-on
 STRIPE_SUCCESS_URL=https://justicegavel.app/payment/success
 STRIPE_CANCEL_URL=https://justicegavel.app/payment/cancel
 LIVE_PAYMENTS=true         # Enable live Stripe charges

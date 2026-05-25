@@ -32,8 +32,8 @@ async function buildApp(db) {
     next();
   }
 
-  const CONSUMER_TIERS = ['starter','pro','consumer_intel'];
-  const TIER_PRICES = { starter:9.99, pro:14.99, consumer_intel:19.99 };
+  const CONSUMER_TIERS = ['starter','pro','legal_radar'];
+  const TIER_PRICES = { starter:9.99, pro:14.99, legal_radar:19.99 };
 
   // POST /consumer/subscribe — validate tier, create subscription record
   router.post('/consumer/subscribe', auth, async (req, res) => {
@@ -147,7 +147,7 @@ describe('POST /api/billing/consumer/subscribe', () => {
     const res = await request(app)
       .post('/api/billing/consumer/subscribe')
       .set('Authorization', `Bearer ${TOKEN}`)
-      .send({ tier:'pro', payment_method_id:'pm_test_123' });
+      .send({ tier:'legal_pro', payment_method_id:'pm_test_123' });
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(res.body.tier).toBe('pro');
@@ -174,15 +174,15 @@ describe('POST /api/billing/consumer/subscribe', () => {
   it('requires authentication', async () => {
     const res = await request(app)
       .post('/api/billing/consumer/subscribe')
-      .send({ tier:'pro', payment_method_id:'pm_123' });
+      .send({ tier:'legal_pro', payment_method_id:'pm_123' });
     expect(res.status).toBe(401);
   });
 
   it('all valid tiers are accepted', async () => {
-    for (const tier of ['starter','pro','consumer_intel']) {
+    for (const tier of ['starter','pro','legal_radar']) {
       const res = await request(app)
         .post('/api/billing/consumer/subscribe')
-        .set('Authorization', `Bearer ${tok(USER_ID+10+['starter','pro','consumer_intel'].indexOf(tier))}`)
+        .set('Authorization', `Bearer ${tok(USER_ID+10+['starter','pro','legal_radar'].indexOf(tier))}`)
         .send({ tier, payment_method_id:'pm_test' });
       expect(res.status).toBe(200);
     }

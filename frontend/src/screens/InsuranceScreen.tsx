@@ -9,7 +9,7 @@ declare var data: any;
 declare var load: any;
 const PLANS = [
   { key: 'basic',  label: 'Basic',  icon: '🛡️', desc: 'Consultations, document review, Q&A hotline',     color: COLORS.blue },
-  { key: 'pro',    label: 'Pro',    icon: '⚖️', desc: 'Basic + court date reminders, attorney matching', color: COLORS.blue },
+  { key: 'legal_pro',    label: 'Legal Pro',    icon: '⚖️', desc: 'Basic + court date reminders, attorney matching', color: COLORS.blue },
   { key: 'family', label: 'Family', icon: '👨‍👩‍👧', desc: 'Pro + covers spouse and dependents',               color: COLORS.legalDark },
 ];
 
@@ -99,7 +99,7 @@ export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.
         {FEATURES.map(f => (
           <View key={f.label} style={styles.featRow}>
             <Text maxFontSizeMultiplier={1.4} style={styles.featLabel}>{f.label}</Text>
-            {(['basic', 'pro', 'family'] as const).map(k => (
+            {(['basic', 'legal_pro', 'family'] as const).map(k => (
               <Text maxFontSizeMultiplier={1.4} key={k} style={[styles.featCheck, f[k] ? styles.featYes : styles.featNo]}>
                 {f[k] ? '✓' : '--'}
               </Text>

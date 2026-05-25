@@ -156,9 +156,9 @@ describe('POST /push/retention/post-purchase', () => {
   let app, db;
   beforeAll(async () => { db=await makeTestDb(); await buildSchema(db); app=await buildApp(db); });
 
-  test('401 without auth', async () => { expect((await request(app).post('/push/retention/post-purchase').send({tier:'pro'})).status).toBe(401); });
+  test('401 without auth', async () => { expect((await request(app).post('/push/retention/post-purchase').send({tier:'legal_pro'})).status).toBe(401); });
   test('200 schedules retention job', async () => {
-    const r = await request(app).post('/push/retention/post-purchase').set('Authorization',`Bearer ${tok()}`).send({tier:'pro'});
+    const r = await request(app).post('/push/retention/post-purchase').set('Authorization',`Bearer ${tok()}`).send({tier:'legal_pro'});
     expect(r.status).toBe(200); expect(r.body.scheduled).toBe(true);
   });
   test('scheduled job appears in reminders', async () => {

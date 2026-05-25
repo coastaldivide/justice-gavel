@@ -715,7 +715,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
                 marginBottom: 10, borderWidth: 1,
                 borderColor: colors.navy + '40',
               }}
-              accessibilityLabel="Upgrade to Pro for verified credentials and response times">
+              accessibilityLabel="Upgrade to Legal Pro for verified credentials and response times">
               <Text maxFontSizeMultiplier={1.2}
                 style={{ fontSize: 12, color: colors.navy, flex: 1 }}>
                 ⭐ Pro: verified credentials, response time, and client reviews

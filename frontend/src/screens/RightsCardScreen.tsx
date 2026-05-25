@@ -67,8 +67,8 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
       try {
         const res = await api.get('/billing/consumer/subscription');
         const sub = res.data?.subscription;
-        if (sub && ['advisor','pro','consumer_intel',
-                    'starter_annual','pro_annual','consumer_intel_annual'].includes(sub.tier)) {
+        if (sub && ['advisor','legal_pro','legal_radar',
+                    'starter_annual','pro_annual','legal_radar_annual'].includes(sub.tier)) {
           setIsSubscriber(true);
         }
       } catch (e: any) { __DEV__ && console.warn(e?.message); }

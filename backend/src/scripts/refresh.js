@@ -276,7 +276,7 @@ async function upsertRecord(db, record, source) {
 
   let totalInserted = 0, totalUpdated = 0, totalSkipped = 0;
 
-  console.log(`\n🔄 Justice Gavel Provider Refresh`);
+  console.log(`\n🔄 Justice Gavel Legal Provider Refresh`);
   console.log(`   Cities: ${cities.join(', ')}`);
   console.log(`   Types:  ${argv.type}`);
   console.log(`   Source: ${argv.source}`);

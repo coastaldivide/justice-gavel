@@ -82,11 +82,11 @@ Subscription billing for all three user types: firms, attorneys, consumers.
 |---|---|---|
 | Starter Plan | Monthly | `STRIPE_ADVISOR_PRICE_ID` |
 | Starter Plan | Annual | `STRIPE_ADVISOR_ANNUAL_ID` |
-| Pro Plan | Monthly | `STRIPE_PRO_PRICE_ID` |
-| Pro Plan | Annual | `STRIPE_PRO_ANNUAL_ID` |
+| Pro Plan | Monthly | `STRIPE_LEGAL_PRO_PRICE_ID` |
+| Pro Plan | Annual | `STRIPE_LEGAL_PRO_ANNUAL_ID` |
 | Attorney Plan | Monthly | `STRIPE_ATTORNEY_PRICE_ID` |
 | Attorney Plan | Annual | `STRIPE_ATTORNEY_ANNUAL_ID` |
-| Consumer Intelligence | One-time | `STRIPE_CONSUMER_INTEL_ID` |
+| Consumer Intelligence | One-time | `STRIPE_LEGAL_RADAR_ID` |
 
 4. Set up Stripe Webhook:
    - `dashboard.stripe.com` → Webhooks → Add endpoint
@@ -100,12 +100,12 @@ Subscription billing for all three user types: firms, attorneys, consumers.
 STRIPE_SECRET=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_ADVISOR_PRICE_ID=price_...
-STRIPE_PRO_PRICE_ID=price_...
+STRIPE_LEGAL_PRO_PRICE_ID=price_...
 STRIPE_ATTORNEY_PRICE_ID=price_...
 STRIPE_ADVISOR_ANNUAL_ID=price_...
-STRIPE_PRO_ANNUAL_ID=price_...
+STRIPE_LEGAL_PRO_ANNUAL_ID=price_...
 STRIPE_ATTORNEY_ANNUAL_ID=price_...
-STRIPE_CONSUMER_INTEL_ID=price_...
+STRIPE_LEGAL_RADAR_ID=price_...
 STRIPE_SUCCESS_URL=https://yourdomain.com/success
 STRIPE_CANCEL_URL=https://yourdomain.com/cancel
 LIVE_PAYMENTS=true
@@ -372,12 +372,12 @@ ANTHROPIC_API_KEY=
 STRIPE_SECRET=
 STRIPE_WEBHOOK_SECRET=
 STRIPE_ADVISOR_PRICE_ID=
-STRIPE_PRO_PRICE_ID=
+STRIPE_LEGAL_PRO_PRICE_ID=
 STRIPE_ATTORNEY_PRICE_ID=
 STRIPE_ADVISOR_ANNUAL_ID=
-STRIPE_PRO_ANNUAL_ID=
+STRIPE_LEGAL_PRO_ANNUAL_ID=
 STRIPE_ATTORNEY_ANNUAL_ID=
-STRIPE_CONSUMER_INTEL_ID=
+STRIPE_LEGAL_RADAR_ID=
 STRIPE_SUCCESS_URL=https://yourdomain.com/success
 STRIPE_CANCEL_URL=https://yourdomain.com/cancel
 LIVE_PAYMENTS=true
