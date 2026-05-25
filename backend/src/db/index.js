@@ -138,7 +138,6 @@ export async function getDb() {
       _db = await initPostgres(process.env.DATABASE_URL);
       return _db;
     } catch(e) {
-      logger.error({ err: e.message }, 'Postgres connection failed');
       logger.error({ err: e.message }, 'Postgres connection failed — server will start without DB');
       // Return a stub db that logs errors but doesn't crash the server
       return {

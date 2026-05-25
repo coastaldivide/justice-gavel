@@ -337,7 +337,11 @@ app.get('/metrics', async (req, res) => {
 ;
 
 // ── Init DB then start scheduler ──────────────────────────────────────────────
-await initDb();
+try {
+  await initDb();
+} catch(e) {
+  logger.error({ err: e.message }, '[db] Startup DB init failed — continuing without DB');
+}
 startScheduler();
 
 // ── API routes ────────────────────────────────────────────────────────────────
