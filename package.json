@@ -1,0 +1,11 @@
+{
+  "name": "justice-gavel",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "cd backend && node src/server.js",
+    "install": "cd backend && npm install"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
