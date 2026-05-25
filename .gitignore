@@ -7,3 +7,4 @@ frontend/.expo/
 frontend/node_modules/
 backend/node_modules/
 .temp/
+.github/
