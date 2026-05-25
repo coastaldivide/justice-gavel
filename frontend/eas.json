@@ -1,6 +1,6 @@
 {
   "cli": {
-    "version": ">= 12.0.0"
+    "version": ">= 16.0.0"
   },
   "build": {
     "development": {
@@ -8,51 +8,44 @@
       "distribution": "internal",
       "ios": {
         "simulator": true
-      },
-      "android": {
-        "buildType": "apk"
       }
     },
     "preview": {
       "distribution": "internal",
-      "ios": {
-        "resourceClass": "m1-medium"
-      },
+      "channel": "preview",
       "android": {
         "buildType": "apk"
       },
-      "channel": "preview"
+      "ios": {
+        "simulator": false
+      }
     },
     "production": {
-      "ios": {
-        "image": "latest"
-      },
+      "channel": "production",
       "android": {
         "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease"
+      },
+      "ios": {
         "autoIncrement": true
       },
       "env": {
-        "EXPO_PUBLIC_ENV": "production"
-      },
-      "channel": "production",
-      "autoIncrement": true,
-      "distribution": "store"
+        "EXPO_PUBLIC_API_BASE": "https://api.justicegavel.app/api",
+        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51TakD62XUfNqC3X4bEUfw48uj4OrctvShiTn0DTTubDJTxMVvbP4RqDrVFwTg59AVpjtCeO3lnIqWrjkAnxYeKcL00CKoFqEgi"
+      }
     }
   },
   "submit": {
     "production": {
       "ios": {
         "appleId": "YOUR_APPLE_ID@email.com",
-        "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
+        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "YOUR_APPLE_TEAM_ID"
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
-        "track": "production"
+        "track": "internal"
       }
     }
-  },
-  "update": {
-    "url": "https://u.expo.dev/YOUR_EAS_PROJECT_ID"
   }
 }
