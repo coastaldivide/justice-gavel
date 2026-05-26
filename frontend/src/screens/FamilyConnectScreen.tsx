@@ -344,7 +344,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
             style={styles.input}
             value={familyPhone}
             onChangeText={setFamilyPhone}
-            placeholder="(615) 555-0100"
+            placeholder="Phone number"
             placeholderTextColor={colors.textMuted}
             keyboardType="phone-pad"
           returnKeyType="next"
@@ -356,7 +356,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
             style={styles.input}
             value={familyEmail}
             onChangeText={setFamilyEmail}
-            placeholder="jane@example.com"
+            placeholder="Email address"
             placeholderTextColor={colors.textMuted}
             keyboardType="email-address"
             autoCapitalize="none"

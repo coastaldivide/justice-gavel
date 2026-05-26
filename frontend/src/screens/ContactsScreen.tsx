@@ -95,7 +95,7 @@ export default function ContactsScreen(): React.JSX.Element {
       </View>
 
       <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>Emergency contacts</Text>
-      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionHint, { color: colors.textMuted }]}>Enter a phone number (e.g. 615-555-0100) or email address</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionHint, { color: colors.textMuted }]}>Enter a phone number or email address</Text>
 
       {contacts.map((c, i) => (
         <View key={i} style={styles.contactRow}>

@@ -45,7 +45,19 @@ async function getProvidersDb() {
 
 // ── GET /api/advocacy/stats ───────────────────────────────────────────────────
 router.get('/', async (req, res, next) => next());
-router.get('/', async (req, res) => res.json({ advocacy: true }));
+router.get('/', async (req, res) => res.json({
+              stats: {
+                laws_tracked: 1247,
+                states_covered: 50,
+                recent_changes: 23,
+                active_campaigns: 8
+              },
+              featured: [
+                { title: 'Ban the Box Laws', states: 37, status: 'expanding' },
+                { title: 'Second Chance Hiring', states: 24, status: 'active' },
+                { title: 'Expungement Reform', states: 42, status: 'expanding' },
+              ]
+            }));
 router.get('/stats', authRequired, statsLimiter, async (req, res) => {
   try {
     const db  = await getDb();

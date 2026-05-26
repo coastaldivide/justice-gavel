@@ -836,7 +836,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             </Text>
             <TextInput
               style={[styles.textInput, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
-              placeholder="family@example.com"
+              placeholder="Emergency contact email"
               placeholderTextColor={colors.textMuted}
               value={inviteEmail}
               onChangeText={setInviteEmail}
@@ -1006,7 +1006,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           </View>
           <TextInput
             style={[styles.textInput, styles.textArea]}
-            placeholder={"e.g. Attorney: Jane Doe 615-555-0100. Charged with DUI first offense. Pre-trial hearing Nov 15."}
+            placeholder={"e.g. Attorney: John Smith, 615-555-0101. Charged with DUI first offense. Pre-trial hearing Nov 15."}
             placeholderTextColor={colors.textMuted}
             value={editCase.notes || ''}
             onChangeText={v => { setEditCase(p => ({ ...p, notes: v })); autoSaveNotes(v); }}

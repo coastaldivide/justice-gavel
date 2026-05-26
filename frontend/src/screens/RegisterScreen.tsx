@@ -69,7 +69,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
           <View style={styles.inputWrap}>
             <TextInput
               style={styles.input}
-              placeholder="you@example.com  or  615-555-0100"
+              placeholder="email or phone number"
               placeholderTextColor={COLORS.textSecond}
               value={identifier}
               onChangeText={v => { setIdentifier(v); setError(''); }}

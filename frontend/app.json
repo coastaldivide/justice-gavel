@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Justice Gavel",
-    "slug": "justicegavel",
-    "version": "5.89.51",
+    "slug": "justice-gavel",
+    "version": "1.0.0",
     "orientation": "portrait",
     "platforms": [
       "ios",
@@ -10,7 +10,7 @@
       "web"
     ],
     "extra": {
-      "apiBase": "http://localhost:4000/api",
+      "apiBase": "https://api.justicegavel.app/api",
       "apiBaseDevice": "http://YOUR_LOCAL_IP:4000/api",
       "_note": "Set EXPO_PUBLIC_API_BASE=https://your-deployed-backend.railway.app/api before building for production",
       "_apiBase_instructions": "BEFORE BUILDING: replace apiBase with your deployed backend URL. E.g. https://your-app.railway.app \u2014 see DevHandoff doc.",
@@ -18,7 +18,9 @@
       "eas": {
         "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
       },
-      "reviewNotes": "Reviewer credentials: see App Store Connect > App Review Notes. Subscription purchase on iOS opens the web browser to justicegavel.app/subscribe \u2014 this is the intended behavior per Apple guideline \u00a73.1.1 compliance while native StoreKit integration is in development. All other features are fully functional."
+      "reviewNotes": "Reviewer credentials: see App Store Connect > App Review Notes. Subscription purchase on iOS opens the web browser to justicegavel.app/subscribe \u2014 this is the intended behavior per Apple guideline \u00a73.1.1 compliance while native StoreKit integration is in development. All other features are fully functional.",
+      "supabaseUrl": "https://yjeplvvnlennyxixwxfq.supabase.co",
+      "stripePublishableKey": "pk_test_51TakD62XUfNqC3X4bEUfw48uj4OrctvShiTn0DTTubDJTxMVvbP4RqDrVFwTg59AVpjtCeO3lnIqWrjkAnxYeKcL00CKoFqEgi"
     },
     "icon": "./assets/icon.png",
     "splash": {
@@ -27,7 +29,7 @@
       "backgroundColor": "#042C53"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "app.justicegavel.mobile",
       "buildNumber": "5.89.51",
       "infoPlist": {
@@ -126,7 +128,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#042C53"
+        "backgroundColor": "#1a1a2e"
       },
       "package": "app.justicegavel.mobile",
       "versionCode": 6031,
