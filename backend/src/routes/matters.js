@@ -460,7 +460,7 @@ router.get('/:id/team', authRequired, requireMatterAccess('id', 'viewer'), async
          mt.added_at ASC`,
       [matterIdVal]
     );
-    if (!members) return res.status(404).json({ error: 'Not found' });
+    if (!members) return res.status(404).json({ error: 'Not found. It may have been moved or deleted.' });
     res.json({ team: members, matter_id: matterIdVal });
   } catch (e) {
     logger.error('[matters/team/list]', e.message);
@@ -550,14 +550,14 @@ router.patch('/:id/team/:userId', authRequired, requireMatterAccess('id', 'partn
       'SELECT role FROM matter_teams WHERE matter_id=? AND user_id=? AND active=1',
       [matterIdVal, targetId]
     );
-    if (!before) return res.status(404).json({ error: 'Not found' });
+    if (!before) return res.status(404).json({ error: 'Not found. It may have been moved or deleted.' });
     if (!before) return err404(res, 'Team member not found.');
 
     await db.run(
       'UPDATE matter_teams SET role=? WHERE matter_id=? AND user_id=?',
       [role, matterIdVal, targetId]
     );
-    if (!before) return res.status(404).json({ error: 'Not found' });
+    if (!before) return res.status(404).json({ error: 'Not found. It may have been moved or deleted.' });
 
     await writeAuditLog(db, {
       user_id: req.user.id,
@@ -590,7 +590,7 @@ router.delete('/:id/team/:userId', authRequired, requireMatterAccess('id', 'part
       'SELECT role FROM matter_teams WHERE matter_id=? AND user_id=? AND active=1',
       [matterIdVal, targetId]
     );
-    if (!before) return res.status(404).json({ error: 'Not found' });
+    if (!before) return res.status(404).json({ error: 'Not found. It may have been moved or deleted.' });
     if (!before) return err404(res, 'Team member not found.');
 
     // Soft-delete — preserve for audit trail
@@ -598,7 +598,7 @@ router.delete('/:id/team/:userId', authRequired, requireMatterAccess('id', 'part
       'UPDATE matter_teams SET active=0 WHERE matter_id=? AND user_id=?',
       [matterIdVal, targetId]
     );
-    if (!before) return res.status(404).json({ error: 'Not found' });
+    if (!before) return res.status(404).json({ error: 'Not found. It may have been moved or deleted.' });
 
     await writeAuditLog(db, {
       user_id: req.user.id,

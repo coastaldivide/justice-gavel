@@ -24,7 +24,7 @@ function piLeadFee(caseType, severity) {
 }
 
 // ── Submit a PI/Civil Rights lead (from user who tapped "I Was Injured" or civil rights) ──
-router.post('/pi-lead/submit', authRequired, async (req, res) => {
+router.post('/pi-lead/submit', billingLimiter, authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const {
@@ -93,7 +93,7 @@ router.get('/pi-leads', authRequired, async (req, res) => {
 });
 
 // ── PI attorney accepts a lead — charges their saved payment method ─────────
-router.post('/pi-lead/accept/:id', authRequired, async (req, res) => {
+router.post('/pi-lead/accept/:id', billingLimiter, authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const lead = await db.get(

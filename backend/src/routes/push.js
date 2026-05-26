@@ -242,7 +242,7 @@ router.post('/send', authRequired, pushLimiter, async (req, res) => {
     }
     // Only allow attorneys and admins to push to other users
     if (req.user.role !== 'attorney' && req.user.role !== 'admin' && req.user.id !== user_id) {
-      return res.status(403).json({ error: 'Forbidden' });
+      return res.status(403).json({ error: 'You do not have permission to do this.' });
     }
     const { sendPushToUser } = await import('../services/pushDelivery.js');
     const result = await sendPushToUser(user_id, { title, body, data });

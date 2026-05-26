@@ -19,7 +19,7 @@ import { setAppAuth } from './auth';
 // Example: EXPO_PUBLIC_API_BASE=https://api.justicegavel.app/api
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE ||
-  (__DEV__ ? 'https://api.justicegavel.app/api' : '');  // empty string will surface API errors fast in prod
+  'https://api.justicegavel.app/api';  // always use production as fallback
 
 if (!process.env.EXPO_PUBLIC_API_BASE && !__DEV__) {
   if (__DEV__) console.error('[api] CRITICAL: EXPO_PUBLIC_API_BASE is not set. Add it to your EAS secrets.');

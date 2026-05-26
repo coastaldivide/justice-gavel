@@ -21,7 +21,7 @@ import {
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import {useTheme} from '../constants/theme';
 
-const EFFECTIVE_DATE = 'May 1, 2026';
+const EFFECTIVE_DATE = 'May 25, 2026';
 const COMPANY       = 'Justice Gavel LLC';
 const CONTACT_EMAIL = 'legal@justicegavel.app';
 const WEBSITE       = 'https://justicegavel.app';

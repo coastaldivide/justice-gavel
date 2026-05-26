@@ -102,7 +102,7 @@ router.get('/subscription', authRequired, async (req, res) => {
 });
 
 // ── Cancel subscription ────────────────────────────────────────────────────────
-router.post('/cancel', authRequired, async (req, res) => {
+router.post('/cancel', billingLimiter, authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const sub = await db.get(
@@ -137,7 +137,7 @@ router.post('/cancel', authRequired, async (req, res) => {
 //
 // Refund processing: via Stripe refund API (stripe.refunds.create).
 // All refund requests logged for FTC compliance and dispute resolution.
-router.post('/refund', authRequired, async (req, res) => {
+router.post('/refund', billingLimiter, authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const { reason, additional_info } = req.body || {};

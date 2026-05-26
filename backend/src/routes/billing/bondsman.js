@@ -15,7 +15,7 @@ import logger             from '../../utils/logger.js';
 const router = Router();
 
 // ── Bondsman: save profile ────────────────────────────────────────────────────
-router.post('/bondsman/profile', authRequired, async (req, res) => {
+router.post('/bondsman/profile', billingLimiter, authRequired, async (req, res) => {
   const { company_name, license_number, license_state = '', counties = [], states = [], min_bail = 0, max_bail = 999999 } = req.body;
   try {
     const db = await getDb();
@@ -99,7 +99,7 @@ router.get('/leads', authRequired, async (req, res) => {
 });
 
 // ── Bondsman: accept lead (charge card) ───────────────────────────────────────
-router.post('/leads/:id/accept', authRequired, async (req, res) => {
+router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) => {
   const arrestId = safeInt(req.params.id);
   const { payment_method_id } = req.body;
 
@@ -180,7 +180,7 @@ router.post('/leads/:id/accept', authRequired, async (req, res) => {
 
 
 // ── Verified Badge subscription ──────────────────────────────────────────────
-router.post('/bondsman/verified-badge/subscribe', authRequired, async (req, res) => {
+router.post('/bondsman/verified-badge/subscribe', billingLimiter, authRequired, async (req, res) => {
   try {
     const db = await getDb();
 
@@ -267,7 +267,7 @@ router.get('/bondsman/verified-badge/status', authRequired, async (req, res) => 
 });
 
 // POST /api/billing/bondsman/verified-badge/cancel
-router.post('/bondsman/verified-badge/cancel', authRequired, async (req, res) => {
+router.post('/bondsman/verified-badge/cancel', billingLimiter, authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const sub = await db.get(

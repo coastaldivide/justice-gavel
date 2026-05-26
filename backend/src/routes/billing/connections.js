@@ -16,7 +16,7 @@ import { calcStripeFee }  from '../../payments/stripe.js';
 const router = Router();
 
 // ── Family: $29 emergency connection ─────────────────────────────────────────
-router.post('/family/connect', authRequired, async (req, res) => {
+router.post('/family/connect', billingLimiter, authRequired, async (req, res) => {
   const { arrest_id, family_name, family_phone, family_email, payment_method_id } = req.body;
   if (!family_name || !family_phone) return err400(res, 'Name and phone required');
 
@@ -122,7 +122,7 @@ router.post('/family/connect', authRequired, async (req, res) => {
 // POST /api/billing/quickconnect
 // Returns one verified bail bondsman + one criminal defense lawyer near user.
 // Charged as a single $20 transaction. No subscription. One-time.
-router.post('/quickconnect', authRequired, async (req, res) => {
+router.post('/quickconnect', billingLimiter, authRequired, async (req, res) => {
   const { lat, lng, county, state = 'TN', payment_method_id } = req.body;
   // Validate coordinates before use in SQL ORDER BY
   const validLat = lat ? parseFloat(lat) : null;

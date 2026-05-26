@@ -19,7 +19,7 @@ declare var setError: any;
 declare var setSub: any;
 const TIERS = [
   {
-    key: 'basic',
+    key: 'advisor',
     label: 'Basic Listing',
     price: '$78.99/mo',
     cents: 7900,
@@ -36,7 +36,7 @@ const TIERS = [
     highlight: false,
   },
   {
-    key: 'alert',
+    key: 'legal_radar',
     label: 'Alert Tier',
     price: '$198.99/mo',
     cents: 19900,
@@ -54,8 +54,8 @@ const TIERS = [
     badge: 'Most Popular',
   },
   {
-    key: 'featured',
-    label: 'Featured',
+    key: 'legal_pro',
+    label: 'Legal Pro',
     price: '$348.99/mo',
     cents: 34900,
     color: COLORS.navy,
@@ -74,7 +74,7 @@ const TIERS = [
 ];
 
 const INTEL_TIER = {
-  key: 'intel',
+  key: 'esquire',
   label: 'Weekly Intel Report',
   price: '$48.99/mo',
   icon: '📊',

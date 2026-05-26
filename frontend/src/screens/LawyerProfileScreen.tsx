@@ -366,7 +366,9 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
             <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { color:colors.textPrimary }]}>
               Reviews
             </Text>
-            {reviews.map((r, i) => (
+            {reviews.length === 0 ? (
+              <Text style={{color: colors.textMuted, textAlign: 'center', padding: 16}}>No reviews yet</Text>
+            ) : reviews.map((r, i) => (
               <View key={i} style={[s.reviewCard, { backgroundColor:colors.bgCard,
                 borderColor:colors.border }]}>
                 <View style={{ flexDirection:'row', justifyContent:'space-between',

@@ -413,7 +413,7 @@ app.use('/api/attorney',       attorneyPlatformRouter);
 app.use('/api/jobs',           jobsRouter);           // async AI job polling        // Bot monitoring + manual trigger
 
 app.use(sentryErrorHandler());
-app.use((req, res) => res.status(404).json({ error: 'Not found' }));
+app.use((req, res) => res.status(404).json({ error: 'Not found. It may have been moved or deleted.' }));
 
 export default app;
 
