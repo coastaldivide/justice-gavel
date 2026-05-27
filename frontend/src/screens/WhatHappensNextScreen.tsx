@@ -551,7 +551,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
       {(data as any)?.length === 0 && (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
           <Text style={{ fontSize: 40 }}>📝</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>Content loading...</Text>
+          
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection and try again.</Text>
         </View>
       )}

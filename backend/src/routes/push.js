@@ -5,7 +5,7 @@ import { getDb } from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
 import { Expo }   from 'expo-server-sdk';
 import logger      from '../utils/logger.js';
-const auth = (req, res, next) => next(); // auto-generated stub
+
 
 // Module-level Expo client
 const _expoClient = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN });

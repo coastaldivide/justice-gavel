@@ -301,7 +301,7 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): React.J
 
       {/* Provider type toggle */}
       <View style={styles.toggleBlock}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.toggleTitle}>I am a...</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.toggleTitle}>I am a:</Text>
         <View style={styles.toggleRow}>
           <TouchableOpacity
             style={[styles.toggleChip, providerType === 'lawyer' && styles.toggleChipActive]}

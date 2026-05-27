@@ -85,6 +85,15 @@ function callLine(number: string) {
   Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`).catch(() => {}).finally(() => setIsLoading(false));
 }
 
+
+const FALLBACK_CRISIS_RESOURCES = [
+  { id: 'f1', name: '988 Suicide & Crisis Lifeline', phone: '988', url: 'https://988lifeline.org', category: 'CRISIS_LINE', description: 'Call or text 988 — free, confidential, 24/7' },
+  { id: 'f2', name: 'Crisis Text Line', phone: 'Text HOME to 741741', url: 'https://www.crisistextline.org', category: 'CRISIS_LINE', description: 'Text-based crisis support, 24/7' },
+  { id: 'f3', name: 'National Domestic Violence Hotline', phone: '1-800-799-7233', url: 'https://www.thehotline.org', category: 'CRISIS_LINE', description: 'Free, confidential, 24/7' },
+  { id: 'f4', name: 'SAMHSA National Helpline', phone: '1-800-662-4357', url: 'https://www.samhsa.gov/find-help/national-helpline', category: 'CRISIS_LINE', description: 'Mental health & substance use, free, 24/7' },
+  { id: 'f5', name: 'National Alliance on Eating Disorders', phone: '1-866-662-1235', url: 'https://www.allianceforeatingdisorders.com', category: 'CRISIS_LINE', description: 'Mon-Fri 9am-9pm ET' },
+];
+
 export default function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {

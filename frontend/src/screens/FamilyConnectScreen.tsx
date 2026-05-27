@@ -402,7 +402,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
           {paying ? (
             <View style={styles.payingBlock}>
               <ActivityIndicator size="large" color={colors.navy} />
-              <Text maxFontSizeMultiplier={1.4} style={styles.payingText}>Connecting you with verified contacts...</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.payingText}>Connecting you with verified contacts</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.payingHint}>This takes just a moment</Text>
             </View>
           ) : result ? (
