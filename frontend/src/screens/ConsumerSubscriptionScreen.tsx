@@ -188,9 +188,9 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
 
       {!active ? (
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.subBtn, { backgroundColor: tier.color }, loading && { opacity: 0.6 }]}
           onPress={() => onSubscribe(tier.key, annual)}
-              accessibilityRole="button"
           disabled={loading}
           activeOpacity={0.85}
         >
@@ -318,15 +318,14 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
       {/* Monthly / Annual billing toggle */}
       <View style={styles.toggleWrap}>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.toggleBtn, !annual && styles.toggleBtnActive]}
           onPress={() => setAnnual(false)}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, !annual && styles.toggleBtnTextActive]}>Monthly</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.toggleBtn, annual && styles.toggleBtnActive]}
-          accessibilityRole="button"
           onPress={() => setAnnual(true)}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, annual && styles.toggleBtnTextActive]}>Annual</Text>
@@ -406,8 +405,8 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
         Payments processed securely by Stripe.
       </Text>
       <TouchableOpacity
+          accessibilityRole="button"
         onPress={() => Alert.alert('Restore Purchases', 'Checking your previous purchases...\n\nIf you had an active subscription it will be restored. This may take a moment.', [{ text: 'OK' }])}
-        accessibilityRole="button"
         style={{ alignItems: 'center', paddingVertical: 16 }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 12, lineHeight: 20, textDecorationLine: 'underline' }}>Restore Purchases</Text>
       </TouchableOpacity>
@@ -422,9 +421,9 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
         </View>
       )}
           <TouchableOpacity
+          accessibilityRole="button"
           style={{ alignItems: 'center', paddingVertical: 16 }}
           onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
-          accessibilityRole="button"
           accessibilityLabel="Continue with free features">
           <Text style={{ fontSize: 13, color: colors.steel, textDecorationLine: 'underline' }}>
             Continue with free features →

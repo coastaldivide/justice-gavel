@@ -3,11 +3,12 @@ import { Router } from 'express';
 import { getDb }   from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
+import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.js';
 const router = Router();
 
 // GET /api/resources
 // Query params: category, state, q (search), type, free, limit
-router.get('/', authRequired, async (req, res) => {
+router.get('/', authRequired, apiLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const { category, state, q, type, free, limit = 100 } = req.query;
@@ -42,7 +43,7 @@ router.get('/', authRequired, async (req, res) => {
 });
 
 // GET /api/resources/categories — list all available categories
-router.get('/categories', authRequired, async (req, res) => {
+router.get('/categories', authRequired, apiLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const rows = await db.all('SELECT DISTINCT category, COUNT(*) as count FROM resources GROUP BY category ORDER BY count DESC LIMIT 200');
@@ -51,7 +52,7 @@ router.get('/categories', authRequired, async (req, res) => {
 });
 
 // GET /api/resources/:id
-router.get('/:id', authRequired, async (req, res) => {
+router.get('/:id', authRequired, apiLimiter, async (req, res) => {
   try {
     const db  = await getDb();
     const row = await db.get('SELECT id, name, category, description, phone, website, address, city, state, email, hours, free, eligibility, languages, updated_at FROM resources WHERE id=?', [safeInt(req.params.id)]);

@@ -8,10 +8,11 @@ import { Router } from 'express';
 import { getDb }   from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
+import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.js';
 
 const router = Router();
 
-router.get('/', authRequired, async (req, res) => {
+router.get('/', authRequired, apiLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const { city, state, q, limit = 50 } = req.query;
@@ -38,7 +39,7 @@ router.get('/', authRequired, async (req, res) => {
   }
 });
 
-router.get('/:id', authRequired, async (req, res) => {
+router.get('/:id', authRequired, apiLimiter, async (req, res) => {
   try {
     const db  = await getDb();
     const row = await db.get('SELECT id, name, address, city, state, zip_code, phone, lat, lng, url, hours, court_type, county FROM courthouses WHERE id=?', [safeInt(req.params.id)]);

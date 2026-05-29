@@ -179,8 +179,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
       {!status?.has_firm && (
         <View style={s.flowBar}>
           {(['browse','activate'] as Flow[]).map(f => (
-            <TouchableOpacity key={f} style={[s.flowBtn, flow===f && s.flowBtnActive]} onPress={() => setFlow(f)}
-                      accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" key={f} style={[s.flowBtn, flow===f && s.flowBtnActive]} onPress={() => setFlow(f)}
               accessibilityLabel='Select firm vertical'
             >
               <Text maxFontSizeMultiplier={1.4} style={[s.flowLabel, flow===f && s.flowLabelActive]}>
@@ -264,16 +264,15 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                 <Text maxFontSizeMultiplier={1.4} style={s.upgradeBody}>Mission pricing (75% off) available for nonprofits, public defenders, and government offices.</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                   <TouchableOpacity
+          accessibilityRole="button"
                     style={[s.upgradeBtn, { backgroundColor: colors.legal }]}
                     onPress={() => requestUpgrade('enterprise')}
-            accessibilityRole="button"
                     disabled={upgrading}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={s.upgradeBtnText}>{upgrading ? 'Submitting…' : 'Enterprise'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[s.upgradeBtn, { backgroundColor: colors.gold }]}
-          accessibilityRole="button"
                     onPress={() => requestUpgrade('mission')}
                     disabled={upgrading}
                   >
@@ -286,8 +285,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
             {/* Quick actions */}
             <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 20 }]}>Quick actions</Text>
             <View style={s.actionGrid}>
-              <TouchableOpacity style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical')}
-                        accessibilityRole="button"
+              <TouchableOpacity
+          accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical')}
                       >
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>⚙️</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Configure vertical</Text>
@@ -297,8 +296,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📅</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Deadline calculator</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.actionBtn} onPress={() => navigation.navigate('MatterIntelligence')}
-                        accessibilityRole="button"
+              <TouchableOpacity
+          accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('MatterIntelligence')}
                       >
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📁</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Create matter</Text>
@@ -322,10 +321,10 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
             <View style={s.vertGrid}>
               {VERTICALS.map(v => (
                 <TouchableOpacity
+          accessibilityRole="button"
                   key={v.key}
                   style={[s.vertTile, selectedV === v.key && { borderColor: v.color, borderWidth: 1.5 }]}
                   onPress={() => setSelectedV(v.key)}
-            accessibilityRole="button"
                   activeOpacity={0.75}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={s.vertEmoji}>{v.emoji}</Text>
@@ -378,8 +377,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
               </>
             )}
 
-            <TouchableOpacity style={s.ctaBtn} onPress={() => setFlow('activate')}
-                      accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" style={s.ctaBtn} onPress={() => setFlow('activate')}
                     >
               <Text maxFontSizeMultiplier={1.4} style={s.ctaBtnText}>Start {TRIAL_DAYS}-day free trial →</Text>
             </TouchableOpacity>
@@ -399,8 +398,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                 <Text maxFontSizeMultiplier={1.4} style={s.vertRecapLabel}>{vertObj?.label}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.vertRecapHint}>Tap Explore to change vertical</Text>
               </View>
-              <TouchableOpacity onPress={() => setFlow('browse')}
-                        accessibilityRole="button"
+              <TouchableOpacity
+          accessibilityRole="button" onPress={() => setFlow('browse')}
                       >
                 <Text maxFontSizeMultiplier={1.4} style={{ color: colors.steel, fontSize: TYPE.sm }}>Change</Text>
               </TouchableOpacity>

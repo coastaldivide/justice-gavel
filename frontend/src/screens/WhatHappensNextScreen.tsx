@@ -478,9 +478,9 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
       <View style={styles.navRow}>
         {activeStep > 1 && (
           <TouchableOpacity
+          accessibilityRole="button"
             style={[styles.navBtn, styles.navBtnSecondary]}
             onPress={() => setActiveStep(s => Math.max(1, s - 1))}
-          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.navBtnSecondaryText}>← Previous</Text>
           </TouchableOpacity>
@@ -488,7 +488,6 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
         {activeStep < (data?.steps ?? []).length ? (
           <TouchableOpacity
             style={[styles.navBtn, { backgroundColor: data.color, flex: 2 }]}
-          accessibilityRole="button"
             onPress={() => setActiveStep(s => Math.min((data?.steps ?? []).length, s + 1))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.navBtnText}>Next Step →</Text>
@@ -507,9 +506,9 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
       {/* Bottom CTAs */}
       <View style={styles.ctaRow}>
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.ctaCard}
           onPress={() => navigation.navigate('MoreTab', { screen: 'HelpNow' })}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaIcon}>🚨</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaLabel}>HELP NOW</Text>
@@ -527,7 +526,6 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
         <TouchableOpacity
           style={styles.ctaCard}
           onPress={() => navigation.navigate('MoreTab', { screen: 'Education' })}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaIcon}>📚</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaLabel}>Know Rights</Text>

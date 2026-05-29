@@ -56,9 +56,9 @@ const MORE_METHODS = [
 function PurposeCard({ p, selected, onSelect }: any) {
   return (
     <TouchableOpacity
+          accessibilityRole="button"
       style={[styles.purposeCard, selected && styles.purposeCardSelected]}
       onPress={() => onSelect(p)}
-          accessibilityRole="button"
       activeOpacity={0.8}
     >
       <Text maxFontSizeMultiplier={1.4} style={styles.purposeIcon}>{p.icon}</Text>
@@ -312,8 +312,8 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
         <Text maxFontSizeMultiplier={1.4} style={styles.stepLabel}>Step 3 -- How would you like to pay?</Text>
 
         {lastMethod && lastMethod !== method && (
-          <TouchableOpacity style={styles.lastUsedBanner} onPress={() => setMethod(lastMethod)}
-            accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" style={styles.lastUsedBanner} onPress={() => setMethod(lastMethod)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.lastUsedText}>
               ↩ Use last method: {[...PRIMARY_METHODS, ...MORE_METHODS].find(m => m.key === lastMethod)?.label || lastMethod}
@@ -339,8 +339,8 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
         {allMethods.map(m => (
           <MethodRow key={m.key} m={m} selected={method === m.key} onSelect={setMethod} />
         ))}
-        <TouchableOpacity style={styles.moreToggle} onPress={() => setShowMore(m => !m)}
-          accessibilityRole="button"
+        <TouchableOpacity
+          accessibilityRole="button" style={styles.moreToggle} onPress={() => setShowMore(m => !m)}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.moreToggleText}>
             {showMore ? '▲ Fewer options' : '▼ More payment options (Venmo, ACH, Zelle, Crypto…)'}

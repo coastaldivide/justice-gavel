@@ -17,6 +17,7 @@ import { authRequired } from '../middleware/auth.js';
 import {
   err400, err404, err500, safeInt, sanitizeStr, buildWhere
 } from '../utils/routeHelpers.js';
+import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.js';
 
 const router = express.Router();
 
@@ -87,7 +88,7 @@ async function getDb() {
 }
 
 // ── GET /api/recovery-agents — search recovery agents ────────────────────────
-router.get('/', authRequired, async (req, res) => {
+router.get('/', authRequired, apiLimiter, async (req, res) => {
   try {
     const { state, city, armed, lat, lng, limit = 20, offset = 0 } = req.query;
 
@@ -154,7 +155,7 @@ router.get('/', authRequired, async (req, res) => {
 });
 
 // ── GET /api/recovery-agents/laws/:state ─────────────────────────────────────
-router.get('/laws/:state', authRequired, async (req, res) => {
+router.get('/laws/:state', authRequired, apiLimiter, async (req, res) => {
   try {
     const state = (req.params.state || '').toUpperCase().slice(0, 2);
     const law   = RECOVERY_LAWS[state];
@@ -170,7 +171,7 @@ router.get('/laws/:state', authRequired, async (req, res) => {
 });
 
 // ── GET /api/recovery-agents/laws — all states summary ───────────────────────
-router.get('/laws', authRequired, async (req, res) => {
+router.get('/laws', authRequired, apiLimiter, async (req, res) => {
   res.json({
     laws: RECOVERY_LAWS,
     summary: {

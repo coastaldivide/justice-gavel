@@ -230,11 +230,11 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
             Consulting with {lawyerName || 'your lawyer'}. Platform fee is separate from attorney fees.
           </Text>
           {DURATIONS.map(d => (
-            <TouchableOpacity key={d.min}
+            <TouchableOpacity
+          accessibilityRole="button" key={d.min}
               style={[styles.durationCard, { backgroundColor: colors.bgCard, borderColor: colors.border },
                 duration.min === d.min && { borderColor: COLORS.navy, borderWidth: 2 }]}
               onPress={() => setDuration(d)}
-            accessibilityRole="button"
               accessibilityLabel={`${d.label} -- ${d.fee} platform fee`}>
               <Text maxFontSizeMultiplier={1.4} style={styles.durEmoji}>{d.emoji}</Text>
               <View style={{ flex: 1 }}>
@@ -262,8 +262,8 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
       {/* ── Step 2: Date + Time on ONE screen ────────────────────────────── */}
       {step === 'datetime' && (
         <>
-          <TouchableOpacity onPress={() => setStep('duration')} style={styles.back}
-            accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" onPress={() => setStep('duration')} style={styles.back}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
           </TouchableOpacity>
@@ -346,8 +346,8 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
       {/* ── Step 3: Notes + Confirm ───────────────────────────────────────── */}
       {step === 'confirm' && (
         <>
-          <TouchableOpacity onPress={() => setStep('datetime')} style={styles.back}
-            accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" onPress={() => setStep('datetime')} style={styles.back}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
           </TouchableOpacity>

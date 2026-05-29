@@ -3,6 +3,7 @@ import logger from '../utils/logger.js';
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
+import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.js';
 
 const router = Router();
 

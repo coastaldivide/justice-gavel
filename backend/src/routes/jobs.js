@@ -17,11 +17,12 @@ import logger from '../utils/logger.js';
 import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getJob, queueStats, getQueueStats } from '../services/aiQueue.js';
+import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.js';
 
 const router = Router();
 
 // GET /api/jobs/:id — poll job status
-router.get('/:id', authRequired, async (req, res) => {
+router.get('/:id', authRequired, apiLimiter, async (req, res) => {
   try {
     const id = safeInt(req.params.id);
     if (isNaN(id)) return err400(res, 'Invalid id');

@@ -91,8 +91,8 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
       <View style={styles.modalWrap}>
         <View style={styles.modalHeader}>
           <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>Enroll Defendant</Text>
-          <TouchableOpacity onPress={() => { reset(); onClose(); }}
-              accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" onPress={() => { reset(); onClose(); }}
             >
             <Text maxFontSizeMultiplier={1.4} style={styles.modalClose}>✕</Text>
           </TouchableOpacity>
@@ -315,9 +315,9 @@ export default function CheckInManagerScreen({ route, navigation }: ScreenProps)
           </Text>
         </View>
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.enrollBtn}
           onPress={() => requireAuth(() => setShowEnroll(true))}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.enrollBtnText}>+ Enroll</Text>
         </TouchableOpacity>
@@ -335,9 +335,9 @@ export default function CheckInManagerScreen({ route, navigation }: ScreenProps)
             '5. $9.99/month per defendant -- cancel anytime',
           ].map(s => <Text maxFontSizeMultiplier={1.4} key={s} style={styles.howItem}>{s}</Text>)}
           <TouchableOpacity
+          accessibilityRole="button"
             style={styles.howBtn}
             onPress={() => requireAuth(() => setShowEnroll(true))}
-          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.howBtnText}>Enroll First Defendant →</Text>
           </TouchableOpacity>
@@ -395,16 +395,15 @@ export default function CheckInManagerScreen({ route, navigation }: ScreenProps)
 
                 <View style={styles.cardActions}>
                   <TouchableOpacity
+          accessibilityRole="button"
                     style={styles.actionBtn}
                     onPress={() => setSelectedEnroll(item)}
-          accessibilityRole="button"
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📋 View History</Text>
                   </TouchableOpacity>
                   {item.active && (
                     <TouchableOpacity
                       style={[styles.actionBtn, styles.actionBtnRed]}
-          accessibilityRole="button"
                       onPress={() => deactivate(item.id, item.defendant_name)}
                     >
                       <Text maxFontSizeMultiplier={1.4} style={[styles.actionBtnText, { color: COLORS.emergency }]}>Remove</Text>

@@ -5,11 +5,12 @@ import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
 import logger from '../utils/logger.js';
+import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.js';
 
 const router = Router();
 
 // GET /api/family/contacts
-router.get('/contacts', authRequired, async (req, res) => {
+router.get('/contacts', authRequired, apiLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const contacts = await db.all(
@@ -21,7 +22,7 @@ router.get('/contacts', authRequired, async (req, res) => {
 });
 
 // POST /api/family/contacts
-router.post('/contacts', authRequired, async (req, res) => {
+router.post('/contacts', authRequired, apiLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const { name, phone, email, relationship } = req.body || {};
@@ -37,7 +38,7 @@ router.post('/contacts', authRequired, async (req, res) => {
 });
 
 // DELETE /api/family/contacts/:id
-router.delete('/contacts/:id', authRequired, async (req, res) => {
+router.delete('/contacts/:id', authRequired, apiLimiter, async (req, res) => {
   try {
     const db = await getDb();
     await db.run(

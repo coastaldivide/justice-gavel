@@ -15,6 +15,7 @@ import { getDb }                                 from '../db/index.js';
 import logger                                    from '../utils/logger.js';
 import { getAuditLog, ensureAuditTable }         from '../middleware/audit.js';
 import { hasMinRole }                            from '../middleware/rbac.js';
+import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.js';
 
 const router = Router();
 
@@ -28,7 +29,7 @@ async function getFirmRole(db, userId) {
 }
 
 // ── GET /api/audit/me — own activity ─────────────────────────────────────────
-router.get('/me', authRequired, async (req, res) => {
+router.get('/me', authRequired, apiLimiter, async (req, res) => {
   try {
     const db = await getDb();
     await ensureAuditTable(db);
@@ -51,7 +52,7 @@ router.get('/me', authRequired, async (req, res) => {
 });
 
 // ── GET /api/audit/matter/:id ─────────────────────────────────────────────────
-router.get('/matter/:id', authRequired, async (req, res) => {
+router.get('/matter/:id', authRequired, apiLimiter, async (req, res) => {
   try {
     const db       = await getDb();
     await ensureAuditTable(db);
@@ -92,7 +93,7 @@ router.get('/matter/:id', authRequired, async (req, res) => {
 });
 
 // ── GET /api/audit/contract/:id ───────────────────────────────────────────────
-router.get('/contract/:id', authRequired, async (req, res) => {
+router.get('/contract/:id', authRequired, apiLimiter, async (req, res) => {
   try {
     const db         = await getDb();
     await ensureAuditTable(db);
@@ -130,7 +131,7 @@ router.get('/contract/:id', authRequired, async (req, res) => {
 });
 
 // ── GET /api/audit/user/:id — specific user's activity (firm_admin+) ─────────
-router.get('/user/:id', authRequired, async (req, res) => {
+router.get('/user/:id', authRequired, apiLimiter, async (req, res) => {
   try {
     const db       = await getDb();
     await ensureAuditTable(db);
@@ -174,7 +175,7 @@ router.get('/user/:id', authRequired, async (req, res) => {
 });
 
 // ── GET /api/audit/firm — firm-wide audit log ─────────────────────────────────
-router.get('/firm', authRequired, async (req, res) => {
+router.get('/firm', authRequired, apiLimiter, async (req, res) => {
   try {
     const db = await getDb();
     await ensureAuditTable(db);

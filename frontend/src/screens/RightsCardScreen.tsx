@@ -200,9 +200,9 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
       <View style={styles.stateRow}>
         <Text maxFontSizeMultiplier={1.4} style={styles.stateLabel}>State:</Text>
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.statePicker}
           onPress={() => setShowPicker(p => !p)}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.statePickerText}>{state}  ▾</Text>
         </TouchableOpacity>
@@ -234,9 +234,9 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
             Start a free 30-day trial to unlock your rights card, unlimited AI chat, full lawyer search, and more.
           </Text>
           <TouchableOpacity
+          accessibilityRole="button"
             style={styles.gateBtn}
             onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
-          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.gateBtnText}>Start Free Trial →</Text>
           </TouchableOpacity>
@@ -305,9 +305,9 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
       {card && (
         <View style={styles.actions}>
           <TouchableOpacity
+          accessibilityRole="button"
             style={[styles.shareBtn, (!isSubscriber || sharing) && styles.shareBtnDisabled]}
             onPress={isSubscriber ? shareCard : () => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
-          accessibilityRole="button"
             disabled={sharing}
             activeOpacity={0.85}
           >
@@ -328,7 +328,6 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
           )}
           <TouchableOpacity
             style={styles.stateChangeBtn}
-          accessibilityRole="button"
             onPress={() => setShowPicker(p => !p)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.stateChangeBtnText}>🗺  Change State</Text>
