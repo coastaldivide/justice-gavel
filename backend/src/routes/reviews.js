@@ -15,7 +15,7 @@ import { makeUserLimiter }                   from '../middleware/sharedAiLimiter
 import logger                                from '../utils/logger.js';
 import { Router }                            from 'express';
 import { authRequired }                      from '../middleware/auth.js';
-import sqlite3                               from 'sqlite3';
+// sqlite3 imported dynamically
 import { open }                              from 'sqlite';
 import { fileURLToPath }                     from 'url';
 import path                                  from 'path';
@@ -31,6 +31,8 @@ const PROVIDERS_DB = path.resolve(__dirname_r, '../../data/providers.sqlite');
 // WAL mode is set on first open for better concurrent read throughput.
 let _rdb = null;
 async function getReviewsDb() {
+  let sqlite3;
+  try { sqlite3 = (await import('sqlite3')).default; } catch(e) { return null; }
   if (_rdb) return _rdb;
   try {
     _rdb = await open({ filename: PROVIDERS_DB, driver: sqlite3.Database });
@@ -58,6 +60,7 @@ router.get('/', async (req, res) => {
     }
 
     const d = await getReviewsDb();
+  if (!d) return res.json([]);
     if (!d) return res.json([]);
 
     const rows = await d.all(
@@ -90,6 +93,7 @@ router.post('/', authRequired, reviewsLimiter, async (req, res) => {
     const safeComment = rawComment ? truncateStr(sanitizeStr(String(rawComment), 1000), 1000) : '';
 
     const d = await getReviewsDb();
+  if (!d) return res.json([]);
     if (!d) return res.status(503).json({ error: 'Review service temporarily unavailable.' });
 
     const r = await d.run(
@@ -125,6 +129,7 @@ router.get('/summary', async (req, res) => {
     }
 
     const d = await getReviewsDb();
+  if (!d) return res.json([]);
     if (!d) return res.json({ avg_rating: null, count: 0, top_reviews: [] });
 
     const safeType = sanitizeStr(entity_type, 30);

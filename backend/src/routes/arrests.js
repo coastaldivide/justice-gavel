@@ -13,7 +13,6 @@ import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
 import express from 'express';
 import { open } from 'sqlite';
-import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { authRequired as authMiddleware } from '../middleware/auth.js';

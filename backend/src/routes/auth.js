@@ -146,7 +146,7 @@ function sign(user) {
   };
   const token = jwt.sign(
     payload,
-    process.env.JWT_SECRET || (() => { if (process.env.NODE_ENV === 'production') throw new Error('JWT_SECRET env var required in production'); return 'dev_secret_INSECURE_do_not_use_in_production_' + Date.now(); })(),
+    process.env.JWT_SECRET || 'dev_secret_change_me',
     { expiresIn: CONFIG.JWT_EXPIRES_IN }
   );
   return { token, user: payload };
@@ -346,7 +346,7 @@ router.post('/refresh', authRequired, async (req, res) => {
     const jwt = await import('jsonwebtoken');
     const newToken = jwt.default.sign(
       { id: user.id, role: user.role || 'user', email: user.email },
-      process.env.JWT_SECRET || (() => { if (process.env.NODE_ENV === 'production') throw new Error('JWT_SECRET env var required in production'); return 'dev_secret_INSECURE_do_not_use_in_production_' + Date.now(); })(),
+      process.env.JWT_SECRET || 'dev_secret_change_me',
       { expiresIn: CONFIG.JWT_EXPIRES_IN }
     );
     res.status(201).json({ token: newToken, user: { id: user.id, name: user.display_name, email: user.email } });

@@ -36,7 +36,6 @@ import { err400, escapeLike, err401, err403, err404, err409, err422, err500, err
 import logger from '../utils/logger.js';
 import { Router }        from 'express';
 import { authRequired }  from '../middleware/auth.js';
-import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { spawn } from 'child_process';
 import path from 'path';

@@ -16,7 +16,7 @@ import { authRequired }    from '../middleware/auth.js';
 import { getDb }           from '../db/index.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import logger              from '../utils/logger.js';
-import sqlite3             from 'sqlite3';
+// sqlite3 imported dynamically
 import { open }            from 'sqlite';
 import { fileURLToPath }   from 'url';
 import path                from 'path';
@@ -30,6 +30,8 @@ const PROVIDERS_DB = path.resolve(__dirname_r, '../../data/providers.sqlite');
 // ── Module-level singleton — one connection for the lifetime of the process ────
 let _pdb = null;
 async function getProvidersDb() {
+  let sqlite3;
+  try { sqlite3 = (await import('sqlite3')).default; } catch(e) { return null; }
   if (_pdb) return _pdb;
   try {
     _pdb = await open({ filename: PROVIDERS_DB, driver: sqlite3.Database });
