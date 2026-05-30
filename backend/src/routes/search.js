@@ -51,9 +51,7 @@ router.get('/', authRequired, async (req, res) => {
         ? db.all(
             `SELECT c.id, c.title, c.status, c.next_court_date,
                     rank
-             FROM cases_fts
-             JOIN cases c ON c.id = cases_fts.rowid
-             WHERE cases_fts MATCH ? AND c.user_id = ?
+             FROM cases_fts WHERE tsv @@ plainto_tsquery('english', $1) AND c.user_id = ?
              ORDER BY rank, c.next_court_date ASC
              LIMIT ?`,
             [ftsQuery, uid, limit]
@@ -70,10 +68,7 @@ router.get('/', authRequired, async (req, res) => {
       useFts
         ? db.all(
             `SELECT m.id, m.content, m.created_at, c.id as case_id, c.title as case_title
-             FROM messages_fts
-             JOIN messages m ON m.id = messages_fts.rowid
-             JOIN cases c ON c.id = m.case_id
-             WHERE messages_fts MATCH ? AND c.user_id = ?
+             FROM messages_fts WHERE tsv @@ plainto_tsquery('english', $1) AND c.user_id = ?
              ORDER BY rank DESC LIMIT ?`,
             [ftsQuery, uid, limit]
           ).catch(() => [])
@@ -107,9 +102,7 @@ router.get('/', authRequired, async (req, res) => {
       useFts
         ? db.all(
             `SELECT l.id, l.title, l.category, l.difficulty
-             FROM lessons_fts
-             JOIN lessons l ON l.id = lessons_fts.rowid
-             WHERE lessons_fts MATCH ?
+             FROM lessons_fts WHERE tsv @@ plainto_tsquery('english', $1)
              ORDER BY rank DESC LIMIT ?`,
             [ftsQuery, limit]
           ).catch(() => [])

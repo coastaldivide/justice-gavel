@@ -496,13 +496,29 @@ CREATE TABLE IF NOT EXISTS password_resets (
 );
 
 -- Full-text search virtual tables (Postgres tsvector approach)
-CREATE TABLE IF NOT EXISTS cases_fts AS
-  SELECT id, to_tsvector('english', coalesce(title,'') || ' ' || coalesce(status,'')) AS tsv
-  FROM cases WHERE false;
+-- ── Full-Text Search views (Postgres — mirrors SQLite FTS5 query pattern) ────
+-- search.js queries these as if they were FTS5 virtual tables
+-- In Postgres we use tsvector + GIN indexes and expose them as views
 
-CREATE INDEX IF NOT EXISTS cases_fts_idx ON cases USING gin(to_tsvector('english', title || ' ' || coalesce(status,'')));
-CREATE INDEX IF NOT EXISTS lessons_fts_idx ON lessons USING gin(to_tsvector('english', title || ' ' || coalesce(body,'')));
-CREATE INDEX IF NOT EXISTS messages_fts_idx ON chat_messages USING gin(to_tsvector('english', content));
+CREATE OR REPLACE VIEW cases_fts AS
+  SELECT id, title, status, user_id,
+         to_tsvector('english', coalesce(title,'') || ' ' || coalesce(status,'')) AS tsv
+  FROM cases;
+
+CREATE OR REPLACE VIEW lessons_fts AS
+  SELECT id, title, category, body AS content, difficulty, duration_min,
+         to_tsvector('english', coalesce(title,'') || ' ' || coalesce(body,'') || ' ' || coalesce(category,'')) AS tsv
+  FROM lessons;
+
+CREATE OR REPLACE VIEW messages_fts AS
+  SELECT cm.id, cm.session_id, cm.content, cm.role, cm.user_id,
+         to_tsvector('english', coalesce(cm.content,'')) AS tsv
+  FROM chat_messages cm;
+
+-- GIN indexes for efficient FTS queries
+CREATE INDEX IF NOT EXISTS idx_cases_fts    ON cases    USING gin(to_tsvector('english', coalesce(title,'') || ' ' || coalesce(status,'')));
+CREATE INDEX IF NOT EXISTS idx_lessons_fts  ON lessons  USING gin(to_tsvector('english', coalesce(title,'') || ' ' || coalesce(body,'')));
+CREATE INDEX IF NOT EXISTS idx_messages_fts ON chat_messages USING gin(to_tsvector('english', coalesce(content,'')));
 
 CREATE TABLE IF NOT EXISTS callback_requests (
   id            BIGSERIAL PRIMARY KEY,

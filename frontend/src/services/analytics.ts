@@ -68,9 +68,9 @@ export async function track(event: EventName, props: EventProps = {}): Promise<v
       ...props,
     };
 
-      // eslint-disable-next-line no-console
     if (__DEV__) {
-      console.info('[analytics]', event, payload);
+      // eslint-disable-next-line no-console
+      console.warn('[analytics]', event, payload);
       return;
     }
 
