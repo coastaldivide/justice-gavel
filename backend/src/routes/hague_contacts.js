@@ -22,7 +22,7 @@
  *   POST /api/hague-contacts/report-intake
  *        → Records a pre-application intake for attorney tracking.
  *          Does NOT submit to authority — attorney submits directly.
- *          Stores: caseId, countryCode, childName, abductionDate, notes
+ *          Stores: caseId = null, countryCode = '', childName = '', abductionDate, notes
  *
  *   GET  /api/hague-contacts/intake/:caseId
  *        → Retrieves intake record for a specific case
@@ -195,7 +195,7 @@ router.get('/central-authority/:countryCode', authRequired, async (req, res) => 
 // ── Route: POST /report-intake ─────────────────────────────────────────────
 router.post('/report-intake', authRequired, routeLimiter, async (req, res) => {
   try {
-    const { caseId, countryCode, childName, abductionDate, notes, childAge } = req.body;
+    const { caseId = null, countryCode = '', childName = '', abductionDate, notes, childAge } = req.body;
     if (!caseId)       return err400(res, 'caseId required');
     if (!countryCode)  return err400(res, 'countryCode required');
     if (!childName)    return err422(res, 'childName required');

@@ -14,7 +14,7 @@ router.post('/generate', authRequired, perUserAiLimit, async (req, res) => {
     const db = await getDb();
     await ensureTables(db);
 
-    const { motionType, caseId, facts, jurisdiction, additionalNotes } = req.body;
+    const { motionType = '', caseId = null, facts = '', jurisdiction, additionalNotes } = req.body;
     if (!motionType) return res.status(400).json({ error: 'motionType is required' });
     if (!facts || facts.trim().length < 20)
       return res.status(400).json({ error: 'facts must be at least 20 characters' });

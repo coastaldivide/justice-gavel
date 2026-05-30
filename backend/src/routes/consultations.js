@@ -104,7 +104,7 @@ router.get('/', authRequired, async (req, res) => {
 router.post('/book', authRequired, consultationsLimiter, async (req, res) => {
   const {
     lawyer_id, lawyer_name, lawyer_phone = '',
-    date_slot, time_slot,
+    date_slot = null, time_slot = null,
     duration_min = 30, notes = '',
   } = req.body;
   const safeNotes = notes ? truncateStr(sanitizeStr(String(notes), 2000), 2000) : notes;

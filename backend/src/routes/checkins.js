@@ -203,8 +203,8 @@ router.post('/submit', authRequired, checkinsLimiter, async (req, res) => {
   // No auth required — defendants may not have accounts
   // They identify by enrollment_id + name match
   const {
-    enrollment_id, defendant_name,
-    lat, lng, location_label = '',
+    enrollment_id, defendant_name = null,
+    lat = null, lng = null, location_label = '',
     selfie_url = '', notes = '',
     device_info = '',
   } = req.body;
@@ -232,7 +232,7 @@ router.post('/submit', authRequired, checkinsLimiter, async (req, res) => {
 
     const record = await db.run(
       `INSERT INTO checkin_records
-         (enrollment_id, lat, lng, location_label, selfie_url, notes, status, device_info)
+         (enrollment_id, lat = null, lng = null, location_label, selfie_url, notes, status, device_info)
        VALUES (?,?,?,?,?,?,?,?)`,
       [
         enrollment_id, lat || null, lng || null, location_label,

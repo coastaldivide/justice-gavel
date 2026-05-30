@@ -417,3 +417,69 @@ VALUES
   ('Nashville Bail Co', 'Nashville Bail Company', '615-555-1002', '202 Rosa Parks Blvd', 'Nashville', 'TN', 36.168, -86.785, 8, 4.5, 1, 1, 0),
   ('ATL Bail Bonds', 'Atlanta Bail Bonds Inc', '404-555-2001', '200 Marietta St', 'Atlanta', 'GA', 33.753, -84.389, 10, 4.3, 1, 1, 1)
 ON CONFLICT DO NOTHING;
+
+-- ── Additional tables identified during functional audit ─────────────────────
+
+CREATE TABLE IF NOT EXISTS hague_intakes (
+  id                BIGSERIAL PRIMARY KEY,
+  user_id           BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  case_id           TEXT,
+  country_code      TEXT NOT NULL,
+  child_name        TEXT NOT NULL,
+  child_dob         DATE,
+  left_on           DATE,
+  retained_by       TEXT,
+  petitioner_name   TEXT,
+  petitioner_contact TEXT,
+  status            TEXT NOT NULL DEFAULT 'intake',
+  notes             TEXT,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS web_push_subscriptions (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint    TEXT NOT NULL UNIQUE,
+  p256dh      TEXT,
+  auth_key    TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS case_messages (
+  id          BIGSERIAL PRIMARY KEY,
+  case_id     BIGINT NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+  user_id     BIGINT NOT NULL REFERENCES users(id),
+  role        TEXT NOT NULL DEFAULT 'user',
+  content     TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS integration_external_ids (
+  id              BIGSERIAL PRIMARY KEY,
+  user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  service         TEXT NOT NULL,
+  external_id     TEXT NOT NULL,
+  access_token    TEXT,
+  refresh_token   TEXT,
+  expires_at      TIMESTAMPTZ,
+  metadata        JSONB,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, service)
+);
+
+CREATE TABLE IF NOT EXISTS workspace_members (
+  id          BIGSERIAL PRIMARY KEY,
+  workspace_id BIGINT NOT NULL,
+  user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role        TEXT NOT NULL DEFAULT 'member',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(workspace_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS workspaces (
+  id          BIGSERIAL PRIMARY KEY,
+  name        TEXT NOT NULL,
+  owner_id    BIGINT NOT NULL REFERENCES users(id),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

@@ -271,7 +271,7 @@ const lessonsLimiter = makeUserLimiter({ windowMs: 3600000, max: 100, message: '
 router.get('/', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    const rows = await db.all('SELECT id, title, category, body, difficulty, duration_min FROM lessons ORDER BY id ASC LIMIT 200');
+    const rows = await db.all('SELECT id, title, category, body, body as content, difficulty, duration_min FROM lessons ORDER BY id ASC LIMIT 200');
     res.setHeader('Cache-Control', 'public, max-age=1800, stale-while-revalidate=3600');
     return res.json(rows);
   } catch (e) {

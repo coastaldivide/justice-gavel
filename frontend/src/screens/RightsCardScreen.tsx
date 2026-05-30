@@ -11,6 +11,7 @@
  * Free for 24 Hour Advisor+ subscribers. Unsubscribed users see a preview + upgrade prompt.
  * Designed for TikTok virality: "Print this before you go out tonight"
  */
+import { Linking } from 'react-native';
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useState, useEffect, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
@@ -300,6 +301,35 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
           <Text maxFontSizeMultiplier={1.4} style={styles.blurOverlayText}>🔒 Subscribe to unlock full card + share</Text>
         </View>
       )}
+
+
+      {/* Emergency quick-call strip */}
+      <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 8 }}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Call 988 Suicide and Crisis Lifeline"
+          style={{ flex: 1, backgroundColor: '#dc2626', borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
+          onPress={() => Linking.openURL('tel:988').catch(() => {})}
+        >
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>📞 988 Crisis</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Call ACLU helpline"
+          style={{ flex: 1, backgroundColor: '#1e3a8a', borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
+          onPress={() => Linking.openURL('tel:+12125492660').catch(() => {})}
+        >
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>📞 ACLU</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Call National Bail Hotline"
+          style={{ flex: 1, backgroundColor: '#064e3b', borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
+          onPress={() => Linking.openURL('tel:+18009800010').catch(() => {})}
+        >
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>📞 Bail</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Action buttons */}
       {card && (

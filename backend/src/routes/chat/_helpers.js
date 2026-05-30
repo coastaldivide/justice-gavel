@@ -16,7 +16,7 @@ import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION }
 
 export async function getHistory(db, sessionId, limit = 20) {
   const rows = await db.all(
-    `SELECT role, content FROM chat_sessions
+    `SELECT role, content, content AS text FROM chat_sessions
      WHERE session_id = ?
      ORDER BY created_at DESC LIMIT ?`,
     [sessionId, limit]

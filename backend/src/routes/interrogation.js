@@ -381,7 +381,7 @@ router.post('/transcribe', authRequired, (req, res, next) => {
   try {
     if (!req.file) return err400(res, 'Audio file required');
 
-    const { state, userName, location, dateTime, caseId } = req.body;
+    const { state = 'US', userName = '', location = '', dateTime, caseId } = req.body;
     const law = getRecordingLaw(state);
 
     // Step 1: Whisper
