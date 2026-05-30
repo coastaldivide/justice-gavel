@@ -483,3 +483,56 @@ CREATE TABLE IF NOT EXISTS workspaces (
   owner_id    BIGINT NOT NULL REFERENCES users(id),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- ── Tables identified in second functional audit ─────────────────────────────
+
+CREATE TABLE IF NOT EXISTS password_resets (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token       TEXT NOT NULL UNIQUE,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used        BOOLEAN NOT NULL DEFAULT false,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Full-text search virtual tables (Postgres tsvector approach)
+CREATE TABLE IF NOT EXISTS cases_fts AS
+  SELECT id, to_tsvector('english', coalesce(title,'') || ' ' || coalesce(status,'')) AS tsv
+  FROM cases WHERE false;
+
+CREATE INDEX IF NOT EXISTS cases_fts_idx ON cases USING gin(to_tsvector('english', title || ' ' || coalesce(status,'')));
+CREATE INDEX IF NOT EXISTS lessons_fts_idx ON lessons USING gin(to_tsvector('english', title || ' ' || coalesce(body,'')));
+CREATE INDEX IF NOT EXISTS messages_fts_idx ON chat_messages USING gin(to_tsvector('english', content));
+
+CREATE TABLE IF NOT EXISTS callback_requests (
+  id            BIGSERIAL PRIMARY KEY,
+  user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  lawyer_id     BIGINT,
+  lawyer_name   TEXT NOT NULL,
+  phone         TEXT,
+  requested_at  TEXT,
+  notes         TEXT,
+  status        TEXT NOT NULL DEFAULT 'pending',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS civil_attorney_profiles (
+  id                  BIGSERIAL PRIMARY KEY,
+  user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stripe_cus_id       TEXT,
+  payment_method_id   TEXT,
+  bar_number          TEXT,
+  practice_areas      TEXT[],
+  accepts_pi          BOOLEAN NOT NULL DEFAULT false,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS payment_history (
+  id            BIGSERIAL PRIMARY KEY,
+  user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount_cents  INTEGER NOT NULL,
+  description   TEXT,
+  stripe_pi_id  TEXT,
+  status        TEXT NOT NULL DEFAULT 'succeeded',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

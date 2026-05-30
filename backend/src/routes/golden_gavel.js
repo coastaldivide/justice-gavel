@@ -368,7 +368,7 @@ router.post('/hall/opt-in', authRequired, gavelLimiter, async (req, res) => {
     const display_name = rawDisplayName ? truncateStr(sanitizeStr(String(rawDisplayName), 100), 100) : null;
     const consult = await db.get(`SELECT COUNT(*) as n FROM consultation_bookings WHERE lawyer_id = ? AND status='completed'`, [req.user.id]).catch(() => ({ n:0 }));
     const motions = await db.get(`SELECT COUNT(*) as n FROM motions WHERE user_id = ?`, [req.user.id]).catch(() => ({ n:0 }));
-    const fc      = await db.get(`SELECT COUNT(*) as n FROM payment_history WHERE user_id = ? AND product='family_connect'`, [req.user.id]).catch(() => ({ n:0 }));
+    const fc      = await db.get(`SELECT COUNT(*) as n FROM payment_history WHERE user_id = ? AND product='family_connect'`, [req.user.id]).catch(() => ({ n: 0 })).catch(() => ({ n:0 }));
     const helped  = (consult?.n ?? 0) + (motions?.n ?? 0) + (fc?.n ?? 0);
 
     await db.run(

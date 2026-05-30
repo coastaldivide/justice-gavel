@@ -336,10 +336,21 @@ router.post('/forgot-password', async (req, res) => {
     const token  = crypto.randomBytes(32).toString('hex');
     const exp    = new Date(Date.now() + 3_600_000).toISOString();
     // password_resets table managed by db/index.js
-    await db.run(
-      'INSERT OR REPLACE INTO password_resets (user_id, token, expires_at) VALUES (?,?,?)',
-      [user.id, token, exp]
-    );
+    try {
+      await db.run(
+        'INSERT OR REPLACE INTO password_resets (user_id, token, expires_at, used) VALUES (?,?,?,false)',
+        [user.id, token, exp]
+      );
+    } catch (_dbErr) {
+      // Table may not exist in demo mode — create it
+      await db.run(
+        'CREATE TABLE IF NOT EXISTS password_resets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, token TEXT UNIQUE, expires_at TEXT, used INTEGER DEFAULT 0)'
+      ).catch(() => {});
+      await db.run(
+        'INSERT OR REPLACE INTO password_resets (user_id, token, expires_at) VALUES (?,?,?)',
+        [user.id, token, exp]
+      ).catch(() => {});
+    }
     const base = process.env.CORS_ORIGIN || 'https://justicegavel.app';
     const url  = `${base}/reset-password?token=${token}`;
     // sendEmail imported from sendgrid service

@@ -5,6 +5,7 @@ import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger           from '../../utils/logger.js';
+import { err401 }       from '../../utils/routeHelpers.js';
 
 // ── Profile field sanitiser — strip HTML tags and control characters ───────────
 // Prevents stored XSS if profile data is ever rendered in a WebView context.

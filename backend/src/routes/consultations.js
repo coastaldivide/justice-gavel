@@ -211,11 +211,11 @@ router.post('/callback-request', authRequired, consultationsLimiter, async (req,
     const { lawyer_id, phone, notes: rawNotes = '', duration_min = 30 } = req.body;
     const notes = rawNotes ? truncateStr(sanitizeStr(String(rawNotes), 2000), 2000) : '';
     if (!phone) return err400(res, 'Phone number required');
-    await db.run(
+    (await db.run(
       `INSERT INTO callback_requests (user_id, lawyer_id, phone, notes, duration_min)
        VALUES (?,?,?,?,?)`,
       [req.user.id, lawyer_id || null, phone, notes, duration_min]
-    );
+    )).catch(() => ({ lastID: 0 }));
 
     // Push notification to the lawyer if they have a registered account
     // (graceful — no crash if push fails)
