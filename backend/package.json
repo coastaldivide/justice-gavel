@@ -71,7 +71,7 @@
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
     "node-fetch": "^3.3.2",
-    "nodemailer": "^6.9.14",
+    "nodemailer": "^8.0.10",
     "p-queue": "^8.0.1",
     "pdfkit": "^0.18.0",
     "pg": "^8.21.0",
@@ -82,7 +82,7 @@
     "stripe": "^14.25.0",
     "yargs": "^17.7.2"
   },
-  "description": "Justice Gavel \u2014 Backend API",
+  "description": "Justice Gavel — Backend API",
   "devDependencies": {
     "better-sqlite3": "^12.9.0",
     "jest": "^29.7.0",

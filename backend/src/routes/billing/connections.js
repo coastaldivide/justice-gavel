@@ -134,6 +134,7 @@ router.post('/quickconnect', billingLimiter, authRequired, async (req, res) => {
     const db = await getDb();
 
 
+    const creditCents = req.body?.credit_cents ?? 0;
     const finalAmountCents = Math.max(0, BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS - creditCents);   // $20 minus credit, floor $0
     const creditApplied    = Math.min(creditCents, 2000);        // never exceed the price
 

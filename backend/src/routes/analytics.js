@@ -21,6 +21,17 @@ import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 
 const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
 
+
+// ── Firm membership helper ────────────────────────────────────────────────────
+async function getFirmMembership(db, userId) {
+  try {
+    return await db.get(
+      "SELECT * FROM firm_members WHERE user_id=? AND status='active' LIMIT 1",
+      [userId]
+    );
+  } catch { return null; }
+}
+
 const router = express.Router();
 
 const err403 = (res, msg) => res.status(403).json({ error: msg });

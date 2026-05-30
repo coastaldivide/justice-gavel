@@ -122,8 +122,7 @@ router.post('/pi-lead/accept/:id', billingLimiter, authRequired, async (req, res
         confirm: true,
         off_session: true,
         description: `PI Lead #${lead.id} — ${lead.case_type} — ${lead.city}, ${lead.state}`,
-        metadata: { user_id: String(req.user.id), source: 'pi_leads' },
-      metadata: { user_id: String(req.user.id), lead_id: String(lead.id) },
+        metadata: { user_id: String(req.user.id), lead_id: String(lead.id), source: 'pi_leads' },
     });
     }
 

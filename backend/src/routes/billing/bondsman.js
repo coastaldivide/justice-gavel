@@ -103,8 +103,9 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
   const arrestId = safeInt(req.params.id);
   const { payment_method_id } = req.body;
 
+  let db;
   try {
-    const db = await getDb();
+    db = await getDb();
     await db.exec("BEGIN IMMEDIATE");  // Atomic: charge + record together
 
     // Get arrest record
@@ -144,7 +145,7 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
       await stripe.paymentMethods.attach(payment_method_id, { customer: customerId });
     }
 
-    const piIdempotencyKey = `pi_${req.user.id}_${plan}_${Date.now()}`;
+    const piIdempotencyKey = `pi_${req.user.id}_${req.params.id}_${Date.now()}`;
     const pi = await stripe.paymentIntents.create({
       amount: feeCents,
       currency: 'usd',
@@ -168,11 +169,9 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
     );
     await db.run('UPDATE bondsman_profiles SET leads_accepted = leads_accepted + 1 WHERE user_id = ?', [req.user.id]);
     await db.exec('COMMIT');
-
-    await db.exec('COMMIT');
     res.json({ success: true, fee_charged: `$${(feeCents/100).toFixed(0)}`, arrest });
   } catch (e) {
-    await db.exec('ROLLBACK').catch(()=>{});
+    if (db) try { await db.run('ROLLBACK'); } catch (_) {}
     logger.error('[billing] accept lead error:', e.message);
     res.status(500).json({ error: 'Server error. Please try again.' });
   }

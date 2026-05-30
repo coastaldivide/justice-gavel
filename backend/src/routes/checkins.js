@@ -283,9 +283,9 @@ router.get('/status/:enrollmentId', async (req, res) => {
       streak: await (async () => {
         try {
           const rows = await db.all(
-            `SELECT date(checked_in_at) as day FROM checkins
+            `SELECT date(checked_in_at) as day FROM checkin_records
              WHERE enrollment_id=? ORDER BY checked_in_at DESC LIMIT 30`,
-            [enrollment_id]
+            [req.params.enrollmentId]
           );
           let streak = 0;
           const today = new Date().toISOString().split('T')[0];

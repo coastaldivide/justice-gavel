@@ -55,6 +55,9 @@ function verifyAdminKey(req) {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Column and table safety — imported from routeHelpers.js (canonical, correct split on /\s*=\s*/)
+// Helper aliases
+const qSafe = safeInt;
+
 const router = Router();
 
 // ── Apply admin key check to ALL routes on this router ────────────────────────

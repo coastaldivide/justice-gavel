@@ -155,8 +155,9 @@ function sign(user) {
 // ── POST /register ────────────────────────────────────────────────────────────
 
 router.post('/register', authRateLimit, registerLimiter, async (req, res) => {
+  let db;
   try {
-    const db = await getDb();
+    db = await getDb();
     const { identifier, password, displayName: rawDisplayName } = req.body || {};
     const safeDisplayName = rawDisplayName ? truncateStr(sanitizeStr(String(rawDisplayName), 100), 100) : null;
     if (!identifier || !password) {
@@ -204,7 +205,8 @@ router.post('/register', authRateLimit, registerLimiter, async (req, res) => {
     await clearFailedLogins(db, user.id).catch(() => {});
     res.json(sign(user));
   } catch (e) {
-    await db.run('ROLLBACK').catch(()=>{});
+    // ROLLBACK if db was initialized
+    try { await db.run('ROLLBACK'); } catch (_) {}
     logger.error('[auth/register]', e.message);
     res.status(500).json({ error: 'Registration failed' });
   }
@@ -308,7 +310,8 @@ router.post('/update-profile', authRequired, async (req, res) => {
 
     vals.push(req.user.id);
     await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, vals);
-  if (!user) return res.status(404).json({ error: 'Account not found.' });
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
+    if (!user) return res.status(404).json({ error: 'Account not found.' });
     res.json(sign(user).user);
   } catch (e) {
     logger.error('[auth/update-profile]', e.message);
@@ -386,6 +389,7 @@ router.delete('/account', authRequired, async (req, res) => {
   }
   try {
     const db = await getDb();
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
     if (!user) return err404(res, 'Account not found.');
 
     // Verify password before deletion

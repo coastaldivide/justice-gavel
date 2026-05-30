@@ -682,7 +682,7 @@ router.post('/dpa', authRequired, routeLimiter, async (req, res) => {
       client_name, agency, investigation_type,
       cooperation_level = 'unknown', dpa_status = 'evaluating',
       base_fine_cents = 0, matter_id, notes,
-      wells_due, subpoena_due,
+      wells_due, subpoena_due, dpa_sign_due,
     } = req.body || {};
     if (!client_name?.trim()) return err400(res, 'client_name is required.');
     if (cooperation_level && !VALID_COOP.includes(cooperation_level)) return err400(res, 'Invalid cooperation_level.');
@@ -1003,7 +1003,7 @@ router.patch('/matters/:id/scoring', authRequired, routeLimiter, async (req, res
 
 const VALID_PLEA_TYPE   = ['guilty','nolo','alford','best_interest','deferred'];
 const VALID_PLEA_STATUS = ['pending','accepted','rejected','expired','withdrawn','countered'];
-const VALID_IMM_STATUS  = ['lpr','visa','undocumented','daca','tps','asylee','other'];
+const VALID_IMM_STATUS  = ['citizen','lpr','visa','asylee','refugee','daca','undocumented','tps','unknown'];
 
 router.get('/plea-offers', authRequired, async (req, res) => {
   try {
@@ -1757,7 +1757,7 @@ router.patch('/codefendants/:id', authRequired, routeLimiter, async (req, res) =
 // GET  /padilla-warnings/:id      — get single record
 // ══════════════════════════════════════════════════════════════════════════════
 
-// VALID_IMM_STATUS and VALID_WARN_METHOD are defined earlier in this file
+const VALID_WARN_METHOD = ['verbal', 'written', 'email', 'certified_mail', 'court_filing'];
 
 router.get('/padilla-warnings', authRequired, async (req, res) => {
   try {

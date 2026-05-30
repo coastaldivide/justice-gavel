@@ -173,7 +173,7 @@ ${text}` }];
 }
 
 export async function analyzeDocument(file, filename = 'document', docType = '', caseContext = '') {
-  if (!ANTHROPIC_KEY) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error('ANTHROPIC_API_KEY not configured. Add it to backend/.env to enable document analysis.');
   }
 
@@ -197,9 +197,9 @@ export async function analyzeDocument(file, filename = 'document', docType = '',
 If a field is not visible in the document, use an empty string. Do not guess.`;
 
     const fileBlocks = await buildContentBlocks(file);
-    const res = await fetch(API_URLS.ANTHROPIC, {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
       temperature: 0.2,
@@ -277,11 +277,11 @@ Rules:
   // Build content blocks based on file type
   const fileBlocks = await buildContentBlocks(file);
 
-  const res = await fetch(API_URLS.ANTHROPIC, {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type':      'application/json',
-      'x-api-key':         ANTHROPIC_KEY,
+      'x-api-key':         process.env.ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({

@@ -34,6 +34,7 @@ import logger                                 from '../utils/logger.js';
 import {
   requirePermission, requireMatterAccess,
   loadMatterRole, hasMinRole, ROLES,
+  loadFirmContext
 }                                             from '../middleware/rbac.js';
 import { auditLog, writeAuditLog }            from '../middleware/audit.js';
 import { dispatchWebhookEvent }               from './webhooks/outbound.js';
@@ -197,11 +198,15 @@ router.post('/', authRequired, matterLimiter, auditLog('matter', 'create'), asyn
       } catch (_e) {} // Non-blocking — never fail matter creation
     });
 
-    dispatchWebhookEvent(db, ctx.firm_id, 'matter.created', {
-      matter_id:   matterId,
-      title:       matter?.title,
-      client_name: matter?.client_name || null,
-      status:      matter?.status,
+    // Dispatch webhook if user belongs to a firm
+    loadFirmContext(req).then(ctx => {
+      if (ctx?.firm_id) {
+        dispatchWebhookEvent(db, ctx.firm_id, 'matter.created', {
+          matter_id:   matterId,
+          title:       matter?.title,
+          client_name: matter?.client_name || null,
+        }).catch(() => {});
+      }
     }).catch(() => {});
     res.status(201).json(matter);
   } catch (e) {
@@ -356,7 +361,7 @@ router.put('/:id', authRequired, requireMatterAccess('id', 'associate'), auditLo
       const changeKind = (incomingBody.status && incomingBody.status !== beforeVersion.status)
         ? 'status_change'
         : 'update';
-      await writeMatterVersion(db, safeInt(req.params.id), firmId, req.user.id, beforeVersion, incomingBody, changeKind);
+      await writeMatterVersion(db, safeInt(req.params.id), beforeVersion?.firm_id || 0, req.user.id, beforeVersion, incomingBody, changeKind);
     } else {
       logger.warn(`[matters/patch] matter ${req.params.id} not found for versioning — skipping`);
     }

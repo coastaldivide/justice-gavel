@@ -268,7 +268,7 @@ router.post('/index', authRequired, requireFirmRole('associate'), async (req, re
     });
 
     if (conflicts_found.length > 0 && ctx?.firm_id) {
-      dispatchWebhookEvent(db, ctx.firm_id, 'conflict.detected', { matter_id: matter_id||null, conflict_count: conflicts_found.length, query_names: rawNames }).catch(()=>{});
+      dispatchWebhookEvent(db, ctx.firm_id, 'conflict.detected', { matter_id: matter_id||null, conflict_count: conflicts_found.length, query_names: parties ? parties.map(p => p.name || p) : [] }).catch(()=>{});
     }
     res.json({
       added,

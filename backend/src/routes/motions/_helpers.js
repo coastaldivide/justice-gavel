@@ -136,7 +136,8 @@ GENERAL REQUIREMENTS:
 
 Generate the complete motion now:`;
 
-  const res = await fetch(API_URLS.ANTHROPIC, {
+  const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+  const res = await fetch(ANTHROPIC_URL, {
     method: 'POST',
     headers: {
       'Content-Type':      'application/json',

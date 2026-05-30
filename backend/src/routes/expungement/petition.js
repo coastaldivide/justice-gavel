@@ -53,7 +53,7 @@ Include: caption, statement of facts, legal basis with specific ${state} statute
 Format as a formal legal document.
 Note at the top in ALL CAPS: THIS IS AN AI-GENERATED DRAFT — NOT REVIEWED BY AN ATTORNEY — VERIFY ALL INFORMATION AND STATUTES BEFORE FILING.`;
 
-    const response = await fetch(API_URLS.ANTHROPIC, {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',

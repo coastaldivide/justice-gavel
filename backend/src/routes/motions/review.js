@@ -22,7 +22,6 @@ const aiLimiter = rateLimit({
   message: { error: 'AI rate limit reached — please wait before sending another request.' },
 });
 
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const STRIPE_SECRET = process.env.STRIPE_SECRET;
 
 const router = Router();
@@ -92,7 +91,7 @@ ${draft.slice(0, 6000)}
 
 Respond ONLY with the JSON object. No other text.`;
 
-    const response = await fetch(API_URLS.ANTHROPIC, {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',
