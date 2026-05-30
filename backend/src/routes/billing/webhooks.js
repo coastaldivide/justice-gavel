@@ -211,7 +211,68 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         }
         break;
       }
-      default:
+  
+    // ── 24-Hour Advisor (one-time payment) ──────────────────────────
+    case 'payment_intent.succeeded': {
+      const pi = event.data.object;
+      const uid = pi.metadata?.user_id;
+      if (uid) {
+        const db = await getDb();
+        await db.run(
+          `UPDATE users SET subscription_tier='advisor', advisor_expires_at=datetime('now','+1 day') WHERE id=?`,
+          [uid]
+        ).catch(() => {});
+        await sendPushToUser(db, Number(uid), {
+          title: '✅ 24-Hour Access Active',
+          body:  'Your Justice Gavel Advisor access is live for the next 24 hours.',
+        }).catch(() => {});
+      }
+      break;
+    }
+
+    case 'payment_intent.payment_failed': {
+      const pi = event.data.object;
+      const uid = pi.metadata?.user_id;
+      if (uid) {
+        const db = await getDb();
+        await sendPushToUser(db, Number(uid), {
+          title: '⚠️ Payment Failed',
+          body:  'Your payment could not be processed. Please update your payment method.',
+        }).catch(() => {});
+      }
+      break;
+    }
+
+    // ── Trial ending soon ────────────────────────────────────────────
+    case 'customer.subscription.trial_will_end': {
+      const sub = event.data.object;
+      const uid = sub.metadata?.user_id;
+      if (uid) {
+        const db = await getDb();
+        await sendPushToUser(db, Number(uid), {
+          title: '⏰ Trial Ends Soon',
+          body:  'Your free trial ends in 3 days. Add a payment method to keep access.',
+        }).catch(() => {});
+      }
+      break;
+    }
+
+    // ── Refund issued ────────────────────────────────────────────────
+    case 'charge.refunded': {
+      const charge = event.data.object;
+      const uid    = charge.metadata?.user_id;
+      if (uid) {
+        const db = await getDb();
+        const amt = (charge.amount_refunded / 100).toFixed(2);
+        await sendPushToUser(db, Number(uid), {
+          title: '💳 Refund Issued',
+          body:  `A refund of $${amt} has been issued to your original payment method.`,
+        }).catch(() => {});
+      }
+      break;
+    }
+
+    default:
         // unhandled event type — ignored (expected for new Stripe events)
     }
     res.json({ received: true, type: event.type });

@@ -1,6 +1,6 @@
 {
   "name": "justicegavel",
-  "version": "5.89.11",
+  "version": "5.90.0",
   "private": true,
   "main": "index.js",
   "scripts": {
@@ -68,7 +68,7 @@
     "react-native-svg": "^15.2.0",
     "react-native-web": "^0.21.2"
   },
-  "description": "Justice Gavel — Justice, in your hands.",
+  "description": "Justice Gavel \u2014 Justice, in your hands.",
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-typescript": "^7.28.5",
@@ -92,7 +92,7 @@
   "build": {
     "appId": "app.justicegavel.desktop",
     "productName": "Justice Gavel",
-    "copyright": "Copyright © 2026 Justice Gavel",
+    "copyright": "Copyright \u00a9 2026 Justice Gavel",
     "directories": {
       "output": "electron-dist",
       "buildResources": "assets"

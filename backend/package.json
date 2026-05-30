@@ -1,6 +1,6 @@
 {
   "name": "justicegavel-backend",
-  "version": "5.89.11",
+  "version": "5.90.0",
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
@@ -82,7 +82,7 @@
     "stripe": "^14.25.0",
     "yargs": "^17.7.2"
   },
-  "description": "Justice Gavel — Backend API",
+  "description": "Justice Gavel \u2014 Backend API",
   "devDependencies": {
     "better-sqlite3": "^12.9.0",
     "jest": "^29.7.0",

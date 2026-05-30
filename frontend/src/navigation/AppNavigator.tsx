@@ -88,6 +88,7 @@ import FirmAcquisitionScreen from '../screens/FirmAcquisitionScreen';
 import MatterIntelligenceScreen from '../screens/MatterIntelligenceScreen';
 import { Analytics } from '../services/analytics';
 import HagueContactScreen from '../screens/HagueContactScreen';
+import AgeGateScreen            from '../screens/AgeGateScreen';
 
 declare var navigationRef: any; // hoisted from component scope
 // ── Deep link configuration ────────────────────────────────────────────────────
@@ -289,6 +290,7 @@ function GuestNavigator() {
   return (
     <ErrorBoundary>
     <GuestStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <GuestStack.Screen name="AgeGate"    component={AgeGateScreen}    />
       <GuestStack.Screen name="Onboarding" component={OnboardingScreen} />
       <GuestStack.Screen name="Login"      component={LoginScreen} />
       <GuestStack.Screen name="Register"   component={RegisterScreen} options={{ headerShown: true, title: 'Create Account', ...HDR }} />

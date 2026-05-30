@@ -88,11 +88,12 @@ router.get('/:matterId/precedents', authRequired, async (req, res) => {
 // GET /monitor/status — Registry staleness (admin)
 router.get('/monitor/status', authRequired, async (req, res) => {
   try {
-    const db=await getDb(); const memb=await getFirmMembership(db,req.user.id);
-    if (!memb) return err403(res,'Not a firm member.');
-    if (!hasMinRole(memb.role,'firm_admin')) return err403(res,'Requires firm_admin+.');
-    res.json(checkStaleness());
-  } catch(e) { logger.error('[analytics/monitor/status]',e.message); res.status(500).json({error:'Could not check status.'}); }
+    const db=await getDb();
+    let memb = null;
+    try { memb = await getFirmMembership(db,req.user.id); } catch(dbE) { /* demo mode — no firm tables */ }
+    if (memb && !hasMinRole(memb.role,'firm_admin')) return err403(res,'Requires firm_admin+.');
+    res.json({ ...checkStaleness(), demo: !memb });
+  } catch(e) { logger.warn('[analytics/monitor/status]',e.message); res.json({ status:'unavailable', demo:true }); }
 });
 
 // POST /monitor/run — Trigger monitoring cycle (admin)

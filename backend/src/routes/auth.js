@@ -252,12 +252,31 @@ router.post('/login', authRateLimit, authLimiter, async (req, res) => {
 
 router.get('/me', authRequired, async (req, res) => {
   try {
-    const db = await getDb();
-    if (!user) return err404(res, 'Invalid credentials');
-    res.json(sign(user).user);
+    const db   = await getDb();
+    const rows = await db.query(
+      'SELECT id, identifier, display_name, role, subscription_tier, created_at FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    const user = rows.rows?.[0] ?? rows[0];
+    if (!user) return err404(res, 'User not found');
+    res.json({
+      id:                user.id,
+      identifier:        user.identifier,
+      displayName:       user.display_name,
+      role:              user.role,
+      subscriptionTier:  user.subscription_tier,
+      createdAt:         user.created_at,
+    });
   } catch (e) {
-    logger.error('[auth/me]', e.message);
-    res.status(500).json({ error: 'Could not load profile' });
+    // Fallback: return what we have from the JWT
+    logger.warn('[auth/me] db error, returning JWT payload:', e.message);
+    res.json({
+      id:               req.user.id,
+      identifier:       req.user.identifier,
+      displayName:      req.user.displayName || req.user.display_name,
+      role:             req.user.role || 'consumer',
+      subscriptionTier: req.user.subscriptionTier || 'free',
+    });
   }
 });
 

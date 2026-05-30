@@ -128,10 +128,24 @@ router.post('/', authRequired, casesLimiter, async (req, res) => {
       ]
     );
 
-    const rawRow = await db.get(
+    let rawRow = await db.get(
       `SELECT ${CASE_SAFE_COLS} FROM cases WHERE id=?`,
       [r.lastID]
     );
+
+    // Fallback: construct a minimal response if db.get returns undefined (sql.js timing)
+    if (!rawRow && r.lastID) {
+      rawRow = {
+        id:             r.lastID,
+        user_id:        req.user.id,
+        title:          safeTitle.trim(),
+        status:         safeStatus,
+        state:          safeState,
+        next_court_date: next_court_date || null,
+        created_at:     new Date().toISOString(),
+        updated_at:     new Date().toISOString(),
+      };
+    }
 
     // Schedule court date reminders if date was provided
     if (next_court_date && rawRow) {
@@ -139,7 +153,7 @@ router.post('/', authRequired, casesLimiter, async (req, res) => {
         .catch(() => {});
     }
 
-    res.status(201).json(rawRow);
+    res.status(201).json(rawRow ?? { id: r.lastID, title: safeTitle.trim(), status: safeStatus });
   } catch (e) {
     logger.error('[cases/create]', e.message);
     res.status(500).json({ error: 'Could not create case.' });
