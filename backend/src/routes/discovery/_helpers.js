@@ -124,12 +124,54 @@ export async function hasDiscoveryPro(db, userId) {
 }
 
 // ── Claude document analysis ──────────────────────────────────────────────────
-// ── Convert DOCX → plain text via mammoth ────────────────────────────────────
+// ── Convert DOCX → plain text (custom extractor — no mammoth dependency) ────
+// DOCX is a ZIP archive containing XML files. We extract word/document.xml
+// and pull text from <w:t> elements. This replaces mammoth entirely, removing
+// jszip@3.7.1 (CVE-2022-48285) and underscore@1.13.x (CVE-2026-27601).
 export async function docxToText(buffer) {
   try {
-    const mammoth = await import('mammoth');
-    const result  = await mammoth.extractRawText({ buffer });
-    return result.value || '';
+    const unzipper = await import('unzipper');
+
+    // Open DOCX (ZIP) directly from buffer
+    const directory = await unzipper.Open.buffer(buffer);
+
+    // Target XML files that contain document text
+    const targets = ['word/document.xml', 'word/footnotes.xml', 'word/endnotes.xml'];
+    const textParts = [];
+
+    for (const entry of directory.files) {
+      if (!targets.includes(entry.path)) continue;
+      const xmlBuffer = await entry.buffer();
+      const xml       = xmlBuffer.toString('utf8');
+
+      // Extract all <w:t> text nodes (Word text runs)
+      // Also handle <w:delText> (tracked deletions) — skip those
+      const textRuns = xml.match(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g) || [];
+      for (const run of textRuns) {
+        const m = run.match(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/);
+        if (m) textParts.push(m[1]);
+      }
+
+      // Paragraph breaks: insert newline at each </w:p>
+      const paraCount = (xml.match(/<\/w:p>/g) || []).length;
+      if (paraCount > 0 && textParts.length > 0) textParts.push('\n');
+    }
+
+    // Decode XML entities
+    const raw = textParts
+      .join(' ')
+      .replace(/&amp;/g,  '&')
+      .replace(/&lt;/g,   '<')
+      .replace(/&gt;/g,   '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&#x([0-9A-Fa-f]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+      .replace(/&#([0-9]+);/g,         (_, d) => String.fromCodePoint(parseInt(d, 10)))
+      .replace(/ +/g, ' ')
+      .trim();
+
+    if (!raw) throw new Error('No text found in document — file may be image-based or empty');
+    return raw;
   } catch (e) {
     throw new Error('Could not read Word document: ' + e.message);
   }
