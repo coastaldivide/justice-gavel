@@ -2,16 +2,13 @@
  * middleware/auth.js — JWT authentication middleware
  *
  * authRequired:
- *   - Verifies the Bearer token signature and algorithm
+ *   - Verifies Bearer token signature and algorithm (HS256 pinned)
  *   - Checks token expiry (jwt.verify enforces exp automatically)
- *   - Rejects expired tokens with a clear message distinguishing
- *     "expired" from "invalid" so clients can trigger a token refresh
+ *   - Verifies user still exists in DB (prevents ghost sessions)
+ *   - In-process cache: user existence checked once per token, not per request
  *
  * optionalAuth:
- *   - Sets req.user if a valid token is present, proceeds regardless
- *   - Used on public endpoints that have richer behavior when authenticated
- *
- * Both use HS256 algorithm-pinning to prevent algorithm confusion attacks.
+ *   - Sets req.user if valid token present; proceeds regardless
  */
 
 import jwt    from 'jsonwebtoken';
@@ -19,6 +16,37 @@ import logger from '../utils/logger.js';
 
 const JWT_SECRET  = () => process.env.JWT_SECRET || 'dev_secret_change_me';
 const ALGORITHMS  = ['HS256'];
+
+// ── In-process revocation cache ───────────────────────────────────────────────
+// Maps userId → { exists: bool, checkedAt: timestamp }
+// Prevents a DB round-trip on every authenticated request.
+// Cache TTL: 60 seconds. Deleted users are denied within 60s of deletion.
+const USER_CACHE = new Map();
+const CACHE_TTL_MS = 60_000;
+
+async function userExists(userId) {
+  const now    = Date.now();
+  const cached = USER_CACHE.get(userId);
+  if (cached && (now - cached.checkedAt) < CACHE_TTL_MS) {
+    return cached.exists;
+  }
+  try {
+    const { getDb } = await import('../db/index.js');
+    const db = await getDb();
+    const row = await db.get('SELECT id FROM users WHERE id=? LIMIT 1', [userId]);
+    const exists = !!row;
+    USER_CACHE.set(userId, { exists, checkedAt: now });
+    // Evict old entries (keep cache bounded)
+    if (USER_CACHE.size > 10000) {
+      for (const [k, v] of USER_CACHE) {
+        if (now - v.checkedAt > CACHE_TTL_MS * 2) USER_CACHE.delete(k);
+      }
+    }
+    return exists;
+  } catch {
+    return true; // fail open — never deny on DB error
+  }
+}
 
 export function authRequired(req, res, next) {
   const auth  = req.headers.authorization || '';
@@ -30,7 +58,6 @@ export function authRequired(req, res, next) {
 
   try {
     req.user = jwt.verify(token, JWT_SECRET(), { algorithms: ALGORITHMS });
-    next();
   } catch (e) {
     if (e.name === 'TokenExpiredError') {
       return res.status(401).json({
@@ -48,6 +75,17 @@ export function authRequired(req, res, next) {
     logger.warn('[auth] unexpected jwt error:', e.message);
     return res.status(401).json({ error: 'Authentication failed.', code: 'auth_error' });
   }
+
+  // Verify user still exists in DB (ghost session protection)
+  userExists(req.user.id).then(exists => {
+    if (!exists) {
+      return res.status(401).json({
+        error: 'Account not found. Please log in again.',
+        code:  'user_not_found',
+      });
+    }
+    next();
+  }).catch(() => next()); // fail open on DB error
 }
 
 export function optionalAuth(req, res, next) {
@@ -57,11 +95,15 @@ export function optionalAuth(req, res, next) {
     try {
       req.user = jwt.verify(token, JWT_SECRET(), { algorithms: ALGORITHMS });
     } catch {
-      // Token invalid or expired — proceed unauthenticated
       req.user = null;
     }
   }
   next();
+}
+
+// Explicitly invalidate a user's cache entry (call after deletion/suspension)
+export function invalidateUserCache(userId) {
+  USER_CACHE.delete(userId);
 }
 
 // Backward-compatibility alias

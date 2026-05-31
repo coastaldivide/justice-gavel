@@ -81,7 +81,8 @@ export const CONFIG = {
   AI_CONCURRENCY: parseInt(process.env.AI_CONCURRENCY || '8', 10),
 
   // ── Auth ─────────────────────────────────────────────────────────────────────
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN  || '30d',
+  JWT_EXPIRES_IN:         process.env.JWT_EXPIRES_IN          || '15m'   ,  // Access token: 15 min
+  JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN  || '7d'    ,  // Refresh token: 7 days,
 
   // ── URLs ─────────────────────────────────────────────────────────────────────
   BASE_URL:       process.env.BASE_URL || process.env.CORS_ORIGIN || 'https://justicegavel.app',

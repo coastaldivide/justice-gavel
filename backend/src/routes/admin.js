@@ -60,6 +60,25 @@ const qSafe = safeInt;
 
 const router = Router();
 
+// ── Super-admin guard ─────────────────────────────────────────────────────────
+// All /api/admin routes require authentication + super_admin role.
+// Applied here as an early router-level middleware so no individual route
+// can accidentally be exposed without the check.
+function requireSuperAdmin(req, res, next) {
+  const role = req.user?.role;
+  if (!role || !['super_admin', 'admin'].includes(role)) {
+    return res.status(403).json({
+      error: 'Super admin access required.',
+      code:  'forbidden',
+    });
+  }
+  next();
+}
+
+// Apply auth + super_admin check to ALL routes in this router
+router.use(authRequired, requireSuperAdmin);
+
+
 // ── Apply admin key check to ALL routes on this router ────────────────────────
 // verifyAdminKey uses timingSafeEqual to prevent timing attacks.
 // Any request without a valid X-Admin-Key header gets 401 immediately.

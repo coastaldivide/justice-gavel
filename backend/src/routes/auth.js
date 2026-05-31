@@ -27,6 +27,40 @@ import { authRequired } from '../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
 import logger from '../utils/logger.js';
 
+// ── Refresh token helpers ─────────────────────────────────────────────────────
+const JWT_REFRESH_SECRET = () => process.env.JWT_REFRESH_SECRET
+  || process.env.JWT_SECRET + '_refresh'  // fallback: derive from main secret
+  || 'dev_refresh_secret_change_me';
+
+async function issueTokenPair(user, db) {
+  const payload = { id: user.id, role: user.role || 'user', email: user.email };
+
+  // Short-lived access token (15 min)
+  const jwt_mod  = await import('jsonwebtoken');
+  const accessToken = jwt_mod.default.sign(payload, JWT_SECRET(), {
+    expiresIn: CONFIG.JWT_EXPIRES_IN,
+  });
+
+  // Long-lived refresh token (7 days) — stored in DB, single-use
+  const refreshPayload = { id: user.id, type: 'refresh' };
+  const refreshToken = jwt_mod.default.sign(refreshPayload, JWT_REFRESH_SECRET(), {
+    expiresIn: CONFIG.JWT_REFRESH_EXPIRES_IN || '7d',
+  });
+
+  // Persist refresh token hash (so we can invalidate on use)
+  const tokenHash = Buffer.from(refreshToken).toString('base64').slice(-32);
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  await db.run(
+    `INSERT OR REPLACE INTO refresh_tokens (user_id, token_hash, expires_at, used)
+     VALUES (?, ?, ?, 0)`,
+    [user.id, tokenHash, expiresAt]
+  ).catch(() => {}); // non-fatal — degrades to expiry-only
+
+  return { token: accessToken, refreshToken, user: payload };
+}
+
+const JWT_SECRET = () => process.env.JWT_SECRET || 'dev_secret_change_me';
+
 // ── Login attempt tracking ────────────────────────────────────────────────────
 const MAX_LOGIN_ATTEMPTS = 10;
 const LOCKOUT_MINUTES    = 15;
@@ -136,7 +170,7 @@ function defaultDisplayName(identifier, type) {
 
 // ── JWT helper ────────────────────────────────────────────────────────────────
 
-function sign(user) {
+async function sign(user) {
   const payload = {
     id: user.id,
     email: user.email || null,
@@ -144,12 +178,8 @@ function sign(user) {
     displayName: user.display_name || user.name || defaultDisplayName(user.login_identifier || '', ''),
     premium: !!user.is_premium
   };
-  const token = jwt.sign(
-    payload,
-    process.env.JWT_SECRET || 'dev_secret_change_me',
-    { expiresIn: CONFIG.JWT_EXPIRES_IN }
-  );
-  return { token, user: payload };
+  const db_for_token = await getDb();
+  return await issueTokenPair(user, db_for_token);
 }
 
 // ── POST /register ────────────────────────────────────────────────────────────
@@ -182,7 +212,7 @@ router.post('/register', authRateLimit, registerLimiter, async (req, res) => {
       return res.status(409).json({ error: `${type === 'email' ? 'Email' : 'Phone number'} already registered` });
     }
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await bcrypt.hash(password, 12);
     const name = safeDisplayName?.trim() || defaultDisplayName(value, type);
 
     await db.run('BEGIN');
@@ -367,32 +397,60 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // ── POST /api/auth/refresh — exchange valid token for a fresh one ─────────────
-router.post('/refresh', authRequired, async (req, res) => {
-  try {
-    const db   = await getDb();
-    const user = await db.get(
-      'SELECT id, display_name, email, role FROM users WHERE id=?',
-      [req.user.id]
-    ).catch(() => null);
-    if (!user) return err404(res, 'Invalid credentials');
+router.post('/refresh', async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return err400(res, 'refreshToken required');
 
-    const jwt = await import('jsonwebtoken');
-    const newToken = jwt.default.sign(
-      { id: user.id, role: user.role || 'user', email: user.email },
-      process.env.JWT_SECRET || 'dev_secret_change_me',
-      { expiresIn: CONFIG.JWT_EXPIRES_IN }
-    );
-    res.status(201).json({ token: newToken, user: { id: user.id, name: user.display_name, email: user.email } });
+  try {
+    const jwt_mod = await import('jsonwebtoken');
+    const db = await getDb();
+    const JWT_REFRESH_SECRET_FN = () => process.env.JWT_REFRESH_SECRET
+      || (process.env.JWT_SECRET + '_refresh')
+      || 'dev_refresh_secret_change_me';
+
+    // 1. Verify refresh token signature and expiry
+    let decoded;
+    try {
+      decoded = jwt_mod.default.verify(refreshToken, JWT_REFRESH_SECRET_FN(), { algorithms: ['HS256'] });
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid or expired refresh token', code: 'invalid_refresh' });
+    }
+
+    if (decoded.type !== 'refresh') {
+      return res.status(401).json({ error: 'Not a refresh token', code: 'invalid_refresh' });
+    }
+
+    // 2. Check token hasn't been used (replay protection)
+    const tokenHash = Buffer.from(refreshToken).toString('base64').slice(-32);
+    const stored = await db.get(
+      'SELECT * FROM refresh_tokens WHERE user_id=? AND token_hash=? AND used=0 AND expires_at > datetime("now")',
+      [decoded.id, tokenHash]
+    ).catch(() => null);
+
+    if (!stored) {
+      // Token already used or not found — possible token theft; invalidate all user tokens
+      await db.run('DELETE FROM refresh_tokens WHERE user_id=?', [decoded.id]).catch(() => {});
+      return res.status(401).json({ error: 'Refresh token already used or expired', code: 'token_reuse' });
+    }
+
+    // 3. Mark old token as used (single-use rotation)
+    await db.run('UPDATE refresh_tokens SET used=1 WHERE token_hash=?', [tokenHash]).catch(() => {});
+
+    // 4. Fetch current user (ensures account still active)
+    const user = await db.get('SELECT id, display_name, email, role FROM users WHERE id=?', [decoded.id]).catch(() => null);
+    if (!user) return res.status(401).json({ error: 'Account not found', code: 'user_not_found' });
+
+    // 5. Issue new token pair (rotation)
+    const result = await issueTokenPair(user, db);
+    res.json(result);
+
   } catch (e) {
     logger.error('[auth/refresh]', e.message);
     res.status(500).json({ error: 'Could not refresh token' });
   }
 });
 
-// ── Account deletion (App Store required) ─────────────────────────────────
-// DELETE /api/auth/account
-// Permanently deletes the user, all cases, messages, push tokens, subscriptions.
-// Requires password confirmation for security.
+
 router.delete('/account', authRequired, async (req, res) => {
   const { password } = req.body || {};
   if (!password) {

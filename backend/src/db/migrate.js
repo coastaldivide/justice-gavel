@@ -10,6 +10,18 @@ async function migrate() {
   const db = await getDb();
 
   const migrations = [
+    // Refresh tokens table (single-use rotation, replay detection)
+    `CREATE TABLE IF NOT EXISTS refresh_tokens (
+       id         INTEGER PRIMARY KEY AUTOINCREMENT,
+       user_id    INTEGER NOT NULL,
+       token_hash TEXT    NOT NULL,
+       expires_at TEXT    NOT NULL,
+       used       INTEGER NOT NULL DEFAULT 0,
+       created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+       UNIQUE(user_id, token_hash)
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_rt_user ON refresh_tokens(user_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_rt_hash ON refresh_tokens(token_hash)`,
     // Ensure password_resets table exists
     `CREATE TABLE IF NOT EXISTS password_resets (
        id         INTEGER PRIMARY KEY AUTOINCREMENT,
