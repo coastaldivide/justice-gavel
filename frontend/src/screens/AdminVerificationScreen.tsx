@@ -1,3 +1,4 @@
+import { AppIcon } from '../components/AppIcon';
 /**
  * AdminVerificationScreen -- Bar Verification Approval Queue
  *
@@ -142,7 +143,7 @@ export default function AdminVerificationScreen({ navigation }: ScreenProps): Re
 
       {!loading && pending.length === 0 && (
         <View style={[styles.empty, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>✅</Text>
+          <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
           <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No pending verifications</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textSecond }]}>
             All bar number submissions have been reviewed.

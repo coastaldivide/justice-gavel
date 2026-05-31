@@ -1,3 +1,5 @@
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
 import SkeletonLoader from '../components/SkeletonLoader';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -252,7 +254,7 @@ export default function ResourcesScreen(): React.JSX.Element {
                         <TouchableOpacity accessibilityRole="button"
                           onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => {})}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
-                          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>📞</Text>
+                          <AppIcon name="call-outline" size={20} color="#1B5E20" />
                           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary, fontWeight:'600', fontSize:14 }}>
                             {item.phone}
                           </Text>
@@ -285,7 +287,7 @@ export default function ResourcesScreen(): React.JSX.Element {
                       ) : null}
                       {item.income_limit ? (
                         <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
-                          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>💰</Text>
+                          <AppIcon name="cash-outline" size={20} color="#1B5E20" />
                           <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>Eligibility: {item.income_limit}</Text>
                         </View>
                       ) : null}

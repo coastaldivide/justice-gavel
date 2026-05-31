@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * SettingsScreen -- User preferences
  *
@@ -113,7 +116,7 @@ function TierGatedRow({
         onPress={goToCourtForms}
         accessibilityLabel="Official Court Forms"
         style={{ flexDirection:'row', alignItems:'center', paddingVertical:14, paddingHorizontal:4, borderBottomWidth:StyleSheet.hairlineWidth, borderBottomColor:COLORS.border }}>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize:20, width:32 }}>📋</Text>
+        <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
         <View style={{ flex:1 }}>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, ...FONTS.semiBold, color:COLORS.textPrimary }}>Official Court Forms</Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, ...FONTS.regular, color:COLORS.textMuted }}>Government forms -- all 50 states</Text>
@@ -144,7 +147,7 @@ function TierGatedRow({
         <Text maxFontSizeMultiplier={1.4} style={[gStyles.hint, { color: COLORS.textMuted }]}>{hint}</Text>
       </View>
       <View style={gStyles.lockWrap}>
-        <Text maxFontSizeMultiplier={1.4} style={gStyles.lockIcon}>🔒</Text>
+        <AppIcon name="lock-closed-outline" size={20} color={COLORS.navy} />
       </View>
     </TouchableOpacity>
     </>

@@ -1,3 +1,7 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * SearchScreen -- Global search across all user data
  *
@@ -151,7 +155,7 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
       testID="search-screen">
       {/* Search input */}
       <View style={[s.searchBar, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-        <Text maxFontSizeMultiplier={1.4} style={s.searchIcon}>🔍</Text>
+        <AppIcon name="search-outline" size={20} color={COLORS.navy} />
         <TextInput
           style={[s.input, { color: colors.textPrimary }]}
           placeholder="Search cases, messages, attorneys, lessons…"
@@ -258,7 +262,7 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
                 </View>
               </View>
               <View style={s.empty}>
-                <Text maxFontSizeMultiplier={1.4} style={s.emptyIcon}>🔍</Text>
+                <AppIcon name="search-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4}
                   style={[s.emptySub, { color: colors.textMuted }]}>
                   Search across your cases, messages,{'\n'}saved attorneys, and legal lessons.

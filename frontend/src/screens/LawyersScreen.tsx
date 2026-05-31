@@ -1,3 +1,5 @@
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import { EmptyState } from '../components/EmptyState';
 import LawyerSkeletonCard from '../components/LawyerSkeletonCard';
 import { t } from '../i18n';
@@ -763,7 +765,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           ListEmptyComponent={
             !statusMsg ? (
               <View style={styles.emptyBlock}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>⚖️</Text>
+                <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>No lawyers found in your area.</Text>
                 <TouchableOpacity
           accessibilityRole="button" style={styles.emptyBtn} accessibilityLabel="Adjust filters" onPress={() => setShowFilters(true)}
@@ -915,7 +917,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
             flexDirection:'row', alignItems:'center', justifyContent:'center', gap:10 }}
           accessibilityLabel="\u2696\ufe0f" onPress={() => setShowBulk(true)}
         >
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>⚖️</Text>
+          <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700',
             fontSize:15, lineHeight:22 }}>
             Contact {selected.length} Attorney{selected.length !== 1 ? 's' : ''}

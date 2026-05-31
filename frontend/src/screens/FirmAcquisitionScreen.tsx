@@ -1,3 +1,5 @@
+import { HapticButton } from '../components/HapticButton';
+import { AppIcon } from '../components/AppIcon';
 /**
  * FirmAcquisitionScreen — Self-serve firm onboarding funnel
  *
@@ -289,7 +291,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
               <TouchableOpacity
           accessibilityRole="button" style={s.actionBtn} accessibilityLabel="\u2699\ufe0f" onPress={() => navigation.navigate('FirmVertical')}
                       >
-                <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>⚙️</Text>
+                <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Configure vertical</Text>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('DeadlineCalculator')}
@@ -305,7 +307,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical', { tab: 'pricing' })}
                       >
-                <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>💳</Text>
+                <AppIcon name="card-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Upgrade plan</Text>
               </TouchableOpacity>
             </View>

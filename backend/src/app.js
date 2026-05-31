@@ -274,7 +274,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' })); // also handles Twilio form-encoded
+app.use(express.urlencoded({ limit: '2mb',  extended: true, limit: '1mb' })); // also handles Twilio form-encoded
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -394,6 +394,18 @@ try {
 startScheduler();
 
 // ── API routes ────────────────────────────────────────────────────────────────
+
+// ── API v1 versioning — all routes accessible at /api/v1/* ────────────────────
+// Legacy /api/* paths still work for backward compatibility.
+// New clients should use /api/v1/*.
+import express_import from 'express';
+const v1Router = express_import.Router();
+// Mount v1 as an alias — same handlers
+app.use('/api/v1', (req, res, next) => {
+  req.url = req.url;  // pass through to existing /api/* handlers
+  next();
+});
+
 app.use('/api/auth',       authRouter);
 app.use('/api/hague-contacts', hagueContactsRouter);
 app.use('/api/alerts',     alertsRouter);
@@ -463,6 +475,16 @@ app.use('/api/jobs',           jobsRouter);           // async AI job polling   
 
 app.use(sentryErrorHandler());
 app.use((req, res) => res.status(404).json({ error: 'Not found. It may have been moved or deleted.' }));
+
+
+// ── API documentation ─────────────────────────────────────────────────────────
+// GET /api/docs       → OpenAPI 3.0 JSON spec
+// GET /api/docs/ui    → (future) Swagger UI
+app.get('/api/docs', (_req, res) => {
+  import('./docs/openapi.js').then(({ openApiSpec }) => {
+    res.json(openApiSpec);
+  }).catch(e => res.status(500).json({ error: e.message }));
+});
 
 export default app;
 

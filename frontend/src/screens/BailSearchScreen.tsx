@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import { t, initLang } from '../i18n';
 import { haptic, hapticCall } from '../services/haptics';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -422,7 +425,7 @@ export default function BailSearchScreen(): React.JSX.Element {
 
       {searched && items.length === 0 && !loading && !locationDenied && (
         <View testID="bail-search-empty" style={styles.emptyState}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>🔍</Text>
+          <AppIcon name="search-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>No bail agents found here.</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.emptyHint}>Try a nearby city:</Text>
           <View style={styles.nearbyCities}>

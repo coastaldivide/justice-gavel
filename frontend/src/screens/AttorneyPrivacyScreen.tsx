@@ -1,3 +1,5 @@
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,

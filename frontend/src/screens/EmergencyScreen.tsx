@@ -1,3 +1,4 @@
+import { AppIcon } from '../components/AppIcon';
 /**
  * EmergencyScreen -- SOS alert + quick actions + rights cards
  * Designed for panicked, possibly impaired users.

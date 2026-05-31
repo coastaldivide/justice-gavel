@@ -18,7 +18,7 @@ import { validate, schemas } from '../middleware/validate.js';
  *   Body: { displayName?, phone?, email? }
  */
 
-import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, withTransaction} from '../utils/routeHelpers.js';
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
 import bcrypt from 'bcryptjs';
@@ -687,6 +687,42 @@ router.get('/disclaimer/status', authRequired, async (req, res) => {
   const { checkDisclaimerStatus } = await import('../middleware/disclaimer.js');
   const status = await checkDisclaimerStatus(req.user.id);
   res.json(status);
+});
+
+
+// GET /api/auth/data/export — GDPR/CCPA data portability
+// Returns all user data as a downloadable JSON
+router.get('/data/export', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const userId = req.user.id;
+
+    const [user, cases, checkins, messages, subscriptions, auditLog] = await Promise.all([
+      db.get('SELECT id, display_name, email, role, created_at FROM users WHERE id=?', [userId]),
+      db.all('SELECT * FROM cases WHERE user_id=? AND deleted_at IS NULL', [userId]),
+      db.all('SELECT * FROM checkins WHERE user_id=? LIMIT 500', [userId]),
+      db.all('SELECT role, content, created_at FROM chat_messages WHERE user_id=? LIMIT 1000', [userId]),
+      db.all('SELECT tier, status, created_at FROM subscriptions WHERE user_id=?', [userId]),
+      db.all('SELECT action, entity_type, created_at FROM audit_log WHERE user_id=? LIMIT 200', [userId]),
+    ]).catch(() => [null, [], [], [], [], []]);
+
+    await audit('compliance.data_export_requested', { userId, req });
+
+    res.json({
+      export_date:   new Date().toISOString(),
+      format:        'json',
+      version:       '1.0',
+      user,
+      cases,
+      checkins,
+      chat_messages: messages,
+      subscriptions,
+      audit_log:     auditLog,
+      disclaimer:    'This export contains all personal data associated with your account. Handle securely.',
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Export failed.' });
+  }
 });
 
 export default router;

@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -169,7 +172,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
-      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 48, marginBottom: 12 }}>📋</Text>
+      <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
       <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20, ...FONTS.black, color: COLORS.navy, textAlign: 'center', marginBottom: 8 }}>
         Check-In Link Required
       </Text>
@@ -207,7 +210,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
   // ── Error ──────────────────────────────────────────────────────────────────
   if (phase === 'error') return (
     <View style={styles.center}>
-      <Text testID="checkin-error-message" maxFontSizeMultiplier={1.4} style={styles.errorIcon}>⚠️</Text>
+      <AppIcon name="warning-outline" size={20} color="#E65100" />
       <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Check-in unavailable</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={loadStatus}

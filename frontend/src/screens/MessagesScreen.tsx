@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * LegalResearchScreen -- AI Legal Research ($49/mo)
  *
@@ -284,7 +287,7 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
         backgroundColor: COLORS.bgSubtle,
         borderColor: COLORS.navy + '33'
       }]}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.paywallIcon}>⚖️</Text>
+        <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.paywallTitle, { color: COLORS.textPrimary }]}>
           AI Legal Research
         </Text>
@@ -636,7 +639,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
             style={[styles.histRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
             accessibilityLabel="\u2696\ufe0f" onPress={() => loadSession(sess)}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.histIcon}>⚖️</Text>
+            <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.histTitle, { color: colors.textPrimary }]}
                 numberOfLines={2}>{sess.title}</Text>

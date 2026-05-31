@@ -1,3 +1,7 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * PaymentsScreen -- Seamless, context-aware payment flow
  *
@@ -328,7 +332,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
                 disabled={generatingReceipt}
                 accessibilityLabel="Download payment receipt"
               >
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12 }}>📄</Text>
+                <AppIcon name="document-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
                   color:colors.blue, fontWeight:'600' }}>
                   {generatingReceipt ? 'Generating…' : 'Download Receipt'}

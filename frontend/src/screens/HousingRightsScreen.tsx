@@ -1,3 +1,4 @@
+import { AppIcon } from '../components/AppIcon';
 /**
  * HousingRightsScreen -- Housing Rights & Criminal Record
  *
@@ -116,7 +117,7 @@ export default function HousingRightsScreen(): React.JSX.Element {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <Text style={{ fontSize: 32 }}>🏠</Text>
+        <AppIcon name="home-outline" size={20} color={COLORS.navy} />
         <Text style={[styles.headerTitle, { color: colors.bgCard }]}>Housing Rights</Text>
         <Text style={[styles.headerSub, { color: colors.steel }]}>Tenant rights & evictions</Text>
       </View>

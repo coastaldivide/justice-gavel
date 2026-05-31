@@ -1,3 +1,6 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
 import React, { useState, useEffect, useCallback } from 'react';
 import {View, Text, FlatList, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView} from 'react-native';
@@ -188,7 +191,7 @@ export default function CourtLocatorScreen(): React.JSX.Element {
             >
               {/* Header */}
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>🏛️</Text>
+                <AppIcon name="business-outline" size={20} color={COLORS.navy} />
                 <View style={{ flex: 1 }}>
                   <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontWeight: '700', fontSize: 14, lineHeight: 20 }}>
                     {item.name}
@@ -231,7 +234,7 @@ export default function CourtLocatorScreen(): React.JSX.Element {
                       accessibilityRole="button"
                       onPress={() => openPhone(item.phone)}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>📞</Text>
+                      <AppIcon name="call-outline" size={20} color="#1B5E20" />
                       <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>
                         {item.phone}
                       </Text>

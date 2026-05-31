@@ -1,3 +1,4 @@
+import { HapticButton } from '../components/HapticButton';
 import { AppIcon, ICONS } from '../components/AppIcon';
 import { GradientHeader } from '../components/GradientHeader';
 import EmergencyStrip from '../components/EmergencyStrip';
@@ -216,7 +217,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
             accessibilityLabel="\u2699\ufe0f" onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             style={styles.settingsBtn}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.settingsIcon}>⚙️</Text>
+            <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
           </TouchableOpacity>
         </View>
       </View>
@@ -285,7 +286,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
           activeOpacity={0.85}
         >
           <View style={styles.emergencyIconWrap}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.emergencyIcon}>🚨</Text>
+            <AppIcon name="flash" size={20} color={COLORS.emergency} />
           </View>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={styles.emergencyTitle}>Emergency Screen</Text>
@@ -415,7 +416,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             activeOpacity={0.85}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.nudgeIcon}>👤</Text>
+            <AppIcon name="person-outline" size={20} color={COLORS.navy} />
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={styles.nudgeTitle}>Create a free account</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.nudgeSub}>Save cases, send SOS alerts, get notifications</Text>

@@ -1,3 +1,7 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import { EmptyState } from '../components/EmptyState';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -84,7 +88,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                   }}
                   accessibilityLabel="Set court date reminder"
                 >
-                  <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11 }}>🔔</Text>
+                  <AppIcon name="notifications-outline" size={20} color={COLORS.navy} />
                   <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, lineHeight:16,
                     color:COLORS.navy, fontWeight:'600' }}>Remind me</Text>
                 </TouchableOpacity>
@@ -1063,7 +1067,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             accessibilityLabel="Discuss case with AI"
           >
             <View style={[styles.toolCardIcon, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>⚖️</Text>
+              <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
             </View>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: COLORS.bgCard }]}>
@@ -1085,7 +1089,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               caseTitle: cases[0]?.title})}
           >
             <View style={[styles.toolCardIcon, { backgroundColor: '#EF5350' + '18' }]}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>📄</Text>
+              <AppIcon name="document-outline" size={20} color={COLORS.navy} />
             </View>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: COLORS.bg }]}>
@@ -1107,7 +1111,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               caseTitle: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
           >
             <View style={[styles.toolCardIcon, { backgroundColor: colors.blue + '18' }]}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>🔍</Text>
+              <AppIcon name="search-outline" size={20} color={COLORS.navy} />
             </View>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: COLORS.bg }]}>
@@ -1128,7 +1132,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               caseContext: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
           >
             <View style={[styles.toolCardIcon, { backgroundColor: colors.legal + '18' }]}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>⚖️</Text>
+              <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
             </View>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: COLORS.bg }]}>

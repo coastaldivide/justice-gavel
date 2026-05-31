@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 /**
@@ -152,7 +155,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
   if (step === 'confirmed') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.confirmedWrap}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.confirmedEmoji}>✅</Text>
+        <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>Consultation booked!</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedSub, { color: colors.textSecond }]}>
           {selDay.label} at {selTime} · {duration.label}
@@ -188,7 +191,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
   if (step === 'callback_sent') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.confirmedWrap}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.confirmedEmoji}>📞</Text>
+        <AppIcon name="call-outline" size={20} color="#1B5E20" />
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>Callback requested</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedSub, { color: colors.textSecond }]}>
           {lawyerName || 'The attorney'} will call you at {callbackPhone} to schedule a time.

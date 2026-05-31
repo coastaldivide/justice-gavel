@@ -1,3 +1,4 @@
+import { AppIcon } from '../components/AppIcon';
 import { GradientHeader } from '../components/GradientHeader';
 /**
  * CrisisResourcesScreen -- Mental health & crisis resources
@@ -154,7 +155,7 @@ export default function CrisisResourcesScreen({ route, navigation }: ScreenProps
         accessibilityLabel="Call 988 Suicide and Crisis Lifeline"
         accessibilityHint="Opens your phone to call the free 24/7 crisis line"
       >
-        <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnIcon}>📞</Text>
+        <AppIcon name="call-outline" size={20} color="#1B5E20" />
         <View style={styles.primaryBtnText}>
           <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnTitle}>{t('crisis_988_label')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnSub}>
@@ -196,7 +197,7 @@ export default function CrisisResourcesScreen({ route, navigation }: ScreenProps
           accessibilityHint={line.forWhom}
         >
           <View style={[styles.lineDot, { backgroundColor: line.bg }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.lineDotText, { color: line.color }]}>📞</Text>
+            <AppIcon name="call-outline" size={20} color="#1B5E20" />
           </View>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.lineName, { color: colors.textPrimary }]}>{line.name}</Text>
@@ -219,7 +220,7 @@ export default function CrisisResourcesScreen({ route, navigation }: ScreenProps
           style={[styles.legalBtn, { backgroundColor: COLORS.navy }]}
           accessibilityLabel="\u2696\ufe0f" onPress={() => navigation.navigate('LawyersTab')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnIcon}>⚖️</Text>
+          <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnText}>Find a Lawyer</Text>
         </TouchableOpacity>
         <TouchableOpacity

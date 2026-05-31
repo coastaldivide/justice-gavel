@@ -1,3 +1,4 @@
+import { AppIcon } from '../components/AppIcon';
 /**
  * MentalHealthDiversionScreen -- Mental Health & Criminal Justice Intersection
  *

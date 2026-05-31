@@ -1,3 +1,6 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { HapticButton } from '../components/HapticButton';
+import { AppIcon } from '../components/AppIcon';
 /**
  * LawyerProfileScreen -- Full attorney profile
  *
@@ -213,7 +216,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
           justifyContent:'center' }}>
           {lawyer.source && lawyer.source !== 'seed' && (
             <View style={[s.badge, { backgroundColor: colors.infoBg, flexDirection:'row', alignItems:'center', gap:4 }]}>
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize:10 }}>🔍</Text>
+              <AppIcon name="search-outline" size={20} color={COLORS.navy} />
               <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.blue }]}>Google Verified</Text>
             </View>
           )}

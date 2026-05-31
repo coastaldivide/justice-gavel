@@ -1,3 +1,5 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
 import type {} from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
@@ -218,7 +220,7 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
                         accessibilityLabel="HOW TO GET IN"
                         onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => {})}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>📞</Text>
+                        <AppIcon name="call-outline" size={20} color="#1B5E20" />
                         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontSize: 13,
                           fontWeight: '600' }}>{item.phone}</Text>
                       </TouchableOpacity>

@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 import { MotionTypeBadge } from '../components/MotionTypeBadge';
 import Analytics from '../services/analytics';
@@ -272,7 +275,7 @@ function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPE
                 disabled={reviewing}
                 accessibilityLabel="Run AI review of this motion draft"
               >
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>🔍</Text>
+                <AppIcon name="search-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
                   fontWeight:'700', color:COLORS.textPrimary }}>
                   {reviewing ? 'Reviewing…' : 'AI Review Draft'}
@@ -1164,7 +1167,7 @@ const loadHistory = useCallback(async () => {
         : history.length === 0
         ? (
           <View style={styles.centreWrap}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 40, marginBottom: 12 }}>📄</Text>
+            <AppIcon name="document-outline" size={20} color={COLORS.navy} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.generatingLabel, { color: colors.textPrimary }]}>No motions yet</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.generatingSub, { color: colors.textMuted }]}>
               Generate your first motion from the library.

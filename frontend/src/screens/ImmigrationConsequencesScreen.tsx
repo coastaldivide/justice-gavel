@@ -1,3 +1,4 @@
+import { AppIcon } from '../components/AppIcon';
 /**
  * ImmigrationConsequencesScreen -- Criminal Record & Immigration Consequences
  *
@@ -126,7 +127,7 @@ export default function ImmigrationConsequencesScreen(): React.JSX.Element {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <Text style={{ fontSize: 32 }}>🌍</Text>
+        <AppIcon name="globe-outline" size={20} color={COLORS.navy} />
         <Text style={[styles.headerTitle, { color: colors.bgCard }]}>Immigration & Charges</Text>
         <Text style={[styles.headerSub, { color: colors.steel }]}>Consequences of convictions</Text>
       </View>

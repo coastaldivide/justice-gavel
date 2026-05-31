@@ -1,3 +1,5 @@
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * WhatHappensNextScreen -- t("whn_title") animated legal process walkthrough
  *
@@ -286,7 +288,7 @@ function StepCard({ step, color, isActive, onPress }: {
             }}
             accessibilityLabel="Set a reminder for this step"
           >
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12 }}>🔔</Text>
+            <AppIcon name="notifications-outline" size={20} color={COLORS.navy} />
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
               fontWeight:'600', color }}>
               Remind me tomorrow
@@ -510,7 +512,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
           style={styles.ctaCard}
           onPress={() => navigation.navigate('MoreTab', { screen: 'HelpNow' })}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.ctaIcon}>🚨</Text>
+          <AppIcon name="flash" size={20} color={COLORS.emergency} />
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaLabel}>HELP NOW</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaSub}>Bail + Lawyer</Text>
         </TouchableOpacity>

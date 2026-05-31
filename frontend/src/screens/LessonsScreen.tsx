@@ -1,3 +1,5 @@
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, FlatList, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';

@@ -1,3 +1,7 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * PILeadScreen -- Personal Injury & Civil Rights Lead Submission
  *
@@ -90,7 +94,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
   if (step === 'submitted') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.successWrap}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.successEmoji}>✅</Text>
+        <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
         <Text maxFontSizeMultiplier={1.4} style={[styles.successTitle, { color: colors.textPrimary }]}>Your case is in review</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.successSub, { color: colors.textSecond }]}>
           Attorneys in your area will review your case. When one accepts, you'll get their contact info -- at no cost to you. Attorneys pay a referral fee, not you.
@@ -268,7 +272,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
       {/* Empty state */}
       {data?.length === 0 && (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>📋</Text>
+          <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No civil leads available</Text>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection or broaden your search criteria.</Text>
         </View>

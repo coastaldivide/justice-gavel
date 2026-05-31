@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -80,7 +83,7 @@ export default function ContactsScreen(): React.JSX.Element {
 
       <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>Your name (shown in alerts)</Text>
       <View style={[styles.inputWrap, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.inputIcon}>👤</Text>
+        <AppIcon name="person-outline" size={20} color={COLORS.navy} />
         <TextInput
           style={[styles.input, { color: colors.textPrimary }]}
           placeholder="e.g. Jamie Smith"

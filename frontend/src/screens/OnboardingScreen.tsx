@@ -1,3 +1,5 @@
+import { HapticButton } from '../components/HapticButton';
+import { AppIcon } from '../components/AppIcon';
 /**
  * OnboardingScreen -- First-time user intro
  *

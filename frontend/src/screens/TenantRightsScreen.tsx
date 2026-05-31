@@ -1,3 +1,4 @@
+import { AppIcon } from '../components/AppIcon';
 /**
  * TenantRightsScreen -- Eviction emergency + tenant rights
  *

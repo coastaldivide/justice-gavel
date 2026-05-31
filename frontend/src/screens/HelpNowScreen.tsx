@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * HelpNowScreen -- Emergency bypass screen
  *
@@ -58,7 +61,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
             paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:911').catch(() => {})}
         >
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>🚨</Text>
+          <AppIcon name="flash" size={20} color={COLORS.emergency} />
           <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '900', fontSize: 14, color: COLORS.emergency }}>CALL 911</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -315,7 +318,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
   if (phase === 'error') {
     return (
       <View style={styles.loadingScreen}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.errorIcon}>⚠️</Text>
+        <AppIcon name="warning-outline" size={20} color="#E65100" />
         <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{errorMsg}</Text>
         <TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={fetchBoth}
           accessibilityLabel="Try Again"
@@ -382,7 +385,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
         {/* No results state -- both null, no providers in area */}
         {!bail && !lawyer && (
           <View style={styles.noResultsWrap}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.noResultsIcon}>🔍</Text>
+            <AppIcon name="search-outline" size={20} color={COLORS.navy} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.noResultsText, { fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 16 }]}>
               No local contacts found
             </Text>
@@ -540,7 +543,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
             onPress={() => navigation.navigate('MoreTab', { screen: 'Bail' })}
           activeOpacity={0.85}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.moreBtnIcon}>💰</Text>
+            <AppIcon name="cash-outline" size={20} color="#1B5E20" />
             <Text maxFontSizeMultiplier={1.4} style={styles.moreBtnText}>{t('help_now_more_bail').split('\n')[0]}Bail Agents</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -550,7 +553,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
             onPress={() => navigation.navigate('LawyersTab')}
               activeOpacity={0.85}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.moreBtnIcon}>⚖️</Text>
+            <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
             <Text maxFontSizeMultiplier={1.4} style={styles.moreBtnText}>{t('help_now_more_bail').split('\n')[0]}Bail Agents</Text>
           </TouchableOpacity>
           <TouchableOpacity

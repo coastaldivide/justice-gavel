@@ -1,3 +1,7 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 import LegalNotice from '../components/LegalNotice';
 /**
@@ -186,7 +190,7 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
               paddingHorizontal: 14, paddingVertical: 10, alignSelf: 'flex-start' }}
             accessibilityLabel="Set a reminder for your eligibility date"
           >
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14 }}>🔔</Text>
+            <AppIcon name="notifications-outline" size={20} color={COLORS.navy} />
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 19,
               fontWeight: '700', color: COLORS.bgCard }}>
               Remind me
@@ -358,7 +362,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
 
       <View style={styles.hero}>
 
-              <Text maxFontSizeMultiplier={1.4} style={styles.heroEmoji}>📋</Text>
+              <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
         <Text maxFontSizeMultiplier={1.4} style={styles.heroTitle}>Could your record be cleared?</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.heroSub}>
           Millions of Americans are eligible to seal or expunge their arrest records --
@@ -529,7 +533,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
                 disabled={genPetition}
                 accessibilityLabel="Generate expungement petition draft"
               >
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>📋</Text>
+                <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, fontWeight: '700',
                   fontSize: 14, lineHeight: 21 }}>
                   {genPetition ? 'Generating…' : 'Generate Petition Draft'}

@@ -1,3 +1,4 @@
+import { AppIcon } from '../components/AppIcon';
 /**
  * JuvenileJusticeScreen -- Juvenile Justice Rights & Navigation
  *
@@ -214,7 +215,7 @@ export default function JuvenileJusticeScreen(): React.JSX.Element {
 </View>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 32 }}>⚖️</Text>
+        <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.bgCard }]}>Juvenile Justice</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>Rights in the juvenile system</Text>
       </View>

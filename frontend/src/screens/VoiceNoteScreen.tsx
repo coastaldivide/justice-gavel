@@ -1,3 +1,5 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
 /**
  * VoiceNoteScreen -- Voice-to-structured case note
  *

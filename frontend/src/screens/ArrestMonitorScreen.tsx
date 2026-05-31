@@ -1,3 +1,7 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform, RefreshControl} from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 import { useNavigation } from '@react-navigation/native';
@@ -127,7 +131,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
       <View style={[styles.screen, { backgroundColor: colors.bg }]}
         testID="arrest-monitor-screen">
         <View style={styles.upsellCard}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.upsellIcon}>🔔</Text>
+          <AppIcon name="notifications-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.4} style={styles.upsellTitle}>Arrest Monitoring</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.upsellBody}>
             Get an instant alert the moment someone you care about is booked into any jail in the US.{'\n\n'}

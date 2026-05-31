@@ -1,3 +1,6 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, RefreshControl} from 'react-native';
@@ -156,7 +159,7 @@ export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.
       {/* Empty state */}
       {data?.length === 0 && (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>🛡️</Text>
+          <AppIcon name="shield-checkmark-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No insurance information available</Text>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection and try again.</Text>
         </View>

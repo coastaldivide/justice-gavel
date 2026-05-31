@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 import { t } from '../i18n';
@@ -229,7 +232,7 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
 
             <View style={styles.priceRow}>
               <View style={[styles.priceIcon, { backgroundColor: colors.bailBg }]}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.priceIconText}>💰</Text>
+                <AppIcon name="cash-outline" size={20} color="#1B5E20" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.priceItemLabel}>1 Bail Bondsman</Text>
@@ -242,7 +245,7 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
 
             <View style={styles.priceRow}>
               <View style={[styles.priceIcon, { backgroundColor: colors.legalBg }]}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.priceIconText}>⚖️</Text>
+                <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.priceItemLabel}>1 Criminal Defense Lawyer</Text>
@@ -383,7 +386,7 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
 
       {/* Success header */}
       <View style={[styles.header, styles.headerSuccess]}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.successIcon}>✅</Text>
+        <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
         <Text maxFontSizeMultiplier={1.4} style={styles.heading}>You're connected!</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
           {result.mock ? 'Demo mode -- no real charge' : `${result.charged} charged`}

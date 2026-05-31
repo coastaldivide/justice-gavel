@@ -1,3 +1,5 @@
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * DiversionScreen -- Diversion program eligibility checker
  *
@@ -426,7 +428,7 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
       {/* Empty state */}
       {data?.length === 0 && (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>⚖️</Text>
+          <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No diversion programs found</Text>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Diversion programs vary by county. Contact your attorney or the court clerk.</Text>
         </View>

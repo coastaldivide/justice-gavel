@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import { CaseStatusBadge } from '../components/CaseStatusBadge';
 /**
  * CaseTimelineScreen -- Chronological view of a case's events
@@ -358,7 +361,7 @@ export default function CaseTimelineScreen({ navigation, route }: ScreenProps): 
         ListEmptyComponent={
           !loading ? (
             <View style={s.empty}>
-              <Text maxFontSizeMultiplier={1.4} style={[s.emptyIcon]}>📋</Text>
+              <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
               <Text maxFontSizeMultiplier={1.4} style={[s.emptyTitle, { color: colors.textPrimary }]}>
                 No events yet
               </Text>

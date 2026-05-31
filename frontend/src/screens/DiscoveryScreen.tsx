@@ -1,3 +1,5 @@
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * DiscoveryScreen -- AI Discovery Document Analysis
  *
@@ -180,7 +182,7 @@ function HistoryRow({ item, onOpen, onDelete }: any) {
       onPress={() => onOpen(item)}
     >
       <View style={[styles.histDocIcon, { backgroundColor: COLORS.bgSubtle }]}>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>📄</Text>
+        <AppIcon name="document-outline" size={20} color={COLORS.navy} />
       </View>
       <View style={{ flex: 1 }}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.histFilename, { color: COLORS.textPrimary }]}
@@ -580,7 +582,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
   if (phase === 'analyzing') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.analyzingWrap}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.analyzingEmoji}>🔍</Text>
+        <AppIcon name="search-outline" size={20} color={COLORS.navy} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.analyzingTitle, { color: colors.textPrimary }]}>
           Analyzing document…
         </Text>
@@ -609,7 +611,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
         : history.length === 0
         ? (
           <View style={styles.emptyWrap}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 40, marginBottom: 12 }}>📄</Text>
+            <AppIcon name="document-outline" size={20} color={COLORS.navy} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No analyses yet</Text>
             <TouchableOpacity
   accessibilityRole="button"

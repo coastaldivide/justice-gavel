@@ -1,3 +1,7 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView} from 'react-native';
@@ -464,7 +468,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" style={styles.profileBtn} accessibilityLabel="\u2699\ufe0f" onPress={() => setShowProfile(true)}
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.profileBtnText}>⚙️</Text>
+            <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
           </TouchableOpacity>
         </View>
       </View>
@@ -585,7 +589,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadLeads(true)} />}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>📋</Text>
+              <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>{statusMsg || 'No leads right now.'}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyHint}>Pull to refresh or change time filter above.</Text>
               {!statusMsg && (

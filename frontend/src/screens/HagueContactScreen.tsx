@@ -1,3 +1,5 @@
+import { HapticButton } from '../components/HapticButton';
+import { AppIcon } from '../components/AppIcon';
 /**
  * HagueContactScreen.tsx — Hague Convention Central Authority Contact
  *
@@ -160,7 +162,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
       <ScrollView keyboardShouldPersistTaps='handled' style={s.container} contentContainerStyle={s.content}
         testID="hague-contact-screen">
         <View style={s.successBanner}>
-          <Text maxFontSizeMultiplier={1.4} style={s.successIcon}>✅</Text>
+          <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
           <Text maxFontSizeMultiplier={1.4} style={s.successTitle}>Intake Recorded</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.successSub}>Attached to your case for tracking</Text>
         </View>
@@ -423,7 +425,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           onPress={() => openUrl('https://travel.state.gov/content/travel/en/International-Parental-Child-Abduction/prevention/hague-convention.html')}
           accessibilityLabel="Open State Department Hague application"
         >
-          <Text maxFontSizeMultiplier={1.4} style={s.reportIcon}>📋</Text>
+          <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
           <View style={s.reportInfo}>
             <Text maxFontSizeMultiplier={1.4} style={s.reportTitle}>File Hague Application</Text>
             <Text maxFontSizeMultiplier={1.4} style={s.reportSub}>Submit to OCI — travel.state.gov</Text>

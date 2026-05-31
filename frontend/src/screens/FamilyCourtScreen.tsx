@@ -1,3 +1,4 @@
+import { AppIcon } from '../components/AppIcon';
 /**
  * FamilyCourtScreen -- Family Court Navigation Guide
  *
@@ -150,7 +151,7 @@ export default function FamilyCourtScreen(): React.JSX.Element {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 32 }}>⚖️</Text>
+        <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.bgCard }]}>Family Court</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>Custody, support & orders</Text>
       </View>

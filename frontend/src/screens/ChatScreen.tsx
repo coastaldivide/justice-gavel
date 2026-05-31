@@ -1,3 +1,7 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * ChatScreen — Full conversation UI wired to Claude backend
@@ -769,7 +773,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
       {/* Messages or empty state */}
       {isEmpty ? (
         <View style={styles.emptyState}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>⚖️</Text>
+          <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>Know your rights</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>
             Ask anything about your legal situation. I'm here to help.

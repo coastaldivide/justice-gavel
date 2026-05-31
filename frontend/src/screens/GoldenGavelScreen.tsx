@@ -1,3 +1,4 @@
+import { AppIcon } from '../components/AppIcon';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useRef } from 'react';

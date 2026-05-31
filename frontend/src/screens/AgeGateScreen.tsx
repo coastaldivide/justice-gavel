@@ -1,3 +1,5 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
 /**
  * AgeGateScreen -- Year-of-birth age verification
  *

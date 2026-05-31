@@ -1,3 +1,7 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * MatchScreen -- AI-powered lawyer matching with GPS location + full contact actions
  *
@@ -171,7 +175,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
             <View style={[styles.msgSheet, { backgroundColor: COLORS.bgCard }]}>
               {msgSent ? (
                 <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                  <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 40, marginBottom: 10 }}>✅</Text>
+                  <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
                   <Text maxFontSizeMultiplier={1.4} style={[styles.msgSheetTitle, { color: COLORS.textPrimary }]}>Message sent</Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.msgSheetSub, { color: COLORS.textSecond }]}>
                     {item?.name} will contact you shortly.

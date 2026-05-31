@@ -1,3 +1,5 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
 /**
  * RecoveryAgentsScreen
@@ -378,7 +380,7 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
         </View>
       ) : searched && agents.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyIcon}>🔍</Text>
+          <AppIcon name="search-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.3} style={[styles.emptyText,
             { color: colors.textMuted }]}>
             No licensed recovery agents found in {selectedState}.{'\n'}

@@ -2,7 +2,7 @@
  * attorney/verification.js — Bar verification submit + admin approve
  */
 import { err400, err401, err403, err404, err409, err422, err500, err502,
-         safeInt, sanitizeStr, validateEmail } from '../../utils/routeHelpers.js';
+         safeInt, sanitizeStr, validateEmail, withTransaction} from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';

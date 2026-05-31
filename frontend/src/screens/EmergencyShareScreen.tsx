@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * EmergencyShareScreen -- One-tap emergency share
  *
@@ -344,7 +347,7 @@ if (phase === 'ready') return (
           accessibilityLabel="Call or text 988 Suicide and Crisis Lifeline"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.bgSubtle }]}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>📞</Text>
+            <AppIcon name="call-outline" size={20} color="#1B5E20" />
           </View>
           <View style={styles.crisisInfo}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>988 Suicide & Crisis Lifeline</Text>
@@ -405,7 +408,7 @@ if (phase === 'ready') return (
           accessibilityLabel="National Domestic Violence Hotline"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.emergencyBg }]}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>🛡️</Text>
+            <AppIcon name="shield-checkmark-outline" size={20} color={COLORS.navy} />
           </View>
           <View style={styles.crisisInfo}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>National Domestic Violence Hotline</Text>
@@ -434,7 +437,7 @@ if (phase === 'ready') return (
   // ── Error ──────────────────────────────────────────────────────────────────
   if (phase === 'error') return (
     <View style={styles.center}>
-      <Text maxFontSizeMultiplier={1.4} style={styles.errorIcon}>⚠️</Text>
+      <AppIcon name="warning-outline" size={20} color="#E65100" />
       <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Could not send</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity

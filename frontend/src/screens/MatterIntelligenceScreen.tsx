@@ -1,3 +1,5 @@
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { AppIcon } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * MatterIntelligenceScreen — All 40 simulation signals surfaced as live matter intelligence
@@ -224,7 +226,7 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         {NEGATIVE_INDICATOR_TYPES.has(ind.type) && (
-                          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: 12 }}>⚠️</Text>
+                          <AppIcon name="warning-outline" size={20} color="#E65100" />
                         )}
                         <Text maxFontSizeMultiplier={1.4} style={s.indLabel}>{ind.label}</Text>
                       </View>

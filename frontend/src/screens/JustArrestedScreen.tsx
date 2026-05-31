@@ -1,3 +1,4 @@
+import { AppIcon } from '../components/AppIcon';
 /**
  * JustArrestedScreen -- Step-by-step arrest guide
  * For panicked, possibly impaired users.
@@ -167,7 +168,7 @@ export default function JustArrestedScreen({ navigation }: ScreenProps): React.J
             activeOpacity={0.85}
             accessibilityLabel="Call 911 emergency services"
           >
-            <Text maxFontSizeMultiplier={1.4} style={styles.emergencyIcon}>🚨</Text>
+            <AppIcon name="flash" size={20} color={COLORS.emergency} />
             <Text maxFontSizeMultiplier={1.2} style={styles.emergencyLabel}>CALL 911</Text>
           </TouchableOpacity>
           <TouchableOpacity

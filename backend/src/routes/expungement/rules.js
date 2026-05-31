@@ -528,6 +528,24 @@ function classifyCharge(chargeText = '') {
   if (/carjacking/.test(lower)) return 'felony';
   if (/extortion|blackmail/.test(lower)) return 'felony';
   if (/hate crime/.test(lower)) return 'felony';
+
+  // ── Additional state-specific felonies ─────────────────────────────────────
+  if (/grand jury.*obstruct|perjury.*federal|subornation/i.test(lower)) return 'felony';
+  if (/human trafficking|sex trafficking|labor trafficking/.test(lower)) return 'felony';
+  if (/child pornography|child.*sexual.*material|CSAM/.test(lower)) return 'sexual';
+  if (/stalking.*felony|aggravated.*stalking/.test(lower)) return 'felony';
+  if (/terroris|weapon.*mass|WMD|biological.*weapon/.test(lower)) return 'felony';
+  if (/elder abuse.*felony|financial.*elder/.test(lower)) return 'felony';
+  if (/gang enhancement|street gang|criminal street gang/.test(lower)) return 'felony';
+  if (/cartel|narco.*trafficking|fentanyl.*distribution/.test(lower)) return 'felony';
+  if (/revenge porn|nonconsensual.*intimate|intimate.*image/.test(lower)) return 'felony';
+  if (/deepfake.*nonconsensual|synthetic.*intimate/.test(lower)) return 'felony';
+  if (/AI.*fraud|synthetic.*identity.*federal/.test(lower)) return 'felony';
+  if (/crypto.*fraud|NFT.*fraud|blockchain.*fraud/.test(lower)) return 'felony';
+  if (/ransomware|cyberextortion/.test(lower)) return 'felony';
+  if (/public official.*bribe|quid.*pro.*quo.*official/.test(lower)) return 'felony';
+  if (/espionage|18 u\.s\.c.*794|national security/.test(lower)) return 'felony';
+
   return 'misdemeanor';
 }
 

@@ -1,3 +1,5 @@
+import { HapticButton } from '../components/HapticButton';
+import { AppIcon } from '../components/AppIcon';
 /**
  * CourtFormsScreen.tsx
  *
@@ -441,7 +443,7 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
             onPress={loadAiGuide}
             accessibilityLabel="Get AI field guide"
           >
-            <Text maxFontSizeMultiplier={1.4} style={s.aiGuideBtnIcon}>🤖</Text>
+            <AppIcon name="hardware-chip-outline" size={20} color={COLORS.navy} />
             <View style={s.aiGuideBtnInfo}>
               <Text maxFontSizeMultiplier={1.4} style={s.aiGuideBtnTitle}>
                 AI Field Guide -- What Each Section Asks For

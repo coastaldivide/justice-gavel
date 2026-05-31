@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * FamilyConnectScreen -- $28.99 one-tap emergency connection
  *
@@ -406,7 +409,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
           ) : result ? (
             <>
               <View style={styles.successBanner}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.successIcon}>✅</Text>
+                <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
                 <Text maxFontSizeMultiplier={1.4} style={styles.successTitle}>You're connected!</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.successSub}>
                   Call any of the contacts below right now. They are expecting calls.

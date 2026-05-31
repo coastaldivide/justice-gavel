@@ -1,3 +1,6 @@
+import { HapticButton } from '../components/HapticButton';
+import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 /**
  * AttorneyDashboardScreen -- Practice Management Hub
  *
@@ -512,7 +515,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
 
             {templates.length === 0 ? (
               <View style={[styles.emptyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-                <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>📋</Text>
+                <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No templates yet</Text>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBody, { color: colors.textSecond }]}>
                   Generate a motion in the Motion Library, then save it as an office template for your colleagues to use.
@@ -634,7 +637,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
         {/* ── PROFILE ──────────────────────────────────────────────────── */}
         {tab === 'profile' && !profile && !loading && (
           <View style={[styles.emptyCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>👤</Text>
+            <AppIcon name="person-outline" size={20} color={COLORS.navy} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>Profile not loaded</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBody, { color: colors.textSecond }]}>Pull to refresh or check your connection.</Text>
           </View>
