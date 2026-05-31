@@ -89,6 +89,8 @@ import MatterIntelligenceScreen from '../screens/MatterIntelligenceScreen';
 import { Analytics } from '../services/analytics';
 import HagueContactScreen from '../screens/HagueContactScreen';
 import AgeGateScreen            from '../screens/AgeGateScreen';
+import AttorneyPrivacyScreen from '../screens/AttorneyPrivacyScreen';
+import ChildSupportScreen from '../screens/ChildSupportScreen';
 
 declare var navigationRef: any; // hoisted from component scope
 // ── Deep link configuration ────────────────────────────────────────────────────
@@ -294,6 +296,8 @@ function GuestNavigator() {
       <GuestStack.Screen name="Onboarding" component={OnboardingScreen} />
       <GuestStack.Screen name="Login"      component={LoginScreen} />
       <GuestStack.Screen name="Register"   component={RegisterScreen} options={{ headerShown: true, title: 'Create Account', ...HDR }} />
+      <GuestStack.Screen name="AttorneyPrivacy" component={AttorneyPrivacyScreen} />
+      <GuestStack.Screen name="ChildSupport" component={ChildSupportScreen} />
     </GuestStack.Navigator>
     </ErrorBoundary>
   );
@@ -337,3 +341,5 @@ export function trackScreenChange(state: Record<string, unknown> | undefined) {
     Analytics.track('screen_view', { screen: route.name } as any);
   }
 }
+      <GuestStack.Screen name="ChildSupport" component={ChildSupportScreen} options={{ headerShown: false }} />
+

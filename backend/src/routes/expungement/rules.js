@@ -495,9 +495,9 @@ function classifyCharge(chargeText = '') {
   if (/domestic|intimate partner|family violence/.test(lower)) return 'domestic';
   // Sexual offenses
   if (/sex offense|sexual batt|sexual conduct|sexual assault|rape|molest|indecent|indecency|lewd|child abuse|child sex|child exploit/.test(lower)) return 'sexual';
-  // Explicit felony classifications and serious violent crimes that are
-  // always felonies regardless of how they're described in a charge sheet
+  // Explicit felony classifications
   if (/felony|felonious|class [a-f] felony|felon in possess/.test(lower)) return 'felony';
+  // Violent crimes — always felony
   if (/murder|manslaughter|homicide|killing/.test(lower)) return 'felony';
   if (/robbery/.test(lower)) return 'felony';
   if (/burglary|breaking and enter/.test(lower)) return 'felony';
@@ -507,9 +507,23 @@ function classifyCharge(chargeText = '') {
   if (/arson/.test(lower)) return 'felony';
   if (/witness tamper|tamper.*witness|obstruct.*justice/.test(lower)) return 'felony';
   if (/trafficking|distribution.*drug|manufacture.*drug/.test(lower)) return 'felony';
-  // Property crimes that are always felonies at the dollar thresholds typically charged
+  // ── Federal white-collar crimes ── always felony under federal statute ────
+  // These were previously falling through to misdemeanor — corrected per firm feedback
+  if (/tax evasion|tax fraud|tax.{0,10}26 u\.s\.c\.|internal revenue/.test(lower)) return 'felony';
+  if (/money launder|launder.*proceed|smurfing/.test(lower)) return 'felony';
+  if (/rico|racketeer|continuing criminal enterprise|\bcce\b|\b21 u\.s\.c.*848/.test(lower)) return 'felony';
+  if (/bank fraud|mortgage fraud|loan fraud|insurance fraud.*federal/.test(lower)) return 'felony';
+  if (/identity theft|\b18 u\.s\.c.*1028/.test(lower)) return 'felony';
+  if (/conspiracy.*defraud|mail fraud|wire fraud|\b18 u\.s\.c.*134[3-4]/.test(lower)) return 'felony';
+  if (/bribery|kickback|honest services|\b18 u\.s\.c.*666/.test(lower)) return 'felony';
+  if (/securities fraud|insider trading|\b15 u\.s\.c|\bsec\b.*fraud/.test(lower)) return 'felony';
+  if (/computer fraud|cfaa|\b18 u\.s\.c.*1030/.test(lower)) return 'felony';
+  if (/healthcare fraud|medicare fraud|medicaid fraud/.test(lower)) return 'felony';
+  if (/drug trafficking|federal.*drug|\b21 u\.s\.c.*841/.test(lower)) return 'felony';
+  if (/counterfeiting|forgery.*federal|currency/.test(lower)) return 'felony';
+  // Property crimes at felony thresholds
   if (/grand theft|grand larceny|grand auto/.test(lower)) return 'felony';
-  if (/embezzlement|wire fraud|mail fraud/.test(lower)) return 'felony';
+  if (/embezzlement/.test(lower)) return 'felony';
   if (/carjacking/.test(lower)) return 'felony';
   if (/extortion|blackmail/.test(lower)) return 'felony';
   if (/hate crime/.test(lower)) return 'felony';
