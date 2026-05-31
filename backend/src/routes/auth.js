@@ -1,3 +1,4 @@
+import { audit, AUDIT_ACTIONS } from '../utils/audit.js';
 import { auditLog } from '../utils/auditLog.js';
 import { validate, schemas } from '../middleware/validate.js';
 /**
@@ -668,5 +669,24 @@ router.post('/accept-tos', authRequired, async (req, res) => {
   }
 });
 
+
+
+// POST /api/auth/disclaimer/accept — record disclaimer acceptance
+router.post('/disclaimer/accept', authRequired, async (req, res) => {
+  try {
+    const { recordDisclaimerAcceptance } = await import('../middleware/disclaimer.js');
+    const result = await recordDisclaimerAcceptance(req.user.id, req);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: 'Could not record acceptance.' });
+  }
+});
+
+// GET /api/auth/disclaimer/status — check if user needs to accept
+router.get('/disclaimer/status', authRequired, async (req, res) => {
+  const { checkDisclaimerStatus } = await import('../middleware/disclaimer.js');
+  const status = await checkDisclaimerStatus(req.user.id);
+  res.json(status);
+});
 
 export default router;

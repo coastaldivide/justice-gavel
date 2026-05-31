@@ -1,4 +1,4 @@
-import { validate, schemas } from '../middleware/validate.js';
+import { validate, createReviewSchema } from '../middleware/validate.js';
 /**
  * routes/reviews.js — Provider reviews and ratings
  *
@@ -77,7 +77,7 @@ router.get('/', async (req, res) => {
 });
 
 // ── POST /api/reviews ─────────────────────────────────────────────────────────
-router.post('/', authRequired, reviewsLimiter, async (req, res) => {
+router.post('/', authRequired, validate(createReviewSchema), reviewsLimiter, async (req, res) => {
   try {
     const { entity_type, entity_id, rating, comment: rawComment = '', anonymous = 0 } = req.body || {};
 

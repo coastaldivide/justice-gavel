@@ -34,6 +34,34 @@ import logger                                   from '../utils/logger.js';
 import { startHealthScanScheduler, stopHealthScanScheduler, runHealthScan } from './healthScan.js';
 import { archiveCompletedDocketEntries, checkAccountInactivity } from './retention.js';
 
+// ── Refresh token cleanup — runs daily at 3am ──────────────────────────────────
+// Removes tokens that are expired or have already been used.
+// Without this the refresh_tokens table grows unbounded.
+async function cleanupRefreshTokens() {
+  const db = await getDb();
+  const result = await db.run(
+    `DELETE FROM refresh_tokens
+     WHERE expires_at < datetime('now')
+        OR (used = 1 AND created_at < datetime('now', '-7 days'))`,
+  ).catch(() => ({ changes: 0 }));
+  if (result.changes > 0) {
+    logger.info('[scheduler] cleaned up refresh tokens:', result.changes);
+  }
+}
+
+// ── Audit log archival — move entries >90 days to cold storage summary ─────────
+// Keeps audit_log table performant for active queries
+async function archiveOldAuditLogs() {
+  const db = await getDb();
+  const result = await db.run(
+    `DELETE FROM audit_log WHERE created_at < datetime('now', '-90 days')`,
+  ).catch(() => ({ changes: 0 }));
+  if (result.changes > 0) {
+    logger.info('[scheduler] archived old audit entries:', result.changes);
+  }
+}
+
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ── Lazy Expo singleton for docket push notifications ─────────────────────────

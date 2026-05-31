@@ -1,5 +1,6 @@
+import { validate, createCaseSchema } from '../middleware/validate.js';
+import { audit, AUDIT_ACTIONS } from '../utils/audit.js';
 import { auditLog } from '../utils/auditLog.js';
-import { validate, schemas } from '../middleware/validate.js';
 /**
  * routes/cases.js — User case management
  *
@@ -101,7 +102,7 @@ router.get('/', authRequired, async (req, res) => {
 });
 
 // ── POST / — create case ──────────────────────────────────────────────────────
-router.post('/', authRequired, casesLimiter, async (req, res) => {
+router.post('/', authRequired, validate(createCaseSchema), casesLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const {
@@ -365,6 +366,7 @@ router.post('/:id/events', authRequired, casesLimiter, async (req, res) => {
        FROM case_events WHERE id=?`,
       [result.lastID]
     );
+    await audit(AUDIT_ACTIONS.CASE_CREATED, { req, entityType: 'case', entityId: String(caseId || '') });
     res.status(201).json({ event: created });
   } catch (e) {
     logger.error('[cases/events/create]', e.message);

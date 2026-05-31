@@ -1,3 +1,5 @@
+import { requireDisclaimer } from '../../middleware/disclaimer.js';
+import { withBreaker } from '../../middleware/circuitBreaker.js';
 /**
  * chat/ask.js — POST /ask — main AI chat
  */
@@ -22,7 +24,7 @@ const aiLimiter = rateLimit({
 
 const router = Router();
 
-router.post('/ask', aiLimiter, authRequired, perUserAiLimit, async (req, res) => {
+router.post('/ask', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, async (req, res) => {
   // Fail fast if API key is missing — avoids DB queries for a non-starter request
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(503).json({

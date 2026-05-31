@@ -10,6 +10,39 @@ async function migrate() {
   const db = await getDb();
 
   const migrations = [
+    // Audit log — immutable record of all sensitive operations
+    `CREATE TABLE IF NOT EXISTS audit_log (
+       id          INTEGER PRIMARY KEY AUTOINCREMENT,
+       user_id     INTEGER,
+       action      TEXT    NOT NULL,
+       entity_type TEXT,
+       entity_id   TEXT,
+       ip_address  TEXT,
+       user_agent  TEXT,
+       metadata    TEXT,
+       created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_audit_user   ON audit_log(user_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(action)`,
+    `CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id)`,
+
+    // Disclaimer version tracking — force re-acceptance when legal text changes
+    `CREATE TABLE IF NOT EXISTS disclaimer_versions (
+       id          INTEGER PRIMARY KEY AUTOINCREMENT,
+       version     TEXT    NOT NULL UNIQUE,
+       title       TEXT    NOT NULL,
+       effective_at TEXT   NOT NULL,
+       content_hash TEXT   NOT NULL,
+       created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+     )`,
+    `CREATE TABLE IF NOT EXISTS user_disclaimer_acceptance (
+       user_id    INTEGER NOT NULL,
+       version    TEXT    NOT NULL,
+       accepted_at TEXT   NOT NULL DEFAULT (datetime('now')),
+       ip_address  TEXT,
+       PRIMARY KEY (user_id, version)
+     )`,
+
     // Refresh tokens table (single-use rotation, replay detection)
     `CREATE TABLE IF NOT EXISTS refresh_tokens (
        id         INTEGER PRIMARY KEY AUTOINCREMENT,

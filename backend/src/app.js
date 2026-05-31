@@ -318,6 +318,8 @@ app.get('/health', healthLimiter, async (req, res) => {
     live_sms:      process.env.LIVE_SMS      === 'true',
     live_email:    process.env.LIVE_EMAIL    === 'true',
     live_payments: process.env.LIVE_PAYMENTS === 'true',
+    jwt_secure:    process.env.JWT_SECRET !== 'dev_secret_change_me',
+    disclaimer_ver: '2026-01-01.1',
     anthropic:     !!process.env.ANTHROPIC_API_KEY,
     supabase:     !!process.env.SUPABASE_URL,
     stripe:        !!process.env.STRIPE_SECRET,

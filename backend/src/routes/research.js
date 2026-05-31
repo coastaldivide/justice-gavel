@@ -1,3 +1,4 @@
+import { requireDisclaimer } from '../middleware/disclaimer.js';
 /**
  * research.js — AI Legal Research ($49/mo add-on)
  *
@@ -150,7 +151,7 @@ if (!process.env.ANTHROPIC_API_KEY) {
   logger.error('[research.js] ANTHROPIC_API_KEY not set — all AI routes will fail');
 }
 
-router.post('/ask', aiLimiter, authRequired, perUserAiLimit, async (req, res) => {
+router.post('/ask', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, async (req, res) => {
   try {
     const db = await getDb();
     if (!await hasResearchAccess(db, req.user.id)) {

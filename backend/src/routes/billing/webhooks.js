@@ -1,3 +1,4 @@
+import { audit, AUDIT_ACTIONS } from '../../utils/audit.js';
 /**
  * billing/webhooks.js — Stripe webhook handler
  *
@@ -19,6 +20,31 @@ import logger                                        from '../../utils/logger.js
 
 import { sendEmail }       from '../../services/sendgrid.js';
 import { sendPushToUser }  from '../../services/pushDelivery.js';
+
+
+// ── Subscription state machine ─────────────────────────────────────────────────
+// States: trialing → active → past_due → canceled | unpaid
+// All transitions update the user's feature access in real time
+const SUBSCRIPTION_STATES = {
+  trialing:  { can_use_ai: true,  tier_locked: false },
+  active:    { can_use_ai: true,  tier_locked: false },
+  past_due:  { can_use_ai: true,  tier_locked: true  },  // grace period — don't cut off immediately
+  canceled:  { can_use_ai: false, tier_locked: true  },
+  unpaid:    { can_use_ai: false, tier_locked: true  },
+  paused:    { can_use_ai: false, tier_locked: true  },
+};
+
+async function syncSubscriptionState(db, stripeSubId, newStatus, userId) {
+  const state = SUBSCRIPTION_STATES[newStatus] || SUBSCRIPTION_STATES.canceled;
+  await db.run(
+    `UPDATE users SET
+       subscription_tier   = CASE WHEN ? = 1 THEN subscription_tier ELSE 'free' END,
+       subscription_status = ?,
+       updated_at          = datetime('now')
+     WHERE id = ?`,
+    [state.tier_locked ? 0 : 1, newStatus, userId]
+  ).catch(e => logger.error('[webhooks] syncSubscriptionState failed:', e.message));
+}
 
 const router = Router();
 
@@ -69,6 +95,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     const db = await getDb();
     switch (event.type) {
       case 'customer.subscription.deleted':
+      await audit(AUDIT_ACTIONS.SUBSCRIPTION_CANCELLED, { userId: event?.data?.object?.metadata?.user_id });
       case 'customer.subscription.updated': {
         const sub = event.data.object;
         const status = sub.status; // 'active' | 'canceled' | 'past_due' | 'unpaid'
@@ -81,7 +108,12 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         }
         break;
       }
-      case 'invoice.payment_failed': {
+      case 'invoice.payment_failed':
+      // Dunning: mark past_due, notify user, retain access during grace period
+      await syncSubscriptionState(db, event.data.object.subscription, 'past_due',
+        event.data.object.customer);
+      logger.warn('[webhooks] payment failed — marking past_due for customer:',
+        event.data.object.customer); {
         const inv = event.data.object;
         const userId = inv.subscription_details?.metadata?.user_id || null;
         logger.warn('[billing/webhook] Payment failed:', inv.customer_email, 'sub:', inv.subscription);

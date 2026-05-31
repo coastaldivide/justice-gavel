@@ -1,3 +1,5 @@
+import { requireDisclaimer } from '../../middleware/disclaimer.js';
+import { withBreaker } from '../../middleware/circuitBreaker.js';
 import { anthropicBreaker } from '../../utils/circuitBreaker.js';
 /**
  * chat/stream.js — POST /stream — Server-Sent Events streaming
@@ -25,7 +27,7 @@ const aiLimiter = rateLimit({
 
 const router = Router();
 
-router.post('/stream', aiLimiter, authRequired, perUserAiLimit, async (req, res) => {
+router.post('/stream', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, async (req, res) => {
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(503).json({
       error:   'AI service not configured.',
@@ -133,6 +135,13 @@ router.post('/stream', aiLimiter, authRequired, perUserAiLimit, async (req, res)
     let fullText = '';
 
     // ── Anthropic streaming API ─────────────────────────────────────────────
+    // 120-second stream timeout — prevents hung server connections at scale
+    const _ctrl    = new AbortController();
+    const _stTimer = setTimeout(() => {
+      _ctrl.abort();
+      try { res.write('data: ' + JSON.stringify({ type: 'error', error: 'Response timed out. Please try again.' }) + '\n\n'); res.end(); } catch {}
+    }, 120_000);
+
     const response = await fetch(API_URLS.ANTHROPIC, {
       method: 'POST',
       headers: {

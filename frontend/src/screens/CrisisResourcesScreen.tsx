@@ -22,6 +22,12 @@ declare var data: any;
 declare var setIsLoading: any; // hoisted from component scope
 // ── Hotlines ──────────────────────────────────────────────────────────────────
 const CRISIS_LINES = [
+  { name: '211 — Social Services',     number: '211',              desc: 'Housing, food, utilities, crisis support. Free, confidential, 24/7.' },
+  { name: 'RAINN Sexual Assault',      number: '1-800-656-4673',   desc: 'National Sexual Assault Hotline. Confidential, 24/7.' },
+  { name: 'Human Trafficking',         number: '1-888-373-7888',   desc: 'National Human Trafficking Hotline. Text BeFree to 233733.' },
+  { name: 'Veterans Crisis Line',      number: '988 (then 1)',     desc: 'Crisis support for Veterans and Service members. 24/7.' },
+  { name: 'Trans Lifeline',            number: '1-877-565-8860',   desc: 'Peer support by and for trans people. US and Canada.' },
+  { name: 'Crisis Text Line',          number: 'Text HOME to 741741', desc: 'Text-based crisis support. Free, 24/7.' },
   {
     key: '988',
     name: '988 Suicide & Crisis Lifeline',
@@ -337,4 +343,5 @@ const makeStyles = (colors: any) => StyleSheet.create({
   footer: {
     fontSize: 11, textAlign: 'center', lineHeight: 17, paddingHorizontal: 12,
   },
+
 });

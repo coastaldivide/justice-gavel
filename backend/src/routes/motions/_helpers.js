@@ -1,3 +1,4 @@
+import { requireDisclaimer } from '../../middleware/disclaimer.js';
 const MAX_MOTION_LENGTH = 50000; // ~12,500 words — covers any motion
 
 /**

@@ -1,50 +1,97 @@
 /**
- * validate.js — Zod request validation middleware
+ * middleware/validate.js — Zod request validation
+ *
+ * All POST/PUT endpoints declare their schema here.
+ * Invalid requests get 422 with field-level errors — never 500.
+ * This prevents malformed data from reaching the database layer.
  */
-import { z } from 'zod';
-export { z };
 
-export function validate({ body, query, params } = {}) {
+import { z } from 'zod';
+
+export function validate(schema) {
   return (req, res, next) => {
-    const errors = {};
-    if (body)   { const r = body.safeParse(req.body);     if (!r.success) errors.body   = r.error.flatten().fieldErrors; }
-    if (query)  { const r = query.safeParse(req.query);   if (!r.success) errors.query  = r.error.flatten().fieldErrors; }
-    if (params) { const r = params.safeParse(req.params); if (!r.success) errors.params = r.error.flatten().fieldErrors; }
-    if (Object.keys(errors).length)
-      return res.status(422).json({ error: 'Validation failed', code: 'validation_error', fields: errors });
+    const result = schema.safeParse(req.body);
+    if (!result.success) {
+      const errors = result.error.errors.map(e => ({
+        field:   e.path.join('.'),
+        message: e.message,
+        code:    e.code,
+      }));
+      return res.status(422).json({
+        error:  'Validation failed.',
+        code:   'validation_error',
+        errors,
+      });
+    }
+    req.validated = result.data;
     next();
   };
 }
 
-export const schemas = {
-  id: z.object({ id: z.coerce.number().int().positive() }),
-  pagination: z.object({
-    limit:  z.coerce.number().int().min(1).max(200).default(50),
-    offset: z.coerce.number().int().min(0).default(0),
-  }),
-  register: z.object({
-    identifier:  z.string().min(3).max(120),
-    password:    z.string().min(8).max(128)
-                   .regex(/[A-Z]/, 'Must contain uppercase')
-                   .regex(/[0-9]/, 'Must contain number'),
-    displayName: z.string().max(80).optional(),
-  }),
-  login: z.object({
-    identifier: z.string().min(3).max(120),
-    password:   z.string().min(1).max(128),
-  }),
-  caseCreate: z.object({
-    title:      z.string().min(1).max(200),
-    case_type:  z.string().max(50).optional(),
-    court_date: z.string().optional().nullable(),
-    charges:    z.string().max(500).optional(),
-    status:     z.enum(['active','pending','closed','dismissed']).default('active'),
-  }),
-  review: z.object({
-    entity_type: z.string().max(30),
-    entity_id:   z.coerce.number().int().positive(),
-    rating:      z.number().int().min(1).max(5),
-    comment:     z.string().max(1000).optional(),
-    anonymous:   z.boolean().default(false),
-  }),
-};
+// ── Auth schemas ─────────────────────────────────────────────────────────────
+export const registerSchema = z.object({
+  identifier:  z.string().min(3).max(120).trim(),
+  password:    z.string().min(8).max(128)
+                 .regex(/[A-Z]/, 'Must contain uppercase letter')
+                 .regex(/[0-9]/, 'Must contain a number'),
+  displayName: z.string().min(1).max(60).trim().optional(),
+});
+
+export const loginSchema = z.object({
+  identifier: z.string().min(1).max(120).trim(),
+  password:   z.string().min(1).max(128),
+});
+
+export const resetPasswordSchema = z.object({
+  token:    z.string().min(20).max(200),
+  password: z.string().min(8).max(128)
+              .regex(/[A-Z]/, 'Must contain uppercase letter')
+              .regex(/[0-9]/, 'Must contain a number'),
+});
+
+// ── Case schemas ─────────────────────────────────────────────────────────────
+export const createCaseSchema = z.object({
+  title:           z.string().min(1).max(200).trim(),
+  description:     z.string().max(5000).trim().optional(),
+  status:          z.enum(['open','closed','pending','active']).default('open'),
+  charge_type:     z.string().max(100).trim().optional(),
+  jurisdiction:    z.string().max(100).trim().optional(),
+  court_date:      z.string().datetime().optional().nullable(),
+  attorney_id:     z.number().int().positive().optional().nullable(),
+});
+
+// ── Bail schemas ─────────────────────────────────────────────────────────────
+export const bailCalculateSchema = z.object({
+  state:        z.string().length(2).toUpperCase(),
+  charge_type:  z.enum(['felony','misdemeanor','dui','domestic','sexual','dismissed']),
+  severity:     z.enum(['low','medium','high','extreme']).default('medium'),
+  prior_record: z.enum(['none','minor','significant','extensive']).default('none'),
+  flight_risk:  z.enum(['low','medium','high']).default('low'),
+  employed:     z.boolean().default(true),
+  ice_hold:     z.boolean().default(false),
+  violent:      z.boolean().default(false),
+});
+
+// ── Review schemas ────────────────────────────────────────────────────────────
+export const createReviewSchema = z.object({
+  entity_type: z.enum(['lawyer','bail_agent','bondsman','provider']),
+  entity_id:   z.number().int().positive(),
+  rating:      z.number().int().min(1).max(5),
+  comment:     z.string().max(2000).trim().optional(),
+  anonymous:   z.boolean().default(false),
+});
+
+// ── Chat schemas ──────────────────────────────────────────────────────────────
+export const chatMessageSchema = z.object({
+  message:    z.string().min(1).max(4000).trim(),
+  session_id: z.string().max(100).optional().nullable(),
+  case_id:    z.number().int().positive().optional().nullable(),
+  mode:       z.enum(['consumer','defender']).default('consumer'),
+});
+
+// ── Subscription schemas ──────────────────────────────────────────────────────
+export const subscribeSchema = z.object({
+  tier:         z.enum(['legal_radar','advisor','legal_pro','esquire',
+                         'advisor_annual','pro_annual','esquire_annual']),
+  payment_method_id: z.string().min(2).max(200).optional(),
+});
