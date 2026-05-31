@@ -149,7 +149,7 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
             style={[styles.saveBtn, saving && { opacity: 0.6 }]}
             onPress={save}
             disabled={saving}
-          >
+           accessibilityLabel="Enroll \u00b7 $9.99/month">
             {saving
               ? <ActivityIndicator color={COLORS.bgCard} />
               : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>Enroll · $9.99/month</Text>
@@ -315,7 +315,7 @@ export default function CheckInManagerScreen({ route, navigation }: ScreenProps)
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.enrollBtn}
-          onPress={() => requireAuth(() => setShowEnroll(true))}
+          accessibilityLabel="+ Enroll" onPress={() => requireAuth(() => setShowEnroll(true))}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.enrollBtnText}>+ Enroll</Text>
         </TouchableOpacity>
@@ -335,7 +335,7 @@ export default function CheckInManagerScreen({ route, navigation }: ScreenProps)
           <TouchableOpacity
           accessibilityRole="button"
             style={styles.howBtn}
-            onPress={() => requireAuth(() => setShowEnroll(true))}
+            accessibilityLabel="Enroll First Defendant \u2192" onPress={() => requireAuth(() => setShowEnroll(true))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.howBtnText}>Enroll First Defendant →</Text>
           </TouchableOpacity>
@@ -395,7 +395,7 @@ export default function CheckInManagerScreen({ route, navigation }: ScreenProps)
                   <TouchableOpacity
                     accessibilityRole="button"
                     style={styles.actionBtn}
-                    onPress={() => setSelectedEnroll(item)}
+                    accessibilityLabel="\ud83d\udccb View History" onPress={() => setSelectedEnroll(item)}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📋 View History</Text>
                   </TouchableOpacity>
@@ -403,7 +403,7 @@ export default function CheckInManagerScreen({ route, navigation }: ScreenProps)
                     <TouchableOpacity
                       accessibilityRole="button"
                       style={[styles.actionBtn, styles.actionBtnRed]}
-                      onPress={() => deactivate(item.id, item.defendant_name)}
+                      accessibilityLabel="Remove" onPress={() => deactivate(item.id, item.defendant_name)}
                     >
                       <Text maxFontSizeMultiplier={1.4} style={[styles.actionBtnText, { color: COLORS.emergency }]}>Remove</Text>
                     </TouchableOpacity>

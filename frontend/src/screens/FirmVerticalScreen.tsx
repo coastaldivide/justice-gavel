@@ -483,7 +483,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
             )}
 
             <TouchableOpacity style={s.saveBtn} onPress={saveConfig} disabled={saving}
-            accessibilityRole="button">
+            accessibilityRole="button" accessibilityLabel="Save configuration">
               {saving
                 ? <ActivityIndicator color={colors.navy} />
                 : <Text maxFontSizeMultiplier={1.4} style={s.saveBtnText}>Save configuration</Text>
@@ -558,7 +558,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
               <View>
 
               <TouchableOpacity style={s.missionBtn} onPress={submitMission} disabled={submittingMV}
-            accessibilityRole="button">
+            accessibilityRole="button" accessibilityLabel="Submit verification request">
                 {submittingMV
                   ? <ActivityIndicator color="#fff" />
                   : <Text maxFontSizeMultiplier={1.4} style={s.missionBtnText}>Submit verification request</Text>
@@ -605,7 +605,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
         'withholding', 'CAT', 'adjustment', 'citizenship', 'humanitarian', 'TPS', 'SIJ',
       ].map(rt => (
                           <TouchableOpacity
-          accessibilityRole="button" key={rt} style={[s.segBtn, acRelief===rt && s.segBtnActive]} onPress={() => setACRelief(rt)}
+          accessibilityRole="button" key={rt} style={[s.segBtn, acRelief===rt && s.segBtnActive]} accessibilityLabel="{rt}" onPress={() => setACRelief(rt)}
                                   >
                             <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, acRelief===rt && s.segLabelActive]}>{rt}</Text>
                           </TouchableOpacity>
@@ -630,7 +630,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
                       <TextInput style={[s.input,{minHeight:56}]} value={acNotes} onChangeText={setACNotes} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} multiline
               maxLength={2000} />
                       <TouchableOpacity style={[s.addBtn, creatingAC && { opacity: 0.6 }]} onPress={createAC} disabled={creatingAC}
-            accessibilityRole="button"><Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{creatingAC ? 'Adding…' : 'Add clock'}</Text></TouchableOpacity>
+            accessibilityRole="button" accessibilityLabel="{creatingAC ? 'Adding\u2026' : 'Add clock'}"><Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{creatingAC ? 'Adding…' : 'Add clock'}</Text></TouchableOpacity>
                     </View>
 
                     {asylumClocks.map((c: any) => {
@@ -839,7 +839,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
               placeholder="YYYY-MM-DD"
               placeholderTextColor={colors.textMuted} returnKeyType="next" />
             <TouchableOpacity style={s.saveBtn} onPress={loadDeadlines} disabled={dlLoading}
-            accessibilityRole="button">
+            accessibilityRole="button" accessibilityLabel="Calculate deadlines">
               {dlLoading ? <ActivityIndicator color={colors.navy} /> : <Text maxFontSizeMultiplier={1.4} style={s.saveBtnText}>Calculate deadlines</Text>}
             </TouchableOpacity>
 

@@ -287,7 +287,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
             <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 20 }]}>Quick actions</Text>
             <View style={s.actionGrid}>
               <TouchableOpacity
-          accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical')}
+          accessibilityRole="button" style={s.actionBtn} accessibilityLabel="\u2699\ufe0f" onPress={() => navigation.navigate('FirmVertical')}
                       >
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>⚙️</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Configure vertical</Text>
@@ -325,7 +325,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
           accessibilityRole="button"
                   key={v.key}
                   style={[s.vertTile, selectedV === v.key && { borderColor: v.color, borderWidth: 1.5 }]}
-                  onPress={() => setSelectedV(v.key)}
+                  accessibilityLabel="{v.emoji}" onPress={() => setSelectedV(v.key)}
                   activeOpacity={0.75}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={s.vertEmoji}>{v.emoji}</Text>
@@ -379,7 +379,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
             )}
 
             <TouchableOpacity
-          accessibilityRole="button" style={s.ctaBtn} onPress={() => setFlow('activate')}
+          accessibilityRole="button" style={s.ctaBtn} accessibilityLabel="Start {TRIAL_DAYS}-day free trial \u2192" onPress={() => setFlow('activate')}
                     >
               <Text maxFontSizeMultiplier={1.4} style={s.ctaBtnText}>Start {TRIAL_DAYS}-day free trial →</Text>
             </TouchableOpacity>
@@ -400,7 +400,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                 <Text maxFontSizeMultiplier={1.4} style={s.vertRecapHint}>Tap Explore to change vertical</Text>
               </View>
               <TouchableOpacity
-          accessibilityRole="button" onPress={() => setFlow('browse')}
+          accessibilityRole="button" accessibilityLabel="Change" onPress={() => setFlow('browse')}
                       >
                 <Text maxFontSizeMultiplier={1.4} style={{ color: colors.steel, fontSize: TYPE.sm }}>Change</Text>
               </TouchableOpacity>
@@ -433,7 +433,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
             </View>
 
             <TouchableOpacity style={s.activateBtn} onPress={activateTrial} disabled={activating}
-            accessibilityRole="button">
+            accessibilityRole="button" accessibilityLabel="Activate free trial">
               {activating
                 ? <ActivityIndicator color={colors.navy} />
                 : <Text maxFontSizeMultiplier={1.4} style={s.activateBtnText}>Activate free trial</Text>

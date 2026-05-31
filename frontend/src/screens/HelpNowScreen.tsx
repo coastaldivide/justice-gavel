@@ -354,7 +354,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
                   accessibilityRole="button"
                   key={city}
                   style={styles.cityRow}
-                  onPress={() => fetchForCity(city)}
+                  accessibilityLabel="\ud83d\udccd  {city}" onPress={() => fetchForCity(city)}
                     activeOpacity={0.85}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.cityRowText}>📍  {city}</Text>
@@ -459,7 +459,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
                 </TouchableOpacity>
               ) : null}
               {courthouse.phone ? (
-                <TouchableOpacity accessibilityRole="button" style={styles.callBtn} onPress={() => callPhone(courthouse.phone)}
+                <TouchableOpacity accessibilityRole="button" style={styles.callBtn} accessibilityLabel="\ud83d\udcde {courthouse.phone}" onPress={() => callPhone(courthouse.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {courthouse.phone}</Text>
                 </TouchableOpacity>
@@ -491,7 +491,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
               ) : null}
               {publicDefender.phone ? (
                 <TouchableOpacity
-          accessibilityRole="button" style={styles.callBtn} onPress={() => callPhone(publicDefender.phone)}
+          accessibilityRole="button" style={styles.callBtn} accessibilityLabel="\ud83d\udcde {publicDefender.phone}" onPress={() => callPhone(publicDefender.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {publicDefender.phone}</Text>
                 </TouchableOpacity>
@@ -508,7 +508,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
               <Text maxFontSizeMultiplier={1.4} style={styles.contactName}>{crisisLine.title}</Text>
               {crisisLine.phone ? (
                 <TouchableOpacity
-          accessibilityRole="button" style={styles.callBtn} onPress={() => callPhone(crisisLine.phone)}
+          accessibilityRole="button" style={styles.callBtn} accessibilityLabel="\ud83d\udcde {crisisLine.phone}" onPress={() => callPhone(crisisLine.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {crisisLine.phone}</Text>
                 </TouchableOpacity>

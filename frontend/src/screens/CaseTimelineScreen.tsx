@@ -377,8 +377,7 @@ export default function CaseTimelineScreen({ navigation, route }: ScreenProps): 
       <TouchableOpacity
         accessibilityRole="button"
         style={[s.fab, { backgroundColor: colors.navy }]}
-        onPress={() => setShowAdd(true)}
-        accessibilityLabel="Add event to timeline"
+        accessibilityLabel="+ Add Event" onPress={() => setShowAdd(true)}
         activeOpacity={0.85}
       >
         <Text maxFontSizeMultiplier={1.4} style={s.fabText}>+ Add Event</Text>

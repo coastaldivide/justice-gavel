@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FileSystem, ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type {} from '../types/navigation';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList, Modal, ScrollView, Linking, ActivityIndicator, RefreshControl, Share, KeyboardAvoidingView, Platform} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList, Modal, ScrollView, Linking, ActivityIndicator, RefreshControl, Share, KeyboardAvoidingView, Platform, AccessibilityInfo} from 'react-native';
 import { api } from '../services/api';
 import { cacheAgeLabel, cacheCases, cacheSavedLawyers, getCachedLawyers } from '../services/offlineCache';
 import { t }   from '../i18n';
@@ -54,7 +54,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
   return (
     <TouchableOpacity
       accessibilityRole="button" testID="case-card" style={styles.card} onPress={onPress} activeOpacity={0.85}
-    >
+     accessibilityLabel="{item.title}">
       <View style={styles.cardTop}>
         <Text maxFontSizeMultiplier={1.4} style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
 
@@ -106,8 +106,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
       <TouchableOpacity
           accessibilityRole="button" testID="case-share-sheet"
         style={styles.shareBtn}
-        onPress={() => onShare(item)}
-        accessibilityLabel={`Share ${item.title} with family`}
+        accessibilityLabel="\ud83d\udd17  Share Link" onPress={() => onShare(item)}
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>🔗  Share Link</Text>
       </TouchableOpacity>
@@ -226,6 +225,8 @@ const DEEP_BG = C_0A1929;
 const _HEX_CASE = {
   _c0: C_0A1929,
 } as const;
+
+const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
 export default function CaseScreen({ route, navigation }: any) {
   React.useEffect(() => {
@@ -694,7 +695,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'cases' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('cases')}
+          accessibilityLabel="{t('case_tab_cases')}" onPress={() => setActiveTab('cases')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'cases' && styles.tabBtnTextActive]}>{t('case_tab_cases')}</Text>
         </TouchableOpacity>
@@ -738,7 +739,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('case_tab_cases')}</Text>
         <TouchableOpacity accessibilityRole="button" style={styles.addBtn} testID="case-add-button" onPress={openNew}
-        >
+         accessibilityLabel="{t('case_new')}">
           <Text maxFontSizeMultiplier={1.4} style={styles.addBtnText}>{t('case_new')}</Text>
         </TouchableOpacity>
       </View>
@@ -767,7 +768,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>No cases yet</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>Tap "+ New case" to start tracking your legal matter.</Text>
               <TouchableOpacity accessibilityRole="button" style={styles.emptyBtn} onPress={openNew}
-              >
+               accessibilityLabel="Create first case">
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>Create first case</Text>
             </TouchableOpacity>
             </View>
@@ -877,7 +878,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>{editCase.id ? 'Edit case' : 'New case'}</Text>
             <TouchableOpacity
               accessibilityRole="button" activeOpacity={0.6} onPress={save} disabled={saving}
-            >
+             accessibilityLabel="Save">
               {saving ? <ActivityIndicator color={colors.navy} /> : <Text maxFontSizeMultiplier={1.4} style={styles.modalSave}>Save</Text>}
             </TouchableOpacity>
           </View>

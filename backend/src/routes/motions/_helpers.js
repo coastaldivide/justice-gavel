@@ -1,3 +1,5 @@
+const MAX_MOTION_LENGTH = 50000; // ~12,500 words — covers any motion
+
 /**
  * motions/_helpers.js — ensureTables() and generateMotion() AI function
  *
@@ -162,3 +164,5 @@ Generate the complete motion now:`;
 }
 
 // ── POST /api/motions/generate ────────────────────────────────────────────────
+
+export const MOTION_DISCLAIMER = 'AI-generated motion drafts require attorney review before filing.';

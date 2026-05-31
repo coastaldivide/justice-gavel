@@ -196,6 +196,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
   const [langB,     setLangB]     = useState('es');  // client
   const [sessionCode, setCode]    = useState('');
   const [joinCode,  setJoinCode]  = useState('');
+  const [loading, setLoading] = useState(false);
   const [joiningAs, setJoiningAs] = useState<'a'|'b'>('b');
   const [messages,  setMessages]  = useState<TurnMessage[]>([]);
   const [inputA,    setInputA]    = useState('');
@@ -415,7 +416,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.backLink}
-          onPress={() => setPhase('setup')}
+          accessibilityLabel="\u2190 Back" onPress={() => setPhase('setup')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.backLinkText, { color: colors.textMuted }]}>← Back</Text>
         </TouchableOpacity>
@@ -521,7 +522,7 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
           {mode === 'split' && (
             <TouchableOpacity
               accessibilityRole="button" onPress={shareCode} style={styles.shareCodeBtn}
-            >
+             accessibilityLabel="Share \u2192">
               <Text maxFontSizeMultiplier={1.4} style={[styles.shareCodeText, { color: COLORS.navy }]}>Share →</Text>
             </TouchableOpacity>
           )}

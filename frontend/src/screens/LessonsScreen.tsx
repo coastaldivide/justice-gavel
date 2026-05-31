@@ -182,14 +182,14 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
               <Text maxFontSizeMultiplier={1.4} style={styles.lifeSub}>Justice Gavel covers DUI, divorce, immigration, employment, and 18 other areas of law. Find a specialist for your next legal moment.</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                 <TouchableOpacity
-          accessibilityRole="button" style={styles.lifeBtn} onPress={() => navigation.navigate("LawyersTab")}
+          accessibilityRole="button" style={styles.lifeBtn} accessibilityLabel="Find a Lawyer" onPress={() => navigation.navigate("LawyersTab")}
           >
                   <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>Find a Lawyer</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   accessibilityRole="button"
                   style={[styles.lifeBtn, { backgroundColor: colors.emergencyDark }]}
-                  onPress={() => navigation.navigate('MoreTab', { screen: 'RightsCard' })}
+                  accessibilityLabel="\ud83d\udccb Get Rights Card" onPress={() => navigation.navigate('MoreTab', { screen: 'RightsCard' })}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>📋 Get Rights Card</Text>
                 </TouchableOpacity>

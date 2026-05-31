@@ -210,8 +210,7 @@ export default function CrisisResourcesScreen({ route, navigation }: ScreenProps
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.legalBtn, { backgroundColor: COLORS.navy }]}
-          onPress={() => navigation.navigate('LawyersTab')}
-          accessibilityLabel={t("crisis_find_lawyer")}
+          accessibilityLabel="\u2696\ufe0f" onPress={() => navigation.navigate('LawyersTab')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnIcon}>⚖️</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnText}>Find a Lawyer</Text>

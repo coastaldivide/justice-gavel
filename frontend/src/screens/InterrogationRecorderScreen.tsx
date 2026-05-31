@@ -262,14 +262,14 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.emergencyBtn, { backgroundColor: colors.emergency }]}
-          onPress={() => Linking.openURL('tel:911').catch(() => {})}
+          accessibilityLabel="\ud83d\udea8 CALL 911" onPress={() => Linking.openURL('tel:911').catch(() => {})}
         >
           <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>🚨 CALL 911</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.emergencyBtn, { backgroundColor: colors.blue }]}
-          onPress={() => Linking.openURL('tel:988').catch(() => {})}
+          accessibilityLabel="\ud83d\udc99 CRISIS 988" onPress={() => Linking.openURL('tel:988').catch(() => {})}
         >
           <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>💙 CRISIS 988</Text>
         </TouchableOpacity>
@@ -365,7 +365,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
           <Text maxFontSizeMultiplier={1.3} style={styles.errorMsg}>{error}</Text>
           <TouchableOpacity
             accessibilityRole="button" style={styles.retryBtn} onPress={reset}
-          >
+           accessibilityLabel="Try Again">
             <Text maxFontSizeMultiplier={1.2} style={styles.retryBtnText}>Try Again</Text>
           </TouchableOpacity>
         </View>

@@ -395,8 +395,7 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.ctaBtn, { backgroundColor: COLORS.legal }]}
-          onPress={() => navigation.navigate('LawyersTab')}
-          accessibilityLabel="Find a lawyer"
+          accessibilityLabel="\u2696\ufe0f  Find a Lawyer" onPress={() => navigation.navigate('LawyersTab')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaBtnText}>⚖️  Find a Lawyer</Text>
         </TouchableOpacity>

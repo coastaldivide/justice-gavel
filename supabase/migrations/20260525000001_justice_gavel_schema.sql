@@ -565,3 +565,25 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 );
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens(token_hash);
+
+-- ── FK constraints added in audit ─────────────────────────────────────────────
+ALTER TABLE IF EXISTS integration_external_ids
+  ADD CONSTRAINT IF NOT EXISTS fk_iei_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE IF EXISTS workspace_members
+  ADD CONSTRAINT IF NOT EXISTS fk_wm_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+-- ── Performance indexes added in audit ──────────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_chat_messages_user_id ON chat_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_sub ON subscriptions(stripe_sub_id);
+CREATE INDEX IF NOT EXISTS idx_bail_agents_state ON bail_agents(state);
+
+-- ── Data integrity constraints ─────────────────────────────────────────────────
+ALTER TABLE IF EXISTS subscriptions
+  ALTER COLUMN status SET NOT NULL,
+  ALTER COLUMN status SET DEFAULT 'active';
+
+-- ── Soft-delete for cases ─────────────────────────────────────────────────────
+ALTER TABLE IF EXISTS cases ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ NULL;
+CREATE INDEX IF NOT EXISTS idx_cases_deleted_at ON cases(deleted_at) WHERE deleted_at IS NULL;

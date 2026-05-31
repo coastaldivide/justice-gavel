@@ -35,8 +35,7 @@ import React, {
 import {
   ActivityIndicator, Alert, FlatList, KeyboardAvoidingView,
   Platform, Pressable, Share, StyleSheet, Text, TextInput,
-  TouchableOpacity, View,
-} from 'react-native';
+  TouchableOpacity, View, AccessibilityInfo} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { track } from '../services/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -314,6 +313,8 @@ function getOfflineAnswer(query: string): string | null {
 
 // ── ChatScreen ─────────────────────────────────────────────────────────────────
 // T1-J: function signature is on one line; all hooks are inside the function body
+const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
+
 export default function ChatScreen({ navigation, route }: ScreenProps) {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -734,7 +735,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
             accessibilityRole="button"
             onPress={clearChat}
             style={styles.clearBtn}
-          >
+           accessibilityLabel="Clear">
             <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>Clear</Text>
           </TouchableOpacity>
         )}
@@ -779,7 +780,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
                 accessibilityRole="button"
                 key={p.label}
                 style={styles.quickChip}
-                onPress={() => send(p.text)}
+                accessibilityLabel="{p.label}" onPress={() => send(p.text)}
               >
                 <Text maxFontSizeMultiplier={1.4} style={styles.quickChipText}>{p.label}</Text>
               </TouchableOpacity>

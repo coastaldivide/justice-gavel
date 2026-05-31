@@ -113,7 +113,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.dirBtn}
-          onPress={() => openDirections(contact.lat, contact.lng, contact.name)}
+          accessibilityLabel="\ud83d\uddfa  Get Directions" onPress={() => openDirections(contact.lat, contact.lng, contact.name)}
             activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.dirBtnText}>🗺  Get Directions</Text>
@@ -442,7 +442,7 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.homeBtn}
-          onPress={() => navigation.navigate('HomeTab')}
+          accessibilityLabel="\u2190 Back to Home" onPress={() => navigation.navigate('HomeTab')}
             activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.homeBtnText}>← Back to Home</Text>

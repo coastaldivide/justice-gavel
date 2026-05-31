@@ -125,7 +125,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
   if (fetchError && !schedules.length) return (
     <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
       <TouchableOpacity
-          accessibilityRole="button" onPress={() => { setFetchError(false); setRefreshTick(t => t+1); }}>
+          accessibilityRole="button" accessibilityLabel="Tap to retry" onPress={() => { setFetchError(false); setRefreshTick(t => t+1); }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary }}>Tap to retry</Text>
       </TouchableOpacity>
     </View>

@@ -148,3 +148,27 @@ HALLUCINATION GUARD:
 - NEVER invent a case name, volume number, or page number
 
 The output will be rendered to PDF exactly as written. No markdown. No asterisks. No headers with # symbols. Plain text only with clear paragraph breaks.`;
+
+// ── Prompt injection detection ────────────────────────────────────────────────
+// These patterns appear in known jailbreak/injection attempts.
+// User messages containing them get a sanitization pass.
+const INJECTION_PATTERNS = [
+  /ignore\s+(?:all\s+)?(?:previous|prior|above)\s+instructions/i,
+  /you\s+are\s+(?:now|actually|really)\s+(?:DAN|[A-Z]{2,})/i,
+  /DAN|jailbreak|do\s+anything\s+now/i,
+  /system\s*:\s*you\s+are/i,
+  /\[SYSTEM\]|\[INST\]|<<SYS>>/i,
+  /forget\s+(?:your|all)\s+(?:previous\s+)?(?:instructions|training)/i,
+];
+
+export function sanitizeUserMessage(text = '') {
+  if (!text) return text;
+  let sanitized = text;
+  for (const pattern of INJECTION_PATTERNS) {
+    if (pattern.test(sanitized)) {
+      // Replace the injection attempt with a placeholder
+      sanitized = sanitized.replace(pattern, '[removed]');
+    }
+  }
+  return sanitized.slice(0, 4000); // hard cap: 4k chars per user message
+}

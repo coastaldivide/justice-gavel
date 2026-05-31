@@ -320,14 +320,14 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.toggleBtn, !annual && styles.toggleBtnActive]}
-          onPress={() => setAnnual(false)}
+          accessibilityLabel="Monthly" onPress={() => setAnnual(false)}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, !annual && styles.toggleBtnTextActive]}>Monthly</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.toggleBtn, annual && styles.toggleBtnActive]}
-          onPress={() => setAnnual(true)}
+          accessibilityLabel="Annual" onPress={() => setAnnual(true)}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, annual && styles.toggleBtnTextActive]}>Annual</Text>
           <View style={styles.savingsBadge}>
@@ -384,7 +384,7 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
             )}
           </View>
           <TouchableOpacity accessibilityRole="button" onPress={handleCancel}
-          >
+           accessibilityLabel="Cancel">
             <Text maxFontSizeMultiplier={1.4} style={styles.cancelLink}>Cancel</Text>
           </TouchableOpacity>
         </View>

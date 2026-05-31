@@ -124,7 +124,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
               <Text maxFontSizeMultiplier={1.4} style={styles.revealedTitle}>✓ Contact Information Unlocked</Text>
               {lead.phone && (
                 <TouchableOpacity
-          accessibilityRole="button" onPress={() => Linking.openURL('tel:' + lead.phone).catch(() => {})}
+          accessibilityRole="button" accessibilityLabel="\ud83d\udcde {lead.phone}" onPress={() => Linking.openURL('tel:' + lead.phone).catch(() => {})}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.revealedPhone}>📞 {lead.phone}</Text>
                 </TouchableOpacity>
@@ -284,7 +284,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
           <View style={styles.confirmBtns}>
             <TouchableOpacity
               accessibilityRole="button" style={styles.confirmCancel} onPress={onClose}
-            >
+             accessibilityLabel="Cancel">
               <Text maxFontSizeMultiplier={1.4} style={styles.confirmCancelText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
@@ -462,7 +462,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.checkInMgrBtnText}>🔍 Recovery</Text>
           </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" style={styles.profileBtn} onPress={() => setShowProfile(true)}
+          <TouchableOpacity accessibilityRole="button" style={styles.profileBtn} accessibilityLabel="\u2699\ufe0f" onPress={() => setShowProfile(true)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.profileBtnText}>⚙️</Text>
           </TouchableOpacity>
@@ -548,7 +548,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
             accessibilityRole="button"
             key={h}
             style={[styles.filterChip, filterHours === h && styles.filterChipActive]}
-            onPress={() => setFilterHours(h)}
+            accessibilityLabel="{h}h" onPress={() => setFilterHours(h)}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.filterChipText, filterHours === h && styles.filterChipTextActive]}>
               {h}h

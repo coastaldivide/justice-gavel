@@ -96,8 +96,12 @@ router.post('/', authRequired, reviewsLimiter, async (req, res) => {
   if (!d) return res.json([]);
     if (!d) return res.status(503).json({ error: 'Review service temporarily unavailable.' });
 
+    // One review per user per entity
+    const existing = await d.get('SELECT id FROM reviews WHERE user_id=? AND entity_type=? AND entity_id=?', [req.user.id, entity_type, entity_id]).catch(()=>null);
+    if (existing) return res.status(409).json({ error: 'You have already reviewed this.', code: 'duplicate_review' });
+
     const r = await d.run(
-      `INSERT INTO reviews (entity_type, entity_id, rating, comment, verified, anonymous)
+          `INSERT INTO reviews (entity_type, entity_id, rating, comment, verified, anonymous)
        VALUES (?,?,?,?,1,?)`,
       [
         sanitizeStr(entity_type, 30),

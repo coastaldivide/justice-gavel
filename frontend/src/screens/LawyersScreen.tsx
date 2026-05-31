@@ -765,8 +765,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
                 <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>⚖️</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>No lawyers found in your area.</Text>
                 <TouchableOpacity
-          accessibilityRole="button" style={styles.emptyBtn} onPress={() => setShowFilters(true)}
-                  accessibilityLabel="Adjust filters"
+          accessibilityRole="button" style={styles.emptyBtn} accessibilityLabel="Adjust filters" onPress={() => setShowFilters(true)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>Adjust filters</Text>
                 </TouchableOpacity>
@@ -913,8 +912,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           style={{ position:'absolute', bottom:24, left:16, right:16,
             backgroundColor:colors.navy, borderRadius:14, paddingVertical:16,
             flexDirection:'row', alignItems:'center', justifyContent:'center', gap:10 }}
-          onPress={() => setShowBulk(true)}
-          accessibilityLabel={`Contact ${selected.length} selected attorneys`}
+          accessibilityLabel="\u2696\ufe0f" onPress={() => setShowBulk(true)}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>⚖️</Text>
           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700',

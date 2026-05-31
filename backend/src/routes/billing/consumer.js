@@ -6,7 +6,7 @@ import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer, calcLea
   from './_shared.js';
 import { err400, BUSINESS_CONSTANTS, err401, err403, err404, err409,
          err422, err500, err502,
-         safeInt, safeFloat, sanitizeStr, validateEmail } from '../../utils/routeHelpers.js';
+         safeInt, safeFloat, sanitizeStr, validateEmail, withTransaction} from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';

@@ -363,7 +363,7 @@ export default function BailSearchScreen(): React.JSX.Element {
           <TouchableOpacity
           accessibilityRole="button"
           style={styles.dirBtn}
-          onPress={() => openDirections(item.lat, item.lng, item?.name)}
+          accessibilityLabel="\ud83d\uddfa  Get Directions" onPress={() => openDirections(item.lat, item.lng, item?.name)}
           >
           <Text maxFontSizeMultiplier={1.4} style={styles.dirBtnText}>🗺  Get Directions</Text>
           </TouchableOpacity>
@@ -439,8 +439,7 @@ export default function BailSearchScreen(): React.JSX.Element {
             ))}
           </View>
           <TouchableOpacity
-          accessibilityRole="button" style={styles.pickCityBtn} onPress={() => setLocationDenied(true)}
-            accessibilityLabel="Try wider search"
+          accessibilityRole="button" style={styles.pickCityBtn} accessibilityLabel="\ud83d\udccd Pick a Different City" onPress={() => setLocationDenied(true)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.pickCityBtnText}>📍 Pick a Different City</Text>
           </TouchableOpacity>

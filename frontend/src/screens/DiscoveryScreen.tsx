@@ -247,7 +247,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
       headerRight: () => (
         <View style={{ flexDirection: 'row', gap: 12, marginRight: 14 }}>
           {phase !== 'history' && (
-            <TouchableOpacity accessibilityRole="button" onPress={loadHistory}>
+            <TouchableOpacity accessibilityRole="button" onPress={loadHistory} accessibilityLabel="History">
               <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
             </TouchableOpacity>
           )}
@@ -614,7 +614,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
             <TouchableOpacity
   accessibilityRole="button"
               style={[styles.analyzeBtn, { backgroundColor: COLORS.navy, width: '100%', marginTop: 16 }]}
-              onPress={() => setPhase('upload')}
+              accessibilityLabel="\u2190 Upload a Document" onPress={() => setPhase('upload')}
           >
               <Text maxFontSizeMultiplier={1.4} style={styles.analyzeBtnText}>← Upload a Document</Text>
             </TouchableOpacity>

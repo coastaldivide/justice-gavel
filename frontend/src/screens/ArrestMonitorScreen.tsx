@@ -170,7 +170,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
             <Text maxFontSizeMultiplier={1.4} style={styles.upsellBtnText}>Upgrade to Legal Pro -- $14.99/mo</Text>
           </TouchableOpacity>
           <TouchableOpacity
-          accessibilityRole="button" style={styles.upsellSkip} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
+          accessibilityRole="button" style={styles.upsellSkip} accessibilityLabel="Maybe later" onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
             >
             <Text maxFontSizeMultiplier={1.4} style={styles.upsellSkipText}>Maybe later</Text>
           </TouchableOpacity>
@@ -289,14 +289,14 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
                   <TouchableOpacity
                     accessibilityRole="button"
                     style={styles.cancelFormBtn}
-                    onPress={() => { setShowForm(false); setName(''); setCounty(''); }}
+                    accessibilityLabel="Cancel" onPress={() => { setShowForm(false); setName(''); setCounty(''); }}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.cancelFormText}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             ) : (
-              <TouchableOpacity accessibilityRole="button" style={styles.addTrigger} onPress={() => setShowForm(true)}
+              <TouchableOpacity accessibilityRole="button" style={styles.addTrigger} accessibilityLabel="+ Add a Name to Monitor" onPress={() => setShowForm(true)}
               >
                 <Text maxFontSizeMultiplier={1.4} style={styles.addTriggerText}>+ Add a Name to Monitor</Text>
               </TouchableOpacity>

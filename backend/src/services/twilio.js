@@ -47,10 +47,10 @@ export async function sendSms({ to, body }) {
 }
 
 // ── Verify Twilio webhook signature ──────────────────────────────────────────
-export function verifyTwilioSignature(req) {
+export async function verifyTwilioSignature(req) {
   if (!LIVE) return true; // Always pass in demo mode
   try {
-    const twilio = require('twilio');
+    const twilio = (await import('twilio')).default;
     const signature = req.headers['x-twilio-signature'] || '';
     const url = process.env.BOT_WEBHOOK_BASE_URL + req.originalUrl;
     return twilio.validateRequest(authToken, signature, url, req.body);

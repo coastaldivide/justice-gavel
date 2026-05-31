@@ -314,7 +314,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.typeLink}
-          onPress={() => setPhase('text_input')}
+          accessibilityLabel="\u270f\ufe0f  Type instead" onPress={() => setPhase('text_input')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>
             ✏️  Type instead
@@ -417,7 +417,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.typeLink}
-          onPress={() => setPhase('idle')}
+          accessibilityLabel="\u2190 Use voice instead" onPress={() => setPhase('idle')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>← Use voice instead</Text>
         </TouchableOpacity>
@@ -512,7 +512,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.typeLink}
-          onPress={() => { setPhase('idle'); setNote(null); setEditText(''); }}
+          accessibilityLabel="\ud83c\udf99  Record another note" onPress={() => { setPhase('idle'); setNote(null); setEditText(''); }}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>🎙  Record another note</Text>
         </TouchableOpacity>

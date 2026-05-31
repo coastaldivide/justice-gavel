@@ -250,7 +250,7 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
                       style={{ backgroundColor: colors.bgCard, borderRadius: 20,
                         paddingHorizontal:14, paddingVertical:8,
                         borderWidth:1, borderColor: colors.border }}
-                      onPress={() => { setQuery(q); doSearch(q); }}
+                      accessibilityLabel="{q}" onPress={() => { setQuery(q); doSearch(q); }}
                     >
                       <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color: colors.textSecond }}>{q}</Text>
                     </TouchableOpacity>

@@ -123,16 +123,14 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.stripBtn, { backgroundColor: colors.emergencyDark }]}
-          onPress={() => call('911')}
-          accessibilityLabel="Call 911 emergency services"
+          accessibilityLabel="\ud83d\udea8  CALL 911" onPress={() => call('911')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>🚨  CALL 911</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.stripBtn, { backgroundColor: colors.blue }]}
-          onPress={() => call('988')}
-          accessibilityLabel="Call 988 crisis line"
+          accessibilityLabel="\ud83d\udc99  CRISIS 988" onPress={() => call('988')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>💙  CRISIS 988</Text>
         </TouchableOpacity>
@@ -220,7 +218,7 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
             <Text maxFontSizeMultiplier={1.4} style={styles.panelSub}>{result}</Text>
             <TouchableOpacity
               accessibilityRole="button" style={styles.cancelBtn} onPress={reset} activeOpacity={0.85}
-            >
+             accessibilityLabel="Done">
               <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Done</Text>
             </TouchableOpacity>
           </>
@@ -231,7 +229,7 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
             <Text maxFontSizeMultiplier={1.4} style={styles.panelTitle}>Could not send</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.panelSub}>{result}</Text>
             <TouchableOpacity accessibilityRole="button" style={styles.cancelBtn} onPress={reset} activeOpacity={0.85}
-            >
+             accessibilityLabel="Try again">
               <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Try again</Text>
             </TouchableOpacity>
           </>

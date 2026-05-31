@@ -397,12 +397,12 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
       <View style={s.actions}>
         <TouchableOpacity
           accessibilityRole="button" style={[s.actionBtn, { backgroundColor:colors.navy }]}
-          testID="lawyer-book-button" onPress={() => { hapticImpact(); handleBook(); }}>
+          testID="lawyer-book-button" accessibilityLabel="\ud83d\udcc5 Book Consultation" onPress={() => { hapticImpact(); handleBook(); }}>
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>📅 Book Consultation</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button" style={[s.actionBtn, { backgroundColor:colors.legal }]}
-          onPress={() => { hapticImpact(); handleMessage(); }}
+          accessibilityLabel="\ud83d\udcac Send Message" onPress={() => { hapticImpact(); handleMessage(); }}
                   >
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>💬 Send Message</Text>
         </TouchableOpacity>
@@ -417,19 +417,19 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
           <TouchableOpacity
             accessibilityRole="button"
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleSave}>
+            onPress={handleSave} accessibilityLabel="\u2b50 Save">
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>⭐ Save</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleDirections}>
+            onPress={handleDirections} accessibilityLabel="\ud83d\udccd Directions">
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>📍 Directions</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleShare}>
+            onPress={handleShare} accessibilityLabel="\u2191 Share">
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>↑ Share</Text>
           </TouchableOpacity>
         </View>

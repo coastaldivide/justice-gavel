@@ -138,7 +138,7 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
         <TouchableOpacity accessibilityRole="button"
           style={[s.btn, { backgroundColor: colors.navy }]}
           onPress={requestPermission}
-        >
+         accessibilityLabel="Allow Camera">
           <Text maxFontSizeMultiplier={1.4} style={s.btnText}>Allow Camera</Text>
         </TouchableOpacity>
       </View>
@@ -155,8 +155,7 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
           <TouchableOpacity
             accessibilityRole="button"
             style={[s.previewBtn, { backgroundColor: 'rgba(255,255,255,0.15)' }]}
-            onPress={() => setCaptured(null)}
-            accessibilityLabel="Retake photo"
+            accessibilityLabel="\u21a9 Retake" onPress={() => setCaptured(null)}
           >
             <Text maxFontSizeMultiplier={1.4} style={s.previewBtnText}>↩ Retake</Text>
           </TouchableOpacity>

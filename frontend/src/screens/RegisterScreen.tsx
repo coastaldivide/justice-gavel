@@ -97,7 +97,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
               selectionColor={COLORS.steel}
             />
             <TouchableOpacity
-          accessibilityRole="button" onPress={() => setShowPass(s => !s)}
+          accessibilityRole="button" accessibilityLabel="{showPass ? 'Hide' : 'Show'}" onPress={() => setShowPass(s => !s)}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.showBtnText}>{showPass ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>

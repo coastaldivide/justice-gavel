@@ -58,7 +58,7 @@ function PurposeCard({ p, selected, onSelect }: any) {
     <TouchableOpacity
           accessibilityRole="button"
       style={[styles.purposeCard, selected && styles.purposeCardSelected]}
-      onPress={() => onSelect(p)}
+      accessibilityLabel="{p.icon}" onPress={() => onSelect(p)}
       activeOpacity={0.8}
     >
       <Text maxFontSizeMultiplier={1.4} style={styles.purposeIcon}>{p.icon}</Text>
@@ -78,7 +78,7 @@ function MethodRow({ m, selected, onSelect }: any) {
     <TouchableOpacity
       accessibilityRole="button"
       style={[styles.methodRow, selected && styles.methodRowSelected]}
-      onPress={() => onSelect(m.key)}
+      accessibilityLabel="{m.icon}" onPress={() => onSelect(m.key)}
       activeOpacity={0.8}
     >
       <Text maxFontSizeMultiplier={1.4} style={styles.methodIcon}>{m.icon}</Text>

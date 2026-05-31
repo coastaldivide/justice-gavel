@@ -479,7 +479,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.navBtn, styles.navBtnSecondary]}
-            onPress={() => setActiveStep(s => Math.max(1, s - 1))}
+            accessibilityLabel="\u2190 Previous" onPress={() => setActiveStep(s => Math.max(1, s - 1))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.navBtnSecondaryText}>← Previous</Text>
           </TouchableOpacity>
@@ -488,7 +488,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.navBtn, { backgroundColor: data.color, flex: 2 }]}
-            onPress={() => setActiveStep(s => Math.min((data?.steps ?? []).length, s + 1))}
+            accessibilityLabel="Next Step \u2192" onPress={() => setActiveStep(s => Math.min((data?.steps ?? []).length, s + 1))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.navBtnText}>Next Step →</Text>
           </TouchableOpacity>
@@ -496,7 +496,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.navBtn, { backgroundColor: COLORS.legal, flex: 2 }]}
-            onPress={() => navigation.navigate('LawyersTab')}
+            accessibilityLabel="Find a Lawyer Now \u2192" onPress={() => navigation.navigate('LawyersTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.navBtnText}>Find a Lawyer Now →</Text>
           </TouchableOpacity>

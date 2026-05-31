@@ -381,7 +381,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
             accessibilityRole="button"
             style={styles.payBtn}
             onPress={proceedToPayment}
-          >
+           accessibilityLabel="Pay $28.99 &amp; Get Connected Now">
             <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>Pay $28.99 &amp; Get Connected Now</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.payBtnSub}>Demo mode: no real charge</Text>
           </TouchableOpacity>
@@ -476,7 +476,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
             <View style={styles.errorBlock}>
               <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>Something went wrong. Please go back and try again.</Text>
               <TouchableOpacity
-          accessibilityRole="button" style={styles.backBtn} onPress={() => setStep(2)}
+          accessibilityRole="button" style={styles.backBtn} accessibilityLabel="\u2190 Go back" onPress={() => setStep(2)}
                 >
                 <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>← Go back</Text>
               </TouchableOpacity>

@@ -222,7 +222,7 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.callBtn, { backgroundColor: colors.legalDark }]}
-            onPress={() => call(item.phone, item.name)}
+            accessibilityLabel="\ud83d\udcde Call" onPress={() => call(item.phone, item.name)}
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2} style={styles.callBtnText}>
@@ -239,7 +239,7 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.webBtn, { borderColor: colors.border }]}
-            onPress={() => openWeb(item.website)}
+            accessibilityLabel="\ud83c\udf10 Website" onPress={() => openWeb(item.website)}
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.webBtnText,

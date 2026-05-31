@@ -175,8 +175,7 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
     <TouchableOpacity
   accessibilityRole="button"
       style={s.stateRow}
-      onPress={() => onSelectState(item)}
-      accessibilityLabel={`Select ${item.stateName}`}
+      accessibilityLabel="{item.stateName}" onPress={() => onSelectState(item)}
     >
       <View style={s.stateInfo}>
         <Text maxFontSizeMultiplier={1.4} style={s.stateName}>{item.stateName}</Text>
@@ -264,7 +263,7 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
         <View style={s.subHeader}>
           <TouchableOpacity
   accessibilityRole="button"
-          >
+           accessibilityLabel="\u2190 States">
             <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← States</Text>
           </TouchableOpacity>
           <Text maxFontSizeMultiplier={1.4} style={s.subHeaderTitle}>{selectedState.stateName}</Text>
@@ -279,8 +278,7 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
             <TouchableOpacity accessibilityRole="button"
               key={cat.key}
               style={s.categoryCard}
-              onPress={() => onSelectCategory(cat.key)}
-              accessibilityLabel={cat.label}
+              accessibilityLabel="{cat.icon}" onPress={() => onSelectCategory(cat.key)}
             >
               <Text maxFontSizeMultiplier={1.4} style={s.categoryIcon}>{cat.icon}</Text>
               <View style={s.categoryInfo}>
@@ -346,7 +344,7 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
         <View style={s.subHeader}>
           <TouchableOpacity
   accessibilityRole="button"
-          >
+           accessibilityLabel="\u2190 {selectedState.stateName}">
             <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← {selectedState.stateName}</Text>
           </TouchableOpacity>
           <Text maxFontSizeMultiplier={1.4} style={s.subHeaderTitle}>{categoryInfo?.label}</Text>
@@ -486,7 +484,7 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
         <View style={s.subHeader}>
           <TouchableOpacity
   accessibilityRole="button"
-          >
+           accessibilityLabel="\u2190 Forms">
             <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← Forms</Text>
           </TouchableOpacity>
           <Text maxFontSizeMultiplier={1.4} style={s.subHeaderTitle}>Field Guide</Text>

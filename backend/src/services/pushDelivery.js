@@ -21,7 +21,7 @@ async function getExpoClass() {
  * sendPushToUser — send an immediate push to a specific user
  * Used by: attorney messages, case updates, hearing reminders
  */
-export async function sendPushToUser(userId, { title, body, data = {}, badge = 1, sound = 'default' }) {
+export async function sendPushToUser(userId, { title, body, data = {}, badge = 1, sound = 'default', priority = 'high', channelId = 'default'}) {
   try {
     const db = await getDb();
     const rows = await db.all(
@@ -105,7 +105,6 @@ export async function deliverScheduledPushes() {
             case_id: push.case_id           || null,
             push_id: push.id,
           },
-        data: push.data ? JSON.parse(push.data) : {},
       }];
 
       const expoC = await getExpoClient();

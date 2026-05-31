@@ -189,8 +189,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           <TouchableOpacity
             accessibilityRole="button"
             style={s.contactRow}
-            onPress={() => callNumber('18008435678')}
-            accessibilityLabel="Call NCMEC"
+            accessibilityLabel="\ud83d\udd34 NCMEC 24/7" onPress={() => callNumber('18008435678')}
           >
             <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🔴 NCMEC 24/7</Text>
             <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>1-800-843-5678</Text>
@@ -200,7 +199,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         <TouchableOpacity
           accessibilityRole="button"
           style={s.btnPrimary}
-          onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
+          accessibilityLabel="Back to Case" onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
         >
           <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Back to Case</Text>
         </TouchableOpacity>
@@ -284,7 +283,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         <TouchableOpacity
           accessibilityRole="button"
           style={s.btnSecondary}
-          onPress={() => setPhase('lookup')}
+          accessibilityLabel="Back" onPress={() => setPhase('lookup')}
         >
           <Text maxFontSizeMultiplier={1.4} style={s.btnSecondaryText}>Back</Text>
         </TouchableOpacity>
@@ -337,14 +336,14 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
             <TouchableOpacity
               accessibilityRole="button"
               style={s.btnPrimary}
-              onPress={() => setPhase('intake')}
+              accessibilityLabel="Record Intake for Case" onPress={() => setPhase('intake')}
             >
               <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Record Intake for Case</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <TouchableOpacity accessibilityRole="button" style={s.btnSecondary} onPress={() => setPhase('home')}
+        <TouchableOpacity accessibilityRole="button" style={s.btnSecondary} accessibilityLabel="\u2190 Back" onPress={() => setPhase('home')}
         >
           <Text maxFontSizeMultiplier={1.4} style={s.btnSecondaryText}>← Back</Text>
         </TouchableOpacity>

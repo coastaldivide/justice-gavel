@@ -148,7 +148,7 @@ export default function ChildSupportScreen({ navigation }: any) {
               key={n}
               accessibilityRole="button"
               style={[s.childBtn, { borderColor: COLORS.border, backgroundColor: children === n ? COLORS.navy : COLORS.bgCard }]}
-              onPress={() => setChildren(n)}
+              accessibilityLabel="{n}" onPress={() => setChildren(n)}
             >
               <Text style={{ color: children === n ? '#fff' : COLORS.textPrimary, fontWeight: '700' }}>{n}</Text>
             </TouchableOpacity>
@@ -198,7 +198,7 @@ export default function ChildSupportScreen({ navigation }: any) {
           accessibilityRole="button"
           style={[s.calcBtn, { backgroundColor: COLORS.navy }]}
           onPress={calculate}
-        >
+         accessibilityLabel="Calculate Estimate">
           <Text style={s.calcBtnText}>Calculate Estimate</Text>
         </TouchableOpacity>
       </View>

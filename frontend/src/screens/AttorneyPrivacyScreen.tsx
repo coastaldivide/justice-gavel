@@ -96,7 +96,7 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
         </Text>
         <TouchableOpacity
           accessibilityRole="button"
-          onPress={() => Linking.openURL('https://justicegavel.app/privacy').catch(() => {})}
+          accessibilityLabel="Full Privacy Policy \u2192" onPress={() => Linking.openURL('https://justicegavel.app/privacy').catch(() => {})}
         >
           <Text style={[s.fullPolicyLink, { color: COLORS.navy }]}>Full Privacy Policy →</Text>
         </TouchableOpacity>
@@ -111,7 +111,7 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
           <TouchableOpacity
             accessibilityRole="button"
             style={s.sectionHeader}
-            onPress={() => setExpanded(expanded === idx ? null : idx)}
+            accessibilityLabel="{sec.icon}" onPress={() => setExpanded(expanded === idx ? null : idx)}
           >
             <Text style={s.sectionIcon}>{sec.icon}</Text>
             <Text style={[s.sectionTitle, { color: COLORS.textPrimary, flex: 1 }]}>
@@ -142,7 +142,7 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
         <TouchableOpacity
           accessibilityRole="button"
           style={[s.contactBtn, { backgroundColor: COLORS.navy }]}
-          onPress={() => Linking.openURL('mailto:legal@justicegavel.app').catch(() => Alert.alert('Email', 'legal@justicegavel.app'))}
+          accessibilityLabel="Contact Legal Team" onPress={() => Linking.openURL('mailto:legal@justicegavel.app').catch(() => Alert.alert('Email', 'legal@justicegavel.app'))}
         >
           <Text style={s.contactBtnText}>Contact Legal Team</Text>
         </TouchableOpacity>

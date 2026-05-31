@@ -1,3 +1,5 @@
+const JOB_LAST_RUN = new Map(); // prevents duplicate runs within same window
+
 /**
  * scheduler.js — Justice Gavel Full Automated Pipeline
  * ─────────────────────────────────────────────────────

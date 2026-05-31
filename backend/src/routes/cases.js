@@ -67,7 +67,7 @@ router.get('/', authRequired, async (req, res) => {
     const offset = (page - 1) * limit;
     const status = req.query.status ? sanitizeStr(req.query.status, 30) : null;
 
-    let sql    = `SELECT ${CASE_SAFE_COLS} FROM cases WHERE user_id=?`;
+    let sql    = `SELECT ${CASE_SAFE_COLS} FROM cases WHERE user_id=? AND deleted_at IS NULL`;
     const args = [req.user.id];
     if (status) { sql += ' AND status=?'; args.push(status); }
     sql += ' ORDER BY id DESC LIMIT ? OFFSET ?';
@@ -77,8 +77,8 @@ router.get('/', authRequired, async (req, res) => {
       db.all(sql, args),
       db.get(
         status
-          ? 'SELECT COUNT(*) as total FROM cases WHERE user_id=? AND status=?'
-          : 'SELECT COUNT(*) as total FROM cases WHERE user_id=?',
+          ? 'SELECT COUNT(*) as total FROM cases WHERE user_id=? AND deleted_at IS NULL AND status=?'
+          : 'SELECT COUNT(*) as total FROM cases WHERE user_id=? AND deleted_at IS NULL',
         status ? [req.user.id, status] : [req.user.id]
       ),
     ]);
@@ -273,7 +273,7 @@ router.delete('/:id', authRequired, async (req, res) => {
       });
     }
 
-    await db.run('DELETE FROM cases WHERE id=? AND user_id=?', [caseId, req.user.id]);
+    await db.run("UPDATE cases SET deleted_at=datetime('now') WHERE id=? AND user_id=?", [caseId, req.user.id]);
     res.json({ ok: true });
   } catch (e) {
     logger.error('[cases/delete]', e.message);

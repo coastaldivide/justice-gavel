@@ -172,8 +172,7 @@ function SavedCard({
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.actionBtn, { backgroundColor: COLORS.legal }]}
-            onPress={() => callPhone(lawyer.phone!)}
-            accessibilityLabel={`Call ${lawyer.name}`}
+            accessibilityLabel="\ud83d\udcde {t('saved_call')}" onPress={() => callPhone(lawyer.phone!)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📞 {t('saved_call')}</Text>
           </TouchableOpacity>
@@ -182,8 +181,7 @@ function SavedCard({
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.actionBtn, { backgroundColor: COLORS.blue }]}
-            onPress={() => sendSMS(lawyer.phone!)}
-            accessibilityLabel={`Text ${lawyer.name}`}
+            accessibilityLabel="\ud83d\udcac Text" onPress={() => sendSMS(lawyer.phone!)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>💬 Text</Text>
           </TouchableOpacity>
@@ -201,8 +199,7 @@ function SavedCard({
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.actionBtn, { backgroundColor: COLORS.warnDark }]}
-          onPress={() => setReviewing(r => !r)}
-          accessibilityLabel={`Leave a review for ${lawyer.name}`}
+          accessibilityLabel="\u2b50 Review" onPress={() => setReviewing(r => !r)}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>⭐ Review</Text>
         </TouchableOpacity>
@@ -271,13 +268,13 @@ function SavedCard({
                 style={[styles.notesBtn, { backgroundColor: COLORS.navy }]}
                 onPress={saveNote}
                 disabled={saving}
-              >
+               accessibilityLabel="{saving ? 'Saving\u2026' : 'Save note'}">
                 <Text maxFontSizeMultiplier={1.4} style={styles.notesBtnText}>{saving ? 'Saving…' : 'Save note'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 accessibilityRole="button"
                 style={[styles.notesBtn, { backgroundColor: COLORS.border }]}
-                onPress={() => { setNote(lawyer.notes || ''); setEditingNote(false); }}
+                accessibilityLabel="Cancel" onPress={() => { setNote(lawyer.notes || ''); setEditingNote(false); }}
               >
                 <Text maxFontSizeMultiplier={1.4} style={[styles.notesBtnText, { color: COLORS.textSecond }]}>Cancel</Text>
               </TouchableOpacity>
@@ -374,7 +371,7 @@ export default function SavedLawyersScreen({ navigation }: any): React.JSX.Eleme
         <View style={styles.center}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.errorText, { color: COLORS.emergency }]}>{error}</Text>
           <TouchableOpacity
-          accessibilityRole="button" style={styles.retryBtn} onPress={() => load()}
+          accessibilityRole="button" style={styles.retryBtn} accessibilityLabel="Try Again" onPress={() => load()}
             >
             <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
           </TouchableOpacity>
@@ -392,7 +389,7 @@ export default function SavedLawyersScreen({ navigation }: any): React.JSX.Eleme
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.findBtn, { backgroundColor: COLORS.navy }]}
-            onPress={() => navigation.navigate('LawyersTab')}
+            accessibilityLabel="{t('saved_find_lawyers')}" onPress={() => navigation.navigate('LawyersTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.findBtnText}>{t('saved_find_lawyers')}</Text>
           </TouchableOpacity>

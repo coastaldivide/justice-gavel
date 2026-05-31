@@ -9,8 +9,7 @@ import { getDb }          from '../../db/index.js';
 import logger             from '../../utils/logger.js';
 import rateLimit          from 'express-rate-limit';
 import {
-  SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION,
-} from './_prompts.js';
+  SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION, sanitizeUserMessage} from './_prompts.js';
 import {
   getHistory, saveMessage, detectLawyerHandoff, classifyIntent,
   buildCaseNote, buildJurisdictionNote,
@@ -123,6 +122,7 @@ router.post('/stream', aiLimiter, authRequired, perUserAiLimit, async (req, res)
 
     // ── SSE headers ────────────────────────────────────────────────────────
     res.setHeader('Content-Type',  'text/event-stream');
+    res.write('data: ' + JSON.stringify({ type: 'disclaimer', required: true }) + '\n\n');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection',    'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');

@@ -293,7 +293,7 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): React.J
           </View>
           <TouchableOpacity
             accessibilityRole="button" onPress={handleCancel}
-            >
+             accessibilityLabel="Cancel">
             <Text maxFontSizeMultiplier={1.4} style={styles.cancelLink}>Cancel</Text>
           </TouchableOpacity>
         </View>
@@ -368,7 +368,7 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): React.J
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.bondsCTABtn}
-          onPress={() => navigation.navigate('BondsmanDashboard')}
+          accessibilityLabel="Open Lead Dashboard \u2192" onPress={() => navigation.navigate('BondsmanDashboard')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTABtnText}>Open Lead Dashboard →</Text>
         </TouchableOpacity>

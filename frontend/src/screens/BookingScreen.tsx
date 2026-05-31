@@ -175,7 +175,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
         <TouchableOpacity accessibilityRole="button" style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
           // @ts-ignore — handleBack is declared via var and is assigned before first user interaction
           onPress={handleBack}
-          >
+           accessibilityLabel="Back to Home">
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Back to Home</Text>
         </TouchableOpacity>
       </View>
@@ -196,7 +196,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
         <TouchableOpacity accessibilityRole="button" style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
           // @ts-ignore — handleBack var declaration is hoisted
           onPress={handleBack}
-          >
+           accessibilityLabel="Back to Home">
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Back to Home</Text>
         </TouchableOpacity>
       </View>
@@ -251,7 +251,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           ))}
           <TouchableOpacity
             accessibilityRole="button" style={[styles.nextBtn, { backgroundColor: COLORS.navy }]}
-            onPress={handleDatetimeStep}>
+            onPress={handleDatetimeStep} accessibilityLabel="Next \u2192">
             <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>Next →</Text>
           </TouchableOpacity>
         </>
@@ -261,7 +261,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
       {step === 'datetime' && (
         <>
           <TouchableOpacity
-          accessibilityRole="button" onPress={() => setStep('duration')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel="\u2190 Back" onPress={() => setStep('duration')} style={styles.back}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
           </TouchableOpacity>
@@ -332,7 +332,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
                 accessibilityRole="button"
                 style={[styles.nextBtn, { backgroundColor: COLORS.navy }, !selTime && styles.nextBtnDisabled]}
                 testID="booking-confirm-button" onPress={handleConfirmStep}
-                disabled={!selTime}>
+                disabled={!selTime} accessibilityLabel="Next \u2192">
                 <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>Next →</Text>
               </TouchableOpacity>
             </>
@@ -344,7 +344,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
       {step === 'confirm' && (
         <>
           <TouchableOpacity
-          accessibilityRole="button" onPress={() => setStep('datetime')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel="\u2190 Back" onPress={() => setStep('datetime')} style={styles.back}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
           </TouchableOpacity>
@@ -378,7 +378,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
 
           <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
             style={[styles.confirmBtn, { backgroundColor: COLORS.navy }, booking && { opacity: 0.6 }]}
-            testID="booking-confirm" onPress={confirmBooking} disabled={booking}>
+            testID="booking-confirm" onPress={confirmBooking} disabled={booking} accessibilityLabel="Confirm & Pay {duration.fee} \u2192">
             {booking
               ? <ActivityIndicator color={colors.bgCard} />
               : <Text maxFontSizeMultiplier={1.4} style={styles.confirmBtnText}>Confirm & Pay {duration.fee} →</Text>}

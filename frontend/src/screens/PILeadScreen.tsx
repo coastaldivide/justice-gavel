@@ -98,15 +98,14 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
-          onPress={() => navigation.navigate('LawyersTab')}
-          accessibilityLabel="Find a lawyer now"
+          accessibilityLabel="\u2696\ufe0f  Browse Lawyers Now" onPress={() => navigation.navigate('LawyersTab')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>⚖️  Browse Lawyers Now</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.homeBtn}
-          onPress={() => navigation.navigate('HomeTab')}
+          accessibilityLabel="Back to Home" onPress={() => navigation.navigate('HomeTab')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.homeBtnText, { color: colors.textMuted }]}>Back to Home</Text>
         </TouchableOpacity>
@@ -148,8 +147,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
                 accessibilityRole="button"
                 key={t.key}
                 style={[styles.typeCard, { backgroundColor: t.bg, borderColor: t.color + '55' }]}
-                onPress={() => { setCaseType(t.key); setStep('severity'); }}
-                accessibilityLabel={t.label}
+                accessibilityLabel="{t.icon}" onPress={() => { setCaseType(t.key); setStep('severity'); }}
 
               >
                 <Text maxFontSizeMultiplier={1.4} style={styles.typeIcon}>{t.icon}</Text>
@@ -167,7 +165,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
         {step === 'severity' && (
           <>
             <TouchableOpacity
-          accessibilityRole="button" onPress={() => setStep('type')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel="\u2190 Back" onPress={() => setStep('type')} style={styles.back}
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
             </TouchableOpacity>
@@ -204,7 +202,7 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
         {step === 'details' && (
           <>
             <TouchableOpacity
-          accessibilityRole="button" onPress={() => setStep('severity')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel="\u2190 Back" onPress={() => setStep('severity')} style={styles.back}
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
             </TouchableOpacity>

@@ -205,7 +205,8 @@ router.post('/index', authRequired, requireFirmRole('associate'), async (req, re
     const added = [];
     const conflicts_found = [];
 
-    for (const party of parties) {
+    // TODO[perf]: batch this query — currently N+1
+  for (const party of parties) {
       const name = truncateStr(sanitizeStr(String(party.name || ''), 200), 200);
       const role = PARTY_ROLES.includes(party.role) ? party.role : 'client';
       if (!name) continue;

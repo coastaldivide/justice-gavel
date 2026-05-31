@@ -394,7 +394,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
           accessibilityRole="button"
           style={styles.stateBtn}
           testID="expungement-state-picker"
-          onPress={() => setShowStatePicker(p => !p)}
+          accessibilityLabel="{stateError}" onPress={() => setShowStatePicker(p => !p)}
         >
       {!!stateError && <Text testID="expungement-state-error" style={{ color: COLORS.emergency, fontSize: 12, marginTop: 4, marginLeft: 4 }}>{stateError}</Text>}
         <Text maxFontSizeMultiplier={1.4} style={styles.stateBtnText}>{state}  ▾</Text>
@@ -421,7 +421,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
           <TouchableOpacity accessibilityRole="button"
             key={s}
             style={[styles.statusChip, caseStatus === s && styles.statusChipActive]}
-            onPress={() => setCaseStatus(s)}
+            accessibilityLabel="{s}" onPress={() => setCaseStatus(s)}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.statusChipText, caseStatus === s && styles.statusChipTextActive]}>{s}</Text>
           </TouchableOpacity>
@@ -435,7 +435,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
           <TouchableOpacity accessibilityRole="button"
             key={ch}
             style={[styles.chargeChip, charges === ch && styles.chargeChipActive]}
-            onPress={() => setCharges(charges === ch ? '' : ch)}
+            accessibilityLabel="{ch}" onPress={() => setCharges(charges === ch ? '' : ch)}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.chargeChipText, charges === ch && styles.chargeChipTextActive]}>{ch}</Text>
           </TouchableOpacity>
@@ -457,7 +457,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
         style={[styles.checkBtn, loading && { opacity: 0.6 }]}
         testID="expungement-check-button" onPress={checkEligibility}
         disabled={loading}
-        activeOpacity={0.85}>
+        activeOpacity={0.85} accessibilityLabel="Check My Eligibility  \u2192">
 
         {loading
           ? <ActivityIndicator color={colors.bgCard} />
@@ -542,7 +542,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
                   borderBottomWidth: 1, borderBottomColor: colors.border }}>
                   <TouchableOpacity
   accessibilityRole="button"
-          onPress={() => setShowPetition(false)}
+          accessibilityLabel="\u2190 Close" onPress={() => setShowPetition(false)}
                     >
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16,
                       color: colors.navy }}>← Close</Text>
@@ -667,7 +667,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
           ].map(s => <Text maxFontSizeMultiplier={1.4} key={s} style={styles.notEligibleItem}>{s}</Text>)}
           <TouchableOpacity accessibilityRole="button"
             style={styles.partnerBtn}
-            onPress={() => navigation.navigate('LawyersTab')}
+            accessibilityLabel="Find a Criminal Defense Lawyer \u2192" onPress={() => navigation.navigate('LawyersTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>Find a Criminal Defense Lawyer →</Text>
           </TouchableOpacity>

@@ -270,7 +270,7 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
           {!isLast && (
             <TouchableOpacity
               accessibilityRole="button" style={styles.nextBtn} onPress={next} activeOpacity={0.8}
-            >
+             accessibilityLabel="{t('onboard_next')}">
               <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>{t('onboard_next')}</Text>
             </TouchableOpacity>
           )}

@@ -211,7 +211,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
       <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Check-in unavailable</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={loadStatus}
-      >
+       accessibilityLabel="Try Again">
         <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
       </TouchableOpacity>
     </View>

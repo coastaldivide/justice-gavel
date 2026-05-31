@@ -491,7 +491,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
       title: phase === 'history' ? '📚 Research History' : '⚖️ Legal Research',
       headerRight: () => hasAccess && phase !== 'paywall' ? (
         <View style={{ flexDirection: 'row', gap: 16, marginRight: 14 }}>
-          <TouchableOpacity accessibilityRole="button" onPress={loadHistory}>
+          <TouchableOpacity accessibilityRole="button" onPress={loadHistory} accessibilityLabel="History">
             <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
           </TouchableOpacity>
           {phase === 'thread' && (
@@ -624,7 +624,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No research yet</Text>
             <TouchableOpacity
   accessibilityRole="button"
-              onPress={() => setPhase('home')}
+              accessibilityLabel="Start Researching \u2192" onPress={() => setPhase('home')}
               >
               <Text maxFontSizeMultiplier={1.4} style={styles.newSearchBtnText}>Start Researching →</Text>
             </TouchableOpacity>
@@ -634,8 +634,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
           <TouchableOpacity accessibilityRole="button"
             key={sess.id}
             style={[styles.histRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
-            onPress={() => loadSession(sess)}
-            accessibilityLabel={`Open: ${sess.title}`}
+            accessibilityLabel="\u2696\ufe0f" onPress={() => loadSession(sess)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.histIcon}>⚖️</Text>
             <View style={{ flex: 1 }}>

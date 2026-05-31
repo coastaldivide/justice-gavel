@@ -210,7 +210,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.statePicker}
-          onPress={() => setShowPicker(p => !p)}
+          accessibilityLabel="{state}  \u25be" onPress={() => setShowPicker(p => !p)}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.statePickerText}>{state}  ▾</Text>
         </TouchableOpacity>
@@ -244,7 +244,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
           <TouchableOpacity
           accessibilityRole="button"
             style={styles.gateBtn}
-            onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
+            accessibilityLabel="Start Free Trial \u2192" onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.gateBtnText}>Start Free Trial →</Text>
           </TouchableOpacity>
@@ -359,14 +359,14 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
           {isSubscriber && (
             <TouchableOpacity
               accessibilityRole="button" style={styles.textShareBtn} onPress={shareCard}
-            >
+             accessibilityLabel="Share as text (for SMS / iMessage)">
               <Text maxFontSizeMultiplier={1.4} style={styles.textShareBtnText}>Share as text (for SMS / iMessage)</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
             accessibilityRole="button"
             style={styles.stateChangeBtn}
-            onPress={() => setShowPicker(p => !p)}
+            accessibilityLabel="\ud83d\uddfa  Change State" onPress={() => setShowPicker(p => !p)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.stateChangeBtnText}>🗺  Change State</Text>
           </TouchableOpacity>

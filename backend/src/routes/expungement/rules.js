@@ -486,6 +486,7 @@ const DEFAULT_RULES = {
 };
 
 function classifyCharge(chargeText = '') {
+  if (!chargeText) return 'misdemeanor'; // null/undefined/empty guard
   const lower = chargeText.toLowerCase();
   // Dismissals first — override everything else
   if (/dismiss|not guilty|acquit|dropped|no charge/.test(lower)) return 'dismissed';

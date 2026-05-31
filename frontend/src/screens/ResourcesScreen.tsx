@@ -175,7 +175,7 @@ export default function ResourcesScreen(): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.4} style={{ color:colors.emergencyDark, textAlign:'center', margin:20 }}>{error}</Text>
           <TouchableOpacity
             accessibilityRole="button"
-            onPress={() => load()}
+            accessibilityLabel="Try again" onPress={() => load()}
             style={{ marginTop: 12, alignItems: 'center', padding: 8 }}
           >
             <Text style={{ color: ('\x23' + '1d4ed8') as string, fontSize: 14 }}>Try again</Text>

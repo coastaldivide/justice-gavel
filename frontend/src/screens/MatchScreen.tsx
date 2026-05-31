@@ -125,26 +125,26 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         <View style={styles.actionRow}>
           {item?.phone && (
             <TouchableOpacity
-          accessibilityRole="button" style={[styles.actionBtn, styles.callBtn]} onPress={() => callPhone(item?.phone)}
+          accessibilityRole="button" style={[styles.actionBtn, styles.callBtn]} accessibilityLabel="\ud83d\udcde Call" onPress={() => callPhone(item?.phone)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📞 Call</Text>
             </TouchableOpacity>
           )}
           {item?.phone && (
-            <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.smsBtn]} onPress={() => sendSMS(item?.phone)}
+            <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.smsBtn]} accessibilityLabel="\ud83d\udcac Text" onPress={() => sendSMS(item?.phone)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>💬 Text</Text>
             </TouchableOpacity>
           )}
           {item.lat && item.lng && (
             <TouchableOpacity
-          accessibilityRole="button" style={[styles.actionBtn, styles.dirBtn]} onPress={() => openDirections(item.lat, item.lng, item?.name)}
+          accessibilityRole="button" style={[styles.actionBtn, styles.dirBtn]} accessibilityLabel="\ud83d\uddfa Dir" onPress={() => openDirections(item.lat, item.lng, item?.name)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>🗺 Dir</Text>
             </TouchableOpacity>
           )}
           {item.website && (
-            <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.webBtn]} onPress={() => openWebsite(item.website)}
+            <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.webBtn]} accessibilityLabel="\ud83c\udf10 Web" onPress={() => openWebsite(item.website)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>🌐 Web</Text>
             </TouchableOpacity>
@@ -177,8 +177,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                     {item?.name} will contact you shortly.
                   </Text>
                   <TouchableOpacity
-          accessibilityRole="button" style={[styles.msgSendBtn, { marginTop: 20, width: '100%' }]} onPress={() => setMsgModal(false)}
-                    accessibilityLabel="Done"
+          accessibilityRole="button" style={[styles.msgSendBtn, { marginTop: 20, width: '100%' }]} accessibilityLabel="Done" onPress={() => setMsgModal(false)}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.msgSendBtnText}>Done</Text>
                   </TouchableOpacity>

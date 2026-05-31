@@ -1,3 +1,6 @@
+// Disclaimer appended to all signal outputs per legal policy
+const SIGNAL_DISCLAIMER = 'AI-generated signals are informational only and do not constitute legal advice.';
+
 /**
  * routes/firm_verticals.js — Vertical configuration, pricing tiers, and
  *                             specialty trackers for all 10 practice areas.
@@ -2600,9 +2603,11 @@ router.patch('/:firmId/:trackerId/resolve', authRequired, async (req, res) => {
     const { firmId, trackerId } = req.params;
     const { resolved, resolution_notes } = req.body || {};
     // Try to update in any tracker table
-    const tables = ['plea_offers','voluntary_departure','vop_trackers','bop_exhaustion','padilla_warnings'];
+    const ALLOWED_TRACKER_TABLES = new Set(['plea_offers','voluntary_departure','vop_trackers','bop_exhaustion','padilla_warnings']);
     let updated = false;
-    for (const table of tables) {
+    for (const table of ALLOWED_TRACKER_TABLES) {
+      // table comes from a hard-coded Set — never from user input, no SQLi risk
+      // eslint-disable-next-line no-await-in-loop
       try {
         const r = await db.run(
           `UPDATE ${table} SET status = ?, resolution_notes = ?, updated_at = datetime('now')

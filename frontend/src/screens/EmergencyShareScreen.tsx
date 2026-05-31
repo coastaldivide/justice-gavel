@@ -285,7 +285,7 @@ if (phase === 'ready') return (
           <TouchableOpacity
   accessibilityRole="button"
             style={styles.addContactsBtn}
-            onPress={() => navigation.navigate('Contacts')}
+            accessibilityLabel="Add Emergency Contacts \u2192" onPress={() => navigation.navigate('Contacts')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.addContactsBtnText}>Add Emergency Contacts →</Text>
           </TouchableOpacity>
@@ -318,13 +318,13 @@ if (phase === 'ready') return (
         onPress={gatherInfo}
         disabled={contacts.length === 0}
         activeOpacity={0.85}
-      >
+       accessibilityLabel="\ud83d\udea8  Get Info & Preview Message">
         <Text maxFontSizeMultiplier={1.4} style={styles.goBtnText}>🚨  Get Info & Preview Message</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
   accessibilityRole="button"
-      >
+       accessibilityLabel="Edit emergency contacts \u2192">
         <Text maxFontSizeMultiplier={1.4} style={styles.editContactsText}>Edit emergency contacts →</Text>
       </TouchableOpacity>
 
@@ -439,7 +439,7 @@ if (phase === 'ready') return (
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity
   accessibilityRole="button"
-        >
+         accessibilityLabel="Try Again">
         <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
       </TouchableOpacity>
     </View>
@@ -453,7 +453,7 @@ if (phase === 'ready') return (
       <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>Your emergency contacts have been notified.</Text>
       <TouchableOpacity
   accessibilityRole="button"
-        >
+         accessibilityLabel="Done Sharing">
         <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done Sharing</Text>
       </TouchableOpacity>
     </View>
@@ -499,7 +499,7 @@ if (phase === 'ready') return (
           {bondsman.phone && (
             <TouchableOpacity
   accessibilityRole="button"
-              >
+               accessibilityLabel="{bondsman.phone}">
               <Text maxFontSizeMultiplier={1.4} style={styles.providerPhone}>{bondsman.phone}</Text>
             </TouchableOpacity>
           )}
@@ -512,7 +512,7 @@ if (phase === 'ready') return (
           {lawyer.phone && (
             <TouchableOpacity
   accessibilityRole="button"
-              >
+               accessibilityLabel="{lawyer.phone}">
               <Text maxFontSizeMultiplier={1.4} style={[styles.providerPhone, { color: COLORS.legal }]}>{lawyer.phone}</Text>
             </TouchableOpacity>
           )}
@@ -520,14 +520,14 @@ if (phase === 'ready') return (
       )}
       <TouchableOpacity
   accessibilityRole="button"
-      >
+       accessibilityLabel="\ud83d\udea8  Send Now">
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>🚨  Send Now</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnSub}>Opens your Messages app</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
   accessibilityRole="button"
-        >
+         accessibilityLabel="Cancel">
         <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Cancel</Text>
       </TouchableOpacity>
       <View style={{ height: 40 }} />

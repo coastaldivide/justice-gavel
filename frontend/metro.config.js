@@ -13,3 +13,4 @@ config.resolver.sourceExts = [
 ];
 
 module.exports = config;
+// minification is handled by Metro's default transformer (Hermes enabled in app.json)

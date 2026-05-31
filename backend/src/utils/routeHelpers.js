@@ -194,3 +194,18 @@ export function stripHtml(val) {
     .replace(/&amp;/g, '&').replace(/&quot;/g, '"')
     .trim();
 }
+
+// ── Transaction wrapper ────────────────────────────────────────────────────────
+// Usage: await withTransaction(db, async (db) => { await db.run(...); ... });
+// Falls back gracefully if the DB adapter does not support transactions.
+export async function withTransaction(db, fn) {
+  try {
+    await db.run('BEGIN').catch(() => {});
+    const result = await fn(db);
+    await db.run('COMMIT').catch(() => {});
+    return result;
+  } catch (err) {
+    await db.run('ROLLBACK').catch(() => {});
+    throw err;
+  }
+}

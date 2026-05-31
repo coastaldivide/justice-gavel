@@ -366,8 +366,7 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
       <TouchableOpacity
   accessibilityRole="button"
         style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
-        onPress={() => onOpen(item)}
-        accessibilityLabel={`Open ${item.label}`}
+        accessibilityLabel="{m?.icon || '\ud83d\udcc4'}" onPress={() => onOpen(item)}
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.historyIcon}>{m?.icon || '📄'}</Text>
         <View style={{ flex: 1 }}>
@@ -598,7 +597,7 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
       headerRight: () => phase === 'library' ? (
         <TouchableOpacity
   accessibilityRole="button"
-          style={{ marginRight: 14 }}>
+          style={{ marginRight: 14 }} accessibilityLabel="History">
           <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
         </TouchableOpacity>
       ) : null });
@@ -931,7 +930,7 @@ const loadHistory = useCallback(async () => {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity accessibilityRole="button" style={styles.backLink} onPress={() => setPhase('library')}
+        <TouchableOpacity accessibilityRole="button" style={styles.backLink} accessibilityLabel="\u2190 Back to library" onPress={() => setPhase('library')}
           >
           <Text maxFontSizeMultiplier={1.4} style={[styles.backLinkText, { color: colors.textMuted }]}>← Back to library</Text>
         </TouchableOpacity>
@@ -978,7 +977,7 @@ const loadHistory = useCallback(async () => {
               <TouchableOpacity
                 accessibilityRole="button"
                 style={egStyles.reviewBtn}
-                onPress={() => Linking.openURL('https://www.lawhelp.org/').catch(() => {})}
+                accessibilityLabel="Find Free Legal Help \u2192" onPress={() => Linking.openURL('https://www.lawhelp.org/').catch(() => {})}
               >
                 <Text maxFontSizeMultiplier={1.4} style={egStyles.reviewBtnText}>Find Free Legal Help →</Text>
               </TouchableOpacity>
@@ -1002,7 +1001,7 @@ const loadHistory = useCallback(async () => {
               <View style={egStyles.btnRow}>
                 <TouchableOpacity accessibilityRole="button"
                   style={egStyles.cancelBtn}
-                  onPress={() => setShowExportGate(false)}
+                  accessibilityLabel="Go Back" onPress={() => setShowExportGate(false)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={egStyles.cancelBtnText}>Go Back</Text>
                 </TouchableOpacity>
@@ -1070,7 +1069,7 @@ const loadHistory = useCallback(async () => {
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
             style={[styles.resultAction, { backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.border }]}
-            onPress={() => { setPhase('library'); setSelected(null); setDraft(''); }}
+            accessibilityLabel="+ New" onPress={() => { setPhase('library'); setSelected(null); setDraft(''); }}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.resultActionText, { color: colors.textSecond }]}>+ New</Text>
           </TouchableOpacity>
@@ -1173,7 +1172,7 @@ const loadHistory = useCallback(async () => {
             <TouchableOpacity
   accessibilityRole="button"
               style={[styles.generateBtn, { backgroundColor: COLORS.navy, marginTop: 20, width: '100%' }]}
-              onPress={() => setPhase('library')}
+              accessibilityLabel="\u2190 Back to Library" onPress={() => setPhase('library')}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.generateBtnText}>← Back to Library</Text>
             </TouchableOpacity>

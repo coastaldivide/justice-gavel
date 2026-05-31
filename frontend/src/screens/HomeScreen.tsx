@@ -1,7 +1,7 @@
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, AccessibilityInfo} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { getContacts } from '../services/storage';
@@ -55,6 +55,8 @@ const TILES = [
   { key: 'Resources',     icon: '📚', label: 'Legal\nResources',        nav: 'More:Resources',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
   { key: 'Search',        icon: '🔍', label: 'Search\nEverything',      nav: 'More:Search',                bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
 ];
+
+const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
 export default function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
@@ -209,7 +211,7 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
-            onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
+            accessibilityLabel="\u2699\ufe0f" onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             style={styles.settingsBtn}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.settingsIcon}>⚙️</Text>
