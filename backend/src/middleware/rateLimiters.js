@@ -1,3 +1,4 @@
+import { getDb } from '../db/index.js';
 /**
  * rateLimiters.js — Centralized rate limit presets
  *
@@ -62,3 +63,42 @@ export const publicLimiter = rateLimit({
   legacyHeaders:   false,
   message:         { error: 'Rate limit exceeded — please slow down.' },
 });
+
+// ── AI quota middleware — enforces free-tier message limits ───────────────────
+// Free tier: 10 AI messages/day; Paid: unlimited (governed by rate limiter only)
+export async function aiQuotaCheck(req, res, next) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return next();
+    
+    const db = await getDb();
+    // Get subscription tier
+    const sub = await db.get(
+      `SELECT subscription_tier FROM users WHERE id = ?`, [userId]
+    ).catch(() => null);
+    
+    const tier = sub?.subscription_tier || 'free';
+    if (tier !== 'free') return next(); // paid users pass through
+    
+    // Count today's AI messages
+    const today = new Date().toISOString().slice(0, 10);
+    const usage = await db.get(
+      `SELECT COUNT(*) as cnt FROM chat_messages 
+       WHERE user_id = ? AND role = 'user' AND DATE(created_at) = ?`,
+      [userId, today]
+    ).catch(() => ({ cnt: 0 }));
+    
+    const FREE_DAILY_LIMIT = 10;
+    if ((usage?.cnt || 0) >= FREE_DAILY_LIMIT) {
+      return res.status(429).json({
+        error:    'Daily AI limit reached',
+        limit:    FREE_DAILY_LIMIT,
+        upgrade:  true,
+        message:  `Free accounts get ${FREE_DAILY_LIMIT} AI messages per day. Upgrade to Legal Radar or higher for unlimited access.`,
+      });
+    }
+    next();
+  } catch {
+    next(); // never block on quota errors
+  }
+}

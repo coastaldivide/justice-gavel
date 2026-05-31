@@ -12,6 +12,15 @@ import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger             from '../../utils/logger.js';
 
+// ── Generate Stripe idempotency key ────────────────────────────────────────────
+// Key format: userId-priceId-5minuteBucket
+// This means the same user subscribing to the same plan within 5 minutes
+// uses the same idempotency key → Stripe returns the same result, no double charge
+function stripeIdempotencyKey(userId, priceId, action = 'sub') {
+  const bucket = Math.floor(Date.now() / 300000); // 5-minute windows
+  return `${action}-${userId}-${String(priceId || 'none').slice(-12)}-${bucket}`;
+}
+
 const router = Router();
 
 // ── Consumer subscribe ────────────────────────────────────────────────────────
@@ -56,7 +65,7 @@ router.post('/consumer/subscribe', billingLimiter, authRequired, async (req, res
       items: [{ price_data: { currency: 'usd', unit_amount: tierConfig.monthly_cents, product_data: { name: `Justice Gavel ${tierConfig.name}` }, recurring: { interval: 'month' } } }],
       trial_period_days: 7,
       metadata: { user_id: String(req.user.id), tier, provider_type: 'consumer' }
-    });
+    }, { idempotencyKey: stripeIdempotencyKey(req.user?.id, tierConfig?.price_id || tier || 'checkout') });
     const trialEnd = new Date(stripeSub.trial_end * 1000).toISOString();
     const sub = await db.run(
       `INSERT INTO subscriptions (user_id, provider_type, tier, status, amount_cents, trial_ends_at, stripe_sub_id, stripe_cus_id)

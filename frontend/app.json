@@ -2,7 +2,7 @@
   "expo": {
     "name": "Justice Gavel",
     "slug": "justice-gavel",
-    "version": "5.98.0",
+    "version": "5.99.0",
     "orientation": "portrait",
     "platforms": [
       "ios",
@@ -31,7 +31,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.justicegavel.mobile",
-      "buildNumber": "598",
+      "buildNumber": "599",
       "infoPlist": {
         "NSCalendarsUsageDescription": "Justice Gavel adds your court dates to your calendar so you never miss a hearing.",
         "NSCalendarsWriteOnlyAccessUsageDescription": "Justice Gavel adds your court dates to your calendar so you never miss a hearing.",
@@ -131,7 +131,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "app.justicegavel.mobile",
-      "versionCode": 598,
+      "versionCode": 599,
       "permissions": [
         "READ_MEDIA_IMAGES",
         "CAMERA",

@@ -18,6 +18,15 @@ import { authRequired }          from '../middleware/auth.js';
 import { createPaymentSession }  from '../payments/orchestrator.js';
 import logger                    from '../utils/logger.js';
 
+// ── Generate Stripe idempotency key ────────────────────────────────────────────
+// Key format: userId-priceId-5minuteBucket
+// This means the same user subscribing to the same plan within 5 minutes
+// uses the same idempotency key → Stripe returns the same result, no double charge
+function stripeIdempotencyKey(userId, priceId, action = 'sub') {
+  const bucket = Math.floor(Date.now() / 300000); // 5-minute windows
+  return `${action}-${userId}-${String(priceId || 'none').slice(-12)}-${bucket}`;
+}
+
 const router     = Router();
 const payLimiter = makeUserLimiter({
   windowMs: 3_600_000, // 1 hour
