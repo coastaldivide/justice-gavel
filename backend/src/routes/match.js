@@ -57,6 +57,9 @@ function haversineKm(aLat, aLng, bLat, bLng) {
 // ── stage 1: SQL hard filter + numeric scoring ────────────────────────────────
 
 async function fetchAndFilterLawyers(db, { city, caseType, language, lat, lng, proBonoOnly, user_state = null }) {
+  // Guard: coerce all string params to safe strings to prevent crashes
+  const safeStr = (v) => (v == null ? '' : String(v).trim());
+
   // Pull a broad candidate pool for the city
   const rows = await db.all(
     `SELECT ${LAWYERS_COLS} FROM lawyers WHERE city = ? COLLATE NOCASE ORDER BY jtb_verified DESC, bar_verified DESC, rating DESC, reviews DESC LIMIT 100`,

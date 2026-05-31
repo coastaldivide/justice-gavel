@@ -486,8 +486,17 @@ const DEFAULT_RULES = {
 };
 
 function classifyCharge(chargeText = '') {
-  if (!chargeText) return 'misdemeanor'; // null/undefined/empty guard
-  const lower = chargeText.toLowerCase();
+  // Coerce any input to a safe string — never crash on bad input types
+  // In a legal app, a classification error could affect real people.
+  // We return 'misdemeanor' as the conservative safe default for any
+  // unrecognizable input, rather than throwing an exception.
+  const safe  = (chargeText === null || chargeText === undefined)
+    ? ''
+    : typeof chargeText === 'string'
+    ? chargeText
+    : String(chargeText);          // handles numbers, booleans, objects, arrays
+  if (!safe.trim()) return 'misdemeanor';
+  const lower = safe.toLowerCase();
   // Dismissals first — override everything else
   if (/dismiss|not guilty|acquit|dropped|no charge/.test(lower)) return 'dismissed';
   // DUI/DWI before domestic (drunk driving + domestic overlap is rare)
@@ -549,7 +558,19 @@ function classifyCharge(chargeText = '') {
   return 'misdemeanor';
 }
 
+/**
+ * Get expungement eligibility for a charge in a state.
+ * @param {string} state - 2-letter state code
+ * @param {string} chargeType - one of felony/misdemeanor/dui/domestic/sexual/dismissed
+ * @returns {{ eligible: boolean|'conditional', waiting_years: number, notes: string[] }}
+ *   eligible: true = eligible, false = not eligible, 'conditional' = depends on factors
+ *   Never throws — returns default rules if state not found.
+ */
 function getEligibility(state, chargeType, status) {
+  // Coerce inputs — never crash on bad state or charge type
+  const safeState  = (state  == null) ? '' : String(state).trim().toUpperCase().slice(0,2);
+  const safeCharge = (chargeType == null) ? 'misdemeanor' : String(chargeType).trim().toLowerCase();
+
   // Dismissed always overrides charge type
   const lookupType = (status === 'Dismissed') ? 'dismissed' : chargeType;
   const rules = STATE_RULES[state] || DEFAULT_RULES;
