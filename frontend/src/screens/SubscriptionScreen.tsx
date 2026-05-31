@@ -113,10 +113,10 @@ function TierCard({ tier, active, onSubscribe, loading }: any) {
 
       {!active ? (
         <TouchableOpacity
+          accessibilityRole="button"
           activeOpacity={0.6}
           style={[styles.subscribeBtn, { backgroundColor: tier.color }, loading && { opacity: 0.6 }]}
           onPress={() => onSubscribe(tier.key)}
-              accessibilityRole="button"
           disabled={loading}
         >
           {loading
@@ -274,7 +274,7 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): React.J
 
       {/* Grace period / canceled but still active notice */}
       {isCanceled && periodEnd && (
-        <View style={[styles.activeBanner, { borderColor: COLORS.textSecond, backgroundColor: isDark ? '#2a1a00' : '#fff8f0' }]}>
+        <View style={[styles.activeBanner, { borderColor: COLORS.textSecond, backgroundColor: isDark ? (colors.warnDark || COLORS.warnDark || COLORS.textPrimary) : (colors.warnBg || COLORS.warnBg || COLORS.bgCard) }]}>
           <Text maxFontSizeMultiplier={1.3} style={[styles.activeBannerSub, { color: COLORS.textSecond }]}>
             ⚠️  Subscription canceled — access continues until {periodEnd}
           </Text>
@@ -291,8 +291,8 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): React.J
               <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerSub}>Free trial ends {trialEnd}</Text>
             )}
           </View>
-          <TouchableOpacity onPress={handleCancel}
-              accessibilityRole="button"
+          <TouchableOpacity
+            accessibilityRole="button" onPress={handleCancel}
             >
             <Text maxFontSizeMultiplier={1.4} style={styles.cancelLink}>Cancel</Text>
           </TouchableOpacity>
@@ -304,18 +304,18 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): React.J
         <Text maxFontSizeMultiplier={1.4} style={styles.toggleTitle}>I am a:</Text>
         <View style={styles.toggleRow}>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.toggleChip, providerType === 'lawyer' && styles.toggleChipActive]}
             onPress={() => setProviderType('lawyer')}
-          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.toggleChipText, providerType === 'lawyer' && styles.toggleChipTextActive]}>
               ⚖️ Attorney
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.toggleChip, providerType === 'bail_agent' && styles.toggleChipActive]}
             onPress={() => setProviderType('bail_agent')}
-          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.toggleChipText, providerType === 'bail_agent' && styles.toggleChipTextActive]}>
               🔓 Bail Agent
@@ -366,9 +366,9 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): React.J
           Accept individual leads for $25-$300 based on bail amount.
         </Text>
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.bondsCTABtn}
           onPress={() => navigation.navigate('BondsmanDashboard')}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTABtnText}>Open Lead Dashboard →</Text>
         </TouchableOpacity>

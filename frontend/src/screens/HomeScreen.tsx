@@ -199,16 +199,16 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.helpNowBtn}
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'HelpNow' })}
-            accessibilityRole="button"
             accessibilityLabel="Get help now"
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.helpNowBtnText}>{t('help_now')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-          accessibilityRole="button"
+            accessibilityRole="button"
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             style={styles.settingsBtn}
           >
@@ -347,9 +347,9 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
         {/* Legal Tip of the Day */}
         {!!legalTip && (
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.tipCard}
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Education', params: { category: tipCategory, query: tipQuery } })}
-            accessibilityRole="button"
             activeOpacity={0.85}
           >
             <View style={styles.tipLeft}>
@@ -406,9 +406,9 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
 
         {!displayName && (
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.nudgeCard}
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
-            accessibilityRole="button"
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.nudgeIcon}>👤</Text>
@@ -437,10 +437,10 @@ export default function HomeScreen({ route, navigation }: ScreenProps): React.JS
       {/* Offline banner -- shown when device has no connection */}
       {isOffline && (
         <TouchableOpacity
+          accessibilityRole="button"
           style={{ backgroundColor: '#FFA726', borderBottomWidth: 1, borderBottomColor: '#FFA726',
             flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
           onPress={() => (navigation as any).navigate('OfflineStatus')}
-          accessibilityRole="button"
           accessibilityLabel="No internet connection -- tap to see what works offline"
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14 }}>📡</Text>

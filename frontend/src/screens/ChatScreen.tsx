@@ -151,9 +151,9 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
         </Text>
         {msg.suggestLawyerSearch && !isUser && (
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.lawyerCta}
             onPress={onFindLawyer}
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.lawyerCtaText}>
               📍 {t('chat_find_lawyer')}
@@ -162,9 +162,9 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
         )}
         {msg.showUpgrade && !isUser && (
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.upgradeCta}
             onPress={onUpgrade}
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.upgradeCtaText}>
               💎 {t('chat_upgrade_cta')}
@@ -344,7 +344,7 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
   // ── Refs ──────────────────────────────────────────────────────────────────────
   const mountedRef   = useRef(true);
   // T1-L: correct generic type; no JSX attribute in type parameter
-  const listRef      = useRef<FlatList<Message>>(null);
+  const listRef      = useRef<InstanceType<typeof FlatList<Message>>>( null as any);
   const userStateRef = useRef<{ code: string; name: string } | null>(null);
 
   // ── Effects ───────────────────────────────────────────────────────────────────
@@ -731,9 +731,9 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
         </View>
         {messages.length > 0 && (
           <TouchableOpacity
+            accessibilityRole="button"
             onPress={clearChat}
             style={styles.clearBtn}
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>Clear</Text>
           </TouchableOpacity>
@@ -743,8 +743,8 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
       {/* Disclaimer banner — dismisses after user taps */}
       {showDisclaimer && (
         <TouchableOpacity
-          activeOpacity={0.6}
           accessibilityRole="button"
+          activeOpacity={0.6}
           onPress={() => {
             setShowDisclaimer(false);
             recordConsent();
@@ -776,10 +776,10 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
             {/* T1-P: onPress fixed — no longer split across lines */}
             {QUICK_PROMPTS.map(p => (
               <TouchableOpacity
+                accessibilityRole="button"
                 key={p.label}
                 style={styles.quickChip}
                 onPress={() => send(p.text)}
-                accessibilityRole="button"
               >
                 <Text maxFontSizeMultiplier={1.4} style={styles.quickChipText}>{p.label}</Text>
               </TouchableOpacity>
@@ -837,9 +837,9 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
       <View style={styles.inputBar}>
         {/* Voice input button */}
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.iconBtn}
           onPress={() => navigation.navigate('MoreTab', { screen: 'VoiceNote' })}
-          accessibilityRole="button"
           accessibilityLabel="Use voice input"
           accessibilityHint="Opens voice recorder to transcribe and send a message"
         >
@@ -860,9 +860,9 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
 
         {/* Translate button */}
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.iconBtn}
           onPress={() => navigation.navigate('MoreTab', { screen: 'Translator' })}
-          accessibilityRole="button"
           accessibilityLabel="Open interpreter"
           accessibilityHint="Opens real-time translation for non-English speakers"
         >
@@ -871,9 +871,9 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
 
         {/* T1-S: closing '>' on TouchableOpacity restored */}
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
           onPress={() => send(input)}
-            accessibilityRole="button"
           disabled={!input.trim() || loading}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>↑</Text>

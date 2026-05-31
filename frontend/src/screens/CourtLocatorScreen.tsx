@@ -113,8 +113,7 @@ export default function CourtLocatorScreen(): React.JSX.Element {
       {/* Mode toggle */}
       <View style={{ flexDirection:'row', margin:16, marginBottom:4, gap:8 }}>
         {(['state','federal'] as const).map(mode => (
-          <TouchableOpacity key={mode}
-            accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" key={mode}
             onPress={() => { setCourtMode(mode); doSearch(search || 'a'); }}
             style={{
               flex:1, paddingVertical:9, borderRadius:10, alignItems:'center',

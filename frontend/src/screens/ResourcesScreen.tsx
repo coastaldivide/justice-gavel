@@ -144,7 +144,7 @@ export default function ResourcesScreen(): React.JSX.Element {
           const cc = CAT_COLORS[cat.key] || CAT_COLORS.textMuted;
           return (
             <TouchableOpacity
-              accessibilityRole="button"
+  accessibilityRole="button"
               key={cat.key}
               onPress={() => setCategory(cat.key)}
               style={{
@@ -173,7 +173,13 @@ export default function ResourcesScreen(): React.JSX.Element {
       {error ? (
         <View>
         <Text maxFontSizeMultiplier={1.4} style={{ color:colors.emergencyDark, textAlign:'center', margin:20 }}>{error}</Text>
-          <TouchableOpacity onPress={() => load()} style={{ marginTop:12, backgroundColor:colors.navy, borderRadius:10, paddingVertical:12, paddingHorizontal:24, alignSelf:'center' }} accessibilityRole="button" accessibilityLabel="Try again"><Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, fontWeight:'700' }}>Try Again</Text></TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={() => load()}
+            style={{ marginTop: 12, alignItems: 'center', padding: 8 }}
+          >
+            <Text style={{ color: ('\x23' + '1d4ed8') as string, fontSize: 14 }}>Try again</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList
@@ -197,7 +203,7 @@ export default function ResourcesScreen(): React.JSX.Element {
             const cat = CATEGORIES.find(c => c.key === item.category);
             return (
               <TouchableOpacity
-                accessibilityRole="button"
+  accessibilityRole="button"
                 onPress={() => setExpanded(isOpen ? null : item.id)}
                 style={{
                   backgroundColor:card, borderRadius:12, marginBottom:12,
@@ -243,8 +249,7 @@ export default function ResourcesScreen(): React.JSX.Element {
                     {/* Contact info grid */}
                     <View style={{ marginTop:12, gap:6 }}>
                       {item.phone ? (
-                        <TouchableOpacity
-                          accessibilityRole="button"
+                        <TouchableOpacity accessibilityRole="button"
                           onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => {})}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>📞</Text>
@@ -254,8 +259,7 @@ export default function ResourcesScreen(): React.JSX.Element {
                         </TouchableOpacity>
                       ) : null}
                       {item.url ? (
-                        <TouchableOpacity
-                          accessibilityRole="button"
+                        <TouchableOpacity accessibilityRole="button"
                           onPress={() => Linking.openURL(item.url).catch(() => {})}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>🌐</Text>
@@ -266,8 +270,7 @@ export default function ResourcesScreen(): React.JSX.Element {
                         </TouchableOpacity>
                       ) : null}
                       {item.address ? (
-                        <TouchableOpacity
-                          accessibilityRole="button"
+                        <TouchableOpacity accessibilityRole="button"
                           onPress={() => Linking.openURL(`https://maps.apple.com/?address=${encodeURIComponent(item.address)}`).catch(() => {})}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>📍</Text>

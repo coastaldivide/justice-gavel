@@ -146,10 +146,10 @@ export default function JustArrestedScreen({ navigation }: ScreenProps): React.J
         {/* Action button */}
         {current.action ? (
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.actionBtn, { backgroundColor: current.color }]}
             onPress={handleAction}
             activeOpacity={0.85}
-            accessibilityRole="button"
             accessibilityLabel={current.actionLabel || ''}
           >
             <Text maxFontSizeMultiplier={1.2} style={styles.actionBtnText}>
@@ -161,9 +161,9 @@ export default function JustArrestedScreen({ navigation }: ScreenProps): React.J
         {/* 911 / 988 -- always visible */}
         <View style={styles.emergencyRow}>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.emergencyBtn, { backgroundColor: colors.emergencyDark }]}
             onPress={() => call('911')}
-            accessibilityRole="button"
             activeOpacity={0.85}
             accessibilityLabel="Call 911 emergency services"
           >
@@ -171,9 +171,9 @@ export default function JustArrestedScreen({ navigation }: ScreenProps): React.J
             <Text maxFontSizeMultiplier={1.2} style={styles.emergencyLabel}>CALL 911</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.emergencyBtn, { backgroundColor: colors.blue }]}
             onPress={() => call('988')}
-            accessibilityRole="button"
             activeOpacity={0.85}
             accessibilityLabel="Call 988 crisis line"
           >
@@ -231,10 +231,10 @@ export default function JustArrestedScreen({ navigation }: ScreenProps): React.J
       <View style={[styles.navBar, { backgroundColor: card, borderTopColor: colors.border }]}>
         {step > 0 ? (
           <TouchableOpacity
+            accessibilityRole="button"
             onPress={prev}
             style={[styles.navBtn, { backgroundColor: isDark ? colors.bgElevated : colors.bgCard, flex: 1 }]}
             activeOpacity={0.85}
-            accessibilityRole="button"
             accessibilityLabel="Previous step"
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.navBtnText, { color: text }]}>← Back</Text>
@@ -242,10 +242,10 @@ export default function JustArrestedScreen({ navigation }: ScreenProps): React.J
         ) : null}
         {step < STEPS.length - 1 ? (
           <TouchableOpacity
+            accessibilityRole="button"
             onPress={next}
             style={[styles.navBtn, { backgroundColor: current.color, flex: step > 0 ? 2 : 1 }]}
             activeOpacity={0.85}
-            accessibilityRole="button"
             accessibilityLabel="Next step"
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.navBtnText, { color: colors.bgCard }]}>

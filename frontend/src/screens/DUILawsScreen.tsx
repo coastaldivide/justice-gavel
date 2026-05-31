@@ -108,8 +108,7 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
             {filtered.map(l => {
               const sel = selected?.state === l.state;
               return (
-                <TouchableOpacity key={l.state}
-                  accessibilityRole="button"
+                <TouchableOpacity accessibilityRole="button" key={l.state}
                   onPress={() => { setSelected(l); setTab('first'); }}
                   style={{
                     paddingVertical:10, paddingHorizontal:8,
@@ -155,8 +154,8 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
             {/* Tabs */}
             <View style={{ flexDirection:'row', gap:6, marginBottom:12 }}>
               {(['first','second','rules'] as const).map(t => (
-                <TouchableOpacity key={t} onPress={() => setTab(t)}
-                  accessibilityRole="button"
+                <TouchableOpacity
+          accessibilityRole="button" key={t} onPress={() => setTab(t)}
                   style={{ flex:1, paddingVertical:8, borderRadius:8, alignItems:'center',
                     backgroundColor: tab===t ? colors.emergencyDark : card,
                     borderWidth:1, borderColor: tab===t ? colors.emergencyDark : border }}>

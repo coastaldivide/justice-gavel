@@ -385,9 +385,9 @@ export default function PrivacyPolicyScreen({ navigation }: ScreenProps): React.
           Exercise Your Rights
         </Text>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.rightsBtn, { backgroundColor: colors.legalDark }]}
           onPress={() => openEmail(CONTACT_EMAIL)}
-            accessibilityRole="button"
           activeOpacity={0.85}
           accessibilityLabel="Request data access or correction"
         >
@@ -396,10 +396,10 @@ export default function PrivacyPolicyScreen({ navigation }: ScreenProps): React.
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.rightsBtn, { backgroundColor: colors.emergencyDark }]}
           onPress={requestDeletion}
           activeOpacity={0.85}
-          accessibilityRole="button"
           accessibilityLabel="Request account and data deletion"
         >
           <Text maxFontSizeMultiplier={1.3} style={styles.rightsBtnText}>

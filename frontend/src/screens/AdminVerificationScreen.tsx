@@ -172,10 +172,10 @@ export default function AdminVerificationScreen({ navigation }: ScreenProps): Re
           )}
           <View style={styles.actions}>
             <TouchableOpacity
+              accessibilityRole="button"
           activeOpacity={0.6}
               style={[styles.approveBtn, { opacity: acting === atty.user_id ? 0.6 : 1 }]}
               onPress={() => approve(atty.user_id, atty.name)}
-            accessibilityRole="button"
               disabled={acting === atty.user_id}
               accessibilityLabel={`Approve ${atty.name}`}
             >
@@ -186,9 +186,9 @@ export default function AdminVerificationScreen({ navigation }: ScreenProps): Re
             </TouchableOpacity>
 
             <TouchableOpacity
+              accessibilityRole="button"
               style={[styles.rejectBtn, { borderColor: colors.emergency, opacity: acting === atty.user_id ? 0.6 : 1 }]}
               onPress={() => reject(atty.user_id, atty.name)}
-            accessibilityRole="button"
               disabled={acting === atty.user_id}
               accessibilityLabel={`Reject ${atty.name}`}
             >

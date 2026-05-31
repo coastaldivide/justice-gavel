@@ -122,8 +122,7 @@ export default function ContactsScreen(): React.JSX.Element {
           {!!typeHint(c.value) && <Text maxFontSizeMultiplier={1.4} style={styles.typeHint}>{typeHint(c.value)}</Text>}
         </View>
       ))}
-      <TouchableOpacity activeOpacity={0.6} style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={save} disabled={saving}
-        accessibilityRole="button"
+      <TouchableOpacity accessibilityRole="button" activeOpacity={0.6} style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={save} disabled={saving}
       >
         {saving ? <ActivityIndicator color={colors.bgCard} /> : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>{saved ? '✓ Saved' : 'Save contacts'}</Text>}
       </TouchableOpacity>

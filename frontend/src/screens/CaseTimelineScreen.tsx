@@ -375,9 +375,9 @@ export default function CaseTimelineScreen({ navigation, route }: ScreenProps): 
 
       {/* Add event FAB */}
       <TouchableOpacity
+        accessibilityRole="button"
         style={[s.fab, { backgroundColor: colors.navy }]}
         onPress={() => setShowAdd(true)}
-        accessibilityRole="button"
         accessibilityLabel="Add event to timeline"
         activeOpacity={0.85}
       >
@@ -397,9 +397,9 @@ export default function CaseTimelineScreen({ navigation, route }: ScreenProps): 
             <View style={s.typePills}>
               {['arrest','bail_set','arraignment','hearing','motion_filed',
                 'continuance','verdict','note','other'].map(t => (
-                <TouchableOpacity key={t}
+                <TouchableOpacity
+          accessibilityRole="button" key={t}
                   onPress={() => setNewType(t)}
-            accessibilityRole="button"
                   style={[s.typePillBtn, {
                     backgroundColor: newType===t ? (EVENT_COLORS[t]||colors.navy) : colors.bgSubtle,
                     borderColor:     newType===t ? (EVENT_COLORS[t]||colors.navy) : colors.border,
@@ -471,18 +471,18 @@ export default function CaseTimelineScreen({ navigation, route }: ScreenProps): 
               </Text>
             )}
             <View style={s.modalButtons}>
-              <TouchableOpacity style={[s.cancelBtn, { borderColor: colors.border }]}
-                accessibilityRole="button"
+              <TouchableOpacity
+                accessibilityRole="button" style={[s.cancelBtn, { borderColor: colors.border }]}
                 onPress={() => { setShowAdd(false); setFormError(''); }}>
                 <Text maxFontSizeMultiplier={1.4} style={[s.cancelBtnText, { color: colors.textMuted }]}>
                   Cancel
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
+                accessibilityRole="button"
                 style={[s.saveBtn, { backgroundColor: saving ? colors.bgSubtle : colors.navy }]}
                 onPress={handleAdd}
                 disabled={saving}
-                accessibilityRole="button"
                 accessibilityLabel="Save event"
                 activeOpacity={0.85}
               >

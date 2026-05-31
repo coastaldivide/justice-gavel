@@ -124,7 +124,8 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
 
   if (fetchError && !schedules.length) return (
     <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <TouchableOpacity onPress={() => { setFetchError(false); setRefreshTick(t => t+1); }}>
+      <TouchableOpacity
+          accessibilityRole="button" onPress={() => { setFetchError(false); setRefreshTick(t => t+1); }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary }}>Tap to retry</Text>
       </TouchableOpacity>
     </View>
@@ -245,8 +246,8 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
           padding:14, alignItems:'center', marginTop:8,
         }}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('BailTab')}
             accessibilityRole="button"
+            onPress={() => navigation.navigate('BailTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
               🔓 Find a Bail Bondsman Near You
@@ -263,10 +264,10 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
         {/* Real attorney CTA -- now powered by live data */}
         <View style={{ marginHorizontal: 16, marginBottom: 20 }}>
           <TouchableOpacity
+            accessibilityRole="button"
             style={{ backgroundColor: colors.navy, borderRadius: 14,
               paddingVertical: 16, alignItems: 'center' }}
             onPress={() => navigation.navigate('LawyersTab')}
-            accessibilityRole="button"
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2}

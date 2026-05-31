@@ -120,10 +120,9 @@ export default function OfflineStatusScreen({ navigation }: ScreenProps): React.
             </Text>
           )}
         </View>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={[styles.refreshBtn, { borderColor: colors.border }]}
           onPress={onRefresh}
-          accessibilityRole="button"
           accessibilityLabel="Check connection"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.refreshBtnText, { color: colors.textMuted }]}>↺ Check</Text>

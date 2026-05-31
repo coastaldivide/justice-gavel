@@ -96,16 +96,16 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
           Attorneys in your area will review your case. When one accepts, you'll get their contact info -- at no cost to you. Attorneys pay a referral fee, not you.
         </Text>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
           onPress={() => navigation.navigate('LawyersTab')}
-            accessibilityRole="button"
           accessibilityLabel="Find a lawyer now"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>⚖️  Browse Lawyers Now</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.homeBtn}
           accessibilityRole="button"
+          style={styles.homeBtn}
           onPress={() => navigation.navigate('HomeTab')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.homeBtnText, { color: colors.textMuted }]}>Back to Home</Text>
@@ -145,10 +145,10 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
             </Text>
             {CASE_TYPES.map(t => (
               <TouchableOpacity
+                accessibilityRole="button"
                 key={t.key}
                 style={[styles.typeCard, { backgroundColor: t.bg, borderColor: t.color + '55' }]}
                 onPress={() => { setCaseType(t.key); setStep('severity'); }}
-            accessibilityRole="button"
                 accessibilityLabel={t.label}
 
               >
@@ -166,8 +166,8 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
         {/* ── Step 2: Severity ──────────────────────────────────────────── */}
         {step === 'severity' && (
           <>
-            <TouchableOpacity onPress={() => setStep('type')} style={styles.back}
-              accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" onPress={() => setStep('type')} style={styles.back}
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
             </TouchableOpacity>
@@ -177,11 +177,11 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
             </Text>
             {(caseType === 'Civil Rights' ? SEVERITIES.slice(0, 3) : SEVERITIES).map(s => (
               <TouchableOpacity
+                accessibilityRole="button"
                 key={s.key}
                 style={[styles.sevCard, { backgroundColor: s.bg, borderColor: s.color + '44' },
                   severity === s.key && { borderColor: s.color, borderWidth: 2 }]}
                 onPress={() => { setSeverity(s.key); setStep('details'); }}
-            accessibilityRole="button"
                 accessibilityLabel={s.label}
 
               >
@@ -203,8 +203,8 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
         {/* ── Step 3: Description ───────────────────────────────────────── */}
         {step === 'details' && (
           <>
-            <TouchableOpacity onPress={() => setStep('severity')} style={styles.back}
-              accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" onPress={() => setStep('severity')} style={styles.back}
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
             </TouchableOpacity>
@@ -252,13 +252,12 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
               </Text>
             </View>
 
-            <TouchableOpacity activeOpacity={0.6}
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
               style={[styles.submitBtn, { backgroundColor: COLORS.navy },
                 (loading || description.trim().length < 20) && styles.submitBtnDisabled]}
               onPress={submit}
               disabled={loading || description.trim().length < 20}
               accessibilityLabel="Submit your case to attorneys"
-              accessibilityRole="button"
             >
               {loading
                 ? <ActivityIndicator color={colors.bgCard} />

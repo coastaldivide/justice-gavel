@@ -107,9 +107,9 @@ export default function AgeGateScreen({ route, navigation }: any) {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.backBtn}
           onPress={() => { setPhase('entry'); setYear(''); }}
-          accessibilityRole="button"
           accessibilityLabel="Go back and re-enter birth year"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>← Go back</Text>
@@ -159,12 +159,11 @@ export default function AgeGateScreen({ route, navigation }: any) {
           {!!error && (
             <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{error}</Text>
           )}
-          <TouchableOpacity activeOpacity={0.6}
+          <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
             style={[styles.continueBtn, year.length < 4 && styles.continueBtnDisabled]}
             onPress={verify}
             disabled={year.length < 4}
             accessibilityLabel="Continue"
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.continueBtnText}>Continue →</Text>
           </TouchableOpacity>

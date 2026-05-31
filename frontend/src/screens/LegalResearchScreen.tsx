@@ -222,17 +222,15 @@ function ResearchBubble({ msg }: { msg: Message }) {
       />
       {/* Copy button */}
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           activeOpacity={0.6}
           style={[styles.copyBtn, { borderColor: COLORS.border, flex: 1 }]}
           onPress={() => { hapticSelection(); Clipboard.setString(msg.content); }}
-            accessibilityRole="button"
           accessibilityLabel="Copy research result"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.textMuted }]}>Copy</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
+        <TouchableOpacity accessibilityRole="button"
           style={[styles.copyBtn, { borderColor: COLORS.navy, flex: 1 }]}
           onPress={async () => {
             try {
@@ -262,9 +260,9 @@ function ResearchBubble({ msg }: { msg: Message }) {
       {/* Discuss with AI -- continue into Defender Mode chat with research context */}
       {onDiscussWithAI && (
         <TouchableOpacity
+  accessibilityRole="button"
           style={[styles.copyBtn, { borderColor: COLORS.navy + '55', backgroundColor: COLORS.navy + '08' }]}
           onPress={() => onDiscussWithAI(msg.content)}
-            accessibilityRole="button"
           accessibilityLabel="Discuss this research with AI"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>⚖️ Discuss with AI</Text>
@@ -333,10 +331,9 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
           ))}
         </View>
 
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={[styles.subscribeBtn, { backgroundColor: COLORS.navy }, loading && { opacity: 0.6 }]}
           onPress={() => onSubscribe('legal_research')}
-            accessibilityRole="button"
           disabled={loading}
           accessibilityLabel="Subscribe to Legal Research for $49.99/mo"
         >
@@ -344,10 +341,9 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
             ? <ActivityIndicator color={COLORS.bgCard} />
             : <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>Start 14-Day Free Trial -- $49.99/mo</Text>}
         </TouchableOpacity>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={[styles.annualBtn, { borderColor: COLORS.navy + '55' }]}
           onPress={() => onSubscribe('legal_research_annual')}
-            accessibilityRole="button"
           disabled={loading}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.annualBtnText, { color: COLORS.navy }]}>
@@ -495,13 +491,16 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
       title: phase === 'history' ? '📚 Research History' : '⚖️ Legal Research',
       headerRight: () => hasAccess && phase !== 'paywall' ? (
         <View style={{ flexDirection: 'row', gap: 16, marginRight: 14 }}>
-          <TouchableOpacity onPress={loadHistory} accessibilityRole="button">
+          <TouchableOpacity accessibilityRole="button" onPress={loadHistory}>
             <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
           </TouchableOpacity>
           {phase === 'thread' && (
-            <TouchableOpacity onPress={() => {
-              setMessages([]); setSessionId(null); setQuery(''); setPhase('home');
-            }} accessibilityRole="button">
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={() => {
+                setMessages([]); setSessionId(null); setQuery(''); setPhase('home');
+              }}
+            >
               <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
             </TouchableOpacity>
           )}
@@ -623,20 +622,19 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
           <View style={styles.centreWrap}>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 40, marginBottom: 12 }}>📚</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No research yet</Text>
-            <TouchableOpacity style={[styles.newSearchBtn, { backgroundColor: COLORS.navy }]}
+            <TouchableOpacity
+  accessibilityRole="button"
               onPress={() => setPhase('home')}
-            accessibilityRole="button"
               >
               <Text maxFontSizeMultiplier={1.4} style={styles.newSearchBtnText}>Start Researching →</Text>
             </TouchableOpacity>
           </View>
         )
         : history.map(sess => (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={sess.id}
             style={[styles.histRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
             onPress={() => loadSession(sess)}
-            accessibilityRole="button"
             accessibilityLabel={`Open: ${sess.title}`}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.histIcon}>⚖️</Text>
@@ -703,7 +701,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
               style={styles.quickScroll} contentContainerStyle={{ gap: 8 }}>
               {QUICK_PROMPTS.map(p => (
                 <TouchableOpacity
-                  accessibilityRole="button"
+  accessibilityRole="button"
                   key={p.label}
                   style={[styles.quickChip, {
                     backgroundColor: colors.bgCard,
@@ -785,11 +783,11 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
           blurOnSubmit
         />
         <TouchableOpacity
+  accessibilityRole="button"
           style={[styles.searchBtn, {
             backgroundColor: query.trim() && !searching ? COLORS.navy : colors.border
           }]}
           onPress={() => runSearch(query)}
-            accessibilityRole="button"
           disabled={!query.trim() || searching}
           accessibilityLabel="Run legal research"
         >

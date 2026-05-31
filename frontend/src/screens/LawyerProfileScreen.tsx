@@ -395,12 +395,13 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
 
       {/* Action buttons */}
       <View style={s.actions}>
-        <TouchableOpacity style={[s.actionBtn, { backgroundColor:colors.navy }]}
-          accessibilityRole="button"
+        <TouchableOpacity
+          accessibilityRole="button" style={[s.actionBtn, { backgroundColor:colors.navy }]}
           testID="lawyer-book-button" onPress={() => { hapticImpact(); handleBook(); }}>
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>📅 Book Consultation</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[s.actionBtn, { backgroundColor:colors.legal }]}
+        <TouchableOpacity
+          accessibilityRole="button" style={[s.actionBtn, { backgroundColor:colors.legal }]}
           onPress={() => { hapticImpact(); handleMessage(); }}
                   >
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>💬 Send Message</Text>
@@ -414,6 +415,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
         {/* Secondary actions row */}
         <View style={{ flexDirection:'row', gap:10 }}>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
             onPress={handleSave}>
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>⭐ Save</Text>
@@ -425,6 +427,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>📍 Directions</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
             onPress={handleShare}>
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>↑ Share</Text>

@@ -62,8 +62,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
 
 
   return (
-    <TouchableOpacity testID="lead-card"
-      accessibilityRole="button"
+    <TouchableOpacity accessibilityRole="button" testID="lead-card"
       style={[styles.card, lead.purchased && styles.cardPurchased]}
       onPress={() => setExpanded(e => !e)}
       activeOpacity={0.85}
@@ -124,8 +123,8 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
             <View style={styles.revealedBlock}>
               <Text maxFontSizeMultiplier={1.4} style={styles.revealedTitle}>✓ Contact Information Unlocked</Text>
               {lead.phone && (
-                <TouchableOpacity onPress={() => Linking.openURL('tel:' + lead.phone).catch(() => {})}
-                  accessibilityRole="button"
+                <TouchableOpacity
+          accessibilityRole="button" onPress={() => Linking.openURL('tel:' + lead.phone).catch(() => {})}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.revealedPhone}>📞 {lead.phone}</Text>
                 </TouchableOpacity>
@@ -229,8 +228,7 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
           <Text maxFontSizeMultiplier={1.4} style={styles.helpText}>
             You'll receive leads for arrests in these counties only.
           </Text>
-          <TouchableOpacity activeOpacity={0.6}
-            accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
             accessibilityLabel="Save Profile"
             style={[styles.saveBtn, saving && { opacity: 0.6 }]}
             onPress={save}
@@ -284,17 +282,16 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
           </Text>
 
           <View style={styles.confirmBtns}>
-            <TouchableOpacity style={styles.confirmCancel} onPress={onClose}
-              accessibilityRole="button"
+            <TouchableOpacity
+              accessibilityRole="button" style={styles.confirmCancel} onPress={onClose}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.confirmCancelText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity activeOpacity={0.6}
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
               accessibilityLabel="on Confirm"
               style={[styles.confirmAccept, loading && { opacity: 0.6 }]}
               onPress={onConfirm}
               disabled={loading}
-          accessibilityRole="button"
             >
               {loading
                 ? <ActivityIndicator color={COLORS.bgCard} size="small" />
@@ -455,8 +452,8 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
             <Text maxFontSizeMultiplier={1.4} style={styles.checkInMgrBtnText}>📋 Check-Ins</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.checkInMgrBtn, { backgroundColor: '#042C53' }]}
-          accessibilityRole="button"
             onPress={() => {
               hapticImpact();
               navigation.navigate('RecoveryAgents');
@@ -514,8 +511,8 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
               <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerTitle}>✓  Verified by Justice Gavel</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerSub}>Your listings show the verified badge · $48.99/month</Text>
             </View>
-            <TouchableOpacity onPress={handleBadgeCancel}
-              accessibilityRole="button"
+            <TouchableOpacity
+              accessibilityRole="button" onPress={handleBadgeCancel}
               accessibilityLabel="Cancel"
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerCancel}>Cancel</Text>
@@ -523,12 +520,12 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
           </View>
         ) : (
           <TouchableOpacity
+            accessibilityRole="button"
             accessibilityLabel="Badge Subscribe"
             style={styles.badgeBannerPromo}
             onPress={handleBadgeSubscribe}
             disabled={badgeLoading}
             activeOpacity={0.85}
-          accessibilityRole="button"
           >
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerPromoTitle}>

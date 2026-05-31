@@ -96,8 +96,8 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
               onSubmitEditing={() => nameRef.current?.focus()}
               selectionColor={COLORS.steel}
             />
-            <TouchableOpacity onPress={() => setShowPass(s => !s)}
-              accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" onPress={() => setShowPass(s => !s)}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.showBtnText}>{showPass ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
@@ -136,8 +136,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
             }
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.loginLink}
-            accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" style={styles.loginLink}
             onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.loginText}>

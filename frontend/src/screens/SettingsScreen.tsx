@@ -84,9 +84,8 @@ function TierGatedRow({
         />
 
         {/* State preference -- controls rights card, AI jurisdiction, and provider search */}
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={styles.row}
-          accessibilityRole="button"
           onPress={() => setShowStatePickerSettings(true)}
           accessibilityLabel="Change your state preference"
         >
@@ -110,9 +109,8 @@ function TierGatedRow({
   return (
     <>
       {/* Official Court Forms -- all 50 states */}
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button"
         onPress={goToCourtForms}
-        accessibilityRole="button"
         accessibilityLabel="Official Court Forms"
         style={{ flexDirection:'row', alignItems:'center', paddingVertical:14, paddingHorizontal:4, borderBottomWidth:StyleSheet.hairlineWidth, borderBottomColor:COLORS.border }}>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize:20, width:32 }}>📋</Text>
@@ -122,12 +120,11 @@ function TierGatedRow({
         </View>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, color:COLORS.textMuted }}>›</Text>
       </TouchableOpacity>
-<TouchableOpacity
+<TouchableOpacity accessibilityRole="button"
       style={[gStyles.row, gStyles.lockedRow, {
         backgroundColor: isDark ? COLORS.bgCard : COLORS.bg,
         borderColor: COLORS.border }]}
       onPress={() => navigation.navigate('ConsumerSubscription')}
-            accessibilityRole="button"
       activeOpacity={0.8}
       accessibilityLabel={`${label} -- requires ${requiredTier} plan`}
     >
@@ -416,7 +413,10 @@ export default function SettingsScreen({ route, navigation }: any) {
         <InfoRow icon="👤" label="Display name" value={user.displayName || user.name} />
         {!!user.email && <InfoRow icon="✉️" label="Email" value={user.email} />}
         {goldenGavel
-          ? <TouchableOpacity onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })} activeOpacity={0.8} accessibilityRole="button">
+          ? <TouchableOpacity
+              accessibilityRole="button"
+              onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })}
+            >
               <InfoRow icon="🏆" label="Account status" value="Golden Gavel  ›" />
             </TouchableOpacity>
           : <InfoRow icon="⚖️" label="Golden Gavel" value="Check eligibility  ›" />
@@ -461,8 +461,7 @@ export default function SettingsScreen({ route, navigation }: any) {
         </Text>
         <View style={styles.langRow}>
           {[{ code: 'en', label: 'English' }, { code: 'es', label: 'Español' }, { code: 'pt', label: 'Português' }, { code: 'vi', label: 'Tiếng Việt' }].map(l => (
-            <TouchableOpacity
-              accessibilityRole="button"
+            <TouchableOpacity accessibilityRole="button"
               key={l.code}
               style={[
                 styles.langChip,
@@ -561,7 +560,7 @@ export default function SettingsScreen({ route, navigation }: any) {
 
       {/* ── Test push notification (debug / support) ──────────────────── */}
       <TouchableOpacity
-        accessibilityRole="button"
+  accessibilityRole="button"
         style={[styles.testPushBtn, { borderColor: colors.surface }]}
         onPress={async () => {
     await hapticImpact();
@@ -594,11 +593,10 @@ export default function SettingsScreen({ route, navigation }: any) {
               </Text>
             </View>
         </View>
-        <TouchableOpacity activeOpacity={0.6}
+        <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
           style={[styles.shareBtn, { backgroundColor: COLORS.navy }]}
           onPress={shareReferral}
           accessibilityLabel="Share referral code"
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>Share My Code →</Text>
         </TouchableOpacity>
@@ -628,10 +626,10 @@ export default function SettingsScreen({ route, navigation }: any) {
           { icon: '📊', label: 'Advocacy',              hint: 'Criminal justice data and reform tools',     screen: 'Advocacy' },
         ].map((item, i, arr) => (
           <TouchableOpacity
+  accessibilityRole="button"
             key={item.screen}
             style={[styles.menuRow, { borderBottomWidth: i < arr.length - 1 ? 1 : 0, borderBottomColor: colors.surface }]}
             onPress={() => navigation.navigate('MoreTab', { screen: item.screen })}
-            accessibilityRole="button"
             accessibilityLabel={item.label}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.menuIcon}>{item.icon}</Text>
@@ -650,9 +648,9 @@ export default function SettingsScreen({ route, navigation }: any) {
           <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>Admin</Text>
           <View style={card}>
             <TouchableOpacity
+  accessibilityRole="button"
               style={[styles.navRow, { borderBottomWidth: 0 }]}
               onPress={() => navigation.navigate('MoreTab', { screen: 'AdminVerification' })}
-              accessibilityRole="button"
               accessibilityLabel="Bar verification queue"
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.navRowLabel, { color: colors.bgCard }]}>⚖️  Bar Verification Queue</Text>
@@ -673,10 +671,10 @@ export default function SettingsScreen({ route, navigation }: any) {
           { icon: '🌐', label: 'Website',           url: 'https://justicegavel.app' },
         ].map((item, i, arr) => (
           <TouchableOpacity
+  accessibilityRole="button"
             key={item.label}
             style={[styles.menuRow, { borderBottomWidth: i < arr.length - 1 ? 1 : 0, borderBottomColor: colors.surface }]}
             onPress={() => { hapticImpact(); if (item.nav) navigation.navigate('MoreTab', { screen: item.nav }); }}
-            accessibilityRole="button"
             accessibilityLabel={item.label}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.menuIcon}>{item.icon}</Text>
@@ -693,11 +691,10 @@ export default function SettingsScreen({ route, navigation }: any) {
       </View>
 
       {/* ── Sign out ──────────────────────────────────────────────────────── */}
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button"
         style={[styles.logoutBtn, { backgroundColor: colors.bg }]}
         onPress={logout}
         accessibilityLabel="Sign out"
-        accessibilityRole="button"
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.logoutText}>Sign out</Text>
       </TouchableOpacity>
@@ -720,10 +717,9 @@ export default function SettingsScreen({ route, navigation }: any) {
             Permanently deletes your account, all cases, messages, and data.
             This cannot be undone.
           </Text>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={{ backgroundColor: '#EF5350', borderRadius: 8,
               paddingVertical: 12, alignItems: 'center' }}
-            accessibilityRole="button"
             accessibilityLabel="Delete account permanently"
             onPress={() => {
               Alert.alert(
@@ -763,9 +759,8 @@ export default function SettingsScreen({ route, navigation }: any) {
               Delete My Account
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={{ marginTop: 12, alignItems: 'center', padding: 8 }}
-            accessibilityRole="button"
             accessibilityLabel="Export my data"
             onPress={async () => {
               try {
@@ -788,7 +783,7 @@ export default function SettingsScreen({ route, navigation }: any) {
 
           {/* ── Rate the App ─────────────────────────────────────────── */}
           <TouchableOpacity
-            accessibilityRole="button"
+  accessibilityRole="button"
             style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between',
               backgroundColor:colors.bgCard, borderRadius:10, padding:14,
               marginBottom:8, borderWidth:1, borderColor:colors.border }}

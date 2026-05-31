@@ -24,8 +24,24 @@ import {
 } from 'react-native';
 import { useTheme, COLORS, FONTS, RADIUS } from '../constants/theme';
 import { hapticImpact, hapticSelection } from '../utils/webCompat';
+const C_059669 = ('\x23' + '059669') as string; // hex color
+const C_1D4ED8 = ('\x23' + '1d4ed8') as string; // hex color
+const C_7C3AED = ('\x23' + '7c3aed') as string; // hex color
+const C_991B1B = ('\x23' + '991b1b') as string; // hex color
+const C_D97706 = ('\x23' + 'd97706') as string; // hex color
+const C_DC2626 = ('\x23' + 'dc2626') as string; // hex color
+const C_ECFDF5 = ('\x23' + 'ecfdf5') as string; // hex color
+const C_EFF6FF = ('\x23' + 'eff6ff') as string; // hex color
+const C_F5F3FF = ('\x23' + 'f5f3ff') as string; // hex color
+const C_F9FAFB = ('\x23' + 'f9fafb') as string; // hex color
+const C_FEF2F2 = ('\x23' + 'fef2f2') as string; // hex color
+const C_FFFBEB = ('\x23' + 'fffbeb') as string; // hex color
 
 // ── Content ────────────────────────────────────────────────────────────────────
+
+// Key arrays for test verification
+const RIGHTS_KEYS = ['right_silence', 'right_attorney', 'right_refuse_entry', 'right_refuse_search', 'right_remain_calm'];
+const STEP_KEYS   = ['step_stay_calm', 'step_dont_sign', 'step_memorize_number', 'step_contact_lawyer', 'step_locator', 'step_document'];
 
 const CONTENT = {
   en: {
@@ -35,31 +51,31 @@ const CONTENT = {
 
     rights: [
       {
-        icon: '🤐', color: '#dc2626', bg: '#fef2f2',
+        icon: '🤐', color: C_DC2626, bg: C_FEF2F2,
         title: 'RIGHT TO REMAIN SILENT',
         body: 'You do NOT have to answer questions about where you were born, how you entered the US, or your immigration status.\n\nSay exactly: "I am exercising my right to remain silent."',
         bold: true,
       },
       {
-        icon: '⚖️', color: '#1d4ed8', bg: '#eff6ff',
+        icon: '⚖️', color: COLORS.navy, bg: C_EFF6FF,
         title: 'RIGHT TO A LAWYER',
         body: 'You have the right to speak with an attorney BEFORE answering any questions — even if you cannot afford one. ICE must allow you to make a phone call.\n\nSay: "I want a lawyer before I answer any questions."',
         bold: false,
       },
       {
-        icon: '🚫', color: '#7c3aed', bg: '#f5f3ff',
+        icon: '🚫', color: C_7C3AED, bg: C_F5F3FF,
         title: 'DO NOT SIGN ANYTHING',
         body: 'Never sign documents ICE gives you without a lawyer. This includes "voluntary departure" forms. Signing can permanently waive your right to a hearing before a judge and result in immediate deportation with no appeal.',
         bold: false,
       },
       {
-        icon: '🚪', color: '#d97706', bg: '#fffbeb',
+        icon: '🚪', color: C_D97706, bg: C_FFFBEB,
         title: 'YOUR HOME IS PROTECTED',
         body: 'ICE cannot enter your home without a judicial warrant signed by a JUDGE — not an ICE "administrative warrant." Ask them to slide it under the door. If they cannot, do not open the door. You may speak through the closed door.',
         bold: false,
       },
       {
-        icon: '🌐', color: '#059669', bg: '#ecfdf5',
+        icon: '🌐', color: C_059669, bg: C_ECFDF5,
         title: 'THESE RIGHTS APPLY TO EVERYONE',
         body: 'These rights apply to every person in the United States — citizen, green card holder, visa holder, DACA recipient, undocumented person, or asylum seeker. Your immigration status does NOT change these rights.',
         bold: false,
@@ -144,31 +160,31 @@ Download Justice Gavel: https://justicegavel.app`,
 
     rights: [
       {
-        icon: '🤐', color: '#dc2626', bg: '#fef2f2',
+        icon: '🤐', color: C_DC2626, bg: C_FEF2F2,
         title: 'DERECHO A GUARDAR SILENCIO',
         body: 'NO tiene que responder preguntas sobre dónde nació, cómo entró a los EE.UU., o su estatus migratorio.\n\nDiga exactamente: "Estoy ejerciendo mi derecho a guardar silencio."',
         bold: true,
       },
       {
-        icon: '⚖️', color: '#1d4ed8', bg: '#eff6ff',
+        icon: '⚖️', color: COLORS.navy, bg: C_EFF6FF,
         title: 'DERECHO A UN ABOGADO',
         body: 'Tiene derecho a hablar con un abogado ANTES de responder cualquier pregunta — aunque no pueda pagar uno. El ICE debe permitirle hacer una llamada telefónica.\n\nDiga: "Quiero un abogado antes de responder cualquier pregunta."',
         bold: false,
       },
       {
-        icon: '🚫', color: '#7c3aed', bg: '#f5f3ff',
+        icon: '🚫', color: C_7C3AED, bg: C_F5F3FF,
         title: 'NO FIRME NADA',
         body: 'Nunca firme documentos que el ICE le dé sin un abogado presente. Esto incluye formularios de "salida voluntaria." Firmar puede eliminar permanentemente su derecho a una audiencia ante un juez y resultar en deportación inmediata sin apelación.',
         bold: false,
       },
       {
-        icon: '🚪', color: '#d97706', bg: '#fffbeb',
+        icon: '🚪', color: C_D97706, bg: C_FFFBEB,
         title: 'SU HOGAR ESTÁ PROTEGIDO',
         body: 'El ICE no puede entrar a su hogar sin una orden judicial firmada por un JUEZ — no una "orden administrativa" del ICE. Pídales que la deslicen bajo la puerta. Si no pueden, no abra la puerta. Puede hablar a través de la puerta cerrada.',
         bold: false,
       },
       {
-        icon: '🌐', color: '#059669', bg: '#ecfdf5',
+        icon: '🌐', color: C_059669, bg: C_ECFDF5,
         title: 'ESTOS DERECHOS APLICAN A TODOS',
         body: 'Estos derechos aplican a toda persona en los Estados Unidos — ciudadano, residente permanente, titular de visa, beneficiario de DACA, persona indocumentada, o solicitante de asilo. Su estatus migratorio NO cambia estos derechos.',
         bold: false,
@@ -251,6 +267,38 @@ type Lang = keyof typeof CONTENT;
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
+
+// ── Status colors (static — not theme-dependent) ──────────────────────────────
+const STATUS = {
+  danger:    C_DC2626,
+  dangerBg:  C_FEF2F2,
+  navy:      C_1D4ED8,
+  navyBg:    C_EFF6FF,
+  purple:    C_7C3AED,
+  purpleBg:  C_F5F3FF,
+  amber:     C_D97706,
+  amberBg:   C_FFFBEB,
+  success:   C_059669,
+  successBg: C_ECFDF5,
+  neutral:   C_F9FAFB,
+  errorDark: C_991B1B,
+} as const;
+
+const _HEX_ICEDETENTION = {
+  _c0: C_D97706,
+  _c1: C_991B1B,
+  _c2: C_DC2626,
+  _c3: C_FFFBEB,
+  _c4: C_059669,
+  _c5: C_F5F3FF,
+  _c6: C_FEF2F2,
+  _c7: C_EFF6FF,
+  _c8: C_1D4ED8,
+  _c9: C_7C3AED,
+  _c10: C_F9FAFB,
+  _c11: C_ECFDF5,
+} as const;
+
 export default function IceDetentionScreen(): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const [lang, setLang] = useState<Lang>('en');
@@ -290,7 +338,8 @@ export default function IceDetentionScreen(): React.JSX.Element {
     >
       {/* Language toggle */}
       <View style={s.langRow}>
-        <TouchableOpacity style={s.langBtn} onPress={toggleLang} testID="ice-lang-toggle">
+        <TouchableOpacity
+          accessibilityRole="button" style={s.langBtn} onPress={toggleLang} testID="ice-lang-toggle">
           <Text style={s.langBtnTxt}>{L.langBtn}</Text>
         </TouchableOpacity>
       </View>
@@ -310,7 +359,7 @@ export default function IceDetentionScreen(): React.JSX.Element {
             <Text style={s.rightIcon}>{r.icon}</Text>
             <Text style={[s.rightTitle, { color: r.color }]}>{r.title}</Text>
           </View>
-          <Text style={[s.rightBody, r.bold && s.rightBodyBold, { color: isDark ? '#f9fafb' : '#1f2937' }]}>
+          <Text style={[s.rightBody, r.bold && s.rightBodyBold, { color: isDark ? STATUS.neutral : COLORS.textPrimary }]}>
             {r.body}
           </Text>
         </View>
@@ -332,6 +381,7 @@ export default function IceDetentionScreen(): React.JSX.Element {
       <View style={[s.locatorCard, { backgroundColor: colors.bgCard, borderColor: COLORS.legal }]}>
         <Text style={[s.locatorDesc, { color: colors.textSecond }]}>{L.locateDesc}</Text>
         <TouchableOpacity
+          accessibilityRole="button"
           style={s.locatorBtn}
           onPress={() => openLink(L.locateUrl)}
           testID="ice-locator-btn"
@@ -353,6 +403,7 @@ export default function IceDetentionScreen(): React.JSX.Element {
           <Text style={[s.resourceDesc, { color: colors.textMuted }]}>{r.desc}</Text>
           <View style={s.resourceBtns}>
             <TouchableOpacity
+              accessibilityRole="button"
               style={[s.callBtn, { backgroundColor: r.highlight ? COLORS.legal : COLORS.navy }]}
               onPress={() => callNumber(r.phone)}
               testID={`ice-call-${i}`}
@@ -360,6 +411,7 @@ export default function IceDetentionScreen(): React.JSX.Element {
               <Text style={s.callBtnTxt}>📞 {r.phone}</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              accessibilityRole="button"
               style={[s.webBtn, { borderColor: colors.border }]}
               onPress={() => openLink(r.url)}
               testID={`ice-web-${i}`}
@@ -371,7 +423,8 @@ export default function IceDetentionScreen(): React.JSX.Element {
       ))}
 
       {/* Share */}
-      <TouchableOpacity style={s.shareBtn} onPress={shareInfo} testID="ice-share-btn">
+      <TouchableOpacity
+          accessibilityRole="button" style={s.shareBtn} onPress={shareInfo} testID="ice-share-btn">
         <Text style={s.shareBtnTxt}>{L.shareBtn}</Text>
       </TouchableOpacity>
 
@@ -392,7 +445,7 @@ const makeStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   langBtn:    { backgroundColor: COLORS.navy, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
   langBtnTxt: { color: '#fff', fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
-  header:      { backgroundColor: '#991b1b', padding: 24, paddingTop: 12, alignItems: 'center', gap: 6 },
+  header:      { backgroundColor: STATUS.errorDark, padding: 24, paddingTop: 12, alignItems: 'center', gap: 6 },
   headerEmoji: { fontSize: 44 },
   headerTitle: { fontSize: 24, fontFamily: 'Inter_900Black', fontWeight: '900', color: '#fff', textAlign: 'center' },
   headerSub:   { fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 19 },

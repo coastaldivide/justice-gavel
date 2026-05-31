@@ -412,8 +412,8 @@ export default function FirmVerticalScreen({ navigation }: any) {
       {/* Tab bar */}
       <View style={s.tabBar}>
         {(['setup','pricing','trackers','deadlines'] as Tab[]).map(t => (
-          <TouchableOpacity key={t} style={[s.tabBtn, tab===t && s.tabActive]} onPress={() => setTab(t)}
-                    accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" key={t} style={[s.tabBtn, tab===t && s.tabActive]} onPress={() => setTab(t)}
             accessibilityLabel='Switch tab'
           >
             <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===t && s.tabLabelActive]}>
@@ -437,10 +437,9 @@ export default function FirmVerticalScreen({ navigation }: any) {
             <Text maxFontSizeMultiplier={1.4} style={s.hint}>This unlocks the correct feature set, deadline rules, and matcher weighting for your firm.</Text>
 
             {VERTICALS.map(v => (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 key={v.key}
                 style={[s.vertCard, selectedV === v.key && s.vertCardSelected]}
-          accessibilityRole="button"
                 onPress={() => {
                   setSelectedVsetSelectedV(v.key);
                   // Preserve existing flag values; only initialise new flags to false
@@ -525,10 +524,10 @@ export default function FirmVerticalScreen({ navigation }: any) {
               <View style={s.segRow}>
                 {['nonprofit','public_defender','government','legal_aid'].map(ot => (
                   <TouchableOpacity
+                    accessibilityRole="button"
                     key={ot}
                     style={[s.segBtn, missionOrg === ot && s.segBtnActive]}
                     onPress={() => setMissionOrg(ot)}
-            accessibilityRole="button"
                   >
                     <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, missionOrg === ot && s.segLabelActive]}>
                       {ot === 'nonprofit' ? 'Nonprofit' : ot === 'public_defender' ? 'Public Def.' : ot === 'government' ? 'Government' : 'Legal Aid'}
@@ -575,8 +574,8 @@ export default function FirmVerticalScreen({ navigation }: any) {
           <>
             <View style={s.subTabRow}>
               {(['asylum','dpa','tro'] as const).map(tt => (
-                <TouchableOpacity key={tt} style={[s.subTab, trackerTab===tt && s.subTabActive]} onPress={() => setTrackerTab(tt)}
-                          accessibilityRole="button"
+                <TouchableOpacity
+          accessibilityRole="button" key={tt} style={[s.subTab, trackerTab===tt && s.subTabActive]} onPress={() => setTrackerTab(tt)}
                         >
                   <Text maxFontSizeMultiplier={1.4} style={[s.subTabLabel, trackerTab===tt && s.subTabLabelActive]}>
                     {tt === 'asylum' ? '🕐 Asylum Clock' : tt === 'dpa' ? '💰 DPA Tracker' : '🚨 TRO Tracker'}
@@ -605,8 +604,8 @@ export default function FirmVerticalScreen({ navigation }: any) {
         'asylum', 'cancellation', 'DACA', 'VAWA', 'U_visa',
         'withholding', 'CAT', 'adjustment', 'citizenship', 'humanitarian', 'TPS', 'SIJ',
       ].map(rt => (
-                          <TouchableOpacity key={rt} style={[s.segBtn, acRelief===rt && s.segBtnActive]} onPress={() => setACRelief(rt)}
-                                    accessibilityRole="button"
+                          <TouchableOpacity
+          accessibilityRole="button" key={rt} style={[s.segBtn, acRelief===rt && s.segBtnActive]} onPress={() => setACRelief(rt)}
                                   >
                             <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, acRelief===rt && s.segLabelActive]}>{rt}</Text>
                           </TouchableOpacity>
@@ -619,8 +618,8 @@ export default function FirmVerticalScreen({ navigation }: any) {
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Country conditions (optional)</Text>
                       <View style={s.segRow}>
                         {(['crisis','deteriorating','stable'] as const).map(cc => (
-                          <TouchableOpacity key={cc} style={[s.segBtn, acCountry===cc && s.segBtnActive]} onPress={() => setACCountry(acCountry===cc ? '' : cc)}
-                                    accessibilityRole="button"
+                          <TouchableOpacity
+          accessibilityRole="button" key={cc} style={[s.segBtn, acCountry===cc && s.segBtnActive]} onPress={() => setACCountry(acCountry===cc ? '' : cc)}
                                   >
                             <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, acCountry===cc && s.segLabelActive]}>
                               {cc==='crisis'?'🔴 Crisis':cc==='deteriorating'?'🟡 Deteriorating':'🟢 Stable'}
@@ -680,8 +679,8 @@ export default function FirmVerticalScreen({ navigation }: any) {
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Cooperation level</Text>
                       <View style={s.segRow}>
                         {['full_cooperation','limited_cooperation','proffer_agreement','no_cooperation'].map(cl => (
-                          <TouchableOpacity key={cl} style={[s.segBtn, dpaCoop===cl && s.segBtnActive]} onPress={() => setDPACoop(cl)}
-                                    accessibilityRole="button"
+                          <TouchableOpacity
+          accessibilityRole="button" key={cl} style={[s.segBtn, dpaCoop===cl && s.segBtnActive]} onPress={() => setDPACoop(cl)}
                                   >
                             <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, dpaCoop===cl && s.segLabelActive]}>
                               {cl === 'full_cooperation' ? 'Full' : cl === 'limited_cooperation' ? 'Limited' : cl === 'proffer_agreement' ? 'Proffer' : 'None'}
@@ -767,8 +766,8 @@ export default function FirmVerticalScreen({ navigation }: any) {
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Asset tier</Text>
                       <View style={s.segRow}>
                         {(['under_100k','100k_500k','500k_2m','2m_10m','over_10m'] as const).map(at => (
-                          <TouchableOpacity key={at} style={[s.segBtn, troAsset===at && s.segBtnActive]} onPress={() => setTROAsset(at)}
-                                    accessibilityRole="button"
+                          <TouchableOpacity
+          accessibilityRole="button" key={at} style={[s.segBtn, troAsset===at && s.segBtnActive]} onPress={() => setTROAsset(at)}
                                   >
                             <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, troAsset===at && s.segLabelActive]}>
                               {at === 'under_100k' ? '<100k'
@@ -780,8 +779,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
                           </TouchableOpacity>
                         ))}
                       </View>
-                      <TouchableOpacity style={[s.addBtn, troDV && { backgroundColor: colors.emergency }]} onPress={createTRO}
-            accessibilityRole="button"
+                      <TouchableOpacity accessibilityRole="button" style={[s.addBtn, troDV && { backgroundColor: colors.emergency }]} onPress={createTRO}
           >
                         <Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{troDV ? '🚨 File emergency TRO' : 'Add TRO tracker'}</Text>
                       </TouchableOpacity>

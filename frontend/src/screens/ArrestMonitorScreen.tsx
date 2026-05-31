@@ -169,8 +169,8 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.upsellBtnText}>Upgrade to Legal Pro -- $14.99/mo</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.upsellSkip} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
-            accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" style={styles.upsellSkip} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
             >
             <Text maxFontSizeMultiplier={1.4} style={styles.upsellSkipText}>Maybe later</Text>
           </TouchableOpacity>
@@ -230,8 +230,8 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
                     </View>
                   )}
                 </View>
-                <TouchableOpacity style={styles.removeBtn} onPress={() => removeWatch(w.id)}
-                  accessibilityRole="button"
+                <TouchableOpacity
+          accessibilityRole="button" style={styles.removeBtn} onPress={() => removeWatch(w.id)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.removeBtnText}>✕</Text>
                 </TouchableOpacity>
@@ -275,8 +275,8 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
                   />
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity activeOpacity={0.6}
-                    accessibilityRole="button"
+                  <TouchableOpacity
+                    accessibilityRole="button" activeOpacity={0.6}
                     style={[styles.addBtn, { flex: 1 }]}
                     onPress={addWatch}
                     disabled={adding}
@@ -287,9 +287,9 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
                     }
                   </TouchableOpacity>
                   <TouchableOpacity
+                    accessibilityRole="button"
                     style={styles.cancelFormBtn}
                     onPress={() => { setShowForm(false); setName(''); setCounty(''); }}
-          accessibilityRole="button"
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.cancelFormText}>Cancel</Text>
                   </TouchableOpacity>

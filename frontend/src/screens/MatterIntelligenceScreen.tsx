@@ -135,8 +135,8 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
         <Text maxFontSizeMultiplier={1.4} style={s.headerTitle} numberOfLines={1}>{matterTitle || 'Matter Intelligence'}</Text>
         {partialLoad && (
           <TouchableOpacity
+  accessibilityRole="button"
             onPress={() => { setErrorMsg(null); load(); }}
-            accessibilityRole="button"
             style={[s.metaPill, { backgroundColor: colors.errorBg }]}
           >
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: TYPE.xs }}>
@@ -161,10 +161,10 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
       <View style={s.tabBar}>
         {(['outcome','motions','diversion','escalation','analytics'] as Tab[]).map(t => (
           <TouchableOpacity
+            accessibilityRole="tab"
             key={t}
             style={[s.tabBtn, tab===t && s.tabActive]}
             onPress={() => setTab(t as Tab)}
-            accessibilityRole="tab"
             accessibilityState={{ selected: tab === t }}
             accessibilityLabel={`${t.charAt(0).toUpperCase() + t.slice(1)} tab`}>
             <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===t && s.tabLabelActive]}>

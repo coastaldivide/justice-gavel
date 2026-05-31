@@ -116,8 +116,8 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
             const sel = offenseFilter === ot;
             const cc = OFFENSE_COLORS[ot] || { bg:card, border:colors.textFaint, text:text };
             return (
-              <TouchableOpacity key={ot} onPress={() => setOffenseFilter(ot)}
-                accessibilityRole="button"
+              <TouchableOpacity
+          accessibilityRole="button" key={ot} onPress={() => setOffenseFilter(ot)}
                 style={{ paddingHorizontal:12, paddingVertical:7, borderRadius:20,
                   backgroundColor: sel ? cc.border : card,
                   borderWidth:1.5, borderColor:cc.border }}>
@@ -155,8 +155,7 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
           const cc = OFFENSE_COLORS[p.offense_type] || OFFENSE_COLORS.emergencyDark;
           const isFelony = p.charge_level?.toLowerCase().includes('felony');
           return (
-            <TouchableOpacity key={p.id}
-              accessibilityRole="button"
+            <TouchableOpacity accessibilityRole="button" key={p.id}
               onPress={() => setExpanded(open ? null : p.id)}
               style={{ backgroundColor:card, borderRadius:12, padding:13,
                 borderWidth:1.5, borderColor: open ? cc.border : border,
@@ -235,8 +234,8 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
           padding:14, alignItems:'center', marginTop:8,
         }}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('LawyersTab')}
             accessibilityRole="button"
+            onPress={() => navigation.navigate('LawyersTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
               ⚖️ Find a Criminal Defense Attorney
@@ -251,8 +250,8 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
       </View>
 
       <TouchableOpacity
+        accessibilityRole="button"
         onPress={() => navigation.navigate('LawyersTab')}
-            accessibilityRole="button"
         style={{ backgroundColor: colors.emergencyDark, paddingVertical: 16,
           paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' }}
       >

@@ -68,8 +68,7 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
         </View>
 
         {/* Browse without account -- TOP of form, first thing seen */}
-        <TouchableOpacity style={styles.topBrowseBtn} onPress={browseAsGuest} activeOpacity={0.85}
-          accessibilityRole="button"
+        <TouchableOpacity accessibilityRole="button" style={styles.topBrowseBtn} onPress={browseAsGuest} activeOpacity={0.85}
           accessibilityLabel="OR SIGN IN"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.topBrowseBtnText}>🔍  Search Without an Account</Text>
@@ -120,8 +119,8 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
               onSubmitEditing={onLogin}
               selectionColor={COLORS.steel}
             />
-            <TouchableOpacity onPress={() => setShowPass(s => !s)}
-              accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" onPress={() => setShowPass(s => !s)}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.showBtnText}>{showPass ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
@@ -166,8 +165,8 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
             }
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.registerLink} onPress={() => navigation.navigate('Register')} testID="login-register-link"
-            accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" style={styles.registerLink} onPress={() => navigation.navigate('Register')} testID="login-register-link"
             accessibilityLabel="Create one"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.registerText}>

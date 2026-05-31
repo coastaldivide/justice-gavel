@@ -219,10 +219,10 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
       {/* State */}
       <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textPrimary }]}>Your state</Text>
       <TouchableOpacity
+        accessibilityRole="button"
           activeOpacity={0.6}
         style={[styles.stateBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
         onPress={() => setShowState(p => !p)}
-            accessibilityRole="button"
         accessibilityLabel={`Select state, currently ${state as string}`}
       >
         <Text maxFontSizeMultiplier={1.4} style={[styles.stateBtnText, { color: colors.textPrimary }]}>{state as string}  ▾</Text>
@@ -295,9 +295,9 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
       </View>
 
       <TouchableOpacity
+        accessibilityRole="button"
         style={[styles.checkBtn, !charge && styles.checkBtnDisabled]}
         onPress={() => charge && setStep('result')}
-            accessibilityRole="button"
         disabled={!charge}
         accessibilityLabel="Check diversion eligibility"
       >
@@ -393,16 +393,16 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
       {/* CTAs */}
       <View style={styles.ctaRow}>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.ctaBtn, { backgroundColor: COLORS.legal }]}
           onPress={() => navigation.navigate('LawyersTab')}
-            accessibilityRole="button"
           accessibilityLabel="Find a lawyer"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaBtnText}>⚖️  Find a Lawyer</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.ctaBtn, { backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.border }]}
           accessibilityRole="button"
+          style={[styles.ctaBtn, { backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.border }]}
           onPress={() => { setStep('form'); setCharge(''); }}
           accessibilityLabel="Check a different charge"
         >

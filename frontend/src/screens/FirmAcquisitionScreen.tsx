@@ -264,7 +264,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                 <Text maxFontSizeMultiplier={1.4} style={s.upgradeBody}>Mission pricing (75% off) available for nonprofits, public defenders, and government offices.</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                   <TouchableOpacity
-          accessibilityRole="button"
+                    accessibilityRole="button"
                     style={[s.upgradeBtn, { backgroundColor: colors.legal }]}
                     onPress={() => requestUpgrade('enterprise')}
                     disabled={upgrading}
@@ -272,6 +272,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
                     <Text maxFontSizeMultiplier={1.4} style={s.upgradeBtnText}>{upgrading ? 'Submitting…' : 'Enterprise'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
+                    accessibilityRole="button"
                     style={[s.upgradeBtn, { backgroundColor: colors.gold }]}
                     onPress={() => requestUpgrade('mission')}
                     disabled={upgrading}

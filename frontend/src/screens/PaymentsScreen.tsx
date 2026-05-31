@@ -321,10 +321,10 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
 
               {/* Receipt download */}
               <TouchableOpacity
+                accessibilityRole="button"
                 style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:8,
                   paddingVertical:6 }}
                 onPress={() => generateReceipt(payment)}
-            accessibilityRole="button"
                 disabled={generatingReceipt}
                 accessibilityLabel="Download payment receipt"
               >
@@ -359,8 +359,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
           <Text maxFontSizeMultiplier={1.4} style={styles.summaryMeta}>🔒 Encrypted</Text>
         </View>
 
-        <TouchableOpacity activeOpacity={0.6}
-          accessibilityRole="button"
+        <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
           style={[styles.payBtn, loading && styles.payBtnDisabled]}
           onPress={onPay}
           disabled={loading}>

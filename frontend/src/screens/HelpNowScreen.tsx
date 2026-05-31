@@ -101,9 +101,9 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
       {/* Big call button -- always visible */}
       {contact.phone ? (
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.callBtn, { backgroundColor: color }]}
           onPress={() => callPhone(contact.phone)}
-            accessibilityRole="button"
             activeOpacity={0.85}
           accessibilityLabel={`Call ${contact.name}`}
           accessibilityHint="Opens your phone dialer to call this contact"
@@ -317,8 +317,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
       <View style={styles.loadingScreen}>
         <Text maxFontSizeMultiplier={1.4} style={styles.errorIcon}>⚠️</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{errorMsg}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={fetchBoth}
-          accessibilityRole="button"
+        <TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={fetchBoth}
           accessibilityLabel="Try Again"
           activeOpacity={0.85}>
           <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
@@ -453,8 +452,8 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
               </View>
               <Text maxFontSizeMultiplier={1.4} style={styles.contactName}>{courthouse.name}</Text>
               {courthouse.address ? (
-                <TouchableOpacity onPress={() => openDir(courthouse.lat, courthouse.lng, courthouse.name)}
-                  accessibilityRole="button"
+                <TouchableOpacity
+          accessibilityRole="button" onPress={() => openDir(courthouse.lat, courthouse.lng, courthouse.name)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={[styles.contactAddress, { color: colors.navy }]}>{courthouse.address}</Text>
                 </TouchableOpacity>
@@ -474,7 +473,7 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
             <Text style={[styles.noResultsBtnText, { color: '#fff' }]}>Find Courthouses Near You →</Text>
           </TouchableOpacity>
       <TouchableOpacity
-          accessibilityRole="button"
+        accessibilityRole="button"
         onPress={() => navigation.navigate('BailCalculator')}
         style={{ marginTop: 8, padding: 12, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
         <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 14 }}>💰 Bail Amount Calculator</Text>
@@ -491,8 +490,8 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
                 <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 12, marginTop: 4 }} numberOfLines={2}>{publicDefender.body}</Text>
               ) : null}
               {publicDefender.phone ? (
-                <TouchableOpacity style={styles.callBtn} onPress={() => callPhone(publicDefender.phone)}
-                  accessibilityRole="button"
+                <TouchableOpacity
+          accessibilityRole="button" style={styles.callBtn} onPress={() => callPhone(publicDefender.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {publicDefender.phone}</Text>
                 </TouchableOpacity>
@@ -508,8 +507,8 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
               </View>
               <Text maxFontSizeMultiplier={1.4} style={styles.contactName}>{crisisLine.title}</Text>
               {crisisLine.phone ? (
-                <TouchableOpacity style={styles.callBtn} onPress={() => callPhone(crisisLine.phone)}
-                  accessibilityRole="button"
+                <TouchableOpacity
+          accessibilityRole="button" style={styles.callBtn} onPress={() => callPhone(crisisLine.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {crisisLine.phone}</Text>
                 </TouchableOpacity>
@@ -590,8 +589,8 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
           <Text maxFontSizeMultiplier={1.4} style={styles.referralPromptArrow}>↑</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.refreshBtn} onPress={fetchBoth}
-          accessibilityRole="button"
+        <TouchableOpacity
+          accessibilityRole="button" style={styles.refreshBtn} onPress={fetchBoth}
           accessibilityLabel="fetch Both"
           activeOpacity={0.85}>
           <Text maxFontSizeMultiplier={1.4} style={styles.refreshBtnText}>↺  Refresh Results</Text>
@@ -601,8 +600,8 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
 
       {/* ── Attorney / Bondsman B2B upsell footer ───────────────── */}
       <TouchableOpacity
+        accessibilityRole="button"
         onPress={() => navigation.navigate('MoreTab', { screen: 'Subscription' })}
-            accessibilityRole="button"
         style={{ flexDirection:'row', alignItems:'center', justifyContent:'center',
           paddingVertical:10, paddingHorizontal:16, gap:6 }}
       >

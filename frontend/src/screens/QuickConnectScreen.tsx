@@ -92,9 +92,9 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
       {/* Primary CTA -- always visible, large */}
       {contact.phone ? (
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.callBtn, { backgroundColor: accent }]}
           onPress={() => callPhone(contact.phone)}
-            accessibilityRole="button"
             activeOpacity={0.85}
           accessibilityLabel={`Call ${contact.name}`}
           accessibilityHint="Opens your phone dialer"
@@ -356,9 +356,9 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.demoHelpOr}>-- or --</Text>
               <TouchableOpacity
+                accessibilityRole="button"
                 style={styles.demoHelpBtn}
                 onPress={() => navigation.navigate('MoreTab', { screen: 'Bail' })}
-            accessibilityRole="button"
           activeOpacity={0.85}
               >
                 <Text maxFontSizeMultiplier={1.4} style={styles.demoHelpBtnText}>🔓 Find a Bail Agent Free Instead →</Text>

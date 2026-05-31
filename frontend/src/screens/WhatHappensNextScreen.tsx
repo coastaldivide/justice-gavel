@@ -221,11 +221,10 @@ function StepCard({ step, color, isActive, onPress }: {
   );
 
   return (
-    <TouchableOpacity
+    <TouchableOpacity accessibilityRole="button"
       style={[styles.stepCard, isActive && { borderColor: color, borderWidth: 2 }]}
       onPress={onPress}
       activeOpacity={0.85}
-      accessibilityRole="button"
     >
       {/* Step header -- always visible */}
       <View style={styles.stepHeader}>
@@ -478,7 +477,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
       <View style={styles.navRow}>
         {activeStep > 1 && (
           <TouchableOpacity
-          accessibilityRole="button"
+            accessibilityRole="button"
             style={[styles.navBtn, styles.navBtnSecondary]}
             onPress={() => setActiveStep(s => Math.max(1, s - 1))}
           >
@@ -487,6 +486,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
         )}
         {activeStep < (data?.steps ?? []).length ? (
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.navBtn, { backgroundColor: data.color, flex: 2 }]}
             onPress={() => setActiveStep(s => Math.min((data?.steps ?? []).length, s + 1))}
           >
@@ -515,15 +515,16 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaSub}>Bail + Lawyer</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.ctaCard}
           onPress={() => navigation.navigate('ChatTab')}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaIcon}>💬</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaLabel}>AI Help</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaSub}>Ask a question</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.ctaCard}
           onPress={() => navigation.navigate('MoreTab', { screen: 'Education' })}
         >

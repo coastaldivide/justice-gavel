@@ -173,9 +173,9 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
   // ── Render helpers ─────────────────────────────────────────────────────────
   const renderStateItem = useCallback(({ item }: { item: CourtFormSource }) => (
     <TouchableOpacity
+  accessibilityRole="button"
       style={s.stateRow}
       onPress={() => onSelectState(item)}
-      accessibilityRole="button"
       accessibilityLabel={`Select ${item.stateName}`}
     >
       <View style={s.stateInfo}>
@@ -262,8 +262,8 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
     return (
       <View style={s.root}>
         <View style={s.subHeader}>
-          <TouchableOpacity onPress={() => setPhase('state_select')} style={s.backBtn}
-            accessibilityRole="button"
+          <TouchableOpacity
+  accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← States</Text>
           </TouchableOpacity>
@@ -276,11 +276,10 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
         <ScrollView keyboardShouldPersistTaps='handled' contentContainerStyle={s.categoryList}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
           {FORM_CATEGORIES.map(cat => (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={cat.key}
               style={s.categoryCard}
               onPress={() => onSelectCategory(cat.key)}
-              accessibilityRole="button"
               accessibilityLabel={cat.label}
             >
               <Text maxFontSizeMultiplier={1.4} style={s.categoryIcon}>{cat.icon}</Text>
@@ -314,9 +313,9 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
           </View>
 
 <TouchableOpacity
+  accessibilityRole="button"
             style={[s.categoryCard, s.selfHelpCard]}
             onPress={() => openFormUrl(selectedState.selfHelpUrl ?? selectedState.formsPortalUrl)}
-            accessibilityRole="button"
             accessibilityLabel="All forms -- open official state portal"
           >
             <Text maxFontSizeMultiplier={1.4} style={s.categoryIcon}>🌐</Text>
@@ -345,8 +344,8 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
     return (
       <View style={s.root}>
         <View style={s.subHeader}>
-          <TouchableOpacity onPress={() => setPhase('category_select')} style={s.backBtn}
-            accessibilityRole="button"
+          <TouchableOpacity
+  accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← {selectedState.stateName}</Text>
           </TouchableOpacity>
@@ -368,9 +367,9 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
           {/* Official form link */}
           <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>Official Government Forms</Text>
           <TouchableOpacity
+            accessibilityRole="link"
             style={s.formLink}
             onPress={() => openFormUrl(primaryUrl)}
-            accessibilityRole="link"
             accessibilityLabel={`Open ${selectedState.stateName} ${categoryInfo?.label} forms`}
           >
             <View style={s.formLinkLeft}>
@@ -388,9 +387,9 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
           {/* Self-help portal */}
           {selfHelpUrl !== primaryUrl && (
             <TouchableOpacity
+              accessibilityRole="link"
               style={[s.formLink, s.formLinkSecondary]}
               onPress={() => openFormUrl(selfHelpUrl)}
-              accessibilityRole="link"
               accessibilityLabel="Open self-help portal"
             >
               <View style={s.formLinkLeft}>
@@ -406,9 +405,9 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
 
           {/* Federal forms link */}
           <TouchableOpacity
+            accessibilityRole="link"
             style={[s.formLink, s.formLinkSecondary]}
             onPress={() => openFormUrl(FEDERAL_SOURCES.formsPortalUrl)}
-            accessibilityRole="link"
             accessibilityLabel="Open federal court forms"
           >
             <View style={s.formLinkLeft}>
@@ -423,9 +422,9 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
 
           {/* National legal aid link */}
           <TouchableOpacity
+            accessibilityRole="link"
             style={[s.formLink, s.formLinkSecondary]}
             onPress={() => openFormUrl('https://www.lawhelp.org/')}
-            accessibilityRole="link"
             accessibilityLabel="Open LawHelp.org free legal help"
           >
             <View style={s.formLinkLeft}>
@@ -439,10 +438,9 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
 
           {/* AI field guide CTA */}
           <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>Understand the Form</Text>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={s.aiGuideBtn}
             onPress={loadAiGuide}
-            accessibilityRole="button"
             accessibilityLabel="Get AI field guide"
           >
             <Text maxFontSizeMultiplier={1.4} style={s.aiGuideBtnIcon}>🤖</Text>
@@ -486,8 +484,8 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
     return (
       <View style={s.root}>
         <View style={s.subHeader}>
-          <TouchableOpacity onPress={() => setPhase('form_display')} style={s.backBtn}
-            accessibilityRole="button"
+          <TouchableOpacity
+  accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← Forms</Text>
           </TouchableOpacity>
@@ -523,7 +521,7 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
 
           {/* Always re-link to official source */}
           <TouchableOpacity
-            accessibilityRole="button"
+  accessibilityRole="button"
             style={[s.formLink, { marginTop: 20 }]}
             onPress={() => openFormUrl(
               selectedState ? getBestUrl(selectedState, selectedCategory ?? '') : 'https://www.uscourts.gov/forms-rules/forms'

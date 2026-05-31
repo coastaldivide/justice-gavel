@@ -135,10 +135,9 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
         <Text maxFontSizeMultiplier={1.4} style={[s.permSub, { color: colors.textMuted }]}>
           Allow camera access to scan and attach documents.
         </Text>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={[s.btn, { backgroundColor: colors.navy }]}
           onPress={requestPermission}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={s.btnText}>Allow Camera</Text>
         </TouchableOpacity>
@@ -154,19 +153,19 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
 
         <View style={s.previewActions}>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[s.previewBtn, { backgroundColor: 'rgba(255,255,255,0.15)' }]}
             onPress={() => setCaptured(null)}
-            accessibilityRole="button"
             accessibilityLabel="Retake photo"
           >
             <Text maxFontSizeMultiplier={1.4} style={s.previewBtnText}>↩ Retake</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
+            accessibilityRole="button"
             style={[s.previewBtn, { backgroundColor: colors.navy }]}
             onPress={usePhoto}
             disabled={uploading}
-            accessibilityRole="button"
             accessibilityLabel={caseId ? 'Attach to case' : 'Use this photo'}
           >
             {uploading
@@ -205,10 +204,9 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
 
         {/* Shutter button */}
         <View style={s.shutterRow}>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={s.shutter}
             onPress={capture}
-            accessibilityRole="button"
             accessibilityLabel="Take photo"
             activeOpacity={0.8}
           >

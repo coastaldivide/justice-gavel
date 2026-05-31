@@ -120,7 +120,7 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
         </View>
       )}
 
-  const flatRef  = useRef<FlatList<(typeof SLIDES)[0]>>(null);
+  const flatRef  = useRef<InstanceType<typeof FlatList<(typeof SLIDES)[0]>>>( null as any);
   const scrollX  = useRef(new Animated.Value(0)).current;
 
   // P2 FIX: Browse goes directly to app -- NOT to Login
@@ -162,7 +162,7 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
 
   const goToLogin = async () => {
     await AsyncStorage.setItem('onboarding_done', 'true');
-    navigation.replace('Login');
+    navigation.navigate('AgeGate');
   };
 
   const next = () => {
@@ -245,8 +245,7 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
       <View style={styles.ctaWrap}>
 
         {/* PRIMARY: Browse -- clear label on every slide */}
-        <TouchableOpacity style={styles.browseBtn} onPress={browseNow} activeOpacity={0.85}
-          accessibilityRole="button"
+        <TouchableOpacity accessibilityRole="button" style={styles.browseBtn} onPress={browseNow} activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.browseBtnText}>
 {activeIndex === 0 ? t('onboard_browse_1') : activeIndex === 1 ? t('onboard_browse_2') : activeIndex === 2 ? t('onboard_browse_3') : t('onboard_browse_4')}
@@ -269,14 +268,13 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
         {/* SECONDARY: Next slide or login */}
         <View style={styles.secondaryRow}>
           {!isLast && (
-            <TouchableOpacity style={styles.nextBtn} onPress={next} activeOpacity={0.8}
-              accessibilityRole="button"
+            <TouchableOpacity
+              accessibilityRole="button" style={styles.nextBtn} onPress={next} activeOpacity={0.8}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>{t('onboard_next')}</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={styles.loginBtn} onPress={goToLogin} activeOpacity={0.8}
-          accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" style={styles.loginBtn} onPress={goToLogin} activeOpacity={0.8}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.loginBtnText}>
               {isLast ? t('onboard_signin_last') : t('onboard_signin')}

@@ -124,8 +124,8 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         {/* Contact action buttons */}
         <View style={styles.actionRow}>
           {item?.phone && (
-            <TouchableOpacity style={[styles.actionBtn, styles.callBtn]} onPress={() => callPhone(item?.phone)}
-                      accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" style={[styles.actionBtn, styles.callBtn]} onPress={() => callPhone(item?.phone)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📞 Call</Text>
             </TouchableOpacity>
@@ -137,8 +137,8 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
             </TouchableOpacity>
           )}
           {item.lat && item.lng && (
-            <TouchableOpacity style={[styles.actionBtn, styles.dirBtn]} onPress={() => openDirections(item.lat, item.lng, item?.name)}
-                      accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" style={[styles.actionBtn, styles.dirBtn]} onPress={() => openDirections(item.lat, item.lng, item?.name)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>🗺 Dir</Text>
             </TouchableOpacity>
@@ -153,9 +153,9 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
 
         {/* Leave a Message -- always-visible async contact option */}
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.leaveMessageBtn}
           onPress={() => { setMsgSent(false); setMsgModal(true); }}
-          accessibilityRole="button"
           activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.leaveMessageBtnText}>✉️  Leave a Message for {item?.name}</Text>
@@ -164,8 +164,8 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         {/* Leave a Message modal */}
         <Modal accessibilityViewIsModal={true} visible={msgModal} transparent animationType="slide" onRequestClose={() => setMsgModal(false)}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-            <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMsgModal(false)}
-              accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" style={styles.modalOverlay} activeOpacity={1} onPress={() => setMsgModal(false)}
               accessibilityLabel="Message sent"
             >
             <View style={[styles.msgSheet, { backgroundColor: COLORS.bgCard }]}>
@@ -176,8 +176,8 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                   <Text maxFontSizeMultiplier={1.4} style={[styles.msgSheetSub, { color: COLORS.textSecond }]}>
                     {item?.name} will contact you shortly.
                   </Text>
-                  <TouchableOpacity style={[styles.msgSendBtn, { marginTop: 20, width: '100%' }]} onPress={() => setMsgModal(false)}
-                    accessibilityRole="button"
+                  <TouchableOpacity
+          accessibilityRole="button" style={[styles.msgSendBtn, { marginTop: 20, width: '100%' }]} onPress={() => setMsgModal(false)}
                     accessibilityLabel="Done"
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.msgSendBtnText}>Done</Text>
@@ -247,8 +247,8 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                     }}>
                     <Text maxFontSizeMultiplier={1.4} style={styles.msgSendBtnText}>{msgSending ? 'Sending…' : 'Send Message'}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={{ alignItems: 'center', paddingVertical: 12 }} onPress={() => setMsgModal(false)}
-                    accessibilityRole="button"
+                  <TouchableOpacity
+          accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 12 }} onPress={() => setMsgModal(false)}
                     accessibilityLabel="Cancel"
                   >
                     <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 12 }}>Cancel</Text>
@@ -412,17 +412,16 @@ export default function MatchScreen(): React.JSX.Element {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.toggleRow} onPress={() => setProBonoOnly(v => !v)}
-          accessibilityRole="button"
+        <TouchableOpacity
+          accessibilityRole="button" style={styles.toggleRow} onPress={() => setProBonoOnly(v => !v)}
         >
           <View style={[styles.toggle, proBonoOnly && styles.toggleOn]} />
           <Text maxFontSizeMultiplier={1.4} style={styles.toggleLabel}>Pro bono / free representation only</Text>
         </TouchableOpacity>
 
         {/* Search button */}
-        <TouchableOpacity activeOpacity={0.6} style={[styles.searchBtn, loading && styles.searchBtnDisabled]} onPress={findMatches} disabled={loading}
+        <TouchableOpacity accessibilityRole="button" activeOpacity={0.6} style={[styles.searchBtn, loading && styles.searchBtnDisabled]} onPress={findMatches} disabled={loading}
           accessibilityLabel="📍 Find My Best Matches"
-          accessibilityRole="button"
         >
           {loading
             ? <ActivityIndicator color={colors.bgCard} />

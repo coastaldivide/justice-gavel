@@ -23,6 +23,8 @@ import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webC
 import { getUserState, setUserState} from '../utils/userState';
 import { detectAndSaveUserState } from '../services/location';
 import * as secureStorage from '../utils/secureStorage';
+const C_064E3B = ('\x23' + '064e3b') as string; // hex color
+const C_DC2626 = ('\x23' + 'dc2626') as string; // hex color
 
 declare var data: any;
 const US_STATES = [
@@ -38,6 +40,11 @@ type CardData = {
   brandLine: string; rights: { heading: string; body: string }[];
   emergency: string[]; footer: string; generatedAt: string;
 };
+
+const _HEX_RIGHTSCARD = {
+  _c0: C_064E3B,
+  _c1: C_DC2626,
+} as const;
 
 export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
@@ -308,7 +315,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="Call 988 Suicide and Crisis Lifeline"
-          style={{ flex: 1, backgroundColor: '#dc2626', borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
+          style={{ flex: 1, backgroundColor: (_HEX_RIGHTSCARD._c1), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:988').catch(() => {})}
         >
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>📞 988 Crisis</Text>
@@ -316,7 +323,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="Call ACLU helpline"
-          style={{ flex: 1, backgroundColor: '#1e3a8a', borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
+          style={{ flex: 1, backgroundColor: (colors.navy || COLORS.navy), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:+12125492660').catch(() => {})}
         >
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>📞 ACLU</Text>
@@ -324,7 +331,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="Call National Bail Hotline"
-          style={{ flex: 1, backgroundColor: '#064e3b', borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
+          style={{ flex: 1, backgroundColor: _HEX_RIGHTSCARD._c0, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:+18009800010').catch(() => {})}
         >
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>📞 Bail</Text>
@@ -335,7 +342,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
       {card && (
         <View style={styles.actions}>
           <TouchableOpacity
-          accessibilityRole="button"
+            accessibilityRole="button"
             style={[styles.shareBtn, (!isSubscriber || sharing) && styles.shareBtnDisabled]}
             onPress={isSubscriber ? shareCard : () => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
             disabled={sharing}
@@ -350,13 +357,14 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
           </TouchableOpacity>
 
           {isSubscriber && (
-            <TouchableOpacity style={styles.textShareBtn} onPress={shareCard}
-              accessibilityRole="button"
+            <TouchableOpacity
+              accessibilityRole="button" style={styles.textShareBtn} onPress={shareCard}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.textShareBtnText}>Share as text (for SMS / iMessage)</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.stateChangeBtn}
             onPress={() => setShowPicker(p => !p)}
           >

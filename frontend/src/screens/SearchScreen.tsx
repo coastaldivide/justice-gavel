@@ -204,11 +204,11 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
                       🕐 Recent Searches
                     </Text>
                     <TouchableOpacity
+                      accessibilityRole="button"
                       onPress={() => {
                         clearRecentSearches().catch(() => {});
                         setRecentSearches([]);
                       }}
-                      accessibilityRole="button"
                       accessibilityLabel="Clear recent searches"
                     >
                       <Text maxFontSizeMultiplier={1.4}
@@ -219,11 +219,11 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
                   </View>
                   {recentSearches.map((q, i) => (
                     <TouchableOpacity
+                      accessibilityRole="button"
                       key={i}
                       style={[s.resultRow, { backgroundColor: colors.bgCard,
                         borderColor: colors.border }]}
                       onPress={() => { setQuery(q); doSearch(q); }}
-                      accessibilityRole="button"
                       accessibilityLabel={`Search for ${q}`}
                       activeOpacity={0.75}
                     >
@@ -245,12 +245,12 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
                 <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8 }}>
                   {['DUI attorney','bail bondsman','expungement','drug charge','know my rights',
                     'public defender','court date','probation violation','assault charge'].map(q => (
-                    <TouchableOpacity key={q}
+                    <TouchableOpacity
+          accessibilityRole="button" key={q}
                       style={{ backgroundColor: colors.bgCard, borderRadius: 20,
                         paddingHorizontal:14, paddingVertical:8,
                         borderWidth:1, borderColor: colors.border }}
                       onPress={() => { setQuery(q); doSearch(q); }}
-                      accessibilityRole="button"
                     >
                       <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color: colors.textSecond }}>{q}</Text>
                     </TouchableOpacity>
@@ -275,11 +275,11 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
             </Text>
             {(section.items || []).map((result, i) => (
               <TouchableOpacity
+                accessibilityRole="button"
                 key={result.id}
                 style={[s.resultRow, { backgroundColor: colors.bgCard, borderColor: colors.border },
                   i < (section.items || []).length-1 && { borderBottomWidth:0, borderBottomLeftRadius:0, borderBottomRightRadius:0 }]}
                 onPress={() => handleTap(result)}
-                accessibilityRole="button"
                 accessibilityLabel={result.title}
                 activeOpacity={0.75}
               >

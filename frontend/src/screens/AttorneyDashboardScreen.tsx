@@ -123,12 +123,14 @@ function AvailabilityGrid({ userId }: { userId: number }) {
             {SLOTS.map(slot => {
               const active = (schedule[day] || []).includes(slot);
               return (
-                <TouchableOpacity key={slot}
+                <TouchableOpacity
+                accessibilityRole="button"
+
+                key={slot}
                   style={{ width: '100%', height: 28, borderRadius: 4,
                     backgroundColor: active ? COLORS.navy : COLORS.bgSubtle,
                     borderWidth: 1, borderColor: active ? COLORS.navy : COLORS.border }}
                   onPress={() => toggle(day, slot)}
-                  accessibilityRole="checkbox"
                   accessibilityState={{ checked: active }}
                   accessibilityLabel={`${DAY_LABELS[day]} ${SLOT_LABELS[slot]}`}
                 />
@@ -152,10 +154,10 @@ function AvailabilityGrid({ userId }: { userId: number }) {
         accessibilityLabel="Availability note"
       />
       <TouchableOpacity
+  accessibilityRole="button"
         style={{ marginTop: 10, backgroundColor: saving ? COLORS.bgSubtle : COLORS.navy,
           borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
         onPress={save} disabled={saving}
-        accessibilityRole="button" accessibilityLabel="Save availability"
       >
         <Text maxFontSizeMultiplier={1.4} style={{ color: saving ? COLORS.textMuted : COLORS.bgCard,
           fontWeight: '700', fontSize: 13, lineHeight: 19 }}>
@@ -332,8 +334,8 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
             )}
           </View>
           <TouchableOpacity
+  accessibilityRole="button"
             onPress={() => navigation.navigate('MoreTab', { screen: 'MatterIntelligence' })}
-            accessibilityRole="button"
             accessibilityLabel='Open matter intelligence'
             style={{ backgroundColor: colors.navy, paddingHorizontal: 12,
               paddingVertical: 7, borderRadius: 8 }}>
@@ -355,10 +357,10 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
           { key:'profile',   label:'Profile',   badge: null },
         ] as { key: Tab; label: string; badge: number | null }[]).map(t => (
           <TouchableOpacity
+            accessibilityRole="tab"
             key={t.key}
             style={[styles.tabBtn, tab===t.key && { borderBottomColor: colors.steel, borderBottomWidth: 2 }]}
             onPress={() => setTab(t.key)}
-            accessibilityRole="tab"
             accessibilityLabel={t.label}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.tabLabel, { color: tab===t.key ? colors.textPrimary : colors.textMuted }]}>
@@ -395,8 +397,8 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
             {cases.length > 1 && (
               <View style={{ flexDirection:'row', gap:6, marginBottom:10 }}>
                 {(['date','name','status'] as const).map(opt => (
-                  <TouchableOpacity key={opt} onPress={() => setSortBy(opt)}
-                    accessibilityRole="button"
+                  <TouchableOpacity
+  accessibilityRole="button"
                     style={{ paddingHorizontal:12, paddingVertical:5, borderRadius:16,
                       borderWidth:1, borderColor:sortBy===opt?colors.navy:colors.border,
                       backgroundColor:sortBy===opt?colors.navy:colors.bgCard }}>
@@ -411,11 +413,10 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
             {[...cases].sort((a,b)=>{ if(sortBy==='name') return (a.title||'').localeCompare(b.title||''); if(sortBy==='status') return (a.status||'').localeCompare(b.status||''); const da=a.next_court_date?new Date(a.next_court_date).getTime():Infinity; const db2=b.next_court_date?new Date(b.next_court_date).getTime():Infinity; return da-db2; }).map((cas, i) => {
               const days = daysUntil(cas.next_court_date);
               return (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   key={cas.id}
                   style={[styles.caseCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
                   onPress={() => navigation.navigate('Cases')}
-                  accessibilityRole="button"
                   accessibilityLabel={`Open case: ${cas.title}`}
                 >
                   <View style={styles.caseHeader}>
@@ -442,17 +443,15 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
                     </Text>
                   ) : null}
                   <View style={styles.caseActions}>
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       style={[styles.caseActionBtn, { borderColor: colors.border }]}
                       onPress={() => navigation.navigate('Messages', { caseId: cas.id, caseTitle: cas.title })}
-                      accessibilityRole="button"
                       accessibilityLabel="Message client"
                     >
                       <Text maxFontSizeMultiplier={1.4} style={[styles.caseActionText, { color: colors.steel }]}>💬 Message</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
+                    <TouchableOpacity accessibilityRole="button"
                       style={[styles.caseActionBtn, { borderColor: colors.border }]}
-          accessibilityRole="button"
                       onPress={() => navigation.navigate('MotionLibrary', { caseId: cas.id })}
                       accessibilityLabel="Draft a motion for this case"
                     >
@@ -474,8 +473,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600',
                 color: colors.textMuted, marginRight: 4 }}>View:</Text>
               {(['cards','table'] as const).map(mode => (
-                <TouchableOpacity key={mode}
-                  accessibilityRole="button"
+                <TouchableOpacity accessibilityRole="button" key={mode}
                   onPress={() => setMotionViewMode(mode)}
                   style={{ paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
                     borderWidth: 1,
@@ -491,12 +489,11 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
 
             <View style={styles.filterRow}>
               {(['approved','pending','all'] as const).map(f => (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   key={f}
                   style={[styles.filterChip,
                     { backgroundColor: tplFilter===f ? colors.steel : colors.bgCard,
                       borderColor: tplFilter===f ? colors.steel : colors.border }]}
-          accessibilityRole="button"
                   onPress={() => setTplFilter(f)}
                   accessibilityLabel={f}
                 >
@@ -514,10 +511,9 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
                 <Text maxFontSizeMultiplier={1.4} style={[styles.emptyBody, { color: colors.textSecond }]}>
                   Generate a motion in the Motion Library, then save it as an office template for your colleagues to use.
                 </Text>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   style={[styles.emptyBtn, { backgroundColor: colors.steel }]}
                   onPress={() => navigation.navigate('MotionLibrary')}
-                  accessibilityRole="button"
                   accessibilityLabel="Go to Motion Library"
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>Open Motion Library →</Text>
@@ -564,9 +560,9 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
               return (
                 <View key={course.id} style={[styles.cleCard, { backgroundColor: colors.bgCard, borderColor: done ? colors.legalDark : colors.border }]}>
                   <TouchableOpacity
+  accessibilityRole="button"
                     style={styles.cleCardHeader}
                     onPress={() => setExpandedCourse(expanded ? null : course.id)}
-            accessibilityRole="button"
                     activeOpacity={0.8}
                     accessibilityLabel={course.title}
                   >
@@ -592,10 +588,10 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
                       <Text maxFontSizeMultiplier={1.4} style={[styles.cleContent, { color: colors.textSecond }]}>{course.content}</Text>
                       {!done ? (
                         <TouchableOpacity
+  accessibilityRole="button"
                           style={[styles.completeBtn, { backgroundColor: colors.steel },
                             completing === course.id && { opacity: 0.6 }]}
                           onPress={() => completeCLE(course.id)}
-            accessibilityRole="button"
                           disabled={completing === course.id}
                           accessibilityLabel={`Mark ${course.title} complete`}
                         >
@@ -619,9 +615,9 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
               );
             })}
             <TouchableOpacity
+  accessibilityRole="button"
               style={[styles.transcriptBtn, { borderColor: colors.steel }]}
               onPress={() => Alert.alert('CLE Transcript', `${cleTotal.toFixed(1)} CLE hours earned on Justice Gavel.`)}
-              accessibilityRole="button"
               accessibilityLabel="View CLE transcript"
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.transcriptBtnText, { color: colors.steel }]}>View Full Transcript →</Text>
@@ -740,11 +736,11 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
           blurOnSubmit
         />
 
-            <TouchableOpacity activeOpacity={0.6}
+            <TouchableOpacity
+  accessibilityRole="button"
               style={[styles.saveBtn, { backgroundColor: colors.steel }, savingProfile && { opacity: 0.6 }]}
               onPress={saveProfile}
               disabled={savingProfile}
-              accessibilityRole="button"
               accessibilityLabel="Save profile"
             >
               {savingProfile
@@ -753,8 +749,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
               }
             </TouchableOpacity>
 
-            <TouchableOpacity
-              accessibilityRole="button"
+            <TouchableOpacity accessibilityRole="button"
               style={[styles.outlineBtn, { borderColor: colors.legalDark }]}
               onPress={async () => {
                 if (!barInput.trim()) {
@@ -773,19 +768,17 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
               <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.legal }]}>✅  Submit Bar Number for Verification →</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               style={[styles.outlineBtn, { borderColor: colors.border }]}
               onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })}
-              accessibilityRole="button"
               accessibilityLabel="View Gavel Program"
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.textSecond }]}>🏆  Gavel Program Status →</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               style={[styles.outlineBtn, { borderColor: colors.border }]}
               onPress={() => navigation.navigate('Subscription')}
-              accessibilityRole="button"
               accessibilityLabel="Manage subscription"
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.textSecond }]}>💎  Manage Subscription →</Text>
@@ -902,9 +895,9 @@ const styles = makeStyles(COLORS);
               </View>
               {!profile.bar_verified && (
                 <TouchableOpacity
+  accessibilityRole="button"
                   style={styles.barStatusAction}
                   onPress={() => setTab('profile')}
-                  accessibilityRole="button"
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.barStatusActionText}>
                     {profile.bar_number ? 'View Status' : 'Verify Now'}

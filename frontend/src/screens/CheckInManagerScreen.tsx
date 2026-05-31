@@ -145,8 +145,7 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
             ))}
           </View>
 
-          <TouchableOpacity activeOpacity={0.6}
-            accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
             style={[styles.saveBtn, saving && { opacity: 0.6 }]}
             onPress={save}
             disabled={saving}
@@ -188,8 +187,7 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
         testID="check-in-manager-screen">
         <View style={[styles.modalHeader, { backgroundColor: COLORS.navy }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.modalTitle, { color: COLORS.bgCard }]}>{enrollment.defendant_name}</Text>
-          <TouchableOpacity onPress={onClose}
-            accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" onPress={onClose}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.modalClose, { color: COLORS.bgCard }]}>✕</Text>
           </TouchableOpacity>
@@ -395,7 +393,7 @@ export default function CheckInManagerScreen({ route, navigation }: ScreenProps)
 
                 <View style={styles.cardActions}>
                   <TouchableOpacity
-          accessibilityRole="button"
+                    accessibilityRole="button"
                     style={styles.actionBtn}
                     onPress={() => setSelectedEnroll(item)}
                   >
@@ -403,6 +401,7 @@ export default function CheckInManagerScreen({ route, navigation }: ScreenProps)
                   </TouchableOpacity>
                   {item.active && (
                     <TouchableOpacity
+                      accessibilityRole="button"
                       style={[styles.actionBtn, styles.actionBtnRed]}
                       onPress={() => deactivate(item.id, item.defendant_name)}
                     >

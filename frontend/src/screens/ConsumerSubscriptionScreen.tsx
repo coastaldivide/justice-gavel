@@ -325,6 +325,7 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
           <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, !annual && styles.toggleBtnTextActive]}>Monthly</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.toggleBtn, annual && styles.toggleBtnActive]}
           onPress={() => setAnnual(true)}
         >
@@ -382,8 +383,7 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
               </Text>
             )}
           </View>
-          <TouchableOpacity onPress={handleCancel}
-            accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" onPress={handleCancel}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.cancelLink}>Cancel</Text>
           </TouchableOpacity>

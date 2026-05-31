@@ -422,8 +422,8 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
 
 
                 <TouchableOpacity
+                  accessibilityRole="button"
                   onPress={() => scheduleReminder(rule.label, deadline)}
-            accessibilityRole="button"
                   style={{ marginTop: 6, marginRight: 8, flexDirection: 'row', alignItems: 'center',
                     paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
                     borderWidth: 1, borderColor: COLORS.navy + '40',
@@ -435,8 +435,8 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
                   </Text>
                 </TouchableOpacity>
 <TouchableOpacity
+  accessibilityRole="button"
             onPress={() => addToCalendar(dl.label, dl.date)}
-            accessibilityRole="button"
             style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center',
               paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
               borderWidth: 1, borderColor: COLORS.border,
@@ -468,9 +468,9 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
       style={[styles.row, { backgroundColor: col.bg, borderColor: col.border }]}
       onPress={() => setExpanded(p => !p)}
-            accessibilityRole="button"
       activeOpacity={0.85}
       accessibilityLabel={`${rule.label}: ${formatDate(deadline)}`}
     >

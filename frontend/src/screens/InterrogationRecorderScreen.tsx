@@ -267,6 +267,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
           <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>🚨 CALL 911</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.emergencyBtn, { backgroundColor: colors.blue }]}
           onPress={() => Linking.openURL('tel:988').catch(() => {})}
         >
@@ -311,11 +312,10 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
 
       {/* ── Main recording control ───────────────────── */}
       {phase === 'ready' && (
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={styles.recordBtn}
           onPress={startRecording}
           activeOpacity={0.85}
-          accessibilityRole="button"
           accessibilityLabel="Start recording police encounter"
           accessibilityHint="Records audio and generates a timestamped transcript PDF">
           <Text style={styles.recordBtnIcon}>🎙</Text>
@@ -332,11 +332,10 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
               REC  {formatTime(elapsed)}
             </Text>
           </View>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.stopBtn, { backgroundColor: colors.bgCard, borderColor: colors.emergency }]}
             onPress={stopAndProcess}
             activeOpacity={0.85}
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.stopBtnText, { color: colors.emergency }]}>
               ⏹  STOP & TRANSCRIBE
@@ -364,8 +363,8 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
         <View style={[styles.errorBox, { backgroundColor: colors.emergencyBg }]}>
           <Text maxFontSizeMultiplier={1.3} style={styles.errorTitle}>Could not process</Text>
           <Text maxFontSizeMultiplier={1.3} style={styles.errorMsg}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={reset}
-            accessibilityRole="button"
+          <TouchableOpacity
+            accessibilityRole="button" style={styles.retryBtn} onPress={reset}
           >
             <Text maxFontSizeMultiplier={1.2} style={styles.retryBtnText}>Try Again</Text>
           </TouchableOpacity>
@@ -377,10 +376,10 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
           {/* Save PDF */}
           {pdfBase64 ? (
             <TouchableOpacity
+              accessibilityRole="button"
               style={[styles.saveBtn, { backgroundColor: colors.legalDark }]}
               onPress={savePDF}
               activeOpacity={0.85}
-              accessibilityRole="button"
             >
               <Text maxFontSizeMultiplier={1.2} style={styles.saveBtnText}>
                 📄  Save & Share PDF
@@ -419,11 +418,10 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
           </View>
 
           {/* Record again */}
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.recordAgainBtn, { backgroundColor: colors.bgElevated }]}
             onPress={reset}
             activeOpacity={0.85}
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.recordAgainText, { color: colors.textSecond }]}>
               + Record Another Encounter

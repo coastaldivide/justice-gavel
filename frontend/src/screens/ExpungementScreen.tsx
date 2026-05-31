@@ -178,12 +178,11 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
               {eligible.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </Text>
           </Text>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             onPress={scheduleReminder}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6,
               backgroundColor: COLORS.navy, borderRadius: 8,
               paddingHorizontal: 14, paddingVertical: 10, alignSelf: 'flex-start' }}
-            accessibilityRole="button"
             accessibilityLabel="Set a reminder for your eligibility date"
           >
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14 }}>🔔</Text>
@@ -391,9 +390,12 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
 
       {/* State */}
       <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Your state</Text>
-      <TouchableOpacity style={styles.stateBtn}
-        testID="expungement-state-picker" onPress={() => setShowStatePicker(p => !p)}
-        accessibilityRole="button">
+      <TouchableOpacity
+          accessibilityRole="button"
+          style={styles.stateBtn}
+          testID="expungement-state-picker"
+          onPress={() => setShowStatePicker(p => !p)}
+        >
       {!!stateError && <Text testID="expungement-state-error" style={{ color: COLORS.emergency, fontSize: 12, marginTop: 4, marginLeft: 4 }}>{stateError}</Text>}
         <Text maxFontSizeMultiplier={1.4} style={styles.stateBtnText}>{state}  ▾</Text>
       </TouchableOpacity>
@@ -401,10 +403,10 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
         <ScrollView style={styles.stateDropdown} nestedScrollEnabled>
           {US_STATES.map(st => (
             <TouchableOpacity
+              accessibilityRole="button"
               key={st}
               style={[styles.stateRow, state === st && styles.stateRowActive]}
               onPress={() => { setState(st); setShowStatePicker(false); }}
-              accessibilityRole="button"
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.stateRowText, state === st && { color: COLORS.navy, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }]}>{st}</Text>
             </TouchableOpacity>
@@ -416,11 +418,10 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
       <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Case outcome</Text>
       <View style={styles.statusRow}>
         {['Closed', 'Dismissed', 'Still Open'].map(s => (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={s}
             style={[styles.statusChip, caseStatus === s && styles.statusChipActive]}
             onPress={() => setCaseStatus(s)}
-              accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.statusChipText, caseStatus === s && styles.statusChipTextActive]}>{s}</Text>
           </TouchableOpacity>
@@ -431,11 +432,10 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
       <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>What were the charges?</Text>
       <View style={styles.chargeChips}>
         {CHARGE_EXAMPLES.map(ch => (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={ch}
             style={[styles.chargeChip, charges === ch && styles.chargeChipActive]}
             onPress={() => setCharges(charges === ch ? '' : ch)}
-              accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.chargeChipText, charges === ch && styles.chargeChipTextActive]}>{ch}</Text>
           </TouchableOpacity>
@@ -453,7 +453,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
         />
 
       <TouchableOpacity
-        accessibilityRole="button"
+  accessibilityRole="button"
         style={[styles.checkBtn, loading && { opacity: 0.6 }]}
         testID="expungement-check-button" onPress={checkEligibility}
         disabled={loading}
@@ -518,13 +518,12 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
           </Text>
             {/* Generate expungement petition */}
             {result && !result?.eligibility?.notEligible && (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 style={{ marginTop: 12, backgroundColor: colors.legal, borderRadius: 12,
                   paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row',
                   alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 onPress={generatePetition}
                 disabled={genPetition}
-                accessibilityRole="button"
                 accessibilityLabel="Generate expungement petition draft"
               >
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>📋</Text>
@@ -541,8 +540,9 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
               <View style={{ flex: 1, backgroundColor: colors.bg }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16,
                   borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                  <TouchableOpacity onPress={() => setShowPetition(false)}
-                    style={{ marginRight: 16 }} accessibilityRole="button"
+                  <TouchableOpacity
+  accessibilityRole="button"
+          onPress={() => setShowPetition(false)}
                     >
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16,
                       color: colors.navy }}>← Close</Text>
@@ -551,8 +551,7 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
                     fontWeight: '700', color: colors.textPrimary }}>
                     Petition Draft
                   </Text>
-                  <TouchableOpacity
-                    accessibilityRole="button"
+                  <TouchableOpacity accessibilityRole="button"
                     onPress={async () => {
                       const { Share } = await import('react-native');
                       try {
@@ -604,19 +603,17 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
               )}
               <View style={{ flexDirection:'row', gap:8, marginTop:4 }}>
                 {atty.phone && (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     style={[styles.partnerBtn, { flex:1, backgroundColor:colors.legalDark }]}
                     onPress={() => { Linking.openURL('tel:'+atty.phone).catch(() => {})}}
-                    accessibilityRole="button"
                     accessibilityLabel={`Call ${atty.name}`}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>📞 Call</Text>
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   style={[styles.partnerBtn, { flex:2 }]}
                   onPress={() => navigation.navigate('MoreTab', { screen: 'Booking', params: { lawyerName: atty.name, lawyerPhone: atty.phone || '', lawyerId: atty.id }})}
-                  accessibilityRole="button"
                   accessibilityLabel={`Book consultation with ${atty.name}`}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>Book Free Consultation →</Text>
@@ -637,9 +634,9 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
                     <Text maxFontSizeMultiplier={1.4} style={styles.partnerFeeValue}>{partner.estimatedCost}</Text>
                   </View>
                   <TouchableOpacity
+  accessibilityRole="button"
                     style={[styles.partnerBtn, referralLoading === partner.key && { opacity: 0.6 }]}
                     onPress={() => handleReferral(partner.key, partner.url)}
-                    accessibilityRole="button"
                     disabled={referralLoading === partner.key}
                     activeOpacity={0.85}
                   >
@@ -668,10 +665,9 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
             "🏛️  Apply for a Governor's pardon in some states",
             '⏳  Check back when the waiting period is complete',
           ].map(s => <Text maxFontSizeMultiplier={1.4} key={s} style={styles.notEligibleItem}>{s}</Text>)}
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={styles.partnerBtn}
             onPress={() => navigation.navigate('LawyersTab')}
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>Find a Criminal Defense Lawyer →</Text>
           </TouchableOpacity>
@@ -679,8 +675,8 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
       )}
       <Text maxFontSizeMultiplier={1.4} style={styles.disclaimerNote}>{result?.disclaimer}</Text>
 
-      <TouchableOpacity style={styles.startOverBtn} onPress={() => setStep('form')}
-        accessibilityRole="button"
+      <TouchableOpacity
+  accessibilityRole="button"
       >
       </TouchableOpacity>
 

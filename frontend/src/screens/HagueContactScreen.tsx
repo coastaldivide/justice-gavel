@@ -178,18 +178,18 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         <View style={s.card}>
           <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Emergency Contacts</Text>
           <TouchableOpacity
+            accessibilityRole="button"
             style={s.contactRow}
             onPress={() => callNumber('+18884074747')}
-            accessibilityRole="button"
             accessibilityLabel="Call Office of Children's Issues emergency line"
           >
             <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🏛 OCI Emergency Line</Text>
             <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>1-888-407-4747</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessibilityRole="button"
             style={s.contactRow}
             onPress={() => callNumber('18008435678')}
-            accessibilityRole="button"
             accessibilityLabel="Call NCMEC"
           >
             <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🔴 NCMEC 24/7</Text>
@@ -198,9 +198,9 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         </View>
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={s.btnPrimary}
           onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Back to Case</Text>
         </TouchableOpacity>
@@ -270,10 +270,10 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           maxLength={2000} returnKeyType="done" />
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={[s.btnPrimary, submitting && s.btnDisabled]}
           onPress={submitIntake}
           disabled={submitting}
-          accessibilityRole="button"
           accessibilityLabel="Submit Hague intake record"
         >
           {submitting
@@ -282,9 +282,9 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         </TouchableOpacity>
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={s.btnSecondary}
           onPress={() => setPhase('lookup')}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={s.btnSecondaryText}>Back</Text>
         </TouchableOpacity>
@@ -301,10 +301,10 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
 
         {QUICK_COUNTRIES.map(c => (
           <TouchableOpacity
+            accessibilityRole="button"
             key={c.code}
             style={[s.countryBtn, selectedCountry === c.code && s.countryBtnActive]}
             onPress={() => onSelectCountry(c.code)}
-            accessibilityRole="button"
             accessibilityLabel={`Select ${c.name}`}
           >
             <Text maxFontSizeMultiplier={1.4} style={[s.countryBtnText, selectedCountry === c.code && s.countryBtnTextActive]}>
@@ -326,8 +326,8 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
               <>
                 <Text maxFontSizeMultiplier={1.4} style={s.authName}>{authorityData.central_authority.name}</Text>
                 <TouchableOpacity
-                  onPress={() => openUrl(authorityData.central_authority.website)}
                   accessibilityRole="button"
+                  onPress={() => openUrl(authorityData.central_authority.website)}
                   accessibilityLabel="Open central authority website"
                 >
                   <Text maxFontSizeMultiplier={1.4} style={s.linkText}>{authorityData.central_authority.website}</Text>
@@ -335,9 +335,9 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
               </>
             )}
             <TouchableOpacity
+              accessibilityRole="button"
               style={s.btnPrimary}
               onPress={() => setPhase('intake')}
-              accessibilityRole="button"
             >
               <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Record Intake for Case</Text>
             </TouchableOpacity>
@@ -371,9 +371,9 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         <Text maxFontSizeMultiplier={1.4} style={s.emergencyTitle}>🚨 Emergency Contacts</Text>
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={s.contactRow}
           onPress={() => callNumber('+18884074747')}
-          accessibilityRole="button"
           accessibilityLabel="Call Office of Children's Issues emergency line"
           accessibilityHint="24/7 emergency line for US citizens abroad"
         >
@@ -388,9 +388,9 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         <View style={s.divider} />
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={s.contactRow}
           onPress={() => callNumber('18008435678')}
-          accessibilityRole="button"
           accessibilityLabel="Call NCMEC 24/7 hotline"
         >
           <View style={s.contactInfo}>
@@ -406,9 +406,9 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Federal Reporting Paths</Text>
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={s.reportRow}
           onPress={() => openUrl('https://www.ic3.gov')}
-          accessibilityRole="button"
           accessibilityLabel="Open FBI IC3 reporting portal"
         >
           <Text maxFontSizeMultiplier={1.4} style={s.reportIcon}>🏛</Text>
@@ -419,9 +419,9 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         </TouchableOpacity>
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={s.reportRow}
           onPress={() => openUrl('https://travel.state.gov/content/travel/en/International-Parental-Child-Abduction/prevention/hague-convention.html')}
-          accessibilityRole="button"
           accessibilityLabel="Open State Department Hague application"
         >
           <Text maxFontSizeMultiplier={1.4} style={s.reportIcon}>📋</Text>
@@ -432,9 +432,9 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         </TouchableOpacity>
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={s.reportRow}
           onPress={() => openUrl('https://www.interpol.int/Crimes/Crimes-against-children/Child-abduction')}
-          accessibilityRole="button"
           accessibilityLabel="Open INTERPOL child abduction information"
         >
           <Text maxFontSizeMultiplier={1.4} style={s.reportIcon}>🌐</Text>
@@ -447,9 +447,9 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
 
       {/* Country Lookup */}
       <TouchableOpacity
+        accessibilityRole="button"
         style={s.btnPrimary}
         onPress={() => setPhase('lookup')}
-        accessibilityRole="button"
         accessibilityLabel="Look up destination country central authority"
       >
         <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Find Destination Country Authority →</Text>

@@ -262,7 +262,7 @@ function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPE
     <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '48%' }}>
               {/* AI Review button */}
               <TouchableOpacity
-                accessibilityRole="button"
+  accessibilityRole="button"
                 style={{ flexDirection:'row', alignItems:'center', gap:8, paddingVertical:12,
                   paddingHorizontal:16, borderRadius:10, borderWidth:1,
                   borderColor:COLORS.border, backgroundColor:COLORS.bgSubtle,
@@ -317,12 +317,11 @@ function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPE
                 </View>
               )}
 
-<TouchableOpacity
+<TouchableOpacity accessibilityRole="button"
         style={[styles.motionCard, { backgroundColor: m.bg, borderColor: m.color + '44' }]}
         onPress={handlePress}
         activeOpacity={1}
         accessibilityLabel={`${m.label} -- ${m.desc}`}
-        accessibilityRole="button"
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.motionIcon}>{m.icon}</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.motionLabel, { color: m.color }]}>{m.label}</Text>
@@ -365,9 +364,9 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
       testID="motion-library-screen">
       {/* Open motion */}
       <TouchableOpacity
+  accessibilityRole="button"
         style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
         onPress={() => onOpen(item)}
-        accessibilityRole="button"
         accessibilityLabel={`Open ${item.label}`}
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.historyIcon}>{m?.icon || '📄'}</Text>
@@ -385,10 +384,9 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
       </TouchableOpacity>
 
       {/* Status badge -- tappable */}
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button"
         style={[styles.statusBadgeBtn, { backgroundColor: cfg.bg, borderColor: cfg.color + '60' }]}
         onPress={() => setShowPicker(p => !p)}
-            accessibilityRole="button"
         disabled={updating}
         accessibilityLabel={`Filing status: ${cfg.label}. Tap to change.`}
       >
@@ -398,9 +396,8 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
       </TouchableOpacity>
 
       {/* Delete */}
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button"
         onPress={() => onDelete(item.id)}
-            accessibilityRole="button"
         style={styles.historyDelete}
         accessibilityLabel="Delete motion"
       >
@@ -417,12 +414,11 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
           shadowRadius: 8,
           elevation: 6 }]}>
           {(Object.entries(FILING_STATUS) as [FilingStatus, typeof FILING_STATUS[FilingStatus]][]).map(([key, cfg]) => (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={key}
               style={[styles.statusPickerRow,
                 key === status && { backgroundColor: cfg.bg }]}
               onPress={() => changeStatus(key)}
-              accessibilityRole="button"
               accessibilityLabel={`Mark as ${cfg.label}`}
             >
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, lineHeight: 21, marginRight: 8 }}>{cfg.icon}</Text>
@@ -600,8 +596,8 @@ export default function MotionLibraryScreen({ route, navigation }: ScreenProps):
            : phase === 'result'  ? '📄 Generated Motion'
            : '📄 Motion Library',
       headerRight: () => phase === 'library' ? (
-        <TouchableOpacity onPress={() => loadHistory()}
-          accessibilityRole="button"
+        <TouchableOpacity
+  accessibilityRole="button"
           style={{ marginRight: 14 }}>
           <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
         </TouchableOpacity>
@@ -916,8 +912,7 @@ const loadHistory = useCallback(async () => {
         </View>
 
         {/* Generate button */}
-        <TouchableOpacity
-          accessibilityRole="button"
+        <TouchableOpacity accessibilityRole="button"
           style={[styles.generateBtn, { backgroundColor: selected.color }]}
           onPress={() => {
             Alert.alert(
@@ -981,17 +976,17 @@ const loadHistory = useCallback(async () => {
                 We strongly recommend having a licensed attorney review this draft before filing.
               </Text>
               <TouchableOpacity
+                accessibilityRole="button"
                 style={egStyles.reviewBtn}
                 onPress={() => Linking.openURL('https://www.lawhelp.org/').catch(() => {})}
-                accessibilityRole="link"
               >
                 <Text maxFontSizeMultiplier={1.4} style={egStyles.reviewBtnText}>Find Free Legal Help →</Text>
               </TouchableOpacity>
               <View style={egStyles.checkRow}>
                 <TouchableOpacity
+                  accessibilityRole="button"
                   onPress={() => setAttorneyReviewed(v => !v)}
                   style={egStyles.checkBox}
-                  accessibilityRole="checkbox"
                   accessibilityState={{ checked: attorneyReviewed }}
                   accessibilityLabel="I have reviewed this draft with a licensed attorney"
                 >
@@ -1005,16 +1000,14 @@ const loadHistory = useCallback(async () => {
                 </Text>
               </View>
               <View style={egStyles.btnRow}>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   style={egStyles.cancelBtn}
                   onPress={() => setShowExportGate(false)}
-                  accessibilityRole="button"
                 >
                   <Text maxFontSizeMultiplier={1.4} style={egStyles.cancelBtnText}>Go Back</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   style={[egStyles.exportBtn, !attorneyReviewed && egStyles.exportBtnDisabled]}
-          accessibilityRole="button"
                   onPress={() => {
                     setShowExportGate(false);
                     shareMotion();
@@ -1054,40 +1047,35 @@ const loadHistory = useCallback(async () => {
 
       {/* Action bar */}
         <View style={styles.resultActionBar}>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.resultAction, { backgroundColor: copied ? COLORS.legal : COLORS.navy }]}
             onPress={copyToClipboard}
             accessibilityLabel="Copy motion to clipboard"
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>{copied ? '✓ Copied' : '📋 Copy'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.resultAction, { backgroundColor: COLORS.steel }]}
             onPress={shareMotion}
             accessibilityLabel="Share motion"
-          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>↑ Share</Text>
           </TouchableOpacity>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.resultAction, { backgroundColor: colors.navy, borderWidth: 1, borderColor: colors.steel }]}
             onPress={printMotion}
             accessibilityLabel="Export motion as PDF"
-            accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>PDF</Text>
           </TouchableOpacity>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.resultAction, { backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.border }]}
-          accessibilityRole="button"
             onPress={() => { setPhase('library'); setSelected(null); setDraft(''); }}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.resultActionText, { color: colors.textSecond }]}>+ New</Text>
           </TouchableOpacity>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.resultAction, { backgroundColor: COLORS.legal }]}
-          accessibilityRole="button"
             onPress={() => navigation.navigate('LegalResearch', {
               initialQuery: selected
                 ? `Precedent and case law supporting a ${selected.label} -- cite key cases`
@@ -1157,12 +1145,11 @@ const loadHistory = useCallback(async () => {
           const cfg = key === 'all' ? null : FILING_STATUS[key as FilingStatus];
           const active = histFilter === key;
           return (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={key}
               style={[styles.histFilterChip, active && {
                 backgroundColor: cfg ? cfg.bg : COLORS.navy + '14',
                 borderColor: cfg ? cfg.color : COLORS.navy }]}
-          accessibilityRole="button"
               onPress={() => setHistFilter(key)}
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.histFilterText, { color: active ? (cfg?.color || COLORS.navy) : colors.textMuted }]}>
@@ -1184,9 +1171,9 @@ const loadHistory = useCallback(async () => {
               Generate your first motion from the library.
             </Text>
             <TouchableOpacity
+  accessibilityRole="button"
               style={[styles.generateBtn, { backgroundColor: COLORS.navy, marginTop: 20, width: '100%' }]}
               onPress={() => setPhase('library')}
-              accessibilityRole="button"
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.generateBtnText}>← Back to Library</Text>
             </TouchableOpacity>

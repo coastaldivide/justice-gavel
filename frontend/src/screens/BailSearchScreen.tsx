@@ -191,8 +191,8 @@ export default function BailSearchScreen(): React.JSX.Element {
         </Text>
       </View>
 
-      <TouchableOpacity activeOpacity={0.6} style={styles.searchBtn} testID="bail-search-submit-button" onPress={() => search()} disabled={loading}
-        accessibilityRole="button"
+      <TouchableOpacity
+          accessibilityRole="button" activeOpacity={0.6} style={styles.searchBtn} testID="bail-search-submit-button" onPress={() => search()} disabled={loading}
         accessibilityLabel="Searching…"
       >
         {loading
@@ -207,8 +207,8 @@ export default function BailSearchScreen(): React.JSX.Element {
 
       <View style={{ flexDirection: 'row', paddingHorizontal: 12, marginBottom: 8, gap: 8 }}>
         {(['rating','distance','rate']).map(s => (
-          <TouchableOpacity key={s} onPress={() => setSortBy(s)}
-            accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" key={s} onPress={() => setSortBy(s)}
             style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20,
               backgroundColor: sortBy === s ? colors.blue : colors.bgCard,
               borderWidth: 1, borderColor: sortBy === s ? colors.blue : colors.border }}>
@@ -224,8 +224,8 @@ export default function BailSearchScreen(): React.JSX.Element {
       <View style={{ flexDirection:'row', paddingHorizontal:12, paddingVertical:8, gap:8,
         borderBottomWidth:1, borderBottomColor:colors.border, backgroundColor:colors.bgSubtle }}>
         <TouchableOpacity
+          accessibilityRole="button"
           onPress={() => setFilterVerified(v => !v)}
-            accessibilityRole="button"
           style={{ flexDirection:'row', alignItems:'center', gap:5, paddingHorizontal:12,
             paddingVertical:6, borderRadius:16, borderWidth:1,
             borderColor:filterVerified?colors.navy:colors.border,
@@ -238,8 +238,8 @@ export default function BailSearchScreen(): React.JSX.Element {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           onPress={() => setFilterAvailNow(v => !v)}
-            accessibilityRole="button"
           style={{ flexDirection:'row', alignItems:'center', gap:5, paddingHorizontal:12,
             paddingVertical:6, borderRadius:16, borderWidth:1,
             borderColor:filterAvailNow?colors.legalDark:colors.border,
@@ -252,8 +252,8 @@ export default function BailSearchScreen(): React.JSX.Element {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           onPress={() => setFilterPaymentPlan(v => !v)}
-            accessibilityRole="button"
           style={{ flexDirection:'row', alignItems:'center', gap:5, paddingHorizontal:12,
             paddingVertical:7, borderRadius:16, borderWidth:1,
             borderColor:filterPaymentPlan?colors.gold:colors.border,
@@ -343,8 +343,7 @@ export default function BailSearchScreen(): React.JSX.Element {
 
           {/* ALWAYS-VISIBLE call button -- primary action */}
           {item?.phone ? (
-          <TouchableOpacity testID="bail-agent-card"
-          accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" testID="bail-agent-card"
           accessibilityLabel="Call bail agent"
           style={styles.callBtnBig}
           onPress={() => callPhone(item?.phone)}
@@ -407,10 +406,9 @@ export default function BailSearchScreen(): React.JSX.Element {
           </TouchableOpacity>
           <View style={styles.cityList}>
             {filteredCities.map(city => (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 key={city}
                 style={styles.cityRow}
-          accessibilityRole="button"
                 onPress={() => { setLocationDenied(false); setCityQuery(''); search(city); }}
                 activeOpacity={0.75}
               >
@@ -440,8 +438,8 @@ export default function BailSearchScreen(): React.JSX.Element {
               </TouchableOpacity>
             ))}
           </View>
-          <TouchableOpacity style={styles.pickCityBtn} onPress={() => setLocationDenied(true)}
-            accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" style={styles.pickCityBtn} onPress={() => setLocationDenied(true)}
             accessibilityLabel="Try wider search"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.pickCityBtnText}>📍 Pick a Different City</Text>

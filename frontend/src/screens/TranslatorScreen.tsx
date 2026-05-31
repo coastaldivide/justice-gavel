@@ -114,8 +114,8 @@ function TurnBubble({
       </View>
 
       {/* Original */}
-      <TouchableOpacity onPress={() => { hapticSelection(); Clipboard.setString(msg.original); }}
-        accessibilityRole="button"
+      <TouchableOpacity
+          accessibilityRole="button" onPress={() => { hapticSelection(); Clipboard.setString(msg.original); }}
       >
         <Text maxFontSizeMultiplier={1.4} style={[styles.bubbleOriginal, { color: COLORS.textPrimary }]}>
           {msg.original}
@@ -133,8 +133,8 @@ function TurnBubble({
           <Text maxFontSizeMultiplier={1.4} style={[styles.translationLang, { color: isA ? aColor : bColor }]}>
             {tgtLang.flag} {tgtLang.native}
           </Text>
-          <TouchableOpacity onPress={() => { hapticSelection(); Clipboard.setString(msg.translated); }}
-            accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" onPress={() => { hapticSelection(); Clipboard.setString(msg.translated); }}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.translationText, { color: COLORS.textPrimary }]}>
               {msg.translated}
@@ -401,20 +401,20 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
         {!!joinError && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.joinError, { color: COLORS.emergency }]}>{joinError}</Text>
         )}
-        <TouchableOpacity activeOpacity={0.6}
+        <TouchableOpacity
+          accessibilityRole="button" activeOpacity={0.6}
           style={[styles.joinBtn, { backgroundColor: COLORS.navy },
             joinCode.length !== 6 && { opacity: 0.45 }]}
           onPress={joinSession}
           disabled={joinCode.length !== 6}
           accessibilityLabel="Join session"
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.joinBtnText}>Join Session →</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.backLink}
           accessibilityRole="button"
+          style={styles.backLink}
           onPress={() => setPhase('setup')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.backLinkText, { color: colors.textMuted }]}>← Back</Text>
@@ -486,9 +486,9 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
         </View>
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.joinExisting, { borderColor: colors.border, backgroundColor: colors.bgCard }]}
           onPress={() => setPhase('join')}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.joinExistingText, { color: colors.textPrimary }]}>
             🗝  Join with a code (client)
@@ -519,14 +519,14 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
           <Text maxFontSizeMultiplier={1.4} style={[styles.codeBarLabel, { color: colors.textMuted }]}>Session code</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.codeBarCode, { color: COLORS.navy }]}>{sessionCode}</Text>
           {mode === 'split' && (
-            <TouchableOpacity onPress={shareCode} style={styles.shareCodeBtn}
-              accessibilityRole="button"
+            <TouchableOpacity
+              accessibilityRole="button" onPress={shareCode} style={styles.shareCodeBtn}
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.shareCodeText, { color: COLORS.navy }]}>Share →</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
-          accessibilityRole="button"
+            accessibilityRole="button"
             onPress={() => {
               if (pollRef.current) clearInterval(pollRef.current);
               setPhase('setup');
@@ -602,11 +602,11 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
                 accessibilityLabel={`Type in ${langAObj.label}`}
               />
               <TouchableOpacity
+                accessibilityRole="button"
                 style={[styles.sendBtn, {
                   backgroundColor: inputA.trim() && !sendingA ? COLORS.navy : colors.border
                 }]}
                 onPress={() => sendMessage('a')}
-            accessibilityRole="button"
                 disabled={!inputA.trim() || sendingA}
                 accessibilityLabel="Send and translate"
               >
@@ -645,11 +645,11 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
               accessibilityLabel={`Type in ${langBObj.label}`}
             />
             <TouchableOpacity
+              accessibilityRole="button"
               style={[styles.sendBtn, {
                 backgroundColor: inputB.trim() && !sendingB ? colors.textSecond : colors.border
               }]}
               onPress={() => sendMessage('b')}
-            accessibilityRole="button"
               disabled={!inputB.trim() || sendingB}
               accessibilityLabel="Send and translate"
             >

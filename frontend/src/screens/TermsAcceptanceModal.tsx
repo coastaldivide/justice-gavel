@@ -148,9 +148,9 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
 
           {/* Link to full ToS */}
           <TouchableOpacity
+            accessibilityRole="link"
             style={s.fullTosLink}
             onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => {})}
-            accessibilityRole="link"
             accessibilityLabel="Read the full Terms of Service"
           >
             <Text maxFontSizeMultiplier={1.4} style={s.fullTosLinkText}>📄 Read the full Terms of Service →</Text>
@@ -172,9 +172,10 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
 
           {/* Checkbox 1: ToS agreement */}
           <TouchableOpacity
+            accessibilityRole="button"
+
             style={s.checkRow}
             onPress={() => setCheckToS(v => !v)}
-            accessibilityRole="checkbox"
             accessibilityState={{ checked: checkToS }}
             accessibilityLabel="I have read and agree to the Terms of Service">
             <View style={[s.checkbox, checkToS && s.checkboxChecked]}>
@@ -191,9 +192,10 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
 
           {/* Checkbox 2: The critical disclaimer — standalone affirmative act */}
           <TouchableOpacity
+            accessibilityRole="button"
+
             style={s.checkRow}
             onPress={() => setCheckNoAdvice(v => !v)}
-            accessibilityRole="checkbox"
             accessibilityState={{ checked: checkNoAdvice }}
             accessibilityLabel="I understand Justice Gavel is not a law firm and does not provide legal advice">
             <View style={[s.checkbox, checkNoAdvice && s.checkboxChecked]}>
@@ -219,11 +221,10 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
           )}
 
           {/* Accept button */}
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[s.acceptBtn, (!canAccept || submitting) && s.acceptBtnDisabled]}
             onPress={handleAccept}
             disabled={!canAccept || submitting}
-            accessibilityRole="button"
             accessibilityLabel="I Agree — accept Terms of Service"
             accessibilityState={{ disabled: !canAccept || submitting }}>
             {submitting

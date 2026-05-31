@@ -121,16 +121,16 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
       {/* ── 911 / 988 strip -- always at very top ─── */}
       <View style={styles.emergencyStrip}>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.stripBtn, { backgroundColor: colors.emergencyDark }]}
           onPress={() => call('911')}
-          accessibilityRole="button"
           accessibilityLabel="Call 911 emergency services"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>🚨  CALL 911</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.stripBtn, { backgroundColor: colors.blue }]}
           accessibilityRole="button"
+          style={[styles.stripBtn, { backgroundColor: colors.blue }]}
           onPress={() => call('988')}
           accessibilityLabel="Call 988 crisis line"
         >
@@ -154,29 +154,29 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
                 : '⚠️ No contacts saved yet.\nAdd them in Emergency Contacts first.'}
             </Text>
             <TouchableOpacity
+              accessibilityRole="button"
               style={[styles.sosBtn, contacts.length === 0 && { opacity: 0.5 }]}
               onPress={startCountdown}
               disabled={contacts.length === 0}
               activeOpacity={0.85}
-              accessibilityRole="button"
               accessibilityLabel="Send emergency alert to your contacts"
               accessibilityHint="Starts a 5 second countdown then sends your location"
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.sosBtnText}>🚨  Send Emergency Alert</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.shareBtn}
               onPress={() => navigation.navigate('EmergencyShare')}
-            accessibilityRole="button"
               activeOpacity={0.85}
               accessibilityLabel="Share location with bail agent and lawyer"
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>📤  Share Location + Find Help →</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.addContactsBtn}
               onPress={() => navigation.navigate('Contacts')}
-            accessibilityRole="button"
               activeOpacity={0.85}
               accessibilityLabel="Manage emergency contacts"
             >
@@ -193,11 +193,10 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
           <>
             <Text maxFontSizeMultiplier={1.3} style={styles.countdownNum}>{countdown}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.panelTitle}>Sending in {countdown}s…</Text>
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               style={styles.cancelBtn}
               onPress={cancelCountdown}
               activeOpacity={0.85}
-              accessibilityRole="button"
               accessibilityLabel="Cancel alert"
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>✕  Cancel</Text>
@@ -219,8 +218,8 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
             <Text maxFontSizeMultiplier={1.3} style={styles.bigCheck}>✓</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.panelTitle}>Alert sent!</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.panelSub}>{result}</Text>
-            <TouchableOpacity style={styles.cancelBtn} onPress={reset} activeOpacity={0.85}
-              accessibilityRole="button"
+            <TouchableOpacity
+              accessibilityRole="button" style={styles.cancelBtn} onPress={reset} activeOpacity={0.85}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Done</Text>
             </TouchableOpacity>
@@ -231,8 +230,7 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
           <>
             <Text maxFontSizeMultiplier={1.4} style={styles.panelTitle}>Could not send</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.panelSub}>{result}</Text>
-            <TouchableOpacity style={styles.cancelBtn} onPress={reset} activeOpacity={0.85}
-              accessibilityRole="button"
+            <TouchableOpacity accessibilityRole="button" style={styles.cancelBtn} onPress={reset} activeOpacity={0.85}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Try again</Text>
             </TouchableOpacity>
@@ -253,12 +251,11 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
           { icon: '📋', label: 'Just\nArrested?', onPress: () => navigation.navigate('MoreTab', { screen: 'HelpNow' }) },
           { icon: '🧠', label: 'Crisis\nHelp',    onPress: () => navigation.navigate('MoreTab', { screen: 'CrisisResources' }) },
         ].map(item => (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             key={item.label}
             style={[styles.quickBtn, { backgroundColor: colors.bgCard }]}
             onPress={item.onPress}
             activeOpacity={0.75}
-            accessibilityRole="button"
             accessibilityLabel={item.label.replace('\n', ' ')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.quickIcon}>{item.icon}</Text>

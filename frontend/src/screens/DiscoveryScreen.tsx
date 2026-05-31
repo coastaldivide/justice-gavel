@@ -129,10 +129,9 @@ function Section({
 
   return (
     <Animated.View style={[styles.section, { backgroundColor: bg, borderColor, opacity: fadeAnim }]}>
-      <TouchableOpacity
+      <TouchableOpacity accessibilityRole="button"
         style={styles.sectionHeader}
         onPress={() => setExpanded(e => !e)}
-        accessibilityRole="button"
         accessibilityLabel={`${title} -- ${expanded ? 'collapse' : 'expand'}`}
       >
         <View style={styles.sectionTitleRow}>
@@ -148,11 +147,10 @@ function Section({
       {expanded && (
         <View style={styles.sectionBody}>
           {(items || []).map((item, i) => (
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               key={i}
               style={styles.itemRow}
               onPress={() => Clipboard.setString(item)}
-            accessibilityRole="button"
               accessibilityLabel={`Copy item: ${item}`}
             >
               <View style={[styles.itemBullet, { backgroundColor: color }]}>
@@ -177,9 +175,9 @@ function HistoryRow({ item, onOpen, onDelete }: any) {
   const { colors } = useTheme();
   return (
     <TouchableOpacity
+  accessibilityRole="button"
       style={[styles.histRow, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
       onPress={() => onOpen(item)}
-      accessibilityRole="button"
     >
       <View style={[styles.histDocIcon, { backgroundColor: COLORS.bgSubtle }]}>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>📄</Text>
@@ -199,8 +197,8 @@ function HistoryRow({ item, onOpen, onDelete }: any) {
         </Text>
       </View>
       <TouchableOpacity
+  accessibilityRole="button"
         onPress={() => onDelete(item.id)}
-            accessibilityRole="button"
         style={styles.histDelete}
         accessibilityLabel="Delete analysis"
       >
@@ -249,17 +247,18 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
       headerRight: () => (
         <View style={{ flexDirection: 'row', gap: 12, marginRight: 14 }}>
           {phase !== 'history' && (
-            <TouchableOpacity onPress={loadHistory} accessibilityRole="button">
+            <TouchableOpacity accessibilityRole="button" onPress={loadHistory}>
               <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
             </TouchableOpacity>
           )}
           {phase === 'result' && (
-            <TouchableOpacity onPress={() => {
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={() => {
               setPhase('upload'); setFile(null); setAnalysis(null); setDocType('');
-            }} accessibilityRole="button">
+            }}>
               <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
             </TouchableOpacity>
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         // eslint-disable-next-line react-hooks/exhaustive-deps
           )}
         </View>
@@ -449,7 +448,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
 
       {/* Drop zone */}
       <TouchableOpacity
-        accessibilityRole="button"
+  accessibilityRole="button"
         style={[styles.dropZone, {
           borderColor: file ? COLORS.legal : colors.border,
           backgroundColor: file
@@ -494,7 +493,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
         style={styles.typeScroll} contentContainerStyle={{ gap: 8 }}>
         {DOC_TYPES.map(t => (
           <TouchableOpacity
-            accessibilityRole="button"
+  accessibilityRole="button"
             key={t}
             style={[styles.typeChip, {
               backgroundColor: docType === t
@@ -546,8 +545,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
             <Text maxFontSizeMultiplier={1.4} style={[styles.pricingText, { color: colors.textPrimary }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}>$19.99 per document</Text>
             </Text>
-            <TouchableOpacity
-              accessibilityRole="button"
+            <TouchableOpacity accessibilityRole="button"
               accessibilityLabel="Upgrade to Discovery Pro"
               onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Subscription' })}
             >
@@ -560,13 +558,12 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
       </View>
 
       {/* Analyze button */}
-      <TouchableOpacity activeOpacity={0.6}
+      <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
         style={[styles.analyzeBtn, {
           backgroundColor: file ? COLORS.navy : colors.border }, analyzing && { opacity: 0.6 }]}
         onPress={analyze}
         disabled={!file || analyzing}
         accessibilityLabel={`Analyze document -- ${hasPro ? 'included' : '$19.99'}`}
-        accessibilityRole="button"
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.analyzeBtnText}>
           {hasPro ? 'Analyze Document →' : 'Analyze -- $19.99 →'}
@@ -615,9 +612,9 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 40, marginBottom: 12 }}>📄</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No analyses yet</Text>
             <TouchableOpacity
+  accessibilityRole="button"
               style={[styles.analyzeBtn, { backgroundColor: COLORS.navy, width: '100%', marginTop: 16 }]}
               onPress={() => setPhase('upload')}
-            accessibilityRole="button"
           >
               <Text maxFontSizeMultiplier={1.4} style={styles.analyzeBtnText}>← Upload a Document</Text>
             </TouchableOpacity>
@@ -667,11 +664,10 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
             )}
           </View>
         </View>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={shareAnalysis}
           style={styles.shareBtn}
           accessibilityLabel="Share analysis"
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: COLORS.navy }]}>↑ Share</Text>
         </TouchableOpacity>

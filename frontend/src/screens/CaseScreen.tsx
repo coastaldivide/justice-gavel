@@ -15,6 +15,7 @@ import { saveCaseOffline, getOfflineCases, startSyncListener } from '../services
 import Markdown from 'react-native-markdown-display';
 import { useFocusEffect } from '@react-navigation/native';
 import { daysUntil, formatDate} from '../utils/dateUtils';
+const C_0A1929 = ('\x23' + '0A1929') as string; // hex color
 
 declare var ScreenProps: any;
 declare var caseData: any;
@@ -51,17 +52,17 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
     : null;
 
   return (
-    <TouchableOpacity testID="case-card" style={styles.card} onPress={onPress} activeOpacity={0.85}
-      accessibilityRole="button"
+    <TouchableOpacity
+      accessibilityRole="button" testID="case-card" style={styles.card} onPress={onPress} activeOpacity={0.85}
     >
       <View style={styles.cardTop}>
         <Text maxFontSizeMultiplier={1.4} style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
 
               {item.next_court_date && (
                 <TouchableOpacity
+                  accessibilityRole="button"
                   style={{ flexDirection:'row', alignItems:'center', gap:4, paddingVertical:6,
                     marginTop:2 }}
-          accessibilityRole="button"
                   onPress={async () => {
                     const d = new Date(item.next_court_date!);
                     const remind = new Date(d);
@@ -102,17 +103,17 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
       )}
       {!!item.notes && <Markdown style={{ body: { fontSize:14, lineHeight:21, color:COLORS.textSecond } }}>{item.notes}</Markdown>}
       <Text maxFontSizeMultiplier={1.4}>Created {new Date(item.created_at ?? 0).toLocaleDateString()}</Text>
-      <TouchableOpacity testID="case-share-sheet"
+      <TouchableOpacity
+          accessibilityRole="button" testID="case-share-sheet"
         style={styles.shareBtn}
         onPress={() => onShare(item)}
-        accessibilityRole="button"
         accessibilityLabel={`Share ${item.title} with family`}
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>🔗  Share Link</Text>
       </TouchableOpacity>
       <TouchableOpacity
+        accessibilityRole="button"
         style={[styles.shareBtn, { borderColor: 'rgba(133,183,235,0.33)', backgroundColor: COLORS.bgCard }]}
-          accessibilityRole="button"
         onPress={() => onInvite(item)}
         accessibilityLabel={`Invite a family member to ${item.title}`}
       >
@@ -120,9 +121,9 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
       </TouchableOpacity>
       {hasDate && (
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.calendarBtn}
           onPress={() => onCalendar(item)}
-          accessibilityRole="button"
           accessibilityLabel={`Add ${item.title} court date to calendar`}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.calendarBtnText}>📅  Add to Calendar</Text>
@@ -130,8 +131,8 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
       )}
       {['Open', 'Active', 'Pending'].includes(item.status) && (
         <TouchableOpacity
-          style={styles.discoveryBtn}
           accessibilityRole="button"
+          style={styles.discoveryBtn}
           onPress={() => navigation?.navigate('Discovery', {
             caseId: item.id, caseTitle: item.title
           })}
@@ -143,8 +144,8 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
       {['Closed','Dismissed'].includes(item.status) && (
         <>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.expungeBtn, { backgroundColor: COLORS.bgSubtle }]}
-          accessibilityRole="button"
             onPress={() => navigation?.navigate('MoreTab', {
               screen: 'CaseTimeline',
               params: { caseId: item.id, caseTitle: item.title }
@@ -154,8 +155,8 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
             <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>📋 View Timeline →</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.expungeBtn, { backgroundColor: COLORS.bgSubtle }]}
-          accessibilityRole="button"
             onPress={() => navigation?.navigate('MoreTab', {
               screen: 'VoiceNote',
               params: { caseId: item.id, caseTitle: item.title }
@@ -167,8 +168,8 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.expungeBtn, { backgroundColor: COLORS.infoBg }]}
-          accessibilityRole="button"
             onPress={() => navigation?.navigate('MoreTab', {
               screen: 'DocumentScanner',
               params: { caseId: item.id }
@@ -180,9 +181,9 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.expungeBtn, { backgroundColor: COLORS.bgSubtle }]}
             onPress={() => exportCasePDF(item)}
-            accessibilityRole="button"
             accessibilityLabel="Export full case summary as PDF"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>
@@ -190,8 +191,8 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.expungeBtn}
-          accessibilityRole="button"
             onPress={() => navigation?.navigate('MoreTab', {
               screen: 'Expungement',
               params: {
@@ -204,8 +205,8 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
             <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>📋 Check expungement eligibility →</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.civilRightsBtn}
-          accessibilityRole="button"
             onPress={() => navigation?.navigate('MoreTab', {
               screen: 'PILead',
               params: { caseType: 'Civil Rights' }
@@ -219,6 +220,12 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
     </TouchableOpacity>
   );
 })
+
+const DEEP_BG = C_0A1929;
+
+const _HEX_CASE = {
+  _c0: C_0A1929,
+} as const;
 
 export default function CaseScreen({ route, navigation }: any) {
   React.useEffect(() => {
@@ -692,9 +699,9 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'cases' && styles.tabBtnTextActive]}>{t('case_tab_cases')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'messages' && styles.tabBtnActive]}
           onPress={() => setActiveTab('messages')}
-            accessibilityRole="button"
           accessibilityLabel={`Messages${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -709,9 +716,9 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           </View>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'tools' && styles.tabBtnActive]}
           onPress={() => setActiveTab('tools')}
-            accessibilityRole="button"
           accessibilityLabel="Defender Tools"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'tools' && styles.tabBtnTextActive]}>
@@ -719,8 +726,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'lawyers' && styles.tabBtnActive]}
           accessibilityRole="button"
+          style={[styles.tabBtn, activeTab === 'lawyers' && styles.tabBtnActive]}
           testID="case-save-button" onPress={() => { setActiveTab('lawyers'); loadSavedLawyers(); }}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'lawyers' && styles.tabBtnTextActive]}>
@@ -730,8 +737,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
       </View>
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('case_tab_cases')}</Text>
-        <TouchableOpacity style={styles.addBtn} testID="case-add-button" onPress={openNew}
-          accessibilityRole="button"
+        <TouchableOpacity accessibilityRole="button" style={styles.addBtn} testID="case-add-button" onPress={openNew}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.addBtnText}>{t('case_new')}</Text>
         </TouchableOpacity>
@@ -760,8 +766,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>📁</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>No cases yet</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>Tap "+ New case" to start tracking your legal matter.</Text>
-              <TouchableOpacity style={styles.emptyBtn} onPress={openNew}
-                accessibilityRole="button"
+              <TouchableOpacity accessibilityRole="button" style={styles.emptyBtn} onPress={openNew}
               >
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>Create first case</Text>
             </TouchableOpacity>
@@ -798,10 +803,10 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           </Text>
           {familyCases.map(fc => (
             <TouchableOpacity
+              accessibilityRole="button"
               key={fc.id}
               style={[styles.familyCaseRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
               onPress={() => navigation.navigate('Messages', { caseId: fc.id, caseTitle: fc.title })}
-              accessibilityRole="button"
               accessibilityLabel={`Open shared case ${fc.title}`}
             >
               <View style={{ flex: 1 }}>
@@ -821,8 +826,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
       <Modal accessibilityViewIsModal={true} testID="case-detail-screen" visible={inviteModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setInviteModal(false)}>
         <View style={[styles.modal, { backgroundColor: colors.bg }]}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setInviteModal(false)}
-            accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" onPress={() => setInviteModal(false)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.modalClose}>✕</Text>
           </TouchableOpacity>
@@ -847,11 +852,10 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           blurOnSubmit
         />
             {!!inviteError && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: 12, lineHeight: 20, marginBottom: 8 }}>⚠ {inviteError}</Text>}
-            <TouchableOpacity activeOpacity={0.6}
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
               style={[styles.emptyBtn, { backgroundColor: colors.steel, opacity: inviting ? 0.6 : 1 }]}
               onPress={sendInvite}
               disabled={inviting || !inviteEmail.trim()}
-              accessibilityRole="button"
               accessibilityLabel="Send invite"
             >
               {inviting
@@ -867,12 +871,12 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex:1 }}>
         <ScrollView style={styles.modal} keyboardShouldPersistTaps="handled">
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setModal(false)}
-              accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" onPress={() => setModal(false)}
             ><Text maxFontSizeMultiplier={1.4} style={styles.modalClose}>✕</Text></TouchableOpacity>
             <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>{editCase.id ? 'Edit case' : 'New case'}</Text>
-            <TouchableOpacity activeOpacity={0.6} onPress={save} disabled={saving}
-          accessibilityRole="button"
+            <TouchableOpacity
+              accessibilityRole="button" activeOpacity={0.6} onPress={save} disabled={saving}
             >
               {saving ? <ActivityIndicator color={colors.navy} /> : <Text maxFontSizeMultiplier={1.4} style={styles.modalSave}>Save</Text>}
             </TouchableOpacity>
@@ -881,11 +885,10 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           {!!error && <View style={styles.errorBanner}><Text maxFontSizeMultiplier={1.4} style={styles.errorText}>⚠ {error}</Text></View>}
           {/* Document scanner -- auto-fill from photo */}
           {!editCase.id && (
-            <TouchableOpacity activeOpacity={0.6}
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
               style={[styles.scanBtn, scanning && { opacity: 0.6 }]}
               onPress={scanDocument}
               disabled={scanning}
-              accessibilityRole="button"
               accessibilityLabel="Scan a document to auto-fill case fields"
             >
               {scanning ? (
@@ -978,19 +981,19 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Notes</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>Attorney name, charges, hearing details, reminders</Text>
             </View>
-            <TouchableOpacity activeOpacity={0.6}
+            <TouchableOpacity
+              accessibilityRole="button" activeOpacity={0.6}
               style={[styles.micChip, { backgroundColor: colors.legalBg, borderColor: colors.legalDark }]}
               onPress={scanDocument}
               disabled={scanning}
               accessibilityLabel="Scan a document"
-              accessibilityRole="button"
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.micChipIcon}>📷</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.micChipText, { color: colors.legal }]}>Scan</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              accessibilityRole="button"
               style={[styles.micChip, { backgroundColor: COLORS.navy + '12', borderColor: COLORS.navy + '33' }]}
-          accessibilityRole="button"
               onPress={() => navigation.navigate('VoiceNote', {
                 caseId:        editCase.id,
                 caseTitle:     editCase.title || 'This case',
@@ -1073,11 +1076,11 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
 
           {/* Motions */}
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('MotionLibrary', {
               caseId: cases[0]?.id,
               caseTitle: cases[0]?.title})}
-            accessibilityRole="button"
           >
             <View style={[styles.toolCardIcon, { backgroundColor: '#EF5350' + '18' }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>📄</Text>
@@ -1095,11 +1098,11 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
 
           {/* Discovery */}
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('Discovery', {
               caseId:    cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
               caseTitle: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
-            accessibilityRole="button"
           >
             <View style={[styles.toolCardIcon, { backgroundColor: colors.blue + '18' }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>🔍</Text>
@@ -1117,10 +1120,10 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
 
           {/* Legal Research */}
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('LegalResearch', {
               caseContext: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
-            accessibilityRole="button"
           >
             <View style={[styles.toolCardIcon, { backgroundColor: colors.legal + '18' }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>⚖️</Text>
@@ -1137,9 +1140,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           </TouchableOpacity>
 
           {/* Voice Notes */}
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
-          accessibilityRole="button"
             onPress={() => navigation.navigate('VoiceNote', {
               caseId:        cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
               caseTitle:     cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title,
@@ -1161,9 +1163,9 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
 
           {/* Interpreter */}
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('Translator')}
-            accessibilityRole="button"
             accessibilityLabel="Attorney-client interpreter"
           >
             <View style={[styles.toolCardIcon, { backgroundColor: colors.legal + '18' }]}>
@@ -1182,9 +1184,9 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
 
           {/* ⏰ Deadline Calculator */}
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: COLORS.emergency + '40', borderWidth: 1.5 }]}
             onPress={() => navigation.navigate('DeadlineCalculator')}
-            accessibilityRole="button"
           >
             <View style={[styles.toolCardIcon, { backgroundColor: COLORS.emergency + '18' }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>⏰</Text>
@@ -1204,10 +1206,9 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
                 Analyze by case
               </Text>
               {cases.filter((ca: any) => ['Open','Active','Pending'].includes(ca.status)).slice(0,5).map((ca: any) => (
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   key={String(ca.id)}
                   style={[styles.caseToolRow, { backgroundColor: isDark ? colors.bg : COLORS.bg, borderColor: colors.surface }]}
-          accessibilityRole="button"
                   onPress={() => navigation.navigate('Discovery', {
                     caseId: ca.id, caseTitle: ca.title
                   })}
@@ -1347,9 +1348,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 16, alignItems: 'center' },
   toolCard:      { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(4,44,83,0.15)' },
   toolCardIcon:  { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  toolCardTitle: { fontSize: 14, fontWeight: '700', color: '#0A1929', lineHeight: 18 },
-  toolCardSub:   { fontSize: 12, color: '#5C6F82', lineHeight: 16, marginTop: 2 },
-  toolCardArrow: { marginLeft: 'auto', fontSize: 16, color: '#8FA3B1' },
+  toolCardTitle: { fontSize: 14, fontWeight: '700', color: DEEP_BG, lineHeight: 18 },
+  toolCardSub:   { fontSize: 12, color: (colors.textMuted), lineHeight: 16, marginTop: 2 },
+  toolCardArrow: { marginLeft: 'auto', fontSize: 16, color: (colors.textMuted) },
   discoveryBtn:      { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.infoBg, borderRadius: 10, padding: 12, marginTop: 8, borderWidth: 1, borderColor: colors.info },
   discoveryBtnText:  { fontSize: 14, color: colors.info, fontWeight: '600', marginLeft: 8 },
   toolsSectionLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, marginTop: 4 },

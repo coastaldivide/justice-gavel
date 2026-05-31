@@ -172,10 +172,9 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>📅 Add to Calendar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
+        <TouchableOpacity accessibilityRole="button" style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
           // @ts-ignore — handleBack is declared via var and is assigned before first user interaction
           onPress={handleBack}
-            accessibilityRole="button"
           >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Back to Home</Text>
         </TouchableOpacity>
@@ -194,10 +193,9 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedSub, { color: colors.textSecond }]}>
           {lawyerName || 'The attorney'} will call you at {callbackPhone} to schedule a time.
         </Text>
-        <TouchableOpacity style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
+        <TouchableOpacity accessibilityRole="button" style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
           // @ts-ignore — handleBack var declaration is hoisted
           onPress={handleBack}
-            accessibilityRole="button"
           >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Back to Home</Text>
         </TouchableOpacity>
@@ -251,8 +249,8 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
               <Text maxFontSizeMultiplier={1.4} style={[styles.durFee, { color: COLORS.navy }]}>{d.fee}</Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity style={[styles.nextBtn, { backgroundColor: COLORS.navy }]}
-            accessibilityRole="button"
+          <TouchableOpacity
+            accessibilityRole="button" style={[styles.nextBtn, { backgroundColor: COLORS.navy }]}
             onPress={handleDatetimeStep}>
             <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>Next →</Text>
           </TouchableOpacity>
@@ -273,8 +271,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           <ScrollView horizontal showsHorizontalScrollIndicator={false}
             style={styles.dayScroll} contentContainerStyle={{ gap: 8 }}>
             {days.map(day => (
-              <TouchableOpacity key={day.date}
-                accessibilityRole="button"
+              <TouchableOpacity accessibilityRole="button" key={day.date}
                 style={[styles.dayChip, { borderColor: colors.border, backgroundColor: colors.bgCard },
                   selDay?.date === day.date && { borderColor: COLORS.navy, backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle }]}
                 onPress={() => { setSelDay(day); setSelTime(''); }}>
@@ -305,8 +302,8 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
           returnKeyType="next"
           blurOnSubmit
         />
-              <TouchableOpacity activeOpacity={0.6}
-                accessibilityRole="button"
+              <TouchableOpacity
+                accessibilityRole="button" activeOpacity={0.6}
                 style={[styles.callbackBtn, { backgroundColor: COLORS.legal }]}
                 onPress={sendCallback} disabled={sendingCallback}>
                 {sendingCallback
@@ -319,8 +316,8 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
               <Text maxFontSizeMultiplier={1.4} style={[styles.timesLabel, { color: colors.textMuted }]}>Available times</Text>
               <View testID="booking-datetime-step" style={styles.timesGrid}>
                 {availTimes.map(t => (
-                  <TouchableOpacity key={t.time}
-                    accessibilityRole="button"
+                  <TouchableOpacity
+                    accessibilityRole="button" key={t.time}
                     style={[styles.timeChip, { borderColor: colors.border, backgroundColor: colors.bgCard },
                       selTime === t.time && { borderColor: COLORS.navy, backgroundColor: isDark ? colors.bgElevated : colors.bgSubtle }]}
                     onPress={() => setSelTime(t.time)}>
@@ -379,8 +376,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
             accessibilityLabel="Notes for your attorney"
           />
 
-          <TouchableOpacity activeOpacity={0.6}
-            accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
             style={[styles.confirmBtn, { backgroundColor: COLORS.navy }, booking && { opacity: 0.6 }]}
             testID="booking-confirm" onPress={confirmBooking} disabled={booking}>
             {booking

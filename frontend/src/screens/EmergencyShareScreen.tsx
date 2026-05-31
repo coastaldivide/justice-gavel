@@ -259,10 +259,9 @@ if (phase === 'ready') return (
         contentContainerStyle={{ paddingBottom: 24 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={styles.quickExitBar}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           onPress={handleQuickExitTap}
           style={styles.quickExitBtn}
-          accessibilityRole="button"
           accessibilityLabel="Quick exit -- tap 3 times to leave this screen immediately"
           hitSlop={{ top:12, bottom:12, left:12, right:12 }}>
           <Text maxFontSizeMultiplier={1.4} style={styles.quickExitBtnText}>✕ Quick Exit</Text>
@@ -284,9 +283,9 @@ if (phase === 'ready') return (
             Add contacts first so they can be reached when you need help.
           </Text>
           <TouchableOpacity
+  accessibilityRole="button"
             style={styles.addContactsBtn}
             onPress={() => navigation.navigate('Contacts')}
-          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.addContactsBtnText}>Add Emergency Contacts →</Text>
           </TouchableOpacity>
@@ -314,8 +313,7 @@ if (phase === 'ready') return (
         ].map(item => <Text maxFontSizeMultiplier={1.4} key={item} style={styles.whatItem}>{item}</Text>)}
       </View>
 
-      <TouchableOpacity
-        accessibilityRole="button"
+      <TouchableOpacity accessibilityRole="button"
         style={[styles.goBtn, contacts.length === 0 && styles.goBtnDisabled]}
         onPress={gatherInfo}
         disabled={contacts.length === 0}
@@ -324,8 +322,8 @@ if (phase === 'ready') return (
         <Text maxFontSizeMultiplier={1.4} style={styles.goBtnText}>🚨  Get Info & Preview Message</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.editContactsLink} onPress={() => navigation.navigate('Contacts')}
-        accessibilityRole="button"
+      <TouchableOpacity
+  accessibilityRole="button"
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.editContactsText}>Edit emergency contacts →</Text>
       </TouchableOpacity>
@@ -340,10 +338,9 @@ if (phase === 'ready') return (
           Free, confidential, available 24/7. No app or login needed.
         </Text>
 
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('tel:988').catch(() => {})}
-          accessibilityRole="button"
           accessibilityLabel="Call or text 988 Suicide and Crisis Lifeline"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.bgSubtle }]}>
@@ -356,10 +353,9 @@ if (phase === 'ready') return (
           <Text maxFontSizeMultiplier={1.4} style={styles.crisisArrow}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('sms:741741&body=HOME').catch(() => {})}
-          accessibilityRole="button"
           accessibilityLabel="Text HOME to 741741 Crisis Text Line"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.legalBg }]}>
@@ -372,10 +368,9 @@ if (phase === 'ready') return (
           <Text maxFontSizeMultiplier={1.4} style={styles.crisisArrow}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('tel:18009506264').catch(() => {})}
-          accessibilityRole="button"
           accessibilityLabel="Call NAMI Helpline 1-800-950-6264"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.warnBg }]}>
@@ -388,10 +383,9 @@ if (phase === 'ready') return (
           <Text maxFontSizeMultiplier={1.4} style={styles.crisisArrow}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('tel:18007994889').catch(() => {})}
-          accessibilityRole="button"
           accessibilityLabel="Call SAMHSA National Helpline"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.bgSubtle }]}>
@@ -405,9 +399,9 @@ if (phase === 'ready') return (
         </TouchableOpacity>
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.crisisRow, { borderBottomWidth: 0 }]}
           onPress={() => Linking.openURL('https://www.thehotline.org/get-help/').catch(() => {})}
-          accessibilityRole="link"
           accessibilityLabel="National Domestic Violence Hotline"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.emergencyBg }]}>
@@ -443,8 +437,8 @@ if (phase === 'ready') return (
       <Text maxFontSizeMultiplier={1.4} style={styles.errorIcon}>⚠️</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Could not send</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
-      <TouchableOpacity style={styles.retryBtn} onPress={() => setPhase('ready')}
-        accessibilityRole="button"
+      <TouchableOpacity
+  accessibilityRole="button"
         >
         <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
       </TouchableOpacity>
@@ -457,8 +451,8 @@ if (phase === 'ready') return (
       <Text maxFontSizeMultiplier={1.4} style={styles.doneIcon}>✓</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.doneTitle}>Message sent!</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>Your emergency contacts have been notified.</Text>
-      <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
-        accessibilityRole="button"
+      <TouchableOpacity
+  accessibilityRole="button"
         >
         <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done Sharing</Text>
       </TouchableOpacity>
@@ -503,8 +497,8 @@ if (phase === 'ready') return (
           <Text maxFontSizeMultiplier={1.4} style={styles.providerLabel}>🔓 Bail bondsman</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.providerName}>{bondsman.name}</Text>
           {bondsman.phone && (
-            <TouchableOpacity onPress={() => { hapticCall(); Linking.openURL('tel:' + bondsman.phone.replace(/\s/g,'')).catch(() => {}).catch(() => {}); }}
-              accessibilityRole="button"
+            <TouchableOpacity
+  accessibilityRole="button"
               >
               <Text maxFontSizeMultiplier={1.4} style={styles.providerPhone}>{bondsman.phone}</Text>
             </TouchableOpacity>
@@ -516,23 +510,23 @@ if (phase === 'ready') return (
           <Text maxFontSizeMultiplier={1.4} style={[styles.providerLabel, { color: COLORS.legal }]}>⚖️ Lawyer</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.providerName}>{lawyer.name}</Text>
           {lawyer.phone && (
-            <TouchableOpacity onPress={() => { hapticCall(); Linking.openURL('tel:' + lawyer.phone.replace(/\s/g,'')).catch(() => {}).catch(() => {}); }}
-              accessibilityRole="button"
+            <TouchableOpacity
+  accessibilityRole="button"
               >
               <Text maxFontSizeMultiplier={1.4} style={[styles.providerPhone, { color: COLORS.legal }]}>{lawyer.phone}</Text>
             </TouchableOpacity>
           )}
         </View>
       )}
-      <TouchableOpacity style={styles.sendBtn} onPress={sendShare} activeOpacity={0.85}
-          accessibilityRole="button"
+      <TouchableOpacity
+  accessibilityRole="button"
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>🚨  Send Now</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnSub}>Opens your Messages app</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.cancelBtn} onPress={() => setPhase('ready')}
-        accessibilityRole="button"
+      <TouchableOpacity
+  accessibilityRole="button"
         >
         <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Cancel</Text>
       </TouchableOpacity>

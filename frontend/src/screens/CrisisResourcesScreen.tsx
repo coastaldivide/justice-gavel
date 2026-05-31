@@ -140,9 +140,9 @@ export default function CrisisResourcesScreen({ route, navigation }: ScreenProps
 
       {/* ── 988 PRIMARY BUTTON ─────────────────────────────────────────── */}
       <TouchableOpacity
+        accessibilityRole="button"
         style={styles.primaryBtn}
         onPress={() => callLine('988')}
-            accessibilityRole="button"
         activeOpacity={0.88}
         accessibilityLabel="Call 988 Suicide and Crisis Lifeline"
         accessibilityHint="Opens your phone to call the free 24/7 crisis line"
@@ -180,10 +180,10 @@ export default function CrisisResourcesScreen({ route, navigation }: ScreenProps
 
       {CRISIS_LINES.filter(l => !l.primary).map(line => (
         <TouchableOpacity
+          accessibilityRole="button"
           key={line.key}
           style={[styles.lineCard, { backgroundColor: colors.bgCard }]}
           onPress={() => callLine(line.number)}
-            accessibilityRole="button"
           activeOpacity={0.85}
           accessibilityLabel={`Call ${line.name}`}
           accessibilityHint={line.forWhom}
@@ -208,18 +208,18 @@ export default function CrisisResourcesScreen({ route, navigation }: ScreenProps
 
       <View style={styles.legalRow}>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.legalBtn, { backgroundColor: COLORS.navy }]}
           onPress={() => navigation.navigate('LawyersTab')}
-            accessibilityRole="button"
           accessibilityLabel={t("crisis_find_lawyer")}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnIcon}>⚖️</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnText}>Find a Lawyer</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.legalBtn, { backgroundColor: COLORS.bail }]}
           onPress={() => navigation.navigate('MoreTab', { screen: 'HelpNow' })}
-            accessibilityRole="button"
           accessibilityLabel="Get immediate help"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnIcon}>🔓</Text>

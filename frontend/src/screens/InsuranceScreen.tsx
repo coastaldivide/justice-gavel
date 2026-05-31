@@ -69,10 +69,10 @@ export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.
       <Text maxFontSizeMultiplier={1.4} style={[styles.sectionTitle, { color: colors.textMuted }]}>Choose your plan</Text>
       {PLANS.map(p => (
         <TouchableOpacity
+          accessibilityRole="button"
           key={p.key}
           style={[styles.planCard, { backgroundColor: colors.bgCard, borderColor: colors.border }, plan === p.key && { borderColor: p.color, borderWidth: 2, backgroundColor: p.color + '0A' }]}
           onPress={() => { setPlan(p.key); setQuote(null); }}
-          accessibilityRole="button"
           accessibilityLabel="Select insurance plan"
           activeOpacity={0.85}
         >
@@ -109,8 +109,8 @@ export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.
       </View>
 
       {/* Get quote */}
-      <TouchableOpacity activeOpacity={0.6} style={[styles.quoteBtn, { backgroundColor: selected.color }]} onPress={getQuote} disabled={getting}
-        accessibilityRole="button"
+      <TouchableOpacity
+        accessibilityRole="button" activeOpacity={0.6} style={[styles.quoteBtn, { backgroundColor: selected.color }]} onPress={getQuote} disabled={getting}
         accessibilityLabel="Retry →"
       >
         {getting ? <ActivityIndicator color={colors.bgCard} /> : <Text maxFontSizeMultiplier={1.4} style={styles.quoteBtnText}>Get my quote for {selected.label}</Text>}
@@ -119,8 +119,8 @@ export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.
       {!!error && (
         <View style={{ backgroundColor: colors.emergencyBg, borderRadius: 8, padding: 12, margin: 16, borderWidth: 1, borderColor: colors.emergencyBg }}>
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, fontSize: 12 }}>⚠️  {error}</Text>
-          <TouchableOpacity onPress={() => { setError(''); setQuote(null); }}
-            accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" onPress={() => { setError(''); setQuote(null); }}
             accessibilityLabel="Retry →"
           >
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 }}>Retry →</Text>
@@ -133,8 +133,8 @@ export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.
           <Text maxFontSizeMultiplier={1.4} style={[styles.quotePrice, { color: selected.color }]}>${quote.monthly}<Text maxFontSizeMultiplier={1.4} style={styles.quoteMo}>/mo</Text></Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.quoteProvider}>via {quote.provider}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.quoteLegal}>{quote.legalese}</Text>
-          <TouchableOpacity style={[styles.enrollBtn, { backgroundColor: selected.color }]} onPress={() => navigation.navigate('Payments', { productId: 'insurance' })}
-            accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" style={[styles.enrollBtn, { backgroundColor: selected.color }]} onPress={() => navigation.navigate('Payments', { productId: 'insurance' })}
             accessibilityLabel="Enroll now →"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.enrollBtnText}>Enroll now →</Text>

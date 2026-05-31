@@ -113,8 +113,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
                   <View style={styles.contentArea}>
                     <Text maxFontSizeMultiplier={1.4} style={styles.contentText}>{item.content}</Text>
                     {!done && (
-                      <TouchableOpacity style={styles.completeBtn}
-                        accessibilityRole="button"
+                      <TouchableOpacity accessibilityRole="button" style={styles.completeBtn}
                         onPress={() => markComplete(item.id, item.points || 0)}
                         >
                         <Text maxFontSizeMultiplier={1.4} style={styles.completeBtnText}>✓  Mark as complete  (+{item.points} pts)</Text>
@@ -155,11 +154,11 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
           <View style={{ flexDirection: 'row', paddingHorizontal: 12, paddingTop: 8, gap: 6 }}>
             {['Criminal','General','Civil','Constitutional'].map(cat => (
               <TouchableOpacity
+                accessibilityRole="button"
                 key={cat}
                 style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20,
                   backgroundColor: filterCat === cat ? (CAT_COLORS[cat] || colors.navy) : colors.bg }}
                 onPress={() => setFilterCat(filterCat === cat ? null : cat)}
-            accessibilityRole="button"
               >
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700',
                   color: filterCat === cat ? colors.bgCard : colors.textMuted }}>{cat}</Text>
@@ -182,15 +181,15 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
               <Text maxFontSizeMultiplier={1.4} style={styles.lifeTitle}>Your legal needs go beyond this arrest.</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.lifeSub}>Justice Gavel covers DUI, divorce, immigration, employment, and 18 other areas of law. Find a specialist for your next legal moment.</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                <TouchableOpacity style={styles.lifeBtn} onPress={() => navigation.navigate("LawyersTab")}
-            accessibilityRole="button"
+                <TouchableOpacity
+          accessibilityRole="button" style={styles.lifeBtn} onPress={() => navigation.navigate("LawyersTab")}
           >
                   <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>Find a Lawyer</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  accessibilityRole="button"
                   style={[styles.lifeBtn, { backgroundColor: colors.emergencyDark }]}
                   onPress={() => navigation.navigate('MoreTab', { screen: 'RightsCard' })}
-                accessibilityRole="button"
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>📋 Get Rights Card</Text>
                 </TouchableOpacity>

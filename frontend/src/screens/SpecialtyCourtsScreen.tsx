@@ -99,9 +99,9 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
         <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 8 }}>
         {COURT_TYPES.map(t => (
-          <TouchableOpacity key={t.key}
+          <TouchableOpacity
+          accessibilityRole="button" key={t.key}
             onPress={() => setType(t.key)}
-              accessibilityRole="button"
             style={{
               backgroundColor: type === t.key ? t.color : card,
               borderWidth: 1.5, borderColor: t.color, borderRadius: 20,
@@ -139,7 +139,7 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
       {loading && <ActivityIndicator style={{ marginTop: 30 }} color={colors.primary} />}
       {error ? (
         <><Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign:"center", margin:16 }}>{error}</Text>
-        <TouchableOpacity accessibilityRole="button" onPress={load} style={{marginTop:8,padding:10,backgroundColor:'#1A237E',borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:'#fff',fontWeight:'700'}}>Retry</Text></TouchableOpacity></> 
+        <TouchableOpacity accessibilityRole="button" onPress={load} style={{marginTop:8,padding:10,backgroundColor:(colors.navy || COLORS.navy),borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:'#fff',fontWeight:'700'}}>Retry</Text></TouchableOpacity></> 
       ) : null}
       {!loading && !error && <FlatList
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load().catch(() => {}); setRefreshing(false); }} />}

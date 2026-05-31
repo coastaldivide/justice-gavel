@@ -248,8 +248,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
               onSubmitEditing={searchArrests}
               returnKeyType="search"
             />
-            <TouchableOpacity activeOpacity={0.6}
-              accessibilityRole="button"
+            <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
               accessibilityLabel="Search"
               style={[styles.searchBtn, searching && { opacity: 0.6 }]}
               onPress={searchArrests}
@@ -294,8 +293,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
               ))}
             </View>
           )}
-          <TouchableOpacity style={styles.skipBtn} onPress={skipToStep2}
-            accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" style={styles.skipBtn} onPress={skipToStep2}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.skipBtnText}>
               {searchResults.length > 0 ? 'Continue without selecting a record →' : 'Skip search and continue →'}
@@ -380,9 +378,9 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
           </View>
 
           <TouchableOpacity
+            accessibilityRole="button"
             style={styles.payBtn}
             onPress={proceedToPayment}
-          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>Pay $28.99 &amp; Get Connected Now</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.payBtnSub}>Demo mode: no real charge</Text>
@@ -477,8 +475,8 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
           ) : (
             <View style={styles.errorBlock}>
               <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>Something went wrong. Please go back and try again.</Text>
-              <TouchableOpacity style={styles.backBtn} onPress={() => setStep(2)}
-                accessibilityRole="button"
+              <TouchableOpacity
+          accessibilityRole="button" style={styles.backBtn} onPress={() => setStep(2)}
                 >
                 <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>← Go back</Text>
               </TouchableOpacity>

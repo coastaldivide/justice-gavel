@@ -298,11 +298,11 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
 
         {/* Big mic button */}
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.micBtnWrap}
           onPress={startRecording}
           activeOpacity={0.85}
           accessibilityLabel="Start recording voice note"
-          accessibilityRole="button"
         >
           <View style={[styles.micBtn, { backgroundColor: COLORS.navy }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.micIcon}>🎙</Text>
@@ -312,9 +312,9 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
         <Text maxFontSizeMultiplier={1.4} style={[styles.tapHint, { color: colors.textMuted }]}>Tap to start recording</Text>
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.typeLink}
           onPress={() => setPhase('text_input')}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>
             ✏️  Type instead
@@ -334,12 +334,11 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
         {/* Pulsing stop button */}
         <View style={styles.micBtnWrap}>
           <PulseRing active />
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.micBtn, { backgroundColor: COLORS.emergency }]}
             onPress={stopAndProcess}
             activeOpacity={0.85}
             accessibilityLabel="Stop recording and process note"
-            accessibilityRole="button"
           >
             <View style={styles.stopSquare} />
           </TouchableOpacity>
@@ -405,19 +404,19 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
           returnKeyType="next"
           blurOnSubmit
         />
-        <TouchableOpacity activeOpacity={0.6}
+        <TouchableOpacity
+          accessibilityRole="button" activeOpacity={0.6}
           style={[styles.processBtn, { backgroundColor: COLORS.navy },
             !textIn.trim() && { opacity: 0.45 }]}
           onPress={processText}
           disabled={!textIn.trim()}
           accessibilityLabel="Structure this note"
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.processBtnText}>Structure This Note →</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.typeLink}
           accessibilityRole="button"
+          style={styles.typeLink}
           onPress={() => setPhase('idle')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>← Use voice instead</Text>
@@ -484,12 +483,12 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
           accessibilityLabel="Edit structured note before saving"
         />
 
-        <TouchableOpacity activeOpacity={0.6}
+        <TouchableOpacity
+          accessibilityRole="button" activeOpacity={0.6}
           style={[styles.saveBtn, { backgroundColor: COLORS.navy }, saving && { opacity: 0.6 }]}
           onPress={saveToCase}
           disabled={saving}
           accessibilityLabel="Save note to case"
-          accessibilityRole="button"
         >
           {saving
             ? <ActivityIndicator color={colors.bgCard} />
@@ -511,9 +510,9 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
         </TouchableOpacity>
 
         <TouchableOpacity
+          accessibilityRole="button"
           style={styles.typeLink}
           onPress={() => { setPhase('idle'); setNote(null); setEditText(''); }}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>🎙  Record another note</Text>
         </TouchableOpacity>

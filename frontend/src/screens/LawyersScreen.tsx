@@ -249,10 +249,10 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         {item.pro_bono         && <View style={[styles.badge, styles.purpleBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.blue }]}>Pro Bono</Text></View>}
         {item.sliding_scale    && <View style={[styles.badge, styles.tealBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.legalDark }]}>Sliding Scale</Text></View>}
         {item.jtb_verified && (
-          <TouchableOpacity testID="lawyer-card"
+          <TouchableOpacity
+          accessibilityRole="button" testID="lawyer-card"
             style={{ flexDirection:'row', alignItems:'center', gap:4 }}
             onPress={() => { setBadgeInfoType('jtb'); setShowBadgeInfo(true); }}
-            accessibilityRole="button"
             accessibilityLabel="What does Justice Gavel Verified mean?"
           >
           <View style={[styles.badge, {
@@ -298,12 +298,12 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
           <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, styles.bookBtnText]}>📅 Book Consult</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityRole="button"
           style={[styles.secondaryBtn, styles.secureBtn]}
           onPress={openSecureMessage}
           disabled={caseLoading}
           activeOpacity={0.85}
           accessibilityLabel={`Send encrypted message to ${item?.name}`}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, styles.secureBtnText]}>
             {caseLoading ? '…' : '🔒 Message'}
@@ -369,8 +369,7 @@ function FilterModal({
       <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>Filter Lawyers</Text>
-          <TouchableOpacity onPress={onClose} style={styles.modalCloseBtn}
-            accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" onPress={onClose} style={styles.modalCloseBtn}
             accessibilityLabel="Language"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.modalCloseText}>✕</Text>
@@ -394,23 +393,22 @@ function FilterModal({
             </Picker>
           </View>
 
-          <TouchableOpacity style={styles.toggleRow} onPress={() => setProBonoOnly((v: boolean) => !v)}
-            accessibilityRole="button"
+          <TouchableOpacity
+          accessibilityRole="button" style={styles.toggleRow} onPress={() => setProBonoOnly((v: boolean) => !v)}
             accessibilityLabel="Pro bono / free representation only"
           >
             <View style={[styles.toggle, proBonoOnly && styles.toggleOn]} />
             <Text maxFontSizeMultiplier={1.4} style={styles.toggleLabel}>Pro bono / free representation only</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.applyBtn} onPress={onApply}
+          <TouchableOpacity
+            accessibilityRole="button" style={styles.applyBtn} onPress={onApply}
             accessibilityLabel="Apply Filters"
-          accessibilityRole="button"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.applyBtnText}>Apply Filters</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.clearBtn}
-            accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" style={styles.clearBtn}
             accessibilityLabel="Clear all filters"
             onPress={() => { setCaseType(''); setLanguage(''); setManualCity(''); setProBonoOnly(false); }}>
             <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>Clear all filters</Text>
@@ -667,8 +665,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
             )}
           </View>
           {!!locationLabel && (
-            <TouchableOpacity onPress={() => { if (searchDebounce.current) clearTimeout(searchDebounce.current); searchDebounce.current = setTimeout(() => { setCoords(null); setManualCity(''); fetchLawyers(); }, 300); }}
-              accessibilityRole="button"
+            <TouchableOpacity
+          accessibilityRole="button" onPress={() => { if (searchDebounce.current) clearTimeout(searchDebounce.current); searchDebounce.current = setTimeout(() => { setCoords(null); setManualCity(''); fetchLawyers(); }, 300); }}
               >
               <Text maxFontSizeMultiplier={1.4} style={styles.locationLabel}>📍 {locationLabel}  <Text maxFontSizeMultiplier={1.4} style={styles.refreshGps}>↺ refresh</Text></Text>
             </TouchableOpacity>
@@ -766,8 +764,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               <View style={styles.emptyBlock}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>⚖️</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>No lawyers found in your area.</Text>
-                <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowFilters(true)}
-                  accessibilityRole="button"
+                <TouchableOpacity
+          accessibilityRole="button" style={styles.emptyBtn} onPress={() => setShowFilters(true)}
                   accessibilityLabel="Adjust filters"
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>Adjust filters</Text>
@@ -847,9 +845,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
       {/* Verified badge explainer modal */}
       <Modal accessibilityViewIsModal={true} visible={showBadgeInfo} transparent animationType="fade"
         onRequestClose={() => setShowBadgeInfo(false)}>
-        <TouchableOpacity style={{ flex:1, backgroundColor:'rgba(0,0,0,0.5)',
+        <TouchableOpacity accessibilityRole="button" style={{ flex:1, backgroundColor:'rgba(0,0,0,0.5)',
           justifyContent:'center', padding:24 }}
-          accessibilityRole="button"
           onPress={() => setShowBadgeInfo(false)} activeOpacity={1}>
           <View style={{ backgroundColor:colors.bgCard, borderRadius:16, padding:20,
             borderWidth:1, borderColor:colors.border }}>
@@ -912,11 +909,11 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
       {/* Contact multiple attorneys FAB */}
       {selected.length > 0 && (
         <TouchableOpacity
+          accessibilityRole="button"
           style={{ position:'absolute', bottom:24, left:16, right:16,
             backgroundColor:colors.navy, borderRadius:14, paddingVertical:16,
             flexDirection:'row', alignItems:'center', justifyContent:'center', gap:10 }}
           onPress={() => setShowBulk(true)}
-          accessibilityRole="button"
           accessibilityLabel={`Contact ${selected.length} selected attorneys`}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>⚖️</Text>
@@ -974,10 +971,10 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
                   fontWeight:'700', fontSize:14, lineHeight:21 }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                accessibilityRole="button"
                 style={{ flex:2, backgroundColor:bulkSending ? colors.bgSubtle : colors.navy,
                   borderRadius:10, paddingVertical:14, alignItems:'center' }}
                 onPress={sendBulk} disabled={bulkSending || !bulkMsg.trim()}
-                accessibilityRole="button"
               >
                 <Text maxFontSizeMultiplier={1.4} style={{
                   color: bulkSending || !bulkMsg.trim() ? colors.textMuted : colors.bgCard,

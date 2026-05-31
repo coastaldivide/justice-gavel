@@ -220,9 +220,9 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
       <View style={styles.actionRow}>
         {item.phone ? (
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.callBtn, { backgroundColor: colors.legalDark }]}
             onPress={() => call(item.phone, item.name)}
-            accessibilityRole="button"
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2} style={styles.callBtnText}>
@@ -237,9 +237,9 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
         )}
         {item.website ? (
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.webBtn, { borderColor: colors.border }]}
             onPress={() => openWeb(item.website)}
-            accessibilityRole="button"
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.webBtnText,
@@ -301,13 +301,12 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
         </View>
 
         {/* Search button */}
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={[styles.searchBtn,
             { backgroundColor: selectedState ? colors.navy : colors.bgSubtle }]}
           onPress={search}
           disabled={!selectedState || loading}
           activeOpacity={0.85}
-          accessibilityRole="button"
         >
           <Text maxFontSizeMultiplier={1.2} style={[styles.searchBtnText,
             { color: selectedState ? '#fff' : colors.textMuted }]}>

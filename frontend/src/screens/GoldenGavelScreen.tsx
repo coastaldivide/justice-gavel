@@ -286,8 +286,7 @@ export default function GoldenGavelScreen({ navigation }: ScreenProps): React.JS
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.golden_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
-          <TouchableOpacity activeOpacity={0.6}
-            accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
             style={[styles.optInBtn, { backgroundColor: (gc as any).header }, optingIn && { opacity: 0.6 }]}
             onPress={handleOptIn}
             disabled={optingIn}>
