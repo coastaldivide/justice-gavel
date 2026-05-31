@@ -1,6 +1,6 @@
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
-import SkeletonLoader from '../components/SkeletonLoader';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 /**
  * CheckInScreen -- Daily defendant check-in
  *

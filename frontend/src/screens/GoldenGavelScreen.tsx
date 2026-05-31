@@ -1,4 +1,4 @@
-import SkeletonLoader from '../components/SkeletonLoader';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';

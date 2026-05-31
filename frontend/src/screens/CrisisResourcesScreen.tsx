@@ -1,3 +1,4 @@
+import { GradientHeader } from '../components/GradientHeader';
 /**
  * CrisisResourcesScreen -- Mental health & crisis resources
  *

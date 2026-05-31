@@ -1,3 +1,4 @@
+import { EmptyState } from '../components/EmptyState';
 import LawyerSkeletonCard from '../components/LawyerSkeletonCard';
 import { t } from '../i18n';
 import type { ScreenProps } from '../types/navigation';

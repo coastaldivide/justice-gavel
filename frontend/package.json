@@ -1,6 +1,6 @@
 {
   "name": "justicegavel",
-  "version": "6.2.0",
+  "version": "6.3.0",
   "private": true,
   "main": "index.js",
   "scripts": {
@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "55.0.10",
+    "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/netinfo": "11.3.2",
     "@react-native-picker/picker": "2.6.1",
@@ -36,6 +37,7 @@
     "axios": "1.9.0",
     "expo": "51.0.14",
     "expo-av": "14.0.7",
+    "expo-blur": "^56.0.3",
     "expo-calendar": "13.0.2",
     "expo-camera": "15.0.16",
     "expo-device": "6.0.2",
@@ -45,6 +47,7 @@
     "expo-haptics": "13.0.1",
     "expo-image-manipulator": "13.0.0",
     "expo-image-picker": "15.0.7",
+    "expo-linear-gradient": "^56.0.4",
     "expo-linking": "6.3.1",
     "expo-local-authentication": "14.0.1",
     "expo-location": "17.0.1",

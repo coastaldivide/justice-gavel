@@ -1,3 +1,4 @@
+import { GradientHeader } from '../components/GradientHeader';
 /**
  * IceDetentionScreen — ICE Detention Emergency Guide
  *

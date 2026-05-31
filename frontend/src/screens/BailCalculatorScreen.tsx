@@ -1,3 +1,5 @@
+import { GradientHeader } from '../components/GradientHeader';
+import { BailBreakdown, RiskMeter } from '../components/LegalCharts';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 import EmergencyStrip from '../components/EmergencyStrip';
 import type { ScreenProps } from '../types/navigation';
