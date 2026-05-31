@@ -1,0 +1,18 @@
+{
+  "name": "justice-gavel-staging",
+  "environments": {
+    "staging": {
+      "NODE_ENV": "staging",
+      "PORT": "4000",
+      "JWT_EXPIRES_IN": "15m",
+      "JWT_REFRESH_EXPIRES_IN": "7d",
+      "SENTRY_ENVIRONMENT": "staging"
+    }
+  },
+  "deploy": {
+    "branch": "staging",
+    "healthcheckPath": "/health",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  }
+}

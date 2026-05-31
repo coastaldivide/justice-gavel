@@ -1,3 +1,4 @@
+import { anthropicBreaker } from '../../utils/circuitBreaker.js';
 /**
  * chat/stream.js — POST /stream — Server-Sent Events streaming
  */

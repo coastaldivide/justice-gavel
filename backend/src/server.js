@@ -1,3 +1,18 @@
+// ── Sentry error monitoring ───────────────────────────────────────────────────
+import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn:          process.env.SENTRY_DSN,
+    environment:  process.env.NODE_ENV || 'production',
+    release:      process.env.npm_package_version,
+    tracesSampleRate:    0.2,   // 20% of requests traced
+    profilesSampleRate:  0.1,
+    integrations: [nodeProfilingIntegration()],
+  });
+}
+
 import 'dotenv/config';
 import logger from './utils/logger.js';
 import app from './app.js';

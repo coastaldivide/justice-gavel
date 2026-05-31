@@ -21,7 +21,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useTheme } from '../constants/theme';
-import { hapticCall, hapticSuccess, hapticWarn, hapticSelect } from '../services/haptics';
+import { haptic, hapticCall, hapticSelect, hapticSuccess, hapticWarn } from '../services/haptics';
 import api from '../services/api';
 
 declare var Platform: any;

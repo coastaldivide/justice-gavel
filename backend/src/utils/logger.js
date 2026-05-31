@@ -63,3 +63,7 @@ export function maskPII(str) {
   }
   return masked;
 }
+
+// ── Request ID context ────────────────────────────────────────────────────────
+// Usage: logger.info('[route] msg', { requestId: req.id })
+// The request ID is set in app.js via crypto.randomUUID()

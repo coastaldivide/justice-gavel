@@ -209,3 +209,31 @@ export async function withTransaction(db, fn) {
     throw err;
   }
 }
+
+// ── Standardised error response ───────────────────────────────────────────────
+export const errResponse = (res, status, message, code) =>
+  res.status(status).json({ error: message, code: code || ('err_' + status), status });
+
+// ── Pagination helper ─────────────────────────────────────────────────────────
+// Usage: const { limit, offset } = parsePagination(req);
+// Returns: { limit: number (1-200), offset: number (>=0) }
+export function parsePagination(req, defaultLimit = 50) {
+  const limit  = Math.min(200, Math.max(1, parseInt(req.query.limit  || defaultLimit, 10) || defaultLimit));
+  const offset = Math.max(0, parseInt(req.query.offset || 0, 10) || 0);
+  return { limit, offset };
+}
+
+export function paginatedResponse(res, { data, total, limit, offset }) {
+  const hasMore = offset + data.length < total;
+  res.json({
+    data,
+    pagination: {
+      total,
+      limit,
+      offset,
+      returned: data.length,
+      has_more: hasMore,
+      next_offset: hasMore ? offset + limit : null,
+    },
+  });
+}

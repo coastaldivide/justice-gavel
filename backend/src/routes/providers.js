@@ -17,7 +17,7 @@
  *   Returns: { city, distanceKm } — nearest city in our dataset
  */
 
-import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, parsePagination} from '../utils/routeHelpers.js';
 import { Router } from 'express';
 import { haversineKm, bboxFromLatLng } from '../services/geolink.js';
 import { authRequired } from '../middleware/auth.js';

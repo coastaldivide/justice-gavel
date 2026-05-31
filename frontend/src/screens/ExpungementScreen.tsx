@@ -1,3 +1,4 @@
+import UPLDisclaimer from '../components/UPLDisclaimer';
 import LegalNotice from '../components/LegalNotice';
 /**
  * ExpungementScreen -- Expungement eligibility + marketplace
@@ -351,7 +352,9 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
         <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+}>
+      <UPLDisclaimer compact />
 
       <View style={styles.hero}>
 

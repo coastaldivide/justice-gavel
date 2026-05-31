@@ -378,6 +378,12 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.steel} />}
       >
 
+      {/* Attorney-client privilege notice */}
+      <View style={{ backgroundColor: '#E3F2FD', borderRadius: 8, padding: 10, margin: 12, marginBottom: 0 }}>
+        <Text style={{ fontSize: 11, color: '#0D47A1', lineHeight: 15 }}>
+          🔏 All matter data is handled consistent with attorney-client privilege. Justice Gavel does not access, share, or use client data for any purpose other than delivering platform services to your firm.
+        </Text>
+      </View>
         {/* ── MY CASES ─────────────────────────────────────────────────── */}
         {tab === 'cases' && (
           <>

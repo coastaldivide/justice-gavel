@@ -1,3 +1,4 @@
+import UPLDisclaimer from '../components/UPLDisclaimer';
 import { MotionTypeBadge } from '../components/MotionTypeBadge';
 import Analytics from '../services/analytics';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
@@ -770,9 +771,8 @@ const loadHistory = useCallback(async () => {
   // ── RENDER: Library ───────────────────────────────────────────────────────
   if (phase === 'library') return (
     <ScrollView
-      refreshControl={<RefreshControl refreshing={refreshing}
-        onRefresh={() => { setRefreshing(true); setLoadError(''); load().finally(() => setRefreshing(false)); }}
-        tintColor={colors.textSecond} />}>
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() =>
+      { setRefreshing(true); setLoadError(''); load().finally(() => setRefreshing(false)); }} tintColor={colors.textSecond} />}>
       <View style={{ backgroundColor: colors.warnBg, borderRadius: 8, padding: 12, margin: 12,
         marginBottom: 0, borderLeftWidth: 4, borderLeftColor: colors.gold }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.gold, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12, marginBottom: 4 }}>

@@ -1,6 +1,6 @@
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
-import { SkeletonLoader } from '../components/SkeletonLoader';
+import SkeletonLoader from '../components/SkeletonLoader';
 /**
  * CheckInScreen -- Daily defendant check-in
  *
@@ -15,7 +15,7 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Animated, KeyboardAvoidingView, Platform, RefreshControl} from 'react-native';
 import { api } from '../services/api';
-import { hapticSuccess } from '../services/haptics';
+import { haptic, hapticSelect, hapticSuccess } from '../services/haptics';
 import { getLocation } from '../services/location';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import * as Location from 'expo-location';

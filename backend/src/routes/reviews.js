@@ -1,3 +1,4 @@
+import { validate, schemas } from '../middleware/validate.js';
 /**
  * routes/reviews.js — Provider reviews and ratings
  *

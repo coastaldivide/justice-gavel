@@ -17,7 +17,7 @@
  *               years_experience, matchScore, matchReport }]
  */
 
-import { err400, safeInt, sanitizeStr, truncateStr, API_URLS } from '../utils/routeHelpers.js';
+import { err400, safeInt, sanitizeStr, truncateStr, API_URLS, parsePagination} from '../utils/routeHelpers.js';
 import { Router }      from 'express';
 import { enqueue }     from '../services/aiQueue.js';
 import { open } from 'sqlite';

@@ -1,3 +1,4 @@
+import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * LegalResearchScreen -- AI Legal Research ($49/mo)
  *
@@ -280,6 +281,7 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
+      <UPLDisclaimer compact />
       <View style={[styles.paywallCard, {
         backgroundColor: COLORS.bgSubtle,
         borderColor: COLORS.navy + '33'

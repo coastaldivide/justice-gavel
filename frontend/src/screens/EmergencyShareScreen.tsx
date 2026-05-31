@@ -25,7 +25,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { getLocation } from '../services/location';
 import { getContacts } from '../services/storage';
-import { hapticCall, hapticSuccess, hapticWarn } from '../services/haptics';
+import { haptic, hapticCall, hapticSuccess, hapticWarn } from '../services/haptics';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 declare var name: any; // hoisted from component scope
 

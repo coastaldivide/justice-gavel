@@ -205,6 +205,13 @@ export default function JuvenileJusticeScreen(): React.JSX.Element {
       contentContainerStyle={{ paddingBottom: 32 }}
       showsVerticalScrollIndicator={false}
     >
+{/* Heightened disclaimer for content involving minors */}
+<View style={{ backgroundColor: '#E8F5E9', borderLeftWidth: 3, borderLeftColor: '#4CAF50', padding: 12, margin: 12, borderRadius: 6 }}>
+  <Text style={{ fontSize: 11, color: '#1B5E20', fontWeight: '700', marginBottom: 3 }}>CONTENT INVOLVING MINORS</Text>
+  <Text style={{ fontSize: 11, color: '#1B5E20', lineHeight: 16 }}>
+    This information is for general education only. Juvenile law outcomes depend heavily on jurisdiction, individual circumstances, and judicial discretion. Never rely on this information for a specific child's case. Consult a licensed juvenile defense attorney.
+  </Text>
+</View>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 32 }}>⚖️</Text>

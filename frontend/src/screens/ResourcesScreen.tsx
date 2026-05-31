@@ -1,5 +1,5 @@
 import ScreenHeader from '../components/ScreenHeader';
-import { SkeletonLoader } from '../components/SkeletonLoader';
+import SkeletonLoader from '../components/SkeletonLoader';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {View, Text, FlatList, RefreshControl, TouchableOpacity, TextInput, Linking, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import { api, cachedGet }           from '../services/api';

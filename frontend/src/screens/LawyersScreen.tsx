@@ -1,7 +1,7 @@
 import LawyerSkeletonCard from '../components/LawyerSkeletonCard';
 import { t } from '../i18n';
 import type { ScreenProps } from '../types/navigation';
-import { hapticCall } from '../services/haptics';
+import { haptic, hapticCall } from '../services/haptics';
 /**
  * LawyersScreen -- GPS-first lawyer finder
  *

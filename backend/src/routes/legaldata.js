@@ -3,7 +3,7 @@
  * Serves structured legal reference data by state.
  * Types: bail, dui, drugs, sol, federal-courts, victim-comp, clinics, bar-complaints
  */
-import { err400, escapeLike, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { err400, escapeLike, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, parsePagination} from '../utils/routeHelpers.js';
 import { Router } from "express";
 import { getDb }   from "../db/index.js";
 import { authRequired } from '../middleware/auth.js';

@@ -1,3 +1,4 @@
+import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * ChatScreen — Full conversation UI wired to Claude backend
  *

@@ -1,3 +1,4 @@
+import UPLDisclaimer from '../components/UPLDisclaimer';
 import EmergencyStrip from '../components/EmergencyStrip';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect } from 'react';
@@ -66,6 +67,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}>
         <ScrollView style={{ flex: 1, backgroundColor: bg }} keyboardShouldPersistTaps="handled">
+      <UPLDisclaimer compact />
       <View style={{ padding: 16 }}>
         {/* Header card */}
         <View style={{

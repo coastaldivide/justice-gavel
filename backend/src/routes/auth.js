@@ -1,3 +1,5 @@
+import { auditLog } from '../utils/auditLog.js';
+import { validate, schemas } from '../middleware/validate.js';
 /**
  * /api/auth — Email-or-phone authentication
  *
@@ -26,6 +28,16 @@ import { authRequired } from '../middleware/auth.js';
 // ── Brute-force protection on credential endpoints (10 req / 15 min per IP) ──
 import rateLimit from 'express-rate-limit';
 import logger from '../utils/logger.js';
+
+// ── Password reset rate limit — 3 attempts per hour per IP ───────────────────
+const resetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,  // 1 hour
+  max:      3,
+  message:  { error: 'Too many password reset requests. Try again in 1 hour.' },
+  standardHeaders: true,
+  legacyHeaders:   false,
+  keyGenerator:    (req) => req.ip + (req.body?.email || ''),
+});
 
 // ── Refresh token helpers ─────────────────────────────────────────────────────
 const JWT_REFRESH_SECRET = () => process.env.JWT_REFRESH_SECRET
@@ -350,7 +362,7 @@ router.post('/update-profile', authRequired, async (req, res) => {
 });
 
 // ── POST /api/auth/forgot-password ───────────────────────────────────────────
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', resetLimiter, async (req, res) => {
   try {
     const { email } = req.body;
   if (email && !validateEmail(email)) return err400(res, 'Invalid email format');

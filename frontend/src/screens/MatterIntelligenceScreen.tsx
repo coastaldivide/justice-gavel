@@ -1,3 +1,4 @@
+import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * MatterIntelligenceScreen — All 40 simulation signals surfaced as live matter intelligence
  *
@@ -181,7 +182,8 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => { setRefreshing(true); setErrorMsg(null); load().finally(() => setRefreshing(false)); }}
+            onRefresh={() =>
+      { setRefreshing(true); setErrorMsg(null); load().finally(() => setRefreshing(false)); }}
             tintColor={colors.gold}
           />
         }

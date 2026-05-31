@@ -1,5 +1,5 @@
 import { t, initLang } from '../i18n';
-import { hapticCall } from '../services/haptics';
+import { haptic, hapticCall } from '../services/haptics';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ActivityIndicator, Alert, Animated, FlatList, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getLocation, formatDistance } from '../services/location';

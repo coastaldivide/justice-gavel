@@ -1,3 +1,4 @@
+import UPLDisclaimer from '../components/UPLDisclaimer';
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
@@ -103,6 +104,7 @@ export default function ChildSupportScreen({ navigation }: any) {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={s.container}>
+      <UPLDisclaimer compact />
       {/* Header */}
       <View style={[s.header, { backgroundColor: COLORS.navy }]}>
         <Text style={s.headerTitle}>Child & Spousal Support</Text>

@@ -1,3 +1,4 @@
+import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * FirmVerticalScreen — Practice Area Configuration & Specialty Trackers
  *
@@ -426,7 +427,8 @@ export default function FirmVerticalScreen({ navigation }: any) {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadAll().catch(()=>{}).finally(() => { setRefreshing(false); }); }}  />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() =>
+      { setRefreshing(true); loadAll().catch(()=>{}).finally(() => setRefreshing(false)); }} />}
         keyboardShouldPersistTaps="handled"
       >
 

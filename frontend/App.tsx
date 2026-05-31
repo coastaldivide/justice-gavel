@@ -1,3 +1,4 @@
+import OfflineBanner from './src/components/OfflineBanner';
 import { StripeProvider } from '@stripe/stripe-react-native';
 /**
  * App.tsx — Justice Gavel root
@@ -314,6 +315,8 @@ function AppInner() {
 
   return (
     <ErrorBoundary>
+      <>
+      <OfflineBanner />
       <NavigationContainer
           ref={navigationRef}
           linking={linking}
@@ -362,6 +365,7 @@ function AppInner() {
           )}
         </RootStack.Navigator>
       </NavigationContainer>
+      </>
     <TermsAcceptanceModal
       visible={tosNeeded}
       onAccepted={() => setTosNeeded(false)}

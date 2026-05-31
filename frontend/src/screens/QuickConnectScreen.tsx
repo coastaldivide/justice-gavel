@@ -1,7 +1,7 @@
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 import { t } from '../i18n';
-import { hapticSuccess, hapticWarn } from '../services/haptics';
+import { haptic, hapticSelect, hapticSuccess, hapticWarn } from '../services/haptics';
 /**
  * QuickConnectScreen -- $19.99 one-time package
  *

@@ -1,3 +1,5 @@
+import { auditLog } from '../utils/auditLog.js';
+import { validate, schemas } from '../middleware/validate.js';
 /**
  * routes/cases.js — User case management
  *

@@ -1,4 +1,4 @@
-import { SkeletonLoader } from '../components/SkeletonLoader';
+import SkeletonLoader from '../components/SkeletonLoader';
 import type {} from '../types/navigation';
 /**
  * SavedLawyersScreen -- Personal attorney contact list

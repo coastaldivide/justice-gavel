@@ -1,3 +1,4 @@
+import { getDb } from '../db/index.js';
 const JOB_LAST_RUN = new Map(); // prevents duplicate runs within same window
 
 /**
@@ -348,3 +349,23 @@ export function stopScheduler() {
 }
 
 export { runNightlyJob };
+
+// ── Token cleanup — runs daily at 3am ────────────────────────────────────────
+// Removes expired + used refresh tokens to keep the table bounded
+async function cleanupExpiredTokens() {
+  const jobKey = 'cleanupExpiredTokens';
+  const now = Date.now();
+  const last = JOB_LAST_RUN.get(jobKey) || 0;
+  if (now - last < 20 * 60 * 60 * 1000) return; // 20h minimum gap
+  JOB_LAST_RUN.set(jobKey, now);
+  try {
+    const db = await getDb();
+    const result = await db.run(
+      `DELETE FROM refresh_tokens WHERE expires_at < datetime('now') OR used = 1`
+    );
+    logger.info('[scheduler] token cleanup:', result?.changes, 'rows removed');
+  } catch (err) {
+    logger.error('[scheduler] token cleanup failed:', err?.message);
+  }
+}
+

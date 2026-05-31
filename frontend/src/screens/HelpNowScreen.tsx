@@ -15,7 +15,7 @@ import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Linking, Modal, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getLocation } from '../services/location';
 import { t, initLang } from '../i18n';
-import { hapticCall } from '../services/haptics';
+import { haptic, hapticCall } from '../services/haptics';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 

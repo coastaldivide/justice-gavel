@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import hagueContactsRouter  from './routes/hague_contacts.js';
 import logger from './utils/logger.js';
 import express from 'express';
@@ -147,6 +148,52 @@ app.post(
 
 // ── Trust proxy — required for Railway/Fly.io/Render (rate limiter IP detection) ──
 app.set('trust proxy', 1);
+
+// ── Security headers (helmet) ─────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:     ["'self'"],
+      scriptSrc:      ["'self'"],
+      styleSrc:       ["'self'", "'unsafe-inline'"],
+      imgSrc:         ["'self'", 'data:', 'https:'],
+      connectSrc:     ["'self'", 'https://api.anthropic.com',
+                       'https://api.stripe.com', 'https://exp.host'],
+      frameSrc:       ["'none'"],
+      objectSrc:      ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  hsts:                    { maxAge: 31536000, includeSubDomains: true, preload: true },
+  noSniff:                 true,
+  xssFilter:               true,
+  referrerPolicy:          { policy: 'strict-origin-when-cross-origin' },
+  permittedCrossDomainPolicies: false,
+}));
+// CORS — configured via ALLOWED_ORIGINS set above
+const corsMiddleware = cors({
+  origin: (origin, cb) => {
+    const allowed = new Set([
+      process.env.FRONTEND_URL || 'https://api.justicegavel.app',
+      'http://localhost:8081', 'http://localhost:19006', 'exp://localhost:19000',
+      ...(process.env.EXTRA_ORIGINS || '').split(',').filter(Boolean),
+    ]);
+    if (!origin || allowed.has(origin)) return cb(null, true);
+    cb(new Error('CORS: origin not allowed'));
+  },
+  credentials: true, methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','X-Request-ID'],
+  exposedHeaders: ['X-Request-ID'], maxAge: 86400,
+});
+app.use(corsMiddleware);
+app.options('*', corsMiddleware);  // preflight
+
+// ── Request ID — threaded through all logs ────────────────────────────────────
+app.use((req, _res, next) => {
+  req.id = req.headers['x-request-id'] || crypto.randomUUID();
+  next();
+});
+
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -456,3 +503,7 @@ app.use((err, req, res, next) => {
   if (!res.headersSent) res.status(status).json({ error: message });
 });
 
+// ── Sentry error handler — must be after routes, before other error handlers ──
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}

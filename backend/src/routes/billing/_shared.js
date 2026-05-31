@@ -127,7 +127,7 @@ export function effectiveMonthlyRate(tierKey) {
 // OR release ($0 bail) = no lead fee — bondsman not needed
 // Fee scales with bail amount since larger bail = more valuable connection
 export function calcLeadFee(bailAmount) {
-  const amt = parseFloat(bailAmount) || 0;
+  const amt = Math.max(0, parseFloat(bailAmount) || 0); // guard: NaN/negative → 0
   if (amt <= 0)       return 0;        // $0 = own recognizance release, no bondsman needed
   if (amt < 1000)     return 1000;     // $10 minimum lead fee
   if (amt < 5000)     return 2500;     // $25

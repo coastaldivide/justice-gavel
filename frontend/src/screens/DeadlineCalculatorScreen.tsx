@@ -1,3 +1,4 @@
+import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * DeadlineCalculatorScreen -- Criminal defense deadline calculator
  *
@@ -573,6 +574,7 @@ export default function DeadlineCalculatorScreen(): React.JSX.Element {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
+      <UPLDisclaimer compact />
 
       {/* Header */}
       <View style={styles.header}>
