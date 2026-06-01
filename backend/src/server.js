@@ -1,3 +1,4 @@
+import { startAllWatchdogs } from './monitoring/selfHealing.js';
 // ── Sentry error monitoring ───────────────────────────────────────────────────
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
@@ -233,7 +234,16 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT',  () => shutdown('SIGINT'));
 
 // Catch uncaught exceptions — log and exit cleanly
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', async (err) => {
+  // Attempt to notify before crashing
+  try {
+    const { notifyCritical } = await import('./monitoring/errorNotifier.js');
+    await notifyCritical('Uncaught exception — process may restart', {
+      code:    'uncaught_exception',
+      error:   err.message,
+      stack:   err.stack?.slice(0, 500),
+    });
+  } catch {}
   if (err.code === 'EADDRINUSE') {
     logger.warn('[server] Port already in use — existing instance running');
     return; // Don't shutdown

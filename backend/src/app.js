@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/node';
+import { initSentry, Sentry } from './monitoring/sentry.js';
 import hagueContactsRouter  from './routes/hague_contacts.js';
 import logger from './utils/logger.js';
 import express from 'express';
@@ -10,7 +10,6 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { initDb } from './db/index.js';
 import { CONFIG } from './config.js';
-import { initSentry, sentryErrorHandler } from './middleware/sentry.js';
 
 // ── App routes ────────────────────────────────────────────────────────────────
 import authRouter       from './routes/auth.js';
@@ -274,7 +273,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ limit: '2mb',  extended: true, limit: '1mb' })); // also handles Twilio form-encoded
+app.use(express.urlencoded({ extended: true, limit: '2mb' })); // also handles Twilio form-encoded
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -473,7 +472,7 @@ app.use('/api/recovery-agents', recoveryAgentsRouter);
 app.use('/api/attorney',       attorneyPlatformRouter);
 app.use('/api/jobs',           jobsRouter);           // async AI job polling        // Bot monitoring + manual trigger
 
-app.use(sentryErrorHandler());
+// Sentry error handler registered above via Sentry.Handlers.errorHandler()
 app.use((req, res) => res.status(404).json({ error: 'Not found. It may have been moved or deleted.' }));
 
 
@@ -484,6 +483,21 @@ app.get('/api/docs', (_req, res) => {
   import('./docs/openapi.js').then(({ openApiSpec }) => {
     res.json(openApiSpec);
   }).catch(e => res.status(500).json({ error: e.message }));
+});
+
+// ── Sentry error handler (must be last middleware) ───────────────────────────
+// Captures all errors that reach Express's error handling layer
+if (Sentry?.Handlers?.errorHandler) {
+  app.use(Sentry.Handlers.errorHandler());
+}
+
+// ── Generic 500 handler (after Sentry) ───────────────────────────────────────
+app.use((err, _req, res, _next) => {
+  const status = err.statusCode || err.status || 500;
+  res.status(status).json({
+    error: status >= 500 ? 'Internal server error.' : (err.message || 'Request failed.'),
+    code:  err.code || 'server_error',
+  });
 });
 
 export default app;

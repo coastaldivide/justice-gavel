@@ -1,6 +1,6 @@
 {
   "name": "justicegavel-backend",
-  "version": "6.6.0",
+  "version": "6.7.0",
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",

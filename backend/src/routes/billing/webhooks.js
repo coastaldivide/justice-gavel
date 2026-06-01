@@ -1,3 +1,4 @@
+import { notifyError } from '../../monitoring/errorNotifier.js';
 import { audit, AUDIT_ACTIONS } from '../../utils/audit.js';
 /**
  * billing/webhooks.js — Stripe webhook handler
@@ -112,6 +113,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       // Dunning: mark past_due, notify user, retain access during grace period
       await syncSubscriptionState(db, event.data.object.subscription, 'past_due',
         event.data.object.customer);
+      notifyError('Payment failed', { code: 'payment_failed' }).catch(()=>{});
       logger.warn('[webhooks] payment failed — marking past_due for customer:',
         event.data.object.customer); {
         const inv = event.data.object;

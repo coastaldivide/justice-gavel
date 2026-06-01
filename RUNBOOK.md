@@ -116,3 +116,75 @@ Supabase takes daily backups automatically. Point-in-time recovery available on 
 - `user_disclaimer_acceptance` — legal consent trail
 - `refresh_tokens` — auth tokens
 - `subscriptions` — billing state
+
+---
+
+## AUTOMATED MONITORING — HOW IT WORKS
+
+### What gets monitored automatically
+
+| Monitor | Frequency | Action on failure |
+|---------|-----------|-------------------|
+| Memory watchdog | Every 30s | Warn at 384MB, attempt GC + cache clear at 512MB, restart at 600MB |
+| DB health check | Every 60s | Auto-reconnect with exponential backoff (5 attempts), then SEV-1 alert |
+| Circuit breakers | Every 15s | SEV-2 email + webhook when Anthropic/Stripe/Twilio opens |
+| Stale job locks | Every 15min | Auto-clear locks older than 30 minutes |
+| Uncaught exceptions | Immediate | SEV-1 email + SMS before process restart |
+| Payment failures | Per event | SEV-2 email on invoice.payment_failed webhook |
+
+### Alert channels by severity
+
+| Severity | Channel | Response time |
+|----------|---------|---------------|
+| SEV-1 (fatal) | Email + SMS to ONCALL_PHONE + Slack webhook | 15 minutes |
+| SEV-2 (error) | Email to engineering + Slack webhook | 1 hour |
+| SEV-3 (warn) | Audit log + Sentry warning | Daily review |
+
+### Alert dedup throttle
+
+The same alert code is suppressed for **5 minutes** after first fire.
+This prevents alert storms during incident (e.g., 1,000 requests hitting a
+broken endpoint won't send 1,000 emails — just one every 5 minutes).
+
+### To set up alert channels
+
+1. **Slack**: Create incoming webhook in Slack App settings → set `ALERT_WEBHOOK_URL`
+2. **SMS**: Set `ONCALL_PHONE=+1XXXXXXXXXX` in Railway env vars
+3. **Email**: `SENDGRID_API_KEY` already required — alerts sent from alerts@justicegavel.app
+4. **Sentry**: Set `SENTRY_DSN` — get from sentry.io project settings
+
+### Self-healing behaviors
+
+**Database goes down:**
+```
+DB fails → auto-retry (200ms, 400ms, 800ms, 1.6s, 3.2s)
+  → recovers → notifyRecovery() logged, alert cleared
+  → fails 5x → notifyCritical('Database unreachable') → SEV-1 email + SMS
+```
+
+**AI (Anthropic) goes down:**
+```
+API call fails → circuit breaker opens after 5 failures
+  → fast 503 returned to all requests (no 120s hangs)
+  → notifyError('Circuit breaker OPEN: anthropic') → SEV-2 alert
+  → auto-recovery test after 30s
+  → recovers → notifyRecovery() → alert cleared
+```
+
+**Memory leak:**
+```
+heap > 384MB → notifyWarn logged
+heap > 512MB → GC forced + caches cleared
+  → if heap drops below 384MB: no further action
+  → if heap stays above 512MB → notifyError email
+heap > 600MB → notifyCritical + graceful restart
+  → Railway restarts container (< 30 second downtime)
+```
+
+**CI pipeline fails on main branch:**
+```
+Test fails → GitHub Actions workflow fails
+  → notify-failure job runs
+  → Email to engineering@justicegavel.app
+  → Deploy to production is blocked (main fails = no deploy)
+```
