@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -521,8 +522,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
   const runDocumentScan = useCallback(async (uri: string) => {
     try {
       // Read image as base64
-      const base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64});
+      const base64 = Platform.OS !== 'web' ? (await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64 })) : null;
       // Send to /discovery/analyze -- reuse existing endpoint
       // Use FormData so it hits the same multer pipeline
       const formData = new FormData();
@@ -795,7 +796,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             </Text>
           }
               renderItem={({ item }) => <CaseCard item={item} testID="case-share-button" onPress={() => openEdit(item)} navigation={navigation} onCalendar={addToCalendar} onShare={shareCase} onInvite={openInvite} />}
-              contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+              contentContainerStyle={{ padding: 16, paddingBottom: 40, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
             />
           )
       }

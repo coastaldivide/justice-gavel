@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
@@ -140,7 +141,7 @@ export default function ResourcesScreen(): React.JSX.Element {
           style={{ flex: 1 }}>
         <ScrollView
         horizontal showsHorizontalScrollIndicator={false}
-        style={{ flexGrow:0 }} contentContainerStyle={{ paddingHorizontal:12, paddingBottom:10 }}>
+        style={{ flexGrow:0 }} contentContainerStyle={{ paddingHorizontal:12, paddingBottom:10, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
         {CATEGORIES.map(cat => {
           const active = category === cat.key;
           const cc = CAT_COLORS[cat.key] || CAT_COLORS.textMuted;

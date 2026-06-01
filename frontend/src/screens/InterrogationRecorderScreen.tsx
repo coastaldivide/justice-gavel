@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
  * InterrogationRecorderScreen
@@ -157,9 +158,9 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
       if (!uri) throw new Error('No recording found');
 
       // Read file as base64
-      const base64 = await FileSystem.readAsStringAsync(uri, {
+      const base64 = Platform.OS !== 'web' ? (await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
-      });
+      })) : null;
 
       let userData: any = {}; try { const _u = await AsyncStorage.getItem('user'); if (_u) userData = JSON.parse(_u); } catch {}
 
@@ -207,9 +208,9 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
     if (!pdfBase64) return;
     try {
       const path = `${FileSystem.documentDirectory}encounter_${docId || Date.now()}.pdf`;
-      await FileSystem.writeAsStringAsync(path, pdfBase64, {
+      Platform.OS !== 'web' ? (await FileSystem.writeAsStringAsync(path, pdfBase64, {
         encoding: FileSystem.EncodingType.Base64,
-      });
+      })) : null;
       await Share.share({
         url: path,
         title: 'Police Encounter Transcript',
@@ -241,7 +242,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
     <ScrollView
       testID="interrogation-recorder-screen"
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
+      contentContainerStyle={{ padding: 16, paddingBottom: 48, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
       keyboardShouldPersistTaps="handled"
     
         refreshControl={

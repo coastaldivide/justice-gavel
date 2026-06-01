@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 import { GradientHeader } from '../components/GradientHeader';
 /**
@@ -335,74 +336,74 @@ export default function IceDetentionScreen(): React.JSX.Element {
     <ScrollView
       testID="ice-detention-screen"
       style={[s.screen, { backgroundColor: colors.bg }]}
-      contentContainerStyle={{ paddingBottom: 48 }}
+      contentContainerStyle={{ paddingBottom: 48, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
       showsVerticalScrollIndicator={false}
     >
       {/* Language toggle */}
       <View style={s.langRow}>
         <TouchableOpacity
           accessibilityRole="button" style={s.langBtn} onPress={toggleLang} testID="ice-lang-toggle" accessibilityLabel="{L.langBtn}">
-          <Text style={s.langBtnTxt}>{L.langBtn}</Text>
+          <Text style={s.langBtnTxt} maxFontSizeMultiplier={1.4}>{L.langBtn}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Header */}
       <View style={s.header}>
-        <Text style={s.headerEmoji}>🛑</Text>
-        <Text style={s.headerTitle}>{L.title}</Text>
-        <Text style={s.headerSub}>{L.subtitle}</Text>
+        <Text style={s.headerEmoji} maxFontSizeMultiplier={1.4}>🛑</Text>
+        <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>{L.title}</Text>
+        <Text style={s.headerSub} maxFontSizeMultiplier={1.4}>{L.subtitle}</Text>
       </View>
 
       {/* Rights */}
-      <Text style={[s.sectionLabel, { color: colors.textFaint }]}>YOUR RIGHTS / SUS DERECHOS</Text>
+      <Text style={[s.sectionLabel, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>YOUR RIGHTS / SUS DERECHOS</Text>
       {L.rights.map((r, i) => (
         <View key={i} style={[s.rightCard, { backgroundColor: r.bg, borderColor: r.color }]}>
           <View style={s.rightTop}>
-            <Text style={s.rightIcon}>{r.icon}</Text>
-            <Text style={[s.rightTitle, { color: r.color }]}>{r.title}</Text>
+            <Text style={s.rightIcon} maxFontSizeMultiplier={1.4}>{r.icon}</Text>
+            <Text style={[s.rightTitle, { color: r.color }]} maxFontSizeMultiplier={1.4}>{r.title}</Text>
           </View>
-          <Text style={[s.rightBody, r.bold && s.rightBodyBold, { color: isDark ? STATUS.neutral : COLORS.textPrimary }]}>
+          <Text style={[s.rightBody, r.bold && s.rightBodyBold, { color: isDark ? STATUS.neutral : COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>
             {r.body}
           </Text>
         </View>
       ))}
 
       {/* Steps */}
-      <Text style={[s.sectionLabel, { color: colors.textFaint }]}>{L.stepsTitle}</Text>
+      <Text style={[s.sectionLabel, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>{L.stepsTitle}</Text>
       {L.steps.map((step, i) => (
         <View key={i} style={[s.stepRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={s.stepBubble}>
-            <Text style={s.stepBubbleTxt}>{i + 1}</Text>
+            <Text style={s.stepBubbleTxt} maxFontSizeMultiplier={1.4}>{i + 1}</Text>
           </View>
-          <Text style={[s.stepTxt, { color: colors.textPrimary }]}>{step}</Text>
+          <Text style={[s.stepTxt, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{step}</Text>
         </View>
       ))}
 
       {/* Detainee locator */}
-      <Text style={[s.sectionLabel, { color: colors.textFaint }]}>{L.locateTitle}</Text>
+      <Text style={[s.sectionLabel, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>{L.locateTitle}</Text>
       <View style={[s.locatorCard, { backgroundColor: colors.bgCard, borderColor: COLORS.legal }]}>
-        <Text style={[s.locatorDesc, { color: colors.textSecond }]}>{L.locateDesc}</Text>
+        <Text style={[s.locatorDesc, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>{L.locateDesc}</Text>
         <TouchableOpacity
           accessibilityRole="button"
           style={s.locatorBtn}
           accessibilityLabel="{L.locateBtn}" onPress={() => openLink(L.locateUrl)}
           testID="ice-locator-btn"
         >
-          <Text style={s.locatorBtnTxt}>{L.locateBtn}</Text>
+          <Text style={s.locatorBtnTxt} maxFontSizeMultiplier={1.4}>{L.locateBtn}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Legal resources */}
-      <Text style={[s.sectionLabel, { color: colors.textFaint }]}>{L.legalTitle}</Text>
+      <Text style={[s.sectionLabel, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>{L.legalTitle}</Text>
       {L.resources.map((r, i) => (
         <View key={i} style={[
           s.resourceCard,
           { backgroundColor: r.highlight ? COLORS.legalBg : colors.bgCard, borderColor: r.highlight ? COLORS.legal : colors.border },
         ]}>
-          <Text style={[s.resourceName, { color: colors.textPrimary }]}>
+          <Text style={[s.resourceName, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>
             {r.highlight ? '⭐ ' : ''}{r.name}
           </Text>
-          <Text style={[s.resourceDesc, { color: colors.textMuted }]}>{r.desc}</Text>
+          <Text style={[s.resourceDesc, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{r.desc}</Text>
           <View style={s.resourceBtns}>
             <TouchableOpacity
               accessibilityRole="button"
@@ -410,7 +411,7 @@ export default function IceDetentionScreen(): React.JSX.Element {
               accessibilityLabel="\ud83d\udcde {r.phone}" onPress={() => callNumber(r.phone)}
               testID={`ice-call-${i}`}
             >
-              <Text style={s.callBtnTxt}>📞 {r.phone}</Text>
+              <Text style={s.callBtnTxt} maxFontSizeMultiplier={1.4}>📞 {r.phone}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
@@ -418,7 +419,7 @@ export default function IceDetentionScreen(): React.JSX.Element {
               accessibilityLabel="Web \u2192" onPress={() => openLink(r.url)}
               testID={`ice-web-${i}`}
             >
-              <Text style={[s.webBtnTxt, { color: colors.textSecond }]}>Web →</Text>
+              <Text style={[s.webBtnTxt, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>Web →</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -427,12 +428,12 @@ export default function IceDetentionScreen(): React.JSX.Element {
       {/* Share */}
       <TouchableOpacity
           accessibilityRole="button" style={s.shareBtn} onPress={shareInfo} testID="ice-share-btn" accessibilityLabel="{L.shareBtn}">
-        <Text style={s.shareBtnTxt}>{L.shareBtn}</Text>
+        <Text style={s.shareBtnTxt} maxFontSizeMultiplier={1.4}>{L.shareBtn}</Text>
       </TouchableOpacity>
 
       {/* Disclaimer */}
       <View style={[s.disclaimer, { backgroundColor: colors.warnBg, borderColor: colors.warn }]}>
-        <Text style={[s.disclaimerTxt, { color: colors.textSecond }]}>{L.disclaimer}</Text>
+        <Text style={[s.disclaimerTxt, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>{L.disclaimer}</Text>
       </View>
     </ScrollView>
   );

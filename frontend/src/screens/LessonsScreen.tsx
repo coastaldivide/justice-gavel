@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -198,7 +199,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
               </View>
             </View>
           }
-          contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
+          contentContainerStyle={{ padding: 12, paddingBottom: 40, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
               No lessons found. Check your connection.

@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -244,7 +245,7 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
 }
 
 const styles = (colors: any, TYPE: any, FONT: any) => StyleSheet.create({
-  container:          { flex: 1, backgroundColor: colors.background },
+  container:          { flex: 1, backgroundColor: colors.background, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%',},
   header:             { paddingTop: 20, paddingHorizontal: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerTitle:        { fontSize: 22, fontFamily: FONT.bold, color: colors.text, marginBottom: 6 },
   headerSub:          { fontSize: 13, color: colors.subtext, lineHeight: 18 },

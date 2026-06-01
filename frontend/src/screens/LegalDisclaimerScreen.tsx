@@ -73,8 +73,8 @@ export default function LegalDisclaimerScreen({ onAccepted }: Props) {
     <View style={s.root}>
       {/* Header — always visible, non-scrollable */}
       <View style={s.header}>
-        <Text style={s.headerTitle}>Before You Continue</Text>
-        <Text style={s.headerSub}>
+        <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>Before You Continue</Text>
+        <Text style={s.headerSub} maxFontSizeMultiplier={1.4}>
           Please read our legal notice carefully.{'\n'}
           Scroll to the bottom to accept.
         </Text>
@@ -89,23 +89,23 @@ export default function LegalDisclaimerScreen({ onAccepted }: Props) {
         {DISCLAIMER_SECTIONS.map((sec, i) => (
           <View key={i} style={s.section}>
             <View style={s.sectionHeader}>
-              <Text style={s.sectionIcon}>{sec.icon}</Text>
-              <Text style={s.sectionTitle}>{sec.title}</Text>
+              <Text style={s.sectionIcon} maxFontSizeMultiplier={1.4}>{sec.icon}</Text>
+              <Text style={s.sectionTitle} maxFontSizeMultiplier={1.4}>{sec.title}</Text>
             </View>
-            <Text style={s.sectionBody}>{sec.body}</Text>
+            <Text style={s.sectionBody} maxFontSizeMultiplier={1.4}>{sec.body}</Text>
           </View>
         ))}
 
         {/* Formal acceptance text */}
         <View style={s.formalBlock}>
-          <Text style={s.formalText}>
+          <Text style={s.formalText} maxFontSizeMultiplier={1.4}>
             By tapping "I Understand and Accept," you acknowledge that you have read
             this notice, understand that Justice Gavel does not provide legal advice,
             and agree to our{' '}
-            <Text style={s.link}>Terms of Service</Text> and{' '}
-            <Text style={s.link}>Privacy Policy</Text>.
+            <Text style={s.link} maxFontSizeMultiplier={1.4}>Terms of Service</Text> and{' '}
+            <Text style={s.link} maxFontSizeMultiplier={1.4}>Privacy Policy</Text>.
           </Text>
-          <Text style={s.formalVersion}>Version {VERSION}</Text>
+          <Text style={s.formalVersion} maxFontSizeMultiplier={1.4}>Version {VERSION}</Text>
         </View>
       </ScrollView>
 
@@ -118,9 +118,9 @@ export default function LegalDisclaimerScreen({ onAccepted }: Props) {
             onPress={() => setAgreed(!agreed)}
           >
             <View style={[s.checkbox, agreed && s.checkboxChecked]}>
-              {agreed && <Text style={s.checkmark}>✓</Text>}
+              {agreed && <Text style={s.checkmark} maxFontSizeMultiplier={1.4}>✓</Text>}
             </View>
-            <Text style={s.checkLabel}>
+            <Text style={s.checkLabel} maxFontSizeMultiplier={1.4}>
               I have read and understand this notice. I am not seeking legal advice.
             </Text>
           </TouchableOpacity>
@@ -133,7 +133,7 @@ export default function LegalDisclaimerScreen({ onAccepted }: Props) {
           >
             {accepting
               ? <ActivityIndicator color="#fff" />
-              : <Text style={s.acceptBtnText}>I Understand and Accept</Text>
+              : <Text style={s.acceptBtnText} maxFontSizeMultiplier={1.4}>I Understand and Accept</Text>
             }
           </TouchableOpacity>
         </View>
@@ -141,7 +141,7 @@ export default function LegalDisclaimerScreen({ onAccepted }: Props) {
 
       {!scrolledToBottom && (
         <View style={s.scrollHint}>
-          <Text style={s.scrollHintText}>↓ Scroll to read and accept</Text>
+          <Text style={s.scrollHintText} maxFontSizeMultiplier={1.4}>↓ Scroll to read and accept</Text>
         </View>
       )}
     </View>

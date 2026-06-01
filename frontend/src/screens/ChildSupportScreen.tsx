@@ -124,8 +124,8 @@ export default function ChildSupportScreen({ navigation }: any) {
       <UPLDisclaimer compact />
       {/* Header */}
       <View style={[s.header, { backgroundColor: COLORS.navy }]}>
-        <Text style={s.headerTitle}>Child & Spousal Support</Text>
-        <Text style={s.headerSub}>
+        <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>Child & Spousal Support</Text>
+        <Text style={s.headerSub} maxFontSizeMultiplier={1.4}>
           Estimate based on Income Shares Model (majority US standard).{'\n'}
           Actual orders vary by state — consult your attorney.
         </Text>
@@ -133,10 +133,10 @@ export default function ChildSupportScreen({ navigation }: any) {
 
       <View style={s.form}>
         {/* Incomes */}
-        <Text style={[s.sectionLabel, { color: COLORS.textMuted }]}>MONTHLY GROSS INCOME</Text>
+        <Text style={[s.sectionLabel, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>MONTHLY GROSS INCOME</Text>
         <View style={s.row}>
           <View style={{ flex: 1, marginRight: 8 }}>
-            <Text style={labelStyle}>Parent 1</Text>
+            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Parent 1</Text>
             <TextInput
               style={inputStyle}
               placeholder="e.g. 4500"
@@ -147,7 +147,7 @@ export default function ChildSupportScreen({ navigation }: any) {
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={labelStyle}>Parent 2</Text>
+            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Parent 2</Text>
             <TextInput
               style={inputStyle}
               placeholder="e.g. 3000"
@@ -160,7 +160,7 @@ export default function ChildSupportScreen({ navigation }: any) {
         </View>
 
         {/* Children */}
-        <Text style={labelStyle}>Number of children</Text>
+        <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Number of children</Text>
         <View style={s.row}>
           {['1','2','3','4','5'].map(n => (
             <TouchableOpacity
@@ -169,13 +169,13 @@ export default function ChildSupportScreen({ navigation }: any) {
               style={[s.childBtn, { borderColor: COLORS.border, backgroundColor: children === n ? COLORS.navy : COLORS.bgCard }]}
               accessibilityLabel="{n}" onPress={() => setChildren(n)}
             >
-              <Text style={{ color: children === n ? '#fff' : COLORS.textPrimary, fontWeight: '700' }}>{n}</Text>
+              <Text style={{ color: children === n ? '#fff' : COLORS.textPrimary, fontWeight: '700' }} maxFontSizeMultiplier={1.4}>{n}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Custody split */}
-        <Text style={labelStyle}>Parent 1 physical custody (%)</Text>
+        <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Parent 1 physical custody (%)</Text>
         <TextInput
           style={inputStyle}
           placeholder="e.g. 70 (parent 1 has 70%)"
@@ -184,13 +184,13 @@ export default function ChildSupportScreen({ navigation }: any) {
           value={custody}
           onChangeText={setCustody}
         />
-        <Text style={[s.hint, { color: COLORS.textMuted }]}>50 = equal shared custody</Text>
+        <Text style={[s.hint, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>50 = equal shared custody</Text>
 
         {/* Spousal support toggle */}
         <View style={[s.switchRow, { borderColor: COLORS.border }]}>
           <View style={{ flex: 1 }}>
-            <Text style={[s.switchLabel, { color: COLORS.textPrimary }]}>Include spousal support?</Text>
-            <Text style={[s.hint, { color: COLORS.textMuted }]}>Alimony paid by higher earner</Text>
+            <Text style={[s.switchLabel, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>Include spousal support?</Text>
+            <Text style={[s.hint, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>Alimony paid by higher earner</Text>
           </View>
           <Switch
             value={alimony}
@@ -200,7 +200,7 @@ export default function ChildSupportScreen({ navigation }: any) {
         </View>
         {alimony && (
           <>
-            <Text style={labelStyle}>Monthly spousal support amount ($)</Text>
+            <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Monthly spousal support amount ($)</Text>
             <TextInput
               style={inputStyle}
               placeholder="e.g. 800"
@@ -218,48 +218,48 @@ export default function ChildSupportScreen({ navigation }: any) {
           style={[s.calcBtn, { backgroundColor: COLORS.navy }]}
           onPress={calculate}
          accessibilityLabel="Calculate Estimate">
-          <Text style={s.calcBtnText}>Calculate Estimate</Text>
+          <Text style={s.calcBtnText} maxFontSizeMultiplier={1.4}>Calculate Estimate</Text>
         </TouchableOpacity>
       </View>
 
       {/* Result */}
       {result && (
         <View style={[s.result, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
-          <Text style={[s.resultTitle, { color: COLORS.textPrimary }]}>Estimated Support Order</Text>
+          <Text style={[s.resultTitle, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>Estimated Support Order</Text>
 
           <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]}>Combined monthly income</Text>
-            <Text style={[s.resultValue, { color: COLORS.textPrimary }]}>{fmt(result.combined)}</Text>
+            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Combined monthly income</Text>
+            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.combined)}</Text>
           </View>
           <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]}>Base obligation ({children} child{parseInt(children) > 1 ? 'ren' : ''})</Text>
-            <Text style={[s.resultValue, { color: COLORS.textPrimary }]}>{fmt(result.baseObligation)}/mo</Text>
+            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Base obligation ({children} child{parseInt(children) > 1 ? 'ren' : ''})</Text>
+            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.baseObligation)}/mo</Text>
           </View>
           <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]}>Parent 1 share ({Math.round(parseFloat(custody || '70'))}% custody)</Text>
-            <Text style={[s.resultValue, { color: COLORS.textPrimary }]}>{fmt(result.parent1Obligation)}/mo</Text>
+            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Parent 1 share ({Math.round(parseFloat(custody || '70'))}% custody)</Text>
+            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.parent1Obligation)}/mo</Text>
           </View>
           <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]}>Parent 2 share ({100 - Math.round(parseFloat(custody || '70'))}% custody)</Text>
-            <Text style={[s.resultValue, { color: COLORS.textPrimary }]}>{fmt(result.parent2Obligation)}/mo</Text>
+            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Parent 2 share ({100 - Math.round(parseFloat(custody || '70'))}% custody)</Text>
+            <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.parent2Obligation)}/mo</Text>
           </View>
 
           {/* Net payment */}
           <View style={[s.netBlock, { backgroundColor: COLORS.navy + '15' }]}>
-            <Text style={[s.netLabel, { color: COLORS.navy }]}>{result.payor} pays {result.payee}</Text>
-            <Text style={[s.netAmount, { color: COLORS.navy }]}>{fmt(result.netMonthly)}<Text style={{ fontSize: 14 }}>/month</Text></Text>
-            <Text style={[s.netAnnual, { color: COLORS.navy }]}>{fmt(result.netAnnual)} per year</Text>
+            <Text style={[s.netLabel, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{result.payor} pays {result.payee}</Text>
+            <Text style={[s.netAmount, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{fmt(result.netMonthly)}<Text style={{ fontSize: 14 }} maxFontSizeMultiplier={1.4}>/month</Text></Text>
+            <Text style={[s.netAnnual, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>{fmt(result.netAnnual)} per year</Text>
           </View>
 
           {alimony && parseFloat(alimonyAmt) > 0 && (
             <View style={[s.alimonyBlock, { borderColor: COLORS.border }]}>
-              <Text style={[s.alimonyLabel, { color: COLORS.textSecond }]}>
+              <Text style={[s.alimonyLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>
                 + Spousal support: {fmt(parseFloat(alimonyAmt))}/mo ({fmt(parseFloat(alimonyAmt) * 12)}/yr)
               </Text>
             </View>
           )}
 
-          <Text style={[s.disclaimer, { color: COLORS.textMuted }]}>
+          <Text style={[s.disclaimer, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>
             ⚠️ This is an estimate using a simplified income shares table. Actual orders are
             set by the court based on your state's guidelines, which may differ significantly.
             This does not constitute legal advice. Always consult a licensed family law attorney.

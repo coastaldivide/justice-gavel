@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -469,7 +470,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
 }
 
 const styles = (colors: any) => StyleSheet.create({
-  container:          { flex: 1, backgroundColor: colors.background },
+  container:          { flex: 1, backgroundColor: colors.background, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%',},
   content:            { padding: 16, paddingBottom: 60 },
   heading:            { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 6 },
   subheading:         { fontSize: 14, color: colors.textMuted, marginBottom: 16, lineHeight: 20 },

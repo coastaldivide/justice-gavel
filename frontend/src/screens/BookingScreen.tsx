@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -278,7 +279,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
 
           {/* Day picker */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false}
-            style={styles.dayScroll} contentContainerStyle={{ gap: 8 }}>
+            style={styles.dayScroll} contentContainerStyle={{ gap: 8, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
             {days.map(day => (
               <TouchableOpacity accessibilityRole="button" key={day.date}
                 style={[styles.dayChip, { borderColor: colors.border, backgroundColor: colors.bgCard },

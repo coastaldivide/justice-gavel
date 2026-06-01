@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -228,7 +229,7 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
           removeClippedSubviews={true}
           data={records}
                 keyExtractor={r => String(r.id)}
-                contentContainerStyle={{ padding: 14 }}
+                contentContainerStyle={{ padding: 14, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
                 renderItem={({ item }) => (
                   <View style={styles.historyRow}>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.historyStatus,

@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
  * TenantRightsScreen -- Eviction emergency + tenant rights
@@ -127,7 +128,7 @@ export default function TenantRightsScreen(): React.JSX.Element {
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
       testID="tenant-rights-screen"
-      contentContainerStyle={{ paddingBottom: 32 }}
+      contentContainerStyle={{ paddingBottom: 32, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}

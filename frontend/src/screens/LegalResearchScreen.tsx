@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -619,7 +620,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
   // ── RENDER: History ───────────────────────────────────────────────────────
   if (phase === 'history') return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
-      contentContainerStyle={{ padding: 16 }}>
+      contentContainerStyle={{ padding: 16, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
       {histLoading
         ? <ActivityIndicator color={COLORS.navy} style={{ marginTop: 40 }} />
         : history.length === 0

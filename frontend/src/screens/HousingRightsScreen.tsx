@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
  * HousingRightsScreen -- Housing Rights & Criminal Record
@@ -112,30 +113,30 @@ export default function HousingRightsScreen(): React.JSX.Element {
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
       testID="housing-rights-screen"
-      contentContainerStyle={{ paddingBottom: 32 }}
+      contentContainerStyle={{ paddingBottom: 32, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <AppIcon name="home-outline" size={20} color={COLORS.navy} />
-        <Text style={[styles.headerTitle, { color: colors.bgCard }]}>Housing Rights</Text>
-        <Text style={[styles.headerSub, { color: colors.steel }]}>Tenant rights & evictions</Text>
+        <Text style={[styles.headerTitle, { color: colors.bgCard }]} maxFontSizeMultiplier={1.4}>Housing Rights</Text>
+        <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>Tenant rights & evictions</Text>
       </View>
 
       {/* Section cards */}
       {allSections.map((sec: any, idx: number) => (
         <View key={idx} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          {sec.title ? <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{sec.title}</Text> : null}
-          {sec.body  ? <Text style={[styles.cardBody,  { color: colors.textMuted  }]}>{sec.body}</Text>  : null}
+          {sec.title ? <Text style={[styles.cardTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{sec.title}</Text> : null}
+          {sec.body  ? <Text style={[styles.cardBody,  { color: colors.textMuted  }]} maxFontSizeMultiplier={1.4}>{sec.body}</Text>  : null}
           {sec.steps ? sec.steps.map((step: string, si: number) => (
-            <Text key={si} style={[styles.cardBody, { color: colors.textMuted }]}>• {step}</Text>
+            <Text key={si} style={[styles.cardBody, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>• {step}</Text>
           )) : null}
         </View>
       ))}
 
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
-        <Text style={[styles.disclaimerText, { color: colors.textFaint }]}>
+        <Text style={[styles.disclaimerText, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>
           This information is for general education only and is not legal advice.
           Laws vary by state. Consult a licensed attorney for advice about your situation.
         </Text>

@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { AppIcon } from '../components/AppIcon';
 import LegalNotice from '../components/LegalNotice';
@@ -113,7 +114,7 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
 
         {/* Offense type chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap:8, paddingVertical:2 }}>
+          contentContainerStyle={{ gap:8, paddingVertical:2, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
           {offenseTypes.map(ot => {
             const sel = offenseFilter === ot;
             const cc = OFFENSE_COLORS[ot] || { bg:card, border:colors.textFaint, text:text };

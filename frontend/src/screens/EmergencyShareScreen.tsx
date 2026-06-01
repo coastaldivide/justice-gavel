@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -265,7 +266,7 @@ export default function EmergencyShareScreen({ route, navigation }: ScreenProps)
 
 if (phase === 'ready') return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingBottom: 24, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={styles.quickExitBar}>
         <TouchableOpacity accessibilityRole="button"

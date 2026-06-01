@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
@@ -398,7 +399,7 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
           data={agents}
           keyExtractor={item => String(item.id)}
           renderItem={renderAgent}
-          contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
+          contentContainerStyle={{ padding: 12, paddingBottom: 40, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
             agents.length > 0 ? (

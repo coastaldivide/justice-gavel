@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
@@ -194,7 +195,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
     : (lawyer.languages || []);
 
   return (
-    <ScrollView testID="lawyer-profile-screen" style={s.screen} contentContainerStyle={{ paddingBottom: 120 }}
+    <ScrollView testID="lawyer-profile-screen" style={s.screen} contentContainerStyle={{ paddingBottom: 120, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
       showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

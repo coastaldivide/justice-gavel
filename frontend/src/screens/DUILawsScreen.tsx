@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
@@ -133,7 +134,7 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
 
         {/* Right: detail */}
         {selected ? (
-          <ScrollView keyboardShouldPersistTaps="handled" style={{ flex:1 }} contentContainerStyle={{ padding:14, paddingBottom:30 }}>
+          <ScrollView keyboardShouldPersistTaps="handled" style={{ flex:1 }} contentContainerStyle={{ padding:14, paddingBottom:30, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
             <Text maxFontSizeMultiplier={1.4} style={{ color:text, fontWeight:'800', fontSize:18, marginBottom:2 }}>
               {STATE_NAMES[selected.state] || selected.state}
             </Text>

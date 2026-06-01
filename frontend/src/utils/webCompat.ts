@@ -1,3 +1,4 @@
+declare var document: any;
 declare var window: any;
 declare var MediaRecorder: any;
 declare var navigator: any;
@@ -290,3 +291,51 @@ export const NotificationsShim = {
   addNotificationReceivedListener: () => ({ remove: () => {} }),
   addNotificationResponseReceivedListener: () => ({ remove: () => {} }),
 };
+
+// ── expo-document-picker shim ─────────────────────────────────────────────────
+export const DocumentPicker = isWeb ? {
+  getDocumentAsync: async (opts: any = {}) => {
+    return new Promise((resolve) => {
+      const input = (typeof document !== 'undefined') ? document.createElement('input') : null;
+      if (!input) return resolve({ canceled: true } as any);
+      input.type   = 'file';
+      input.accept = opts.type || '*/*';
+      input.onchange = (e: any) => {
+        const file = e.target?.files?.[0];
+        if (!file) return resolve({ canceled: true } as any);
+        const uri = URL.createObjectURL(file);
+        resolve({ canceled: false, assets: [{ uri, name: file.name, size: file.size, mimeType: file.type }] } as any);
+      };
+      input.click();
+    });
+  },
+} : null;  // native: import * as DocumentPicker from 'expo-document-picker'
+
+// ── expo-av shim (Audio recording) ───────────────────────────────────────────
+// Web uses MediaRecorder via the .web.tsx screen versions
+export const Audio = isWeb ? {
+  requestPermissionsAsync: async () => ({ granted: true }),
+  setAudioModeAsync:       async () => {},
+  Recording: class {
+    async prepareToRecordAsync() {}
+    async startAsync() {}
+    async stopAndUnloadAsync() {}
+    async getURI(): Promise<string | null> { return null; }
+    static HighQuality = {};
+  },
+} : null;
+
+// ── expo-camera shim ──────────────────────────────────────────────────────────
+// Camera-dependent screens have .web.tsx versions using getUserMedia
+export const Camera = isWeb ? {
+  useCameraPermissions: () => [{ granted: false }, async () => ({ granted: false })],
+  requestCameraPermissionsAsync: async () => ({ granted: false }),
+  Constants: { Type: { back: 'back', front: 'front' } },
+} : null;
+
+// ── Keyboard avoiding view (web: transparent pass-through) ────────────────────
+export { KeyboardAvoidingView } from 'react-native';
+// On web, KeyboardAvoidingView from RN is a no-op, which is correct.
+
+// ── Safe area (web: no notch, use platform default) ──────────────────────────
+export const SafeAreaInsets = isWeb ? { top: 0, bottom: 0, left: 0, right: 0 } : null;

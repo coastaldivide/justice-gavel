@@ -19,3 +19,4 @@ export { Illustration,
          IllustrationError }          from './Illustrations';
 export { Typography, Heading1, Heading2, Heading3,
          Body, BodySmall, Label, Caption, Emphasis } from './Typography';
+export { TabletLayout } from './TabletLayout';

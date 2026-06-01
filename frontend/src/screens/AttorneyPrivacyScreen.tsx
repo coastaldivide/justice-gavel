@@ -83,9 +83,9 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
     >
       {/* Header */}
       <View style={[s.header, { backgroundColor: COLORS.navy }]}>
-        <Text style={s.headerIcon}>🔏</Text>
-        <Text style={s.headerTitle}>Attorney Platform Privacy</Text>
-        <Text style={s.headerSub}>
+        <Text style={s.headerIcon} maxFontSizeMultiplier={1.4}>🔏</Text>
+        <Text style={s.headerTitle} maxFontSizeMultiplier={1.4}>Attorney Platform Privacy</Text>
+        <Text style={s.headerSub} maxFontSizeMultiplier={1.4}>
           Data policy, professional responsibility compliance,
           and BAA information for law firm subscribers
         </Text>
@@ -93,14 +93,14 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
 
       {/* Effective date */}
       <View style={[s.effectiveBadge, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
-        <Text style={[s.effectiveText, { color: COLORS.textMuted }]}>
+        <Text style={[s.effectiveText, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>
           Effective: January 1, 2026 · Version 2.1
         </Text>
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="Full Privacy Policy \u2192" onPress={() => Linking.openURL('https://justicegavel.app/privacy').catch(() => {})}
         >
-          <Text style={[s.fullPolicyLink, { color: COLORS.navy }]}>Full Privacy Policy →</Text>
+          <Text style={[s.fullPolicyLink, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>Full Privacy Policy →</Text>
         </TouchableOpacity>
       </View>
 
@@ -115,17 +115,17 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
             style={s.sectionHeader}
             accessibilityLabel="{sec.icon}" onPress={() => setExpanded(expanded === idx ? null : idx)}
           >
-            <Text style={s.sectionIcon}>{sec.icon}</Text>
-            <Text style={[s.sectionTitle, { color: COLORS.textPrimary, flex: 1 }]}>
+            <Text style={s.sectionIcon} maxFontSizeMultiplier={1.4}>{sec.icon}</Text>
+            <Text style={[s.sectionTitle, { color: COLORS.textPrimary, flex: 1 }]} maxFontSizeMultiplier={1.4}>
               {sec.title}
             </Text>
-            <Text style={[s.chevron, { color: COLORS.textMuted }]}>
+            <Text style={[s.chevron, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>
               {expanded === idx ? '▲' : '▼'}
             </Text>
           </TouchableOpacity>
           {expanded === idx && (
             <View style={[s.sectionBody, { borderTopColor: COLORS.border }]}>
-              <Text style={[s.bodyText, { color: COLORS.textSecond }]}>
+              <Text style={[s.bodyText, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>
                 {sec.body}
               </Text>
             </View>
@@ -135,8 +135,8 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
 
       {/* Contact block */}
       <View style={[s.contactBlock, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
-        <Text style={[s.contactTitle, { color: COLORS.textPrimary }]}>Need a BAA or DPA?</Text>
-        <Text style={[s.contactBody, { color: COLORS.textSecond }]}>
+        <Text style={[s.contactTitle, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>Need a BAA or DPA?</Text>
+        <Text style={[s.contactBody, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>
           Contact our legal team to request a Business Associate Agreement,
           Data Processing Agreement, or custom data governance documentation
           for your jurisdiction.
@@ -146,14 +146,14 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
           style={[s.contactBtn, { backgroundColor: COLORS.navy }]}
           accessibilityLabel="Contact Legal Team" onPress={() => Linking.openURL('mailto:legal@justicegavel.app').catch(() => Alert.alert('Email', 'legal@justicegavel.app'))}
         >
-          <Text style={s.contactBtnText}>Contact Legal Team</Text>
+          <Text style={s.contactBtnText} maxFontSizeMultiplier={1.4}>Contact Legal Team</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[s.contactBtn, s.contactBtnOutline, { borderColor: COLORS.navy }]}
           onPress={() => Linking.openURL('mailto:privacy@justicegavel.app').catch(() => Alert.alert('Email', 'privacy@justicegavel.app'))}
         >
-          <Text style={[s.contactBtnText, { color: COLORS.navy }]}>Request Data Deletion</Text>
+          <Text style={[s.contactBtnText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>Request Data Deletion</Text>
         </TouchableOpacity>
       </View>
 

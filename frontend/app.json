@@ -2,7 +2,7 @@
   "expo": {
     "name": "Justice Gavel",
     "slug": "justice-gavel",
-    "version": "6.7.0",
+    "version": "6.8.0",
     "orientation": "portrait",
     "platforms": [
       "ios",
@@ -29,9 +29,9 @@
       "backgroundColor": "#042C53"
     },
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
       "bundleIdentifier": "app.justicegavel.mobile",
-      "buildNumber": "670",
+      "buildNumber": "680",
       "infoPlist": {
         "NSCalendarsUsageDescription": "Justice Gavel adds your court dates to your calendar so you never miss a hearing.",
         "NSCalendarsWriteOnlyAccessUsageDescription": "Justice Gavel adds your court dates to your calendar so you never miss a hearing.",
@@ -123,7 +123,8 @@
         "aps-environment": "development"
       },
       "statusBarStyle": "auto",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "requireFullScreen": false
     },
     "android": {
       "adaptiveIcon": {
@@ -131,7 +132,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "app.justicegavel.mobile",
-      "versionCode": 670,
+      "versionCode": 680,
       "permissions": [
         "READ_MEDIA_IMAGES",
         "CAMERA",
@@ -164,7 +165,8 @@
       "jsEngine": "hermes",
       "targetSdkVersion": 34,
       "minSdkVersion": 24,
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "screenOrientation": "default"
     },
     "backgroundColor": "#020E1C",
     "scheme": "justicegavel",
@@ -248,14 +250,14 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "single",
-      "favicon": "./assets/icon.png",
+      "output": "static",
+      "favicon": "./assets/favicon.png",
       "name": "Justice Gavel",
-      "shortName": "JusticeGavel",
+      "shortName": "JG",
       "lang": "en",
       "themeColor": "#042C53",
       "backgroundColor": "#042C53",
-      "description": "Free legal help if you get arrested. Find attorneys, bail bondsmen, and know your rights.",
+      "description": "Legal rights, attorneys, and resources in one place.",
       "htmlPath": "./web/index.html"
     },
     "userInterfaceStyle": "automatic",

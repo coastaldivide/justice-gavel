@@ -330,8 +330,8 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
 
     try {
       // Read PDF as base64
-      const base64 = await FileSystem.readAsStringAsync(file.uri, {
-        encoding: FileSystem.EncodingType.Base64 });
+      const base64 = Platform.OS !== 'web' ? (await FileSystem.readAsStringAsync(file.uri, {
+        encoding: FileSystem.EncodingType.Base64 })) : null;
 
       // Send as multipart form data
       const formData = new FormData();

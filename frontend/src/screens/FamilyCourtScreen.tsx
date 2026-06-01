@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
  * FamilyCourtScreen -- Family Court Navigation Guide
@@ -146,7 +147,7 @@ export default function FamilyCourtScreen(): React.JSX.Element {
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
       testID="family-court-screen"
-      contentContainerStyle={{ paddingBottom: 32 }}
+      contentContainerStyle={{ paddingBottom: 32, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}

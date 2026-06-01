@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -166,7 +167,7 @@ export default function CourtLocatorScreen(): React.JSX.Element {
         refreshing={refreshing}
         data={results}
         keyExtractor={i => String(i.id)}
-        contentContainerStyle={{ padding: 16, paddingTop: 4 }}
+        contentContainerStyle={{ padding: 16, paddingTop: 4, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
         ListEmptyComponent={
           !loading ? (
             <Text maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginTop: 40 }}>

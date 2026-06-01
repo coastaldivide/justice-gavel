@@ -1,3 +1,4 @@
+import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
  * ImmigrationConsequencesScreen -- Criminal Record & Immigration Consequences
@@ -122,30 +123,30 @@ export default function ImmigrationConsequencesScreen(): React.JSX.Element {
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
       testID="immigration-consequences-screen"
-      contentContainerStyle={{ paddingBottom: 32 }}
+      contentContainerStyle={{ paddingBottom: 32, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <AppIcon name="globe-outline" size={20} color={COLORS.navy} />
-        <Text style={[styles.headerTitle, { color: colors.bgCard }]}>Immigration & Charges</Text>
-        <Text style={[styles.headerSub, { color: colors.steel }]}>Consequences of convictions</Text>
+        <Text style={[styles.headerTitle, { color: colors.bgCard }]} maxFontSizeMultiplier={1.4}>Immigration & Charges</Text>
+        <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>Consequences of convictions</Text>
       </View>
 
       {/* Section cards */}
       {allSections.map((sec: any, idx: number) => (
         <View key={idx} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          {sec.title ? <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{sec.title}</Text> : null}
-          {sec.body  ? <Text style={[styles.cardBody,  { color: colors.textMuted  }]}>{sec.body}</Text>  : null}
+          {sec.title ? <Text style={[styles.cardTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{sec.title}</Text> : null}
+          {sec.body  ? <Text style={[styles.cardBody,  { color: colors.textMuted  }]} maxFontSizeMultiplier={1.4}>{sec.body}</Text>  : null}
           {sec.steps ? sec.steps.map((step: string, si: number) => (
-            <Text key={si} style={[styles.cardBody, { color: colors.textMuted }]}>• {step}</Text>
+            <Text key={si} style={[styles.cardBody, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>• {step}</Text>
           )) : null}
         </View>
       ))}
 
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
-        <Text style={[styles.disclaimerText, { color: colors.textFaint }]}>
+        <Text style={[styles.disclaimerText, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>
           This information is for general education only and is not legal advice.
           Laws vary by state. Consult a licensed attorney for advice about your situation.
         </Text>
