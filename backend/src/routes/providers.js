@@ -36,9 +36,14 @@ import rateLimit           from 'express-rate-limit';
 const router = Router();
 
 // Alias: /list → /lawyers
-router.get('/list', async (req, res, next) => {
+router.get('/list', async (req, res, next) =>{
+  try {
   req.url = '/lawyers' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '');
   router.handle(req, res, next);
+
+  } catch (_e) {
+    res.status(500).json({ error: 'Internal server error.', code: 'server_error' });
+  }
 });
 
 
@@ -386,12 +391,17 @@ router.get('/bail', optionalAuth, searchLimiter, async (req, res) => {
 const SEED_ONLY_STATES = new Set(['NH', 'DE', 'ND', 'ME', 'SD', 'VT', 'MT', 'WV', 'RI', 'DC', 'WY']);
 
 // GET /api/providers/coverage — returns state coverage for UI display
-router.get('/coverage', async (req, res) => {
+router.get('/coverage', async (req, res) =>{
+  try {
   res.set('Cache-Control', 'public, max-age=3600');
   res.json({
     seed_only_states: [...SEED_ONLY_STATES],
     note: 'States listed have attorney listings but phones/details not yet verified from live sources. Run the scraper to populate real data.',
   });
+
+  } catch (_e) {
+    res.status(500).json({ error: 'Internal server error.', code: 'server_error' });
+  }
 });
 
 export default router;
@@ -413,5 +423,5 @@ router.get('/lawyers/:id', async (req, res) => {
       [id]
     ).catch(() => []);
     res.json({ ...lawyer, reviews });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });

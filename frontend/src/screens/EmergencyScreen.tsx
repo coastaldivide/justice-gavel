@@ -44,6 +44,7 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
   const [phase, setPhase]       = useState<Phase>('ready');
   const [countdown, setCount]   = useState(5);
   const [result, setResult]     = useState('');
+  const [loading, setLoading] = useState(false);
   const [contacts, setContacts] = useState<string[]>([]);
   const [sendingSOS, setSendingSOS] = useState(false);
   const timerRef = useRef<any>(null);

@@ -67,6 +67,7 @@ export default function OfflineStatusScreen({ navigation }: ScreenProps): React.
 
   const { colors } = useTheme();
   const [online, setOnline]         = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(false);
   const [lastOnline, setLastOnline] = useState<string | null>(null);
   const [cacheStatus, setCacheStatus] = useState<Record<string, { isCache: boolean; cachedAt: string | null }>>({});
   const [refreshing, setRefreshing] = useState(false);

@@ -18,7 +18,7 @@ router.get('/contacts', authRequired, apiLimiter, async (req, res) => {
       [req.user.id]
     ).catch(() => []);
     res.json({ contacts });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });
 
 // POST /api/family/contacts
@@ -34,7 +34,7 @@ router.post('/contacts', authRequired, apiLimiter, async (req, res) => {
       [req.user.id, name, phone||null, email||null, relationship||'family']
     );
     res.json({ id: r.lastID, name, phone, email, relationship });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });
 
 // DELETE /api/family/contacts/:id
@@ -46,7 +46,7 @@ router.delete('/contacts/:id', authRequired, apiLimiter, async (req, res) => {
       [req.params.id, req.user.id]
     );
     res.json({ deleted: true });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });
 
 export default router;

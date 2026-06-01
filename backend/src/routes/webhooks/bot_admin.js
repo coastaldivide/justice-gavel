@@ -239,7 +239,7 @@ router.post('/expire-links', requireAdmin, adminLimiter, async (req, res) => {
     res.json({ success: true, ...result });
   } catch (err) {
     logger.error('[bot_admin/expire-links]', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error.', code: 'server_error' });
   }
 });
 

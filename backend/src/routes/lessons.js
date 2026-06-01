@@ -316,6 +316,7 @@ router.get('/progress/:userId', authRequired, async (req, res) => {
 // Returns structured rights card data for any US state.
 // Used by the frontend to render + share a wallet-sized card.
 router.get('/rights-card', async (req, res) => {
+  try {
   const stateCode = (req.query.state || 'US').toString().toUpperCase().slice(0, 2);
 
   // ── All 50 states + DC — stop-and-identify laws ─────────────────────────────
@@ -398,6 +399,10 @@ router.get('/rights-card', async (req, res) => {
 
   res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
   return res.json(card);
+
+  } catch (_e) {
+    if (!res.headersSent) res.status(500).json({ error: 'Internal server error.', code: 'server_error' });
+  }
 });
 
 // GET /api/lessons/progress/me — current user's streak + completed count

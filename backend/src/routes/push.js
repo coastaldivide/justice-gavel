@@ -62,10 +62,15 @@ const LEGAL_TIPS = [
   { tip: "Possession of marijuana may be a misdemeanor or felony depending on weight — know your state's law.",        category: "Criminal",      lesson_query: "drug" },
 ];
 
-router.get('/tip', async (req, res) => {
+router.get('/tip', async (req, res) =>{
+  try {
   const dayIndex = Math.floor(Date.now() / 86400000) % LEGAL_TIPS.length;
   const entry = LEGAL_TIPS[dayIndex];
   return res.json({ tip: entry.tip, category: entry.category, lesson_query: entry.lesson_query, index: dayIndex, total: LEGAL_TIPS.length });
+
+  } catch (_e) {
+    res.status(500).json({ error: 'Internal server error.', code: 'server_error' });
+  }
 });
 
 // ── Post-purchase retention trigger ───────────────────────────────────────────

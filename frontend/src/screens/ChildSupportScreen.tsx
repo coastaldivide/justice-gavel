@@ -4,8 +4,7 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
-  StyleSheet, Switch,
-} from 'react-native';
+  StyleSheet, Switch, Alert } from 'react-native';
 import { COLORS } from '../constants/theme';
 
 // Income shares model — the majority US approach
@@ -93,6 +92,22 @@ export default function ChildSupportScreen({ navigation }: any) {
   const [result, setResult] = useState<any>(null);
 
   const calculate = useCallback(() => {
+    // Input validation
+    const p1Num = parseFloat(p1Income);
+    const p2Num = parseFloat(p2Income);
+    if (!p1Income || isNaN(p1Num) || p1Num <= 0) {
+      Alert.alert('Invalid Input', 'Please enter a valid income for Parent 1.');
+      return;
+    }
+    if (!p2Income || isNaN(p2Num) || p2Num <= 0) {
+      Alert.alert('Invalid Input', 'Please enter a valid income for Parent 2.');
+      return;
+    }
+    if (parseInt(children||'0') < 1 || parseInt(children||'0') > 10) {
+      Alert.alert('Invalid Input', 'Number of children must be between 1 and 10.');
+      return;
+    }
+
     const p1 = parseFloat(p1Income.replace(/[^0-9.]/g, '')) || 0;
     const p2 = parseFloat(p2Income.replace(/[^0-9.]/g, '')) || 0;
     const n  = parseInt(children) || 1;

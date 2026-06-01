@@ -1349,5 +1349,5 @@ router.get('/:id/analytics', authRequired, async (req, res) => {
         days_active: 0,
       }
     });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });

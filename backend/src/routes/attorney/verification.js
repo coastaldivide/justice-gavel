@@ -277,5 +277,5 @@ router.get('/pending-verification', authRequired, async (req, res) => {
        ORDER BY u.created_at DESC LIMIT 50`
     ).catch(() => []);
     res.json({ pending });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });

@@ -55,6 +55,7 @@ export default function EmergencyShareScreen({ route, navigation }: ScreenProps)
   }, []);
 
   const [phase, setPhase]       = useState<Phase>('ready');
+  const [loading, setLoading] = useState(false);
   const [userName, setUserName] = useState('');
   const [contacts, setContacts] = useState<string[]>([]);
   const [coords, setCoords]     = useState<{ lat: number; lng: number } | null>(null);
@@ -252,6 +253,11 @@ export default function EmergencyShareScreen({ route, navigation }: ScreenProps)
     return (
       <View style={{ flex:1, backgroundColor:colors.bgSubtle, alignItems:'center', justifyContent:'center' }}
         testID="emergency-share-screen">
+      {loading && (
+        <View style={{ flex:1, alignItems:'center', justifyContent:'center' }}>
+          <ActivityIndicator size="large" color="#042C53" />
+        </View>
+      )}
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize:24 }}>🌤️</Text>
       </View>
     );

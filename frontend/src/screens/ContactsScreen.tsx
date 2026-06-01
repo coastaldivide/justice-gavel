@@ -16,6 +16,7 @@ export default function ContactsScreen(): React.JSX.Element {
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
+  const [loading, setLoading] = useState(false);
   const [contacts, setLocalContacts] = useState<Contact[]>([
     { value: '', label: 'Contact 1' },
     { value: '', label: 'Contact 2' },

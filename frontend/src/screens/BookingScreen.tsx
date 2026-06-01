@@ -85,6 +85,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
   const [selTime, setSelTime]     = useState('');
   const [notes, setNotes]         = useState('');
   const [booking, setBooking]     = useState(false);
+  const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState<any>(null);
   const [callbackPhone, setCallbackPhone] = useState('');
   const [sendingCallback, setSendingCallback] = useState(false);
@@ -154,6 +155,11 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
   // ── Confirmed ────────────────────────────────────────────────────────────
   if (step === 'confirmed') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      {loading && (
+        <View style={{ flex:1, alignItems:'center', justifyContent:'center' }}>
+          <ActivityIndicator size="large" color="#042C53" />
+        </View>
+      )}
       <View style={styles.confirmedWrap}>
         <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>Consultation booked!</Text>

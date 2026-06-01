@@ -38,7 +38,7 @@ router.get('/status', authRequired, async (req, res) => {
       [req.user.id]
     );
     res.json({ checked_in_today: !!checked_in, streak: streak?.n || 0 });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });
 
 const checkinsLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 30, message: 'Check-in limit reached. Try again later.' });
@@ -333,5 +333,5 @@ router.get('/family-contacts', authRequired, async (req, res) => {
       [req.user.id]
     ).catch(() => []);
     res.json({ contacts });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });
