@@ -77,6 +77,7 @@ function createWindow() {
       nodeIntegration:    false,     // security: no node in renderer
       contextIsolation:   true,      // security: isolate preload
       sandbox:            true,      // security: renderer in sandbox
+      sandbox:            true,      // security: renderer in sandbox
       webSecurity:        true,
       preload: path.join(__dirname, 'preload.js'),
     },
