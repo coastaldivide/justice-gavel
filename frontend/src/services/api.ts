@@ -11,7 +11,7 @@
 
 import axios, { AxiosRequestConfig } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getToken, clearAuth } from '../utils/secureStorage';
+import { getToken, clearAuth, setToken as storeToken } from '../utils/secureStorage';
 import { setAppAuth } from './auth';
 
 // EXPO_PUBLIC_API_BASE must be set in frontend/.env for staging/production.

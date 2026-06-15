@@ -381,7 +381,7 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
         </View>
       ) : searched && agents.length === 0 ? (
         <View style={styles.center}>
-          <AppIcon name="search-outline" size={20} color={COLORS.navy} />
+          <AppIcon name="search-outline" size={20} color={colors.navy} />
           <Text maxFontSizeMultiplier={1.3} style={[styles.emptyText,
             { color: colors.textMuted }]}>
             No licensed recovery agents found in {selectedState}.{'\n'}

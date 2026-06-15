@@ -22,17 +22,17 @@ describe('IMPORT. All Route Files Import Existing Modules', () => {
   test('IMPORT-01: analytics.js uses correct db and logger paths', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js','utf8');
-    // Before fix: imported from '../db.js' and '../logger.js' — neither exists
+    // Before fix: imported from '../db/index.js' and '../logger.js' — neither exists
     // These are actually at '../db/index.js' and '../utils/logger.js'
     expect(src).toContain("from '../db/index.js'");
     expect(src).toContain("from '../utils/logger.js'");
-    expect(src).not.toContain("from '../db.js'");
-    expect(src).not.toContain("from '../logger.js'");
+    expect(src).not.toContain("from '../db/index.js'");
+    expect(src).not.toContain("from '../utils/logger.js'");
   });
   test('IMPORT-02: discovery.js uses perUserAiLimit from sharedAiLimiter (not deleted rateLimiter)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync('/tmp/JG/backend/src/routes/discovery.js','utf8');
-    // Before fix: imported aiLimiter from '../middleware/rateLimiter.js' which doesn't exist
+    // Before fix: imported aiLimiter from '../middleware/rateLimiters.js' which doesn't exist
     expect(src).toContain('sharedAiLimiter.js');
     expect(src).toContain('perUserAiLimit');
     expect(src).not.toContain('rateLimiter.js');

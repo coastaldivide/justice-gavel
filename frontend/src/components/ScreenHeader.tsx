@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 48 : 32,
   },
   patternOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     opacity: 0.04,
     backgroundColor: 'transparent',
   },

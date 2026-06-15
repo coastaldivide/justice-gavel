@@ -280,7 +280,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
     expect(pkg.scripts.prestart).toContain('migrate');
     expect(fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8')).toContain('Users table column bootstrap');
     const analytics=fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js','utf8');
-    expect(analytics).not.toContain("from '../db.js'");
+    expect(analytics).not.toContain("from '../db/index.js'");
     expect(fs.readFileSync('/tmp/JG/backend/src/routes/discovery.js','utf8')).toContain('sharedAiLimiter');
   });
   test('GATE-05: 437/437 routes all tiers', async () => {

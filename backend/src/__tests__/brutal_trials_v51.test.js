@@ -109,7 +109,7 @@ describe('SCHED. scheduler.js — Full Pipeline Architecture', () => {
     const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('archiveCompletedDocketEntries');
     expect(src).toContain('checkAccountInactivity');
-    expect(src).toContain("from './retention.js'");
+    expect(src).toContain("from '../services/retention.js'");
   });
   test('SCHED-04: processGoldenGavelAward is imported from the golden_gavel route', async () => {
     const fs = await import('fs');

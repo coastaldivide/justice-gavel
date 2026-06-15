@@ -26,7 +26,7 @@ import {
   Modal, View, Text, ScrollView, TouchableOpacity,
   StyleSheet, ActivityIndicator, Platform, Linking,
 } from 'react-native';
-import { useTheme } from '../constants/theme';
+import { useTheme, TYPE, FONTS } from '../constants/theme';
 import api from '../services/api';
 
 const TOS_VERSION = '2.1';  // Must match CURRENT_TOS_VERSION in auth.js
@@ -70,7 +70,7 @@ type Props = {
 
 export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
   const { colors } = useTheme();
-  const s = styles(colors, TYPE, FONT);
+  const s = styles(colors, TYPE, FONTS);
 
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
   const [checkToS,         setCheckToS]         = useState(false);

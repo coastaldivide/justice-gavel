@@ -26,5 +26,4 @@ module.exports = {
   ],
   collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/__tests__/**'],
   verbose: true,
-  setupFilesAfterFramework: [],
 };

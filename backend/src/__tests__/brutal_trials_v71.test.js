@@ -115,7 +115,7 @@ describe('SRV. server.js — HTTP Server + Graceful Shutdown', () => {
   test('SRV-01: server.js imports app and starts HTTP server on CONFIG.PORT', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync('/tmp/JG/backend/src/server.js', 'utf8');
-    expect(src).toContain("from './app.js'");
+    expect(src).toContain("from '../app.js'");
     // Port from env var or default
     expect(src).toContain('PORT');
     expect(src).toContain('listen(');

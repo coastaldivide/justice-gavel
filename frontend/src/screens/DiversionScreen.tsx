@@ -1,3 +1,4 @@
+import api from '../services/api';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**

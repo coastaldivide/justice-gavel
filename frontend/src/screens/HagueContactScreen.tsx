@@ -426,7 +426,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           onPress={() => openUrl('https://travel.state.gov/content/travel/en/International-Parental-Child-Abduction/prevention/hague-convention.html')}
           accessibilityLabel="Open State Department Hague application"
         >
-          <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
+          <AppIcon name="document-text-outline" size={20} color={colors.navy} />
           <View style={s.reportInfo}>
             <Text maxFontSizeMultiplier={1.4} style={s.reportTitle}>File Hague Application</Text>
             <Text maxFontSizeMultiplier={1.4} style={s.reportSub}>Submit to OCI — travel.state.gov</Text>

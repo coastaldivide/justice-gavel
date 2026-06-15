@@ -270,7 +270,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
     // All 4 previously broken imports are fixed
     const analytics=fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js','utf8');
     expect(analytics).toContain('db/index.js');
-    expect(analytics).not.toContain("from '../db.js'");
+    expect(analytics).not.toContain("from '../db/index.js'");
     const discovery=fs.readFileSync('/tmp/JG/backend/src/routes/discovery.js','utf8');
     expect(discovery).toContain('sharedAiLimiter');
     expect(fs.readFileSync('/tmp/JG/backend/src/routes/expungement/index.js','utf8').toLowerCase()).not.toContain('referrals.js');

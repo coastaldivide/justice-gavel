@@ -130,7 +130,7 @@ describe('BEH. Behavioral Simulation — All Screen Categories', () => {
     const chat   = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx','utf8');
     const poller = fs.readFileSync('/tmp/JG/frontend/src/services/jobPoller.ts','utf8');
     // ChatScreen imports and uses pollJob
-    expect(chat).toContain("from '../services/jobPoller'");
+    expect(chat).toContain("from '../services/jobPoller.js'");
     expect(chat).toContain('pollJob');
     // jobPoller calls the actual endpoint
     expect(poller).toContain('api.get(`/jobs/${jobId}`)');
