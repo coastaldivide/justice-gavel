@@ -230,3 +230,51 @@ is not optional — it's the legal protection that makes the AI features viable.
 ---
 
 *Justice Gavel v7.2.0 — Built June 2026*
+
+---
+
+## Running the Data Pipeline (IMPORTANT — Do This First)
+
+The database has the schema and RLS security in place but needs to be populated
+with attorney, bail bondsman, and provider data. Run the pipeline via Railway
+so it has database access.
+
+### Quick seed (fastest — foundational data, no API calls needed)
+```bash
+railway run bash backend/scripts/run-all-scrapes.sh --seed-only
+```
+This populates all 50 states with structured foundational data in ~10 minutes.
+
+### Full scrape (complete data — needs Google Places key)
+```bash
+# All 97 cities, full national scrape (~2-4 hours)
+railway run bash backend/scripts/run-all-scrapes.sh
+
+# Single state, faster (~10-20 minutes)
+railway run bash backend/scripts/run-all-scrapes.sh --state TN
+```
+
+### What gets populated
+| Script | Data | Time |
+|--------|------|------|
+| seed_providers.js | 97 cities × attorneys + bail agents (structured) | 10 min |
+| import_doi_bondsmen.js | DOI licensed bondsmen database | 5 min |
+| scrape_providers_national.js | Real Google Places data for all cities | 2-3 hr |
+| scrape_recovery_agents.js | Bail enforcement / recovery agents | 20 min |
+| update_legal_data.js | DUI laws, expungement rules, victim comp | 5 min |
+| scrape_state_bars.js | Verified licensed attorneys from state bars | 1-2 hr |
+
+### Run order matters
+Always run in this order: seed → DOI import → national scrape → state bars
+
+### Verify data is loaded
+```bash
+# Check record counts in Supabase
+# Go to: supabase.com → Table Editor → attorneys, bail_agents tables
+# Should show thousands of records after full scrape
+```
+
+### Scheduled refresh
+The health scan cron runs twice daily (6am + 6pm CT) and auto-refreshes
+stale provider data. Once the initial seed is complete, it maintains itself.
+HEALTH_SCAN_CRON=0 6,18 * * *  (already set in Railway)
