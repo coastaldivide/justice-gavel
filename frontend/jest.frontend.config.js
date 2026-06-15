@@ -3,8 +3,14 @@ module.exports = {
   preset: 'react-native',
   testEnvironment: 'node',
   transform: {
-    '^.+\\.(ts|tsx|js|jsx)$': 'babel-jest',
+    '^.+\\.(ts|tsx|js|jsx)$': ['babel-jest', {
+      configFile: './babel.config.js',
+      plugins: [
+        // Explicitly exclude reanimated plugin for tests
+      ],
+    }],
   },
+  setupFiles: [],
   testMatch: ['**/src/__tests__/**/*.test.js'],
   moduleNameMapper: {
     '^react-native$': '<rootDir>/src/__tests__/__mocks__/react-native.js',
@@ -16,8 +22,9 @@ module.exports = {
     '\\.(png|jpg|svg|ttf)$': '<rootDir>/src/__tests__/__mocks__/file.js',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@testing-library|expo)/)',
+    'node_modules/(?!(react-native|@react-native|@react-native-community|@testing-library|expo|react-native-reanimated|react-native-worklets)/)',
   ],
   collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/__tests__/**'],
   verbose: true,
+  setupFilesAfterFramework: [],
 };

@@ -9,8 +9,14 @@ import fs                from 'fs';
 import path              from 'path';
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 
-const FE      = path.resolve('/tmp/JG/frontend/src');
-const BE      = path.resolve('/tmp/JG/backend/src/routes');
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = dirname(__filename);
+
+
+const FE      = path.resolve(__dirname, '../../../frontend/src');
+const BE      = path.resolve(__dirname, '../routes');
 const SCREENS = path.join(FE, 'screens');
 const NAV     = readFileSync(path.join(FE, 'navigation/AppNavigator.tsx'), 'utf8');
 
@@ -42,7 +48,7 @@ function getBeRoutes() {
 }
 
 function getAppMounts() {
-  const app = readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+  const app = readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
   return new Set(
     [...app.matchAll(/app\.use\(['"]([^'"]+)['"]/g)].map(m => m[1])
   );
