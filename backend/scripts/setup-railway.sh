@@ -46,12 +46,12 @@ VAPID_PRIVATE_KEY="tHETLTl0KZjBIDJmiUfmMjN5NClLCIN-DYgD80nx7rQ"
 
 # Supabase (supabase.com → your project → Settings → API)
 SUPABASE_URL="https://yjeplvvnlennyxixwxfq.supabase.co"
-SUPABASE_ANON_KEY=""          # Settings → API → anon public
-SUPABASE_SERVICE_KEY=""       # Settings → API → service_role secret
-DATABASE_URL=""               # Settings → Database → Connection string (Transaction mode)
+SUPABASE_ANON_KEY=""          # supabase.com → Settings → API → anon public          # Settings → API → anon public
+SUPABASE_SERVICE_KEY=""       # supabase.com → Settings → API → service_role       # Settings → API → service_role secret
+DATABASE_URL=""               # supabase.com → Settings → Database → Transaction pooler               # Settings → Database → Connection string (Transaction mode)
 
 # Anthropic (console.anthropic.com → API Keys)
-ANTHROPIC_API_KEY=""
+ANTHROPIC_API_KEY=""          # console.anthropic.com → API Keys
 
 # Stripe (dashboard.stripe.com → Developers → API Keys)
 STRIPE_SECRET_KEY=""          # sk_live_... (or sk_test_ for testing)
@@ -67,7 +67,8 @@ STRIPE_ESQUIRE_ANNUAL_ID=""
 STRIPE_LEGAL_RADAR_ID=""
 
 # SendGrid (app.sendgrid.com → Settings → API Keys)
-SENDGRID_API_KEY=""           # SG.xxxxxx
+RESEND_API_KEY=""             # resend.com → API Keys
+SENDGRID_API_KEY=""  # legacy — not used, Resend handles email           # SG.xxxxxx
 
 # Twilio (console.twilio.com → Account Info)
 TWILIO_ACCOUNT_SID=""         # ACxxxxxxx
@@ -78,14 +79,14 @@ TWILIO_FROM_NUMBER=""         # +1XXXXXXXXXX
 GOOGLE_PLACES_KEY=""
 
 # Sentry (sentry.io → Settings → Projects → your project → Client Keys)
-SENTRY_DSN=""
+SENTRY_DSN=""             # sentry.io → Project → DSN
 
 # Monitoring alerts
-ALERT_WEBHOOK_URL=""          # Slack: https://hooks.slack.com/...
-ONCALL_PHONE=""               # Your phone: +1XXXXXXXXXX
+ALERT_WEBHOOK_URL=""  # Slack incoming webhook URL          # Slack: https://hooks.slack.com/...
+ONCALL_PHONE=""               # Your mobile number: +1XXXXXXXXXX               # Your phone: +1XXXXXXXXXX
 
 # Expo (expo.dev → Account → Access Tokens)
-EXPO_ACCESS_TOKEN=""
+EXPO_ACCESS_TOKEN=""       # expo.dev → Access Tokens
 
 # ── CORE SETTINGS ─────────────────────────────────────────────────────────────
 NODE_ENV="production"
@@ -158,6 +159,7 @@ set_var "STRIPE_LEGAL_RADAR_ID"        "$STRIPE_LEGAL_RADAR_ID"
 set_var "LIVE_PAYMENTS"                "$LIVE_PAYMENTS"
 
 # Email
+set_var "RESEND_API_KEY"        "$RESEND_API_KEY"
 set_var "SENDGRID_API_KEY"      "$SENDGRID_API_KEY"
 set_var "SENDGRID_FROM_EMAIL"   "$SENDGRID_FROM_EMAIL"
 set_var "LIVE_EMAIL"            "$LIVE_EMAIL"
