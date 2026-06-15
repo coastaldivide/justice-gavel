@@ -32,7 +32,8 @@
       "env": {
         "EXPO_PUBLIC_API_BASE": "https://api.justicegavel.app/api",
         "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51TakD62XUfNqC3X4bEUfw48uj4OrctvShiTn0DTTubDJTxMVvbP4RqDrVFwTg59AVpjtCeO3lnIqWrjkAnxYeKcL00CKoFqEgi"
-      }
+      },
+      "credentialsSource": "remote"
     }
   },
   "submit": {
@@ -47,5 +48,6 @@
         "track": "internal"
       }
     }
-  }
+  },
+  "channel": "production"
 }
