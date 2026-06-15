@@ -39,7 +39,8 @@ async function sendAlertEmail({ subject, body, to }) {
       method:  'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        personalizations: [{ to: [{ email: to || 'engineering@justicegavel.app' }] }],
+        personalizations: [{ to: (Array.isArray(to) ? to : [to || 'engineering@justicegavel.app'])
+              .map(e => ({ email: e })) }],
         from:    { email: 'alerts@justicegavel.app', name: 'Justice Gavel Alerts' },
         subject,
         content: [{ type: 'text/plain', value: body }],
@@ -114,7 +115,14 @@ RUNBOOK: https://github.com/coastaldivide/justice-gavel/blob/main/RUNBOOK.md
 `.trim();
 
   await Promise.allSettled([
-    sendAlertEmail({ subject: `🚨 SEV-1: ${message}`, body }),
+    sendAlertEmail({
+      subject: `🚨 SEV-1: \${message}`,
+      body,
+      to: [
+        process.env.ONCALL_EMAIL  || 'aa.n.hart@gmail.com',
+        process.env.ONCALL_EMAIL_2 || 'russelltallen@gmail.com',
+      ],
+    }),
     // SMS removed — using Slack webhook instead
     } — check email for details`),
     pingWebhook({ text: `🚨 *SEV-1 CRITICAL* — ${message}`, color: '#C62828', fields: extras }),
@@ -134,7 +142,11 @@ export async function notifyError(message, extras = {}) {
 
   await Promise.allSettled([
     sendAlertEmail({
-      subject: `⚠️ SEV-2 Error: ${message}`,
+      to: [
+        process.env.ONCALL_EMAIL  || 'aa.n.hart@gmail.com',
+        process.env.ONCALL_EMAIL_2 || 'russelltallen@gmail.com',
+      ],
+      subject: `⚠️ SEV-2 Error: \${message}`,
       body: `${message}\n\n${JSON.stringify(extras, null, 2)}\n\nTime: ${new Date().toISOString()}`,
     }),
     pingWebhook({ text: `⚠️ *SEV-2 Error* — ${message}`, color: '#E65100' }),
