@@ -64,7 +64,8 @@ STRIPE_ESQUIRE_PRICE_ID=""
 STRIPE_ADVISOR_ANNUAL_ID=""
 STRIPE_LEGAL_PRO_ANNUAL_ID=""
 STRIPE_ESQUIRE_ANNUAL_ID=""
-STRIPE_LEGAL_RADAR_ID=""
+STRIPE_LEGAL_RADAR_ID=""          # price_1Tb1vn2... monthly
+STRIPE_LEGAL_RADAR_ANNUAL_ID=""   # price_1Tb1wQ2... annual
 
 # SendGrid (app.sendgrid.com → Settings → API Keys)
 RESEND_API_KEY=""             # resend.com → API Keys

@@ -154,13 +154,13 @@ export const ALL_ENV_VARS = {
   STRIPE_SUCCESS_URL:       process.env.STRIPE_SUCCESS_URL         || 'https://justicegavel.app/payment/success',
   STRIPE_CANCEL_URL:        process.env.STRIPE_CANCEL_URL          || 'https://justicegavel.app/payment/cancel',
   // Subscription price IDs (create in Stripe dashboard)
-  STRIPE_LEGAL_PRO_PRICE_ID:      process.env.STRIPE_LEGAL_PRO_PRICE_ID        || '',
-  STRIPE_LEGAL_PRO_ANNUAL_ID:     process.env.STRIPE_LEGAL_PRO_ANNUAL_ID       || '',
-  STRIPE_ADVISOR_PRICE_ID:  process.env.STRIPE_ADVISOR_PRICE_ID    || '',
-  STRIPE_ADVISOR_ANNUAL_ID: process.env.STRIPE_ADVISOR_ANNUAL_ID   || '',
-  STRIPE_ESQUIRE_PRICE_ID: process.env.STRIPE_ESQUIRE_PRICE_ID   || '',
-  STRIPE_ESQUIRE_ANNUAL_ID:process.env.STRIPE_ESQUIRE_ANNUAL_ID  || '',
-  STRIPE_LEGAL_RADAR_ID: process.env.STRIPE_LEGAL_RADAR_ID   || '',
+  STRIPE_LEGAL_PRO_PRICE_ID:      (process.env.STRIPE_LEGAL_PRO_PRICE_ID || 'price_1Tb1jc2XUfNqC3X4Iqzcz6lC')        || '',
+  STRIPE_LEGAL_PRO_ANNUAL_ID:     (process.env.STRIPE_LEGAL_PRO_ANNUAL_ID || 'price_1Tb1iJ2XUfNqC3X49Ycr9lti')       || '',
+  STRIPE_ADVISOR_PRICE_ID:  (process.env.STRIPE_ADVISOR_PRICE_ID || 'price_1Tb1hV2XUfNqC3X4QLiRdT22')    || '',
+  STRIPE_ADVISOR_ANNUAL_ID: (process.env.STRIPE_ADVISOR_ANNUAL_ID || 'price_1Tb1hV2XUfNqC3X4iMSFj1e1')   || '',
+  STRIPE_ESQUIRE_PRICE_ID: (process.env.STRIPE_ESQUIRE_PRICE_ID || 'price_1Tb1kY2XUfNqC3X4JMquJ8hX')   || '',
+  STRIPE_ESQUIRE_ANNUAL_ID:(process.env.STRIPE_ESQUIRE_ANNUAL_ID || 'price_1Tb1l32XUfNqC3X4BRSRCuQa')  || '',
+  STRIPE_LEGAL_RADAR_ID: (process.env.STRIPE_LEGAL_RADAR_ID || 'price_1Tb1vn2XUfNqC3X4U1jojSNW')   || '',
 
   // ── Twilio ───────────────────────────────────────────────────────────────
       
