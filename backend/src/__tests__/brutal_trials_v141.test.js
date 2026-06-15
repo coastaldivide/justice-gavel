@@ -142,7 +142,7 @@ describe('SGR. sendgrid.js — SendGrid Email Service (6,912 chars)', () => {
     expect(src).toContain('SENDGRID_LIVE');
     expect(src).toContain('SENDGRID_FROM');
     expect(src.length).toBeGreaterThan(5000);
-    // SENDGRID_LIVE: initialized client; no-op when SENDGRID_API_KEY absent
+    // SENDGRID_LIVE: initialized client; no-op when RESEND_API_KEY absent
   });
   test('SGR-02: buildEmailHtml + buildPasswordResetEmail', async () => {
     const fs = await import('fs');

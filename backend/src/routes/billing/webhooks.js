@@ -19,7 +19,7 @@ import { Router }                                    from 'express';
 import { getDb }                                     from '../../db/index.js';
 import logger                                        from '../../utils/logger.js';
 
-import { sendEmail }       from '../../services/sendgrid.js';
+import { sendEmail }       from '../../services/email.js';
 import { sendPushToUser }  from '../../services/pushDelivery.js';
 
 

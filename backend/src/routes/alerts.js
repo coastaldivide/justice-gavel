@@ -5,7 +5,7 @@ import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
 import { googleMapsLink } from '../services/geolink.js';
 import { sendSms } from '../services/twilio.js';
-import { sendEmail } from '../services/sendgrid.js';
+import { sendEmail } from '../services/email.js';
 import logger from '../utils/logger.js';
 
 const alertsLimiter = makeUserLimiter({ windowMs: 60000, max: 3, message: 'Too many alerts. Please wait 1 minute.' });

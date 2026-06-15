@@ -132,7 +132,7 @@ describe('ENV. .env Completeness', () => {
     const env=fs.readFileSync('/tmp/JG/backend/.env','utf8');
     expect(env).toContain('ANTHROPIC_API_KEY=');
     expect(env).toContain('STRIPE_SECRET=');
-    expect(env).toContain('SENDGRID_API_KEY=');
+    expect(env).toContain('RESEND_API_KEY=');
     // These are present but empty — ready to receive values
   });
 });

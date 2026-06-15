@@ -29,7 +29,7 @@ import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { sendSms, normalizePhone } from './twilio.js';
-import { sendEmail } from './sendgrid.js';
+import { sendEmail } from './email.js';
 import { createPaymentLink, calcStripeFee, STRIPE_LIVE } from '../payments/stripe.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

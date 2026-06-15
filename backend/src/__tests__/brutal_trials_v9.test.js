@@ -590,7 +590,7 @@ describe('6. sendgrid.js — Service Constants', () => {
   });
 
   test('6-02: SENDGRID_LIVE is false in test environment (no API key)', () => {
-    // In test env, SENDGRID_API_KEY is not configured
+    // In test env, RESEND_API_KEY is not configured
     expect(SENDGRID_LIVE).toBe(false);
   });
 
@@ -608,7 +608,7 @@ describe('6. sendgrid.js — Service Constants', () => {
   });
 
   test('6-05: SENDGRID_LIVE = !!sgKey (falsy when no API key)', () => {
-    const key = process.env.SENDGRID_API_KEY || '';
+    const key = process.env.RESEND_API_KEY || '';
     expect(SENDGRID_LIVE).toBe(!!key);
   });
 });

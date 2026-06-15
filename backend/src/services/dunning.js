@@ -8,7 +8,7 @@
  *   3. On 3rd failure → cancel subscription
  */
 import { getDb }    from '../db/index.js';
-import { sendEmail } from './sendgrid.js';
+import { sendEmail } from './email.js';
 import logger        from '../utils/logger.js';
 
 export async function handlePaymentFailed({ invoice, subscription }) {

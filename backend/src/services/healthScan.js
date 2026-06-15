@@ -43,7 +43,7 @@
 
 import cron from 'node-cron';
 import { getDb }        from '../db/index.js';
-import { sendEmail }    from './sendgrid.js';
+import { sendEmail }    from './email.js';
 import { sendSms }      from './twilio.js';
 import { sendPushToUser } from './pushDelivery.js';
 import { checkStaleness, runBiasAudit,

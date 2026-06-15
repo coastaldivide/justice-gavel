@@ -34,7 +34,7 @@ if (!DEMO_MODE) {
 const OPTIONAL_WARNINGS = {
   // Existing infrastructure
   TWILIO_ACCOUNT_SID:    'SMS alerts disabled — emergency SOS will only email contacts',
-  SENDGRID_API_KEY:      'Email alerts disabled — emergency SOS will only SMS contacts',
+  RESEND_API_KEY:      'Email alerts disabled — emergency SOS will only SMS contacts',
   SENTRY_DSN:            'Error tracking disabled — errors will only appear in PM2 logs',
   GOOGLE_PLACES_KEY:     'Google Places fallback disabled — GPS city lookup may fail',
   ADMIN_KEY:             'Admin API unprotected — set ADMIN_KEY to restrict provider DB access',
@@ -67,8 +67,7 @@ export const CONFIG = {
 
   // ── Feature flags ────────────────────────────────────────────────────────────
   LIVE_PAYMENTS:  process.env.LIVE_PAYMENTS  === 'true',
-  LIVE_SMS:       process.env.LIVE_SMS        === 'true',
-  LIVE_EMAIL:     process.env.LIVE_EMAIL      === 'true',
+    LIVE_EMAIL:     process.env.LIVE_EMAIL      === 'true',
   LIVE_REFRESH:   process.env.LIVE_REFRESH    === 'true',
 
   // ── Infrastructure ───────────────────────────────────────────────────────────
@@ -164,12 +163,9 @@ export const ALL_ENV_VARS = {
   STRIPE_LEGAL_RADAR_ID: process.env.STRIPE_LEGAL_RADAR_ID   || '',
 
   // ── Twilio ───────────────────────────────────────────────────────────────
-  TWILIO_ACCOUNT_SID:       process.env.TWILIO_ACCOUNT_SID         || '',
-  TWILIO_AUTH_TOKEN:        process.env.TWILIO_AUTH_TOKEN          || '',
-  TWILIO_FROM_NUMBER:       process.env.TWILIO_FROM_NUMBER         || '',
-
+      
   // ── SendGrid ─────────────────────────────────────────────────────────────
-  SENDGRID_API_KEY:         process.env.SENDGRID_API_KEY           || '',
+  RESEND_API_KEY:         process.env.RESEND_API_KEY           || '',
   ALERT_EMAIL_FROM:         process.env.ALERT_EMAIL_FROM           || 'alerts@justicegavel.app',
 
   // ── Google / Maps ────────────────────────────────────────────────────────

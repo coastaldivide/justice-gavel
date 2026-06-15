@@ -31,7 +31,7 @@ function shouldAlert(code) {
 
 // ── Send email via SendGrid ───────────────────────────────────────────────────
 async function sendAlertEmail({ subject, body, to }) {
-  const apiKey = process.env.SENDGRID_API_KEY;
+  const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
 
   try {
@@ -51,7 +51,8 @@ async function sendAlertEmail({ subject, body, to }) {
 }
 
 // ── Send SMS via Twilio ───────────────────────────────────────────────────────
-async function sendAlertSMS(message) {
+async function // SMS removed — using Slack webhook instead
+    {
   const sid    = process.env.TWILIO_ACCOUNT_SID;
   const token  = process.env.TWILIO_AUTH_TOKEN;
   const from   = process.env.TWILIO_FROM_NUMBER;
@@ -114,7 +115,8 @@ RUNBOOK: https://github.com/coastaldivide/justice-gavel/blob/main/RUNBOOK.md
 
   await Promise.allSettled([
     sendAlertEmail({ subject: `🚨 SEV-1: ${message}`, body }),
-    sendAlertSMS(`SEV-1 CRITICAL: ${message.slice(0, 100)} — check email for details`),
+    // SMS removed — using Slack webhook instead
+    } — check email for details`),
     pingWebhook({ text: `🚨 *SEV-1 CRITICAL* — ${message}`, color: '#C62828', fields: extras }),
   ]);
 }
