@@ -100,8 +100,7 @@ export default function HousingRightsScreen(): React.JSX.Element {
   React.useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
-  }
-  );
+  }, []);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [tab, setTab] = React.useState(0);
