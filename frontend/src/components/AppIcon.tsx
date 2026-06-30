@@ -10,7 +10,7 @@
  *   <AppIcon name="alert-circle" size={20} />   // defaults to textPrimary
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/theme';
 
@@ -99,3 +99,4 @@ export const ICONS = {
 } as const;
 
 export default AppIcon;
+

@@ -28,6 +28,9 @@
   },
   "exclude": [
     "e2e/**/*",
-    "e2e"
+    "e2e",
+    "metro.config.js",
+    "babel.config.js",
+    "babel.test.config.js"
   ]
 }

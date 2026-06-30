@@ -5,7 +5,7 @@
  * Used across all list screens: cases, lawyers, messages, motions, etc.
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../constants/theme';
@@ -68,3 +68,4 @@ const s = StyleSheet.create({
 });
 
 export default EmptyState;
+

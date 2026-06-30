@@ -587,3 +587,100 @@ ALTER TABLE IF EXISTS subscriptions
 -- ── Soft-delete for cases ─────────────────────────────────────────────────────
 ALTER TABLE IF EXISTS cases ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ NULL;
 CREATE INDEX IF NOT EXISTS idx_cases_deleted_at ON cases(deleted_at) WHERE deleted_at IS NULL;
+
+-- ══════════════════════════════════════════════════════════════════
+-- PERFORMANCE INDEXES (added June 2026)
+-- Covers all foreign key columns and high-frequency query patterns
+-- ══════════════════════════════════════════════════════════════════
+
+-- Cases
+CREATE INDEX IF NOT EXISTS idx_cases_user_id      ON cases(user_id);
+CREATE INDEX IF NOT EXISTS idx_cases_attorney_id  ON cases(attorney_id);
+CREATE INDEX IF NOT EXISTS idx_cases_status       ON cases(status);
+CREATE INDEX IF NOT EXISTS idx_cases_created_at   ON cases(created_at DESC);
+
+-- Messages
+CREATE INDEX IF NOT EXISTS idx_messages_case_id   ON messages(case_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
+
+-- Attorneys / providers
+CREATE INDEX IF NOT EXISTS idx_attorneys_state    ON attorneys(state);
+CREATE INDEX IF NOT EXISTS idx_attorneys_city     ON attorneys(city);
+CREATE INDEX IF NOT EXISTS idx_attorneys_lat_lng  ON attorneys(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_attorneys_verified ON attorneys(verified);
+CREATE INDEX IF NOT EXISTS idx_attorneys_updated_at ON attorneys(updated_at DESC);
+
+-- Bail agents
+CREATE INDEX IF NOT EXISTS idx_bail_agents_state  ON bail_agents(state);
+CREATE INDEX IF NOT EXISTS idx_bail_agents_city   ON bail_agents(city);
+CREATE INDEX IF NOT EXISTS idx_bail_agents_lat_lng ON bail_agents(lat, lng);
+
+-- Check-ins
+CREATE INDEX IF NOT EXISTS idx_checkins_user_id   ON checkins(user_id);
+CREATE INDEX IF NOT EXISTS idx_checkins_case_id   ON checkins(case_id);
+CREATE INDEX IF NOT EXISTS idx_checkins_due_date  ON checkins(due_date);
+
+-- Subscriptions
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id    ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status     ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_id  ON subscriptions(stripe_subscription_id);
+
+-- Matters
+CREATE INDEX IF NOT EXISTS idx_matters_attorney_id ON matters(attorney_id);
+CREATE INDEX IF NOT EXISTS idx_matters_client_id   ON matters(client_id);
+CREATE INDEX IF NOT EXISTS idx_matters_status      ON matters(status);
+
+-- Consultations
+CREATE INDEX IF NOT EXISTS idx_consultations_attorney_id ON consultations(attorney_id);
+CREATE INDEX IF NOT EXISTS idx_consultations_user_id     ON consultations(user_id);
+CREATE INDEX IF NOT EXISTS idx_consultations_scheduled_at ON consultations(scheduled_at);
+
+-- Notifications
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id  ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read     ON notifications(read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+
+-- Documents
+CREATE INDEX IF NOT EXISTS idx_documents_case_id  ON documents(case_id);
+CREATE INDEX IF NOT EXISTS idx_documents_user_id  ON documents(user_id);
+
+-- Full-text search indexes for attorney matching
+CREATE INDEX IF NOT EXISTS idx_attorneys_name_gin
+  ON attorneys USING gin(to_tsvector('english', name));
+CREATE INDEX IF NOT EXISTS idx_attorneys_specialties_gin
+  ON attorneys USING gin(specialties);
+
+-- ══════════════════════════════════════════════════════════════════
+-- AUTO updated_at TRIGGERS
+-- Keeps updated_at accurate without manual management in code
+-- ══════════════════════════════════════════════════════════════════
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Apply to all tables that have updated_at column
+DO $$
+DECLARE
+  t TEXT;
+BEGIN
+  FOR t IN
+    SELECT table_name FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND column_name = 'updated_at'
+    AND table_name NOT LIKE 'pg_%'
+  LOOP
+    EXECUTE format(
+      'DROP TRIGGER IF EXISTS set_%s_updated_at ON %I;
+       CREATE TRIGGER set_%s_updated_at
+       BEFORE UPDATE ON %I
+       FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();',
+      t, t, t, t
+    );
+  END LOOP;
+END $$;

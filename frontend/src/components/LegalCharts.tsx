@@ -9,7 +9,7 @@
  *   SignalBadge        — escalation level badge with icon
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Path, G, Rect, Text as SvgText, Defs,
               LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
@@ -266,3 +266,5 @@ const gc = StyleSheet.create({
   signalBadge:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, alignSelf: 'flex-start' },
   signalText:   { fontSize: 12, fontWeight: '700', fontFamily: 'Inter_700Bold' },
 });
+
+export default memo(LethalilyGauge);

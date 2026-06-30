@@ -12,7 +12,7 @@
  *   <Caption>Last updated March 2026</Caption>
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Text, TextStyle, StyleSheet } from 'react-native';
 import { COLORS } from '../constants/theme';
 
@@ -135,3 +135,4 @@ const t = StyleSheet.create({
 
 export const Typography = { Heading1, Heading2, Heading3, Body, BodySmall, Label, Caption, Emphasis };
 export default Typography;
+

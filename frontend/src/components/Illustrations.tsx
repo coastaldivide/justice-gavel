@@ -15,7 +15,7 @@
  *   ErrorState      — something went wrong
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import Svg, {
   Circle, Rect, Path, G, Ellipse, Line, Polygon, Defs,
   LinearGradient as SvgLinearGradient, Stop, ClipPath,
@@ -203,3 +203,5 @@ export const Illustration = {
   DocumentReady:   IllustrationDocumentReady,
   Error:           IllustrationError,
 };
+
+export default memo(IllustrationEmptyCases);

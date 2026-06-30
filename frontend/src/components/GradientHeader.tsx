@@ -6,7 +6,7 @@
  * Supports icon, title, subtitle, badge, back button, and action slot.
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/theme';
@@ -124,3 +124,4 @@ const s = StyleSheet.create({
 });
 
 export default GradientHeader;
+
