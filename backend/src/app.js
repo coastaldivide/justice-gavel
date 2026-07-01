@@ -128,7 +128,9 @@ function corsOriginResolver(origin, callback) {
   if (_allowedOrigins.includes(origin) || _allowedOrigins.includes('*')) return callback(null, true);
   return callback(new Error('CORS: origin not allowed: ' + origin), false);
 }
-const CORS_ORIGINS = (process.env.CORS_ORIGIN || 'http://localhost:19006')
+const CORS_ORIGINS = process.env.NODE_ENV === 'production'
+  ? (process.env.CORS_ORIGIN || 'https://api.justicegavel.app')
+  : (process.env.CORS_ORIGIN || 'http://localhost:19006')
   .split(',').map(o => o.trim()).filter(Boolean);
 const CORS_ORIGIN = CORS_ORIGINS.length === 1 ? CORS_ORIGINS[0] : CORS_ORIGINS;
 

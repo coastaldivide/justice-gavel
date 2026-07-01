@@ -163,6 +163,28 @@ const pushInterval = setInterval(async () => {
 // Drain once at startup for any overdue pushes
 deliverScheduledPushes().catch(err => logger.error('[Push] Startup drain error:', err.message));
 
+
+// ── Required environment variable validation ──────────────────────────────────
+// Fail fast on startup rather than crashing mid-request with a cryptic error.
+const REQUIRED_ENV = [
+  'JWT_SECRET',
+  'JWT_REFRESH_SECRET',
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_KEY',
+  'ANTHROPIC_API_KEY',
+  'STRIPE_SECRET_KEY',
+  'ENCRYPTION_KEY',
+];
+
+const missingEnv = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missingEnv.length > 0) {
+  console.error('\n🚨 STARTUP ERROR — missing required environment variables:');
+  missingEnv.forEach(k => console.error(`   ✗ ${k}`));
+  console.error('\n  Run: railway variables --set "KEY=value"');
+  console.error('  Then redeploy.\n');
+  process.exit(1);
+}
+
 const PORT = parseInt(process.env.PORT || '4000', 10);
 
 const server = app.listen(PORT, '0.0.0.0', () => {

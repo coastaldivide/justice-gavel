@@ -205,57 +205,63 @@ router.post('/index', authRequired, requireFirmRole('associate'), async (req, re
     const added = [];
     const conflicts_found = [];
 
-    // TODO[perf]: batch this query — currently N+1
-  for (const party of parties) {
-      const name = truncateStr(sanitizeStr(String(party.name || ''), 200), 200);
-      const role = PARTY_ROLES.includes(party.role) ? party.role : 'client';
-      if (!name) continue;
+    // Normalise all parties up front
+    const normalisedParties = parties
+      .map(p => ({
+        name: truncateStr(sanitizeStr(String(p.name || ''), 200), 200),
+        role: PARTY_ROLES.includes(p.role) ? p.role : 'client',
+      }))
+      .filter(p => p.name)
+      .map(p => ({ ...p, norm: normalizeName(p.name) }));
 
-      const norm = normalizeName(name);
+    if (!normalisedParties.length) return res.json({ added: [], added_count: 0, conflicts_found: [], conflict_count: 0, requires_waiver: false });
 
-      // Check for existing conflict before adding
-      if (role === 'client') {
-        const existingAdverse = await db.all(
-          `SELECT party_name_orig, matter_id FROM conflict_index
-           WHERE firm_id=? AND party_role='adverse' AND (
-             party_name_norm=? OR party_name_norm LIKE ? OR ? LIKE '%'||party_name_norm||'%'
-           )`,
-          [firmId, norm, `%${norm}%`, norm]
-        ).catch(() => []);
+    // ── BATCH query: pull all potentially conflicting index rows in ONE query ──
+    const clientNorms  = normalisedParties.filter(p => p.role === 'client' ).map(p => p.norm);
+    const adverseNorms = normalisedParties.filter(p => p.role === 'adverse').map(p => p.norm);
 
-        if (existingAdverse.length) {
-          conflicts_found.push({
-            party: name,
-            type: 'new_client_is_existing_adverse',
-            existing_matters: existingAdverse,
-          });
-        }
+    const [adverseRows, clientRows] = await Promise.all([
+      clientNorms.length
+        ? db.all(
+            `SELECT party_name_orig, party_name_norm, matter_id FROM conflict_index
+             WHERE firm_id=? AND party_role='adverse'
+             AND party_name_norm IN (${clientNorms.map(() => '?').join(',')})`,
+            [firmId, ...clientNorms]
+          ).catch(() => [])
+        : [],
+      adverseNorms.length
+        ? db.all(
+            `SELECT party_name_orig, party_name_norm, matter_id FROM conflict_index
+             WHERE firm_id=? AND party_role='client'
+             AND party_name_norm IN (${adverseNorms.map(() => '?').join(',')})`,
+            [firmId, ...adverseNorms]
+          ).catch(() => [])
+        : [],
+    ]);
+
+    // Build lookup maps for O(1) conflict detection
+    const adverseMap = new Map(adverseRows.map(r => [r.party_name_norm, r]));
+    const clientMap  = new Map(clientRows.map(r  => [r.party_name_norm, r]));
+
+    // Process each party against the pre-fetched results (no more DB calls in loop)
+    for (const { name, role, norm } of normalisedParties) {
+      if (role === 'client' && adverseMap.has(norm)) {
+        conflicts_found.push({ party: name, type: 'new_client_is_existing_adverse',  existing_matters: [adverseMap.get(norm)] });
       }
-
-      if (role === 'adverse') {
-        const existingClient = await db.all(
-          `SELECT party_name_orig, matter_id FROM conflict_index
-           WHERE firm_id=? AND party_role='client' AND (
-             party_name_norm=? OR party_name_norm LIKE ? OR ? LIKE '%'||party_name_norm||'%'
-           )`,
-          [firmId, norm, `%${norm}%`, norm]
-        ).catch(() => []);
-
-        if (existingClient.length) {
-          conflicts_found.push({
-            party: name,
-            type: 'adverse_party_is_existing_client',
-            existing_matters: existingClient,
-          });
-        }
+      if (role === 'adverse' && clientMap.has(norm)) {
+        conflicts_found.push({ party: name, type: 'adverse_party_is_existing_client', existing_matters: [clientMap.get(norm)] });
       }
-
-      await db.run(
-        `INSERT OR IGNORE INTO conflict_index (firm_id, matter_id, party_name_norm, party_name_orig, party_role)
-         VALUES (?,?,?,?,?)`,
-        [firmId, matter_id ? safeInt(matter_id) : null, norm, name, role]
-      );
       added.push({ name, role });
+    }
+
+    // ── BATCH insert all new parties in one statement ──────────────────────────
+    if (added.length) {
+      const placeholders = added.map(() => '(?,?,?,?,?)').join(',');
+      const values = normalisedParties.flatMap(p => [firmId, matter_id ? safeInt(matter_id) : null, p.norm, p.name, p.role]);
+      await db.run(
+        `INSERT OR IGNORE INTO conflict_index (firm_id, matter_id, party_name_norm, party_name_orig, party_role) VALUES ${placeholders}`,
+        values
+      ).catch(() => {});
     }
 
     await writeAuditLog(db, {
