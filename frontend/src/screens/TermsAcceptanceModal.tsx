@@ -73,6 +73,7 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
   const s = styles(colors, TYPE, FONTS);
 
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
+  const [loading, setLoading] = React.useState(false);
   const [checkToS,         setCheckToS]         = useState(false);
   const [checkNoAdvice,    setCheckNoAdvice]     = useState(false);
   const [submitting,       setSubmitting]        = useState(false);
@@ -92,8 +93,9 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
     if (!canAccept || submitting) return;
     setSubmitting(true);
     setError(null);
+    setLoading(true);
     try {
-      await api.post('/auth/accept-tos', {
+          await api.post('/auth/accept-tos', {
         tos_version:       TOS_VERSION,
         scroll_completed:  true,
         checkbox_tos:      checkToS,

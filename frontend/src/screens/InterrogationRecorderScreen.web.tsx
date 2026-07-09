@@ -104,7 +104,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{ padding: 20, gap: 16 }}>
       <TouchableOpacity
-        onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home')}
+        onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
         accessibilityRole="button"
       >
         <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>← Back</Text>

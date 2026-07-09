@@ -18,6 +18,7 @@ export default function DocumentScannerScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [scanning,  setScanning]  = useState(false);
+  const [loading, setLoading] = React.useState(false);
   const [result,    setResult]    = useState<string>('');
   const [error,     setError]     = useState('');
 
@@ -26,8 +27,9 @@ export default function DocumentScannerScreen(): React.JSX.Element {
     if (!file) return;
     setScanning(true);
     setError('');
+    setLoading(true);
     try {
-      const formData = new FormData();
+          const formData = new FormData();
       formData.append('document', file);
       const res = await api.post('/messages/attachment', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -45,7 +47,7 @@ export default function DocumentScannerScreen(): React.JSX.Element {
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{ padding: 24, gap: 20 }}>
       <TouchableOpacity
-        onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home')}
+        onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
         style={{ marginBottom: 8 }}
         accessibilityRole="button"
       >

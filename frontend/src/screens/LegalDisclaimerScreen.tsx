@@ -44,6 +44,7 @@ interface Props {
 
 export default function LegalDisclaimerScreen({ onAccepted }: Props) {
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
+  const [loading, setLoading] = React.useState(false);
   const [accepting, setAccepting] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
@@ -59,8 +60,9 @@ export default function LegalDisclaimerScreen({ onAccepted }: Props) {
       return;
     }
     setAccepting(true);
+    setLoading(true);
     try {
-      await api.post('/auth/disclaimer/accept', { version: VERSION });
+          await api.post('/auth/disclaimer/accept', { version: VERSION });
       onAccepted();
     } catch {
       Alert.alert('Error', 'Could not record your acceptance. Please check your connection and try again.');

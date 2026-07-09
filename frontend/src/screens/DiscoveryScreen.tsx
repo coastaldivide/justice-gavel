@@ -229,6 +229,7 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
   const { caseId, caseTitle } = (route?.params as import('../types/api').RouteParams) ?? {};
 
   const [phase,     setPhase]     = useState<Phase>('upload');
+  const [loading, setLoading] = React.useState(false);
   const [file,      setFile]      = useState<{ name: string; uri: string; size: number } | null>(null);
   const [docType,   setDocType]   = useState('');
   const [analysis,  setAnalysis]  = useState<Analysis | null>(null);
@@ -381,8 +382,9 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
 
   const loadHistory = useCallback(async () => {
     setHistLoad(true);
+    setLoading(true);
     try {
-      const res = await api.get('/discovery/history');
+          const res = await api.get('/discovery/history');
       setHistory(res.data || []);
       setPhase('history');
     } catch (e: any) { __DEV__ && console.warn(e?.message); }

@@ -34,9 +34,12 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    try { await fetchLaw(''); } catch {}
+    setLoading(true);
+    try {
+    await fetchLaw(''); } catch {}
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
   }, []);
 
@@ -144,6 +147,8 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
 
     } catch (e: any) {
       Alert.alert('Could not start recording', e.message || 'Check microphone permissions.');
+    } finally {
+      setLoading(false);
     }
   };
 

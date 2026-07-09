@@ -103,6 +103,7 @@ function useTimer(running: boolean) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -230,8 +231,9 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
   const processText = useCallback(async () => {
     if (!textIn.trim()) return;
     setPhase('processing');
+    setLoading(true);
     try {
-      const res = await api.post('/transcribe/text', { text: textIn.trim() });
+          const res = await api.post('/transcribe/text', { text: textIn.trim() });
       if (!mountedRef.current) return;
       setNote(res.data?.note);
       setEditText(formatNoteForCase(res.data?.note));
@@ -504,7 +506,9 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
           style={[styles.shareNoteBtn, { borderColor: COLORS.navy + '55' }]}
           onPress={async () => { try {
             await Share.share({ message: editText, title: 'Case Note' });
-          } catch (shareErr: any) { /* ignore */ }
+          } catch (shareErr: any) { /* ignore */ } finally {
+      setLoading(false);
+    }
           }}
           accessibilityLabel="Share note"
         >

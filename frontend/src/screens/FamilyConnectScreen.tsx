@@ -112,6 +112,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -159,8 +160,9 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
       return;
     }
     setSearching(true);
+    setLoading(true);
     try {
-      const res = await api.get('/arrests/search', {
+          const res = await api.get('/arrests/search', {
         params: { name: searchName.trim(), limit: 10 }
       });
       setSearchResults(res.data?.records || []);

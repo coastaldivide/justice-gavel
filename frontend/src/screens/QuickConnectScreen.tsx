@@ -129,6 +129,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -178,8 +179,9 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
   const doPay = async () => {
     setPaying(true);
     setError('');
+    setLoading(true);
     try {
-      const res = await api.post('/billing/quickconnect', {
+          const res = await api.post('/billing/quickconnect', {
         lat:          (coords as any)?.lat,
         lng:          (coords as any)?.lng,
         state:        (coords as any)?.state || '',  // derived from GPS reverse-geocode in backend
