@@ -1,4 +1,4 @@
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';

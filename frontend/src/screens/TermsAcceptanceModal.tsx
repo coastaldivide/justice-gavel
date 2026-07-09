@@ -141,7 +141,13 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
 
           {/* Key points in plain language */}
           <Text maxFontSizeMultiplier={1.4} style={s.sectionLabel}>What You Need to Know</Text>
-          {SUMMARY_POINTS.map((pt, i) => (
+          
+          {SUMMARY_POINTS.length === 0 && (
+            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <Text style={{ color: '#888', fontSize: 14 }}>No results yet.</Text>
+            </View>
+          )}
+{SUMMARY_POINTS.map((pt, i) => (
             <View key={i} style={s.point}>
               <Text maxFontSizeMultiplier={1.4} style={s.pointIcon}>{pt.icon}</Text>
               <View style={s.pointBody}>

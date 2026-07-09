@@ -62,7 +62,11 @@ export default function LegalDisclaimerScreen({ onAccepted }: Props) {
     setAccepting(true);
     setLoading(true);
     try {
-          await api.post('/auth/disclaimer/accept', { version: VERSION });
+          try {
+            await api.post('/auth/disclaimer/accept', { version: VERSION });
+          } catch (_err) {
+            console.error(_err);
+          }
       onAccepted();
     } catch {
       Alert.alert('Error', 'Could not record your acceptance. Please check your connection and try again.');
@@ -88,7 +92,13 @@ export default function LegalDisclaimerScreen({ onAccepted }: Props) {
         onScroll={handleScroll}
         scrollEventThrottle={100}
       >
-        {DISCLAIMER_SECTIONS.map((sec, i) => (
+        
+          {DISCLAIMER_SECTIONS.length === 0 && (
+            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <Text style={{ color: '#888', fontSize: 14 }}>No results yet.</Text>
+            </View>
+          )}
+{DISCLAIMER_SECTIONS.map((sec, i) => (
           <View key={i} style={s.section}>
             <View style={s.sectionHeader}>
               <Text style={s.sectionIcon} maxFontSizeMultiplier={1.4}>{sec.icon}</Text>

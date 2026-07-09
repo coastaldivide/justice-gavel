@@ -276,7 +276,13 @@ export default function CourtFormsScreen({ route, navigation }: any): React.JSX.
           style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps='handled' contentContainerStyle={s.categoryList}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-          {FORM_CATEGORIES.map(cat => (
+          
+          {FORM_CATEGORIES.length === 0 && (
+            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <Text style={{ color: '#888', fontSize: 14 }}>No results yet.</Text>
+            </View>
+          )}
+{FORM_CATEGORIES.map(cat => (
             <TouchableOpacity accessibilityRole="button"
               key={cat.key}
               style={s.categoryCard}

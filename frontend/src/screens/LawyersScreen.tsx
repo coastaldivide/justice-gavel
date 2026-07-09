@@ -27,7 +27,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import PracticeAreaSelector from '../components/PracticeAreaSelector';
 import { getUserState } from '../utils/userState';
 import * as secureStorage from '../utils/secureStorage';
-import { useFocusEffect } from '@react-navigation/native';
+import {} from '@react-navigation/native';
 
 declare var SkeletonLawyerList: any;
 declare var filter: any;

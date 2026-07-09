@@ -301,7 +301,13 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         <Text maxFontSizeMultiplier={1.4} style={s.heading}>Central Authorities</Text>
         <Text maxFontSizeMultiplier={1.4} style={s.subheading}>Select destination country</Text>
 
-        {QUICK_COUNTRIES.map(c => (
+        
+          {QUICK_COUNTRIES.length === 0 && (
+            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <Text style={{ color: '#888', fontSize: 14 }}>No results yet.</Text>
+            </View>
+          )}
+{QUICK_COUNTRIES.map(c => (
           <TouchableOpacity
             accessibilityRole="button"
             key={c.code}

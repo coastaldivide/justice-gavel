@@ -77,11 +77,15 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
     }
     if (mountedRef.current) setLoading(true);
     try {
-      await api.post('/billing/pi-lead/submit', {
+      try {
+        await api.post('/billing/pi-lead/submit', {
         case_type:   caseType,
         severity,
         description: description.trim(),
       });
+      } catch (_err) {
+        console.error(_err);
+      }
       if (mountedRef.current) setStep('submitted');
     } catch {
       Alert.alert('Could not submit', 'Check your connection and try again.');

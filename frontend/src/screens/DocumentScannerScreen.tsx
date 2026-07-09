@@ -96,8 +96,16 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
         type: 'image/jpeg' } as any);
       if (caseId) form.append('case_id', String(caseId));
 
-      await api.post('/messages/attachment', form, {
+      try {
+
+        await api.post('/messages/attachment', form, {
         headers: { 'Content-Type': 'multipart/form-data' } });
+
+      } catch (_err) {
+
+        console.error(_err);
+
+      }
       await hapticNotification();
       Alert.alert('Document attached ✓',
         caseId

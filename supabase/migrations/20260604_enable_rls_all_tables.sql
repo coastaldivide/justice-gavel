@@ -29,6 +29,15 @@ ALTER TABLE IF EXISTS public.notifications              ENABLE ROW LEVEL SECURIT
 ALTER TABLE IF EXISTS public.user_disclaimer_acceptance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.jobs                       ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE IF EXISTS public.web_push_subscriptions              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.lawyers                             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.workspace_members                   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.password_resets                     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.scheduled_pushes                    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.matters                             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.documents                           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.conflict_index                      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.contracts                           ENABLE ROW LEVEL SECURITY;
 -- Catch-all: lock down any table not listed above
 DO $$
 DECLARE tbl TEXT;

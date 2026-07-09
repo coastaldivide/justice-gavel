@@ -46,7 +46,7 @@ export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.
     if (mountedRef.current) setGetting(true);
     if (mountedRef.current) setQuote(null);
     try {
-      const r = await api.post('/insurance/quote', { plan, city: 'your area' });
+const r = await api.post('/insurance/quote', { plan, city: 'your area' });
       if (mountedRef.current) setQuote(r.data || null);
     } catch {
       if (mountedRef.current) setError('Could not load insurance quote. Check your connection and try again.');
