@@ -101,14 +101,14 @@ const mkMatter = (v, o = {}) => ({
 describe('ATD. AttorneyDashboardScreen — Internal Functions', () => {
   test('ATD-01: urgencyColor maps days-until to color (null→muted, ≤7→red)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
     expect(src).toContain('urgencyColor');
     expect(src).toContain('days === null');
     expect(src).toContain('textMuted');
   });
   test('ATD-02: completeCLE(courseId) POSTs to /attorney/cle/:id/complete', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
     expect(src).toContain('completeCLE');
     expect(src).toContain('/attorney/cle');
     expect(src).toContain('complete');
@@ -116,14 +116,14 @@ describe('ATD. AttorneyDashboardScreen — Internal Functions', () => {
   });
   test('ATD-03: saveProfile() PATCHes /attorney/profile with form data', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
     expect(src).toContain('saveProfile');
     expect(src).toContain("api.patch('/attorney/profile'");
     expect(src).toContain('setSavingProfile');
   });
   test('ATD-04: DiffBadge is an inline functional component for CLE diffs', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
     expect(src).toContain('DiffBadge');
     expect(src).toContain('diff: string');
     expect(src).toContain('Record<string,');
@@ -134,7 +134,7 @@ describe('ATD. AttorneyDashboardScreen — Internal Functions', () => {
 describe('EMG. EmergencyScreen — Countdown + SOS Handlers', () => {
   test('EMG-01: startCountdown fires hapticImpact then sets phase to countdown', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
     expect(src).toContain('startCountdown');
     expect(src).toContain('hapticImpact');
     expect(src).toContain("'countdown'");
@@ -142,13 +142,13 @@ describe('EMG. EmergencyScreen — Countdown + SOS Handlers', () => {
   });
   test('EMG-02: doSend() fires the SOS alert after countdown expires', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
     expect(src).toContain('doSend');
     expect(src).toContain("phase === 'countdown'");
   });
   test('EMG-03: cancelCountdown clears interval and fires hapticNotification', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
     expect(src).toContain('cancelCountdown');
     expect(src).toContain('clearInterval');
     expect(src).toContain('hapticNotification');
@@ -159,7 +159,7 @@ describe('EMG. EmergencyScreen — Countdown + SOS Handlers', () => {
 describe('LPR. LawyerProfileScreen — Call + Share + Directions', () => {
   test('LPR-01: handleCall opens tel: Linking URL (hapticCall before dial)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
     expect(src).toContain('handleCall');
     expect(src).toContain('Linking.openURL');
     expect(src).toContain('tel:');
@@ -167,14 +167,14 @@ describe('LPR. LawyerProfileScreen — Call + Share + Directions', () => {
   });
   test('LPR-02: handleShare shares lawyer name+address via Share.share', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
     expect(src).toContain('handleShare');
     expect(src).toContain('Share');
     expect(src).toContain('lawyer');
   });
   test('LPR-03: handleDirections encodes address and opens maps URL', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
     expect(src).toContain('handleDirections');
     expect(src).toContain('encodeURIComponent');
     expect(src).toContain('maps');
@@ -185,21 +185,21 @@ describe('LPR. LawyerProfileScreen — Call + Share + Directions', () => {
 describe('CTL. CourtLocatorScreen — Search + Maps + Phone', () => {
   test('CTL-01: doSearch(query) calls courthouse search API', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CourtLocatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CourtLocatorScreen.tsx', 'utf8');
     expect(src).toContain('doSearch');
     expect(src).toContain('courthouse');
     expect(src).toContain('setRefreshing');
   });
   test('CTL-02: openMaps(address) encodes and opens native maps', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CourtLocatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CourtLocatorScreen.tsx', 'utf8');
     expect(src).toContain('openMaps');
     expect(src).toContain('encodeURIComponent');
     expect(src).toContain('Linking');
   });
   test('CTL-03: openPhone(phone) strips non-digit characters before dialing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CourtLocatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CourtLocatorScreen.tsx', 'utf8');
     expect(src).toContain('openPhone');
     expect(src).toContain("tel:");
     expect(src).toContain("replace(/[^\\d+]/");
@@ -210,20 +210,20 @@ describe('CTL. CourtLocatorScreen — Search + Maps + Phone', () => {
 describe('EXP. ExpungementScreen — Eligibility + AI Petition + Marketplace', () => {
   test('EXP-01: generatePetition POSTs to /expungement/petition (AI draft)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
     expect(src).toContain('generatePetition');
     expect(src).toContain('/expungement/petition');
     expect(src).toContain('setGenPetition');
   });
   test('EXP-02: expungement screen also handles /expungement/referral marketplace', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
     expect(src).toContain('/expungement/referral');
     expect(src).toContain('handleReferral');
   });
   test('EXP-03: ExpungementScreen entry points — eligibility+marketplace noted in doc', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
     expect(src).toContain('Expungement eligibility + marketplace');
   });
 });
@@ -232,26 +232,26 @@ describe('EXP. ExpungementScreen — Eligibility + AI Petition + Marketplace', (
 describe('FAM. FamilyConnectScreen — $28.99 Emergency Family Connection', () => {
   test('FAM-01: FamilyConnectScreen is $28.99 one-tap emergency connection for families', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
     expect(src).toContain('$28.99');
     expect(src).toContain('emergency connection');
   });
   test('FAM-02: searchArrests searches by name for detained family member', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
     expect(src).toContain('searchArrests');
     expect(src).toContain('searchName');
   });
   test('FAM-03: proceedToPayment validates familyName before step 2', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
     expect(src).toContain('proceedToPayment');
     expect(src).toContain('familyName');
     expect(src).toContain('Required');
   });
   test('FAM-04: handleConnect uses requireAuth before processing payment', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
     expect(src).toContain('handleConnect');
     expect(src).toContain('requireAuth');
     expect(src).toContain('setPaying');
@@ -262,14 +262,14 @@ describe('FAM. FamilyConnectScreen — $28.99 Emergency Family Connection', () =
 describe('HNS. HelpNowScreen — Multi-Source Lawyer/Bondsman Fetching', () => {
   test('HNS-01: fetchBoth loads lawyers+bondsmen concurrently for current location', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
     expect(src).toContain('fetchBoth');
     expect(src).toContain('fetchForCity');
     expect(src).toContain('setShowCityPicker');
   });
   test('HNS-02: saveCache stores data to AsyncStorage with 24h TTL', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
     expect(src).toContain('saveCache');
     expect(src).toContain('AsyncStorage');
     expect(src).toContain('24 hours');
@@ -280,21 +280,21 @@ describe('HNS. HelpNowScreen — Multi-Source Lawyer/Bondsman Fetching', () => {
 describe('LAW. LawyersScreen — Filter + Sort + Cache Architecture', () => {
   test('LAW-01: fetchLawyers(isRefresh) uses stale-while-revalidate with getCachedLawyers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx', 'utf8');
     expect(src).toContain('fetchLawyers');
     expect(src).toContain('isRefresh');
     expect(src).toContain('getCachedLawyers');
   });
   test('LAW-02: applyFilters hides filter modal and re-fetches with new criteria', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx', 'utf8');
     expect(src).toContain('applyFilters');
     expect(src).toContain('setShowFilters(false)');
     expect(src).toContain('fetchLawyers');
   });
   test('LAW-03: sortedLawyers is useMemo computed — avoids sort on every render', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx', 'utf8');
     expect(src).toContain('sortedLawyers');
     expect(src).toContain('useMemo');
     expect(src).toContain('lawyers.length');
@@ -305,19 +305,19 @@ describe('LAW. LawyersScreen — Filter + Sort + Cache Architecture', () => {
 describe('CHS. ChatScreen — Bubble Sub-Component + clearChat', () => {
   test('CHS-01: Bubble sub-component has onFindLawyer prop → navigate to Match', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('onFindLawyer');
     expect(src).toContain("() => void");
   });
   test('CHS-02: clearChat resets session and messages state', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('clearChat');
     expect(src).toContain('session');
   });
   test('CHS-03: exportConversation shares full thread via Share.share', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('exportConversation');
   });
 });
@@ -326,26 +326,26 @@ describe('CHS. ChatScreen — Bubble Sub-Component + clearChat', () => {
 describe('S12. UX — Final Internal Logic Patterns', () => {
   test('S12-01: FamilyConnectScreen $28.99 = QUICKCONNECT equiv for families', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
     expect(src).toContain('$28.99');
     expect(src).toContain('requireAuth');
   });
   test('S12-02: HelpNowScreen 24h cache prevents redundant GPS+API calls', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
     expect(src).toContain('24 hours');
     expect(src).toContain('AsyncStorage');
     expect(src).toContain('saveCache');
   });
   test('S12-03: LawyersScreen useMemo sortedLawyers prevents re-sort on every keypress', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx', 'utf8');
     expect(src).toContain('useMemo');
     expect(src).toContain('sortedLawyers');
   });
   test('S12-04: EmergencyScreen countdown uses setInterval + timerRef for cleanup', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
     expect(src).toContain('timerRef');
     expect(src).toContain('clearInterval');
     expect(src).toContain('startCountdown');
@@ -353,7 +353,7 @@ describe('S12. UX — Final Internal Logic Patterns', () => {
   test('S12-05: all 3 remaining open discrepancy items now in corpus 5+ hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
     // These 3 items were flagged as low in v57 audit
@@ -369,10 +369,10 @@ describe('Regression — All v1–v56 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -396,7 +396,7 @@ describe('Regression — All v1–v56 Confirmed', () => {
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -411,10 +411,10 @@ describe('Regression — All v1–v56 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

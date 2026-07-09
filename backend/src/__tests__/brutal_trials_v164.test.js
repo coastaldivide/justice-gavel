@@ -19,9 +19,9 @@ const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
 describe('NAV1. All navigate() calls are valid', () => {
   test('N1-01: 0 dead navigate() calls across all 75 screens', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const registered=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let dead=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src=fs.readFileSync(path.join(scr,f),'utf8');
@@ -33,7 +33,7 @@ describe('NAV1. All navigate() calls are valid', () => {
   });
   test('N1-02: HelpNow uses correct route names (BailCalculator, CourtLocator)', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/frontend/src/screens/HelpNowScreen.tsx','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HelpNowScreen.tsx','utf8');
     expect(src).toContain("navigate('BailCalculator')");
     expect(src).toContain("navigate('CourtLocator')");
     expect(src).not.toContain("navigate('BailCalculatorScreen')");
@@ -41,14 +41,14 @@ describe('NAV1. All navigate() calls are valid', () => {
   });
   test('N1-03: JustArrested routes to HelpNow (find_help action)', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/frontend/src/screens/JustArrestedScreen.tsx','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/JustArrestedScreen.tsx','utf8');
     expect(src).toContain("action: 'find_help'");
     expect(src).toContain("HelpNow");
     // find_help → HelpNow → LawyersTab: 2-step emergency flow (intentional UX design)
   });
   test('N1-04: MatchCard taps through to LawyerProfile', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/frontend/src/screens/MatchScreen.tsx','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MatchScreen.tsx','utf8');
     const mcStart=src.indexOf('function MatchCard');
     const mcBlock=src.slice(mcStart,mcStart+600);
     expect(mcBlock).toContain("navigate('LawyerProfile'");
@@ -59,16 +59,16 @@ describe('NAV1. All navigate() calls are valid', () => {
   });
   test('N1-05: HagueContact registered and linked from Immigration + FamilyCourt', async () => {
     const fs=await import('fs');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     expect(nav).toContain('name="HagueContact"');
-    const imm=fs.readFileSync('/tmp/JG/frontend/src/screens/ImmigrationConsequencesScreen.tsx','utf8');
-    const fam=fs.readFileSync('/tmp/JG/frontend/src/screens/FamilyCourtScreen.tsx','utf8');
+    const imm=fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ImmigrationConsequencesScreen.tsx','utf8');
+    const fam=fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FamilyCourtScreen.tsx','utf8');
     expect(imm).toContain("navigate('HagueContact')");
     expect(fam).toContain("navigate('HagueContact')");
   });
   test('N1-06: TermsAcceptanceModal wired into RegisterScreen', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/frontend/src/screens/RegisterScreen.tsx','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RegisterScreen.tsx','utf8');
     expect(src).toContain('TermsAcceptanceModal');
     expect(src).toContain('showTerms');
   });
@@ -77,9 +77,9 @@ describe('NAV1. All navigate() calls are valid', () => {
 describe('NAV2. All components in use', () => {
   test('N2-01: 0 unused components', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const compDir='/tmp/JG/frontend/src/components';
-    const scrDir='/tmp/JG/frontend/src/screens';
-    const navSrc=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const compDir='/tmp/JG_fresh/frontend/src/components';
+    const scrDir='/tmp/JG_fresh/frontend/src/screens';
+    const navSrc=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     let allSrc=navSrc;
     for(const f of fs.readdirSync(scrDir).filter(f=>f.endsWith('.tsx')))
       allSrc+=fs.readFileSync(path.join(scrDir,f),'utf8');
@@ -90,13 +90,13 @@ describe('NAV2. All components in use', () => {
   });
   test('N2-02: LawyerSkeletonCard in LawyersScreen loading state', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx','utf8');
     expect(src).toContain('LawyerSkeletonCard');
   });
   test('N2-03: LegalNotice in DUILaws + DrugPenalties + Expungement', async () => {
     const fs=await import('fs');
     for(const f of ['DUILawsScreen','DrugPenaltiesScreen','ExpungementScreen']){
-      const src=fs.readFileSync(`/tmp/JG/frontend/src/screens/${f}.tsx`,'utf8');
+      const src=fs.readFileSync(`/tmp/JG_fresh/frontend/src/screens/${f}.tsx`,'utf8');
       expect(src).toContain('LegalNotice');
     }
   });
@@ -105,34 +105,34 @@ describe('NAV2. All components in use', () => {
 describe('API1. Backend Routes for Frontend Calls', () => {
   test('API-01: GET /family/contacts route exists in cases.js', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/routes/cases.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/cases.js','utf8');
     expect(src).toContain("'/family/contacts'");
     // FamilyConnectScreen calls this; was previously missing → 404 on every load
   });
   test('API-02: /advocacy/stats route exists', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/routes/advocacy.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/advocacy.js','utf8');
     expect(src.toLowerCase()).toContain('stats');
   });
   test('API-03: /arrests/monitors GET+POST routes exist', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/routes/arrests.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/arrests.js','utf8');
     expect(src).toContain('/monitors');
   });
   test('API-04: /checkins routes exist (enroll, submit, enrollments)', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/routes/checkins.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/checkins.js','utf8');
     expect(src).toContain('enroll');
   });
   test('API-05: /pay/create route exists', async () => {
     const fs=await import('fs');
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/pay.js')).toBe(true);
-    const src=fs.readFileSync('/tmp/JG/backend/src/routes/pay.js','utf8');
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/pay.js')).toBe(true);
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/pay.js','utf8');
     expect(src).toContain('create');
   });
   test('API-06: /push/token + /push/reminders exist', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/routes/push.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js','utf8');
     expect(src).toContain('/token');
     expect(src).toContain('reminder');
   });
@@ -141,7 +141,7 @@ describe('API1. Backend Routes for Frontend Calls', () => {
 describe('UX1. Zero Quality Violations', () => {
   test('UX-01: 0 accessibility violations', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let acc=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -153,15 +153,15 @@ describe('UX1. Zero Quality Violations', () => {
     const fs=await import('fs'); const path=await import('path');
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     let hex=0;
-    for(const f of fs.readdirSync('/tmp/JG/frontend/src/screens').filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
-      const s=fs.readFileSync(path.join('/tmp/JG/frontend/src/screens',f),'utf8');
+    for(const f of fs.readdirSync('/tmp/JG_fresh/frontend/src/screens').filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
+      const s=fs.readFileSync(path.join('/tmp/JG_fresh/frontend/src/screens',f),'utf8');
       if(s.includes('useTheme')) for(const h of (s.match(/'#[0-9A-Fa-f]{6}'/g)||[])) if(!BRAND.has(h)) hex++;
     }
     expect(hex).toBe(0);
   });
   test('UX-03: 0 setState without fallback', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let n=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       n+=(fs.readFileSync(path.join(scr,f),'utf8').match(/set\w+\((?:res|r|data|response)\.data\)(?!\s*\|)/g)||[]).length;
@@ -170,7 +170,7 @@ describe('UX1. Zero Quality Violations', () => {
   });
   test('UX-04: 0 unsafe .data.property access', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let n=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src=fs.readFileSync(path.join(scr,f),'utf8');
@@ -182,7 +182,7 @@ describe('UX1. Zero Quality Violations', () => {
   });
   test('UX-05: Linking.openURL uses valid schemes only', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let invalid=0;
     const validSchemes=['http','https','tel:','sms:','mailto:','app-settings:'];
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx'))){
@@ -200,10 +200,10 @@ describe('UX1. Zero Quality Violations', () => {
 describe('ROUTES1. 439/439 Routes All Tiers', () => {
   test('R-01: ≥5 ≥10 ≥15 ≥20 ≥25 all 439/439', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let counts={5:0,10:0,15:0,20:0,25:0},total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){

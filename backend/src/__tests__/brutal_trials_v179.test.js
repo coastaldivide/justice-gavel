@@ -19,7 +19,7 @@ const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
 describe('FLOW. Runtime Behavior Verification', () => {
   test('FLOW-01: api.ts 401 interceptor triggers clearAuth + redirect to guest', async () => {
     const fs = await import('fs');
-    const api = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts','utf8');
+    const api = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts','utf8');
     // Response interceptor catches 401 and clears auth
     expect(api).toContain('interceptors.response');
     expect(api).toContain('401');
@@ -30,7 +30,7 @@ describe('FLOW. Runtime Behavior Verification', () => {
   test('FLOW-02: all useFocusEffect calls use useCallback (React rules)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const scr  = '/tmp/JG/frontend/src/screens';
+    const scr  = '/tmp/JG_fresh/frontend/src/screens';
     const bad  = [];
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src = fs.readFileSync(path.join(scr,f),'utf8');
@@ -43,7 +43,7 @@ describe('FLOW. Runtime Behavior Verification', () => {
   test('FLOW-03: all destructive Alert.alert calls have cancel option', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const scr  = '/tmp/JG/frontend/src/screens';
+    const scr  = '/tmp/JG_fresh/frontend/src/screens';
     const bad  = [];
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src = fs.readFileSync(path.join(scr,f),'utf8');
@@ -57,7 +57,7 @@ describe('FLOW. Runtime Behavior Verification', () => {
   test('FLOW-04: all navigation.reset() have correct index+routes structure', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const scr  = '/tmp/JG/frontend/src/screens';
+    const scr  = '/tmp/JG_fresh/frontend/src/screens';
     const bad  = [];
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src = fs.readFileSync(path.join(scr,f),'utf8');
@@ -73,7 +73,7 @@ describe('FLOW. Runtime Behavior Verification', () => {
   test('FLOW-05: keyboard dismiss on all multi-input ScrollViews', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const scr  = '/tmp/JG/frontend/src/screens';
+    const scr  = '/tmp/JG_fresh/frontend/src/screens';
     const bad  = [];
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src = fs.readFileSync(path.join(scr,f),'utf8');
@@ -107,19 +107,19 @@ describe('RATE. Every Authenticated Write Route Rate-Limited', () => {
         const hasLimiter = src.includes('Limiter') || src.includes('rateLimit') ||
           src.includes('makeUserLimiter');
         if(writes>0 && !hasLimiter){
-          unprotected.push(path.relative('/tmp/JG/backend/src/routes',fp));
+          unprotected.push(path.relative('/tmp/JG_fresh/backend/src/routes',fp));
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(unprotected.length) console.log('Unprotected writes:', unprotected);
     expect(unprotected.length).toBe(0);
     // v179 fix: added makeUserLimiter to attorney/templates.js + attorney/verification.js
   });
   test('RATE-02: attorney/templates.js and verification.js now have limiters', async () => {
     const fs = await import('fs');
-    const t = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/templates.js','utf8');
-    const v = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/verification.js','utf8');
+    const t = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/templates.js','utf8');
+    const v = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/verification.js','utf8');
     expect(t).toContain('makeUserLimiter');
     expect(v).toContain('makeUserLimiter');
   });
@@ -129,7 +129,7 @@ describe('RATE. Every Authenticated Write Route Rate-Limited', () => {
 describe('OTA. OTA and Push Registration Correct', () => {
   test('OTA-01: useOTAUpdates implemented with full check/fetch/reload cycle', async () => {
     const fs = await import('fs');
-    const setup = fs.readFileSync('/tmp/JG/frontend/src/hooks/useAppSetup.ts','utf8');
+    const setup = fs.readFileSync('/tmp/JG_fresh/frontend/src/hooks/useAppSetup.ts','utf8');
     expect(setup).toContain('export function useOTAUpdates');
     expect(setup).toContain('checkForUpdateAsync');
     expect(setup).toContain('fetchUpdateAsync');
@@ -138,13 +138,13 @@ describe('OTA. OTA and Push Registration Correct', () => {
   });
   test('OTA-02: push registration uses correct import path', async () => {
     const fs = await import('fs');
-    const setup = fs.readFileSync('/tmp/JG/frontend/src/hooks/useAppSetup.ts','utf8');
+    const setup = fs.readFileSync('/tmp/JG_fresh/frontend/src/hooks/useAppSetup.ts','utf8');
     expect(setup).not.toContain('./src/services/api');
     expect(setup).toContain('../services/api');
   });
   test('OTA-03: dead duplicate linking config removed', async () => {
     const fs = await import('fs');
-    const setup = fs.readFileSync('/tmp/JG/frontend/src/hooks/useAppSetup.ts','utf8');
+    const setup = fs.readFileSync('/tmp/JG_fresh/frontend/src/hooks/useAppSetup.ts','utf8');
     expect(setup).not.toMatch(/^const linking = \{/m);
   });
 });
@@ -153,9 +153,9 @@ describe('OTA. OTA and Push Registration Correct', () => {
 describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-01: 0 dead navigates + 0 password without secureTextEntry', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let dead=0,noPw=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -180,11 +180,11 @@ describe('GATE. Zero-Defect Production Gates', () => {
           if(!m[0].includes('intentional')&&m[0].includes('FROM')&&!m[0].includes('safeTable'))bare++;
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     expect(inj).toBe(0); expect(bare).toBe(0);
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens'; const all=new Set();
+    const scr='/tmp/JG_fresh/frontend/src/screens'; const all=new Set();
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
       for(const m of s.matchAll(/navigate\(['"]([^'"]+)['"]/g))all.add(m[1]);
@@ -198,7 +198,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
   });
   test('GATE-03: DB schema clean + 0 column mismatches', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     const tables={};
     for(const m of db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)\s*\(([^;]+)\)/gs)){
       const cols=[...m[2].matchAll(/^\s+(\w+)\s+(?:TEXT|INTEGER|REAL|BLOB|NUMERIC)/gm)].map(c=>c[1]);
@@ -214,27 +214,27 @@ describe('GATE. Zero-Defect Production Gates', () => {
         for(const m of src.matchAll(/INSERT\s+(?:OR\s+\w+\s+)?INTO\s+(\w+)\s*\(([^)]+)\)/gsi)){
           const t=m[1]; if(!tables[t])continue;
           const u=m[2].split(',').map(c=>c.trim()).filter(c=>c&&!c.startsWith('?')&&!tables[t].has(c)&&!/^\d/.test(c));
-          if(u.length)bad.push(path.relative('/tmp/JG/backend/src/routes',fp)+': '+t+': '+u);
+          if(u.length)bad.push(path.relative('/tmp/JG_fresh/backend/src/routes',fp)+': '+t+': '+u);
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(bad.length)console.log('Mismatches:',bad);
     expect(bad.length).toBe(0);
   });
   test('GATE-04: security hardening — CORS + GDPR + AI + tokens + referrals', async () => {
     const fs=await import('fs');
-    expect(fs.readFileSync('/tmp/JG/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/chat/_helpers.js','utf8')).toContain('AbortController');
-    expect(fs.readFileSync('/tmp/JG/frontend/src/services/api.ts','utf8')).toContain('REFRESH_THRESHOLD_MS');
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/billing/connections.js','utf8')).not.toContain('referral_credit');
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_helpers.js','utf8')).toContain('AbortController');
+    expect(fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts','utf8')).toContain('REFRESH_THRESHOLD_MS');
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/connections.js','utf8')).not.toContain('referral_credit');
   });
   test('GATE-05: 0 FlatList no keyExtractor + 0 accessibility + 0 hex', async () => {
     const fs=await import('fs'); const path=await import('path');
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let noKey=0,acc=0,hex=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -251,10 +251,10 @@ describe('GATE. Zero-Defect Production Gates', () => {
   });
   test('GATE-06: 437/437 routes all tiers', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let counts={5:0,10:0,15:0,20:0,25:0},total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){

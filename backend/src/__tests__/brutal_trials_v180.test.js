@@ -18,7 +18,7 @@ const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
 describe('STARTUP. Fresh Deployment Safety', () => {
   test('STARTUP-01: package.json prestart runs migrate.js before server', async () => {
     const fs = await import('fs');
-    const pkg = JSON.parse(fs.readFileSync('/tmp/JG/backend/package.json','utf8'));
+    const pkg = JSON.parse(fs.readFileSync('/tmp/JG_fresh/backend/package.json','utf8'));
     // Before fix: npm start only ran server.js — migrations never applied
     // Fresh deployment would fail with "no such column: display_name" on login
     expect(pkg.scripts.prestart).toContain('migrate');
@@ -26,15 +26,15 @@ describe('STARTUP. Fresh Deployment Safety', () => {
   });
   test('STARTUP-02: migrate.js exists and is idempotent', async () => {
     const fs = await import('fs');
-    expect(fs.existsSync('/tmp/JG/backend/src/scripts/migrate.js')).toBe(true);
-    const src = fs.readFileSync('/tmp/JG/backend/src/scripts/migrate.js','utf8');
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/scripts/migrate.js')).toBe(true);
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/migrate.js','utf8');
     // Idempotent: handles "column already exists" errors gracefully
     expect(src).toContain('migration');
     expect(src).toMatch(/IF NOT EXISTS|catch|error/i);
   });
   test('STARTUP-03: db/index.js bootstraps critical users columns on startup', async () => {
     const fs = await import('fs');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     // Before fix: users.role, users.display_name not added in db/index.js
     // Fresh deployment: SELECT role FROM users returns null for all users
     // After fix: ALTER TABLE IF NOT EXISTS for all critical columns
@@ -46,8 +46,8 @@ describe('STARTUP. Fresh Deployment Safety', () => {
   });
   test('STARTUP-04: bootstrap covers all columns auth.js queries from users', async () => {
     const fs = await import('fs');
-    const db   = fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
-    const auth = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js','utf8');
+    const db   = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
+    const auth = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8');
     // Find all column names auth.js SELECTs from users
     const userSelects = [...auth.matchAll(/SELECT\s+([\w\s,*]+)\s+FROM\s+users/gi)];
     const authCols = new Set();
@@ -72,7 +72,7 @@ describe('STARTUP. Fresh Deployment Safety', () => {
   test('STARTUP-06: 44 migration files exist + migrations dir present', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const migDir = '/tmp/JG/backend/src/migrations';
+    const migDir = '/tmp/JG_fresh/backend/src/migrations';
     expect(fs.existsSync(migDir)).toBe(true);
     const files = fs.readdirSync(migDir).filter(f=>f.endsWith('.sql'));
     // At least 40 migrations covering the full feature history
@@ -89,7 +89,7 @@ describe('STARTUP. Fresh Deployment Safety', () => {
 describe('SCHEMA. Database Column Integrity', () => {
   test('SCHEMA-01: 0 INSERT column mismatches (all tables)', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     const tables={};
     for(const m of db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)\s*\(([^;]+)\)/gs)){
       const cols=[...m[2].matchAll(/^\s+(\w+)\s+(?:TEXT|INTEGER|REAL|BLOB|NUMERIC)/gm)].map(c=>c[1]);
@@ -105,17 +105,17 @@ describe('SCHEMA. Database Column Integrity', () => {
         for(const m of src.matchAll(/INSERT\s+(?:OR\s+\w+\s+)?INTO\s+(\w+)\s*\(([^)]+)\)/gsi)){
           const t=m[1]; if(!tables[t])continue;
           const u=m[2].split(',').map(c=>c.trim()).filter(c=>c&&!c.startsWith('?')&&!tables[t].has(c)&&!/^\d/.test(c));
-          if(u.length) bad.push(path.relative('/tmp/JG/backend/src/routes',fp)+': '+t+': '+u);
+          if(u.length) bad.push(path.relative('/tmp/JG_fresh/backend/src/routes',fp)+': '+t+': '+u);
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(bad.length) console.log('Mismatches:',bad);
     expect(bad.length).toBe(0);
   });
   test('SCHEMA-02: users bootstrap covers subscription + gavel + bar + push cols', async () => {
     const fs = await import('fs');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     for(const col of ['subscription','gavel_level','bar_verified','bar_number',
                        'push_token','is_defender','notif_new_case']){
       expect(db).toContain('ADD COLUMN IF NOT EXISTS '+col);
@@ -127,9 +127,9 @@ describe('SCHEMA. Database Column Integrity', () => {
 describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-01: 0 dead navigates + 0 password without secureTextEntry', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let dead=0,noPw=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -151,11 +151,11 @@ describe('GATE. Zero-Defect Production Gates', () => {
         inj+=[...fs.readFileSync(fp,'utf8').matchAll(/db\.(get|all|run)\s*\(`[^`]*\$\{(?:req\.params|req\.body|req\.query)/g)].length;
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     expect(inj).toBe(0);
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens'; const all=new Set();
+    const scr='/tmp/JG_fresh/frontend/src/screens'; const all=new Set();
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
       for(const m of s.matchAll(/navigate\(['"]([^'"]+)['"]/g))all.add(m[1]);
@@ -170,7 +170,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-03: 0 FlatList no keyExtractor + 0 accessibility + 0 hex', async () => {
     const fs=await import('fs'); const path=await import('path');
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let noKey=0,acc=0,hex=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -197,23 +197,23 @@ describe('GATE. Zero-Defect Production Gates', () => {
         const src=fs.readFileSync(fp,'utf8');
         const writes=(src.match(/router\.(post|put|patch|delete)\s*\([^'"]*authRequired/g)||[]).length;
         const hasLim=src.includes('Limiter')||src.includes('rateLimit')||src.includes('makeUserLimiter');
-        if(writes>0&&!hasLim) unprotected.push(path.relative('/tmp/JG/backend/src/routes',fp));
+        if(writes>0&&!hasLim) unprotected.push(path.relative('/tmp/JG_fresh/backend/src/routes',fp));
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(unprotected.length) console.log('Unprotected:',unprotected);
     expect(unprotected.length).toBe(0);
     // Security
-    expect(fs.readFileSync('/tmp/JG/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
   });
   test('GATE-05: 437/437 routes all tiers', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let counts={5:0,10:0,15:0,20:0,25:0},total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){

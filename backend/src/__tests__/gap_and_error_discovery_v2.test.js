@@ -1336,8 +1336,8 @@ describe('16. UX/UI — Screen Contract Model', () => {
 
   test('16-07: SW cache version must match app version (PWA staleness prevention)', async () => {
     const fs = await import('fs');
-    const pkg = JSON.parse(fs.readFileSync('/tmp/JG/frontend/package.json', 'utf8'));
-    const sw  = fs.readFileSync('/tmp/JG/frontend/web/sw.js', 'utf8');
+    const pkg = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/package.json', 'utf8'));
+    const sw  = fs.readFileSync('/tmp/JG_fresh/frontend/web/sw.js', 'utf8');
     const appVer = pkg.version;
     const cacheVer = sw.match(/CACHE_NAME = '([^']+)'/)?.[1] ?? '';
     expect(cacheVer).toContain(appVer);
@@ -1346,7 +1346,7 @@ describe('16. UX/UI — Screen Contract Model', () => {
   test('16-08: nav route syntax — no "Tab:Screen" shorthand anywhere', async () => {
     const fs    = await import('fs');
     const path  = await import('path');
-    const dir   = '/tmp/JG/frontend/src/screens';
+    const dir   = '/tmp/JG_fresh/frontend/src/screens';
     const files = fs.readdirSync(dir).filter(f => f.endsWith('.tsx'));
     const badPattern = /navigate\s*\(\s*['"][A-Z][a-z]+:[A-Z]/;
     const violations = [];
@@ -1360,7 +1360,7 @@ describe('16. UX/UI — Screen Contract Model', () => {
   test('16-09: no unguarded console.* in production screen code', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const files = fs.readdirSync(dir).filter(f => f.endsWith('.tsx'));
     const unguarded = [];
     for (const f of files) {
@@ -1378,7 +1378,7 @@ describe('16. UX/UI — Screen Contract Model', () => {
   test('16-10: no raw unsafe hex in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'",
                            "'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
@@ -1401,7 +1401,7 @@ describe('17. Regression — Prior Fixes Confirmed', () => {
 
   test('17-01: conflicts.js uses batched query (no N+1)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/conflicts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/conflicts.js', 'utf8');
     expect(src).toContain('normedNames');
     expect(src).toContain('ciOrClauses');
     // The old N+1 loop should be gone
@@ -1410,7 +1410,7 @@ describe('17. Regression — Prior Fixes Confirmed', () => {
 
   test('17-02: messages.js uses batch lawyer lookup (no N+1)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/messages.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/messages.js', 'utf8');
     expect(src).toContain('lawyerUserMap');
     // Old per-lawyer SELECT should be gone
     expect(src).not.toContain("db.get('SELECT user_id FROM lawyers WHERE id=?'");
@@ -1418,7 +1418,7 @@ describe('17. Regression — Prior Fixes Confirmed', () => {
 
   test('17-03: privilege.js uses docCounter (no N+1 SELECT per entry)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js', 'utf8');
     expect(src).toContain('docCounter');
     // nextDocNumber should no longer call db.get internally
     const fn_start = src.indexOf('function nextDocNumber');
@@ -1429,7 +1429,7 @@ describe('17. Regression — Prior Fixes Confirmed', () => {
 
   test('17-04: practice-mgmt.js uses batch invoice lookup (no N+1)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
     expect(src).toContain('byInvoice');
     // Old per-invoice SELECT should be gone
     expect(src).not.toContain("SELECT * FROM time_entries WHERE invoice_id=?', [inv.id]");
@@ -1437,7 +1437,7 @@ describe('17. Regression — Prior Fixes Confirmed', () => {
 
   test('17-05: api.ts error interceptor normalises server messages', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('serverMsg');
     expect(src).toContain('error?.response?.data?.error');
     expect(src).toContain('Too many requests');
@@ -1446,67 +1446,67 @@ describe('17. Regression — Prior Fixes Confirmed', () => {
 
   test('17-06: api.ts has deduplicatedGet() for in-flight request dedup', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('deduplicatedGet');
     expect(src).toContain('_inFlight');
   });
 
   test('17-07: app.js has X-API-Version response header', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain('X-API-Version');
   });
 
   test('17-08: theme.ts has errorBg and errorLight tokens', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(src).toContain('errorBg');
     expect(src).toContain('errorLight');
   });
 
   test('17-09: DiversionScreen navigation prop is properly structured', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DiversionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DiversionScreen.tsx', 'utf8');
     expect(src).toContain('navigation, route }: ScreenProps)');
     expect(src).not.toContain('useTheme(); navigation, route }');
   });
 
   test('17-10: LessonsScreen navigation prop is properly structured', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LessonsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LessonsScreen.tsx', 'utf8');
     expect(src).toContain('navigation, route }: ScreenProps)');
     expect(src).not.toContain('useTheme(); navigation, route }');
   });
 
   test('17-11: ExpungementScreen has no broken onPress patterns', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
     expect(src).not.toContain("onPress={() => accessibilityRole");
     expect(src).not.toContain("navigate('More:Booking'");
   });
 
   test('17-12: ArrestMonitorScreen has useNavigation hook', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ArrestMonitorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ArrestMonitorScreen.tsx', 'utf8');
     expect(src).toContain('useNavigation');
   });
 
   test('17-13: DUILawsScreen has useNavigation hook', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DUILawsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DUILawsScreen.tsx', 'utf8');
     expect(src).toContain('useNavigation');
   });
 
   test('17-14: CrisisResourcesScreen has isLoading state', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CrisisResourcesScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CrisisResourcesScreen.tsx', 'utf8');
     expect(src).toContain('const [isLoading, setIsLoading]');
   });
 
   test('17-15: All multiline TextInput screens have maxLength', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
       const src = fs.readFileSync(path.join(dir, f), 'utf8');

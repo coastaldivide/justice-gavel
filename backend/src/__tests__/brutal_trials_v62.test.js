@@ -108,7 +108,7 @@ const mkMatter = (v, o = {}) => ({
 describe('MOT2. MotionLibraryScreen — changeStatus + filteredHistory', () => {
   test('MOT2-01: changeStatus(s) closes picker and PATCHes filing status', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain('changeStatus');
     expect(src).toContain('setShowPicker(false)');
     expect(src).toContain('FilingStatus');
@@ -116,7 +116,7 @@ describe('MOT2. MotionLibraryScreen — changeStatus + filteredHistory', () => {
   });
   test('MOT2-02: filteredHistory is useMemo — filters history without re-render', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain('filteredHistory');
     expect(src).toContain('useMemo');
     expect(src).toContain('history.filter');
@@ -127,7 +127,7 @@ describe('MOT2. MotionLibraryScreen — changeStatus + filteredHistory', () => {
 describe('PAY2. PaymentsScreen — doPayment + onSelectPurpose', () => {
   test('PAY2-01: doPayment uses requireAuth gate then POST /billing/payment', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
     expect(src).toContain('doPayment');
     expect(src).toContain('requireAuth');
     expect(src).toContain('setLoading');
@@ -135,7 +135,7 @@ describe('PAY2. PaymentsScreen — doPayment + onSelectPurpose', () => {
   });
   test('PAY2-02: onSelectPurpose(p) sets purpose and pre-fills amount from defaultAmount', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
     expect(src).toContain('onSelectPurpose');
     expect(src).toContain('setPurpose');
     expect(src).toContain('setAmount');
@@ -147,7 +147,7 @@ describe('PAY2. PaymentsScreen — doPayment + onSelectPurpose', () => {
 describe('PRV. PrivacyPolicyScreen — requestDeletion', () => {
   test('PRV-01: requestDeletion hapticImpact → Alert → email deep link for GDPR/CCPA', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PrivacyPolicyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PrivacyPolicyScreen.tsx', 'utf8');
     expect(src).toContain('requestDeletion');
     expect(src).toContain('hapticImpact');
     expect(src).toContain("'Request Data Deletion'");
@@ -159,7 +159,7 @@ describe('PRV. PrivacyPolicyScreen — requestDeletion', () => {
 describe('QCS. QuickConnectScreen — handlePay', () => {
   test('QCS-01: handlePay is requireAuth gate wrapping doPay for $19.99 QuickConnect', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/QuickConnectScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/QuickConnectScreen.tsx', 'utf8');
     expect(src).toContain('handlePay');
     expect(src).toContain('requireAuth');
     expect(src).toContain('doPay');
@@ -170,7 +170,7 @@ describe('QCS. QuickConnectScreen — handlePay', () => {
 describe('RAS. RecoveryAgentsScreen — renderAgent + openWeb', () => {
   test('RAS-01: renderAgent useCallback renders licensed fugitive recovery agent row', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RecoveryAgentsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RecoveryAgentsScreen.tsx', 'utf8');
     expect(src).toContain('renderAgent');
     expect(src).toContain('useCallback');
     expect(src).toContain('Agent');
@@ -178,7 +178,7 @@ describe('RAS. RecoveryAgentsScreen — renderAgent + openWeb', () => {
   });
   test('RAS-02: openWeb(url) adds https:// prefix if missing then Linking.openURL', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RecoveryAgentsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RecoveryAgentsScreen.tsx', 'utf8');
     expect(src).toContain('openWeb');
     expect(src).toContain('hapticImpact');
     expect(src).toContain("startsWith('http'");
@@ -190,7 +190,7 @@ describe('RAS. RecoveryAgentsScreen — renderAgent + openWeb', () => {
 describe('REG. RegisterScreen — onRegister', () => {
   test('REG-01: onRegister validates identifier.trim() then POST /auth/register', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RegisterScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RegisterScreen.tsx', 'utf8');
     expect(src).toContain('onRegister');
     expect(src).toContain('identifier.trim()');
     expect(src).toContain('/auth/register');
@@ -202,7 +202,7 @@ describe('REG. RegisterScreen — onRegister', () => {
 describe('RWD. RewardsScreen — loadPoints + redeemReferral', () => {
   test('RWD-01: loadPoints(userId) fetches user rewards from /rewards/points', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RewardsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RewardsScreen.tsx', 'utf8');
     expect(src).toContain('loadPoints');
     expect(src).toContain('userId');
     expect(src).toContain('loadPoints');
@@ -210,7 +210,7 @@ describe('RWD. RewardsScreen — loadPoints + redeemReferral', () => {
   });
   test('RWD-02: redeemReferral validates redeemInput then POSTs referral redemption', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RewardsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RewardsScreen.tsx', 'utf8');
     expect(src).toContain('redeemReferral');
     expect(src).toContain('redeemInput');
     expect(src).toContain('setLoading');
@@ -221,14 +221,14 @@ describe('RWD. RewardsScreen — loadPoints + redeemReferral', () => {
 describe('RCC. RightsCardScreen — fetchCard + shareCard', () => {
   test('RCC-01: fetchCard is mountedRef-guarded GET /lessons/rights-card', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
     expect(src).toContain('fetchCard');
     expect(src).toContain('mountedRef');
     expect(src).toContain('rights-card');
   });
   test('RCC-02: shareCard shares card content via Share.share with date stamp', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RightsCardScreen.tsx', 'utf8');
     expect(src).toContain('shareCard');
     expect(src).toContain('setSharing');
     expect(src).toContain('Share');
@@ -240,7 +240,7 @@ describe('RCC. RightsCardScreen — fetchCard + shareCard', () => {
 describe('SVD. SavedLawyersScreen — handleNoteChange + saveNote', () => {
   test('SVD-01: handleNoteChange(id, note) useCallback updates local note state', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
     expect(src).toContain('handleNoteChange');
     expect(src).toContain('useCallback');
     expect(src).toContain('setLawyers');
@@ -248,7 +248,7 @@ describe('SVD. SavedLawyersScreen — handleNoteChange + saveNote', () => {
   });
   test('SVD-02: saveNote useCallback PATCHes /saved-lawyers/:id/note', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
     expect(src).toContain('saveNote');
     expect(src).toContain('setSaving');
     expect(src).toContain('api.patch');
@@ -259,7 +259,7 @@ describe('SVD. SavedLawyersScreen — handleNoteChange + saveNote', () => {
 describe('SCH. SearchScreen — handleChange + handleTap', () => {
   test('SCH-01: handleChange(text) debounces FTS5-backed global search', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SearchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SearchScreen.tsx', 'utf8');
     expect(src).toContain('handleChange');
     expect(src).toContain('setQuery');
     expect(src).toContain('clearTime');
@@ -267,7 +267,7 @@ describe('SCH. SearchScreen — handleChange + handleTap', () => {
   });
   test('SCH-02: handleTap(item) navigates to MoreTab with SearchResult data', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SearchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SearchScreen.tsx', 'utf8');
     expect(src).toContain('handleTap');
     expect(src).toContain("navigate('MoreTab'");
     expect(src).toContain('SearchResult');
@@ -278,7 +278,7 @@ describe('SCH. SearchScreen — handleChange + handleTap', () => {
 describe('STG. SettingsScreen — toggleMaster + shareReferral', () => {
   test('STG-01: toggleMaster persists notification master toggle to AsyncStorage', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SettingsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SettingsScreen.tsx', 'utf8');
     expect(src).toContain('toggleMaster');
     expect(src).toContain('setNotifMaster');
     expect(src).toContain('AsyncStorage');
@@ -286,7 +286,7 @@ describe('STG. SettingsScreen — toggleMaster + shareReferral', () => {
   });
   test('STG-02: shareReferral guards referralCode exists then Share.share', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SettingsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SettingsScreen.tsx', 'utf8');
     expect(src).toContain('shareReferral');
     expect(src).toContain('referralCode');
     expect(src).toContain('Share.share');
@@ -297,7 +297,7 @@ describe('STG. SettingsScreen — toggleMaster + shareReferral', () => {
 describe('TAM. TermsAcceptanceModal — handleScroll', () => {
   test('TAM-01: handleScroll measures scroll position to unlock I Agree button', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TermsAcceptanceModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TermsAcceptanceModal.tsx', 'utf8');
     expect(src).toContain('handleScroll');
     expect(src).toContain('useCallback');
     expect(src).toContain('layoutMeasurement');
@@ -310,14 +310,14 @@ describe('TAM. TermsAcceptanceModal — handleScroll', () => {
 describe('TRS. TranslatorScreen — createSession + sendMessage', () => {
   test('TRS-01: createSession(solo|split) useCallback creates translation session', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
     expect(src).toContain('createSession');
     expect(src).toContain("'solo'|'split'");
     expect(src).toContain('useCallback');
   });
   test('TRS-02: sendMessage(a|b) sends side-aware translation message', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
     expect(src).toContain('sendMessage');
     expect(src).toContain("side === 'a'");
     expect(src).toContain('useCallback');
@@ -328,7 +328,7 @@ describe('TRS. TranslatorScreen — createSession + sendMessage', () => {
 describe('VNS. VoiceNoteScreen — saveToCase + processText', () => {
   test('VNS-01: saveToCase useCallback validates editText then attaches note to case', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/VoiceNoteScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/VoiceNoteScreen.tsx', 'utf8');
     expect(src).toContain('saveToCase');
     expect(src).toContain('editText');
     expect(src).toContain('setSaving');
@@ -336,7 +336,7 @@ describe('VNS. VoiceNoteScreen — saveToCase + processText', () => {
   });
   test('VNS-02: processText useCallback validates textIn then transitions to processing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/VoiceNoteScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/VoiceNoteScreen.tsx', 'utf8');
     expect(src).toContain('processText');
     expect(src).toContain('textIn');
     expect(src).toContain("'processing'");
@@ -348,7 +348,7 @@ describe('VNS. VoiceNoteScreen — saveToCase + processText', () => {
 describe('IRR3. InterrogationRecorderScreen — savePDF', () => {
   test('IRR3-01: savePDF guards pdfBase64 then writes to FileSystem path', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('savePDF');
     expect(src).toContain('pdfBase64');
     expect(src).toContain('FileSystem');
@@ -360,7 +360,7 @@ describe('IRR3. InterrogationRecorderScreen — savePDF', () => {
 describe('CNT. ContactsScreen — typeHint', () => {
   test('CNT-01: typeHint(val) detects @ for email vs phone number hint', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ContactsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ContactsScreen.tsx', 'utf8');
     expect(src).toContain('typeHint');
     expect(src).toContain("includes('@')");
     expect(src).toContain('email');
@@ -372,31 +372,31 @@ describe('CNT. ContactsScreen — typeHint', () => {
 describe('S12. UX — Final Internal Logic Complete', () => {
   test('S12-01: TermsAcceptanceModal scroll-to-unlock is measured not estimated', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TermsAcceptanceModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TermsAcceptanceModal.tsx', 'utf8');
     expect(src).toContain('layoutMeasurement');
     expect(src).toContain('scrolledToBottom');
   });
   test('S12-02: QuickConnectScreen requireAuth gates $19.99 payment', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/QuickConnectScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/QuickConnectScreen.tsx', 'utf8');
     expect(src).toContain('requireAuth');
     expect(src).toContain('handlePay');
   });
   test('S12-03: PrivacyPolicyScreen requestDeletion = GDPR Article 17 compliance', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PrivacyPolicyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PrivacyPolicyScreen.tsx', 'utf8');
     expect(src).toContain('Request Data Deletion');
     expect(src).toContain('requestDeletion');
   });
   test('S12-04: RecoveryAgentsScreen openWeb adds https:// prefix guard', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RecoveryAgentsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RecoveryAgentsScreen.tsx', 'utf8');
     expect(src).toContain("startsWith('http'");
     expect(src).toContain('openWeb');
   });
   test('S12-05: SearchScreen handleChange uses debounce for FTS5 performance', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SearchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SearchScreen.tsx', 'utf8');
     expect(src).toContain('debounce');
     expect(src).toContain('handleChange');
   });
@@ -407,10 +407,10 @@ describe('Regression — All v1–v61 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -434,7 +434,7 @@ describe('Regression — All v1–v61 Confirmed', () => {
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -449,10 +449,10 @@ describe('Regression — All v1–v61 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

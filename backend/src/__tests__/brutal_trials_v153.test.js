@@ -22,7 +22,7 @@ const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
 describe('FV_20. firm_verticals — 36 Routes → ≥20', () => {
   test('FV20-01: Padilla warnings + dual-sovereignty + dv-firearms + eviction + material-support + vop PATCH', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.get('/padilla-warnings/:id'");
     expect(s).toContain("router.patch('/dual-sovereignty/:id'");
     expect(s).toContain("router.patch('/dv-firearms/:id'");
@@ -33,7 +33,7 @@ describe('FV_20. firm_verticals — 36 Routes → ≥20', () => {
   });
   test('FV20-02: ability-to-pay + bop-exhaustion + codefendants + collateral + hague + scoring + plea-offers + voluntary-departure PATCH', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.patch('/ability-to-pay/:id'");
     expect(s).toContain("router.patch('/bop-exhaustion/:id'");
     expect(s).toContain("router.patch('/codefendants/:id'");
@@ -45,7 +45,7 @@ describe('FV_20. firm_verticals — 36 Routes → ≥20', () => {
   });
   test('FV20-03: mission-verify + DELETE asylum/dpa/tro + PATCH asylum/dpa/tro', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.post('/mine/mission-verify'");
     expect(s).toContain("router.delete('/asylum-clocks/:id'");
     expect(s).toContain("router.patch('/asylum-clocks/:id'");
@@ -56,7 +56,7 @@ describe('FV_20. firm_verticals — 36 Routes → ≥20', () => {
   });
   test('FV20-04: GET dv-firearms + material-support + padilla-warnings + plea-offers', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.get('/dv-firearms'");
     expect(s).toContain("router.post('/dv-firearms'");
     expect(s).toContain("router.get('/material-support'");
@@ -68,7 +68,7 @@ describe('FV_20. firm_verticals — 36 Routes → ≥20', () => {
   });
   test('FV20-05: GET/POST bop-exhaustion + collateral-consequences + eviction + dual-sovereignty + vop', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.get('/bop-exhaustion'");
     expect(s).toContain("router.post('/bop-exhaustion'");
     expect(s).toContain("router.get('/collateral-consequences'");
@@ -82,7 +82,7 @@ describe('FV_20. firm_verticals — 36 Routes → ≥20', () => {
   });
   test('FV20-06: deadlines + presets + GET ability-to-pay + codefendants + hague', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.get('/deadlines'");
     expect(s).toContain("router.get('/presets'");
     expect(s).toContain("router.get('/ability-to-pay'");
@@ -105,7 +105,7 @@ describe('FV_20. firm_verticals — 36 Routes → ≥20', () => {
 describe('MTR_20. matters(8) + cases(8) → ≥20', () => {
   test('MTR20-01: matters all 8 routes', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/matters.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matters.js','utf8');
     expect(s).toContain("router.delete('/:id/events/:eid'");
     expect(s).toContain("router.get('/retention-status'");
     expect(s).toContain("router.get('/workload'");
@@ -118,7 +118,7 @@ describe('MTR_20. matters(8) + cases(8) → ≥20', () => {
   });
   test('MTR20-02: cases all 8 routes', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/cases.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/cases.js','utf8');
     expect(s).toContain("router.get('/:id/status-history'");
     expect(s).toContain("router.delete('/:id/events/:eventId'");
     expect(s).toContain("router.post('/:id/invite'");
@@ -133,7 +133,7 @@ describe('MTR_20. matters(8) + cases(8) → ≥20', () => {
 describe('MIA_20. matter_intelligence(7) + analytics(6) + conflicts(7) + privilege(5) → ≥20', () => {
   test('MIA20-01: MI all 7 routes', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js','utf8');
     for (const r of ['/:matterId/diversion','/:matterId/motions','/firm/dashboard',
                      '/:matterId/signals','/:matterId/taxonomy',
                      '/:matterId/escalation','/:matterId/outcome'])
@@ -141,14 +141,14 @@ describe('MIA_20. matter_intelligence(7) + analytics(6) + conflicts(7) + privile
   });
   test('MIA20-02: analytics 5 routes + audit/bias + registry', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/analytics.js','utf8');
     for (const r of ['/:matterId/estimate','/:matterId/precedents','/monitor/status',
                      '/registry','/monitor/run','/audit/bias'])
       expect(s).toContain(r);
   });
   test('MIA20-03: conflicts all 7 routes', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/conflicts.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/conflicts.js','utf8');
     expect(s).toContain("router.delete('/ethics-wall/:matterId/:userId'");
     expect(s).toContain("router.get('/ethics-wall/log/:firmId'");
     expect(s).toContain("router.get('/report/:firmId'");
@@ -159,7 +159,7 @@ describe('MIA_20. matter_intelligence(7) + analytics(6) + conflicts(7) + privile
   });
   test('MIA20-04: privilege all 5 routes', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js','utf8');
     expect(s).toContain("router.get('/matter/:matterId/csv'");
     expect(s).toContain("router.get('/matter/:matterId/pdf'");
     expect(s).toContain("router.get('/matter/:matterId/review-status'");
@@ -181,7 +181,7 @@ describe('MIA_20. matter_intelligence(7) + analytics(6) + conflicts(7) + privile
 describe('PSH_20. push(6) + bondsman(6) + hague(5) + recap(5) + other large groups → ≥20', () => {
   test('PSH20-01: push all 6 low-hit routes confirmed', async () => {
     const fs=await import('fs');
-    const pu=fs.readFileSync('/tmp/JG/backend/src/routes/push.js','utf8');
+    const pu=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js','utf8');
     expect(pu).toContain("router.post('/d7-reengage'");
     expect(pu).toContain("router.post('/receipts'");
     expect(pu).toContain("router.get('/preferences'");
@@ -191,7 +191,7 @@ describe('PSH_20. push(6) + bondsman(6) + hague(5) + recap(5) + other large grou
   });;
   test('PSH20-02: bondsman all 6 routes', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/billing/bondsman.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/bondsman.js','utf8');
     expect(s).toContain("router.get('/bondsman/verified-badge/status'");
     expect(s).toContain("router.post('/bondsman/verified-badge/subscribe'");
     expect(s).toContain("router.post('/bondsman/verified-badge/cancel'");
@@ -201,8 +201,8 @@ describe('PSH_20. push(6) + bondsman(6) + hague(5) + recap(5) + other large grou
   });
   test('PSH20-03: hague + recap all routes', async () => {
     const fs=await import('fs');
-    const hg=fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js','utf8');
-    const rc=fs.readFileSync('/tmp/JG/backend/src/routes/integrations/recap.js','utf8');
+    const hg=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js','utf8');
+    const rc=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js','utf8');
     expect(hg).toContain("router.get('/member-states'");
     expect(hg).toContain("router.get('/central-authority/:countryCode'");
     expect(hg).toContain("router.get('/intake/:caseId'");

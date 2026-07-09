@@ -76,40 +76,40 @@ const mkMatter = (v, o = {}) => ({
 describe('1. push.js — 10 Push Notification Handlers', () => {
   test('1-01: push.js has exactly 10 route handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/push.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js', 'utf8');
     const h = src.match(/router\.(post|get)\s*\(/g) || [];
     expect(h.length).toBe(10);
   });
   test('1-02: /token registers Expo push token', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/push.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js', 'utf8');
     expect(src).toContain("'/token'");
     expect(src).toContain('expo-server-sdk');
     expect(src).toContain('_expoClient');
   });
   test('1-03: /d7-reengage sends 7-day re-engagement push', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/push.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js', 'utf8');
     expect(src).toContain("'/d7-reengage'");
   });
   test('1-04: /retention/post-purchase fires retention sequence after purchase', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/push.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js', 'utf8');
     expect(src).toContain("'/retention/post-purchase'");
   });
   test('1-05: /reminders subscribes to deadline push reminders', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/push.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js', 'utf8');
     expect(src).toContain("'/reminders'");
   });
   test('1-06: /preferences GET+POST for push opt-in/opt-out', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/push.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js', 'utf8');
     expect(src).toContain("'/preferences'");
   });
   test('1-07: /test + /tip + /send + /receipts complete the 10', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/push.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js', 'utf8');
     expect(src).toContain("'/test'");
     expect(src).toContain("'/tip'");
     expect(src).toContain("'/send'");
@@ -117,7 +117,7 @@ describe('1. push.js — 10 Push Notification Handlers', () => {
   });
   test('1-08: push limiter is 20/minute per user', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/push.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js', 'utf8');
     expect(src).toContain('max: 20');
     expect(src).toContain('Push notification limit reached');
   });
@@ -127,36 +127,36 @@ describe('1. push.js — 10 Push Notification Handlers', () => {
 describe('2. arrests.js — Public Arrest Record API', () => {
   test('2-01: arrests.js has 7 route handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/arrests.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/arrests.js', 'utf8');
     const h = src.match(/router\.(get|post)\s*\(/g) || [];
     expect(h.length).toBe(7);
   });
   test('2-02: /search by name + county', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/arrests.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/arrests.js', 'utf8');
     expect(src).toContain("'/search'");
     expect(src).toContain('name');
     expect(src).toContain('county');
   });
   test('2-03: /recent returns recent arrests by county', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/arrests.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/arrests.js', 'utf8');
     expect(src).toContain("'/recent'");
     expect(src).toContain('limit=50');
   });
   test('2-04: /stats/county/:county returns county-level stats', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/arrests.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/arrests.js', 'utf8');
     expect(src).toContain('/stats/county/:county');
   });
   test('2-05: /monitors GET+POST for arrest monitor management', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/arrests.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/arrests.js', 'utf8');
     expect(src).toContain("'/monitors'");
   });
   test('2-06: arrest records come from SQLite DB', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/arrests.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/arrests.js', 'utf8');
     expect(src).toContain('sqlite3');
     expect(src).toContain('open');
   });
@@ -166,19 +166,19 @@ describe('2. arrests.js — Public Arrest Record API', () => {
 describe('3. translate.js — Attorney-Client Translation', () => {
   test('3-01: translate.js has 5 route handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/translate.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/translate.js', 'utf8');
     const h = src.match(/router\.(post|get)\s*\(/g) || [];
     expect(h.length).toBe(5);
   });
   test('3-02: architecture is turn-based via short polling (no WebSocket)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/translate.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/translate.js', 'utf8');
     expect(src).toContain('turn-based translation via short polling');
     expect(src).toContain('no WebSocket');
   });
   test('3-03: has /message, /session, /session/:code GET+POST, /messages', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/translate.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/translate.js', 'utf8');
     expect(src).toContain("'/message'");
     expect(src).toContain("'/session'");
     expect(src).toContain("'/session/:code'");
@@ -187,7 +187,7 @@ describe('3. translate.js — Attorney-Client Translation', () => {
   });
   test('3-04: both phones hit the same session code', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/translate.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/translate.js', 'utf8');
     expect(src).toContain('Both phones hit the same session code');
   });
 });
@@ -196,27 +196,27 @@ describe('3. translate.js — Attorney-Client Translation', () => {
 describe('4. matters.js retention-status + messages.js bulk', () => {
   test('4-01: /retention-status requires partner+ role', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matters.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matters.js', 'utf8');
     expect(src).toContain('/retention-status');
     expect(src).toContain("'partner'");
     expect(src).toContain('retention summary');
   });
   test('4-02: /retention-status returns firm-level data (firmId)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matters.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matters.js', 'utf8');
     expect(src).toContain('getFirmId');
     expect(src).toContain('Not a firm member.');
   });
   test('4-03: messages.js /bulk sends inquiry to multiple attorneys', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/messages.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/messages.js', 'utf8');
     expect(src).toContain("'/bulk'");
     expect(src).toContain('lawyer_ids');
     expect(src).toContain('sent: number');
   });
   test('4-04: privilege.js /review-status requires partner+ role', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js', 'utf8');
     expect(src).toContain('/review-status');
     expect(src).toContain("requireFirmRole('partner')");
   });
@@ -248,13 +248,13 @@ describe('5. computePISignals — Personal Injury Signals', () => {
   });
   test('5-05: plaintiff_fault_pct clamped to [0,100]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('Math.max(0, Math.min(100,');
     expect(src).toContain('plaintiff_fault_pct');
   });
   test('5-06: punitive damages only apply when causation=clear + strong evidence', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain("causa === 'clear'");
     expect(src).toContain('punitive_damages');
     expect(src).toContain('Punitive damages are not reduced by plaintiff fault');
@@ -310,7 +310,7 @@ describe('6. computeFamilySignals — Family Law Signals', () => {
   });
   test('6-06: dv_flag regex detects domestic violence title keywords', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('domestic violence|dv|restraining|protective order');
   });
   test('6-07: 2000 family computations — all signal types correct', () => {
@@ -334,14 +334,14 @@ describe('6. computeFamilySignals — Family Law Signals', () => {
 describe('7. integrations/caldav.js — CalDAV Calendar Integration', () => {
   test('7-01: caldav.js targets CalDAV RFC 4791 servers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/caldav.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/caldav.js', 'utf8');
     expect(src).toContain('CalDAV');
     expect(src).toContain('RFC 4791');
     expect(src).toContain('RFC 5545');
   });
   test('7-02: supports Apple Calendar, Nextcloud, Fastmail + Google + Outlook', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/caldav.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/caldav.js', 'utf8');
     expect(src).toContain('Apple Calendar');
     expect(src).toContain('Nextcloud');
     expect(src).toContain('Google Calendar');
@@ -349,25 +349,25 @@ describe('7. integrations/caldav.js — CalDAV Calendar Integration', () => {
   });
   test('7-03: has push/:entryId, push/matter/:id, DELETE /events/:uid', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/caldav.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/caldav.js', 'utf8');
     expect(src).toContain('/push/:entryId');
     expect(src).toContain('/push/matter/:');
     expect(src).toContain('/events/:uid');
   });
   test('7-04: generates iCal (.ics) format per RFC 5545', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/caldav.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/caldav.js', 'utf8');
     expect(src).toContain('buildVCalendar');
     expect(src).toContain('.ics');
   });
   test('7-05: HMAC-SHA256 UIDs prevent duplicate calendar entries', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/caldav.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/caldav.js', 'utf8');
     expect(src).toContain('HMAC-SHA256');
   });
   test('7-06: has /ical/:firmId for shared calendar feed', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/caldav.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/caldav.js', 'utf8');
     expect(src).toContain('/ical/:firmId');
   });
 });
@@ -376,7 +376,7 @@ describe('7. integrations/caldav.js — CalDAV Calendar Integration', () => {
 describe('8. i18n — 8 Remaining Category Sweeps', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
   };
 
   test('8-01: whn_ DUI walkthrough step keys', async () => {
@@ -489,7 +489,7 @@ describe('9. Regression — All v1–v21 Confirmed', () => {
   test('9-08: zero hex violations in useTheme screens', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const dir = '/tmp/JG/frontend/src/screens';
+    const dir = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {

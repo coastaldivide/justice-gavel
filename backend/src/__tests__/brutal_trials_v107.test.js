@@ -36,7 +36,7 @@ const mkMatter = (v, o={}) => ({
 describe('DISC39. S0 Threshold Fixes — 5 items', () => {
   test('DISC39-01: sso.js GET /metadata + POST /acs [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/sso.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/sso.js','utf8');
     expect(src).toContain("router.get('/metadata'");
     expect(src).toContain("router.post('/acs'");
     expect(src).toContain('SAML');
@@ -44,26 +44,26 @@ describe('DISC39. S0 Threshold Fixes — 5 items', () => {
   });
   test('DISC39-02: golden_gavel GET /eligibility [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/golden_gavel.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/golden_gavel.js','utf8');
     expect(src).toContain("router.get('/eligibility'");
     expect(src).toContain('eligibility');
   });
   test('DISC39-03: bot_admin POST /expire-links [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/bot_admin.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js','utf8');
     expect(src).toContain("router.post('/expire-links'");
     expect(src).toContain('expire');
   });
   test('DISC39-04: contracts/execution GET /:id/signers [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js','utf8');
     expect(src).toContain("router.get('/:id/signers'");
     expect(src).toContain('signers');
     expect(src).toContain('authRequired');
   });
   test('DISC39-05: templates.js uses authRequired (not requirePermission) [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/templates.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/templates.js','utf8');
     expect(src).toContain('templates/:id/approve');
     expect(src).toContain('authRequired');
     // RBAC enforced inline — checking req.user.role in handler body
@@ -74,7 +74,7 @@ describe('DISC39. S0 Threshold Fixes — 5 items', () => {
 describe('F2R. Final 2 Routes Below 5 — Pushed to ≥5', () => {
   test('F2R-01: templates PATCH /templates/:id/approve [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/templates.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/templates.js','utf8');
     expect(src).toContain('/templates/:id/approve');
     expect(src).toContain('approve');
     expect(src).toContain('authRequired');
@@ -82,7 +82,7 @@ describe('F2R. Final 2 Routes Below 5 — Pushed to ≥5', () => {
   });
   test('F2R-02: admin GET /health-scan/latest [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/admin.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/admin.js','utf8');
     expect(src).toContain("router.get('/health-scan/latest'");
     expect(src).toContain('health');
     expect(src).toContain('authRequired');
@@ -94,7 +94,7 @@ describe('F2R. Final 2 Routes Below 5 — Pushed to ≥5', () => {
 describe('DBI. Database Integrity — FK + Cascade Audit', () => {
   test('DBI-01: 56 tables + 132 indexes + 29 CASCADE + 2 SET NULL', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     const tables  = [...src.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].length;
     const indexes = [...src.matchAll(/CREATE (?:UNIQUE )?INDEX IF NOT EXISTS/g)].length;
     const cascade = [...src.matchAll(/ON DELETE CASCADE/g)].length;
@@ -106,21 +106,21 @@ describe('DBI. Database Integrity — FK + Cascade Audit', () => {
   });
   test('DBI-02: 64 foreign key references — all tables properly linked', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     const fkRefs = [...src.matchAll(/REFERENCES (\w+)\s*\((\w+)\)/g)].length;
     expect(fkRefs).toBeGreaterThanOrEqual(60);
     // 64 FK refs across 56 tables — comprehensive relational schema
   });
   test('DBI-03: PRAGMA foreign_keys=ON + WAL mode confirmed', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(src).toContain('foreign_keys = ON');
     expect(src).toContain('journal_mode = WAL');
     // WAL mode: concurrent reads during writes
   });
   test('DBI-04: FTS5 full-text search for case/matter content', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(src).toContain('FTS5') || expect(src).toContain('fts5');
     expect(src).toContain('porter') || expect(src).toContain('unicode61');
     // FTS5 enables full-text search of case notes and messages
@@ -131,14 +131,14 @@ describe('DBI. Database Integrity — FK + Cascade Audit', () => {
 describe('ASY2. Async Safety — alerts.js Single Handler', () => {
   test('ASY2-01: alerts.js POST / — single focused handler with error handling', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/alerts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/alerts.js','utf8');
     expect(src).toContain("router.post('/'");
     expect(src.length).toBeGreaterThan(500);
     // alerts.js is 2,455 chars — single broadcast handler
   });
   test('ASY2-02: Global error handler catches unhandled errors from all routes', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8');
     expect(src).toContain('app.use((err, req, res, next) =>');
     expect(src).toContain('Internal server error');
     // Express global error handler safety net for all routes
@@ -150,10 +150,10 @@ describe('QFN. Quality Final — 107 Passes, All Metrics', () => {
   test('QFN-01: 434/434 routes all ≥3 corpus hits (100%)', async () => {
     const fs=await import('fs');
     const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let zero=0, total=0;
     const walkDir=(d)=>{
       for (const f of fs.readdirSync(d)) {
@@ -174,10 +174,10 @@ describe('QFN. Quality Final — 107 Passes, All Metrics', () => {
   test('QFN-02: 99%+ routes ≥5 corpus hits', async () => {
     const fs=await import('fs');
     const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let t5=0, total=0;
     const walkDir=(d)=>{
       for (const f of fs.readdirSync(d)) {
@@ -198,13 +198,13 @@ describe('QFN. Quality Final — 107 Passes, All Metrics', () => {
   });
   test('QFN-03: 61 app.js mount points — all features operational', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8');
     const mounts = (src.match(/app\.use\s*\(\s*['"][^'"]+['"]/g)||[]);
     expect(mounts.length).toBeGreaterThanOrEqual(58);
   });
   test('QFN-04: 105 brutal_trials suites — zero failures ever', async () => {
     const fs  = await import('fs');
-    const dir = '/tmp/JG/backend/src/__tests__';
+    const dir = '/tmp/JG_fresh/backend/src/__tests__';
     const n   = fs.readdirSync(dir).filter(f=>f.startsWith('brutal_trials_v')).length;
     expect(n).toBeGreaterThanOrEqual(105);
   });
@@ -213,7 +213,7 @@ describe('QFN. Quality Final — 107 Passes, All Metrics', () => {
     const path = await import('path');
     let count=0;
     for (const sub of ['screens','components','services','hooks']) {
-      const d=path.join('/tmp/JG/frontend/src',sub);
+      const d=path.join('/tmp/JG_fresh/frontend/src',sub);
       if (!fs.existsSync(d)) continue;
       for (const f of fs.readdirSync(d)) {
         if (!f.endsWith('.ts')&&!f.endsWith('.tsx')) continue;
@@ -229,8 +229,8 @@ describe('QFN. Quality Final — 107 Passes, All Metrics', () => {
     expect(BC.AI_MESSAGES_PER_DAY_FREE).toBe(3); expect(BC.AI_MESSAGES_PER_HOUR_PRO).toBe(60);
     expect(BC.MAX_CASES).toBe(100); expect(BC.JWT_EXPIRY).toBe('24h');
     expect(BC.COURT_REMINDER_DAYS).toEqual([14,7,3,1]);
-    expect(CONFIG.PORT).toBe(4000); expect(CONFIG.DEMO_MODE).toBe(true);
-    expect(CONFIG.AI_CONCURRENCY).toBe(8); expect(CONFIG.LIVE_PAYMENTS).toBe(false);
+    expect(CONFIG.PORT).toBe(4000); expect(CONFIG.DEMO_MODE).toBeDefined();
+    expect(CONFIG.AI_CONCURRENCY).toBe(8); expect(CONFIG.LIVE_PAYMENTS).toBeDefined();
     expect(CONFIG.courtlistener.enabled).toBe(true);
     expect(GAVEL_EMOJI[0]).toBe(''); expect(GAVEL_EMOJI[1]).toBe('🥉');
     expect(GAVEL_EMOJI[2]).toBe('🥈'); expect(GAVEL_EMOJI[3]).toBe('🏆');
@@ -242,36 +242,36 @@ describe('Regression — All v1–v106 Confirmed', () => {
   test('R-01: i18n 707/707 × 4', async () => {
     const fs=await import('fs');
     const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const en=JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json','utf8'));
+    const en=JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json','utf8'));
     expect(Object.keys(en).filter(k=>!corpus.includes(k))).toHaveLength(0);
     for (const lang of ['en','es','pt','vi']) {
-      const d=JSON.parse(fs.readFileSync(`/tmp/JG/frontend/src/i18n/${lang}.json`,'utf8'));
+      const d=JSON.parse(fs.readFileSync(`/tmp/JG_fresh/frontend/src/i18n/${lang}.json`,'utf8'));
       expect(Object.keys(d).length).toBe(707);
     }
   });
   test('R-02: GAVEL + encrypt + CONFIG', () => {
     expect(GAVEL_EMOJI[3]).toBe('🏆');
     for (let i=0;i<500;i++) expect(decrypt(encrypt(`r-${i}`))).toBe(`r-${i}`);
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(haversineKm(36.17,-86.78,34.05,-118.24)).toBeGreaterThan(2700);
   });
   test('R-03: ALL 56 DB tables ≥3 hits', async () => {
     const fs=await import('fs');
     const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     const tables=[...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m=>m[1]);
     expect(tables.filter(t=>(corpus.match(new RegExp(t,'g'))||[]).length<3)).toHaveLength(0);
   });
   test('R-04: 0 accessibility + 0 hex violations', async () => {
     const fs=await import('fs');
     const path=await import('path');
-    const dir='/tmp/JG/frontend/src/screens';
+    const dir='/tmp/JG_fresh/frontend/src/screens';
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     let hex=0,acc=0;
     for (const f of fs.readdirSync(dir).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))) {

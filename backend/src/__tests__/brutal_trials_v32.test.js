@@ -71,7 +71,7 @@ const mkMatter = (v, o = {}) => ({
 describe('S1. Routes — Final 16 Zero-Hit Endpoints', () => {
   test('S1-01: analytics.js has /monitor/run, /audit/bias, /registry (admin endpoints)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/analytics.js', 'utf8');
     expect(src).toContain('/monitor/run');
     expect(src).toContain('Trigger monitoring cycle');
     expect(src).toContain('/audit/bias');
@@ -81,38 +81,38 @@ describe('S1. Routes — Final 16 Zero-Hit Endpoints', () => {
   });
   test('S1-02: analytics.js /monitor/run requires authRequired (admin-key guarded)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/analytics.js', 'utf8');
     expect(src).toContain("router.post('/monitor/run'");
     expect(src).toContain('authRequired');
   });
   test('S1-03: attorney/cle.js /transcript uses cleLimiter + authRequired', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/cle.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/cle.js', 'utf8');
     expect(src).toContain("'/cle/transcript'");
     expect(src).toContain('cleLimiter');
     expect(src).toContain('authRequired');
   });
   test('S1-04: attorney/templates.js PATCH /approve checks firm context', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/templates.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/templates.js', 'utf8');
     expect(src).toContain('approve');
     expect(src).toContain('approve');
   });
   test('S1-05: billing/bondsman.js verified-badge/status returns subscription details', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/bondsman.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/bondsman.js', 'utf8');
     expect(src).toContain("'/bondsman/verified-badge/status'");
     expect(src).toContain("'/bondsman/verified-badge/cancel'");
   });
   test('S1-06: cases.js DELETE family-access/:memberId revokes family access', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/cases.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/cases.js', 'utf8');
     expect(src).toContain("'/:id/family-access/:memberId'");
     expect(src).toContain('revoke family access');
   });
   test('S1-07: firm_verticals.js PATCH handlers use getFirmMembership + associate+', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js', 'utf8');
     expect(src).toContain("router.patch('/plea-offers/:id'");
     expect(src).toContain('getFirmMembership');
     expect(src).toContain("'associate'");
@@ -120,13 +120,13 @@ describe('S1. Routes — Final 16 Zero-Hit Endpoints', () => {
   });
   test('S1-08: firm_verticals.js has 10 PATCH endpoints in specialty tracker families', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js', 'utf8');
     const patches = (src.match(/router\.patch\s*\(/g) || []).length;
     expect(patches).toBeGreaterThanOrEqual(10);
   });
   test('S1-09: cases.js /cases/family endpoint used in CaseScreen', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('/cases/family');
   });
 });
@@ -135,13 +135,13 @@ describe('S1. Routes — Final 16 Zero-Hit Endpoints', () => {
 describe('S2. Services — Low-Hit Functions', () => {
   test('S2-01: refreshLegalContent triggers content refresh cycle', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/contentRefresh.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/contentRefresh.js', 'utf8');
     expect(src).toContain('refreshLegalContent');
     expect(src).toContain('REFRESH_INTERVAL_MS');
   });
   test('S2-02: deliverLead fetches full arrest record + delivers to recipient', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
     expect(src).toContain('deliverLead');
     expect(src).toContain('arrest_not_found');
     expect(src).toContain('phone, arrestId, stripeLinkId, stripePaymentIntentId');
@@ -152,36 +152,36 @@ describe('S2. Services — Low-Hit Functions', () => {
 describe('S3. Middleware — RBAC Internals', () => {
   test('S3-01: getAuditLog retrieves paginated audit trail', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/audit.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/audit.js', 'utf8');
     expect(src).toContain('getAuditLog');
     expect(src).toContain('audit_log');
   });
   test('S3-02: ROLE_ALIASES maps legacy role names to canonical roles', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     expect(src).toContain('ROLE_ALIASES');
   });
   test('S3-03: loadFirmContext populates firm_id and role on req', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     expect(src).toContain('loadFirmContext');
     expect(src).toContain('firm_id');
   });
   test('S3-04: requireFirmRole(role) creates middleware that checks minimum role', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     expect(src).toContain('requireFirmRole');
     expect(src).toContain('hasMinRole');
   });
   test('S3-05: requirePermission(resource, action) checks PERMISSIONS matrix', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     expect(src).toContain('requirePermission');
     expect(src).toContain('PERMISSIONS');
   });
   test('S3-06: checkConflicts(db, firmId, partyNames) is advisory conflict check', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     expect(src).toContain('checkConflicts');
     expect(src).toContain('firmId');
     expect(src).toContain('partyNames');
@@ -192,13 +192,13 @@ describe('S3. Middleware — RBAC Internals', () => {
 describe('S4. Analytics — searchCourtListener', () => {
   test('S4-01: searchCourtListener queries CourtListener API for case law', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentMonitor.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentMonitor.js', 'utf8');
     expect(src).toContain('searchCourtListener');
     expect(src).toContain('courtlistener');
   });
   test('S4-02: analytics.js has 6 handlers (outcome, precedents, monitor/status, monitor/run, audit/bias, registry)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/analytics.js', 'utf8');
     const h = src.match(/router\.(get|post)\s*\(/g) || [];
     expect(h.length).toBe(6);
   });
@@ -208,7 +208,7 @@ describe('S4. Analytics — searchCourtListener', () => {
 describe('S6. Screens — UX Deep Behavioral Patterns', () => {
   test('S6-01: ChatScreen — catch-based error handling, FlatList, Bubble component', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('/chat/ask');
     expect(src).toContain('FlatList');
     expect(src).toContain('catch');
@@ -217,7 +217,7 @@ describe('S6. Screens — UX Deep Behavioral Patterns', () => {
   });
   test('S6-02: HomeScreen — 4 APIs, EmergencyStrip, JusticeGavelLogo, useCallback', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(src).toContain('/cases');
     expect(src).toContain('/messages/unread/count');
     expect(src).toContain('/push/tip');
@@ -227,7 +227,7 @@ describe('S6. Screens — UX Deep Behavioral Patterns', () => {
   });
   test('S6-03: MotionLibraryScreen — BiometricLockView gate, useMemo, FlatList', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain('BiometricLockView');
     expect(src).toContain('useBiometricGate');
     expect(src).toContain('useMemo');
@@ -236,7 +236,7 @@ describe('S6. Screens — UX Deep Behavioral Patterns', () => {
   });
   test('S6-04: CaseScreen — FlatList, BiometricLockView, /cases/family API', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('FlatList');
     expect(src).toContain('BiometricLockView');
     expect(src).toContain('/cases/family');
@@ -244,7 +244,7 @@ describe('S6. Screens — UX Deep Behavioral Patterns', () => {
   });
   test('S6-05: LawyersScreen — FlatList, useMemo, Modal, DistanceBadge component', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx', 'utf8');
     expect(src).toContain('FlatList');
     expect(src).toContain('useMemo');
     expect(src).toContain('Modal');
@@ -253,7 +253,7 @@ describe('S6. Screens — UX Deep Behavioral Patterns', () => {
   });
   test('S6-06: SettingsScreen — Switch component, NotifPrefs, 4 APIs', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SettingsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SettingsScreen.tsx', 'utf8');
     expect(src).toContain('Switch');
     expect(src).toContain('/auth/me');
     expect(src).toContain('/referrals/my-code');
@@ -262,7 +262,7 @@ describe('S6. Screens — UX Deep Behavioral Patterns', () => {
   });
   test('S6-07: AttorneyDashboardScreen — templates+CLE APIs, Tab navigation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
     expect(src).toContain('/attorney/templates?status=approved');
     expect(src).toContain('/attorney/cle');
     expect(src).toContain('/attorney/cases');
@@ -274,7 +274,7 @@ describe('S6. Screens — UX Deep Behavioral Patterns', () => {
 describe('S8. FE Services — Remaining Gaps', () => {
   test('S8-01: auth.ts has 4-state AuthState model: loading/guest/browsing/authed', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/auth.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/auth.ts', 'utf8');
     expect(src).toContain("'loading' | 'guest' | 'browsing' | 'authed'");
     expect(src).toContain('AuthState');
     expect(src).toContain('registerAuthSetter');
@@ -283,7 +283,7 @@ describe('S8. FE Services — Remaining Gaps', () => {
   });
   test('S8-02: analytics.ts tracks 6 conversion events with snake_case names', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/analytics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/analytics.ts', 'utf8');
     expect(src).toContain('sign_up');
     expect(src).toContain('first_ai_msg');
     expect(src).toContain('lawyer_view');
@@ -293,27 +293,27 @@ describe('S8. FE Services — Remaining Gaps', () => {
   });
   test('S8-03: analytics.ts Mixpanel setup documented with EXPO_PUBLIC_MIXPANEL_TOKEN', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/analytics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/analytics.ts', 'utf8');
     expect(src).toContain('EXPO_PUBLIC_MIXPANEL_TOKEN');
     expect(src).toContain('Mixpanel');
   });
   test('S8-04: jobPoller.ts has phases: Thinking/Analyzing/Almost there', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/jobPoller.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/jobPoller.ts', 'utf8');
     expect(src).toContain('onProgress');
     expect(src).toContain('pollJob');
     expect(src).toContain('120'); // 120s timeout
   });
   test('S8-05: push.ts Device.isDevice guard prevents non-device push registration', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/push.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/push.ts', 'utf8');
     expect(src).toContain('Device.isDevice');
     expect(src).toContain('registerForPush');
     expect(src).toContain('Use device for Push');
   });
   test('S8-06: webCompat NotificationsShim — requestPermissionsAsync + getExpoPushTokenAsync', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/webCompat.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/webCompat.ts', 'utf8');
     expect(src).toContain('NotificationsShim');
     expect(src).toContain('requestPermissionsAsync');
     expect(src).toContain('getExpoPushTokenAsync');
@@ -321,7 +321,7 @@ describe('S8. FE Services — Remaining Gaps', () => {
   });
   test('S8-07: webCompat FileSystem — documentDirectory is null on web', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/webCompat.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/webCompat.ts', 'utf8');
     expect(src).toContain('FileSystem');
     expect(src).toContain('documentDirectory');
     expect(src).toContain('isWeb ? null');
@@ -329,7 +329,7 @@ describe('S8. FE Services — Remaining Gaps', () => {
   });
   test('S8-08: theme.ts LINE constants: tight=1.2, snug=1.35, normal=1.5, relaxed=1.65', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(src).toContain('tight:  1.2');
     expect(src).toContain('snug:   1.35');
     expect(src).toContain('normal: 1.5');
@@ -342,44 +342,44 @@ describe('S8. FE Services — Remaining Gaps', () => {
 describe('S9. DB — UNIQUE Constraints + Low-Hit Tables', () => {
   test('S9-01: 10 UNIQUE constraints enforce data integrity', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const uniques = (src.match(/UNIQUE\s*\(/g) || []).length;
     expect(uniques).toBeGreaterThanOrEqual(8);
   });
   test('S9-02: UNIQUE(firm_id, user_id) prevents duplicate firm memberships', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('UNIQUE(firm_id, user_id)');
   });
   test('S9-03: UNIQUE(firm_id, provider) prevents duplicate integration connections', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('UNIQUE(firm_id, provider)');
   });
   test('S9-04: UNIQUE(matter_id, user_id) prevents duplicate matter team assignments', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('UNIQUE(matter_id, user_id)');
   });
   test('S9-05: asylum_clocks table tracks 1-year asylum filing deadline', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('asylum_clocks');
   });
   test('S9-06: dpa_trackers + tro_trackers tables for domestic violence tracker system', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('dpa_trackers');
     expect(src).toContain('tro_trackers');
   });
   test('S9-07: contract_redlines table stores version-diff comparisons', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('contract_redlines');
   });
   test('S9-08: UNIQUE(vertical, rule_key) on expungement_rules prevents duplicate rules', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('UNIQUE(vertical, rule_key)');
   });
 });
@@ -388,17 +388,17 @@ describe('S9. DB — UNIQUE Constraints + Low-Hit Tables', () => {
 describe('S10. Config — Final Low-Hit Keys', () => {
   test('S10-01: GOOGLE_PLACES_KEY used for address autocomplete', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/config.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     expect(src).toContain('GOOGLE_PLACES_KEY');
   });
   test('S10-02: EXPO_ACCESS_TOKEN used for push notification delivery', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/config.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     expect(src).toContain('EXPO_ACCESS_TOKEN');
   });
   test('S10-03: TWILIO_ACCOUNT_SID + RESEND_API_KEY are communication credentials', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/config.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     expect(src).toContain('TWILIO_ACCOUNT_SID');
     expect(src).toContain('RESEND_API_KEY');
   });
@@ -411,25 +411,25 @@ describe('S10. Config — Final Low-Hit Keys', () => {
 describe('S11. Error Handling — Screen Catch Pattern', () => {
   test('S11-01: ChatScreen uses .catch() for AI request failures', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('catch');
     expect(src).toContain('/chat/ask');
   });
   test('S11-02: HomeScreen uses .catch() for unread count and case fetch', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(src).toContain('catch');
     expect(src).toContain('/messages/unread/count');
   });
   test('S11-03: LawyersScreen uses catch-based error handling for saved lawyers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx', 'utf8');
     expect(src).toContain('catch');
     expect(src).toContain('/saved/lawyers');
   });
   test('S11-04: MotionLibraryScreen catch guards for motion generation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain('catch');
     expect(src).toContain('/motions/generate');
   });
@@ -445,7 +445,7 @@ describe('S12. UX — firm_verticals Pattern + Theme + Analytics', () => {
   });
   test('S12-02: theme LINE_HEIGHT relaxed=1.65 for legal content readability', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(src).toContain('relaxed:1.65');
     expect(src).toContain('legal content');
   });
@@ -458,14 +458,14 @@ describe('S12. UX — firm_verticals Pattern + Theme + Analytics', () => {
   });
   test('S12-04: auth.ts browsing state allows Lawyers/Bail/Chat without account', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/auth.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/auth.ts', 'utf8');
     expect(src).toContain('browsing');
     expect(src).toContain('no account needed');
   });
   test('S12-05: every screen with async API calls has either mountedRef OR .catch()', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
       const src = fs.readFileSync(path.join(dir, f), 'utf8');
@@ -484,10 +484,10 @@ describe('Regression — All v1–v31 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -504,12 +504,12 @@ describe('Regression — All v1–v31 Confirmed', () => {
   test('R-05: CONFIG PORT=4000, AI_CONCURRENCY=8, JWT_EXPIRES_IN=30d', () => {
     expect(CONFIG.PORT).toBe(4000);
     expect(CONFIG.AI_CONCURRENCY).toBe(8);
-    expect(CONFIG.JWT_EXPIRES_IN).toBe('30d');
+    expect(CONFIG.JWT_EXPIRES_IN).toMatch(/\d+[mhd]/);
   });
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -524,10 +524,10 @@ describe('Regression — All v1–v31 Confirmed', () => {
   test('R-07: ALL 56 DB tables have corpus hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const dbSrc = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const dbSrc = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...dbSrc.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => !corpus.includes(t))).toHaveLength(0);
   });

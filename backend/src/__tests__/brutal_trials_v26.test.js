@@ -55,27 +55,27 @@ const mkMatter = (v, o = {}) => ({
 });
 const getEn = async () => {
   const fs = await import('fs');
-  return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+  return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
 };
 
 // ── 1. Components — LegalNotice, ScreenHeader, LawyerCard ────────────────
 describe('1. Components — LegalNotice + ScreenHeader + LawyerCard', () => {
   test('1-01: LegalNotice is a persistent unobtrusive AI-content disclosure', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LegalNotice.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LegalNotice.tsx', 'utf8');
     expect(src).toContain('not legal advice');
     expect(src).toContain('LegalNotice');
     expect(src).toContain('AI-generated');
   });
   test('1-02: LegalNotice is the tier-1 company ongoing disclosure approach', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LegalNotice.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LegalNotice.tsx', 'utf8');
     expect(src).toContain('tier-1');
     expect(src).toContain('always there when it\'s relevant');
   });
   test('1-03: ScreenHeader is unified branded header with nav/navy bg', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/ScreenHeader.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/ScreenHeader.tsx', 'utf8');
     expect(src).toContain('ScreenHeader');
     expect(src).toContain('title');
     expect(src).toContain('COLORS');
@@ -83,19 +83,19 @@ describe('1. Components — LegalNotice + ScreenHeader + LawyerCard', () => {
   });
   test('1-04: ScreenHeader supports optional subtitle and action button', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/ScreenHeader.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/ScreenHeader.tsx', 'utf8');
     expect(src).toContain('subtitle');
     expect(src).toContain('action');
   });
   test('1-05: LawyerCard is attorney result card extracted from LawyersScreen', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LawyerCard.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LawyerCard.tsx', 'utf8');
     expect(src).toContain('LawyerCard');
     expect(src).toContain('Extracted from LawyersScreen');
   });
   test('1-06: LawyerCard Lawyer type has id, name, city, state, phone, distanceKm', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LawyerCard.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LawyerCard.tsx', 'utf8');
     expect(src).toContain('distanceKm?');
     expect(src).toContain('phone?');
     expect(src).toContain('Linking');
@@ -128,14 +128,14 @@ describe('2. icwaApplicable + juvenileSORRequired — Juvenile Special Signals',
   });
   test('2-04: juvenileSORRequired source has advisory comment', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('juvenileSORRequired');
     expect(src).toContain('Advisory');
     expect(src).toContain('state-specific registration');
   });
   test('2-05: CSEC flag detects trafficking + exploitation correctly', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('csecFlag');
     expect(src).toContain('CSEC = Commercial Sexual Exploitation of Children');
     expect(src).toContain("'trafficking' is too broad");
@@ -157,43 +157,43 @@ describe('2. icwaApplicable + juvenileSORRequired — Juvenile Special Signals',
 describe('3. scheduler.js — Automated Pipeline', () => {
   test('3-01: scheduler.js has 8 nightly jobs running at 3AM Central', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('NIGHTLY (3 AM Central)');
     const jobs = src.match(/\d+\.\s+\w/g) || [];
     expect(jobs.length).toBeGreaterThanOrEqual(8);
   });
   test('3-02: job 1 = Google/Yelp provider refresh', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('Google/Yelp provider refresh');
   });
   test('3-03: job 2 = arrest record harvest (97 cities)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('Arrest record harvest');
     expect(src).toContain('97 cities');
   });
   test('3-04: job 4 = outbound bot (revenue engine)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('revenue engine');
     expect(src).toContain('Outbound bot');
   });
   test('3-05: job 6 = state bar refresh on Sundays only', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('State bar');
     expect(src).toContain('Sundays only');
   });
   test('3-06: EVERY 2 HOURS = expire payment links', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('EVERY 2 HOURS');
     expect(src).toContain('Expire payment links');
   });
   test('3-07: LIVE_REFRESH=false gate prevents accidental prod runs in test', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('LIVE_REFRESH');
     expect(src).toContain('Requires LIVE_REFRESH=true');
   });
@@ -203,36 +203,36 @@ describe('3. scheduler.js — Automated Pipeline', () => {
 describe('4. healthScan.js — Automated Health Scan', () => {
   test('4-01: healthScan runs every 12 hours', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain('every 12 hours');
     expect(src).toContain('SCAN_INTERVAL_HOURS');
   });
   test('4-02: scan scope has legal precedent currency check', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain('Legal precedent currency');
     expect(src).toContain('stale registry entries');
   });
   test('4-03: scan scope has asylum clock bar risk check', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain('Asylum clock bar risk');
     expect(src).toContain('1-year bar');
   });
   test('4-04: scan scope has signal engine invariants check', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain('Signal engine invariants');
     expect(src).toContain('correctness assertions');
   });
   test('4-05: always sends daily summary email regardless of status', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain('daily summary email regardless of status');
   });
   test('4-06: SCAN_VERSION is set', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain("SCAN_VERSION = '1.0.0'");
   });
 });
@@ -482,7 +482,7 @@ describe('11. Regression — All v1–v25 Confirmed', () => {
   test('11-08: zero hex violations in useTheme screens', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const dir = '/tmp/JG/frontend/src/screens';
+    const dir = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {

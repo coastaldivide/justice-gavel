@@ -106,47 +106,47 @@ describe('1. LoginScreen — Authentication Flow', () => {
 
   test('1-01: LoginScreen POSTs to /auth/login', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LoginScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LoginScreen.tsx', 'utf8');
     expect(src).toContain("'/auth/login'");
     expect(src).toContain('api.post');
   });
 
   test('1-02: LoginScreen uses setAppAuth on success', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LoginScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LoginScreen.tsx', 'utf8');
     expect(src).toContain('setAppAuth');
   });
 
   test('1-03: LoginScreen has forgot-password endpoint', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LoginScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LoginScreen.tsx', 'utf8');
     expect(src).toContain("'/auth/forgot-password'");
   });
 
   test('1-04: LoginScreen registers push token after login', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LoginScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LoginScreen.tsx', 'utf8');
     expect(src).toContain("'/push/token'");
     expect(src).toContain('registerForPush');
   });
 
   test('1-05: LoginScreen has error state for failed login', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LoginScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LoginScreen.tsx', 'utf8');
     expect(src).toContain('setError');
     expect(src).toContain('error');
   });
 
   test('1-06: LoginScreen has loading state during submission', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LoginScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LoginScreen.tsx', 'utf8');
     expect(src).toContain('loading');
     expect(src).toContain('setLoading');
   });
 
   test('1-07: LoginScreen has show/hide password toggle', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LoginScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LoginScreen.tsx', 'utf8');
     expect(src).toContain('showPass');
     expect(src).toContain('setShowPass');
   });
@@ -159,33 +159,33 @@ describe('2. RegisterScreen — Account Creation', () => {
 
   test('2-01: RegisterScreen POSTs to /auth/register', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RegisterScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RegisterScreen.tsx', 'utf8');
     expect(src).toContain("'/auth/register'");
     expect(src).toContain('api.post');
   });
 
   test('2-02: RegisterScreen enforces 8-character minimum password', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RegisterScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RegisterScreen.tsx', 'utf8');
     expect(src).toContain('password.length < 8');
     expect(src).toContain('8 characters');
   });
 
   test('2-03: RegisterScreen validates non-empty identifier', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RegisterScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RegisterScreen.tsx', 'utf8');
     expect(src).toContain('!identifier.trim()');
   });
 
   test('2-04: RegisterScreen POSTs /push/d7-reengage for re-engagement', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RegisterScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RegisterScreen.tsx', 'utf8');
     expect(src).toContain("'/push/d7-reengage'");
   });
 
   test('2-05: RegisterScreen uses setAppAuth on success', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RegisterScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RegisterScreen.tsx', 'utf8');
     expect(src).toContain('setAppAuth');
   });
 
@@ -208,33 +208,33 @@ describe('3. OnboardingScreen — First-Time User Flow', () => {
 
   test('3-01: OnboardingScreen has "Browse Without Account" on every slide', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
     expect(src).toContain('Browse Without Account');
   });
 
   test('3-02: Skip sets auth state to "browsing" directly', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
     expect(src).toContain("setAppAuth('browsing')");
   });
 
   test('3-03: OnboardingScreen uses FlatList for slides', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
     expect(src).toContain('FlatList');
     expect(src).toContain('Animated');
   });
 
   test('3-04: OnboardingScreen stores onboarding_done in AsyncStorage', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
     expect(src).toContain('AsyncStorage');
     expect(src).toContain('onboarding');
   });
 
   test('3-05: OnboardingScreen has situation and state selection', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
     expect(src).toContain('situation');
     expect(src).toContain('selectedState');
   });
@@ -255,13 +255,13 @@ describe('4. AgeGateScreen — 18+ Age Verification', () => {
 
   test('4-01: AgeGateScreen requires age ≥ 18', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AgeGateScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AgeGateScreen.tsx', 'utf8');
     expect(src).toContain('18');
   });
 
   test('4-02: AgeGateScreen asks for birth year only (least friction)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AgeGateScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AgeGateScreen.tsx', 'utf8');
     expect(src).toContain('year');
     // Year-only, not full DOB
     const hasFullDOB = src.includes('month') && src.includes('day') && src.includes('year');
@@ -270,7 +270,7 @@ describe('4. AgeGateScreen — 18+ Age Verification', () => {
 
   test('4-03: AgeGateScreen legal basis: bail contracts + Stripe', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AgeGateScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AgeGateScreen.tsx', 'utf8');
     const hasLegalBasis = src.includes('Bail') || src.includes('Stripe') || src.includes('18+');
     expect(hasLegalBasis).toBe(true);
   });
@@ -287,7 +287,7 @@ describe('4. AgeGateScreen — 18+ Age Verification', () => {
 
   test('4-05: AgeGateScreen has error state for underage', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AgeGateScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AgeGateScreen.tsx', 'utf8');
     expect(src).toContain('error');
     expect(src).toContain('phase');
   });
@@ -300,13 +300,13 @@ describe('5. CheckInScreen — GPS Defendant Check-In', () => {
 
   test('5-01: CheckInScreen submits to /checkins/submit', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CheckInScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     expect(src).toContain("'/checkins/submit'");
   });
 
   test('5-02: CheckInScreen has todayStatus and phase states', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CheckInScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     // CheckInScreen manages today's check-in status
     expect(src).toContain('todayStatus');
     expect(src).toContain('phase');
@@ -320,7 +320,7 @@ describe('5. CheckInScreen — GPS Defendant Check-In', () => {
 
   test('5-04: CheckInScreen has 5-phase flow', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CheckInScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     expect(src).toContain('phase');
     // Phases: idle → recording/gps → processing → done → error
     const hasPhaseModel = src.includes("'idle'") || src.includes("'done'") || src.includes("'error'");
@@ -329,14 +329,14 @@ describe('5. CheckInScreen — GPS Defendant Check-In', () => {
 
   test('5-05: CheckInScreen has PTR (RefreshControl)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CheckInScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     expect(src).toContain('RefreshControl');
     expect(src).toContain('refreshing');
   });
 
   test('5-06: CheckInScreen uses enrollment_id from navigation params', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CheckInScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     expect(src).toContain('enrollment');
   });
 });
@@ -348,14 +348,14 @@ describe('6. MatchScreen — AI Lawyer Matching', () => {
 
   test('6-01: MatchScreen POSTs to /match/lawyers with GPS + situation', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MatchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MatchScreen.tsx', 'utf8');
     expect(src).toContain("'/match/lawyers'");
     expect(src).toContain('situation');
   });
 
   test('6-02: MatchScreen has case type, language, and pro-bono filters', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MatchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MatchScreen.tsx', 'utf8');
     expect(src).toContain('caseType');
     expect(src).toContain('language');
     expect(src).toContain('proBonoOnly');
@@ -363,25 +363,25 @@ describe('6. MatchScreen — AI Lawyer Matching', () => {
 
   test('6-03: MatchScreen has callback request endpoint', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MatchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MatchScreen.tsx', 'utf8');
     expect(src).toContain("'/consultations/callback-request'");
   });
 
   test('6-04: MatchScreen uses PracticeAreaSelector component', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MatchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MatchScreen.tsx', 'utf8');
     expect(src).toContain('PracticeAreaSelector');
   });
 
   test('6-05: MatchScreen uses Modal for filters', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MatchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MatchScreen.tsx', 'utf8');
     expect(src).toContain('Modal');
   });
 
   test('6-06: MatchScreen has KeyboardAvoidingView (text input safety)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MatchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MatchScreen.tsx', 'utf8');
     expect(src).toContain('KeyboardAvoidingView');
   });
 });
@@ -393,7 +393,7 @@ describe('7. PaymentsScreen — Payment Purposes & Flow', () => {
 
   test('7-01: PURPOSES array has consultation, retainer, bail entries', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
     expect(src).toContain('PURPOSES');
     expect(src).toContain("'consultation'");
     expect(src).toContain("'retainer'");
@@ -402,31 +402,31 @@ describe('7. PaymentsScreen — Payment Purposes & Flow', () => {
 
   test('7-02: consultation defaultAmount is $150', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
     expect(src).toContain("defaultAmount: '150'");
   });
 
   test('7-03: retainer defaultAmount is $1500', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
     expect(src).toContain("defaultAmount: '1500'");
   });
 
   test('7-04: PaymentsScreen POSTs to /pay/create', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
     expect(src).toContain("'/pay/create'");
   });
 
   test('7-05: PaymentsScreen uses Linking.openURL (payment opens in browser)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
     expect(src).toContain('Linking.openURL');
   });
 
   test('7-06: PaymentsScreen has KeyboardAvoidingView (amount input)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PaymentsScreen.tsx', 'utf8');
     expect(src).toContain('KeyboardAvoidingView');
   });
 });
@@ -438,7 +438,7 @@ describe('8. BailCalculatorScreen — Bail Schedule Lookup', () => {
 
   test('8-01: BailCalculatorScreen has all 50 states + DC', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
     expect(src).toContain('STATES');
     const REQUIRED_STATES = ['CA','TX','FL','NY','TN','DC'];
     for (const s of REQUIRED_STATES) {
@@ -448,26 +448,26 @@ describe('8. BailCalculatorScreen — Bail Schedule Lookup', () => {
 
   test('8-02: BailCalculatorScreen uses Picker for state selection', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
     expect(src).toContain('Picker');
     expect(src).toContain('@react-native-picker/picker');
   });
 
   test('8-03: BailCalculatorScreen uses cachedGet for API calls', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
     expect(src).toContain('cachedGet');
   });
 
   test('8-04: BailCalculatorScreen has "ALL" option for nationwide lookup', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
     expect(src).toContain("'ALL'");
   });
 
   test('8-05: BailCalculatorScreen has schedule and expanded states', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BailCalculatorScreen.tsx', 'utf8');
     expect(src).toContain('schedules');
     expect(src).toContain('selected');
   });
@@ -480,34 +480,34 @@ describe('9. ConsumerSubscriptionScreen — Individual Tiers', () => {
 
   test('9-01: has Starter tier at $9.99/mo', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('Starter');
     expect(src).toContain('$9.99');
   });
 
   test('9-02: has Pro tier at $14.99/mo', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('Pro');
     expect(src).toContain('$14.99');
   });
 
   test('9-03: has Intel tier at $19.99/mo', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('Intel');
     expect(src).toContain('$19.99');
   });
 
   test('9-04: 7-day free trial on all tiers', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('7-day');
   });
 
   test('9-05: has /billing/cancel endpoint', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
     expect(src).toContain("'/billing/cancel'");
   });
 
@@ -534,7 +534,7 @@ describe('10. SubscriptionScreen — Attorney/Bondsman Tiers', () => {
 
   test('10-01: has Basic Listing tier at $78.99/mo', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
     expect(src).toContain("'basic'");
     expect(src).toContain('Basic Listing');
     expect(src).toContain('$78.99');
@@ -542,7 +542,7 @@ describe('10. SubscriptionScreen — Attorney/Bondsman Tiers', () => {
 
   test('10-02: has Alert Tier at $198.99/mo', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
     expect(src).toContain("'alert'");
     expect(src).toContain('Alert Tier');
     expect(src).toContain('$198.99');
@@ -550,27 +550,27 @@ describe('10. SubscriptionScreen — Attorney/Bondsman Tiers', () => {
 
   test('10-03: tiers array has cents values (Stripe-compatible)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('cents: 7900');    // $78.99 → 7900 cents
     expect(src).toContain('cents: 19900');   // $198.99 → 19900 cents
   });
 
   test('10-04: 30-day free trial CTA', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('30-day');
   });
 
   test('10-05: Alert tier is highlighted (most popular)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('highlight: true');
     expect(src).toContain('badge');
   });
 
   test('10-06: SubscriptionScreen uses haptic feedback', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('hapticImpact');
     expect(src).toContain('hapticNotification');
   });
@@ -583,7 +583,7 @@ describe('11. InterrogationRecorderScreen — Police Encounter Recorder', () => 
 
   test('11-01: TWO_PARTY_STATES is a Set with 13 states', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('TWO_PARTY_STATES');
     expect(src).toContain('new Set(');
     const TWO_PARTY = ['CA','CT','FL','IL','MD','MA','MI','MT','NH','OR','PA','WA','WI'];
@@ -594,7 +594,7 @@ describe('11. InterrogationRecorderScreen — Police Encounter Recorder', () => 
 
   test('11-02: recording phase has 5 states: idle/recording/processing/done/error', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     // Phase type: 'idle' | 'recording' | 'processing' | 'done' | 'error'
     const hasPhase = src.includes("'recording'") && src.includes("'done'") && src.includes("'error'");
     expect(hasPhase).toBe(true);
@@ -603,19 +603,19 @@ describe('11. InterrogationRecorderScreen — Police Encounter Recorder', () => 
 
   test('11-03: screen has elapsed timer state', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('elapsed');
   });
 
   test('11-04: screen uses Share export for transcript', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('Share');
   });
 
   test('11-05: screen has Linking.openURL for help resources', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('Linking');
   });
 
@@ -693,41 +693,41 @@ describe('13. contracts/execution.js — Contract Lifecycle', () => {
 
   test('13-01: execution.js has 4 route handlers', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js', 'utf8');
     const handlers = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
     expect(handlers.length).toBe(4);
   });
 
   test('13-02: /sign endpoint exists for e-signature', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js', 'utf8');
     expect(src).toContain("'/:id/sign'");
     expect(src).toContain('signLimiter');
   });
 
   test('13-03: signLimiter is 100 signatures per hour', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js', 'utf8');
     expect(src).toContain('max: 100');
     expect(src).toContain('Signature limit reached');
   });
 
   test('13-04: /expiring endpoint checks 30, 60, 90-day windows', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js', 'utf8');
     expect(src).toContain('/expiring');
     expect(src).toContain('30/60/90');
   });
 
   test('13-05: /dashboard returns aggregate stats', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js', 'utf8');
     expect(src).toContain('/dashboard');
   });
 
   test('13-06: /signers returns all signers and status', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js', 'utf8');
     expect(src).toContain('/signers');
   });
 });
@@ -739,25 +739,25 @@ describe('14. healthScan.js — runHealthScan & ScanReport', () => {
 
   test('14-01: SCAN_VERSION is "1.0.0"', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain("SCAN_VERSION = '1.0.0'");
   });
 
   test('14-02: SCAN_INTERVAL_HOURS is 12', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain('SCAN_INTERVAL_HOURS = 1');  // 12 hrs constant
   });
 
   test('14-03: runHealthScan is the exported function', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain('export async function runHealthScan');
   });
 
   test('14-04: ScanReport has scan_id, findings, summary, sections', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain('scan_id');
     expect(src).toContain('findings');
     expect(src).toContain('summary');
@@ -766,20 +766,20 @@ describe('14. healthScan.js — runHealthScan & ScanReport', () => {
 
   test('14-05: scan_id format is scan_${Date.now()}', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain("scan_id      = `scan_${Date.now()}`");
   });
 
   test('14-06: scan sections are independent (failure in one does not stop others)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain('independent');
     expect(src).toContain('does not stop others');
   });
 
   test('14-07: scan has skipPrecedentMonitor option', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js', 'utf8');
     expect(src).toContain('skipPrecedentMonitor');
   });
 });
@@ -791,7 +791,7 @@ describe('15. Regression — All Prior Fixes Confirmed', () => {
 
   test('15-01: HomeScreen PTR + setRefreshing(false)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(src).toContain('RefreshControl');
     expect(src).toContain('setRefreshing(false)');
   });
@@ -821,7 +821,7 @@ describe('15. Regression — All Prior Fixes Confirmed', () => {
 
   test('15-05: TRIAL_DAYS = 14', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/firm_acquisition.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_acquisition.js', 'utf8');
     expect(src).toContain('TRIAL_DAYS     = 14');
   });
 
@@ -842,7 +842,7 @@ describe('15. Regression — All Prior Fixes Confirmed', () => {
   test('15-08: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'",
                            "'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];

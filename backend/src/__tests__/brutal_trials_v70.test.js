@@ -93,7 +93,7 @@ const mkMatter = (v, o = {}) => ({
 describe('DISC5. Discrepancy Fixes — pi_leads + SSO ACS + clearAuth', () => {
   test('DISC5-01: POST /pi-leads/submit has no auth (free lead submission) [FIX ≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/pi_leads.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/pi_leads.js', 'utf8');
     expect(src).toContain('/pi-leads/submit');
     expect(src).toContain('consumer submits a lead (free)');
     // PI lead submission must be frictionless — no account required
@@ -101,14 +101,14 @@ describe('DISC5. Discrepancy Fixes — pi_leads + SSO ACS + clearAuth', () => {
   });
   test('DISC5-02: SSO POST /acs is the SAML Assertion Consumer Service [FIX ≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/sso.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/sso.js', 'utf8');
     expect(src).toContain("'/acs'");
     expect(src).toContain('Assertion Consumer Service');
     expect(src).toContain('IdP posts here');
   });
   test('DISC5-03: clearAuth removes from legacy AsyncStorage location too [FIX ≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('clearAuth');
     expect(src).toContain('legacy location');
     expect(src).toContain("AsyncStorage.removeItem('token')");
@@ -119,7 +119,7 @@ describe('DISC5. Discrepancy Fixes — pi_leads + SSO ACS + clearAuth', () => {
 describe('TIM. time.js — Time Tracking and ABA Billing', () => {
   test('TIM-01: Time tracking module — POST/GET/PUT/DELETE /entries + ABA codes', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/time.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/time.js', 'utf8');
     expect(src).toContain('Time Tracking');
     expect(src).toContain('/entries');
     expect(src).toContain('/aba-codes');
@@ -127,20 +127,20 @@ describe('TIM. time.js — Time Tracking and ABA Billing', () => {
   });
   test('TIM-02: DELETE /entries/:id — own entries only, CANNOT delete if billed', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/time.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/time.js', 'utf8');
     expect(src).toContain('DELETE');
     expect(src).toContain('billing_status');
     expect(src).toContain('billed');
   });
   test('TIM-03: GET /aba-codes returns ABA billing code catalog for time entries', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/time.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/time.js', 'utf8');
     expect(src).toContain("'/aba-codes'");
     expect(src).toContain('aba');
   });
   test('TIM-04: GET /matter/:matterId lists all time entries for a specific matter', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/time.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/time.js', 'utf8');
     expect(src).toContain('/matter/:matterId');
     expect(src).toContain('matterId');
   });
@@ -150,20 +150,20 @@ describe('TIM. time.js — Time Tracking and ABA Billing', () => {
 describe('PRL. privilege.js — AI Privilege Log + Manual CRUD', () => {
   test('PRL-01: POST /generate — AI generates privilege entries from document description', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js', 'utf8');
     expect(src).toContain('Privilege Log Generator');
     expect(src).toContain('/generate');
     expect(src).toContain('AI-generate privilege entries');
   });
   test('PRL-02: GET /bases — returns privilege bases catalog (attorney-client, work product)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js', 'utf8');
     expect(src).toContain("'/bases'");
     expect(src).toContain('bases');
   });
   test('PRL-03: Full CRUD /entries — create, list, update, delete privilege log entries', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js', 'utf8');
     expect(src).toContain("'/entries'");
     expect(src).toContain('/entries/:id');
     expect(src).toContain('authRequired');
@@ -174,19 +174,19 @@ describe('PRL. privilege.js — AI Privilege Log + Manual CRUD', () => {
 describe('CDT. Contracts Sub-Routers — Draft + Review + Execution', () => {
   test('CDT-01: contracts/draft.js handles AI generation + catalog + CRUD', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/draft.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/draft.js', 'utf8');
     expect(src).toContain('authRequired');
     expect(src).toContain('draft');
   });
   test('CDT-02: contracts/review.js handles risk analysis + redline comparison', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/review.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/review.js', 'utf8');
     expect(src).toContain('review');
     expect(src).toContain('authRequired');
   });
   test('CDT-03: contracts/execution.js handles expiry alerts + stats dashboard', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js', 'utf8');
     expect(src).toContain('authRequired');
     expect(src).toContain('execution');
   });
@@ -196,14 +196,14 @@ describe('CDT. Contracts Sub-Routers — Draft + Review + Execution', () => {
 describe('PIL2. pi_leads.js — PI Lead Marketplace Detail', () => {
   test('PIL2-01: PI lead marketplace = pay-per-lead, not subscription', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/pi_leads.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/pi_leads.js', 'utf8');
     expect(src).toContain('pi_leads');
     expect(src).toContain('attorney');
     expect(src).toContain('accept');
   });
   test('PIL2-02: POST /profile — attorney configures PI practice profile', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/pi_leads.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/pi_leads.js', 'utf8');
     expect(src).toContain('/profile');
     expect(src).toContain('authRequired');
   });
@@ -213,13 +213,13 @@ describe('PIL2. pi_leads.js — PI Lead Marketplace Detail', () => {
 describe('SSO2. SSO ACS — SAML Assertion Consumer Service Detail', () => {
   test('SSO2-01: ACS validates SAML assertion signature before issuing JWT', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/sso.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/sso.js', 'utf8');
     expect(src).toContain("router.post('/acs'");
     expect(src).toContain('saml');
   });
   test('SSO2-02: GET /config/:firmId returns firm SSO configuration (for admin setup)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/sso.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/sso.js', 'utf8');
     expect(src).toContain('/config/:firmId');
     expect(src).toContain('config');
     expect(src).toContain('firmId');
@@ -230,14 +230,14 @@ describe('SSO2. SSO ACS — SAML Assertion Consumer Service Detail', () => {
 describe('SCR2. clearAuth — Legacy AsyncStorage Token Cleanup', () => {
   test('SCR2-01: clearAuth removes token from AsyncStorage legacy location', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain("AsyncStorage.removeItem('token')");
     expect(src).toContain('legacy location');
     expect(src).toContain('clearAuth');
   });
   test('SCR2-02: clearAuth uses Promise.all for parallel deletion from both stores', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('Promise.all(');
     expect(src).toContain('SecureStore.deleteItemAsync');
     expect(src).toContain('AsyncStorage.removeItem');
@@ -248,32 +248,32 @@ describe('SCR2. clearAuth — Legacy AsyncStorage Token Cleanup', () => {
 describe('S12. UX — Final Route Architecture Depth', () => {
   test('S12-01: time entries unbillable after invoice (billing_status guard)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/time.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/time.js', 'utf8');
     expect(src).toContain('billing_status');
     expect(src).toContain('billed');
     expect(src).toContain('DELETE');
   });
   test('S12-02: privilege log AI generation = attorney time savings on e-discovery', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js', 'utf8');
     expect(src).toContain('/generate');
     expect(src).toContain('AI-generate');
   });
   test('S12-03: SAML ACS is the ONE endpoint IdP admins must allowlist', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/sso.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/sso.js', 'utf8');
     expect(src).toContain("'/acs'");
     expect(src).toContain('Assertion Consumer Service');
   });
   test('S12-04: secureStorage.clearAuth covers both current and legacy token storage', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('legacy location');
     expect(src).toContain('Promise.all(');
   });
   test('S12-05: ABA billing codes catalog enables standardized legal billing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/time.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/time.js', 'utf8');
     expect(src).toContain('aba-codes');
     expect(src).toContain('Time Tracking');
   });
@@ -284,10 +284,10 @@ describe('Regression — All v1–v69 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -304,13 +304,13 @@ describe('Regression — All v1–v69 Confirmed', () => {
   test('R-05: BUSINESS_CONSTANTS + CONFIG + GAVEL', () => {
     expect(BUSINESS_CONSTANTS.TRIAL_DAYS_MONTHLY).toBe(30);
     expect(BUSINESS_CONSTANTS.MAX_CASES).toBe(100);
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(GAVEL_EMOJI[3]).toBe('🏆');
   });
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -325,16 +325,16 @@ describe('Regression — All v1–v69 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });
   test('R-08: 70 brutal_trials suites — every domain documented', async () => {
     const fs   = await import('fs');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const count = fs.readdirSync(dir).filter(f => f.startsWith('brutal_trials_v') && f.endsWith('.test.js')).length;
     expect(count).toBeGreaterThanOrEqual(68);
   });

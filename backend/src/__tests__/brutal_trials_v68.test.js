@@ -110,21 +110,21 @@ const mkMatter = (v, o = {}) => ({
 describe('DISC3. Discrepancy Fixes — sw.js + sentry + morgan', () => {
   test('DISC3-01: sw.js adds each STATIC_ASSET individually (missing icon never kills install)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/web/sw.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/web/sw.js', 'utf8');
     expect(src).toContain('Add each asset individually');
     expect(src).toContain("STATIC_ASSETS.map(url => cache.add(url))");
     expect(src).toContain('Promise.allSettled');
   });
   test('DISC3-02: sentry tracesSampleRate=0.1 — 10% sample for cost control', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sentry.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sentry.js', 'utf8');
     expect(src).toContain('tracesSampleRate:0.1');
     expect(src).toContain('Sentry.init(');
     expect(src).toContain('dsn: CONFIG.SENTRY_DSN');
   });
   test('DISC3-03: morgan custom format includes response-time (ISO timestamp + response-time)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain('morgan(');
     expect(src).toContain('response-time');
     expect(src).toContain("'production'");
@@ -135,7 +135,7 @@ describe('DISC3. Discrepancy Fixes — sw.js + sentry + morgan', () => {
 describe('API. api.ts — Centralized API Client with Retry + Cache', () => {
   test('API-01: api.ts features retry (3 attempts, exponential backoff)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('Centralized API client for Justice Gavel');
     expect(src).toContain('Automatic retry');
     expect(src).toContain('exponential backoff');
@@ -143,25 +143,25 @@ describe('API. api.ts — Centralized API Client with Retry + Cache', () => {
   });
   test('API-02: api.ts supports AbortController (cancels in-flight on unmount)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('AbortController support');
     expect(src).toContain('cancels in-flight requests on unmount');
   });
   test('API-03: api.ts has response cache — 60s dynamic, 5min static', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('Response cache');
     expect(src).toContain('60s');
     expect(src).toContain('5min');
   });
   test('API-04: deduplicatedGet deduplicates in-flight identical requests', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('deduplicatedGet');
   });
   test('API-05: auth token injected on every request via getToken()', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('getToken');
     expect(src).toContain('Auth token injection');
   });
@@ -171,7 +171,7 @@ describe('API. api.ts — Centralized API Client with Retry + Cache', () => {
 describe('HAP. haptics.ts — Semantic Haptic Feedback (try/catch always)', () => {
   test('HAP-01: hapticCall = Heavy impact (never crashes on no-haptic devices)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/haptics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/haptics.ts', 'utf8');
     expect(src).toContain('hapticCall');
     expect(src).toContain('ImpactFeedbackStyle.Heavy');
     expect(src).toContain('try {');
@@ -179,28 +179,28 @@ describe('HAP. haptics.ts — Semantic Haptic Feedback (try/catch always)', () =
   });
   test('HAP-02: hapticSuccess = Success notification (payment, booking, check-in)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/haptics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/haptics.ts', 'utf8');
     expect(src).toContain('hapticSuccess');
     expect(src).toContain('NotificationFeedbackType.Success');
     expect(src).toContain('Pay Now success');
   });
   test('HAP-03: hapticWarn = Warning notification (errors, failed actions)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/haptics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/haptics.ts', 'utf8');
     expect(src).toContain('hapticWarn');
     expect(src).toContain('NotificationFeedbackType.Warning');
     expect(src).toContain('Warning notification');
   });
   test('HAP-04: hapticSelect = selectionAsync (tab switches, filter chips)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/haptics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/haptics.ts', 'utf8');
     expect(src).toContain('hapticSelect');
     expect(src).toContain('selectionAsync()');
     expect(src).toContain('Light selection');
   });
   test('HAP-05: hapticMedium = Medium impact (save, confirm, secondary actions)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/haptics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/haptics.ts', 'utf8');
     expect(src).toContain('hapticMedium');
     expect(src).toContain('ImpactFeedbackStyle.Medium');
     expect(src).toContain('Medium impact');
@@ -211,7 +211,7 @@ describe('HAP. haptics.ts — Semantic Haptic Feedback (try/catch always)', () =
 describe('PMP. practice-mgmt.js — Clio + PracticePanther Integration', () => {
   test('PMP-01: Supports Clio Manage v4 API and PracticePanther via OAuth2 tokens', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
     expect(src).toContain('Clio Manage');
     expect(src).toContain('PracticePanther');
     expect(src).toContain('OAuth2');
@@ -219,7 +219,7 @@ describe('PMP. practice-mgmt.js — Clio + PracticePanther Integration', () => {
   });
   test('PMP-02: POST /matters/:matterId/push syncs matter to Clio/PracticePanther', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
     expect(src).toContain('/matters/:matterId/push');
     expect(src).toContain('authRequired');
     expect(src).toContain('requireFirm');
@@ -230,14 +230,14 @@ describe('PMP. practice-mgmt.js — Clio + PracticePanther Integration', () => {
 describe('RCP. recap.js — CourtListener Case Law Integration', () => {
   test('RCP-01: GET /search performs full-text case law search via CourtListener', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/recap.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js', 'utf8');
     expect(src).toContain("router.get('/search'");
     expect(src).toContain('courtlistener');
     expect(src).toContain('authRequired');
   });
   test('RCP-02: POST /import/:matterId imports full case data from CourtListener docket', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/recap.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js', 'utf8');
     expect(src).toContain('/import/:matterId');
     expect(src).toContain('import');
   });
@@ -251,19 +251,19 @@ describe('RCP. recap.js — CourtListener Case Law Integration', () => {
 describe('PIL. pi_leads.js — PI & Civil Rights Lead Marketplace', () => {
   test('PIL-01: POST /submit — consumer submits a lead (free, no auth required)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/pi_leads.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/pi_leads.js', 'utf8');
     expect(src).toContain('POST /api/pi-leads/submit');
     expect(src).toContain('consumer submits a lead');
   });
   test('PIL-02: GET / — attorneys browse available PI leads (Pro tier)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/pi_leads.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/pi_leads.js', 'utf8');
     expect(src).toContain('attorney');
     expect(src).toContain('pi-leads');
   });
   test('PIL-03: POST /:id/accept — attorney accepts lead and is charged', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/pi_leads.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/pi_leads.js', 'utf8');
     expect(src).toContain('/accept');
     expect(src).toContain('authRequired');
   });
@@ -273,7 +273,7 @@ describe('PIL. pi_leads.js — PI & Civil Rights Lead Marketplace', () => {
 describe('INT. interrogation.js — Police Encounter Recorder', () => {
   test('INT-01: POST /transcribe accepts multipart audio → Whisper transcript + structured dialogue', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/interrogation.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/interrogation.js', 'utf8');
     expect(src).toContain("router.post('/transcribe'");
     expect(src).toContain('multipart');
     expect(src).toContain('transcript');
@@ -281,13 +281,13 @@ describe('INT. interrogation.js — Police Encounter Recorder', () => {
   });
   test('INT-02: Returns pdf_base64 + recording_law in response', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/interrogation.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/interrogation.js', 'utf8');
     expect(src).toContain('pdf_base64');
     expect(src).toContain('recording_law');
   });
   test('INT-03: GET /recording-law returns consent law for user state', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/interrogation.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/interrogation.js', 'utf8');
     expect(src).toContain("router.get('/recording-law'");
     expect(src).toContain('consent');
     expect(src).toContain('state');
@@ -298,20 +298,20 @@ describe('INT. interrogation.js — Police Encounter Recorder', () => {
 describe('CDV. caldav.js — CalDAV Calendar Integration', () => {
   test('CDV-01: GET /ical/:firmId serves iCal feed for firm calendar subscription', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/caldav.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/caldav.js', 'utf8');
     expect(src).toContain('/ical/:firmId');
     expect(src).toContain('ical');
     expect(src).toContain('firmId');
   });
   test('CDV-02: POST /push/:entryId pushes a docket entry to attorney calendar', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/caldav.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/caldav.js', 'utf8');
     expect(src).toContain('/push/:entryId');
     expect(src).toContain('authRequired');
   });
   test('CDV-03: DELETE /events/:uid removes a calendar event by iCal UID', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/caldav.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/caldav.js', 'utf8');
     expect(src).toContain('/events/:uid');
     expect(src).toContain('DELETE');
   });
@@ -321,14 +321,14 @@ describe('CDV. caldav.js — CalDAV Calendar Integration', () => {
 describe('JBS. jobs.js — Async Job Status Polling', () => {
   test('JBS-01: GET /:id polls an AI generation or PDF export job', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/jobs.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/jobs.js', 'utf8');
     expect(src).toContain('Job status polling');
     expect(src).toContain("router.get('/:id'");
     expect(src).toContain('aiQueue');
   });
   test('JBS-02: GET /stats serves job queue stats for admin dashboard', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/jobs.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/jobs.js', 'utf8');
     expect(src).toContain("'/stats'");
     expect(src).toContain('stats');
   });
@@ -338,25 +338,25 @@ describe('JBS. jobs.js — Async Job Status Polling', () => {
 describe('S12. UX — Final Infrastructure Depth', () => {
   test('S12-01: api.ts retry with exponential backoff = resilient on flaky mobile networks', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('exponential backoff');
     expect(src).toContain('Automatic retry');
   });
   test('S12-02: haptics all wrapped in try/catch — never crashes on simulators', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/haptics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/haptics.ts', 'utf8');
     const catches = (src.match(/\} catch \{\}/g) || []).length;
     expect(catches).toBe(5); // one per haptic function
   });
   test('S12-03: PI lead marketplace = free lead submission, paid attorney access', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/pi_leads.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/pi_leads.js', 'utf8');
     expect(src).toContain('consumer submits a lead (free)');
     expect(src).toContain('attorney');
   });
   test('S12-04: interrogation POST /transcribe → dialogue[] = structured police encounter', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/interrogation.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/interrogation.js', 'utf8');
     expect(src).toContain('dialogue');
     expect(src).toContain('transcript');
   });
@@ -371,10 +371,10 @@ describe('Regression — All v1–v67 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -391,13 +391,13 @@ describe('Regression — All v1–v67 Confirmed', () => {
   test('R-05: BUSINESS_CONSTANTS + CONFIG + GAVEL', () => {
     expect(BUSINESS_CONSTANTS.TRIAL_DAYS_MONTHLY).toBe(30);
     expect(BUSINESS_CONSTANTS.MAX_CASES).toBe(100);
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(GAVEL_EMOJI[3]).toBe('🏆');
   });
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -412,10 +412,10 @@ describe('Regression — All v1–v67 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

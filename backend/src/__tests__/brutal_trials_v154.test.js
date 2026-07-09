@@ -26,27 +26,27 @@ beforeAll(async () => {
 describe('M12B. Remaining 48 Files → ≥20 Hits', () => {
   test('M12B-01: firm_acquisition + checkins + caldav + practice-mgmt', async () => {
     const fs=await import('fs');
-    const acq=fs.readFileSync('/tmp/JG/backend/src/routes/firm_acquisition.js','utf8');
+    const acq=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_acquisition.js','utf8');
     expect(acq).toContain("router.get('/vertical-demo'");
     expect(acq).toContain("router.post('/trial'");
     expect(acq).toContain("router.post('/upgrade'");
-    const chk=fs.readFileSync('/tmp/JG/backend/src/routes/checkins.js','utf8');
+    const chk=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/checkins.js','utf8');
     expect(chk).toContain("router.get('/status/:enrollmentId'");
     expect(chk).toContain("router.get('/history/:enrollmentId'");
-    const cal=fs.readFileSync('/tmp/JG/backend/src/routes/integrations/caldav.js','utf8');
+    const cal=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/caldav.js','utf8');
     expect(cal).toContain("router.get('/ical-token/:firmId'");
     expect(cal).toContain("router.post('/push/matter/:matterId'");
-    const pm=fs.readFileSync('/tmp/JG/backend/src/routes/integrations/practice-mgmt.js','utf8');
+    const pm=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js','utf8');
     expect(pm).toContain("router.get('/contacts'");
     expect(pm).toContain("router.post('/matters/:matterId/push'");
   });
   test('M12B-02: arrests + firms + messages + admin + consultations', async () => {
     const fs=await import('fs');
-    const ar=fs.readFileSync('/tmp/JG/backend/src/routes/arrests.js','utf8');
-    const fi=fs.readFileSync('/tmp/JG/backend/src/routes/firms.js','utf8');
-    const mg=fs.readFileSync('/tmp/JG/backend/src/routes/messages.js','utf8');
-    const ad=fs.readFileSync('/tmp/JG/backend/src/routes/admin.js','utf8');
-    const co=fs.readFileSync('/tmp/JG/backend/src/routes/consultations.js','utf8');
+    const ar=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/arrests.js','utf8');
+    const fi=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firms.js','utf8');
+    const mg=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/messages.js','utf8');
+    const ad=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/admin.js','utf8');
+    const co=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/consultations.js','utf8');
     expect(ar).toContain("router.post('/send-alerts'");
     expect(ar).toContain("router.delete('/monitors/:id'");
     expect(fi).toContain("router.post('/:id/members/invite'");
@@ -60,11 +60,11 @@ describe('M12B. Remaining 48 Files → ≥20 Hits', () => {
   });
   test('M12B-03: integrations/index + bot_admin + outbound + contracts/review + dms', async () => {
     const fs=await import('fs');
-    const ii=fs.readFileSync('/tmp/JG/backend/src/routes/integrations/index.js','utf8');
-    const ba=fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/bot_admin.js','utf8');
-    const ob=fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js','utf8');
-    const cr=fs.readFileSync('/tmp/JG/backend/src/routes/contracts/review.js','utf8');
-    const dm=fs.readFileSync('/tmp/JG/backend/src/routes/integrations/dms.js','utf8');
+    const ii=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/index.js','utf8');
+    const ba=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js','utf8');
+    const ob=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js','utf8');
+    const cr=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/review.js','utf8');
+    const dm=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/dms.js','utf8');
     expect(ii).toContain("router.get('/:provider/sync/log'");
     expect(ii).toContain("router.get('/catalogue'");
     expect(ba).toContain("router.get('/revenue'");
@@ -78,13 +78,13 @@ describe('M12B. Remaining 48 Files → ≥20 Hits', () => {
   });
   test('M12B-04: providers + golden_gavel + audit + lessons + time + connections + attorney/cases', async () => {
     const fs=await import('fs');
-    const pv=fs.readFileSync('/tmp/JG/backend/src/routes/providers.js','utf8');
-    const gg2=fs.readFileSync('/tmp/JG/backend/src/routes/golden_gavel.js','utf8');
-    const au2=fs.readFileSync('/tmp/JG/backend/src/routes/audit.js','utf8');
-    const le2=fs.readFileSync('/tmp/JG/backend/src/routes/lessons.js','utf8');
-    const ti=fs.readFileSync('/tmp/JG/backend/src/routes/time.js','utf8');
-    const bl=fs.readFileSync('/tmp/JG/backend/src/routes/billing/connections.js','utf8');
-    const ac2=fs.readFileSync('/tmp/JG/backend/src/routes/attorney/cases.js','utf8');
+    const pv=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/providers.js','utf8');
+    const gg2=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/golden_gavel.js','utf8');
+    const au2=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/audit.js','utf8');
+    const le2=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/lessons.js','utf8');
+    const ti=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/time.js','utf8');
+    const bl=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/connections.js','utf8');
+    const ac2=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/cases.js','utf8');
     expect(pv).toContain("router.get('/coverage'");
     expect(gg2).toContain("router.post('/evaluate/:id'");
     expect(au2).toContain("router.get('/contract/:id'");
@@ -96,7 +96,7 @@ describe('M12B. Remaining 48 Files → ≥20 Hits', () => {
   test('M12B-05: sso config routes + research + referrals + translate + recovery + sso/test', async () => {
     // referrals.js removed in v175 — exploit risk eliminated
     const fs = await import('fs');
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
   });
 });
 
@@ -104,7 +104,7 @@ describe('M12B. Remaining 48 Files → ≥20 Hits', () => {
 describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
   test('M16-01: immigration + DV + mission tables', async () => {
     const fs=await import('fs');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     const targets=['asylum_clocks','dpa_trackers','tro_trackers',
                    'mission_verification_requests','vertical_deadline_presets'];
     for (const t of targets) expect(db).toContain(t);
@@ -112,7 +112,7 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
   });
   test('M16-02: contract + motion + discovery tables', async () => {
     const fs=await import('fs');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(db).toContain('contract_reviews');
     expect(db).toContain('contract_redlines');
     expect(db).toContain('contract_executions');
@@ -122,7 +122,7 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
   });
   test('M16-03: integration sync + webhook tables', async () => {
     const fs=await import('fs');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(db).toContain('integration_sync_log');
     expect(db).toContain('integration_external_ids');
     expect(db).toContain('document_sync_map');
@@ -131,7 +131,7 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
   });
   test('M16-04: communications + alert tables', async () => {
     const fs=await import('fs');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(db).toContain('case_messages');
     expect(db).toContain('attorney_alerts');
     expect(db).toContain('password_resets');
@@ -140,7 +140,7 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
   });
   test('M16-05: ethics + compliance + config tables', async () => {
     const fs=await import('fs');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(db).toContain('ethics_wall_log');
     expect(db).toContain('conflict_waivers');
     expect(db).toContain('role_permissions');
@@ -150,7 +150,7 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
   });
   test('M16-06: firm lifecycle + acquisition + research + translation tables', async () => {
     const fs=await import('fs');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(db).toContain('firm_onboarding');
     expect(db).toContain('firm_upgrade_requests');
     expect(db).toContain('acquisition_leads');
@@ -163,7 +163,7 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
   });
   test('M16-07: matter + party + team + calendar + scan tables', async () => {
     const fs=await import('fs');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(db).toContain('matter_events');
     expect(db).toContain('matter_parties');
     expect(db).toContain('matter_teams');
@@ -176,7 +176,7 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
 describe('M19. FE Components → ≥20 Hits (6 components)', () => {
   test('M19-01: LawyerSkeletonCard + ScreenHeader + JTBLogo', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const base='/tmp/JG/frontend/src/components';
+    const base='/tmp/JG_fresh/frontend/src/components';
     for (const name of ['LawyerSkeletonCard','ScreenHeader','JTBLogo']) {
       const s=fs.readFileSync(path.join(base,`${name}.tsx`),'utf8');
       expect(s).toContain(name);
@@ -188,7 +188,7 @@ describe('M19. FE Components → ≥20 Hits (6 components)', () => {
   });
   test('M19-02: PlaceholderIllustration + MotionTypeBadge + CaseStatusBadge', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const base='/tmp/JG/frontend/src/components';
+    const base='/tmp/JG_fresh/frontend/src/components';
     for (const name of ['PlaceholderIllustration','MotionTypeBadge','CaseStatusBadge']) {
       const s=fs.readFileSync(path.join(base,`${name}.tsx`),'utf8');
       expect(s).toContain(name);
@@ -203,7 +203,7 @@ describe('M19. FE Components → ≥20 Hits (6 components)', () => {
 describe('M21. Service Exports → ≥20 Hits (35 exports)', () => {
   test('M21-01: scheduler exports — startScheduler + stopScheduler + runRefresh', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js','utf8');
     expect(s).toContain('startScheduler');
     expect(s).toContain('stopScheduler');
     expect(s).toContain('runRefresh');
@@ -212,7 +212,7 @@ describe('M21. Service Exports → ≥20 Hits (35 exports)', () => {
   });
   test('M21-02: sendgrid — sendEmail + buildReceiptEmail + buildWelcomeEmail', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/services/sendgrid.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/services/sendgrid.js','utf8');
     expect(s).toContain('sendEmail');
     expect(s).toContain('buildReceiptEmail');
     expect(s).toContain('buildWelcomeEmail');
@@ -223,7 +223,7 @@ describe('M21. Service Exports → ≥20 Hits (35 exports)', () => {
   });
   test('M21-03: outbound_bot — runOutboundBot + sendPaymentLink + deliverLead + processOptOut + expireOldPaymentLinks', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js','utf8');
     expect(s).toContain('runOutboundBot');
     expect(s).toContain('sendPaymentLink');
     expect(s).toContain('deliverLead');
@@ -233,7 +233,7 @@ describe('M21. Service Exports → ≥20 Hits (35 exports)', () => {
   });
   test('M21-04: twilio — sendSms + verifyTwilioSignature + parseIntent + normalizePhone + TWILIO_FROM + TWILIO_LIVE', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/services/twilio.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js','utf8');
     expect(s).toContain('sendSms');
     expect(s).toContain('verifyTwilioSignature');
     expect(s).toContain('parseIntent');
@@ -244,14 +244,14 @@ describe('M21. Service Exports → ≥20 Hits (35 exports)', () => {
   });
   test('M21-05: contentRefresh — refreshLegalContent + getContentAge + startContentRefreshSchedule', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/services/contentRefresh.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/services/contentRefresh.js','utf8');
     expect(s).toContain('refreshLegalContent');
     expect(s).toContain('getContentAge');
     expect(s).toContain('startContentRefreshSchedule');
   });
   test('M21-06: healthScan — runHealthScan + startHealthScanScheduler + stopHealthScanScheduler', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/services/healthScan.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/services/healthScan.js','utf8');
     expect(s).toContain('runHealthScan');
     expect(s).toContain('startHealthScanScheduler');
     expect(s).toContain('stopHealthScanScheduler');
@@ -259,14 +259,14 @@ describe('M21. Service Exports → ≥20 Hits (35 exports)', () => {
   });
   test('M21-07: pushDelivery — deliverScheduledPushes + checkPushReceipts', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/services/pushDelivery.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/services/pushDelivery.js','utf8');
     expect(s).toContain('deliverScheduledPushes');
     expect(s).toContain('checkPushReceipts');
     expect(s).toContain('sendPushToUser');
   });
   test('M21-08: retention — getFirmRetentionStatus + isSubscriptionWriteable + checkAccountInactivity + onSubscriptionLapse + archiveCompletedDocketEntries + releaseLegalHold', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/services/retention.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/services/retention.js','utf8');
     expect(s).toContain('getFirmRetentionStatus');
     expect(s).toContain('isSubscriptionWriteable');
     expect(s).toContain('checkAccountInactivity');
@@ -277,7 +277,7 @@ describe('M21. Service Exports → ≥20 Hits (35 exports)', () => {
   });
   test('M21-09: aiQueue — getQueueStats + queueStats exports', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/services/aiQueue.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/services/aiQueue.js','utf8');
     expect(s).toContain('getQueueStats');
     expect(s).toContain('queueStats');
     expect(s).toContain('enqueue');
@@ -339,7 +339,7 @@ describe('M24. routeHelpers Exports → ≥20 Hits (12 exports)', () => {
 describe('M18a. FE Screens → ≥30 Hits (Group 1: 17-21 hits)', () => {
   test('M18a-01: screens 17 hits — BailSearch + ConsumerSub + CourtLocator + DrugPenalties + FamilyCourt + HousingRights + SpecialtyCourts', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const base='/tmp/JG/frontend/src/screens';
+    const base='/tmp/JG_fresh/frontend/src/screens';
     const screens=['BailSearchScreen','ConsumerSubscriptionScreen','CourtLocatorScreen',
                    'DrugPenaltiesScreen','FamilyCourtScreen','HousingRightsScreen','SpecialtyCourtsScreen'];
     for (const s of screens) {
@@ -353,7 +353,7 @@ describe('M18a. FE Screens → ≥30 Hits (Group 1: 17-21 hits)', () => {
   });
   test('M18a-02: screens 18 hits — AdminVerif + Insurance + Juvenile + PILead + PrivacyPolicy + RightsCard + ToS', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const base='/tmp/JG/frontend/src/screens';
+    const base='/tmp/JG_fresh/frontend/src/screens';
     const screens=['AdminVerificationScreen','InsuranceScreen','JuvenileJusticeScreen',
                    'PILeadScreen','PrivacyPolicyScreen','RightsCardScreen','TermsOfServiceScreen'];
     for (const s of screens) {
@@ -363,7 +363,7 @@ describe('M18a. FE Screens → ≥30 Hits (Group 1: 17-21 hits)', () => {
   });
   test('M18a-03: screens 19-21 hits — Advocacy + CheckInMgr + DUILaws + MentalHealthDiv + Offline + RecoveryAgents + WhatHappensNext + CrisisResources + ImmigrationConsequences', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const base='/tmp/JG/frontend/src/screens';
+    const base='/tmp/JG_fresh/frontend/src/screens';
     const screens=['AdvocacyScreen','CheckInManagerScreen','DUILawsScreen',
                    'MentalHealthDiversionScreen','OfflineStatusScreen','RecoveryAgentsScreen',
                    'WhatHappensNextScreen','CrisisResourcesScreen','ImmigrationConsequencesScreen'];
@@ -376,7 +376,7 @@ describe('M18a. FE Screens → ≥30 Hits (Group 1: 17-21 hits)', () => {
   });
   test('M18a-04: screens 21-27 hits — AgeGate + HelpNow + JustArrested + Lessons + Register + TenantRights + DeadlineCalc + Match + QuickConnect + ArrestMonitor + Contacts + GoldenGavel + IceDetention + SavedLawyers + BailCalc + CaseTimeline + MatterIntelligence + Onboarding + VoiceNote + FamilyConnect + Rewards + Resources + Discovery', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const base='/tmp/JG/frontend/src/screens';
+    const base='/tmp/JG_fresh/frontend/src/screens';
     const screens=['AgeGateScreen','HelpNowScreen','JustArrestedScreen','LessonsScreen',
                    'RegisterScreen','TenantRightsScreen','DeadlineCalculatorScreen',
                    'MatchScreen','QuickConnectScreen','ArrestMonitorScreen','ContactsScreen',
@@ -395,10 +395,10 @@ describe('M18a. FE Screens → ≥30 Hits (Group 1: 17-21 hits)', () => {
 describe('GRAND5. All Milestones Verification', () => {
   test('GRAND5-01: route tiers', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let t15=0,t20=0,total=0;
     const wd=(d)=>{
       for (const f of fs.readdirSync(d)) {
@@ -421,13 +421,13 @@ describe('GRAND5. All Milestones Verification', () => {
   });
   test('GRAND5-02: 56 tables + 707 i18n + 0 source <3', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     const tables=[...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m=>m[1]);
     expect(tables.filter(t=>(corpus.match(new RegExp(t,'g'))||[]).length<3)).toHaveLength(0);
-    const en=JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json','utf8'));
+    const en=JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json','utf8'));
     expect(Object.keys(en).filter(k=>!corpus.includes(k))).toHaveLength(0);
   });
 });

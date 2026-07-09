@@ -693,7 +693,7 @@ describe('10. api.ts — Timeout, Retry, Interceptors, Dedup', () => {
 
   test('10-01: api.ts has timeout configured', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('timeout');
     // timeout should be a reasonable value (not 15ms — that's too short)
     // Actually the test data said 15ms — let's verify
@@ -708,26 +708,26 @@ describe('10. api.ts — Timeout, Retry, Interceptors, Dedup', () => {
 
   test('10-02: api.ts has retry on network failure', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toMatch(/retry|withRetry/i);
   });
 
   test('10-03: api.ts has request interceptors', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('interceptors');
   });
 
   test('10-04: api.ts has deduplicatedGet function', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('deduplicatedGet');
     expect(src).toContain('_inFlight');
   });
 
   test('10-05: api.ts error normalisation returns user-friendly messages', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('serverMsg');
     expect(src).toContain('Too many requests');
     expect(src).toContain('Network error');
@@ -735,13 +735,13 @@ describe('10. api.ts — Timeout, Retry, Interceptors, Dedup', () => {
 
   test('10-06: api.ts has 401 handling (redirect to login)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('401');
   });
 
   test('10-07: api.ts exports are correct', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('export');
     expect(src).toContain('api');
   });
@@ -754,7 +754,7 @@ describe('11. AppNavigator — Screen Registration & Tab Structure', () => {
 
   test('11-01: AppNavigator registers core tabs', async () => {
     const fs  = await import('fs');
-    const nav = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const nav = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(nav).toContain('HomeTab');
     expect(nav).toContain('ChatTab');
     expect(nav).toContain('LawyersTab');
@@ -762,45 +762,45 @@ describe('11. AppNavigator — Screen Registration & Tab Structure', () => {
 
   test('11-02: HomeScreen is the root component', async () => {
     const fs  = await import('fs');
-    const nav = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const nav = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(nav).toContain('HomeScreen');
   });
 
   test('11-03: EmergencyScreen is registered', async () => {
     const fs  = await import('fs');
-    const nav = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const nav = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(nav).toContain('EmergencyScreen');
     expect(nav).toContain('Emergency');
   });
 
   test('11-04: BondsmanDashboardScreen is registered', async () => {
     const fs  = await import('fs');
-    const nav = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const nav = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(nav).toContain('BondsmanDashboard');
   });
 
   test('11-05: MatterIntelligenceScreen is registered', async () => {
     const fs  = await import('fs');
-    const nav = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const nav = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(nav).toContain('MatterIntelligence');
   });
 
   test('11-06: navigator has exactly 5 tabs', async () => {
     const fs  = await import('fs');
-    const nav = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const nav = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     const tabs = nav.match(/Tab\.Screen/g) || [];
     expect(tabs.length).toBe(5);
   });
 
   test('11-07: TermsAcceptanceModal is integrated into the app', async () => {
     const fs    = await import('fs');
-    const app   = fs.readFileSync('/tmp/JG/frontend/App.tsx', 'utf8');
+    const app   = fs.readFileSync('/tmp/JG_fresh/frontend/App.tsx', 'utf8');
     expect(app).toContain('TermsAcceptanceModal');
   });
 
   test('11-08: no duplicate screen registrations', async () => {
     const fs  = await import('fs');
-    const nav = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const nav = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     const names = nav.match(/name=['"](\w+)['"]/g) || [];
     const unique = new Set(names);
     expect(unique.size).toBe(names.length);
@@ -815,7 +815,7 @@ describe('12. Frontend UX — Uncovered Screen Contracts', () => {
   const readScreen = async (name) => {
     const fs   = await import('fs');
     const path = await import('path');
-    const p = path.join('/tmp/JG/frontend/src/screens', `${name}.tsx`);
+    const p = path.join('/tmp/JG_fresh/frontend/src/screens', `${name}.tsx`);
     return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
   };
 
@@ -909,7 +909,7 @@ describe('12. Frontend UX — Uncovered Screen Contracts', () => {
                            "'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const screen of HIGH_PRIORITY_SCREENS) {
-      const p = path.join('/tmp/JG/frontend/src/screens', `${screen}.tsx`);
+      const p = path.join('/tmp/JG_fresh/frontend/src/screens', `${screen}.tsx`);
       if (!fs.existsSync(p)) continue;
       const src = fs.readFileSync(p, 'utf8');
       if (!src.includes('useTheme')) continue;
@@ -967,14 +967,14 @@ describe('13. Bot Admin — X-Admin-Key Auth Model', () => {
 
   test('13-01: bot_admin.js uses X-Admin-Key header authentication', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/bot_admin.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js', 'utf8');
     expect(src).toContain('X-Admin-Key');
     expect(src).toContain('x-admin-key');
   });
 
   test('13-02: authentication uses timing-safe comparison (timingSafeEqual)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/bot_admin.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js', 'utf8');
     expect(src).toContain('timingSafeEqual');
   });
 
@@ -995,14 +995,14 @@ describe('13. Bot Admin — X-Admin-Key Auth Model', () => {
 
   test('13-04: opt-out endpoint exists in bot admin', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/bot_admin.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js', 'utf8');
     expect(src).toContain('opt-out');
     expect(src).toContain('opt_outs');
   });
 
   test('13-05: run endpoint is fire-and-forget (async, not blocking)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/bot_admin.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js', 'utf8');
     // The run endpoint should fire the bot and immediately respond
     expect(src).toContain('runOutboundBot');
     // Fire-and-forget: bot is started async, route responds immediately
@@ -1012,14 +1012,14 @@ describe('13. Bot Admin — X-Admin-Key Auth Model', () => {
 
   test('13-06: revenue endpoint aggregates by source and day', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/bot_admin.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js', 'utf8');
     expect(src).toContain('revenue');
     expect(src).toContain('/revenue');
   });
 
   test('13-07: expire-links endpoint calls expireOldPaymentLinks', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/bot_admin.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js', 'utf8');
     expect(src).toContain('expireOldPaymentLinks');
     expect(src).toContain('expire-links');
   });
@@ -1032,13 +1032,13 @@ describe('14. Theme & Design System', () => {
 
   test('14-01: theme.ts has both light and dark mode colours', async () => {
     const fs    = await import('fs');
-    const theme = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const theme = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(theme).toMatch(/dark|isDark|darkMode/i);
   });
 
   test('14-02: COLORS constant has all brand colours', async () => {
     const fs    = await import('fs');
-    const theme = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const theme = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(theme).toContain('#042C53'); // navy
     expect(theme).toContain('#F9A825'); // gold
     expect(theme).toContain('#85B7EB'); // steel
@@ -1047,33 +1047,33 @@ describe('14. Theme & Design System', () => {
 
   test('14-03: errorBg and errorLight semantic tokens exist', async () => {
     const fs    = await import('fs');
-    const theme = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const theme = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(theme).toContain('errorBg');
     expect(theme).toContain('errorLight');
   });
 
   test('14-04: warnBg token exists for warning states', async () => {
     const fs    = await import('fs');
-    const theme = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const theme = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(theme).toMatch(/warnBg|warn.*Bg/);
   });
 
   test('14-05: useTheme hook is defined and exported', async () => {
     const fs    = await import('fs');
-    const theme = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const theme = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(theme).toContain('useTheme');
   });
 
   test('14-06: TYPE scale constants are defined', async () => {
     const fs    = await import('fs');
-    const theme = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const theme = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     // Font sizes
     expect(theme).toMatch(/xs|sm|md|lg|xl|body|caption|heading/i);
   });
 
   test('14-07: RADIUS, SHADOW constants are defined', async () => {
     const fs    = await import('fs');
-    const theme = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const theme = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(theme).toMatch(/RADIUS|SHADOW/);
   });
 });
@@ -1085,34 +1085,34 @@ describe('15. DB Schema — Completeness', () => {
 
   test('15-01: 43 migration files exist', async () => {
     const fs   = await import('fs');
-    const migs = fs.readdirSync('/tmp/JG/backend/src/migrations')
+    const migs = fs.readdirSync('/tmp/JG_fresh/backend/src/migrations')
       .filter(f => f.endsWith('.sql'));
     expect(migs.length).toBe(43);
   });
 
   test('15-02: migration 008 creates opt_outs and payment_links', async () => {
     const fs  = await import('fs');
-    const mig = fs.readFileSync('/tmp/JG/backend/src/migrations/008_outbound_bot.sql', 'utf8');
+    const mig = fs.readFileSync('/tmp/JG_fresh/backend/src/migrations/008_outbound_bot.sql', 'utf8');
     expect(mig.toLowerCase()).toContain('opt_outs');
     expect(mig.toLowerCase()).toContain('payment_links');
   });
 
   test('15-03: migration 021b branch migration exists for family_access', async () => {
     const fs  = await import('fs');
-    const exists = fs.existsSync('/tmp/JG/backend/src/migrations/021b_family_access.sql');
+    const exists = fs.existsSync('/tmp/JG_fresh/backend/src/migrations/021b_family_access.sql');
     expect(exists).toBe(true);
   });
 
   test('15-04: main DB schema has 56 tables', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = src.match(/CREATE TABLE IF NOT EXISTS \w+/g) || [];
     expect(tables.length).toBe(56);
   });
 
   test('15-05: key tables have required columns', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     // Users table
     expect(src).toContain('email');
     expect(src).toContain('display_name');
@@ -1132,14 +1132,14 @@ describe('16. HomeScreen — PTR Gap & Fix Model', () => {
 
   test('16-01: HomeScreen has 5+ API calls requiring fresh data', async () => {
     const fs   = await import('fs');
-    const home = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const home = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     const apis = (home.match(/api\.(get|post)\s*\(['"]/g) || []);
     expect(apis.length).toBeGreaterThanOrEqual(3);
   });
 
   test('16-02: HomeScreen has ScrollView (PTR can be attached)', async () => {
     const fs   = await import('fs');
-    const home = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const home = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(home.includes('ScrollView')).toBe(true);
   });
 
@@ -1159,7 +1159,7 @@ describe('16. HomeScreen — PTR Gap & Fix Model', () => {
 
   test('16-04: HomeScreen data endpoints that need PTR', async () => {
     const fs   = await import('fs');
-    const home = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const home = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     // These endpoints should be called on refresh
     const REFRESH_ENDPOINTS = ['/cases', '/messages/unread', '/push/tip', '/providers/bail'];
     for (const ep of REFRESH_ENDPOINTS) {
@@ -1175,14 +1175,14 @@ describe('17. Regression — All Prior Fixes Still Hold', () => {
 
   test('17-01: messages.js batch lawyer lookup intact', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/messages.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/messages.js', 'utf8');
     expect(src).toContain('lawyerUserMap');
     expect(src).not.toContain("db.get('SELECT user_id FROM lawyers WHERE id=?'");
   });
 
   test('17-02: privilege.js docCounter intact (no N+1)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js', 'utf8');
     expect(src).toContain('docCounter');
     const fnStart = src.indexOf('function nextDocNumber');
     const fnBody  = src.slice(fnStart, fnStart + 200);
@@ -1191,26 +1191,26 @@ describe('17. Regression — All Prior Fixes Still Hold', () => {
 
   test('17-03: practice-mgmt.js batch invoice lookup intact', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
     expect(src).toContain('byInvoice');
   });
 
   test('17-04: conflicts.js batched name query intact', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/conflicts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/conflicts.js', 'utf8');
     expect(src).toContain('normedNames');
   });
 
   test('17-05: app.js X-API-Version header intact', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain('X-API-Version');
   });
 
   test('17-06: all useTheme screens have zero unsafe hex (v3 fix)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'",
                            "'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
@@ -1227,15 +1227,15 @@ describe('17. Regression — All Prior Fixes Still Hold', () => {
 
   test('17-07: SW cache version matches app version', async () => {
     const fs  = await import('fs');
-    const pkg = JSON.parse(fs.readFileSync('/tmp/JG/frontend/package.json', 'utf8'));
-    const sw  = fs.readFileSync('/tmp/JG/frontend/web/sw.js', 'utf8');
+    const pkg = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/package.json', 'utf8'));
+    const sw  = fs.readFileSync('/tmp/JG_fresh/frontend/web/sw.js', 'utf8');
     const cacheVer = (sw.match(/CACHE_NAME = '([^']+)'/) || [])[1] || '';
     expect(cacheVer).toContain(pkg.version);
   });
 
   test('17-08: api.ts has deduplicatedGet (v3 fix)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('deduplicatedGet');
     expect(src).toContain('_inFlight');
   });

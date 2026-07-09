@@ -23,8 +23,8 @@ describe('BODY. Async Handler Function Bodies', () => {
     const fs = await import('fs');
     // EmergencyShareScreen.gatherInfo and HelpNowScreen.fetchBoth
     // use Promise.all([api.get(...), api.get(...)]) — both correctly awaited
-    const em = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyShareScreen.tsx','utf8');
-    const hn = fs.readFileSync('/tmp/JG/frontend/src/screens/HelpNowScreen.tsx','utf8');
+    const em = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyShareScreen.tsx','utf8');
+    const hn = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HelpNowScreen.tsx','utf8');
     // Both use Promise.all pattern
     expect(em).toContain('Promise.all');
     expect(hn).toContain('Promise.all');
@@ -34,7 +34,7 @@ describe('BODY. Async Handler Function Bodies', () => {
   });
   test('BODY-02: SettingsScreen.togglePref optimistic UI with .finally loading cleanup', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SettingsScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SettingsScreen.tsx','utf8');
     // Optimistic UI: prefs set locally first, then fire-and-forget POST
     // .catch() handles errors, .finally() clears loading state
     const fnIdx = src.indexOf('const togglePref');
@@ -47,7 +47,7 @@ describe('BODY. Async Handler Function Bodies', () => {
   });
   test('BODY-03: SubscriptionScreen.loadSubscription catch is intentional (no sub = upgrade UI)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SubscriptionScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SubscriptionScreen.tsx','utf8');
     const fnIdx = src.indexOf('const loadSubscription');
     const body  = src.slice(fnIdx, fnIdx+600);
     // Empty catch is intentional: not subscribed = show upgrade CTAs (not an error)
@@ -60,7 +60,7 @@ describe('BODY. Async Handler Function Bodies', () => {
   test('BODY-04: all large screens have try/catch in every api-calling async function', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const scr  = '/tmp/JG/frontend/src/screens';
+    const scr  = '/tmp/JG_fresh/frontend/src/screens';
     const bad  = [];
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src = fs.readFileSync(path.join(scr,f),'utf8');
@@ -88,7 +88,7 @@ describe('BODY. Async Handler Function Bodies', () => {
       ['ChatScreen.tsx', 'iconBtn'],
       ['AgeGateScreen.tsx', 'subtitle'],
     ]){
-      const src = fs.readFileSync('/tmp/JG/frontend/src/screens/'+f,'utf8');
+      const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/'+f,'utf8');
       const ssIdx = src.lastIndexOf('StyleSheet.create(');
       if(ssIdx < 0) continue;
       // Extract the full StyleSheet block
@@ -105,7 +105,7 @@ describe('BODY. Async Handler Function Bodies', () => {
 describe('TRACE. Complete System Flow Traces', () => {
   test('TRACE-01: app.js middleware order correct (security → parsing → routes → errors)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8');
     const helmetIdx  = src.indexOf('helmet');
     const corsIdx    = src.indexOf('cors');
     const bodyIdx    = src.indexOf("limit: '1mb'");
@@ -121,7 +121,7 @@ describe('TRACE. Complete System Flow Traces', () => {
   });
   test('TRACE-02: server.js push drain + bar verify + graceful shutdown complete', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/server.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/server.js','utf8');
     // Every lifecycle aspect
     expect(src).toContain("process.on('SIGTERM'");
     expect(src).toContain('clearInterval(pushInterval)');
@@ -133,7 +133,7 @@ describe('TRACE. Complete System Flow Traces', () => {
   test('TRACE-03: migration sequence complete — init→users expanded→lawyers added', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const migDir = '/tmp/JG/backend/src/migrations';
+    const migDir = '/tmp/JG_fresh/backend/src/migrations';
     const init = fs.readFileSync(path.join(migDir,'001_init.sql'),'utf8');
     expect(init).toContain('CREATE TABLE');
     expect(init).toContain('users');
@@ -152,20 +152,20 @@ describe('TRACE. Complete System Flow Traces', () => {
   test('TRACE-04: web screen variants use platform-appropriate endpoints', async () => {
     const fs = await import('fs');
     // DocScanner.web: was /scan/document (404), now /messages/attachment ✓
-    const doc = fs.readFileSync('/tmp/JG/frontend/src/screens/DocumentScannerScreen.web.tsx','utf8');
+    const doc = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DocumentScannerScreen.web.tsx','utf8');
     expect(doc).not.toContain('/scan/document');
     expect(doc).toContain('/messages/attachment');
     // Voice.web: /transcribe/audio (mounted as /api/transcribe)
-    const voice = fs.readFileSync('/tmp/JG/frontend/src/screens/VoiceNoteScreen.web.tsx','utf8');
+    const voice = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/VoiceNoteScreen.web.tsx','utf8');
     expect(voice).toContain('/transcribe/audio');
     // Interrogation.web: exported with navigation prop
-    const interr = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.web.tsx','utf8');
+    const interr = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.web.tsx','utf8');
     expect(interr).toContain('export default function InterrogationRecorderScreen');
   });
   test('TRACE-05: QuickConnect doPay full error path shown to user', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const src  = fs.readFileSync('/tmp/JG/frontend/src/screens/QuickConnectScreen.tsx','utf8');
+    const src  = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/QuickConnectScreen.tsx','utf8');
     const fnIdx = src.indexOf('const doPay');
     const body  = src.slice(fnIdx, fnIdx+1500);
     // User gets real error message from server
@@ -180,9 +180,9 @@ describe('TRACE. Complete System Flow Traces', () => {
 describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-01: 0 dead navigates + 0 password without secureTextEntry', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let dead=0,noPw=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -209,12 +209,12 @@ describe('GATE. Zero-Defect Production Gates', () => {
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(broken>0) console.log('Broken:',broken);
     expect(inj).toBe(0); expect(broken).toBe(0);
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens'; const all=new Set();
+    const scr='/tmp/JG_fresh/frontend/src/screens'; const all=new Set();
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
       for(const m of s.matchAll(/navigate\(['"]([^'"]+)['"]/g))all.add(m[1]);
@@ -227,7 +227,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-03: 0 FlatList no keyExtractor + 0 accessibility + 0 hex', async () => {
     const fs=await import('fs'); const path=await import('path');
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let noKey=0,acc=0,hex=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -244,20 +244,20 @@ describe('GATE. Zero-Defect Production Gates', () => {
   });
   test('GATE-04: security hardening + startup integrity', async () => {
     const fs=await import('fs');
-    expect(fs.readFileSync('/tmp/JG/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
-    const pkg=JSON.parse(fs.readFileSync('/tmp/JG/backend/package.json','utf8'));
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
+    const pkg=JSON.parse(fs.readFileSync('/tmp/JG_fresh/backend/package.json','utf8'));
     expect(pkg.scripts.prestart).toContain('migrate');
-    expect(fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8')).toContain('Users table column bootstrap');
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js','utf8')).not.toContain("from '../db/index.js'");
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8')).toContain('Users table column bootstrap');
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/analytics.js','utf8')).not.toContain("from '../db/index.js'");
   });
   test('GATE-05: 437/437 routes all tiers', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let counts={5:0,10:0,15:0,20:0,25:0},total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){

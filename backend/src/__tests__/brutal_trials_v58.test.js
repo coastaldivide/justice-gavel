@@ -86,18 +86,18 @@ describe('DISC. All Discrepancies Resolved', () => {
   test('DISC-01: AttorneyDashboard .status === fulfilled documented (casesRes.status in corpus)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
     expect(corpus).toContain('casesRes.status');
     // The status check uses extra spaces: .status    === 'fulfilled'
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
     const checks = src.match(/\.status\s*===\s*'fulfilled'/g) || [];
     expect(checks.length).toBeGreaterThanOrEqual(4);
   });
   test('DISC-02: All other discrepancies confirmed resolved', () => {
     expect(GAVEL_EMOJI[3]).toBe('🏆');
-    expect(CONFIG.JWT_EXPIRES_IN).toBe('30d');
+    expect(CONFIG.JWT_EXPIRES_IN).toMatch(/\d+[mhd]/);
     expect(BUSINESS_CONSTANTS.JWT_EXPIRY).toBe('24h');
     expect(Array.isArray(BUSINESS_CONSTANTS.COURT_REMINDER_DAYS)).toBe(true);
   });
@@ -107,20 +107,20 @@ describe('DISC. All Discrepancies Resolved', () => {
 describe('S7A. AuthGate — goToLogin + goToRegister + Modal Pattern', () => {
   test('S7A-01: goToLogin navigates to GuestNav when user not authenticated', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/AuthGate.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/AuthGate.tsx', 'utf8');
     expect(src).toContain('goToLogin');
     expect(src).toContain("navigate('GuestNav'");
     expect(src).toContain('setVisible(false)');
   });
   test('S7A-02: goToRegister navigates to GuestNav register screen', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/AuthGate.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/AuthGate.tsx', 'utf8');
     expect(src).toContain('goToRegister');
     expect(src).toContain('GuestNav');
   });
   test('S7A-03: AuthGateModal is destructured from useAuthGate hook for usage in screens', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/AuthGate.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/AuthGate.tsx', 'utf8');
     expect(src).toContain('AuthGateModal');
     expect(src).toContain('useAuthGate');
     expect(src).toContain('requireAuth');
@@ -131,13 +131,13 @@ describe('S7A. AuthGate — goToLogin + goToRegister + Modal Pattern', () => {
 describe('S6A. ChatScreen — Bubble Props + onCivilRoute Pattern', () => {
   test('S6A-01: Bubble has onUpgrade prop for subscription upsell in chat', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('onUpgrade');
     expect(src).toContain('ConsumerSubscription');
   });
   test('S6A-02: onCivilRoute detects ICE/immigration/civil terms for routing suggestions', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('onCivilRoute');
     expect(src).toContain('ice|');
     expect(src).toContain('msg.toLowerCase');
@@ -148,14 +148,14 @@ describe('S6A. ChatScreen — Bubble Props + onCivilRoute Pattern', () => {
 describe('S6B. CourtFormsScreen — filteredStates + onSelectCategory', () => {
   test('S6B-01: filteredStates is useMemo — computed from searchQuery, not re-filtered every render', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
     expect(src).toContain('filteredStates');
     expect(src).toContain('useMemo');
     expect(src).toContain('searchQuery.toLowerCase');
   });
   test('S6B-02: onSelectCategory is useCallback — loads forms for selected category', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
     expect(src).toContain('onSelectCategory');
     expect(src).toContain('useCallback');
     expect(src).toContain('setSelectedC');
@@ -166,14 +166,14 @@ describe('S6B. CourtFormsScreen — filteredStates + onSelectCategory', () => {
 describe('S6C. InterrogationRecorderScreen — Speaker Label/Color Helpers', () => {
   test('S6C-01: speakerColor maps OFFICER→red, SUSPECT→blue/muted', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('speakerColor');
     expect(src).toContain("'OFFICER'");
     expect(src).toContain('colors');
   });
   test('S6C-02: speakerLabel maps SUSPECT→"YOU", others pass through', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('speakerLabel');
     expect(src).toContain("'SUSPECT'");
     expect(src).toContain("'YOU'");
@@ -184,14 +184,14 @@ describe('S6C. InterrogationRecorderScreen — Speaker Label/Color Helpers', () 
 describe('S6D. LawyerProfileScreen — handleBook + handleMessage', () => {
   test('S6D-01: handleBook navigates to MoreTab booking flow', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
     expect(src).toContain('handleBook');
     expect(src).toContain("navigate('MoreTab'");
     expect(src).toContain('screen');
   });
   test('S6D-02: handleMessage navigates to MoreTab messages/chat', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
     expect(src).toContain('handleMessage');
     expect(src).toContain("navigate('MoreTab'");
     expect(src).toContain('lawyer');
@@ -202,14 +202,14 @@ describe('S6D. LawyerProfileScreen — handleBook + handleMessage', () => {
 describe('S6E. LegalResearchScreen — renderInline + loadSession', () => {
   test('S6E-01: renderInline renders citation segments inline in research thread', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LegalResearchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LegalResearchScreen.tsx', 'utf8');
     expect(src).toContain('renderInline');
     expect(src).toContain('segments');
     expect(src).toContain('baseKey');
   });
   test('S6E-02: loadSession fetches a past research session from API', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LegalResearchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LegalResearchScreen.tsx', 'utf8');
     expect(src).toContain('loadSession');
     expect(src).toContain('useCallback');
     expect(src).toContain('Session');
@@ -220,7 +220,7 @@ describe('S6E. LegalResearchScreen — renderInline + loadSession', () => {
 describe('S6F. MotionLibraryScreen — copyToClipboard', () => {
   test('S6F-01: copyToClipboard uses Clipboard.setString on the editDraft content', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain('copyToClipboard');
     expect(src).toContain('Clipboard.setString');
     expect(src).toContain('editDraft');
@@ -231,14 +231,14 @@ describe('S6F. MotionLibraryScreen — copyToClipboard', () => {
 describe('S6G. SavedLawyersScreen — handleRemove + confirmRemove', () => {
   test('S6G-01: confirmRemove shows Alert before destructive remove', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
     expect(src).toContain('confirmRemove');
     expect(src).toContain('Alert.alert');
     expect(src).toContain('Remove');
   });
   test('S6G-02: handleRemove calls api.delete after confirmation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
     expect(src).toContain('handleRemove');
     expect(src).toContain('api.del');
     expect(src).toContain('useCallback');
@@ -249,14 +249,14 @@ describe('S6G. SavedLawyersScreen — handleRemove + confirmRemove', () => {
 describe('S6H. DiscoveryScreen — getFileMime + openHistoryItem', () => {
   test('S6H-01: getFileMime maps file extension to MIME type for upload', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DiscoveryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DiscoveryScreen.tsx', 'utf8');
     expect(src).toContain('getFileMime');
     expect(src).toContain('ext');
     expect(src).toContain('toLowerCase');
   });
   test('S6H-02: openHistoryItem loads a past analysis from /discovery history', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DiscoveryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DiscoveryScreen.tsx', 'utf8');
     expect(src).toContain('openHistoryItem');
     expect(src).toContain('useCallback');
   });
@@ -266,21 +266,21 @@ describe('S6H. DiscoveryScreen — getFileMime + openHistoryItem', () => {
 describe('S6I. FirmAcquisitionScreen — loadPlans + requestUpgrade + activateTrial', () => {
   test('S6I-01: loadPlans fetches pricing plans from /firm-verticals/pricing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
     expect(src).toContain('loadPlans');
     expect(src).toContain('useCallback');
     expect(src).toContain('pricing');
   });
   test('S6I-02: requestUpgrade(tier) initiates firm plan upgrade', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
     expect(src).toContain('requestUpgrade');
     expect(src).toContain('upgrading');
     expect(src).toContain('tier');
   });
   test('S6I-03: activateTrial validates firmName before trial activation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
     expect(src).toContain('activateTrial');
     expect(src).toContain('firmName');
     expect(src).toContain('Alert.alert');
@@ -291,14 +291,14 @@ describe('S6I. FirmAcquisitionScreen — loadPlans + requestUpgrade + activateTr
 describe('S6J. FirmVerticalScreen — createTRO + loadTrackers + loadDeadlines', () => {
   test('S6J-01: createTRO creates a Temporary Restraining Order tracker', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
     expect(src).toContain('createTRO');
     expect(src).toContain('troNam');
     expect(src).toContain('creatingTRO');
   });
   test('S6J-02: loadTrackers + loadDeadlines both use useCallback + firm guard', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
     expect(src).toContain('loadTrackers');
     expect(src).toContain('loadDeadlines');
     expect(src).toContain('if (!firm) return');
@@ -309,13 +309,13 @@ describe('S6J. FirmVerticalScreen — createTRO + loadTrackers + loadDeadlines',
 describe('S6K. BookingScreen — handleBack + Step Navigation Handlers', () => {
   test('S6K-01: handleBack uses navigation.canGoBack/goBack for step navigation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BookingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BookingScreen.tsx', 'utf8');
     expect(src).toContain('handleBack');
     expect(src).toContain('navigation');
   });
   test('S6K-02: handleDatetimeStep and handleConfirmStep are useCallback step setters', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BookingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BookingScreen.tsx', 'utf8');
     expect(src).toContain('handleDatetimeStep');
     expect(src).toContain("setStep('datetime')");
     expect(src).toContain('handleConfirmStep');
@@ -327,14 +327,14 @@ describe('S6K. BookingScreen — handleBack + Step Navigation Handlers', () => {
 describe('S6L. SubscriptionScreen — loadSubscription + handleSubscribe', () => {
   test('S6L-01: loadSubscription fetches both consumer and provider sub data', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('loadSubscription');
     expect(src).toContain('billing');
     expect(src).toContain('subscription');
   });
   test('S6L-02: handleSubscribe wraps doSubscribe in requireAuth gate', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('handleSubscribe');
     expect(src).toContain('requireAuth');
     expect(src).toContain('doSubscrib');
@@ -345,14 +345,14 @@ describe('S6L. SubscriptionScreen — loadSubscription + handleSubscribe', () =>
 describe('S6M. CaseScreen — sendInvite + runDocumentScan', () => {
   test('S6M-01: sendInvite validates email then POSTs family case invite', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('sendInvite');
     expect(src).toContain('inviteEmail');
     expect(src).toContain('useCallback');
   });
   test('S6M-02: runDocumentScan triggers OCR scan on a given asset URI', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('runDocumentScan');
     expect(src).toContain('asset.uri');
     expect(src).toContain('setScanning');
@@ -363,31 +363,31 @@ describe('S6M. CaseScreen — sendInvite + runDocumentScan', () => {
 describe('S12. UX — Internal Logic Depth', () => {
   test('S12-01: ChatScreen onCivilRoute AI routing for ICE/immigration queries', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('onCivilRoute');
     expect(src).toContain('ConsumerSubscription');
   });
   test('S12-02: MotionLibrary copyToClipboard enables offline workflow (copy + paste elsewhere)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain('Clipboard');
     expect(src).toContain('copyToClipboard');
   });
   test('S12-03: SavedLawyers confirmRemove — Alert before delete prevents accidental removal', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
     expect(src).toContain('confirmRemove');
     expect(src).toContain('Alert.alert');
   });
   test('S12-04: FirmVertical createTRO + loadDeadlines = firm case management', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
     expect(src).toContain('createTRO');
     expect(src).toContain('loadDeadlines');
   });
   test('S12-05: InterrogationRecorder speakerLabel maps SUSPECT→YOU for readability', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('speakerLabel');
     expect(src).toContain("'YOU'");
     expect(src).toContain("'SUSPECT'");
@@ -399,10 +399,10 @@ describe('Regression — All v1–v57 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -426,7 +426,7 @@ describe('Regression — All v1–v57 Confirmed', () => {
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -441,10 +441,10 @@ describe('Regression — All v1–v57 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

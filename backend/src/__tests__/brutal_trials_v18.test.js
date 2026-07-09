@@ -135,7 +135,7 @@ describe('1. iacDocumentNeeded — Ineffective Counsel Documentation', () => {
 
   test('1-05: IAC = deficient performance + prejudice (Strickland standard)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('IAC = deficient performance + prejudice');
   });
 
@@ -330,7 +330,7 @@ describe('4. recovery_agents.js — Fugitive Recovery State Laws', () => {
 
   test('4-01: RECOVERY_LAWS has state law database', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/recovery_agents.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/recovery_agents.js', 'utf8');
     expect(src).toContain('RECOVERY_LAWS');
     expect(src).toContain('AL:');
     expect(src).toContain('CA:');
@@ -338,7 +338,7 @@ describe('4. recovery_agents.js — Fugitive Recovery State Laws', () => {
 
   test('4-02: state law entries have allowed, license, notes fields', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/recovery_agents.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/recovery_agents.js', 'utf8');
     expect(src).toContain('allowed');
     expect(src).toContain('license');
     expect(src).toContain('notes');
@@ -346,14 +346,14 @@ describe('4. recovery_agents.js — Fugitive Recovery State Laws', () => {
 
   test('4-03: some states require licenses (ARS §13-3885 Arizona)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/recovery_agents.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/recovery_agents.js', 'utf8');
     expect(src).toContain('License required');
     expect(src).toContain('ARS §13-3885');
   });
 
   test('4-04: has /recovery-agents and /recovery-agents/laws/:state routes', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/recovery_agents.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/recovery_agents.js', 'utf8');
     expect(src).toContain('/laws/:state');
     const handlers = src.match(/router\.(get|post)\s*\(/g) || [];
     expect(handlers.length).toBeGreaterThanOrEqual(2);
@@ -361,14 +361,14 @@ describe('4. recovery_agents.js — Fugitive Recovery State Laws', () => {
 
   test('4-05: served exclusively to authenticated bail bondsmen (authRequired)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/recovery_agents.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/recovery_agents.js', 'utf8');
     expect(src).toContain('authRequired');
     expect(src).toContain('exclusively to authenticated bail bondsmen');
   });
 
   test('4-06: disclaimer present — laws researched April 2026', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/recovery_agents.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/recovery_agents.js', 'utf8');
     expect(src).toContain('April 2026');
     expect(src).toContain('Disclaimer');
   });
@@ -381,13 +381,13 @@ describe('5. chat/_prompts.js — AI Persona & Disclaimer', () => {
 
   test('5-01: SYSTEM_PROMPT starts with "CORE PRINCIPLE: Every user is innocent"', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_prompts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_prompts.js', 'utf8');
     expect(src).toContain('CORE PRINCIPLE: Every user is innocent until proven gui');
   });
 
   test('5-02: RESPONSE_FOOTER_INSTRUCTION is always-appended disclaimer', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_prompts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_prompts.js', 'utf8');
     expect(src).toContain('RESPONSE_FOOTER_INSTRUCTION');
     expect(src).toContain('general guidance only');
     expect(src).toContain('does not constitute legal advice');
@@ -395,20 +395,20 @@ describe('5. chat/_prompts.js — AI Persona & Disclaimer', () => {
 
   test('5-03: RESPONSE_FOOTER_INSTRUCTION says "Laws vary by jurisdiction"', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_prompts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_prompts.js', 'utf8');
     expect(src).toContain('Laws vary by jurisdiction');
     expect(src).toContain('change frequently');
   });
 
   test('5-04: DEFENDER_SYSTEM_PROMPT is exported for public defender mode', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_prompts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_prompts.js', 'utf8');
     expect(src).toContain('DEFENDER_SYSTEM_PROMPT');
   });
 
   test('5-05: WARNING comment says changes affect ALL chat responses', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_prompts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_prompts.js', 'utf8');
     expect(src).toContain('WARNING: Changes to SYSTEM_PROMPT affect ALL chat responses');
   });
 });
@@ -420,7 +420,7 @@ describe('6. chat/_helpers.js — Chat Utility Functions', () => {
 
   test('6-01: exports detectLawyerHandoff, buildCaseNote, buildJurisdictionNote', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_helpers.js', 'utf8');
     expect(src).toContain('detectLawyerHandoff');
     expect(src).toContain('buildCaseNote');
     expect(src).toContain('buildJurisdictionNote');
@@ -428,7 +428,7 @@ describe('6. chat/_helpers.js — Chat Utility Functions', () => {
 
   test('6-02: exports callClaude, getHistory, saveMessage, classifyIntent', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_helpers.js', 'utf8');
     expect(src).toContain('callClaude');
     expect(src).toContain('getHistory');
     expect(src).toContain('saveMessage');
@@ -437,7 +437,7 @@ describe('6. chat/_helpers.js — Chat Utility Functions', () => {
 
   test('6-03: imports SYSTEM_PROMPT + DEFENDER_SYSTEM_PROMPT + RESPONSE_FOOTER', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_helpers.js', 'utf8');
     expect(src).toContain('SYSTEM_PROMPT');
     expect(src).toContain('DEFENDER_SYSTEM_PROMPT');
     expect(src).toContain('RESPONSE_FOOTER_INSTRUCTION');
@@ -445,7 +445,7 @@ describe('6. chat/_helpers.js — Chat Utility Functions', () => {
 
   test('6-04: getHistory fetches last 20 messages for a session', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_helpers.js', 'utf8');
     expect(src).toContain('limit = 20');
     expect(src).toContain('session_id');
   });
@@ -458,7 +458,7 @@ describe('7. MessagesScreen — Paginated Messages', () => {
 
   test('7-01: has page, hasMore, searchQuery, searchActive, attachment states', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MessagesScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MessagesScreen.tsx', 'utf8');
     expect(src).toContain('hasMore');
     expect(src).toContain('searchQuery');
     expect(src).toContain('searchActive');
@@ -467,13 +467,13 @@ describe('7. MessagesScreen — Paginated Messages', () => {
 
   test('7-02: uses useFocusEffect for message refresh on return', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MessagesScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MessagesScreen.tsx', 'utf8');
     expect(src).toContain('useFocusEffect');
   });
 
   test('7-03: supports file attachment upload via /messages/attachment', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MessagesScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MessagesScreen.tsx', 'utf8');
     expect(src).toContain("'/messages/attachment'");
   });
 
@@ -493,13 +493,13 @@ describe('8. EmergencyScreen — SOS Alert System', () => {
 
   test('8-01: fetches /alerts for emergency alert configuration', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
     expect(src).toContain("'/alerts'");
   });
 
   test('8-02: has phase, countdown, sendingSOS, contacts, result states', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
     expect(src).toContain('countdown');
     expect(src).toContain('sendingSOS');
     expect(src).toContain('contacts');
@@ -508,14 +508,14 @@ describe('8. EmergencyScreen — SOS Alert System', () => {
 
   test('8-03: designed for panicked users — large buttons, haptic feedback', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
     expect(src).toContain('panicked');
     expect(src).toContain('haptic');
   });
 
   test('8-04: has PTR and RefreshControl', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
     expect(src).toContain('RefreshControl');
   });
 });
@@ -527,7 +527,7 @@ describe('9. InterrogationRecorderScreen — 6-Phase Flow', () => {
 
   test('9-01: 6 phases: law_check|ready|recording|processing|done|error', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain("'law_check'");
     expect(src).toContain("'ready'");
     expect(src).toContain("'recording'");
@@ -538,20 +538,20 @@ describe('9. InterrogationRecorderScreen — 6-Phase Flow', () => {
 
   test('9-02: has transcript state for recording output', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('transcript');
   });
 
   test('9-03: has recordingLaw state for two-party consent display', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('recordingLaw');
     expect(src).toContain('TWO_PARTY_STATES');
   });
 
   test('9-04: has elapsed timer and PTR', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain('elapsed');
     expect(src).toContain('RefreshControl');
   });
@@ -573,20 +573,20 @@ describe('10. DiversionScreen — Diversion Eligibility Guide', () => {
 
   test('10-01: DiversionScreen is zero-API offline static for diversion logic', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DiversionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DiversionScreen.tsx', 'utf8');
     expect(src).toContain('Zero API calls');
     expect(src).toContain('Works offline');
   });
 
   test('10-02: fetches Court Process lessons as supplementary content', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DiversionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DiversionScreen.tsx', 'utf8');
     expect(src).toContain('Court%20Process');
   });
 
   test('10-03: has divLoading, divError, diversionLesson, step, state states', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DiversionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DiversionScreen.tsx', 'utf8');
     expect(src).toContain('divLoading');
     expect(src).toContain('divError');
     expect(src).toContain('step');
@@ -594,13 +594,13 @@ describe('10. DiversionScreen — Diversion Eligibility Guide', () => {
 
   test('10-04: diversion = prosecutor dismisses charges after program completion', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DiversionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DiversionScreen.tsx', 'utf8');
     expect(src).toContain('dismiss charges');
   });
 
   test('10-05: has PTR and refreshing state', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DiversionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DiversionScreen.tsx', 'utf8');
     expect(src).toContain('RefreshControl');
     expect(src).toContain('refreshing');
   });
@@ -613,7 +613,7 @@ describe('11. RewardsScreen — Gamification & Referrals', () => {
 
   test('11-01: EARN_WAYS has lesson (+10), community (+5), review (+5)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RewardsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RewardsScreen.tsx', 'utf8');
     expect(src).toContain('EARN_WAYS');
     expect(src).toContain('+10 pts');
     expect(src).toContain('+5 pts');
@@ -622,13 +622,13 @@ describe('11. RewardsScreen — Gamification & Referrals', () => {
 
   test('11-02: uses /referrals/redeem for reward redemption', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RewardsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RewardsScreen.tsx', 'utf8');
     expect(src).toContain("'/referrals/redeem'");
   });
 
   test('11-03: has points, referralCode, redeemCode, loading, msg states', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RewardsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RewardsScreen.tsx', 'utf8');
     expect(src).toContain('points');
     expect(src).toContain('referralCode');
     expect(src).toContain('redeemCode');
@@ -637,7 +637,7 @@ describe('11. RewardsScreen — Gamification & Referrals', () => {
 
   test('11-04: uses SkeletonLoader and secureStorage', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RewardsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RewardsScreen.tsx', 'utf8');
     expect(src).toContain('SkeletonLoader');
     expect(src).toContain('secureStorage');
   });
@@ -661,19 +661,19 @@ describe('12. BackHandler + onLongPress — Platform Interactions', () => {
 
   test('12-01: EmergencyShareScreen uses BackHandler (Android back intercept)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
     expect(src).toContain('BackHandler');
   });
 
   test('12-02: ChatScreen uses onLongPress for message actions', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('onLongPress');
   });
 
   test('12-03: CaseTimelineScreen onLongPress shows delete Alert', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseTimelineScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseTimelineScreen.tsx', 'utf8');
     expect(src).toContain('onLongPress');
     expect(src).toContain('Alert.alert');
     // Auto-generated entries are not deletable
@@ -688,7 +688,7 @@ describe('13. Config OAuth Client IDs — Demo Mode', () => {
 
   test('13-01: all integration OAuth clients default to demo mode message', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/config.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     expect(src).toContain('CLIO_CLIENT_ID');
     expect(src).toContain('OAuth disabled');
     expect(src).toContain('demo mode only');
@@ -696,14 +696,14 @@ describe('13. Config OAuth Client IDs — Demo Mode', () => {
 
   test('13-02: practice management integrations in demo mode', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/config.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     expect(src).toContain('PRACTICEPANTHER_CLIENT_ID');
     expect(src).toContain('MYCASE_CLIENT_ID');
   });
 
   test('13-03: calendar integrations default to CalDAV basic auth', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/config.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     expect(src).toContain('GOOGLE_CALENDAR_CLIENT_ID');
     expect(src).toContain('CalDAV basic auth only');
     expect(src).toContain('OUTLOOK_CLIENT_ID');
@@ -711,7 +711,7 @@ describe('13. Config OAuth Client IDs — Demo Mode', () => {
 
   test('13-04: all 10 OAuth clients have correct demo messages', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/config.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     const OAUTH_CLIENTS = [
       'CLIO_CLIENT_ID', 'PRACTICEPANTHER_CLIENT_ID', 'MYCASE_CLIENT_ID',
       'GOOGLE_CALENDAR_CLIENT_ID', 'OUTLOOK_CLIENT_ID', 'IMANAGE_CLIENT_ID',
@@ -730,26 +730,26 @@ describe('14. UX Patterns — FlatList & Callback Optimization', () => {
 
   test('14-01: LawyersScreen FlatList has keyExtractor', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx', 'utf8');
     expect(src).toContain('keyExtractor');
   });
 
   test('14-02: HomeScreen uses useCallback for stable handlers', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(src).toContain('useCallback');
   });
 
   test('14-03: ChatScreen uses Pressable for long-press (not TouchableOpacity)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     // Fix notes say View ignores touch props → Pressable used
     expect(src).toContain('Pressable');
   });
 
   test('14-04: MessagesScreen FlatList has keyExtractor', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MessagesScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MessagesScreen.tsx', 'utf8');
     expect(src).toContain('FlatList');
     expect(src).toContain('keyExtractor');
   });
@@ -807,7 +807,7 @@ describe('15. Regression — All Prior Fixes Confirmed', () => {
   test('15-07: zero hex violations in all useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'",
                            "'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];

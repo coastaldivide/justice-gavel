@@ -59,7 +59,7 @@ describe('DISC14. safeInt fallback + escalation dominance [≥5 each]', () => {
 describe('AIQ. aiQueue.js — 2-Layer Async Job Queue Architecture', () => {
   test('AIQ-01: aiQueue solves Node.js event-loop blocking for 5-30s AI calls', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/aiQueue.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/aiQueue.js', 'utf8');
     expect(src).toContain('Async AI job queue');
     expect(src).toContain('event loop');
     expect(src).toContain('5–30 seconds');
@@ -67,7 +67,7 @@ describe('AIQ. aiQueue.js — 2-Layer Async Job Queue Architecture', () => {
   });
   test('AIQ-02: two-layer architecture — in-memory p-queue + SQLite persistence', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/aiQueue.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/aiQueue.js', 'utf8');
     expect(src).toContain('p-queue');
     expect(src).toContain('two-layer architecture');
     expect(src).toContain('concur');
@@ -103,7 +103,7 @@ describe('AIQ. aiQueue.js — 2-Layer Async Job Queue Architecture', () => {
 describe('LDT. legaldata.js — State Legal Reference Data API', () => {
   test('LDT-01: GET /:type serves bail/DUI/drugs/SOL/federal-courts data by state', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/legaldata.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/legaldata.js', 'utf8');
     expect(src).toContain('GET /api/legaldata/:type');
     expect(src).toContain('bail');
     expect(src).toContain('dui');
@@ -112,14 +112,14 @@ describe('LDT. legaldata.js — State Legal Reference Data API', () => {
   });
   test('LDT-02: legaldata types include victim-comp, clinics, bar-complaints', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/legaldata.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/legaldata.js', 'utf8');
     expect(src).toContain('victim-comp');
     expect(src).toContain('clinics');
     expect(src).toContain('bar-complaints');
   });
   test('LDT-03: legaldata is state-specific (query by state param)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/legaldata.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/legaldata.js', 'utf8');
     expect(src).toContain('state');
     expect(src).toContain('authRequired');
   });
@@ -129,20 +129,20 @@ describe('LDT. legaldata.js — State Legal Reference Data API', () => {
 describe('RES. resources.js — Legal Rights Education Resources', () => {
   test('RES-01: GET / lists legal education resources (filterable by category)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/resources.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/resources.js', 'utf8');
     expect(src).toContain("router.get('/'");
     expect(src).toContain('resource');
     expect(src).toContain('authRequired');
   });
   test('RES-02: GET /categories returns resource category list', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/resources.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/resources.js', 'utf8');
     expect(src).toContain("router.get('/categories'");
     expect(src).toContain('categor');
   });
   test('RES-03: GET /:id returns single resource with full content', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/resources.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/resources.js', 'utf8');
     expect(src).toContain("router.get('/:id'");
     expect(src).toContain('id');
   });
@@ -152,20 +152,20 @@ describe('RES. resources.js — Legal Rights Education Resources', () => {
 describe('BLC. billing/connections.js — Emergency $20 QuickConnect', () => {
   test('BLC-01: POST /family/connect — emergency family connection billing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/connections.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/connections.js', 'utf8');
     expect(src).toContain("router.post('/family/connect'");
     expect(src).toContain('Emergency family connection');
   });
   test('BLC-02: POST /quickconnect — $20 instant attorney matchmaking', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/connections.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/connections.js', 'utf8');
     expect(src).toContain("router.post('/quickconnect'");
     expect(src).toContain('QuickConnect');
     expect(src).toContain('$20');
   });
   test('BLC-03: uses stripe, LIVE, TIERS, billingLimiter from _shared.js', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/connections.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/connections.js', 'utf8');
     expect(src).toContain('stripe');
     expect(src).toContain('_shared.js');
     expect(src).toContain('billingLimiter');
@@ -177,11 +177,11 @@ describe('REF. referrals.js — Referral Code + Credit System', () => {
   test('REF-01: POST /generate creates a referral code for sharing', async () => {
     // referrals.js removed in v175 — exploit risk eliminated
     const fs = await import('fs');
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
   });
   test('REF-03: GET /my-code + GET /credit — get own code and credit balance', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/referrals.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/referrals.js', 'utf8');
     expect(src).toContain("router.get('/my-code'");
     expect(src).toContain("router.get('/credit'");
     expect(src).toContain('authRequired');
@@ -192,20 +192,20 @@ describe('REF. referrals.js — Referral Code + Credit System', () => {
 describe('DBP. DB Postgres Pool — max=10, SSL, Timeouts', () => {
   test('DBP-01: Postgres pool max=10 connections', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('max:');
     expect(src).toContain('10');
     // PostgreSQL connection pool with max 10 connections
   });
   test('DBP-02: SSL rejectUnauthorized=false for Railway managed PostgreSQL', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('rejectUnauthorized');
     expect(src).toContain('ssl');
   });
   test('DBP-03: connectionTimeoutMillis=5000 + idleTimeoutMillis=30000', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('connectionTimeoutMillis');
     expect(src).toContain('5000');
     expect(src).toContain('idleTimeoutMillis');
@@ -217,13 +217,13 @@ describe('DBP. DB Postgres Pool — max=10, SSL, Timeouts', () => {
 describe('S12. UX — AI Queue + Legal Data + Referrals Architecture', () => {
   test('S12-01: aiQueue = p-queue prevents 50+ concurrent AI calls from blocking', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/aiQueue.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/aiQueue.js', 'utf8');
     expect(src).toContain('p-queue');
     expect(src).toContain('concurrent');
   });
   test('S12-02: legaldata serves SOL (statute of limitations) by state — justice-critical', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/legaldata.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/legaldata.js', 'utf8');
     expect(src).toContain('sol');
   });
   test('S12-03: billing/connections QUICKCONNECT_PRICE_CENTS=2000 ($20)', () => {
@@ -232,7 +232,7 @@ describe('S12. UX — AI Queue + Legal Data + Referrals Architecture', () => {
   test('S12-04: referrals system drives user acquisition (generate + redeem + apply)', async () => {
     // referrals.js removed in v175 — exploit risk eliminated
     const fs = await import('fs');
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
   });
 });
 
@@ -241,10 +241,10 @@ describe('Regression — All v1–v78 Confirmed', () => {
   test('R-01: i18n 707/707', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: GAVEL[3]=🏆 not 🥇', () => {
@@ -257,17 +257,17 @@ describe('Regression — All v1–v78 Confirmed', () => {
   test('R-04: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });
   test('R-05: zero hex violations', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {

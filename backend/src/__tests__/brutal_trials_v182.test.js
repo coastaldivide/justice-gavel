@@ -21,7 +21,7 @@ const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
 describe('IMPORT. All Route Files Import Existing Modules', () => {
   test('IMPORT-01: analytics.js uses correct db and logger paths', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/analytics.js','utf8');
     // Before fix: imported from '../db/index.js' and '../logger.js' — neither exists
     // These are actually at '../db/index.js' and '../utils/logger.js'
     expect(src).toContain("from '../db/index.js'");
@@ -31,7 +31,7 @@ describe('IMPORT. All Route Files Import Existing Modules', () => {
   });
   test('IMPORT-02: discovery.js uses perUserAiLimit from sharedAiLimiter (not deleted rateLimiter)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/discovery.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery.js','utf8');
     // Before fix: imported aiLimiter from '../middleware/rateLimiters.js' which doesn't exist
     expect(src).toContain('sharedAiLimiter.js');
     expect(src).toContain('perUserAiLimit');
@@ -40,7 +40,7 @@ describe('IMPORT. All Route Files Import Existing Modules', () => {
   });
   test('IMPORT-03: motions/generate.js uses perUserAiLimit from sharedAiLimiter', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/motions/generate.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/motions/generate.js','utf8');
     expect(src).toContain('sharedAiLimiter.js');
     expect(src).toContain('perUserAiLimit');
     expect(src).not.toContain('rateLimiter.js');
@@ -48,7 +48,7 @@ describe('IMPORT. All Route Files Import Existing Modules', () => {
   });
   test('IMPORT-04: expungement/index.js has no reference to deleted referrals.js', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/expungement/index.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/expungement/index.js','utf8');
     // referrals.js was deleted in v175 — any remaining import would crash at startup
     expect(src.toLowerCase()).not.toContain('referrals.js');
     expect(src).not.toContain('referralsRouter');
@@ -67,11 +67,11 @@ describe('IMPORT. All Route Files Import Existing Modules', () => {
           const importPath=m[1];
           const resolved=path.resolve(path.dirname(fp),importPath);
           if(!fs.existsSync(resolved)&&!fs.existsSync(resolved+'.js'))
-            broken.push(path.relative('/tmp/JG/backend/src/routes',fp)+': '+importPath);
+            broken.push(path.relative('/tmp/JG_fresh/backend/src/routes',fp)+': '+importPath);
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(broken.length) console.log('Broken imports:',broken);
     expect(broken.length).toBe(0);
   });
@@ -81,21 +81,21 @@ describe('IMPORT. All Route Files Import Existing Modules', () => {
 describe('RUNTIME. Deep Flow Simulation', () => {
   test('RT-01: Stripe webhook end-to-end — HMAC + events + DB update', async () => {
     const fs = await import('fs');
-    const wh  = fs.readFileSync('/tmp/JG/backend/src/routes/billing/webhooks.js','utf8');
-    const wh2 = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/stripe.js','utf8');
+    const wh  = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/webhooks.js','utf8');
+    const wh2 = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js','utf8');
     expect(wh2).toContain('STRIPE_WEBHOOK_SECRET');
     expect(wh).toContain('customer.subscription');
     expect(wh).toContain('invoice.payment_failed');
     expect(wh).toContain('checkout.session.completed');
     expect(wh).toContain('UPDATE');
     // Raw body must be preserved for HMAC verification
-    const app = fs.readFileSync('/tmp/JG/backend/src/app.js','utf8');
+    const app = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8');
     expect(app).toMatch(/raw|express\.raw|bodyParser\.raw/i);
   });
   test('RT-02: JWT silent refresh — interceptor + /refresh route + new token', async () => {
     const fs = await import('fs');
-    const api  = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts','utf8');
-    const auth = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js','utf8');
+    const api  = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts','utf8');
+    const auth = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8');
     expect(api).toContain('REFRESH_THRESHOLD_MS');
     expect(api).toContain('/auth/refresh');
     expect(api).toContain('clearAuth');  // 401 fallback
@@ -104,8 +104,8 @@ describe('RUNTIME. Deep Flow Simulation', () => {
   });
   test('RT-03: App foreground triggers push token refresh + OTA check', async () => {
     const fs = await import('fs');
-    const app   = fs.readFileSync('/tmp/JG/frontend/App.tsx','utf8');
-    const setup = fs.readFileSync('/tmp/JG/frontend/src/hooks/useAppSetup.ts','utf8');
+    const app   = fs.readFileSync('/tmp/JG_fresh/frontend/App.tsx','utf8');
+    const setup = fs.readFileSync('/tmp/JG_fresh/frontend/src/hooks/useAppSetup.ts','utf8');
     expect(app).toContain('AppState');
     expect(app).toContain("'active'");
     expect(app).toContain('usePushTokenRefresh');
@@ -115,8 +115,8 @@ describe('RUNTIME. Deep Flow Simulation', () => {
   });
   test('RT-04: File upload — VoiceNote records+transcribes, DocScanner captures+uploads', async () => {
     const fs = await import('fs');
-    const voice = fs.readFileSync('/tmp/JG/frontend/src/screens/VoiceNoteScreen.tsx','utf8');
-    const doc   = fs.readFileSync('/tmp/JG/frontend/src/screens/DocumentScannerScreen.tsx','utf8');
+    const voice = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/VoiceNoteScreen.tsx','utf8');
+    const doc   = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DocumentScannerScreen.tsx','utf8');
     // VoiceNote
     expect(voice).toMatch(/Recording|Audio/);
     expect(voice).toContain('/transcribe');
@@ -128,7 +128,7 @@ describe('RUNTIME. Deep Flow Simulation', () => {
   });
   test('RT-05: Push notification → navigates to correct screen', async () => {
     const fs = await import('fs');
-    const app = fs.readFileSync('/tmp/JG/frontend/App.tsx','utf8');
+    const app = fs.readFileSync('/tmp/JG_fresh/frontend/App.tsx','utf8');
     expect(app).toContain('addNotificationResponseReceivedListener');
     expect(app).toContain('navigationRef.current');
     // Handles 7 notification types
@@ -138,7 +138,7 @@ describe('RUNTIME. Deep Flow Simulation', () => {
   });
   test('RT-06: Network errors handled with circuit breaker + user message', async () => {
     const fs = await import('fs');
-    const api = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts','utf8');
+    const api = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts','utf8');
     const hasCircuit = api.includes('circuitBreaker') || api.includes('circuit') || api.includes('Circuit');
     expect(hasCircuit).toBe(true);
     expect(api).toContain('ECONNABORTED');
@@ -149,7 +149,7 @@ describe('RUNTIME. Deep Flow Simulation', () => {
   test('RT-07: Migration gaps — all 44 migrations present, no sequence gaps', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const migDir = '/tmp/JG/backend/src/migrations';
+    const migDir = '/tmp/JG_fresh/backend/src/migrations';
     const files = fs.readdirSync(migDir).filter(f=>f.endsWith('.sql'));
     expect(files.length).toBeGreaterThanOrEqual(44);
     // No gaps in sequence
@@ -165,9 +165,9 @@ describe('RUNTIME. Deep Flow Simulation', () => {
 describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-01: 0 dead navigates + 0 password without secureTextEntry', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let dead=0,noPw=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -189,11 +189,11 @@ describe('GATE. Zero-Defect Production Gates', () => {
         inj+=[...fs.readFileSync(fp,'utf8').matchAll(/db\.(get|all|run)\s*\(`[^`]*\$\{(?:req\.params|req\.body|req\.query)/g)].length;
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     expect(inj).toBe(0);
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens'; const all=new Set();
+    const scr='/tmp/JG_fresh/frontend/src/screens'; const all=new Set();
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
       for(const m of s.matchAll(/navigate\(['"]([^'"]+)['"]/g))all.add(m[1]);
@@ -208,7 +208,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-03: 0 FlatList no keyExtractor + 0 accessibility + 0 hex', async () => {
     const fs=await import('fs'); const path=await import('path');
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let noKey=0,acc=0,hex=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -235,22 +235,22 @@ describe('GATE. Zero-Defect Production Gates', () => {
         const src=fs.readFileSync(fp,'utf8');
         const writes=(src.match(/router\.(post|put|patch|delete)\s*\([^'"]*authRequired/g)||[]).length;
         const hasLim=src.includes('Limiter')||src.includes('rateLimit')||src.includes('makeUserLimiter');
-        if(writes>0&&!hasLim)unprotected.push(path.relative('/tmp/JG/backend/src/routes',fp));
+        if(writes>0&&!hasLim)unprotected.push(path.relative('/tmp/JG_fresh/backend/src/routes',fp));
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(unprotected.length)console.log('Unprotected:',unprotected);
     expect(unprotected.length).toBe(0);
-    expect(fs.readFileSync('/tmp/JG/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
   });
   test('GATE-05: 437/437 routes all tiers', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let counts={5:0,10:0,15:0,20:0,25:0},total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
@@ -270,11 +270,11 @@ describe('GATE. Zero-Defect Production Gates', () => {
   });
   test('GATE-06: startup integrity — prestart+bootstrap+OTA+push', async () => {
     const fs=await import('fs');
-    const pkg=JSON.parse(fs.readFileSync('/tmp/JG/backend/package.json','utf8'));
+    const pkg=JSON.parse(fs.readFileSync('/tmp/JG_fresh/backend/package.json','utf8'));
     expect(pkg.scripts.prestart).toContain('migrate');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(db).toContain('Users table column bootstrap');
-    const setup=fs.readFileSync('/tmp/JG/frontend/src/hooks/useAppSetup.ts','utf8');
+    const setup=fs.readFileSync('/tmp/JG_fresh/frontend/src/hooks/useAppSetup.ts','utf8');
     expect(setup).toContain('checkForUpdateAsync');
     expect(setup).not.toContain('./src/services/api');
   });

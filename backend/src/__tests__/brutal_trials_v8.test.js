@@ -121,7 +121,7 @@ describe('1. theme.ts — Design System Constants', () => {
 
   test('1-01: SPACE scale has 10 named stops with correct values', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(src).toContain("'1': 4");
     expect(src).toContain("'2': 8");
     expect(src).toContain("'4': 16");
@@ -131,7 +131,7 @@ describe('1. theme.ts — Design System Constants', () => {
 
   test('1-02: RADIUS scale has xs → pill', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(src).toContain('xs: 4');
     expect(src).toContain('sm: 8');
     expect(src).toContain('md: 12');
@@ -141,7 +141,7 @@ describe('1. theme.ts — Design System Constants', () => {
 
   test('1-03: SHADOW has sm variant with navy shadow color', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(src).toContain("shadowColor: '#042C53'");
     expect(src).toContain('shadowOpacity');
     expect(src).toContain('shadowRadius');
@@ -150,7 +150,7 @@ describe('1. theme.ts — Design System Constants', () => {
 
   test('1-04: TRACKING letter-spacing values are correct', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(src).toContain('tight:  -0.3');
     expect(src).toContain('normal:  0');
     expect(src).toContain('wide:    0.4');
@@ -160,7 +160,7 @@ describe('1. theme.ts — Design System Constants', () => {
 
   test('1-05: DARK_COLORS and LIGHT_COLORS both have brand navy', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     // Both palettes start with navy
     const darkIdx  = src.indexOf('DARK_COLORS');
     const lightIdx = src.indexOf('LIGHT_COLORS');
@@ -173,14 +173,14 @@ describe('1. theme.ts — Design System Constants', () => {
 
   test('1-06: LIGHT_COLORS darken gold for light mode (contrast)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     // Gold in light mode is darkened for accessibility
     expect(src).toContain('#C68A00'); // darkened gold
   });
 
   test('1-07: FONTS helper has regular, medium, semiBold, bold, extraBold', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(src).toContain('regular:');
     expect(src).toContain('medium:');
     expect(src).toContain('semiBold:');
@@ -190,7 +190,7 @@ describe('1. theme.ts — Design System Constants', () => {
 
   test('1-08: FONT_FALLBACK has all weights set to undefined (no custom fonts in CI)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(src).toContain('FONT_FALLBACK');
     // Fallback has undefined for all font variants
     const fallbackIdx = src.indexOf('FONT_FALLBACK');
@@ -200,7 +200,7 @@ describe('1. theme.ts — Design System Constants', () => {
 
   test('1-09: useTheme hook is exported', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts', 'utf8');
     expect(src).toContain('export');
     expect(src).toContain('useTheme');
     expect(src).toContain('ThemeProvider');
@@ -229,56 +229,56 @@ describe('2. ErrorBoundary — React Error Catching', () => {
 
   test('2-01: ErrorBoundary.tsx exports ErrorBoundary class', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/ErrorBoundary.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/ErrorBoundary.tsx', 'utf8');
     expect(src).toContain('export class ErrorBoundary');
     expect(src).toContain('extends Component');
   });
 
   test('2-02: getDerivedStateFromError sets hasError=true', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/ErrorBoundary.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/ErrorBoundary.tsx', 'utf8');
     expect(src).toContain('getDerivedStateFromError');
     expect(src).toContain('hasError: true');
   });
 
   test('2-03: componentDidCatch reports to Sentry', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/ErrorBoundary.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/ErrorBoundary.tsx', 'utf8');
     expect(src).toContain('componentDidCatch');
     expect(src).toContain('Sentry.captureException');
   });
 
   test('2-04: componentDidCatch has __DEV__ guard for console logging', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/ErrorBoundary.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/ErrorBoundary.tsx', 'utf8');
     expect(src).toContain('__DEV__');
     expect(src).toContain('console.error');
   });
 
   test('2-05: reset() clears hasError state', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/ErrorBoundary.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/ErrorBoundary.tsx', 'utf8');
     expect(src).toContain('reset');
     expect(src).toContain('hasError: false');
   });
 
   test('2-06: fallback UI renders "Try again" button', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/ErrorBoundary.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/ErrorBoundary.tsx', 'utf8');
     expect(src).toContain('Try again');
     expect(src).toContain('accessibilityRole');
   });
 
   test('2-07: fallback prop allows custom error UI', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/ErrorBoundary.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/ErrorBoundary.tsx', 'utf8');
     expect(src).toContain('fallback?');
     expect(src).toContain('this.props.fallback');
   });
 
   test('2-08: initial state has hasError=false', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/ErrorBoundary.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/ErrorBoundary.tsx', 'utf8');
     // State initialization: { hasError: false, error: null }
     expect(src).toContain('hasError: false');
     expect(src).toContain('error: null');
@@ -286,7 +286,7 @@ describe('2. ErrorBoundary — React Error Catching', () => {
 
   test('2-09: ErrorBoundary.tsx also has export default', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/ErrorBoundary.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/ErrorBoundary.tsx', 'utf8');
     expect(src).toContain('export default ErrorBoundary');
   });
 });
@@ -298,14 +298,14 @@ describe('3. LegalDisclaimerModal — Consent Management', () => {
 
   test('3-01: CONSENT_VERSION is "2.0"', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
     expect(src).toContain("CONSENT_VERSION");
     expect(src).toContain("'2.0'");
   });
 
   test('3-02: hasValidConsent reads from AsyncStorage and returns boolean', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
     expect(src).toContain('hasValidConsent');
     expect(src).toContain("val === 'true'");
     expect(src).toContain('AsyncStorage.getItem');
@@ -313,7 +313,7 @@ describe('3. LegalDisclaimerModal — Consent Management', () => {
 
   test('3-03: storeConsent writes "true" to AsyncStorage', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
     expect(src).toContain('storeConsent');
     expect(src).toContain("AsyncStorage.setItem");
     expect(src).toContain("'true'");
@@ -321,14 +321,14 @@ describe('3. LegalDisclaimerModal — Consent Management', () => {
 
   test('3-04: clearConsent removes the consent key', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
     expect(src).toContain('clearConsent');
     expect(src).toContain('removeItem');
   });
 
   test('3-05: hasValidConsent catches errors and returns false (fail-closed)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
     // Should have try/catch that returns false on error
     expect(src).toContain('catch');
     expect(src).toContain('return false');
@@ -344,7 +344,7 @@ describe('3. LegalDisclaimerModal — Consent Management', () => {
 
   test('3-07: clickwrap model — single checkbox (ABA compliant)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
     expect(src).toContain('checkbox');
   });
 });
@@ -356,21 +356,21 @@ describe('4. MotionTypeBadge — Motion Color Model', () => {
 
   test('4-01: MotionTypeBadge exports as React.memo', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
     expect(src).toContain('React.memo');
     expect(src).toContain('MotionTypeBadge');
   });
 
   test('4-02: MOTION_COLORS has 8 entries', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
     const entries = src.match(/^\s+\w+:\s*\{ bg:/gm) || [];
     expect(entries.length).toBe(8);
   });
 
   test('4-03: all 8 motion types have bg, text, and label', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
     const MOTIONS = ['suppress', 'bail_reduction', 'dismiss', 'continuance',
                      'discovery', 'speedy_trial', 'acquittal', 'reduce_sentence'];
     for (const m of MOTIONS) {
@@ -380,7 +380,7 @@ describe('4. MotionTypeBadge — Motion Color Model', () => {
 
   test('4-04: unknown motion type falls back to neutral gray', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
     expect(src).toContain('??');
     expect(src).toContain('#F5F5F5'); // neutral gray fallback
     expect(src).toContain('#424242'); // neutral text
@@ -388,7 +388,7 @@ describe('4. MotionTypeBadge — Motion Color Model', () => {
 
   test('4-05: suppress motion uses red/crimson color (high stakes)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
     const suppressIdx = src.indexOf('suppress:');
     const suppressSection = src.slice(suppressIdx, suppressIdx + 100);
     expect(suppressSection).toContain('#FCE4EC'); // light red bg
@@ -397,7 +397,7 @@ describe('4. MotionTypeBadge — Motion Color Model', () => {
 
   test('4-06: dismiss motion uses green color (positive outcome)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
     const dismissIdx = src.indexOf('dismiss:');
     const dismissSection = src.slice(dismissIdx, dismissIdx + 100);
     expect(dismissSection).toContain('#E8F5E9'); // light green bg
@@ -406,7 +406,7 @@ describe('4. MotionTypeBadge — Motion Color Model', () => {
 
   test('4-07: MotionTypeBadge accepts motionType string prop', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
     expect(src).toContain('motionType: string');
   });
 });
@@ -418,7 +418,7 @@ describe('5. PlaceholderIllustration — Onboarding Illustrations', () => {
 
   test('5-01: 6 illustration types defined', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
     const TYPES = ['gavel', 'shield', 'lawyer', 'phone', 'check', 'lock'];
     for (const t of TYPES) {
       expect(src).toContain(`'${t}'`);
@@ -427,26 +427,26 @@ describe('5. PlaceholderIllustration — Onboarding Illustrations', () => {
 
   test('5-02: IllustrationType union covers exactly 6 values', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
     expect(src).toContain("'gavel' | 'shield' | 'lawyer' | 'phone' | 'check' | 'lock'");
   });
 
   test('5-03: gavel type uses justice scale emoji ⚖️', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
     expect(src).toContain('⚖️');
   });
 
   test('5-04: Props has size (optional) and color (optional)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
     expect(src).toContain('size?:');
     expect(src).toContain('color?:');
   });
 
   test('5-05: PlaceholderIllustration uses ICONS map for emoji lookup', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
     expect(src).toContain('ICONS');
     expect(src).toContain('IllustrationType');
   });
@@ -459,33 +459,33 @@ describe('6. BiometricLockView — Lock Screen UI', () => {
 
   test('6-01: BiometricLockView accepts onUnlock and unlocking props', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/BiometricLockView.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/BiometricLockView.tsx', 'utf8');
     expect(src).toContain('onUnlock');
     expect(src).toContain('unlocking');
   });
 
   test('6-02: onUnlock is async (returns Promise)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/BiometricLockView.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/BiometricLockView.tsx', 'utf8');
     expect(src).toContain('Promise<void>');
   });
 
   test('6-03: BiometricLockView is memoized with React.memo', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/BiometricLockView.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/BiometricLockView.tsx', 'utf8');
     expect(src).toContain('React.memo');
   });
 
   test('6-04: shows lock emoji 🔒 in UI', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/BiometricLockView.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/BiometricLockView.tsx', 'utf8');
     expect(src).toContain('🔒');
     expect(src).toContain('Locked');
   });
 
   test('6-05: uses theme colors (colors.bg, colors.textPrimary)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/BiometricLockView.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/BiometricLockView.tsx', 'utf8');
     expect(src).toContain('useTheme');
     expect(src).toContain('colors.bg');
     expect(src).toContain('colors.textPrimary');
@@ -493,7 +493,7 @@ describe('6. BiometricLockView — Lock Screen UI', () => {
 
   test('6-06: shows ActivityIndicator when unlocking=true', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/BiometricLockView.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/BiometricLockView.tsx', 'utf8');
     expect(src).toContain('ActivityIndicator');
     expect(src).toContain('unlocking');
   });
@@ -506,28 +506,28 @@ describe('7. types/navigation.ts — Navigation Type Contracts', () => {
 
   test('7-01: RootStackParamList is Record<string, object | undefined>', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('RootStackParamList');
     expect(src).toContain('Record<string, object | undefined>');
   });
 
   test('7-02: AppNavigation is NativeStackNavigationProp', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('AppNavigation');
     expect(src).toContain('NativeStackNavigationProp');
   });
 
   test('7-03: AppRoute uses RouteProp', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('AppRoute');
     expect(src).toContain('RouteProp');
   });
 
   test('7-04: ScreenProps has navigation and optional route', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('ScreenProps');
     expect(src).toContain('navigation: AppNavigation');
     expect(src).toContain('route?:');
@@ -535,13 +535,13 @@ describe('7. types/navigation.ts — Navigation Type Contracts', () => {
 
   test('7-05: ScreenProps uses wildcard key [key: string]: unknown', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('[key: string]: unknown');
   });
 
   test('7-06: AppRoute has generic type parameter T', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('AppRoute<T extends string = string>');
   });
 });
@@ -553,33 +553,33 @@ describe('8. push.ts — Push Notification Registration', () => {
 
   test('8-01: registerForPush is exported as async function', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/push.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/push.ts', 'utf8');
     expect(src).toContain('export async function registerForPush');
   });
 
   test('8-02: registerForPush guards against simulator (Device.isDevice)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/push.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/push.ts', 'utf8');
     expect(src).toContain('Device.isDevice');
     expect(src).toContain("throw new Error('Use device for Push')");
   });
 
   test('8-03: registerForPush requests permission if not granted', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/push.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/push.ts', 'utf8');
     expect(src).toContain('requestPermissionsAsync');
     expect(src).toContain("!=='granted'");
   });
 
   test('8-04: registerForPush throws on permission denied', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/push.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/push.ts', 'utf8');
     expect(src).toContain("throw new Error('Push not granted')");
   });
 
   test('8-05: registerForPush returns Expo push token', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/push.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/push.ts', 'utf8');
     expect(src).toContain('getExpoPushTokenAsync');
     expect(src).toContain('.data');
     expect(src).toContain('return token');
@@ -587,7 +587,7 @@ describe('8. push.ts — Push Notification Registration', () => {
 
   test('8-06: notification handler configured for alert+badge but no sound', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/push.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/push.ts', 'utf8');
     expect(src).toContain('setNotificationHandler');
     expect(src).toContain('shouldShowAlert:true');
     expect(src).toContain('shouldPlaySound:false');
@@ -614,7 +614,7 @@ describe('9. chat callClaude — AI Call Architecture', () => {
 
   test('9-01: callClaude source exists and references DEFENDER_SYSTEM_PROMPT', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_helpers.js', 'utf8');
     expect(src).toContain('callClaude');
     expect(src).toContain('DEFENDER_SYSTEM_PROMPT');
     expect(src).toContain('SYSTEM_PROMPT');
@@ -622,21 +622,21 @@ describe('9. chat callClaude — AI Call Architecture', () => {
 
   test('9-02: defender mode selects DEFENDER_SYSTEM_PROMPT', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_helpers.js', 'utf8');
     expect(src).toContain("mode === 'defender'");
     expect(src).toContain('isDefender');
   });
 
   test('9-03: callClaude appends RESPONSE_FOOTER_INSTRUCTION to system prompt', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_helpers.js', 'utf8');
     expect(src).toContain('RESPONSE_FOOTER_INSTRUCTION');
     expect(src).toContain('systemPrompt');
   });
 
   test('9-04: callClaude accepts user_state and user_state_name for jurisdiction', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_helpers.js', 'utf8');
     expect(src).toContain('user_state');
     expect(src).toContain('user_state_name');
     expect(src).toContain('buildJurisdictionNote');
@@ -644,7 +644,7 @@ describe('9. chat callClaude — AI Call Architecture', () => {
 
   test('9-05: callClaude injects case context via buildCaseNote', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_helpers.js', 'utf8');
     expect(src).toContain('buildCaseNote');
     expect(src).toContain('caseContext');
   });
@@ -672,27 +672,27 @@ describe('10. motions generateMotion — Demo Mode & Type Validation', () => {
 
   test('10-01: generateMotion source exists in _helpers.js', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/motions/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/motions/_helpers.js', 'utf8');
     expect(src).toContain('generateMotion');
     expect(src).toContain('MOTION_TYPES');
   });
 
   test('10-02: generateMotion throws on unknown motion type', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/motions/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/motions/_helpers.js', 'utf8');
     expect(src).toContain("throw new Error('Unknown motion type')");
   });
 
   test('10-03: generateMotion has demo mode when no ANTHROPIC_KEY', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/motions/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/motions/_helpers.js', 'utf8');
     expect(src).toContain('DEMO MODE');
     expect(src).toContain('ANTHROPIC_API_KEY');
   });
 
   test('10-04: demo motion interpolates court name, case number, defendant name', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/motions/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/motions/_helpers.js', 'utf8');
     expect(src).toContain('court_name');
     expect(src).toContain('case_number');
     expect(src).toContain('defendant_name');
@@ -710,7 +710,7 @@ describe('10. motions generateMotion — Demo Mode & Type Validation', () => {
 
   test('10-06: ensureTables is a no-op (tables created at startup)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/motions/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/motions/_helpers.js', 'utf8');
     expect(src).toContain('ensureTables');
     expect(src).toContain('no-op');
   });
@@ -723,7 +723,7 @@ describe('11. deliverWebhook — HMAC & Delivery Model', () => {
 
   test('11-01: signPayload uses HMAC-SHA256 with timestamp.payload format', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain('createHmac');
     expect(src).toContain("'sha256'");
     expect(src).toContain('digest(');
@@ -731,7 +731,7 @@ describe('11. deliverWebhook — HMAC & Delivery Model', () => {
 
   test('11-02: signPayload format is timestamp.payload', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     // signPayload builds: timestamp + '.' + payload as the signed data
     expect(src).toContain('timestamp');
     const hasData = src.includes('timestamp') && src.includes('.') && src.includes('payload');
@@ -740,7 +740,7 @@ describe('11. deliverWebhook — HMAC & Delivery Model', () => {
 
   test('11-03: deliverWebhook enforces HTTPS in production', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain("'production'");
     expect(src).toContain("startsWith('https://')");
     expect(src).toContain('HTTPS in production');
@@ -748,13 +748,13 @@ describe('11. deliverWebhook — HMAC & Delivery Model', () => {
 
   test('11-04: RETRY_DELAYS_MS is defined for exponential backoff', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain('RETRY_DELAYS_MS');
   });
 
   test('11-05: webhook event ID uses random bytes hex prefix', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain('evt_');
     // Uses randomBytes for unique event ID
     const hasRandom = src.includes('randomBytes') || src.includes('crypto');
@@ -763,13 +763,13 @@ describe('11. deliverWebhook — HMAC & Delivery Model', () => {
 
   test('11-06: webhook payload has api_version 2025-01', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain("api_version:'2025-01'");
   });
 
   test('11-07: generateSecret uses whsec_ prefix', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain("'whsec_'");
     expect(src).toContain('generateSecret');
   });
@@ -813,14 +813,14 @@ describe('12. checkConflicts — RBAC Conflict Detection', () => {
 
   test('12-01: checkConflicts is exported from rbac.js', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     expect(src).toContain('checkConflicts');
     expect(src).toContain('export');
   });
 
   test('12-02: conflict check model — lookup conflict_index table', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     // checkConflicts queries the conflict_index table
     const hasConflictLogic = src.includes('conflict') || src.includes('conflicts');
     expect(hasConflictLogic).toBe(true);
@@ -828,20 +828,20 @@ describe('12. checkConflicts — RBAC Conflict Detection', () => {
 
   test('12-03: conflict_index table is in DB schema', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('conflict_index');
   });
 
   test('12-04: loadFirmContext caches result on req.firmCtx', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     expect(src).toContain('req.firmCtx');
     expect(src).toContain('loadFirmContext');
   });
 
   test('12-05: loadFirmContext short-circuits on second call (memoized)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     // if (req.firmCtx !== undefined) return req.firmCtx;
     expect(src).toContain('req.firmCtx !== undefined');
     expect(src).toContain('return req.firmCtx');
@@ -855,7 +855,7 @@ describe('13. DB Tables — Previously Untested Schema', () => {
 
   test('13-01: password_resets has user_id FK + token PK + expires_at', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tableSection = src.slice(src.indexOf('password_resets'), src.indexOf('password_resets') + 300);
     expect(tableSection).toContain('user_id');
     expect(tableSection).toContain('token');
@@ -866,7 +866,7 @@ describe('13. DB Tables — Previously Untested Schema', () => {
 
   test('13-02: acquisition_leads captures email, firm_name, vertical, org_size', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tableSection = src.slice(src.indexOf('acquisition_leads'), src.indexOf('acquisition_leads') + 300);
     expect(tableSection).toContain('email');
     expect(tableSection).toContain('firm_name');
@@ -876,7 +876,7 @@ describe('13. DB Tables — Previously Untested Schema', () => {
 
   test('13-03: firm_trials links firm_id + user_id to firms and users', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tableSection = src.slice(src.indexOf('firm_trials'), src.indexOf('firm_trials') + 300);
     expect(tableSection).toContain('firm_id');
     expect(tableSection).toContain('user_id');
@@ -885,7 +885,7 @@ describe('13. DB Tables — Previously Untested Schema', () => {
 
   test('13-04: firm_onboarding has checklist_key for tracking onboarding steps', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tableSection = src.slice(src.indexOf('firm_onboarding'), src.indexOf('firm_onboarding') + 300);
     expect(tableSection).toContain('checklist_key');
     expect(tableSection).toContain('completed_at');
@@ -893,7 +893,7 @@ describe('13. DB Tables — Previously Untested Schema', () => {
 
   test('13-05: firm_upgrade_requests tracks who requested upgrade', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tableSection = src.slice(src.indexOf('firm_upgrade_requests'), src.indexOf('firm_upgrade_requests') + 300);
     expect(tableSection).toContain('firm_id');
     expect(tableSection).toContain('requested_by');
@@ -901,7 +901,7 @@ describe('13. DB Tables — Previously Untested Schema', () => {
 
   test('13-06: all 5 previously untested tables are in the schema', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const TABLES = ['password_resets', 'acquisition_leads', 'firm_trials',
                     'firm_upgrade_requests', 'firm_onboarding'];
     for (const t of TABLES) {
@@ -911,7 +911,7 @@ describe('13. DB Tables — Previously Untested Schema', () => {
 
   test('13-07: total DB table count is still 55', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = src.match(/CREATE TABLE IF NOT EXISTS \w+/g) || [];
     expect(tables.length).toBe(56);
   });
@@ -924,7 +924,7 @@ describe('14. webCompat getHaptics — Lazy Native Loader', () => {
 
   test('14-01: getHaptics returns Haptics shim immediately on web', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/webCompat.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/webCompat.ts', 'utf8');
     const ghIdx = src.indexOf('getHaptics');
     const ghSection = src.slice(ghIdx, ghIdx + 200);
     expect(ghSection).toContain('isWeb');
@@ -933,27 +933,27 @@ describe('14. webCompat getHaptics — Lazy Native Loader', () => {
 
   test('14-02: getHaptics lazily loads expo-haptics on native', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/webCompat.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/webCompat.ts', 'utf8');
     expect(src).toContain("import('expo-haptics')");
     expect(src).toContain('_nativeHaptics');
   });
 
   test('14-03: getHaptics caches the native module (singleton pattern)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/webCompat.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/webCompat.ts', 'utf8');
     // if (!_nativeHaptics) { load it }
     expect(src).toContain('if (!_nativeHaptics)');
   });
 
   test('14-04: hapticImpact default style is Medium', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/webCompat.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/webCompat.ts', 'utf8');
     expect(src).toContain("= 'Medium'");
   });
 
   test('14-05: hapticSelection wraps selectionAsync', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/webCompat.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/webCompat.ts', 'utf8');
     expect(src).toContain('hapticSelection');
     expect(src).toContain('selectionAsync');
   });
@@ -966,13 +966,13 @@ describe('15. analytics.ts — Analytics Class & Identify', () => {
 
   test('15-01: analytics.ts has identify function', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/analytics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/analytics.ts', 'utf8');
     expect(src).toContain('identify');
   });
 
   test('15-02: distinct_id is generated from AsyncStorage (persisted across sessions)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/analytics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/analytics.ts', 'utf8');
     expect(src).toContain('analytics_id');
     expect(src).toContain('AsyncStorage');
     expect(src).toContain('getDistinctId');
@@ -980,7 +980,7 @@ describe('15. analytics.ts — Analytics Class & Identify', () => {
 
   test('15-03: track() payload always includes event, distinct_id, timestamp', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/analytics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/analytics.ts', 'utf8');
     expect(src).toContain('event,');
     expect(src).toContain('distinct_id:');
     expect(src).toContain('timestamp:');
@@ -988,7 +988,7 @@ describe('15. analytics.ts — Analytics Class & Identify', () => {
 
   test('15-04: Analytics is documented as backend-agnostic abstraction', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/analytics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/analytics.ts', 'utf8');
     const hasBackendDocs = src.includes('Mixpanel') || src.includes('Amplitude') ||
                            src.includes('PostHog') || src.includes('abstraction');
     expect(hasBackendDocs).toBe(true);
@@ -1010,7 +1010,7 @@ describe('16. Regression — All Prior Fixes Confirmed', () => {
 
   test('16-01: HomeScreen has RefreshControl + loadAll + setRefreshing(false)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(src).toContain('RefreshControl');
     expect(src).toContain('loadAll');
     expect(src).toContain('setRefreshing(false)');
@@ -1018,24 +1018,24 @@ describe('16. Regression — All Prior Fixes Confirmed', () => {
 
   test('16-02: messages.js N+1 batch fix intact', async () => {
     const fs  = await import('fs');
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/messages.js', 'utf8')).toContain('lawyerUserMap');
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/messages.js', 'utf8')).toContain('lawyerUserMap');
   });
 
   test('16-03: privilege.js docCounter fix intact', async () => {
     const fs  = await import('fs');
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js', 'utf8')).toContain('docCounter');
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js', 'utf8')).toContain('docCounter');
   });
 
   test('16-04: api.ts deduplicatedGet + _inFlight intact', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts', 'utf8');
     expect(src).toContain('deduplicatedGet');
     expect(src).toContain('_inFlight');
   });
 
   test('16-05: ChatScreen L659 is a string literal — not console.*', async () => {
     const fs  = await import('fs');
-    const lines = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8').split('\n');
+    const lines = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8').split('\n');
     const line659 = lines[658];
     expect(line659).toContain('console.anthropic.com');
     expect(line659.trim()).not.toMatch(/^console\.(log|warn|error|debug)\s*\(/);
@@ -1053,7 +1053,7 @@ describe('16. Regression — All Prior Fixes Confirmed', () => {
   test('16-09: all useTheme screens have zero unsafe hex', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'",
                            "'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];

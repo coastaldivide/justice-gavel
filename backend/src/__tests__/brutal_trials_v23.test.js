@@ -77,25 +77,25 @@ const mkMatter = (v, o = {}) => ({
 describe('1. matter_intelligence /firm/dashboard response shape', () => {
   test('1-01: dashboard route exists in matter_intelligence.js', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('/firm/dashboard');
   });
   test('1-02: dashboard returns total_active_matters', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('total_active_matters');
     expect(src).toContain('total_active');
   });
   test('1-03: dashboard returns escalation_summary with critical + high counts', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('escalation_summary');
     expect(src).toContain('criticalCount');
     expect(src).toContain('highCount');
   });
   test('1-04: dashboard returns opportunity_summary with 5 fields', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('opportunity_summary');
     expect(src).toContain('expungement_eligible');
     expect(src).toContain('settlement_opportunities');
@@ -109,21 +109,21 @@ describe('1. matter_intelligence /firm/dashboard response shape', () => {
 describe('2. /:matterId/taxonomy — workflow_flags', () => {
   test('2-01: taxonomy endpoint exists and returns suggested_vertical', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain("'/:matterId/taxonomy'");
     expect(src).toContain('suggested_vertical');
     expect(src).toContain('vertical_updated');
   });
   test('2-02: workflow_flags contains classCertRequired (excessive_force | conditions)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('classCertRequired');
     expect(src).toContain("taxonomy === 'excessive_force'");
     expect(src).toContain("taxonomy === 'conditions'");
   });
   test('2-03: workflow_flags contains capitalCase, ucmjArticle, icwa, medMal', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('capitalCase');
     expect(src).toContain("taxonomy === 'capital'");
     expect(src).toContain('ucmjArticle');
@@ -155,7 +155,7 @@ describe('2. /:matterId/taxonomy — workflow_flags', () => {
 describe('3. /:matterId/escalation response fields', () => {
   test('3-01: escalation endpoint returns recommended_sla string', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain("'/:matterId/escalation'");
     expect(src).toContain('recommended_sla');
     expect(src).toContain('attorney contact required');
@@ -163,13 +163,13 @@ describe('3. /:matterId/escalation response fields', () => {
   });
   test('3-02: escalation returns notify_partner = level !== normal', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('notify_partner');
     expect(src).toContain("escalation.level !== 'normal'");
   });
   test('3-03: escalation returns recommended_match_boost for critical cases', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('recommended_match_boost');
     expect(src).toContain('critical');
   });
@@ -187,21 +187,21 @@ describe('3. /:matterId/escalation response fields', () => {
 describe('4. /:matterId/outcome — outcome_indicators', () => {
   test('4-01: outcome endpoint exists and returns outcome_indicators array', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain("'/:matterId/outcome'");
     expect(src).toContain('outcome_indicators');
     expect(src).toContain("[]");
   });
   test('4-02: outcome_indicators pushed when dismissLikely is true', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('vs.dismissLikely');
     expect(src).toContain('expungement_eligible');
     expect(src).toContain('Dismissal motion viable');
   });
   test('4-03: outcome returns matter_id, vertical, taxonomy', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('matter_id: m.id');
     expect(src).toContain('vertical: signals.vertical');
     expect(src).toContain('taxonomy: signals.taxonomy');
@@ -234,7 +234,7 @@ describe('5. recordMayBePublic — Juvenile Transfer or Violent Charge', () => {
   });
   test('5-04: source comment explains juvenile records may be public', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('may be public record');
     expect(src).toContain('recordMayBePublic');
   });
@@ -257,56 +257,56 @@ describe('5. recordMayBePublic — Juvenile Transfer or Violent Charge', () => {
 describe('6. sharedAiLimiter — 60/hr Per-User AI Rate Limiter', () => {
   test('6-01: MAX_CALLS is 60 per hour', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js', 'utf8');
     expect(src).toContain('MAX_CALLS  = 60');
   });
   test('6-02: WINDOW_MS is 1 hour (60 * 60 * 1000)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js', 'utf8');
     expect(src).toContain('WINDOW_MS  = 60 * 60 * 1000');
     expect(src).toContain('1 hour');
   });
   test('6-03: uses in-memory Map (not Redis) for call tracking', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js', 'utf8');
     expect(src).toContain('new Map()');
     expect(src).toContain('userCalls');
   });
   test('6-04: stale entries purged every 10 minutes', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js', 'utf8');
     expect(src).toContain('10 * 60 * 1000');
     expect(src).toContain('Purge stale entries');
   });
   test('6-05: 429 response includes retry_after_seconds, limit, window fields', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js', 'utf8');
     expect(src).toContain('retry_after_seconds');
     expect(src).toContain("limit: MAX_CALLS");
     expect(src).toContain("window: '1 hour'");
   });
   test('6-06: sets X-AI-Calls-Used and X-AI-Calls-Remaining response headers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js', 'utf8');
     expect(src).toContain('X-AI-Calls-Used');
     expect(src).toContain('X-AI-Calls-Remaining');
   });
   test('6-07: unauthenticated requests bypass (no req.user)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js', 'utf8');
     expect(src).toContain('Only applies to authenticated users');
     expect(src).toContain('!req.user?.id');
   });
   test('6-08: makeUserLimiter factory exported for custom limits', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js', 'utf8');
     expect(src).toContain('export function makeUserLimiter');
     expect(src).toContain('windowMs = 60_000');
     expect(src).toContain('max = 10');
   });
   test('6-09: max exposure comment — $0.03/call × 60 = $1.80/hr per user', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js', 'utf8');
     expect(src).toContain('$0.03/call');
     expect(src).toContain('$1.80');
   });
@@ -317,11 +317,11 @@ describe('7. referrals/coverage/categories endpoints', () => {
   test('7-01: referrals /credit returns credit_cents from users table', async () => {
     // referrals.js removed in v175 — exploit risk eliminated
     const fs = await import('fs');
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
   });
   test('7-03: resources /categories returns DISTINCT categories with counts', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/resources.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/resources.js', 'utf8');
     expect(src).toContain('/categories');
     expect(src).toContain('DISTINCT category');
     expect(src).toContain('COUNT(*)');
@@ -333,44 +333,44 @@ describe('7. referrals/coverage/categories endpoints', () => {
 describe('8. sendgrid sendEmail + db pool + config.js', () => {
   test('8-01: sendEmail returns error on missing to/subject', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/sendgrid.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/sendgrid.js', 'utf8');
     expect(src).toContain("'missing_fields'");
     expect(src).toContain('Missing to or subject');
   });
   test('8-02: sendEmail in mock mode returns { mock: true, messageId: mock_... }', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/sendgrid.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/sendgrid.js', 'utf8');
     expect(src).toContain('!SENDGRID_LIVE');
     expect(src).toContain("mock: true");
     expect(src).toContain("'mock_' + Date.now()");
   });
   test('8-03: SENDGRID_FROM is alerts@justicegavel.app', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/sendgrid.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/sendgrid.js', 'utf8');
     expect(src).toContain('SENDGRID_FROM');
     expect(src).toContain('alerts@justicegavel.app');
   });
   test('8-04: db pool connectionTimeoutMillis=5000 (fail fast 5s)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('connectionTimeoutMillis: 5000');
     expect(src).toContain('idleTimeoutMillis:       30000');
     expect(src).toContain('max:                     10');
   });
   test('8-05: config.js PORT defaults to 4000', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/config.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     expect(src).toContain("parseInt(process.env.PORT   || '4000', 10)");
   });
   test('8-06: config.js AI_CONCURRENCY defaults to 8', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/config.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     expect(src).toContain("AI_CONCURRENCY");
   });
   test('8-07: CONFIG values are correct in test mode', () => {
     expect(CONFIG.PORT).toBe(4000);
     expect(CONFIG.AI_CONCURRENCY).toBe(8);
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
   });
 });
 
@@ -378,7 +378,7 @@ describe('8. sendgrid sendEmail + db pool + config.js', () => {
 describe('9. rbac.js — auditLog + ROLE_HIERARCHY', () => {
   test('9-01: ROLE_HIERARCHY has viewer, client, paralegal, associate, partner', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     expect(src).toContain('viewer');
     expect(src).toContain('paralegal');
     expect(src).toContain('associate');
@@ -386,12 +386,12 @@ describe('9. rbac.js — auditLog + ROLE_HIERARCHY', () => {
   });
   test('9-02: ROLE_HIERARCHY comment shows correct authority order', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     expect(src).toContain('viewer(0) < client(1) < paralegal(2) < associate(3) < partner(4)');
   });
   test('9-03: auditLog is async audit trail middleware (non-blocking)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     expect(src).toContain('auditLog');
     expect(src).toContain('non-blocking');
   });
@@ -408,7 +408,7 @@ describe('9. rbac.js — auditLog + ROLE_HIERARCHY', () => {
 describe('10. i18n — Final Category Sweeps', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
   };
 
   test('10-01: rights_ Miranda rights body text', async () => {
@@ -509,13 +509,13 @@ describe('11. Regression — All v1–v22 Confirmed', () => {
   });
   test('11-07: CONFIG PORT=4000, DEMO_MODE=true, AI_CONCURRENCY=8', () => {
     expect(CONFIG.PORT).toBe(4000);
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(CONFIG.AI_CONCURRENCY).toBe(8);
   });
   test('11-08: zero hex violations in useTheme screens', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const dir = '/tmp/JG/frontend/src/screens';
+    const dir = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {

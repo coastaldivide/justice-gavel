@@ -21,7 +21,7 @@ describe('FUNC. Every Async Function Traced', () => {
   test('FUNC-01: all 52 API-calling async functions have error handling', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const scr  = '/tmp/JG/frontend/src/screens';
+    const scr  = '/tmp/JG_fresh/frontend/src/screens';
     const noCatch = [];
     for(const fname of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src = fs.readFileSync(path.join(scr,fname),'utf8');
@@ -41,7 +41,7 @@ describe('FUNC. Every Async Function Traced', () => {
   test('FUNC-02: all async functions with loading=true clear loading in all paths', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const scr  = '/tmp/JG/frontend/src/screens';
+    const scr  = '/tmp/JG_fresh/frontend/src/screens';
     const stuck = [];
     for(const fname of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src = fs.readFileSync(path.join(scr,fname),'utf8');
@@ -70,10 +70,10 @@ describe('FUNC. Every Async Function Traced', () => {
         if(!f.endsWith('.js')||f.startsWith('_'))return;
         const src=fs.readFileSync(fp,'utf8');
         if(/res\.(?:json|send)\s*\([^)]*(?:err\.stack|error\.stack)/.test(src))
-          leaks.push(path.relative('/tmp/JG/backend/src/routes',fp));
+          leaks.push(path.relative('/tmp/JG_fresh/backend/src/routes',fp));
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(leaks.length) console.log('Stack leaks:', leaks);
     expect(leaks.length).toBe(0);
   });
@@ -83,7 +83,7 @@ describe('FUNC. Every Async Function Traced', () => {
 describe('CONFIG. Constants, Config and Env Vars', () => {
   test('CONFIG-01: app.json bundle IDs match iOS and Android', async () => {
     const fs = await import('fs');
-    const app = JSON.parse(fs.readFileSync('/tmp/JG/frontend/app.json','utf8'));
+    const app = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/app.json','utf8'));
     const ios  = app.expo.ios.bundleIdentifier;
     const droid = app.expo.android.package;
     expect(ios).toBe(droid);
@@ -93,7 +93,7 @@ describe('CONFIG. Constants, Config and Env Vars', () => {
   });
   test('CONFIG-02: JWT_SECRET has production guard (throws if missing in prod)', async () => {
     const fs = await import('fs');
-    const auth = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js','utf8');
+    const auth = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8');
     // Pattern: JWT_SECRET || (() => { if (NODE_ENV === 'production') throw ... })()
     expect(auth).toMatch(/JWT_SECRET.*production.*throw/s);
     // dev_secret is only a fallback for non-production
@@ -102,7 +102,7 @@ describe('CONFIG. Constants, Config and Env Vars', () => {
   });
   test('CONFIG-03: ENCRYPTION_KEY has production guard', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/encryption.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/encryption.js','utf8');
     expect(src).toContain('ENCRYPTION_KEY');
     expect(src).toContain('production');
     expect(src).toMatch(/throw|process\.exit/);
@@ -110,10 +110,10 @@ describe('CONFIG. Constants, Config and Env Vars', () => {
   test('CONFIG-04: all 73 AppNavigator screen imports resolve to existing files', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const nav  = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav  = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const imports = [...nav.matchAll(/from\s+'\.\.\/screens\/([^']+)'/g)].map(m=>m[1]);
     const missing = [];
-    const scr = '/tmp/JG/frontend/src/screens';
+    const scr = '/tmp/JG_fresh/frontend/src/screens';
     for(const imp of imports){
       const full = path.join(scr, imp);
       if(!fs.existsSync(full)&&!fs.existsSync(full+'.tsx')&&!fs.existsSync(full+'.ts'))
@@ -125,7 +125,7 @@ describe('CONFIG. Constants, Config and Env Vars', () => {
   });
   test('CONFIG-05: theme.ts exports useTheme and all brand colors present', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts','utf8');
     expect(src).toContain('useTheme');
     // Core brand colors
     expect(src).toContain('#042C53'); // navy
@@ -148,16 +148,16 @@ describe('DFLOW. 9 Screen Data Flow Traces', () => {
         else if(f.endsWith('.js')) corpus+=fs.readFileSync(fp,'utf8');
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     expect(corpus).toContain('/checkins');
     expect(corpus).toContain('/monitors');
     expect(corpus).toContain('/family/contacts');
   });
   test('DFLOW-02: Match + Insurance + LegalResearch call valid endpoints', async () => {
     const fs = await import('fs');
-    const match = fs.readFileSync('/tmp/JG/frontend/src/screens/MatchScreen.tsx','utf8');
-    const ins   = fs.readFileSync('/tmp/JG/frontend/src/screens/InsuranceScreen.tsx','utf8');
-    const res   = fs.readFileSync('/tmp/JG/frontend/src/screens/LegalResearchScreen.tsx','utf8');
+    const match = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MatchScreen.tsx','utf8');
+    const ins   = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InsuranceScreen.tsx','utf8');
+    const res   = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LegalResearchScreen.tsx','utf8');
     // Each screen calls its own backend endpoint
     expect(match).toMatch(/\/match\/lawyers|\/consultations/);
     expect(ins).toContain('/insurance/quote');
@@ -165,12 +165,12 @@ describe('DFLOW. 9 Screen Data Flow Traces', () => {
   });
   test('DFLOW-03: PI Lead Screen calls correct billing endpoint', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PILeadScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PILeadScreen.tsx','utf8');
     expect(src).toContain('/billing/pi-lead');
   });
   test('DFLOW-04: JustArrested screen is correctly a static content screen (no API needed)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/JustArrestedScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/JustArrestedScreen.tsx','utf8');
     // Static emergency guidance — no API calls needed, content is local
     // This is correct — critical rights info should work offline too
     expect(src).toContain('export default');
@@ -183,9 +183,9 @@ describe('DFLOW. 9 Screen Data Flow Traces', () => {
 describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-01: 0 dead navigates + 0 password without secureTextEntry', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let dead=0,noPw=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -212,12 +212,12 @@ describe('GATE. Zero-Defect Production Gates', () => {
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(broken>0)console.log('Broken:',broken);
     expect(inj).toBe(0); expect(broken).toBe(0);
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens'; const all=new Set();
+    const scr='/tmp/JG_fresh/frontend/src/screens'; const all=new Set();
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
       for(const m of s.matchAll(/navigate\(['"]([^'"]+)['"]/g))all.add(m[1]);
@@ -230,12 +230,12 @@ describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-03: 0 FlatList noKey + 0 accessibility + 0 hex', async () => {
     const fs=await import('fs'); const path=await import('path');
     // Full brand palette from theme.ts
-    const themeColors=new Set(fs.readFileSync('/tmp/JG/frontend/src/constants/theme.ts','utf8')
+    const themeColors=new Set(fs.readFileSync('/tmp/JG_fresh/frontend/src/constants/theme.ts','utf8')
       .match(/'#[0-9A-Fa-f]{6}'/g)||[]);
     themeColors.add("'#042C53'"); themeColors.add("'#C9A84C'"); themeColors.add("'#85B7EB'");
     themeColors.add("'#ffffff'"); themeColors.add("'#FFFFFF'"); themeColors.add("'#000000'");
     themeColors.add("'#000'"); themeColors.add("'#fff'"); themeColors.add("'#F9A825'");
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let noKey=0,acc=0,hex=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -252,22 +252,22 @@ describe('GATE. Zero-Defect Production Gates', () => {
   });
   test('GATE-04: startup integrity + security', async () => {
     const fs=await import('fs');
-    expect(fs.readFileSync('/tmp/JG/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
-    const pkg=JSON.parse(fs.readFileSync('/tmp/JG/backend/package.json','utf8'));
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
+    const pkg=JSON.parse(fs.readFileSync('/tmp/JG_fresh/backend/package.json','utf8'));
     expect(pkg.scripts.prestart).toContain('migrate');
-    expect(fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8')).toContain('Users table column bootstrap');
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8')).toContain('Users table column bootstrap');
     // discovery multer guards
-    const da=fs.readFileSync('/tmp/JG/backend/src/routes/discovery/analyze.js','utf8');
+    const da=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery/analyze.js','utf8');
     expect(da).toContain('fileSize');
     expect(da).toMatch(/fileFilter|ALLOWED/);
   });
   test('GATE-05: 437/437 routes all tiers', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let counts={5:0,10:0,15:0,20:0,25:0},total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){

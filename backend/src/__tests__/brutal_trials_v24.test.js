@@ -72,26 +72,26 @@ const mkMatter = (v, o = {}) => ({
 describe('1. twilio.js — verifyTwilioSignature', () => {
   test('1-01: verifyTwilioSignature always passes in demo mode', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/twilio.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
     expect(src).toContain('verifyTwilioSignature');
     expect(src).toContain('!LIVE');
     expect(src).toContain('return true; // Always pass in demo mode');
   });
   test('1-02: verifyTwilioSignature validates X-Twilio-Signature header', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/twilio.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
     expect(src).toContain("'x-twilio-signature'");
     expect(src).toContain('validateRequest');
   });
   test('1-03: verifyTwilioSignature uses BOT_WEBHOOK_BASE_URL + originalUrl', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/twilio.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
     expect(src).toContain('BOT_WEBHOOK_BASE_URL');
     expect(src).toContain('req.originalUrl');
   });
   test('1-04: verifyTwilioSignature returns false on exception (fail-closed)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/twilio.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
     expect(src).toContain('return false;');
     expect(src).toContain('} catch {');
   });
@@ -101,20 +101,20 @@ describe('1. twilio.js — verifyTwilioSignature', () => {
 describe('2. integrations/recap.js — Docket Import', () => {
   test('2-01: importDocketEntries uses INSERT OR IGNORE for idempotency', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/recap.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js', 'utf8');
     expect(src).toContain('importDocketEntries');
     expect(src).toContain('INSERT OR IGNORE');
     expect(src).toContain('idempotency');
   });
   test('2-02: importDocketEntries supports daysBack and pageSize options', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/recap.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js', 'utf8');
     expect(src).toContain('daysBack = null');
     expect(src).toContain('pageSize = 50');
   });
   test('2-03: recap.js has 6 handlers: search/link/import/status/refresh/unlink', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/recap.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js', 'utf8');
     const h = src.match(/router\.(get|post|delete)\s*\(/g) || [];
     expect(h.length).toBe(6);
     expect(src).toContain("'/search'");
@@ -123,7 +123,7 @@ describe('2. integrations/recap.js — Docket Import', () => {
   });
   test('2-04: external_id mapping ensures idempotency across calls', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/recap.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js', 'utf8');
     expect(src).toContain('external_id');
   });
 });
@@ -132,24 +132,24 @@ describe('2. integrations/recap.js — Docket Import', () => {
 describe('3. attorney/cases.js — Office Management', () => {
   test('3-01: has GET /office — member list with case counts', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/cases.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/cases.js', 'utf8');
     expect(src).toContain('/office');
     expect(src).toContain('office member list with case counts');
   });
   test('3-02: has POST /office/join — join or create an office', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/cases.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/cases.js', 'utf8');
     expect(src).toContain('/office/join');
     expect(src).toContain('join or create an office');
   });
   test('3-03: all endpoints require verified defender status', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/cases.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/cases.js', 'utf8');
     expect(src).toContain('verified defender');
   });
   test('3-04: GET /cases scoped to own assignments (no case leakage)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/cases.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/cases.js', 'utf8');
     expect(src).toContain('no leakage');
     expect(src).toContain('assigned');
   });
@@ -159,20 +159,20 @@ describe('3. attorney/cases.js — Office Management', () => {
 describe('4. outbound_bot.js — processOptOut', () => {
   test('4-01: processOptOut inserts to opt_outs with INSERT OR IGNORE', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
     expect(src).toContain('processOptOut');
     expect(src).toContain('INSERT OR IGNORE INTO opt_outs');
     expect(src).toContain('phone, email, reason');
   });
   test('4-02: processOptOut normalizes phone number before insertion', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
     expect(src).toContain('normalizePhone(phone)');
     expect(src).toContain("email?.toLowerCase()");
   });
   test('4-03: processOptOut sends TCPA-required confirmation SMS', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
     expect(src).toContain('TCPA-required confirmation');
     expect(src).toContain('sendSms');
   });
@@ -188,26 +188,26 @@ describe('4. outbound_bot.js — processOptOut', () => {
 describe('5. integrations/practice-mgmt — syncPracticeMgmt', () => {
   test('5-01: syncPracticeMgmt calls refreshTokenIfNeeded first', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
     expect(src).toContain('syncPracticeMgmt');
     expect(src).toContain('refreshTokenIfNeeded');
   });
   test('5-02: bidirectional sync — PULL and PUSH directions', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
     expect(src).toContain('PULL');
     expect(src).toContain('direction');
     expect(src).toContain('matter_id');
   });
   test('5-03: practice-mgmt.js has 5 route handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
     expect(h.length).toBe(5);
   });
   test('5-04: demo mode enabled when access_token starts with demo_', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
     expect(src).toContain("demo_");
   });
 });
@@ -216,19 +216,19 @@ describe('5. integrations/practice-mgmt — syncPracticeMgmt', () => {
 describe('6. golden_gavel /evaluate + jobs.js', () => {
   test('6-01: /evaluate/:id uses timingSafeEqual for admin key check', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/golden_gavel.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/golden_gavel.js', 'utf8');
     expect(src).toContain('/evaluate/:id');
     expect(src).toContain('timingSafeEqual');
     expect(src).toContain("'x-admin-key'");
   });
   test('6-02: /evaluate/:id uses gavelLimiter rate protection', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/golden_gavel.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/golden_gavel.js', 'utf8');
     expect(src).toContain('gavelLimiter');
   });
   test('6-03: jobs.js has 2 handlers: GET /:id and GET /stats', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/jobs.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/jobs.js', 'utf8');
     const h = src.match(/router\.get\s*\(/g) || [];
     expect(h.length).toBe(2);
     expect(src).toContain("'/:id'");
@@ -236,7 +236,7 @@ describe('6. golden_gavel /evaluate + jobs.js', () => {
   });
   test('6-04: jobs.js has 4 status shapes: pending/processing/done/failed', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/jobs.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/jobs.js', 'utf8');
     expect(src).toContain("status: 'pending'");
     expect(src).toContain("status: 'processing'");
     expect(src).toContain("status: 'done'");
@@ -244,7 +244,7 @@ describe('6. golden_gavel /evaluate + jobs.js', () => {
   });
   test('6-05: jobs.js /stats is admin-only', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/jobs.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/jobs.js', 'utf8');
     expect(src).toContain('admin');
   });
 });
@@ -253,7 +253,7 @@ describe('6. golden_gavel /evaluate + jobs.js', () => {
 describe('7. i18n disc_ — Discovery AI Screen (36 keys)', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
   };
   test('7-01: upload flow labels', async () => {
     const en = await getEn();
@@ -285,7 +285,7 @@ describe('7. i18n disc_ — Discovery AI Screen (36 keys)', () => {
 describe('8. i18n case_ — Case Management Screen (37 keys)', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
   };
   test('8-01: tab labels', async () => {
     const en = await getEn();
@@ -315,7 +315,7 @@ describe('8. i18n case_ — Case Management Screen (37 keys)', () => {
 describe('9. i18n rc_ — Rights Card Screen (35 keys)', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
   };
   test('9-01: rights card content labels', async () => {
     const en = await getEn();
@@ -339,7 +339,7 @@ describe('9. i18n rc_ — Rights Card Screen (35 keys)', () => {
 describe('10. i18n gg_ — Golden Gavel Screen (19 keys)', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
   };
   test('10-01: status and progress labels', async () => {
     const en = await getEn();
@@ -375,7 +375,7 @@ describe('10. i18n gg_ — Golden Gavel Screen (19 keys)', () => {
 describe('11. i18n ice_ + booking_ final sweeps', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
   };
   test('11-01: ice_ detention rights and steps', async () => {
     const en = await getEn();
@@ -447,7 +447,7 @@ describe('12. Regression — All v1–v23 Confirmed', () => {
   test('12-08: zero hex violations in useTheme screens', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const dir = '/tmp/JG/frontend/src/screens';
+    const dir = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {

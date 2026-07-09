@@ -68,7 +68,7 @@ describe('DISC12. Discrepancy Fixes — safeInt fallback + haversine antipodal',
 describe('LGR. logger.js — ISO Timestamp + JSON + Silence Levels', () => {
   test('LGR-01: LEVEL_ORDER: debug=0 info=1 warn=2 error=3 (MIN_LEVEL default=1/info)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/logger.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain('LEVEL_ORDER = { debug: 0, info: 1, warn: 2, error: 3 }');
     expect(src).toContain('MIN_LEVEL');
     expect(src).toContain('LOG_LEVEL');
@@ -77,7 +77,7 @@ describe('LGR. logger.js — ISO Timestamp + JSON + Silence Levels', () => {
   });
   test('LGR-02: LOG_FORMAT=json emits structured JSON with SERVICE_META', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/logger.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain("LOG_FORMAT === 'json'");
     expect(src).toContain('SERVICE_META');
     expect(src).toContain("service: 'justice-gavel-api'");
@@ -85,14 +85,14 @@ describe('LGR. logger.js — ISO Timestamp + JSON + Silence Levels', () => {
   });
   test('LGR-03: SERVICE_META includes service + version + env', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/logger.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain("service: 'justice-gavel-api'");
     expect(src).toContain('npm_package_version');
     expect(src).toContain('NODE_ENV');
   });
   test('LGR-04: logger has debug/info/warn/error methods (all guarded by MIN_LEVEL)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/logger.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain('debug:');
     expect(src).toContain('info:');
     expect(src).toContain('warn:');
@@ -105,7 +105,7 @@ describe('LGR. logger.js — ISO Timestamp + JSON + Silence Levels', () => {
 describe('GEO2. geolink.js — haversine + miles + bbox + googleMapsLink', () => {
   test('GEO2-01: haversineKm uses Haversine formula with Earth radius 6371 km', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/geolink.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/geolink.js', 'utf8');
     expect(src).toContain('6371');
     expect(src).toContain('Math.asin(Math.sqrt(a))');
     expect(src).toContain('Math.PI / 180');
@@ -131,13 +131,13 @@ describe('GEO2. geolink.js — haversine + miles + bbox + googleMapsLink', () =>
   });
   test('GEO2-04: bboxFromLatLng used as SQL WHERE pre-filter before exact haversine', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/geolink.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/geolink.js', 'utf8');
     expect(src).toContain('Bounding-box pre-filter before exact haversine');
     expect(src).toContain('fast SQL WHERE clause');
   });
   test('GEO2-05: googleMapsLink generates maps.google.com URL', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/geolink.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/geolink.js', 'utf8');
     expect(src).toContain('googleMapsLink');
     expect(src).toContain('maps.google.com/?q=');
   });
@@ -174,7 +174,7 @@ describe('RBA. RBAC — PERMISSIONS Matrix + Role Hierarchy', () => {
   });
   test('RBA-05: requirePermission + requireMatterAccess + auditLog are middleware', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/rbac.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/rbac.js', 'utf8');
     expect(src).toContain('requirePermission');
     expect(src).toContain('requireMatterAccess');
     expect(src).toContain('auditLog');
@@ -187,14 +187,14 @@ describe('RBA. RBAC — PERMISSIONS Matrix + Role Hierarchy', () => {
 describe('RET. retention.js — Matter Versioning + Legal Hold + Inactivity', () => {
   test('RET-01: writeMatterVersion + getMatterVersionHistory — matter audit trail', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/retention.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/retention.js', 'utf8');
     expect(src).toContain('writeMatterVersion');
     expect(src).toContain('getMatterVersionHistory');
     expect(src).toContain('matter_versions');
   });
   test('RET-02: applyLegalHold + releaseLegalHold + checkLegalHold — compliance', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/retention.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/retention.js', 'utf8');
     expect(src).toContain('applyLegalHold');
     expect(src).toContain('releaseLegalHold');
     expect(src).toContain('checkLegalHold');
@@ -203,19 +203,19 @@ describe('RET. retention.js — Matter Versioning + Legal Hold + Inactivity', ()
   });
   test('RET-03: archiveCompletedDocketEntries — nightly scheduler job 8', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/retention.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/retention.js', 'utf8');
     expect(src).toContain('archiveCompletedDocketEntries');
     expect(src).toContain('completed');
   });
   test('RET-04: checkAccountInactivity — deactivates accounts after inactivity', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/retention.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/retention.js', 'utf8');
     expect(src).toContain('checkAccountInactivity');
     expect(src).toContain('inactiv');
   });
   test('RET-05: isSubscriptionWriteable + onSubscriptionLapse — billing lifecycle', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/retention.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/retention.js', 'utf8');
     expect(src).toContain('isSubscriptionWriteable');
     expect(src).toContain('onSubscriptionLapse');
   });
@@ -225,20 +225,20 @@ describe('RET. retention.js — Matter Versioning + Legal Hold + Inactivity', ()
 describe('PDL. pushDelivery.js — Expo Push + Scheduled Delivery', () => {
   test('PDL-01: sendPushToUser sends push to a specific user by userId', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/pushDelivery.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/pushDelivery.js', 'utf8');
     expect(src).toContain('sendPushToUser');
     expect(src).toContain('userId');
     expect(src).toContain('push');
   });
   test('PDL-02: deliverScheduledPushes drains scheduled_pushes table every 60s', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/pushDelivery.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/pushDelivery.js', 'utf8');
     expect(src).toContain('deliverScheduledPushes');
     expect(src).toContain('scheduled_pushes');
   });
   test('PDL-03: checkPushReceipts verifies Expo push delivery status', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/pushDelivery.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/pushDelivery.js', 'utf8');
     expect(src).toContain('checkPushReceipts');
     expect(src).toContain('receipt');
   });
@@ -255,26 +255,26 @@ describe('RHX. routeHelpers Extra — safeFloat, buildWhere, stripHtml, truncate
   });
   test('RHX-02: buildWhere generates SQL WHERE clause from filter object', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/routeHelpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/routeHelpers.js', 'utf8');
     expect(src).toContain('buildWhere');
     expect(src).toContain('WHERE');
     expect(src).toContain('AND');
   });
   test('RHX-03: stripHtml removes all HTML tags (XSS prevention)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/routeHelpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/routeHelpers.js', 'utf8');
     expect(src).toContain('stripHtml');
     expect(src).toContain('<'); // HTML tags stripped via regex
   });
   test('RHX-04: truncateStr limits string length for DB storage safety', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/routeHelpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/routeHelpers.js', 'utf8');
     expect(src).toContain('truncateStr');
     expect(src).toContain('slice');
   });
   test('RHX-05: FIELD_LIMITS enforces max lengths (title=200, bio=2000, etc)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/routeHelpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/routeHelpers.js', 'utf8');
     expect(src).toContain('FIELD_LIMITS');
     expect(src).toContain('200');
   });
@@ -284,7 +284,7 @@ describe('RHX. routeHelpers Extra — safeFloat, buildWhere, stripHtml, truncate
 describe('S12. UX — Logger + Geo + RBAC + Retention Architecture', () => {
   test('S12-01: logger silences debug in test (MIN_LEVEL=info by default)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/logger.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/logger.js', 'utf8');
     // LOG_LEVEL env controls silence level — test runner uses LOG_LEVEL=error
     expect(src).toContain('LOG_LEVEL');
     expect(src).toContain('MIN_LEVEL');
@@ -301,13 +301,13 @@ describe('S12. UX — Logger + Geo + RBAC + Retention Architecture', () => {
   });
   test('S12-04: Legal hold blocks archiving (eDiscovery compliance)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/retention.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/retention.js', 'utf8');
     expect(src).toContain('applyLegalHold');
     expect(src).toContain('checkLegalHold');
   });
   test('S12-05: pushDelivery loop runs every 60s (server.js drain cycle)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/server.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/server.js', 'utf8');
     expect(src).toContain('deliverScheduledPushes');
     expect(src).toContain('60');
   });
@@ -318,10 +318,10 @@ describe('Regression — All v1–v76 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true', () => {
@@ -340,10 +340,10 @@ describe('Regression — All v1–v76 Confirmed', () => {
   test('R-06: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

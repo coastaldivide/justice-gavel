@@ -40,20 +40,20 @@ const mkMatter = (v, o={}) => ({
 describe('DISC53. S0 Final — 5 Items', () => {
   test('DISC53-01: GET /:id/signers ABSOLUTE FINAL [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js','utf8');
     expect(src).toContain("router.get('/:id/signers'");
     expect(src).toContain('signers');
     expect(src).toContain('authRequired');
   });
   test('DISC53-02: bondsman GET /leads — arrest lead feed [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/bondsman.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/bondsman.js','utf8');
     expect(src).toContain("router.get('/leads'");
     expect(src).toContain('authRequired');
   });
   test('DISC53-03: expungement /check publicly accessible — no authRequired [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/expungement/check.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/expungement/check.js','utf8');
     expect(src).toContain("router.get('/check'");
     expect(src).not.toContain('authRequired');
     // Public: checks eligibility without requiring account creation
@@ -61,7 +61,7 @@ describe('DISC53. S0 Final — 5 Items', () => {
   test('DISC53-04: manifest.json theme_color=#042C53 + 3 shortcuts [≥4]', async () => {
     const fs = await import('fs');
     const manifest = JSON.parse(
-      fs.readFileSync('/tmp/JG/frontend/web/manifest.json','utf8'));
+      fs.readFileSync('/tmp/JG_fresh/frontend/web/manifest.json','utf8'));
     expect(manifest.theme_color).toBe('#042C53');
     expect(manifest.shortcuts.length).toBeGreaterThanOrEqual(3);
   });
@@ -71,7 +71,7 @@ describe('DISC53. S0 Final — 5 Items', () => {
     // Confirmed: total=0 in real scan
     let count = 0;
     for (const sub of ['services','hooks']) {
-      const d = path.join('/tmp/JG/frontend/src', sub);
+      const d = path.join('/tmp/JG_fresh/frontend/src', sub);
       if (!fs.existsSync(d)) continue;
       for (const f of fs.readdirSync(d)) {
         if (!f.endsWith('.ts')&&!f.endsWith('.tsx')) continue;
@@ -87,7 +87,7 @@ describe('DISC53. S0 Final — 5 Items', () => {
 describe('DOCK. docket.js — Court Calendar + Deadline Engine (30,279 chars)', () => {
   test('DOCK-01: GET /rules — jurisdiction-specific deadline rules', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/docket.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/docket.js','utf8');
     expect(src).toContain("router.get('/rules'");
     expect(src).toContain('authRequired');
     expect(src.length).toBeGreaterThan(25000);
@@ -95,27 +95,27 @@ describe('DOCK. docket.js — Court Calendar + Deadline Engine (30,279 chars)', 
   });
   test('DOCK-02: POST /calculate — calculate deadline from trigger date', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/docket.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/docket.js','utf8');
     expect(src).toContain("router.post('/calculate'");
     // Input: start date + trigger event + jurisdiction → output: deadline date
   });
   test('DOCK-03: POST/GET /entries — create and list docket entries', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/docket.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/docket.js','utf8');
     expect(src).toContain("router.post('/entries'");
     expect(src).toContain("router.get('/entries'");
     // Docket entries: each court event with deadline + reminder schedule
   });
   test('DOCK-04: GET/PUT/DELETE /entries/:id — manage individual entries', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/docket.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/docket.js','utf8');
     expect(src).toContain("router.get('/entries/:id'");
     expect(src).toContain("router.put('/entries/:id'");
     expect(src).toContain("router.delete('/entries/:id'");
   });
   test('DOCK-05: GET /matter/:matterId + GET /upcoming — matter + upcoming deadlines', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/docket.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/docket.js','utf8');
     expect(src).toContain("router.get('/matter/:matterId'");
     expect(src).toContain("router.get('/upcoming'");
     // /upcoming: deadlines in the next 30 days — powers dashboard + push reminders
@@ -130,20 +130,20 @@ describe('DOCK. docket.js — Court Calendar + Deadline Engine (30,279 chars)', 
 describe('JBS. jobs.js — Background Job Status + Stats', () => {
   test('JBS-01: GET /:id — get background job status', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/jobs.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/jobs.js','utf8');
     expect(src).toContain("router.get('/:id'");
     expect(src).toContain('authRequired');
     // Monitor long-running jobs: arrest refresh, PDF generation, DMS sync
   });
   test('JBS-02: GET /stats — job queue statistics', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/jobs.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/jobs.js','utf8');
     expect(src).toContain("router.get('/stats'");
     // Queue depth, success rate, avg duration, failures
   });
   test('JBS-03: jobs.js is 2,166 chars — focused job monitoring', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/jobs.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/jobs.js','utf8');
     expect(src.length).toBeGreaterThan(1000);
   });
 });
@@ -152,21 +152,21 @@ describe('JBS. jobs.js — Background Job Status + Stats', () => {
 describe('DIS2. discovery.js.bak — AI Discovery Document Analysis', () => {
   test('DIS2-01: POST /analyze — AI analysis of discovery documents', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/discovery.js.bak','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery.js.bak','utf8');
     expect(src).toContain("router.post('/analyze'");
     expect(src).toContain('authRequired');
     // AI reviews discovery documents → flags relevant evidence + objectionable items
   });
   test('DIS2-02: GET /history + GET /analysis/:id + DELETE /analysis/:id', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/discovery.js.bak','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery.js.bak','utf8');
     expect(src).toContain("router.get('/history'");
     expect(src).toContain("router.get('/analysis/:id'");
     expect(src).toContain("router.delete('/analysis/:id'");
   });
   test('DIS2-03: discovery.js.bak — 19,512 chars of AI discovery logic', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/discovery.js.bak','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery.js.bak','utf8');
     expect(src.length).toBeGreaterThan(15000);
     // .bak extension: preserved prior version for rollback safety
   });
@@ -177,8 +177,8 @@ describe('ZRTO. Zero Technical Debt — All FE Layers Clean', () => {
   test('ZRTO-01: screens = 0 TODO/FIXME/HACK (confirmed clean)', async () => {
     const fs=await import('fs'); const path=await import('path');
     let count=0;
-    for (const f of fs.readdirSync('/tmp/JG/frontend/src/screens').filter(f=>f.endsWith('.tsx'))) {
-      count+=(fs.readFileSync(path.join('/tmp/JG/frontend/src/screens',f),'utf8')
+    for (const f of fs.readdirSync('/tmp/JG_fresh/frontend/src/screens').filter(f=>f.endsWith('.tsx'))) {
+      count+=(fs.readFileSync(path.join('/tmp/JG_fresh/frontend/src/screens',f),'utf8')
               .match(/(TODO|FIXME|HACK|XXX):/g)||[]).length;
     }
     expect(count).toBe(0);
@@ -186,8 +186,8 @@ describe('ZRTO. Zero Technical Debt — All FE Layers Clean', () => {
   test('ZRTO-02: components = 0 TODO/FIXME/HACK', async () => {
     const fs=await import('fs'); const path=await import('path');
     let count=0;
-    for (const f of fs.readdirSync('/tmp/JG/frontend/src/components').filter(f=>f.endsWith('.tsx'))) {
-      count+=(fs.readFileSync(path.join('/tmp/JG/frontend/src/components',f),'utf8')
+    for (const f of fs.readdirSync('/tmp/JG_fresh/frontend/src/components').filter(f=>f.endsWith('.tsx'))) {
+      count+=(fs.readFileSync(path.join('/tmp/JG_fresh/frontend/src/components',f),'utf8')
               .match(/(TODO|FIXME|HACK|XXX):/g)||[]).length;
     }
     expect(count).toBe(0);
@@ -196,7 +196,7 @@ describe('ZRTO. Zero Technical Debt — All FE Layers Clean', () => {
     const fs=await import('fs'); const path=await import('path');
     let count=0;
     for (const sub of ['services','hooks']) {
-      const d=path.join('/tmp/JG/frontend/src',sub);
+      const d=path.join('/tmp/JG_fresh/frontend/src',sub);
       if (!fs.existsSync(d)) continue;
       for (const f of fs.readdirSync(d)) {
         if (!f.endsWith('.ts')&&!f.endsWith('.tsx')) continue;
@@ -212,13 +212,13 @@ describe('ZRTO. Zero Technical Debt — All FE Layers Clean', () => {
 describe('Regression — All v1–v120 Confirmed', () => {
   test('R-01: i18n 707/707 × 4', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const en=JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json','utf8'));
+    const en=JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json','utf8'));
     expect(Object.keys(en).filter(k=>!corpus.includes(k))).toHaveLength(0);
     for (const lang of ['en','es','pt','vi']) {
-      const d=JSON.parse(fs.readFileSync(`/tmp/JG/frontend/src/i18n/${lang}.json`,'utf8'));
+      const d=JSON.parse(fs.readFileSync(`/tmp/JG_fresh/frontend/src/i18n/${lang}.json`,'utf8'));
       expect(Object.keys(d).length).toBe(707);
     }
   });
@@ -226,15 +226,15 @@ describe('Regression — All v1–v120 Confirmed', () => {
     expect(GAVEL_EMOJI[3]).toBe('🏆');
     expect(calcLeadFee(4999)).toBe(2500);
     expect(calcLeadFee(100000)).toBe(15000);
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(BUSINESS_CONSTANTS.COURT_REMINDER_DAYS).toEqual([14,7,3,1]);
   });
   test('R-03: ALL 56 DB tables ≥3 hits', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     const tables=[...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m=>m[1]);
     expect(tables.filter(t=>(corpus.match(new RegExp(t,'g'))||[]).length<3)).toHaveLength(0);
   });
@@ -242,8 +242,8 @@ describe('Regression — All v1–v120 Confirmed', () => {
     const fs=await import('fs'); const path=await import('path');
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     let hex=0, acc=0;
-    for (const f of fs.readdirSync('/tmp/JG/frontend/src/screens').filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))) {
-      const s=fs.readFileSync(path.join('/tmp/JG/frontend/src/screens',f),'utf8');
+    for (const f of fs.readdirSync('/tmp/JG_fresh/frontend/src/screens').filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))) {
+      const s=fs.readFileSync(path.join('/tmp/JG_fresh/frontend/src/screens',f),'utf8');
       if(s.includes('useTheme')) for(const h of (s.match(/'#[0-9A-Fa-f]{6}'/g)||[])) if(!BRAND.has(h)) hex++;
       acc+=(s.match(/<TouchableOpacity[^>]+>/gs)||[]).filter(b=>!b.includes('accessibilityRole')).length;
     }

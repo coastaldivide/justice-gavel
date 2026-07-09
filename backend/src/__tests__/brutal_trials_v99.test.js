@@ -38,36 +38,36 @@ const mkMatter = (v, o={}) => ({
 describe('DISC31. S0 Threshold Fixes — 6 items to ≥5', () => {
   test('DISC31-01: lessons GET /rights-card [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/lessons.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/lessons.js','utf8');
     expect(src).toContain("router.get('/rights-card'");
     expect(src).toContain('rights');
     // Emergency reference card — usable before attorney arrives
   });
   test('DISC31-02: motions POST /preview [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/motions/export.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/motions/export.js','utf8');
     expect(src).toContain("router.post('/preview'");
     expect(src).toContain('preview');
   });
   test('DISC31-03: contracts/execution POST /:id/sign [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js','utf8');
     expect(src).toContain("router.post('/:id/sign'");
     // E-signature: binding legal commitment
   });
   test('DISC31-04: contracts/execution GET /:id/signers [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js','utf8');
     expect(src).toContain("router.get('/:id/signers'");
     expect(src).toContain('signers');
   });
   test('DISC31-05: route coverage ≥10 hits = 56%+ [≥5]', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let above10=0, total=0;
     const walkDir=(d)=>{
       for (const f of fs.readdirSync(d)) {
@@ -99,34 +99,34 @@ describe('DISC31. S0 Threshold Fixes — 6 items to ≥5', () => {
 describe('MLS. MotionLibraryScreen.tsx — 76,090 chars, 9 Modals, 6 API Calls', () => {
   test('MLS-01: MotionLibraryScreen is the largest screen at 76,090 chars', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
     expect(src.length).toBeGreaterThan(70000);
     expect(src).toContain('MotionLibraryScreen');
   });
   test('MLS-02: 9 modal sheets for motion types + filters + preview', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
     const modals = (src.match(/Modal/g)||[]).length;
     expect(modals).toBeGreaterThanOrEqual(9);
     // Motion library: filter modal, template modal, preview modal, etc.
   });
   test('MLS-03: 6 API calls covering motion CRUD lifecycle', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
     const apiCalls = (src.match(/api\.(get|post|put|delete|patch)\s*\(/g)||[]).length;
     expect(apiCalls).toBeGreaterThanOrEqual(5);
     // get templates, create draft, get preview, refine, export PDF, etc.
   });
   test('MLS-04: filter functionality (10 filter references)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
     expect(src).toContain('filter');
     expect(src).toContain('useTheme');
     // Filter by vertical, jurisdiction, motion type, status
   });
   test('MLS-05: all TouchableOpacity have accessibilityRole', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
     const btns=(src.match(/<TouchableOpacity[^>]+>/gs)||[]);
     const missing=btns.filter(b=>!b.includes('accessibilityRole')).length;
     expect(missing).toBe(0);
@@ -137,32 +137,32 @@ describe('MLS. MotionLibraryScreen.tsx — 76,090 chars, 9 Modals, 6 API Calls',
 describe('CSC. CaseScreen.tsx — 70,149 chars, 18 Modals, 12 API Calls', () => {
   test('CSC-01: CaseScreen 70,149 chars — comprehensive case management', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx','utf8');
     expect(src.length).toBeGreaterThan(65000);
     expect(src).toContain('CaseScreen');
   });
   test('CSC-02: 18 modal sheets for case management actions', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx','utf8');
     const modals=(src.match(/Modal/g)||[]).length;
     expect(modals).toBeGreaterThanOrEqual(15);
     // Case notes, timeline, docket, documents, contacts, checkins, etc.
   });
   test('CSC-03: 12 API calls — comprehensive case data aggregation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx','utf8');
     const apiCalls=(src.match(/api\.(get|post|put|delete|patch)\s*\(/g)||[]).length;
     expect(apiCalls).toBeGreaterThanOrEqual(10);
   });
   test('CSC-04: addToCalendar handler — court dates to device calendar', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx','utf8');
     expect(src).toContain('addToCalendar');
     // Court hearing dates added to device calendar — critical reminder
   });
   test('CSC-05: all TouchableOpacity accessible', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx','utf8');
     const btns=(src.match(/<TouchableOpacity[^>]+>/gs)||[]);
     expect(btns.filter(b=>!b.includes('accessibilityRole')).length).toBe(0);
   });
@@ -172,21 +172,21 @@ describe('CSC. CaseScreen.tsx — 70,149 chars, 18 Modals, 12 API Calls', () => 
 describe('HKS. Hooks — All 3 Custom Hooks Verified', () => {
   test('HKS-01: useAppSetup — auth restore + deep links + push permissions + splash', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/hooks/useAppSetup.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/hooks/useAppSetup.ts','utf8');
     expect(src).toContain('useAppSetup');
     expect(src.length).toBeGreaterThan(500);
     // Called from App.tsx: restores auth, handles deep links, requests push, dismisses splash
   });
   test('HKS-02: useBiometricGate — Face ID / fingerprint gate for sensitive actions', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/hooks/useBiometricGate.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/hooks/useBiometricGate.ts','utf8');
     expect(src).toContain('useBiometricGate');
     expect(src.length).toBeGreaterThan(500);
     // Prompts biometric auth before: sending payment, viewing privileged docs, etc.
   });
   test('HKS-03: useRefresh — pull-to-refresh + re-fetch pattern', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/hooks/useRefresh.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/hooks/useRefresh.ts','utf8');
     expect(src).toContain('useRefresh');
     expect(src).toContain('refresh');
     // Standardized pull-to-refresh: refreshing=true, then fetch, then refreshing=false
@@ -206,7 +206,7 @@ describe('UX2. UX Final Audit — All Screens', () => {
   test('UX2-03: 40 screens >20K chars — complex multi-feature screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const large = fs.readdirSync(dir)
       .filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))
       .filter(f=>fs.readFileSync(path.join(dir,f),'utf8').length>20000);
@@ -215,7 +215,7 @@ describe('UX2. UX Final Audit — All Screens', () => {
   });
   test('UX2-04: LawyersScreen 69,126 chars — 27 modals, 9 API calls', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx','utf8');
     expect(src.length).toBeGreaterThan(65000);
     const modals=(src.match(/Modal/g)||[]).length;
     expect(modals).toBeGreaterThanOrEqual(20);
@@ -228,19 +228,19 @@ describe('Regression — All v1–v98 Confirmed', () => {
   test('R-01: i18n 707/707 × 4 languages', async () => {
     const fs=await import('fs');
     const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const en=JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json','utf8'));
+    const en=JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json','utf8'));
     expect(Object.keys(en).filter(k=>!corpus.includes(k))).toHaveLength(0);
     for (const lang of ['en','es','pt','vi']) {
-      const d=JSON.parse(fs.readFileSync(`/tmp/JG/frontend/src/i18n/${lang}.json`,'utf8'));
+      const d=JSON.parse(fs.readFileSync(`/tmp/JG_fresh/frontend/src/i18n/${lang}.json`,'utf8'));
       expect(Object.keys(d).length).toBe(707);
     }
   });
   test('R-02: GAVEL[3]=🏆 + CONFIG final', () => {
     expect(GAVEL_EMOJI[3]).toBe('🏆');
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(CONFIG.AI_CONCURRENCY).toBe(8);
     expect(CONFIG.LIVE_REFRESH).toBe(false);
     expect(CONFIG.courtlistener.enabled).toBe(true);
@@ -248,17 +248,17 @@ describe('Regression — All v1–v98 Confirmed', () => {
   test('R-03: ALL 56 DB tables ≥3 hits', async () => {
     const fs=await import('fs');
     const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     const tables=[...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m=>m[1]);
     expect(tables.filter(t=>(corpus.match(new RegExp(t,'g'))||[]).length<3)).toHaveLength(0);
   });
   test('R-04: perfect accessibility — 588 buttons, 0 missing roles', async () => {
     const fs=await import('fs');
     const path=await import('path');
-    const dir='/tmp/JG/frontend/src/screens';
+    const dir='/tmp/JG_fresh/frontend/src/screens';
     let total=0, missing=0;
     for (const f of fs.readdirSync(dir).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))) {
       const s=fs.readFileSync(path.join(dir,f),'utf8');

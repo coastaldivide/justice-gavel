@@ -19,7 +19,7 @@ const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
 describe('SEC. Security Configuration Internals', () => {
   test('SEC-01: bcrypt cost factor is 12 (industry standard, not too weak or slow)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8');
     // bcrypt rounds should be 10-14 for good security/performance balance
     const rounds = [...src.matchAll(/bcrypt\.\w+\s*\([^,]+,\s*(\d+)/g)].map(m=>parseInt(m[1]));
     expect(rounds.length).toBeGreaterThan(0);
@@ -31,19 +31,19 @@ describe('SEC. Security Configuration Internals', () => {
   });
   test('SEC-02: JWT uses env-driven expiry (CONFIG.JWT_EXPIRES_IN)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8');
     // Never hardcode expiry — must be configurable via env
     expect(src).toContain('JWT_EXPIRES_IN');
     expect(src).toContain('jwt.sign');
     // Middleware verifies with JWT_SECRET from env
-    const mw = fs.readFileSync('/tmp/JG/backend/src/middleware/auth.js','utf8');
+    const mw = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/auth.js','utf8');
     expect(mw).toContain('JWT_SECRET');
     expect(mw).toContain('process.env');
     expect(mw).toContain('jwt.verify');
   });
   test('SEC-03: CORS uses dynamic origin resolver (no wildcard)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8');
     expect(src).not.toContain("origin: '*'");
     // Dynamic resolver from env
     expect(src).toContain('CORS_ORIGIN');
@@ -60,10 +60,10 @@ describe('SEC. Security Configuration Internals', () => {
         if(!f.endsWith('.js'))return;
         const src=fs.readFileSync(fp,'utf8');
         for(const m of src.matchAll(/\/\/\s*(FIXME|HACK|BUG|XXX)\s*:?([^\n]{0,80})/gi))
-          critical.push(path.relative('/tmp/JG/backend/src',fp)+': '+m[1]+': '+m[2]);
+          critical.push(path.relative('/tmp/JG_fresh/backend/src',fp)+': '+m[1]+': '+m[2]);
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(critical.length) console.log('Critical TODOs:', critical);
     expect(critical.length).toBe(0);
   });
@@ -80,11 +80,11 @@ describe('SEC. Security Configuration Internals', () => {
         const src=fs.readFileSync(fp,'utf8');
         for(const pat of CRED_PATTERNS){
           const m=src.match(pat);
-          if(m) found.push(path.relative('/tmp/JG/backend/src',fp)+': '+m[0].slice(0,12)+'...');
+          if(m) found.push(path.relative('/tmp/JG_fresh/backend/src',fp)+': '+m[0].slice(0,12)+'...');
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(found.length) console.log('Credentials found:', found);
     expect(found.length).toBe(0);
   });
@@ -95,7 +95,7 @@ describe('PAY. Payment Flow Verification', () => {
   test('PAY-01: all PaymentIntent creates have metadata for Stripe audit trail', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const billingDir = '/tmp/JG/backend/src/routes/billing';
+    const billingDir = '/tmp/JG_fresh/backend/src/routes/billing';
     const missing = [];
     for(const f of fs.readdirSync(billingDir).filter(f=>f.endsWith('.js')&&!f.startsWith('_'))){
       const src = fs.readFileSync(path.join(billingDir,f),'utf8');
@@ -116,13 +116,13 @@ describe('PAY. Payment Flow Verification', () => {
     expect(missing.length).toBe(0);
     // Before fix: pi_leads.js had no metadata — Stripe dashboard showed no context
     // After fix: metadata.user_id + metadata.lead_id added
-    const piLeads = fs.readFileSync('/tmp/JG/backend/src/routes/billing/pi_leads.js','utf8');
+    const piLeads = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/pi_leads.js','utf8');
     expect(piLeads).toContain('metadata');
     expect(piLeads).toContain('user_id');
   });
   test('PAY-02: webhook handles all 5 critical Stripe events', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/webhooks.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/webhooks.js','utf8');
     for(const event of [
       'customer.subscription.deleted',
       'customer.subscription.updated',
@@ -137,14 +137,14 @@ describe('PAY. Payment Flow Verification', () => {
   test('PAY-03: payment modes guarded (demo vs live)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const billingDir = '/tmp/JG/backend/src/routes/billing';
+    const billingDir = '/tmp/JG_fresh/backend/src/routes/billing';
     // Shared billing helper exports LIVE flag
     const shared = fs.readFileSync(path.join(billingDir,'_shared.js'),'utf8');
     expect(shared).toMatch(/LIVE|DEMO|demo|stripe_key/i);
   });
   test('PAY-04: QC connections.js has no referral_credit applied', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/connections.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/connections.js','utf8');
     expect(src).not.toContain('referral_credit');
     expect(src).toContain('revenue_log');
     expect(src).toContain('paymentIntents.create');
@@ -155,9 +155,9 @@ describe('PAY. Payment Flow Verification', () => {
 describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-01: 0 dead navigates + 0 password without secureTextEntry', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let dead=0,noPw=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -184,12 +184,12 @@ describe('GATE. Zero-Defect Production Gates', () => {
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(broken>0)console.log('Broken:',broken);
     expect(inj).toBe(0); expect(broken).toBe(0);
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens'; const all=new Set();
+    const scr='/tmp/JG_fresh/frontend/src/screens'; const all=new Set();
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
       for(const m of s.matchAll(/navigate\(['"]([^'"]+)['"]/g))all.add(m[1]);
@@ -202,7 +202,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-03: 0 FlatList noKey + 0 accessibility + 0 hex', async () => {
     const fs=await import('fs'); const path=await import('path');
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let noKey=0,acc=0,hex=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -219,19 +219,19 @@ describe('GATE. Zero-Defect Production Gates', () => {
   });
   test('GATE-04: startup integrity + security hardening', async () => {
     const fs=await import('fs');
-    expect(fs.readFileSync('/tmp/JG/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
-    const pkg=JSON.parse(fs.readFileSync('/tmp/JG/backend/package.json','utf8'));
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
+    const pkg=JSON.parse(fs.readFileSync('/tmp/JG_fresh/backend/package.json','utf8'));
     expect(pkg.scripts.prestart).toContain('migrate');
-    expect(fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8')).toContain('Users table column bootstrap');
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8')).toContain('Users table column bootstrap');
   });
   test('GATE-05: 437/437 routes all tiers', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let counts={5:0,10:0,15:0,20:0,25:0},total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){

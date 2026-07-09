@@ -92,7 +92,7 @@ const mkMatter = (v, o = {}) => ({
 describe('LOG. logger.js — Structured Logging System', () => {
   test('LOG-01: LEVEL_ORDER: debug=0, info=1, warn=2, error=3', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/logger.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain('LEVEL_ORDER');
     expect(src).toContain('debug: 0');
     expect(src).toContain('info: 1');
@@ -101,21 +101,21 @@ describe('LOG. logger.js — Structured Logging System', () => {
   });
   test('LOG-02: MIN_LEVEL defaults to 1 (info); LOG_LEVEL=error silences debug+info in tests', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/logger.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain('MIN_LEVEL');
     expect(src).toContain('LOG_LEVEL');
     expect(src).toContain('default: info');
   });
   test('LOG-03: LOG_FORMAT=json enables structured JSON output (Railway, Datadog)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/logger.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain('LOG_FORMAT');
     expect(src).toContain("'json'");
     expect(src).toContain('JSON_FORMAT');
   });
   test('LOG-04: SERVICE_META embeds service=justice-gavel-api in every log entry', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/logger.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain('SERVICE_META');
     expect(src).toContain("'justice-gavel-api'");
     expect(src).toContain('npm_package_version');
@@ -123,7 +123,7 @@ describe('LOG. logger.js — Structured Logging System', () => {
   test('LOG-05: 77 routes use logger.error (only expungement routes use err500 helpers instead)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/routes';
+    const dir  = '/tmp/JG_fresh/backend/src/routes';
     let loggerRoutes = 0;
     const scan = (d) => {
       for (const f of fs.readdirSync(d)) {
@@ -143,27 +143,27 @@ describe('LOG. logger.js — Structured Logging System', () => {
 describe('FTS. FTS5 Full-Text Search — Three Virtual Tables', () => {
   test('FTS-01: cases_fts indexes title+notes with porter unicode61 tokenizer', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain("CREATE VIRTUAL TABLE IF NOT EXISTS cases_fts");
     expect(src).toContain("tokenize='porter unicode61'");
     expect(src).toContain('title, notes');
   });
   test('FTS-02: messages_fts indexes message content (content_rowid=id)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain("CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts");
     expect(src).toContain('content_rowid=id');
   });
   test('FTS-03: lessons_fts uses content= pattern (no data duplication, shadows lessons table)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain("CREATE VIRTUAL TABLE IF NOT EXISTS lessons_fts");
     expect(src).toContain('content=lessons');
     expect(src).toContain('title, category');
   });
   test('FTS-04: all 3 FTS5 tables populated from existing data on first boot', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('Populate from existing data on first boot');
     expect(src).toContain("INSERT INTO cases_fts(rowid, title, notes)");
   });
@@ -173,13 +173,13 @@ describe('FTS. FTS5 Full-Text Search — Three Virtual Tables', () => {
 describe('DBTWO. DB Dual Config — SQLite (demo) + PostgreSQL (prod)', () => {
   test('DBTWO-01: SQLite DB_PATH resolves to demo.db two directories up', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('demo.db');
     expect(src).toContain("path.resolve(__dirname, '../../demo.db')");
   });
   test('DBTWO-02: PostgreSQL pool max=10, ssl no certificate verify, 5s connect timeout', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('max:                     10');
     expect(src).toContain('rejectUnauthorized: false');
     expect(src).toContain('connectionTimeoutMillis: 5000');
@@ -187,7 +187,7 @@ describe('DBTWO. DB Dual Config — SQLite (demo) + PostgreSQL (prod)', () => {
   });
   test('DBTWO-03: PRAGMA foreign_keys = ON + journal_mode = WAL on every SQLite open', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('PRAGMA foreign_keys = ON');
     expect(src).toContain('PRAGMA journal_mode = WAL');
   });
@@ -197,22 +197,22 @@ describe('DBTWO. DB Dual Config — SQLite (demo) + PostgreSQL (prod)', () => {
 describe('EXP. expungement — Routes That Use err500 Instead of logger', () => {
   test('EXP-01: referrals.js has POST /referral + GET /referrals (both authRequired)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/expungement/referrals.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/expungement/referrals.js', 'utf8');
     expect(src).toContain("router.post('/referral'");
     expect(src).toContain("router.get('/referrals'");
     expect(src).toContain('authRequired');
   });
   test('EXP-02: petition.js has POST /petition — AI expungement petition generation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/expungement/petition.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/expungement/petition.js', 'utf8');
     expect(src).toContain("router.post('/petition'");
     expect(src).toContain('authRequired');
     expect(src).toContain('perUserAiLim');
   });
   test('EXP-03: expungement routes use err500 helper instead of logger (intentional)', async () => {
     const fs = await import('fs');
-    const ref = fs.readFileSync('/tmp/JG/backend/src/routes/expungement/referrals.js', 'utf8');
-    const pet = fs.readFileSync('/tmp/JG/backend/src/routes/expungement/petition.js', 'utf8');
+    const ref = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/expungement/referrals.js', 'utf8');
+    const pet = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/expungement/petition.js', 'utf8');
     expect(ref).toContain('err500');
     expect(pet).toContain('err500');
     expect(ref).not.toContain('logger.error');
@@ -220,7 +220,7 @@ describe('EXP. expungement — Routes That Use err500 Instead of logger', () => 
   });
   test('EXP-04: billing/index.js is purely compositional — 5 sub-routers, no handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/index.js', 'utf8');
     expect(src).toContain('Billing module entry point');
     expect(src).toContain('Composes five focused sub-routers');
     // billing/index.js composes sub-routers
@@ -235,7 +235,7 @@ describe('DEV. __DEV__ Guard — Zero Unguarded console.warn in Production', () 
   test('DEV-01: 27 screens use __DEV__ && console.warn in catch blocks', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const count = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('__DEV__')).length;
     expect(count).toBeGreaterThanOrEqual(25);
@@ -243,7 +243,7 @@ describe('DEV. __DEV__ Guard — Zero Unguarded console.warn in Production', () 
   test('DEV-02: all console.warn calls are inside __DEV__ guard (zero production noise)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
       const src = fs.readFileSync(path.join(dir, f), 'utf8');
@@ -256,7 +256,7 @@ describe('DEV. __DEV__ Guard — Zero Unguarded console.warn in Production', () 
   });
   test('DEV-03: __DEV__ pattern: __DEV__ && console.warn(e?.message) in catch blocks', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('__DEV__ && console.warn(e?.message)');
     expect(src).toContain('} catch (e)');
   });
@@ -266,26 +266,26 @@ describe('DEV. __DEV__ Guard — Zero Unguarded console.warn in Production', () 
 describe('HAIR. StyleSheet.hairlineWidth — Device-Independent 1px Borders', () => {
   test('HAIR-01: CourtFormsScreen uses hairlineWidth for 1px form field borders', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
     expect(src).toContain('hairlineWidth');
     expect(src).toContain('border');
   });
   test('HAIR-02: EmergencyShareScreen uses hairlineWidth for section dividers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
     expect(src).toContain('hairlineWidth');
     expect(src).toContain('borderBottomColor');
   });
   test('HAIR-03: SettingsScreen uses hairlineWidth for list item separators', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SettingsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SettingsScreen.tsx', 'utf8');
     expect(src).toContain('hairlineWidth');
     expect(src).toContain('COLORS.border');
   });
   test('HAIR-04: 3 screens use hairlineWidth — all list/form separation contexts', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const count = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('hairlineWidth')).length;
     expect(count).toBe(3);
@@ -296,13 +296,13 @@ describe('HAIR. StyleSheet.hairlineWidth — Device-Independent 1px Borders', ()
 describe('S12. UX — Final Architecture', () => {
   test('S12-01: LOG_LEVEL=error in test runners — logger silences debug+info, only shows errors', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/logger.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain('LOG_LEVEL');
     expect(src).toContain('test runners');
   });
   test('S12-02: porter unicode61 tokenizer — stems search terms (arrested→arrest, lawyers→lawyer)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain("porter unicode61");
     // porter = English stemmer, unicode61 = Unicode 6.1 normalization
     const fts5Count = (src.match(/porter unicode61/g) || []).length;
@@ -310,14 +310,14 @@ describe('S12. UX — Final Architecture', () => {
   });
   test('S12-03: expungement routes use err500 helpers by design — no logger dependency', async () => {
     const fs = await import('fs');
-    const ref = fs.readFileSync('/tmp/JG/backend/src/routes/expungement/referrals.js', 'utf8');
+    const ref = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/expungement/referrals.js', 'utf8');
     // err500 is the error helper for internal server errors
     expect(ref).toContain('err500');
     expect(ref).toContain('err400');
   });
   test('S12-04: billing/index.js is a pure router compositor — zero business logic', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/index.js', 'utf8');
     const handlers = (src.match(/router\.(get|post|put|delete|patch)\s*\(/g) || []).length;
     expect(handlers).toBeLessThanOrEqual(2);
     expect(src).toContain('Composes five focused sub-routers');
@@ -327,7 +327,7 @@ describe('S12. UX — Final Architecture', () => {
     // This means all 27 screens with console.warn produce zero output in production
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const devScreens = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('__DEV__ && console.warn'));
     expect(devScreens.length).toBeGreaterThanOrEqual(25);
@@ -339,10 +339,10 @@ describe('Regression — All v1–v53 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -367,7 +367,7 @@ describe('Regression — All v1–v53 Confirmed', () => {
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -382,10 +382,10 @@ describe('Regression — All v1–v53 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

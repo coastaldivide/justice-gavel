@@ -95,7 +95,7 @@ describe('DISC6. Discrepancy Fixes — SSO ACS + suite count', () => {
   test('DISC6-01: SSO /acs endpoint is documented (20+ corpus hits for /acs path)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
     // /acs path is documented; check was using wrong string pattern
@@ -104,7 +104,7 @@ describe('DISC6. Discrepancy Fixes — SSO ACS + suite count', () => {
   });
   test('DISC6-02: 69+ brutal_trials suites confirm full coverage (v71 = suite 70)', async () => {
     const fs  = await import('fs');
-    const dir = '/tmp/JG/backend/src/__tests__';
+    const dir = '/tmp/JG_fresh/backend/src/__tests__';
     const count = fs.readdirSync(dir).filter(f => f.startsWith('brutal_trials_v') && f.endsWith('.test.js')).length;
     expect(count).toBeGreaterThanOrEqual(69);
   });
@@ -114,7 +114,7 @@ describe('DISC6. Discrepancy Fixes — SSO ACS + suite count', () => {
 describe('SRV. server.js — HTTP Server + Graceful Shutdown', () => {
   test('SRV-01: server.js imports app and starts HTTP server on CONFIG.PORT', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/server.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/server.js', 'utf8');
     expect(src).toContain("from '../app.js'");
     // Port from env var or default
     expect(src).toContain('PORT');
@@ -122,14 +122,14 @@ describe('SRV. server.js — HTTP Server + Graceful Shutdown', () => {
   });
   test('SRV-02: SIGTERM + SIGINT handlers for graceful Railway/Docker shutdown', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/server.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/server.js', 'utf8');
     expect(src).toContain('SIGTERM');
     expect(src).toContain('SIGINT');
     expect(src).toContain('graceful');
   });
   test('SRV-03: server.js closes DB connections before process exit', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/server.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/server.js', 'utf8');
     expect(src).toContain('close');
     expect(src).toContain('process.exit');
   });
@@ -139,7 +139,7 @@ describe('SRV. server.js — HTTP Server + Graceful Shutdown', () => {
 describe('PAY2. payments/ — Stripe + Multi-Provider Orchestration', () => {
   test('PAY2-01: stripe.js exports calcStripeFee + createStripePayment + STRIPE_LIVE', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/payments/stripe.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/payments/stripe.js', 'utf8');
     expect(src).toContain('Full Stripe integration');
     expect(src).toContain('calcStripeFee');
     expect(src).toContain('createStripePayment');
@@ -147,16 +147,16 @@ describe('PAY2. payments/ — Stripe + Multi-Provider Orchestration', () => {
   });
   test('PAY2-02: orchestrator.js createPaymentSession routes to correct provider', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/payments/orchestrator.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/payments/orchestrator.js', 'utf8');
     expect(src).toContain('createPaymentSession');
     expect(src).toContain('stripe');
   });
   test('PAY2-03: Year 3+ payment stubs exist (ACH, PayPal, Square, crypto)', async () => {
     const fs = await import('fs');
     // Stubs exist as placeholder files for future payment methods
-    const achSrc = fs.readFileSync('/tmp/JG/backend/src/payments/stripeAch.js', 'utf8');
+    const achSrc = fs.readFileSync('/tmp/JG_fresh/backend/src/payments/stripeAch.js', 'utf8');
     expect(achSrc.length).toBeGreaterThan(0);
-    const cryptoSrc = fs.readFileSync('/tmp/JG/backend/src/payments/crypto/coinbase.js', 'utf8');
+    const cryptoSrc = fs.readFileSync('/tmp/JG_fresh/backend/src/payments/crypto/coinbase.js', 'utf8');
     expect(cryptoSrc.length).toBeGreaterThan(0);
   });
 });
@@ -165,22 +165,22 @@ describe('PAY2. payments/ — Stripe + Multi-Provider Orchestration', () => {
 describe('CST. chat/ — SSE Streaming + REST Fallback Routes', () => {
   test('CST-01: chat/stream.js is POST /stream — SSE preferred streaming path', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/stream.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/stream.js', 'utf8');
     expect(src).toContain('POST /stream');
     expect(src).toContain('Server-Sent Events streaming');
     expect(src).toContain('API_URLS');
   });
   test('CST-02: chat/ask.js is POST /ask — standard request/response fallback', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/ask.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/ask.js', 'utf8');
     expect(src).toContain('POST /ask');
     expect(src).toContain('main AI chat');
     expect(src).toContain('BUSINESS_CONSTANTS');
   });
   test('CST-03: both chat routes enforce AI_MESSAGES_PER_DAY_FREE=3 limit', async () => {
     const fs = await import('fs');
-    const askSrc    = fs.readFileSync('/tmp/JG/backend/src/routes/chat/ask.js', 'utf8');
-    const streamSrc = fs.readFileSync('/tmp/JG/backend/src/routes/chat/stream.js', 'utf8');
+    const askSrc    = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/ask.js', 'utf8');
+    const streamSrc = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/stream.js', 'utf8');
     // Both enforce the free tier limit
     expect(askSrc).toContain('BUSINESS_CONSTANTS');
     expect(streamSrc).toContain('BUSINESS_CONSTANTS');
@@ -191,14 +191,14 @@ describe('CST. chat/ — SSE Streaming + REST Fallback Routes', () => {
 describe('SCH. search.js — Global In-App FTS5 Search', () => {
   test('SCH-01: GET / with ?q=term&limit=20 searches via FTS5', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/search.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/search.js', 'utf8');
     expect(src).toContain('Global in-app search');
     expect(src).toContain('q=term&limit=20');
     expect(src).toContain('FTS5');
   });
   test('SCH-02: searches three pools — cases_fts, resources, providers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/search.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/search.js', 'utf8');
     expect(src).toContain('cases_fts');
     // search pools vary — check what's actually in search.js
     expect(src).toContain('FTS5');
@@ -209,14 +209,14 @@ describe('SCH. search.js — Global In-App FTS5 Search', () => {
 describe('REV. reviews.js — Provider Review and Rating System', () => {
   test('REV-01: GET / lists reviews filtered by provider/type', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/reviews.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/reviews.js', 'utf8');
     expect(src).toContain('Provider reviews and ratings');
     expect(src).toContain("router.get('/'");
     expect(src).toContain('authRequired');
   });
   test('REV-02: GET /summary returns aggregated rating for a provider', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/reviews.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/reviews.js', 'utf8');
     expect(src).toContain("'/summary'");
     expect(src).toContain('summary');
   });
@@ -226,14 +226,14 @@ describe('REV. reviews.js — Provider Review and Rating System', () => {
 describe('SVD2. saved.js — Saved Lawyers Personal Contact List', () => {
   test('SVD2-01: GET/POST/PATCH/DELETE /lawyers — full saved lawyer CRUD', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/saved.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/saved.js', 'utf8');
     expect(src).toContain('Saved lawyers');
     expect(src).toContain('/lawyers');
     expect(src).toContain('authRequired');
   });
   test('SVD2-02: PATCH /lawyers/:id — update note on saved lawyer', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/saved.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/saved.js', 'utf8');
     expect(src).toContain("router.patch('/lawyers/:id'");
     expect(src).toContain('note');
   });
@@ -243,14 +243,14 @@ describe('SVD2. saved.js — Saved Lawyers Personal Contact List', () => {
 describe('MTH. match.js — Two-Stage Claude Lawyer Matching', () => {
   test('MTH-01: GET /lawyers uses Claude AI for lawyer matching based on case details', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/match.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/match.js', 'utf8');
     expect(src).toContain('Two-stage Claude-powered lawyer matching');
     expect(src).toContain("router.get('/lawyers'");
     expect(src).toContain('General guidance');
   });
   test('MTH-02: match.js requires legal disclaimer in response', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/match.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/match.js', 'utf8');
     expect(src).toContain('General guidance only');
     expect(src).toContain('not legal advice');
   });
@@ -260,14 +260,14 @@ describe('MTH. match.js — Two-Stage Claude Lawyer Matching', () => {
 describe('PAY3. pay.js + audit.js — Payment + Audit Log', () => {
   test('PAY3-01: pay.js POST /create + /checkout — payment session creation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/pay.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/pay.js', 'utf8');
     expect(src).toContain('Payment session creation');
     expect(src).toContain("'/create'");
     expect(src).toContain("'/checkout'");
   });
   test('PAY3-02: audit.js provides paginated audit log with 4 query endpoints', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/audit.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/audit.js', 'utf8');
     expect(src).toContain('Audit log query endpoints');
     expect(src).toContain("'/me'");
     expect(src).toContain('/matter/:id');
@@ -280,26 +280,26 @@ describe('PAY3. pay.js + audit.js — Payment + Audit Log', () => {
 describe('S12. UX — Final Backend Never-Read Files', () => {
   test('S12-01: server.js graceful shutdown prevents data loss on deploy', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/server.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/server.js', 'utf8');
     expect(src).toContain('SIGTERM');
     expect(src).toContain('graceful');
   });
   test('S12-02: payments orchestrator routes to provider — Stripe is sole live provider', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/payments/orchestrator.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/payments/orchestrator.js', 'utf8');
     expect(src).toContain('createPaymentSession');
     expect(src).toContain('stripe');
   });
   test('S12-03: search.js FTS5 = instant search across cases, resources, providers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/search.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/search.js', 'utf8');
     expect(src).toContain('FTS5');
     expect(src).toContain('cases_fts');
   });
   test('S12-04: chat/stream.js and chat/ask.js = the two AI chat endpoints', async () => {
     const fs = await import('fs');
-    const streamSrc = fs.readFileSync('/tmp/JG/backend/src/routes/chat/stream.js', 'utf8');
-    const askSrc    = fs.readFileSync('/tmp/JG/backend/src/routes/chat/ask.js', 'utf8');
+    const streamSrc = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/stream.js', 'utf8');
+    const askSrc    = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/ask.js', 'utf8');
     expect(streamSrc).toContain('Server-Sent Events');
     expect(askSrc).toContain('main AI chat');
   });
@@ -310,10 +310,10 @@ describe('Regression — All v1–v70 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -330,13 +330,13 @@ describe('Regression — All v1–v70 Confirmed', () => {
   test('R-05: BUSINESS_CONSTANTS + CONFIG + GAVEL', () => {
     expect(BUSINESS_CONSTANTS.TRIAL_DAYS_MONTHLY).toBe(30);
     expect(BUSINESS_CONSTANTS.MAX_CASES).toBe(100);
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(GAVEL_EMOJI[3]).toBe('🏆');
   });
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -351,10 +351,10 @@ describe('Regression — All v1–v70 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

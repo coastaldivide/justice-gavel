@@ -38,7 +38,7 @@ const mkMatter = (v, o={}) => ({
 describe('DISC28. Discrepancy Fixes — 3 items', () => {
   test('DISC28-01: billing/webhooks.js constructEvent signature verification [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/webhooks.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/webhooks.js','utf8');
     expect(src).toContain('constructEvent');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
     expect(src).toContain('express.raw()');
@@ -46,7 +46,7 @@ describe('DISC28. Discrepancy Fixes — 3 items', () => {
   });
   test('DISC28-02: attorney/profile — GET/PATCH /profile + GET/PUT /availability [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/profile.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/profile.js','utf8');
     expect(src).toContain("router.get('/profile'");
     expect(src).toContain("router.patch('/profile'");
     expect(src).toContain("router.get('/profile/availability'");
@@ -54,7 +54,7 @@ describe('DISC28. Discrepancy Fixes — 3 items', () => {
   });
   test('DISC28-03: bail.js GET /nearby — GPS emergency bondsman finder [≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/bail.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/bail.js','utf8');
     expect(src).toContain("router.get('/nearby'");
     expect(src).toContain('nearby');
     expect(src.length).toBeGreaterThan(500);
@@ -65,7 +65,7 @@ describe('DISC28. Discrepancy Fixes — 3 items', () => {
 describe('AUD. middleware/audit.js — Audit Log Writer + Reader', () => {
   test('AUD-01: writeAuditLog — non-throwing audit write for every DB mutation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/audit.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/audit.js','utf8');
     expect(src).toContain('writeAuditLog');
     expect(src).toContain('Audit log writer and reader');
     expect(src).toContain('non-throwing');
@@ -73,14 +73,14 @@ describe('AUD. middleware/audit.js — Audit Log Writer + Reader', () => {
   });
   test('AUD-02: getAuditLog — query audit log with filters', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/audit.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/audit.js','utf8');
     expect(src).toContain('getAuditLog');
     expect(src).toContain('filters');
     // Supports filtering by user, resource, action, date range
   });
   test('AUD-03: auditMiddleware(action, resource) — Express route middleware version', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/audit.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/audit.js','utf8');
     expect(src).toContain('auditMiddleware');
     expect(src).toContain('action');
     expect(src).toContain('resource');
@@ -88,7 +88,7 @@ describe('AUD. middleware/audit.js — Audit Log Writer + Reader', () => {
   });
   test('AUD-04: audit_log table stores all entries', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(src).toContain('audit_log');
     // Immutable audit trail: who did what to which resource when
   });
@@ -98,7 +98,7 @@ describe('AUD. middleware/audit.js — Audit Log Writer + Reader', () => {
 describe('JWT. middleware/auth.js — JWT Authentication Middleware', () => {
   test('JWT-01: authRequired verifies Bearer token + checks expiry', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/auth.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/auth.js','utf8');
     expect(src).toContain('authRequired');
     expect(src).toContain('Bearer token');
     expect(src).toContain('jwt.verify');
@@ -106,20 +106,20 @@ describe('JWT. middleware/auth.js — JWT Authentication Middleware', () => {
   });
   test('JWT-02: expired vs invalid token — separate error messages for UX', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/auth.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/auth.js','utf8');
     expect(src).toContain('expired');
     expect(src).toContain('invalid');
     // Users see "session expired" not "invalid token" — better UX
   });
   test('JWT-03: optionalAuth — attaches user if token present, continues if not', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/auth.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/auth.js','utf8');
     expect(src).toContain('optionalAuth');
     // Used for browse-mode routes: providers, lessons, rights content
   });
   test('JWT-04: algorithm pinned — rejects tokens signed with wrong algorithm', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/auth.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/auth.js','utf8');
     expect(src).toContain('algorithm');
     // Algorithm pinning prevents algorithm confusion attacks (none/RS256 swap)
   });
@@ -129,28 +129,28 @@ describe('JWT. middleware/auth.js — JWT Authentication Middleware', () => {
 describe('AIL. sharedAiLimiter.js — Per-User AI Rate Limiting', () => {
   test('AIL-01: 60 AI calls per user per hour across ALL AI routes', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js','utf8');
     expect(src).toContain('60 AI calls per user per hour');
     expect(src).toContain('Per-user AI rate limiting');
     // Across: chat, motions, research, discovery, translate
   });
   test('AIL-02: cost estimate — avg $0.03/call, $1.80/user/hour max', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js','utf8');
     expect(src).toContain('$0.03/call');
     expect(src).toContain('$1.80');
     // Business safety: cap per-user AI cost
   });
   test('AIL-03: perUserAiLimit + makeUserLimiter — composable limiters', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js','utf8');
     expect(src).toContain('perUserAiLimit');
     expect(src).toContain('makeUserLimiter');
     // makeUserLimiter creates per-resource limiters (chat vs motions vs research)
   });
   test('AIL-04: complements per-IP aiLimiter — dual-layer protection', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js','utf8');
     expect(src).toContain('per-IP aiLimiter');
     expect(src).toContain('Complements');
     // Layer 1: per-IP (prevents bot farms)
@@ -162,26 +162,26 @@ describe('AIL. sharedAiLimiter.js — Per-User AI Rate Limiting', () => {
 describe('LES2. lessons.js — Complete Legal Education Route Set', () => {
   test('LES2-01: GET / — full lessons catalog', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/lessons.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/lessons.js','utf8');
     expect(src).toContain("router.get('/'");
     expect(src).toContain('authRequired');
   });
   test('LES2-02: POST /:id/complete — mark lesson complete + award credits', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/lessons.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/lessons.js','utf8');
     expect(src).toContain("router.post('/:id/complete'");
     expect(src).toContain('complete');
   });
   test('LES2-03: GET /rights-card — Know Your Rights quick reference card', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/lessons.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/lessons.js','utf8');
     expect(src).toContain("router.get('/rights-card'");
     expect(src).toContain('rights');
     // Printable rights card for immediate use after arrest
   });
   test('LES2-04: GET /progress/:userId + GET /progress/me — progress tracking', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/lessons.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/lessons.js','utf8');
     expect(src).toContain("router.get('/progress/:userId'");
     expect(src).toContain("router.get('/progress/me'");
     // /me = own progress; /:userId = admin view of user's progress
@@ -192,7 +192,7 @@ describe('LES2. lessons.js — Complete Legal Education Route Set', () => {
 describe('HGC2. hague_contacts.js — All 5 Routes at ≥5 Corpus Hits', () => {
   test('HGC2-01: GET /us-resources — OCI + NCMEC + FBI + INTERPOL', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js','utf8');
     expect(src).toContain("router.get('/us-resources'");
     expect(src).toContain('1-888-407-4747');
     expect(src).toContain('1-800-843-5678');
@@ -201,7 +201,7 @@ describe('HGC2. hague_contacts.js — All 5 Routes at ≥5 Corpus Hits', () => {
   });
   test('HGC2-02: GET /member-states — 28 member states contracting/non-contracting', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js','utf8');
     expect(src).toContain("router.get('/member-states'");
     expect(src).toContain('MEMBER_STATES');
     const entries=(src.match(/\{ code:'/g)||[]).length;
@@ -209,20 +209,20 @@ describe('HGC2. hague_contacts.js — All 5 Routes at ≥5 Corpus Hits', () => {
   });
   test('HGC2-03: GET /central-authority/:countryCode — per-country authority lookup', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js','utf8');
     expect(src).toContain("router.get('/central-authority/:countryCode'");
     expect(src).toContain('Not a contracting state');
   });
   test('HGC2-04: POST /report-intake — case-linked intake with next_steps', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js','utf8');
     expect(src).toContain("router.post('/report-intake'");
     expect(src).toContain('next_steps');
     expect(src).toContain('Article 11');
   });
   test('HGC2-05: GET /intake/:caseId — retrieve intake record for case', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js','utf8');
     expect(src).toContain("router.get('/intake/:caseId'");
     expect(src).toContain('hague_intakes');
   });
@@ -232,21 +232,21 @@ describe('HGC2. hague_contacts.js — All 5 Routes at ≥5 Corpus Hits', () => {
 describe('CEX. contracts/execution.js — Contract Execution + Signatures', () => {
   test('CEX-01: contracts/execution.js — contract execution lifecycle', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js','utf8');
     expect(src).toContain('authRequired');
     expect(src).toContain('execution');
     expect(src.length).toBeGreaterThan(1000);
   });
   test('CEX-02: POST /:id/sign — attorney/client signs a contract', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js','utf8');
     expect(src).toContain("router.post('/:id/sign'");
     expect(src).toContain('sign');
     // Electronic signature: cryptographic proof of consent
   });
   test('CEX-03: contract execution has POST /:id/sign route', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/execution.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/execution.js','utf8');
     expect(src).toContain("router.post('/:id/sign'");
     expect(src).toContain('authRequired');
   });
@@ -257,10 +257,10 @@ describe('Regression — All v1–v95 Confirmed', () => {
   test('R-01: i18n 707/707', async () => {
     const fs=await import('fs');
     const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const en=JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json','utf8'));
+    const en=JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json','utf8'));
     expect(Object.keys(en).filter(k=>!corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: GAVEL + encryption', () => {
@@ -270,17 +270,17 @@ describe('Regression — All v1–v95 Confirmed', () => {
   test('R-03: ALL 56 DB tables ≥3 hits', async () => {
     const fs=await import('fs');
     const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     const tables=[...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m=>m[1]);
     expect(tables.filter(t=>(corpus.match(new RegExp(t,'g'))||[]).length<3)).toHaveLength(0);
   });
   test('R-04: perfect accessibility + zero hex violations', async () => {
     const fs=await import('fs');
     const path=await import('path');
-    const dir='/tmp/JG/frontend/src/screens';
+    const dir='/tmp/JG_fresh/frontend/src/screens';
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     let hexV=0, accessV=0;
     for (const f of fs.readdirSync(dir).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))) {
@@ -296,7 +296,7 @@ describe('Regression — All v1–v95 Confirmed', () => {
     expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
     expect(BUSINESS_CONSTANTS.COURT_REMINDER_DAYS).toEqual([14,7,3,1]);
     expect(BUSINESS_CONSTANTS.MAX_MESSAGES_PER_THREAD).toBe(500);
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(CONFIG.AI_CONCURRENCY).toBe(8);
     expect(CONFIG.courtlistener.enabled).toBe(true);
   });

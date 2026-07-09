@@ -58,31 +58,31 @@ const mkMatter = (v, o = {}) => ({
 });
 const getEn = async () => {
   const fs = await import('fs');
-  return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+  return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
 };
 
 // ── 1. offlineSync.ts ─────────────────────────────────────────────────────
 describe('1. offlineSync.ts — SQLite Offline Write Queue', () => {
   test('1-01: offlineSync is offline-first write queue for case creation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/offlineSync.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/offlineSync.ts', 'utf8');
     expect(src).toContain('Offline-first write queue for case creation');
   });
   test('1-02: uses expo-sqlite for local storage', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/offlineSync.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/offlineSync.ts', 'utf8');
     expect(src).toContain('expo-sqlite');
     expect(src).toContain('SQLite');
   });
   test('1-03: exports saveCaseOffline and getOfflineCases', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/offlineSync.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/offlineSync.ts', 'utf8');
     expect(src).toContain('saveCaseOffline');
     expect(src).toContain('getOfflineCases');
   });
   test('1-04: syncs to backend when connectivity returns via NetInfo', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/offlineSync.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/offlineSync.ts', 'utf8');
     expect(src).toContain('NetInfo');
     expect(src).toContain('connectivity');
   });
@@ -92,30 +92,30 @@ describe('1. offlineSync.ts — SQLite Offline Write Queue', () => {
 describe('2. secureStorage.ts — Keychain/Keystore Secure Storage', () => {
   test('2-01: explains why AsyncStorage is insecure on Android', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('AsyncStorage on Android stores data as plain text');
     expect(src).toContain('malware');
   });
   test('2-02: uses iOS Keychain Services and Android Keystore', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('Keychain Services');
     expect(src).toContain('Secure Enclave');
   });
   test('2-03: uses WHEN_UNLOCKED_THIS_DEVICE_ONLY accessibility level', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('WHEN_UNLOCKED_THIS_DEVICE_ONLY');
   });
   test('2-04: has clearAuth function using Promise.all + catch', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('clearAuth');
     expect(src).toContain('Promise.all');
   });
   test('2-05: SECURE_KEYS constant defines all stored key names', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('SECURE_KEYS');
   });
 });
@@ -124,13 +124,13 @@ describe('2. secureStorage.ts — Keychain/Keystore Secure Storage', () => {
 describe('3. types/navigation.ts — Navigation Types', () => {
   test('3-01: exports RootStackParamList as Record<string, object|undefined>', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('RootStackParamList');
     expect(src).toContain("Record<string, object | undefined>");
   });
   test('3-02: exports AppNavigation and AppRoute types', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('AppNavigation');
     expect(src).toContain('AppRoute');
     expect(src).toContain('NativeStackNavigationProp');
@@ -138,14 +138,14 @@ describe('3. types/navigation.ts — Navigation Types', () => {
   });
   test('3-03: exports ScreenProps convenience interface', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('ScreenProps');
     expect(src).toContain('navigation: AppNavigation');
     expect(src).toContain('route?');
   });
   test('3-04: avoids explicit any types on all screens (design rationale)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('avoids explicit any types on all screens');
   });
 });
@@ -458,7 +458,7 @@ describe('13. Regression — All v1–v26 Confirmed', () => {
   test('13-07: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {

@@ -65,14 +65,14 @@ const mkMatter = (v, o = {}) => ({
 });
 const getEn = async () => {
   const fs = await import('fs');
-  return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+  return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
 };
 
 // ── 1–6. Low-hit screens ─────────────────────────────────────────────────
 describe('1. ImmigrationConsequencesScreen + TenantRightsScreen', () => {
   test('1-01: ImmigrationConsequencesScreen fetches Immigration lessons + EOIR courts', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ImmigrationConsequencesScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ImmigrationConsequencesScreen.tsx', 'utf8');
     expect(src).toContain("category=Immigration");
     expect(src).toContain('IMMIGRATION_COURT');
     expect(src).toContain('eiorCourts');
@@ -80,7 +80,7 @@ describe('1. ImmigrationConsequencesScreen + TenantRightsScreen', () => {
   });
   test('1-02: ImmigrationConsequencesScreen has tab, PTR, fetchError, mountedRef', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ImmigrationConsequencesScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ImmigrationConsequencesScreen.tsx', 'utf8');
     expect(src).toContain('tab');
     expect(src).toContain('RefreshControl');
     expect(src).toContain('fetchError');
@@ -88,19 +88,19 @@ describe('1. ImmigrationConsequencesScreen + TenantRightsScreen', () => {
   });
   test('1-03: ImmigrationConsequencesScreen is 2-tab: Consequences + DACA/Visa', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ImmigrationConsequencesScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ImmigrationConsequencesScreen.tsx', 'utf8');
     expect(src).toContain('Consequences');
     expect(src).toContain('DACA');
   });
   test('1-04: TenantRightsScreen handles eviction emergency with hard deadline', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TenantRightsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TenantRightsScreen.tsx', 'utf8');
     expect(src).toContain('eviction');
     expect(src).toContain('hard deadline');
   });
   test('1-05: TenantRightsScreen has situation, housingLesson, legalAidResources states', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TenantRightsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TenantRightsScreen.tsx', 'utf8');
     expect(src).toContain('situation');
     expect(src).toContain('housingLesson');
     expect(src).toContain('legalAidResources');
@@ -112,7 +112,7 @@ describe('1. ImmigrationConsequencesScreen + TenantRightsScreen', () => {
 describe('2. InsuranceScreen + PILeadScreen + AdvocacyScreen + DrugPenaltiesScreen', () => {
   test('2-01: InsuranceScreen fetches /insurance/quote with plan/quote states', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InsuranceScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InsuranceScreen.tsx', 'utf8');
     expect(src).toContain("'/insurance/quote'");
     expect(src).toContain('plan');
     expect(src).toContain('quote');
@@ -121,7 +121,7 @@ describe('2. InsuranceScreen + PILeadScreen + AdvocacyScreen + DrugPenaltiesScre
   });
   test('2-02: PILeadScreen submits to /billing/pi-lead/submit', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/PILeadScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/PILeadScreen.tsx', 'utf8');
     expect(src).toContain("'/billing/pi-lead/submit'");
     expect(src).toContain('PI attorney lead marketplace');
     expect(src).toContain('step');
@@ -130,7 +130,7 @@ describe('2. InsuranceScreen + PILeadScreen + AdvocacyScreen + DrugPenaltiesScre
   });
   test('2-03: AdvocacyScreen fetches /advocacy/stats', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AdvocacyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AdvocacyScreen.tsx', 'utf8');
     expect(src).toContain("'/advocacy/stats'");
     expect(src).toContain('stats');
     expect(src).toContain('mountedRef');
@@ -138,7 +138,7 @@ describe('2. InsuranceScreen + PILeadScreen + AdvocacyScreen + DrugPenaltiesScre
   });
   test('2-04: DrugPenaltiesScreen is offline static (no API calls)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DrugPenaltiesScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DrugPenaltiesScreen.tsx', 'utf8');
     expect(src).not.toContain("api.get");
     expect(src).not.toContain("api.post");
     expect(src).toContain('state');
@@ -151,26 +151,26 @@ describe('2. InsuranceScreen + PILeadScreen + AdvocacyScreen + DrugPenaltiesScre
 describe('7. conflicts.js — Conflict Screening & Ethics Wall', () => {
   test('7-01: conflicts.js has 10 route handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/conflicts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/conflicts.js', 'utf8');
     const h = src.match(/router\.(get|post|delete|patch|put)\s*\(/g) || [];
     expect(h.length).toBe(10);
   });
   test('7-02: has bulk conflict check by party names', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/conflicts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/conflicts.js', 'utf8');
     expect(src).toContain('/check');
     expect(src).toContain('bulk conflict check');
     expect(src).toContain('party names');
   });
   test('7-03: has conflict waiver with justification', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/conflicts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/conflicts.js', 'utf8');
     expect(src).toContain('/waiver');
     expect(src).toContain('justification');
   });
   test('7-04: has ethics wall CRUD for matter-level attorney walls', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/conflicts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/conflicts.js', 'utf8');
     expect(src).toContain('ethics-wall');
     expect(src).toContain('Ethics Walls');
   });
@@ -180,13 +180,13 @@ describe('7. conflicts.js — Conflict Screening & Ethics Wall', () => {
 describe('8. consultations.js — Video Consultation Booking', () => {
   test('8-01: consultations.js has 5 handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/consultations.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/consultations.js', 'utf8');
     const h = src.match(/router\.(get|post|delete)\s*\(/g) || [];
     expect(h.length).toBe(5);
   });
   test('8-02: tiered platform fees: $10/$15/$25 by duration', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/consultations.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/consultations.js', 'utf8');
     expect(src).toContain('$10');
     expect(src).toContain('$15');
     expect(src).toContain('$25');
@@ -195,7 +195,7 @@ describe('8. consultations.js — Video Consultation Booking', () => {
   });
   test('8-03: has book, list, slots, cancel endpoints', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/consultations.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/consultations.js', 'utf8');
     expect(src).toContain('/book');
     expect(src).toContain('/slots/:lawyerId');
     expect(src).toContain(':id/cancel');
@@ -206,19 +206,19 @@ describe('8. consultations.js — Video Consultation Booking', () => {
 describe('9. docket.js — Deadline Calculation Engine', () => {
   test('9-01: docket.js has 9 route handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/docket.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/docket.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
     expect(h.length).toBe(9);
   });
   test('9-02: POST /calculate computes deadlines from trigger event', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/docket.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/docket.js', 'utf8');
     expect(src).toContain('/calculate');
     expect(src).toContain('calculate deadlines from a trigger event');
   });
   test('9-03: has docket entries CRUD + matter/:matterId + upcoming', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/docket.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/docket.js', 'utf8');
     expect(src).toContain('/entries');
     expect(src).toContain('/matter/:matterId');
     expect(src).toContain('/upcoming');
@@ -229,13 +229,13 @@ describe('9. docket.js — Deadline Calculation Engine', () => {
 describe('10. attorney/verification.js — Bar Verification', () => {
   test('10-01: verification.js has bar submit + admin approve', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/verification.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/verification.js', 'utf8');
     expect(src).toContain('Bar verification submit');
     expect(src).toContain('admin approve');
   });
   test('10-02: verification.js has 2 handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/verification.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/verification.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete|patch)\s*\(/g) || [];
     expect(h.length).toBe(2);
   });
@@ -245,7 +245,7 @@ describe('10. attorney/verification.js — Bar Verification', () => {
 describe('11. Analytics — checkStaleness + runBiasAudit', () => {
   test('11-01: checkStaleness iterates PRECEDENT_REGISTRY and flags expiry', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentMonitor.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentMonitor.js', 'utf8');
     expect(src).toContain('checkStaleness');
     expect(src).toContain('PRECEDENT_REGISTRY');
     expect(src).toContain('superseded_by');
@@ -253,18 +253,18 @@ describe('11. Analytics — checkStaleness + runBiasAudit', () => {
   });
   test('11-02: checkStaleness returns EXPIRED/WARNING/APPROACHING severity levels', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentMonitor.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentMonitor.js', 'utf8');
     expect(src).toContain("'EXPIRED'");
   });
   test('11-03: checkStaleness computes days-until using daysUntil calculation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentMonitor.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentMonitor.js', 'utf8');
     expect(src).toContain('daysUntil');
     expect(src).toContain('1000 * 86400');
   });
   test('11-04: runBiasAudit returns audit_date, version, tests[] shape', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentMonitor.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentMonitor.js', 'utf8');
     expect(src).toContain('runBiasAudit');
     expect(src).toContain('audit_date');
     expect(src).toContain("version: MONITOR_VERSION");
@@ -272,7 +272,7 @@ describe('11. Analytics — checkStaleness + runBiasAudit', () => {
   });
   test('11-05: runBiasAudit test 1 is evidence strength symmetry', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentMonitor.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentMonitor.js', 'utf8');
     expect(src).toContain('Evidence strength symmetry');
     expect(src).toContain('same reason and in the same direction');
   });
@@ -292,7 +292,7 @@ describe('11. Analytics — checkStaleness + runBiasAudit', () => {
 describe('12. PRECEDENT_REGISTRY — Authoritative Knowledge Base', () => {
   test('12-01: registry has 4 design principles', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentRegistry.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentRegistry.js', 'utf8');
     expect(src).toContain('DESIGN PRINCIPLES');
     expect(src).toContain('1. Every entry is cited');
     expect(src).toContain('2. Every entry has a staleness date');
@@ -301,14 +301,14 @@ describe('12. PRECEDENT_REGISTRY — Authoritative Knowledge Base', () => {
   });
   test('12-02: registry exports REGISTRY_VERSION, REGISTRY_DATE, PRECEDENT_REGISTRY', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentRegistry.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentRegistry.js', 'utf8');
     expect(src).toContain('REGISTRY_VERSION');
     expect(src).toContain('REGISTRY_DATE');
     expect(src).toContain('PRECEDENT_REGISTRY');
   });
   test('12-03: registry entries have stat_base, jurisdiction, stale_after, source', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentRegistry.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentRegistry.js', 'utf8');
     expect(src).toContain('stat_base');
     expect(src).toContain('jurisdiction');
     expect(src).toContain('stale_after');
@@ -316,7 +316,7 @@ describe('12. PRECEDENT_REGISTRY — Authoritative Knowledge Base', () => {
   });
   test('12-04: getRelevantEntries exported and filters by vertical/taxonomy', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentRegistry.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentRegistry.js', 'utf8');
     expect(src).toContain('getRelevantEntries');
   });
   test('12-05: PRECEDENT_REGISTRY runtime test — importable', async () => {
@@ -396,7 +396,7 @@ describe('13. i18n Final Sweep — 211 remaining keys', () => {
   test('13-07: 4-language parity — all 4 languages have 707 keys', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const dir = '/tmp/JG/frontend/src/i18n';
+    const dir = '/tmp/JG_fresh/frontend/src/i18n';
     const langs = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
     expect(langs.length).toBe(4);
     for (const lang of langs) {
@@ -442,7 +442,7 @@ describe('14. Regression — All v1–v27 Confirmed', () => {
   test('14-07: zero hex violations in useTheme screens', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const dir = '/tmp/JG/frontend/src/screens';
+    const dir = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {

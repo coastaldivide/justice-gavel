@@ -15,24 +15,24 @@ const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
 describe('FVB. firm_verticals — Tier 1 (6-9 hits → ≥15)', () => {
   test('FVB-01: GET /padilla-warnings/:id — specific Padilla warning detail', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.get('/padilla-warnings/:id'");
     // Returns specific Padilla warning record with deportation risk assessment
   });
   test('FVB-02: PATCH /dual-sovereignty/:id + PATCH /eviction/:id', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.patch('/dual-sovereignty/:id'");
     expect(s).toContain("router.patch('/eviction/:id'");
   });
   test('FVB-03: PATCH /material-support/:id — update 18 USC 2339 screening', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.patch('/material-support/:id'");
   });
   test('FVB-04: PATCH /vop/:id + PATCH /dv-firearms/:id', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.patch('/vop/:id'");
     expect(s).toContain("router.patch('/dv-firearms/:id'");
   });
@@ -41,27 +41,27 @@ describe('FVB. firm_verticals — Tier 1 (6-9 hits → ≥15)', () => {
 describe('FVC. firm_verticals — Tier 2 (8-9 hits → ≥15)', () => {
   test('FVC-01: PATCH /ability-to-pay/:id + /bop-exhaustion/:id', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.patch('/ability-to-pay/:id'");
     expect(s).toContain("router.patch('/bop-exhaustion/:id'");
   });
   test('FVC-02: PATCH /codefendants/:id + /collateral-consequences/:id', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.patch('/codefendants/:id'");
     expect(s).toContain("router.patch('/collateral-consequences/:id'");
     // Both mandated by Padilla v. Kentucky — must inform of all collateral consequences
   });
   test('FVC-03: PATCH /hague/:id + /plea-offers/:id + /voluntary-departure/:id', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.patch('/hague/:id'");
     expect(s).toContain("router.patch('/plea-offers/:id'");
     expect(s).toContain("router.patch('/voluntary-departure/:id'");
   });
   test('FVC-04: PATCH /matters/:id/scoring + POST /mine/mission-verify', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.patch('/matters/:id/scoring'");
     expect(s).toContain("router.post('/mine/mission-verify'");
   });
@@ -70,19 +70,19 @@ describe('FVC. firm_verticals — Tier 2 (8-9 hits → ≥15)', () => {
 describe('FVD. firm_verticals — Tier 3 (10-14 hits → ≥15)', () => {
   test('FVD-01: DELETE /asylum-clocks/:id + PATCH /asylum-clocks/:id', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.delete('/asylum-clocks/:id'");
     expect(s).toContain("router.patch('/asylum-clocks/:id'");
   });
   test('FVD-02: DELETE /dpa/:id + PATCH /dpa/:id', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.delete('/dpa/:id'");
     expect(s).toContain("router.patch('/dpa/:id'");
   });
   test('FVD-03: DELETE /tro/:id + PATCH /tro/:id + GET/POST /dv-firearms', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.delete('/tro/:id'");
     expect(s).toContain("router.patch('/tro/:id'");
     expect(s).toContain("router.get('/dv-firearms'");
@@ -90,7 +90,7 @@ describe('FVD. firm_verticals — Tier 3 (10-14 hits → ≥15)', () => {
   });
   test('FVD-04: GET /deadlines + GET/POST /material-support + GET /padilla-warnings', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.get('/deadlines'");
     expect(s).toContain("router.get('/material-support'");
     expect(s).toContain("router.post('/material-support'");
@@ -98,7 +98,7 @@ describe('FVD. firm_verticals — Tier 3 (10-14 hits → ≥15)', () => {
   });
   test('FVD-05: GET/POST /plea-offers + GET /presets + GET /ability-to-pay', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.get('/plea-offers'");
     expect(s).toContain("router.post('/plea-offers'");
     expect(s).toContain("router.get('/presets'");
@@ -106,7 +106,7 @@ describe('FVD. firm_verticals — Tier 3 (10-14 hits → ≥15)', () => {
   });
   test('FVD-06: GET/POST /bop-exhaustion + /collateral-consequences + /eviction', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.get('/bop-exhaustion'");
     expect(s).toContain("router.post('/bop-exhaustion'");
     expect(s).toContain("router.get('/collateral-consequences'");
@@ -116,7 +116,7 @@ describe('FVD. firm_verticals — Tier 3 (10-14 hits → ≥15)', () => {
   });
   test('FVD-07: GET/POST /dual-sovereignty + GET/POST /vop', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     expect(s).toContain("router.get('/dual-sovereignty'");
     expect(s).toContain("router.post('/dual-sovereignty'");
     expect(s).toContain("router.get('/vop'");
@@ -129,14 +129,14 @@ describe('FVD. firm_verticals — Tier 3 (10-14 hits → ≥15)', () => {
 describe('MTA. matters.js 8 + cases.js 8 → ≥15', () => {
   test('MTA-01: matters — DELETE events/eid + retention-status + workload', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/matters.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matters.js','utf8');
     expect(s).toContain("router.delete('/:id/events/:eid'");
     expect(s).toContain("router.get('/retention-status'");
     expect(s).toContain("router.get('/workload'");
   });
   test('MTA-02: matters — /:id/history + /:id/hold + /:id/team/:userId', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/matters.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matters.js','utf8');
     expect(s).toContain("router.get('/:id/history'");
     expect(s).toContain("router.post('/:id/hold'");
     expect(s).toContain("router.delete('/:id/hold'");
@@ -146,7 +146,7 @@ describe('MTA. matters.js 8 + cases.js 8 → ≥15', () => {
   });
   test('MTA-03: cases — status-history + invite + share + family-access', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/cases.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/cases.js','utf8');
     expect(s).toContain("router.get('/:id/status-history'");
     expect(s).toContain("router.post('/:id/invite'");
     expect(s).toContain("router.post('/:id/share'");
@@ -155,7 +155,7 @@ describe('MTA. matters.js 8 + cases.js 8 → ≥15', () => {
   });
   test('MTA-04: cases — family-access/:memberId + /shared/:token + /:id/family-access', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/cases.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/cases.js','utf8');
     expect(s).toContain("router.delete('/:id/family-access/:memberId'");
     expect(s).toContain("router.get('/shared/:token'");
     expect(s).toContain("router.get('/:id/family-access'");
@@ -165,7 +165,7 @@ describe('MTA. matters.js 8 + cases.js 8 → ≥15', () => {
 describe('MIA_B. matter_intelligence 7 + analytics 5 → ≥15', () => {
   test('MIA_B-01: MI signals + diversion + motions + dashboard + taxonomy', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js','utf8');
     expect(s).toContain("router.get('/:matterId/signals'");
     expect(s).toContain("router.get('/:matterId/diversion'");
     expect(s).toContain("router.get('/:matterId/motions'");
@@ -174,13 +174,13 @@ describe('MIA_B. matter_intelligence 7 + analytics 5 → ≥15', () => {
   });
   test('MIA_B-02: MI escalation + outcome — HTTP routes', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js','utf8');
     expect(s).toContain("router.get('/:matterId/escalation'");
     expect(s).toContain("router.get('/:matterId/outcome'");
   });
   test('MIA_B-03: analytics estimate + precedents + monitor + registry', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/analytics.js','utf8');
     expect(s).toContain("router.get('/:matterId/estimate'");
     expect(s).toContain("router.get('/:matterId/precedents'");
     expect(s).toContain("router.get('/monitor/status'");
@@ -203,7 +203,7 @@ describe('MIA_B. matter_intelligence 7 + analytics 5 → ≥15', () => {
 describe('CON_C. conflicts 7 + acquisition 5 + privilege 5 → ≥15', () => {
   test('CON_C-01: conflicts ethics-wall log + report + waivers + soc2', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/conflicts.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/conflicts.js','utf8');
     expect(s).toContain("router.get('/ethics-wall/log/:firmId'");
     expect(s).toContain("router.delete('/ethics-wall/:matterId/:userId'");
     expect(s).toContain("router.get('/report/:firmId'");
@@ -214,7 +214,7 @@ describe('CON_C. conflicts 7 + acquisition 5 + privilege 5 → ≥15', () => {
   });
   test('CON_C-02: firm_acquisition all 5 routes', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/firm_acquisition.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_acquisition.js','utf8');
     expect(s).toContain("router.get('/vertical-demo'");
     expect(s).toContain("router.post('/trial'");
     expect(s).toContain("router.post('/upgrade'");
@@ -223,7 +223,7 @@ describe('CON_C. conflicts 7 + acquisition 5 + privilege 5 → ≥15', () => {
   });
   test('CON_C-03: privilege csv + pdf + review-status + entries/review + bases', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js','utf8');
+    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js','utf8');
     expect(s).toContain("router.get('/matter/:matterId/csv'");
     expect(s).toContain("router.get('/matter/:matterId/pdf'");
     expect(s).toContain("router.get('/matter/:matterId/review-status'");

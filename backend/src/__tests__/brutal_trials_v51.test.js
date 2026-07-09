@@ -88,7 +88,7 @@ const mkMatter = (v, o = {}) => ({
 describe('SCHED. scheduler.js — Full Pipeline Architecture', () => {
   test('SCHED-01: Justice Gavel Full Automated Pipeline header documentation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('Justice Gavel Full Automated Pipeline');
     expect(src).toContain('NIGHTLY (3 AM Central)');
     expect(src).toContain('EVERY 2 HOURS');
@@ -96,7 +96,7 @@ describe('SCHED. scheduler.js — Full Pipeline Architecture', () => {
   });
   test('SCHED-02: 8 nightly jobs + 1 two-hour job documented', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('Google/Yelp provider refresh');
     expect(src).toContain('Arrest record harvest');
     expect(src).toContain('97 cities');
@@ -106,20 +106,20 @@ describe('SCHED. scheduler.js — Full Pipeline Architecture', () => {
   });
   test('SCHED-03: scheduler imports archiveCompletedDocketEntries + checkAccountInactivity', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('archiveCompletedDocketEntries');
     expect(src).toContain('checkAccountInactivity');
     expect(src).toContain("from '../services/retention.js'");
   });
   test('SCHED-04: processGoldenGavelAward is imported from the golden_gavel route', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('processGoldenGavelAward');
     expect(src).toContain("from '../routes/golden_gavel.js'");
   });
   test('SCHED-05: startScheduler + stopScheduler exported from scheduler.js', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('startScheduler');
     expect(src).toContain('stopScheduler');
     expect(src).toContain('export');
@@ -130,7 +130,7 @@ describe('SCHED. scheduler.js — Full Pipeline Architecture', () => {
 describe('PHASE. Screen State Machines — Phase Types', () => {
   test('PHASE-01: CourtFormsScreen 4-phase flow: state_select→category_select→form_display→ai_guide', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
     expect(src).toContain("'state_select' | 'category_select' | 'form_display' | 'ai_guide'");
     const transitions = (src.match(/setPhase\('[^']+'\)/g) || []).map(t => t.match(/'([^']+)'/)?.[1]);
     expect(transitions).toContain('category_select');
@@ -140,7 +140,7 @@ describe('PHASE. Screen State Machines — Phase Types', () => {
   });
   test('PHASE-02: InterrogationRecorderScreen 6-phase: law_check→ready→recording→processing→done→error', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain("'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'error'");
     expect(src).toContain("setPhase('recording')");
     expect(src).toContain("setPhase('processing')");
@@ -149,13 +149,13 @@ describe('PHASE. Screen State Machines — Phase Types', () => {
   });
   test('PHASE-03: LegalResearchScreen 5-phase: paywall→home→searching→thread→history', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LegalResearchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LegalResearchScreen.tsx', 'utf8');
     expect(src).toContain("'paywall' | 'home' | 'searching' | 'thread' | 'history'");
     expect(src).toContain('disclaimerVisible');
   });
   test('PHASE-04: MotionLibraryScreen 6-phase: library→form→confirm→generating→result→history', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain("'library' | 'form' | 'confirm' | 'generating' | 'result' | 'history'");
     expect(src).toContain("setPhase('generating')");
     expect(src).toContain("setPhase('result')");
@@ -163,21 +163,21 @@ describe('PHASE. Screen State Machines — Phase Types', () => {
   });
   test('PHASE-05: TranslatorScreen 3-phase: setup→session→join (interpreter mode)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
     expect(src).toContain("'setup' | 'session' | 'join'");
     expect(src).toContain("setPhase('session')");
     expect(src).toContain("setPhase('setup')");
   });
   test('PHASE-06: VoiceNoteScreen 5-phase: idle→recording→processing→result→text_input', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/VoiceNoteScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/VoiceNoteScreen.tsx', 'utf8');
     expect(src).toContain("'idle' | 'recording' | 'processing' | 'result' | 'text_input'");
     expect(src).toContain("setPhase('recording')");
     expect(src).toContain("setPhase('processing')");
   });
   test('PHASE-07: EmergencyShareScreen 7-phase: ready→locating→finding→confirm→sharing→done→error', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
     expect(src).toContain("'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' | 'error'");
     expect(src).toContain("setPhase('locating')");
     expect(src).toContain("setPhase('finding')");
@@ -191,17 +191,17 @@ describe('PHASE. Screen State Machines — Phase Types', () => {
 describe('TYPE. Screen Type Aliases — State Machine Types', () => {
   test('TYPE-01: FirmAcquisitionScreen Flow = browse|activate|status', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
     expect(src).toContain("type Flow = 'browse' | 'activate' | 'status'");
   });
   test('TYPE-02: BookingScreen Step = duration|datetime|confirm|confirmed|callback_sent', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BookingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BookingScreen.tsx', 'utf8');
     expect(src).toContain("type Step = 'duration' | 'datetime' | 'confirm' | 'confirmed' | 'callback_sent'");
   });
   test('TYPE-03: TenantRightsScreen Situation type (eviction_notice|lockout|utility_shutoff)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TenantRightsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TenantRightsScreen.tsx', 'utf8');
     expect(src).toContain('eviction_notice');
     expect(src).toContain('lockout');
     expect(src).toContain('utility_shutoff');
@@ -209,12 +209,12 @@ describe('TYPE. Screen Type Aliases — State Machine Types', () => {
   });
   test('TYPE-04: AttorneyDashboardScreen Tab = cases|templates|cle|profile', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/AttorneyDashboardScreen.tsx', 'utf8');
     expect(src).toContain("type Tab = 'cases' | 'templates' | 'cle' | 'profile'");
   });
   test('TYPE-05: CheckInScreen CheckInPhase has already_done state (idempotent check-in)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CheckInScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     expect(src).toContain('CheckInPhase');
     expect(src).toContain('already_done');
     expect(src).toContain("'loading' | 'ready' | 'gps' | 'submitting' | 'done'");
@@ -225,7 +225,7 @@ describe('TYPE. Screen Type Aliases — State Machine Types', () => {
 describe('S7. Components — useEffect + useCallback Depth', () => {
   test('S7-01: OfflineBanner useEffect subscribes to NetInfo.addEventListener', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/OfflineBanner.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/OfflineBanner.tsx', 'utf8');
     expect(src).toContain('useEffect');
     expect(src).toContain('NetInfo');
     // OfflineBanner uses useNetInfo hook (graceful import from @react-native-community/netinfo)
@@ -234,7 +234,7 @@ describe('S7. Components — useEffect + useCallback Depth', () => {
   });
   test('S7-02: LegalDisclaimerModal has 2 useCallbacks: handleAccept + openLink', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
     const callbacks = (src.match(/useCallback/g) || []).length;
     expect(callbacks).toBe(3); // handleAccept + openLink + one more
     expect(src).toContain('handleAccept');
@@ -242,13 +242,13 @@ describe('S7. Components — useEffect + useCallback Depth', () => {
   });
   test('S7-03: AuthGate useCallback(requireAuth) — stable reference for child buttons', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/AuthGate.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/AuthGate.tsx', 'utf8');
     expect(src).toContain('useCallback');
     expect(src).toContain('requireAuth');
   });
   test('S7-04: FloatingSOSButton useEffect starts the pulse+ring animation loop', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
     expect(src).toContain('useEffect');
     expect(src).toContain('Animated.loop');
     expect(src).toContain('pulse');
@@ -260,39 +260,39 @@ describe('S7. Components — useEffect + useCallback Depth', () => {
 describe('S12. UX — Final Depth', () => {
   test('S12-01: FIELD_LIMITS email=254 follows RFC 5321 max length', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/routeHelpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/routeHelpers.js', 'utf8');
     expect(src).toContain('RFC 5321');
     expect(src).toContain('email:       254');
     expect(src).toContain('content:     10000');
   });
   test('S12-02: audit_log has composite index (firm_id, created_at DESC) for paginated queries', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('idx_audit_log_firm_ts');
     expect(src).toContain('audit_log');
   });
   test('S12-03: EmergencyStrip compact prop for space-constrained layouts', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/EmergencyStrip.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/EmergencyStrip.tsx', 'utf8');
     expect(src).toContain('compact = false');
     expect(src).toContain('compact && styles.compact');
   });
   test('S12-04: scheduler LIVE_REFRESH=true requirement prevents accidental production activation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('LIVE_REFRESH');
     expect(src).toContain('Manual trigger');
   });
   test('S12-05: CheckInScreen already_done prevents duplicate check-ins (idempotent)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CheckInScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     expect(src).toContain('already_done');
     expect(src).toContain('/checkins/submit');
   });
   test('S12-06: EmergencyShareScreen 7-phase is most complex state machine in app', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const src = fs.readFileSync(path.join(dir, 'EmergencyShareScreen.tsx'), 'utf8');
     // 7 phases = 6 pipe symbols
     const pipeCount = (src.match(/'ready' \| 'locating' \| 'finding' \| 'confirm' \| 'sharing' \| 'done' \| 'error'/g) || []).length;
@@ -302,7 +302,7 @@ describe('S12. UX — Final Depth', () => {
   });
   test('S12-07: MotionLibraryScreen generating phase triggers AI — longest loading state', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain("setPhase('generating')");
     expect(src).toContain('/motions/generate');
   });
@@ -313,10 +313,10 @@ describe('Regression — All v1–v50 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -341,7 +341,7 @@ describe('Regression — All v1–v50 Confirmed', () => {
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -356,10 +356,10 @@ describe('Regression — All v1–v50 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

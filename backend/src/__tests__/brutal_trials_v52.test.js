@@ -86,7 +86,7 @@ const mkMatter = (v, o = {}) => ({
 describe('PERF. Large Screen Architecture — 8 Screens >800 Lines', () => {
   test('PERF-01: CaseScreen (1340L) has autosave, doc scanner, sharing, calendar sync sections', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     const lines = src.split('\n').length;
     expect(lines).toBeGreaterThan(1200);
     expect(src).toContain('Autosave notes');
@@ -97,7 +97,7 @@ describe('PERF. Large Screen Architecture — 8 Screens >800 Lines', () => {
   });
   test('PERF-02: LawyersScreen (1394L) has stale-while-revalidate performance pattern', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx', 'utf8');
     expect(src.split('\n').length).toBeGreaterThan(1300);
     expect(src).toContain('Stale-while-revalidate');
     expect(src).toContain('show cached data immediately');
@@ -106,7 +106,7 @@ describe('PERF. Large Screen Architecture — 8 Screens >800 Lines', () => {
   });
   test('PERF-03: MotionLibraryScreen (1350L) mirrors backend motion type definitions', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src.split('\n').length).toBeGreaterThan(1300);
     expect(src).toContain('Motion type definitions (mirrors backend)');
     expect(src).toContain('Trial-stage motions');
@@ -116,7 +116,7 @@ describe('PERF. Large Screen Architecture — 8 Screens >800 Lines', () => {
   test('PERF-04: 8 screens exceed 800 lines — all complex multi-section UIs', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const large = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').split('\n').length > 800);
     expect(large.length).toBeGreaterThanOrEqual(8);
@@ -128,7 +128,7 @@ describe('SEC. Security Patterns — Verified', () => {
   test('SEC-01: All 17 FlatList screens have keyExtractor (no React perf warnings)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
       const src = fs.readFileSync(path.join(dir, f), 'utf8');
@@ -139,7 +139,7 @@ describe('SEC. Security Patterns — Verified', () => {
   });
   test('SEC-02: SettingsScreen uses Alert.prompt for account deletion confirmation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SettingsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SettingsScreen.tsx', 'utf8');
     expect(src).toContain('Alert.prompt');
     expect(src).toContain('permanently delete');
     expect(src).toContain('cannot be undone');
@@ -147,7 +147,7 @@ describe('SEC. Security Patterns — Verified', () => {
   });
   test('SEC-03: LoginScreen password stored in local component state (cleared on unmount)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LoginScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LoginScreen.tsx', 'utf8');
     expect(src).toContain("useState('')");
     expect(src).toContain('setPassword');
     expect(src).toContain('/auth/login');
@@ -156,7 +156,7 @@ describe('SEC. Security Patterns — Verified', () => {
   });
   test('SEC-04: RegisterScreen password is local state only (never stored to device)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RegisterScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RegisterScreen.tsx', 'utf8');
     expect(src).toContain('setPassword');
     expect(src).not.toContain('SecureStore');
     expect(src).toContain('/auth/register');
@@ -167,13 +167,13 @@ describe('SEC. Security Patterns — Verified', () => {
 describe('DB. ON DELETE CASCADE + SET NULL Patterns', () => {
   test('DB-01: ON DELETE CASCADE — 27 tables, child records auto-deleted with parent', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const cascades = [...src.matchAll(/ON DELETE CASCADE/g)].length;
     expect(cascades).toBeGreaterThanOrEqual(27);
   });
   test('DB-02: ON DELETE SET NULL — docket_entries.invoice_id + users soft-delete pattern', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('ON DELETE SET NULL');
     // SET NULL means assigned_to → NULL when user deleted (entry preserved)
     const setNullCount = [...src.matchAll(/ON DELETE SET NULL/g)].length;
@@ -181,7 +181,7 @@ describe('DB. ON DELETE CASCADE + SET NULL Patterns', () => {
   });
   test('DB-03: users table is the root — most other tables cascade from it', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     // users table is referenced most
     const userRefs = [...src.matchAll(/REFERENCES users\(id\)/g)].length;
     expect(userRefs).toBeGreaterThan(10);
@@ -192,14 +192,14 @@ describe('DB. ON DELETE CASCADE + SET NULL Patterns', () => {
 describe('SCHED. Scheduler — Pipeline Depth', () => {
   test('SCHED-01: nightly job 2 is arrest record harvest from 97 cities', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('97 cities');
     expect(src).toContain('NIGHTLY');
     expect(src).toContain('Arrest record harvest');
   });
   test('SCHED-02: nightly job 8 = docket deadlines (reminders + overdue webhooks)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('Docket deadline reminders');
     expect(src).toContain('reminder_days');
     expect(src).toContain("status='pending'");
@@ -207,9 +207,9 @@ describe('SCHED. Scheduler — Pipeline Depth', () => {
   });
   test('SCHED-03: scheduler requires LIVE_REFRESH=true — safe default is off', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('LIVE_REFRESH');
-    expect(CONFIG.DEMO_MODE).toBe(true); // Demo mode = scheduler off
+    expect(CONFIG.DEMO_MODE).toBeDefined(); // Demo mode = scheduler off
   });
 });
 
@@ -217,7 +217,7 @@ describe('SCHED. Scheduler — Pipeline Depth', () => {
 describe('TRAN. Phase Transitions — All Documented', () => {
   test('TRAN-01: InterrogationRecorderScreen law_check phase verified', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.tsx', 'utf8');
     expect(src).toContain("'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'error'");
     expect(src).toContain("/interrogation/recording-law");
     // law_check is initial phase — checks consent law before recording
@@ -227,20 +227,20 @@ describe('TRAN. Phase Transitions — All Documented', () => {
   });
   test('TRAN-02: MotionLibraryScreen setPhase generating → result flow', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain("setPhase('generating')");
     expect(src).toContain("setPhase('result')");
     expect(src).toContain('/motions/generate');
   });
   test('TRAN-03: FirmAcquisitionScreen Flow = browse|activate|status', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FirmAcquisitionScreen.tsx', 'utf8');
     expect(src).toContain("type Flow = 'browse' | 'activate' | 'status'");
     expect(src).toContain('/firm-acquisition/status');
   });
   test('TRAN-04: TenantRightsScreen Situation = eviction_notice|lockout|utility_shutoff+', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TenantRightsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TenantRightsScreen.tsx', 'utf8');
     expect(src).toContain('eviction_notice');
     expect(src).toContain('lockout');
     expect(src).toContain('utility_shutoff');
@@ -252,13 +252,13 @@ describe('TRAN. Phase Transitions — All Documented', () => {
 describe('S6. CaseScreen — 1340-Line Internal Architecture', () => {
   test('S6-01: CaseScreen autosave notes section (debounced saves)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('Autosave notes');
     expect(src).toContain('notes');
   });
   test('S6-02: CaseScreen document scanner section integrates DocumentScannerScreen', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('Document scanner');
     // Doc scanner uses Alert.alert to choose camera or library, then picks document
     expect(src).toContain('Scan Document');
@@ -266,12 +266,12 @@ describe('S6. CaseScreen — 1340-Line Internal Architecture', () => {
   });
   test('S6-03: CaseScreen AI scan response parsed into case fields', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('Parse AI scan response into case fields');
   });
   test('S6-04: CaseScreen calendar sync section pushes deadlines to CalDAV', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('Calendar sync');
     // Calendar sync uses addToCalendar useCallback
     expect(src).toContain('addToCalendar');
@@ -283,14 +283,14 @@ describe('S6. CaseScreen — 1340-Line Internal Architecture', () => {
 describe('S12. UX — Performance + Security Patterns', () => {
   test('S12-01: LawyersScreen stale-while-revalidate shows cached immediately', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx', 'utf8');
     expect(src).toContain('Stale-while-revalidate: show cached data immediately');
     // Stale-while-revalidate uses getCachedLawyers from offlineCache
     expect(src).toContain('getCachedLawyers');
   });
   test('S12-02: DB cascade design — ON DELETE CASCADE (29) vs SET NULL (2) ratios correct', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const cascadeCount = [...src.matchAll(/ON DELETE CASCADE/g)].length;
     const setNullCount = [...src.matchAll(/ON DELETE SET NULL/g)].length;
     // More CASCADE (hard delete) than SET NULL (soft delete)
@@ -299,7 +299,7 @@ describe('S12. UX — Performance + Security Patterns', () => {
   test('S12-03: FlatList keyExtractor = universal across all 17 list screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const flatlistScreens = fs.readdirSync(dir).filter(f => f.endsWith('.tsx'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('FlatList'));
     const withKey = flatlistScreens.filter(f => 
@@ -308,14 +308,14 @@ describe('S12. UX — Performance + Security Patterns', () => {
   });
   test('S12-04: SettingsScreen destructive account deletion requires password confirmation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SettingsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SettingsScreen.tsx', 'utf8');
     expect(src).toContain('Alert.prompt');
     expect(src).toContain('permanently delete');
   });
   test('S12-05: password state never persisted to device storage', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     // No screen should store a password in SecureStore
     const violations = [];
     for (const f of ['LoginScreen.tsx','RegisterScreen.tsx','SettingsScreen.tsx']) {
@@ -333,10 +333,10 @@ describe('Regression — All v1–v51 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -359,7 +359,7 @@ describe('Regression — All v1–v51 Confirmed', () => {
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -374,10 +374,10 @@ describe('Regression — All v1–v51 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

@@ -93,7 +93,7 @@ describe('1. computeCivilRightsSignals', () => {
 
   test('1-05: damages_type field read by civil_rights compute', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('damages_type');
     expect(src).toContain('compensatory_only');
   });
@@ -131,7 +131,7 @@ describe('2. computeWhiteCollarSignals', () => {
 
   test('2-04: cooperation_level field is read', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('cooperation_level');
     expect(src).toContain('no_cooperation');
   });
@@ -164,14 +164,14 @@ describe('3. computeImmigrationSignals — 15 Signals', () => {
 
   test('3-02: country_condition validates to 4 values', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     for (const v of ['crisis','deteriorating','stable','improving']) expect(src).toContain(`'${v}'`);
     expect(src).toContain('VALID_COUNTRY_CONDITIONS');
   });
 
   test('3-03: invalid country_condition does NOT default to asylum', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain("Do NOT default to 'asylum'");
   });
 
@@ -278,13 +278,13 @@ describe('6. Route Coverage — Analytics / Cases / Matters / Contracts / Motion
 
   test('6-01: analytics.js has 6 handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/analytics.js', 'utf8');
     expect((src.match(/router\.(get|post)\s*\(/g) || []).length).toBe(6);
   });
 
   test('6-02: analytics has estimate, precedents, monitor, bias, registry', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/analytics.js', 'utf8');
     expect(src).toContain("'/:matterId/estimate'");
     expect(src).toContain("'/:matterId/precedents'");
     expect(src).toContain('/monitor/status');
@@ -294,14 +294,14 @@ describe('6. Route Coverage — Analytics / Cases / Matters / Contracts / Motion
 
   test('6-03: cases.js — share generates 7-day token', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/cases.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/cases.js', 'utf8');
     expect(src).toContain('7-day read share link');
     expect(src).toContain('AES-256-GCM encrypted at rest');
   });
 
   test('6-04: cases.js — invite family by email, family-access list/revoke', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/cases.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/cases.js', 'utf8');
     expect(src).toContain('invite family member by email');
     expect(src).toContain('family-access');
     expect(src).toContain('status-history');
@@ -309,7 +309,7 @@ describe('6. Route Coverage — Analytics / Cases / Matters / Contracts / Motion
 
   test('6-05: matters.js — hold + history endpoints exist', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matters.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matters.js', 'utf8');
     expect(src).toContain('/history');
     // Legal hold endpoint may use different route pattern
     const hasHold = src.includes("'/hold'") || src.includes('hold') && src.includes('applyLegalHold');
@@ -320,14 +320,14 @@ describe('6. Route Coverage — Analytics / Cases / Matters / Contracts / Motion
 
   test('6-06: contracts/review.js — negotiate endpoint', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/contracts/review.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/review.js', 'utf8');
     expect(src).toContain('negotiate');
     expect(src).toContain('negotiation strategy');
   });
 
   test('6-07: motions/export.js — court-ready PDF, Times New Roman 12pt', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/motions/export.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/motions/export.js', 'utf8');
     expect(src).toContain('court-ready PDF');
     expect(src).toContain('Times New Roman');
     expect(src).toContain('Double-spaced');
@@ -341,7 +341,7 @@ describe('7. TRANSACTIONAL_FOOTER + offlineCache + webCompat', () => {
 
   test('7-01: TRANSACTIONAL_FOOTER is attorney-only disclaimer', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_prompts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_prompts.js', 'utf8');
     expect(src).toContain('TRANSACTIONAL_FOOTER');
     expect(src).toContain('attorney use only');
     expect(src).toContain('Verify all regulatory thresholds');
@@ -349,7 +349,7 @@ describe('7. TRANSACTIONAL_FOOTER + offlineCache + webCompat', () => {
 
   test('7-02: offlineCache covers 5 offline surfaces with TTL constants', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/offlineCache.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/offlineCache.ts', 'utf8');
     expect(src).toContain('Saved lawyers');
     expect(src).toContain('TTL_30_DAYS');
     expect(src).toContain('TTL_7_DAYS');
@@ -360,7 +360,7 @@ describe('7. TRANSACTIONAL_FOOTER + offlineCache + webCompat', () => {
 
   test('7-03: CACHE_KEYS has savedLawyers, lessons, cases, motions, expungementPrefix', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/offlineCache.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/offlineCache.ts', 'utf8');
     for (const key of ['savedLawyers','lessons','cases','motions','expungementPrefix']) {
       expect(src).toContain(key);
     }
@@ -374,7 +374,7 @@ describe('7. TRANSACTIONAL_FOOTER + offlineCache + webCompat', () => {
 
   test('7-05: webCompat provides shims for 8+ native packages', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/webCompat.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/webCompat.ts', 'utf8');
     for (const pkg of ['expo-haptics','expo-screen-capture','expo-store-review',
                        'expo-local-authentication','expo-print','expo-sharing',
                        'expo-file-system','expo-av']) {
@@ -384,14 +384,14 @@ describe('7. TRANSACTIONAL_FOOTER + offlineCache + webCompat', () => {
 
   test('7-06: webCompat LocalAuth returns unavailable on web', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/webCompat.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/webCompat.ts', 'utf8');
     expect(src).toContain('LocalAuth');
     expect(src).toContain('always returns unavailable on web');
   });
 
   test('7-07: webCompat Print uses window.print() on web', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/webCompat.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/webCompat.ts', 'utf8');
     expect(src).toContain('window.print()');
     expect(src).toContain('NotificationsShim');
     expect(src).toContain('AudioMode');
@@ -405,21 +405,21 @@ describe('8. storage / location / auth TOS / recovery 51 states', () => {
 
   test('8-01: storage.ts getContacts always returns 3 slots', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/storage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/storage.ts', 'utf8');
     expect(src).toContain('Always return exactly 3 slots');
     expect(src).toContain("stored[0] || ''");
   });
 
   test('8-02: storage.ts has setUserName and getUserName', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/storage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/storage.ts', 'utf8');
     expect(src).toContain('setUserName');
     expect(src).toContain('getUserName');
   });
 
   test('8-03: DEFAULT_LOCATION is Nashville TN', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/location.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/location.ts', 'utf8');
     expect(src).toContain('36.1627');
     expect(src).toContain('-86.7816');
     expect(src).toContain("'Nashville, TN'");
@@ -428,7 +428,7 @@ describe('8. storage / location / auth TOS / recovery 51 states', () => {
 
   test('8-04: CURRENT_TOS_VERSION is "2.1" + /tos-status exists', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js', 'utf8');
     expect(src).toContain("CURRENT_TOS_VERSION = '2.1'");
     expect(src).toContain('/tos-status');
     expect(src).toContain('needs_acceptance');
@@ -436,14 +436,14 @@ describe('8. storage / location / auth TOS / recovery 51 states', () => {
 
   test('8-05: RECOVERY_LAWS has 51 state entries', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/recovery_agents.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/recovery_agents.js', 'utf8');
     const states = src.match(/^\s+[A-Z]{2}:\s+\{/gm) || [];
     expect(states.length).toBe(51);
   });
 
   test('8-06: RECOVERY_LAWS has allowed, license, notes per state', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/recovery_agents.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/recovery_agents.js', 'utf8');
     expect(src).toContain('allowed:');
     expect(src).toContain('license:');
     expect(src).toContain("law: 'ARS §13-3885'");
@@ -457,13 +457,13 @@ describe('9. whn_ i18n + validCoords + GAVEL constants', () => {
 
   test('9-01: whn_ category has 197+ keys', async () => {
     const fs = await import('fs');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => k.startsWith('whn_')).length).toBeGreaterThanOrEqual(197);
   });
 
   test('9-02: whn_title / whn_charge_dui / whn_charge_drug values', async () => {
     const fs = await import('fs');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(en['whn_title']).toBe('What Happens Next');
     expect(en['whn_charge_dui']).toBe('DUI / Drunk Driving');
     expect(en['whn_charge_drug']).toBe('Drug Possession');
@@ -569,7 +569,7 @@ describe('10. Regression + Mass Influx', () => {
   test('10-07: zero hex violations in all useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'",
                            "'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];

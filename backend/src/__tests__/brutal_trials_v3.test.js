@@ -684,7 +684,7 @@ describe('6. Scheduler — Cron Model & Job Sequencing', () => {
   test('6-04: scheduler is a service module with start/stop exports', async () => {
     // scheduler.js chains to sqlite3 via DB — test through fs instead
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('startScheduler');
     expect(src).toContain('stopScheduler');
     expect(src).toContain('runRefresh');
@@ -692,7 +692,7 @@ describe('6. Scheduler — Cron Model & Job Sequencing', () => {
 
   test('6-05: stopScheduler is safe — exported function verified via source', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('export function stopScheduler');
   });
 
@@ -913,7 +913,7 @@ describe('9. Frontend UX — PTR & Form Safety', () => {
 
   test('9-01: HomeScreen needs pull-to-refresh (shows live case data)', async () => {
     const fs   = await import('fs');
-    const home = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const home = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     // HomeScreen calls /cases, /messages/unread/count, /push/tip, /providers/bail
     // All of these are data that users expect to be fresh when they pull down
     const hasApiCalls  = home.includes("api.get('/cases')");
@@ -931,7 +931,7 @@ describe('9. Frontend UX — PTR & Form Safety', () => {
 
   test('9-02: BookingScreen has a GET for availability + POST for booking', async () => {
     const fs      = await import('fs');
-    const booking = fs.readFileSync('/tmp/JG/frontend/src/screens/BookingScreen.tsx', 'utf8');
+    const booking = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BookingScreen.tsx', 'utf8');
     const hasPOST = booking.includes("'/consultations/book'") || booking.includes('"/consultations/book"');
     const hasGET  = booking.includes('/attorney/profile/availability') ||
              booking.includes('/consultations/slots/');
@@ -945,7 +945,7 @@ describe('9. Frontend UX — PTR & Form Safety', () => {
   test('9-03: all screens have consistent theme token usage after hex replacement', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'",
                            "'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
@@ -963,7 +963,7 @@ describe('9. Frontend UX — PTR & Form Safety', () => {
   test('9-04: no screen uses navigate("Tab:Screen") shorthand', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const badPattern = /navigate\s*\(\s*['"][A-Z][a-z]+:[A-Z]/;
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx'))) {
@@ -976,7 +976,7 @@ describe('9. Frontend UX — PTR & Form Safety', () => {
   test('9-05: all screens with multiline TextInput have maxLength', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
       const src = fs.readFileSync(path.join(dir, f), 'utf8');
@@ -988,7 +988,7 @@ describe('9. Frontend UX — PTR & Form Safety', () => {
   test('9-06: zero unguarded console.* in any screen', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const unguarded = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx'))) {
       const lines = fs.readFileSync(path.join(dir, f), 'utf8').split('\n');
@@ -1344,7 +1344,7 @@ describe('14. DB Schema Integrity', () => {
 
   test('14-02: schema has all required core tables', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const REQUIRED_TABLES = [
       'users', 'firms', 'firm_members', 'matters', 'cases',
       'messages', 'invoices', 'time_entries', 'conflict_index',
@@ -1357,14 +1357,14 @@ describe('14. DB Schema Integrity', () => {
 
   test('14-03: schema has 56 tables (correct count)', async () => {
     const fs   = await import('fs');
-    const src  = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src  = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = src.match(/CREATE TABLE IF NOT EXISTS (\w+)/g) || [];
     expect(tables.length).toBe(56);
   });
 
   test('14-04: web_push_subscriptions table has correct structure', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tableSection = src.includes('web_push_subscriptions');
     expect(tableSection).toBe(true);
     // Should have user_id, endpoint, p256dh, auth columns
@@ -1376,20 +1376,20 @@ describe('14. DB Schema Integrity', () => {
   test('14-05: opt_outs table exists for TCPA compliance (migration 008)', async () => {
     const fs  = await import('fs');
     // opt_outs is created in migration 008, not in db/index.js main schema
-    const mig = fs.readFileSync('/tmp/JG/backend/src/migrations/008_outbound_bot.sql', 'utf8');
+    const mig = fs.readFileSync('/tmp/JG_fresh/backend/src/migrations/008_outbound_bot.sql', 'utf8');
     expect(mig.toLowerCase()).toContain('opt_outs');
   });
 
   test('14-06: payment_links table exists (migration 008)', async () => {
     const fs  = await import('fs');
-    const mig = fs.readFileSync('/tmp/JG/backend/src/migrations/008_outbound_bot.sql', 'utf8');
+    const mig = fs.readFileSync('/tmp/JG_fresh/backend/src/migrations/008_outbound_bot.sql', 'utf8');
     expect(mig.toLowerCase()).toContain('payment_links');
   });
 
   test('14-07: migration files are numbered sequentially', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/migrations';
+    const dir  = '/tmp/JG_fresh/backend/src/migrations';
     const files = fs.readdirSync(dir)
       .filter(f => f.endsWith('.sql'))
       .sort();
@@ -1417,14 +1417,14 @@ describe('15. HomeScreen — Pull-to-Refresh Fix', () => {
 
   test('15-01: HomeScreen has multiple live-data API calls requiring PTR', async () => {
     const fs   = await import('fs');
-    const home = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const home = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     const apiCalls = (home.match(/api\.(get|post)\s*\(['"][^'"]+['"]\)/g) || []);
     expect(apiCalls.length).toBeGreaterThanOrEqual(3);
   });
 
   test('15-02: HomeScreen has ScrollView (PTR can be added)', async () => {
     const fs   = await import('fs');
-    const home = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const home = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(home.includes('ScrollView')).toBe(true);
   });
 

@@ -25,7 +25,7 @@ const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
 describe('TODO_3A. Bail Schedules — 51/51 States Complete', () => {
   test('3A-01: all 51 jurisdictions present in BAIL_SCHEDULES', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_providers.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_providers.js','utf8');
     const bs_idx=src.indexOf('const BAIL_SCHEDULES');
     const bs_end=src.indexOf('];',bs_idx)+2;
     const block=src.slice(bs_idx,bs_end);
@@ -41,7 +41,7 @@ describe('TODO_3A. Bail Schedules — 51/51 States Complete', () => {
   });
   test('3A-02: CA TX FL NY TN have correct statute codes', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_providers.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_providers.js','utf8');
     expect(src).toContain("state:'CA'"); expect(src).toContain('PC245');
     expect(src).toContain("state:'TX'"); expect(src).toContain('TPC22.02');
     expect(src).toContain("state:'FL'"); expect(src).toContain('FS784.045');
@@ -50,7 +50,7 @@ describe('TODO_3A. Bail Schedules — 51/51 States Complete', () => {
   });
   test('3A-03: each state has DUI + Drug + Violent charges', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_providers.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_providers.js','utf8');
     const bs=src.slice(src.indexOf('const BAIL_SCHEDULES'), src.indexOf('const bailStmt'));
     const dui=(bs.match(/category:'DUI'/g)||[]).length;
     const drug=(bs.match(/category:'Drug'/g)||[]).length;
@@ -66,7 +66,7 @@ describe('TODO_3A. Bail Schedules — 51/51 States Complete', () => {
 describe('TODO_3C. Language Tags — 7 Languages Added', () => {
   test('3C-01: language assignment code exists in seed_providers.js', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_providers.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_providers.js','utf8');
     expect(src).toContain('Mandarin');
     expect(src).toContain('Korean');
     expect(src).toContain('Tagalog');
@@ -78,7 +78,7 @@ describe('TODO_3C. Language Tags — 7 Languages Added', () => {
   });
   test('3C-02: language assignment is city/state-aware', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_providers.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_providers.js','utf8');
     expect(src).toContain("['CA','NY','WA'].includes(state)");
     expect(src).toContain("['TX','CA','FL','NY','IL','NM','AZ'].includes(state)");
     // Spanish where Hispanic population is largest; Tagalog in CA/HI; etc.
@@ -89,7 +89,7 @@ describe('TODO_3C. Language Tags — 7 Languages Added', () => {
 describe('TODO_3D. Attorney Specialties — Full Tag Set', () => {
   test('3D-01: all missing specialty types now in seed', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_providers.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_providers.js','utf8');
     expect(src).toContain('DUI Specialist');
     expect(src).toContain('Sex Crimes Defense');
     expect(src).toContain('Weapons Charges');
@@ -103,7 +103,7 @@ describe('TODO_3D. Attorney Specialties — Full Tag Set', () => {
 describe('TODO_3E. Lessons — 50 Articles', () => {
   test('3E-01: LESSONS array has ≥ 50 entries', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_providers.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_providers.js','utf8');
     const li=src.indexOf('const LESSONS');
     const le=src.indexOf('];',li)+2;
     const block=src.slice(li,le);
@@ -113,7 +113,7 @@ describe('TODO_3E. Lessons — 50 Articles', () => {
   });
   test('3E-02: covers all required categories', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_providers.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_providers.js','utf8');
     const li=src.indexOf('const LESSONS'); const le=src.indexOf('];',li)+2;
     const block=src.slice(li,le);
     const cats=[...new Set([...block.matchAll(/category:'([^']+)'/g)].map(m=>m[1]))];
@@ -130,7 +130,7 @@ describe('TODO_3E. Lessons — 50 Articles', () => {
   });
   test('3E-03: new lesson topics present', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_providers.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_providers.js','utf8');
     expect(src.toLowerCase()).toContain('veteran');
     expect(src.toLowerCase()).toContain('mental health');
     expect(src.toLowerCase()).toContain('bail hearing');
@@ -144,7 +144,7 @@ describe('TODO_3E. Lessons — 50 Articles', () => {
 describe('TODO_3F_3G. CourtLocator + BailCalculator Built + Wired', () => {
   test('3F-01: CourtLocatorScreen exists and queries /courthouses + /legaldata/federal-courts', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/frontend/src/screens/CourtLocatorScreen.tsx','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CourtLocatorScreen.tsx','utf8');
     expect(src).toContain('CourtLocatorScreen');
     expect(src).toContain('/courthouses');
     expect(src).toContain('/legaldata/federal-courts');
@@ -153,12 +153,12 @@ describe('TODO_3F_3G. CourtLocator + BailCalculator Built + Wired', () => {
   });
   test('3F-02: CourtLocatorScreen in AppNavigator', async () => {
     const fs=await import('fs');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     expect(nav).toContain('CourtLocatorScreen');
   });
   test('3G-01: BailCalculatorScreen calls /legaldata/bail', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/frontend/src/screens/BailCalculatorScreen.tsx','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BailCalculatorScreen.tsx','utf8');
     expect(src).toContain('BailCalculatorScreen');
     expect(src).toContain('/legaldata/bail');
     expect(src.length).toBeGreaterThan(13000);
@@ -166,7 +166,7 @@ describe('TODO_3F_3G. CourtLocator + BailCalculator Built + Wired', () => {
   });
   test('3G-02: BailCalculatorScreen in AppNavigator', async () => {
     const fs=await import('fs');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     expect(nav).toContain('BailCalculatorScreen');
   });
 });
@@ -175,7 +175,7 @@ describe('TODO_3F_3G. CourtLocator + BailCalculator Built + Wired', () => {
 describe('TODO_3H. Probation in legaldata TABLE_MAP', () => {
   test('3H-01: /api/legaldata/probation routes to probation_offices', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/routes/legaldata.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/legaldata.js','utf8');
     expect(src.includes('"probation"') || src.includes("'probation'")).toBe(true);
     expect(src).toContain('probation_offices');
   });
@@ -185,7 +185,7 @@ describe('TODO_3H. Probation in legaldata TABLE_MAP', () => {
 describe('TODO_3I. HelpNowScreen — All Data Sources Wired', () => {
   test('3I-01: HelpNow queries courthouse + public defender + crisis + treatment', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/frontend/src/screens/HelpNowScreen.tsx','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HelpNowScreen.tsx','utf8');
     expect(src).toContain('/courthouses');
     expect(src).toContain('PUBLIC_DEFENDER');
     expect(src).toContain('CRISIS_LINE');
@@ -199,7 +199,7 @@ describe('TODO_3I. HelpNowScreen — All Data Sources Wired', () => {
 describe('TODO_3J. Forum Seed Posts', () => {
   test('3J-01: FORUM_POSTS in seed_demo.js with 13 posts', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_demo.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_demo.js','utf8');
     expect(src).toContain('FORUM_POSTS');
     const posts=[...src.matchAll(/category:'[^']+',\s*title:/g)];
     console.log(`Forum posts: ${posts.length}`);
@@ -207,7 +207,7 @@ describe('TODO_3J. Forum Seed Posts', () => {
   });
   test('3J-02: covers DUI, drug, assault, bail, rights categories', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_demo.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_demo.js','utf8');
     expect(src).toContain("category:'dui'");
     expect(src).toContain("category:'drug'");
     expect(src).toContain("category:'assault'");
@@ -221,7 +221,7 @@ describe('TODO_3J. Forum Seed Posts', () => {
 describe('TODO_3K. Specialty Courts — Veterans, Drug, Mental Health', () => {
   test('3K-01: SPECIALTY_COURTS in seed_demo.js with 13 courts', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_demo.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_demo.js','utf8');
     expect(src).toContain('SPECIALTY_COURTS');
     const courts=[...src.matchAll(/court_type:'(veteran|drug|mental_health)'/g)];
     const types=[...new Set(courts.map(m=>m[1]))];
@@ -233,7 +233,7 @@ describe('TODO_3K. Specialty Courts — Veterans, Drug, Mental Health', () => {
   });
   test('3K-02: specialty_courts table exists in db schema', async () => {
     const fs=await import('fs');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(db).toContain('specialty_courts');
     expect(db).toContain('veteran');
   });
@@ -243,7 +243,7 @@ describe('TODO_3K. Specialty Courts — Veterans, Drug, Mental Health', () => {
 describe('TODO_3L. Arrest Monitor Demo Seed Data', () => {
   test('3L-01: DEMO_ARRESTS in seed_demo.js with 10 records', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_demo.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_demo.js','utf8');
     expect(src).toContain('DEMO_ARRESTS');
     const arrests=[...src.matchAll(/first_name:'[^']+'/g)];
     console.log(`Demo arrests: ${arrests.length}`);
@@ -251,7 +251,7 @@ describe('TODO_3L. Arrest Monitor Demo Seed Data', () => {
   });
   test('3L-02: arrests span multiple states (TN TX CA FL IL NY)', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/seed_demo.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/seed_demo.js','utf8');
     for (const state of ['TN','TX','CA','FL','IL','NY'])
       expect(src).toContain(`jail_state:'${state}'`);
   });
@@ -261,7 +261,7 @@ describe('TODO_3L. Arrest Monitor Demo Seed Data', () => {
 describe('TODO_3B. SOL Null Records Fix Script', () => {
   test('3B-01: update_legal_data.js has SOL fix instructions', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG/backend/src/scripts/update_legal_data.js','utf8');
+    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/scripts/update_legal_data.js','utf8');
     expect(src).toContain('statute_of_limitations');
     // SQL fix: UPDATE statute_of_limitations SET years=3 WHERE years IS NULL AND crime_type='felony'
   });
@@ -271,10 +271,10 @@ describe('TODO_3B. SOL Null Records Fix Script', () => {
 describe('FINAL_158. Complete Quality Gate', () => {
   test('FINAL-01: 434/434 routes all tiers', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let counts={5:0,10:0,15:0,20:0,25:0},total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
@@ -294,7 +294,7 @@ describe('FINAL_158. Complete Quality Gate', () => {
   });
   test('FINAL-02: TODO.md — 0 incomplete items (❌)', async () => {
     const fs=await import('fs');
-    const todo=fs.readFileSync('/tmp/JG/TODO.md','utf8');
+    const todo=fs.readFileSync('/tmp/JG_fresh/TODO.md','utf8');
     const incomplete=(todo.match(/❌/g)||[]).length;
     console.log(`TODO incomplete: ${incomplete}`);
     expect(incomplete).toBe(0);
@@ -303,8 +303,8 @@ describe('FINAL_158. Complete Quality Gate', () => {
     const fs=await import('fs'); const path=await import('path');
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     let hex=0,acc=0,todo=0;
-    for(const f of fs.readdirSync('/tmp/JG/frontend/src/screens').filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
-      const s=fs.readFileSync(path.join('/tmp/JG/frontend/src/screens',f),'utf8');
+    for(const f of fs.readdirSync('/tmp/JG_fresh/frontend/src/screens').filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
+      const s=fs.readFileSync(path.join('/tmp/JG_fresh/frontend/src/screens',f),'utf8');
       if(s.includes('useTheme')) for(const h of (s.match(/'#[0-9A-Fa-f]{6}'/g)||[])) if(!BRAND.has(h)) hex++;
       acc+=(s.match(/<TouchableOpacity[^>]+>/gs)||[]).filter(b=>!b.includes('accessibilityRole')).length;
       todo+=(s.match(/(TODO|FIXME|HACK):/g)||[]).length;

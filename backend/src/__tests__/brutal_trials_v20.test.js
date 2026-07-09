@@ -49,31 +49,31 @@ const mkMatter = (v, o = {}) => ({
 describe('1. auth.js — Forgot/Reset Password', () => {
   test('1-01: /forgot-password validates email format', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js', 'utf8');
     expect(src).toContain('/forgot-password');
     expect(src).toContain('Invalid email format');
     expect(src).toContain('Email required');
   });
   test('1-02: reset link goes to justicegavel.app/reset-password', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js', 'utf8');
     expect(src).toContain('justicegavel.app');
     expect(src).toContain('reset-password?token=');
   });
   test('1-03: reset uses sendEmail from sendgrid', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js', 'utf8');
     expect(src).toContain("'Reset your Justice Gavel password'");
     expect(src).toContain('../services/sendgrid.js');
   });
   test('1-04: /update-profile endpoint exists', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js', 'utf8');
     expect(src).toContain('/update-profile');
   });
   test('1-05: CURRENT_TOS_VERSION is 2.1', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js', 'utf8');
     expect(src).toContain("CURRENT_TOS_VERSION = '2.1'");
   });
 });
@@ -98,7 +98,7 @@ describe('2. schoolDisciplineParallel — IDEA/504 Parallel Proceeding', () => {
   });
   test('2-05: source mentions IDEA § 504 protections', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('IDEA');
     expect(src).toContain('§ 504');
   });
@@ -136,7 +136,7 @@ describe('3. maxConfinementJurisdictionalCeiling — Military', () => {
   });
   test('3-05: source has verify Article-specific max caveat', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/matter_intelligence.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/matter_intelligence.js', 'utf8');
     expect(src).toContain('verify Article-specific max');
   });
   test('3-06: 2000 military computations — ceiling always 240 or 12', () => {
@@ -154,32 +154,32 @@ describe('3. maxConfinementJurisdictionalCeiling — Military', () => {
 describe('4. contentRefresh.getContentAge + integrations', () => {
   test('4-01: getContentAge exported from contentRefresh.js', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/contentRefresh.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/contentRefresh.js', 'utf8');
     expect(src).toContain('export async function getContentAge');
   });
   test('4-02: SAFE table whitelist: expungement_rules, rights_cards, crisis_resources, lessons', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/contentRefresh.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/contentRefresh.js', 'utf8');
     for (const t of ['expungement_rules','rights_cards','crisis_resources','lessons']) expect(src).toContain(`'${t}'`);
     expect(src).toContain('SAFE.has(table)');
   });
   test('4-03: staleness thresholds: 30d/60d/30d', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/contentRefresh.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/contentRefresh.js', 'utf8');
     expect(src).toContain('expungement_rules: 30');
     expect(src).toContain('rights_cards:      60');
     expect(src).toContain('ABA/LawHelp');
   });
   test('4-04: syncDMS supports iManage + NetDocuments', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/dms.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/dms.js', 'utf8');
     expect(src).toContain('iManage Work 10+');
     expect(src).toContain('NetDocuments');
     expect(src).toContain('pushMatterToImanage');
   });
   test('4-05: refreshTokenIfNeeded is silent on demo mode', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/index.js', 'utf8');
     expect(src).toContain('refreshTokenIfNeeded');
     expect(src).toContain('silent on demo mode');
     expect(src).toContain('fresh conn object with updated tokens');
@@ -190,19 +190,19 @@ describe('4. contentRefresh.getContentAge + integrations', () => {
 describe('5. outbound_bot.js — Lead + Payment Link', () => {
   test('5-01: deliverLead fetches arrest, returns error if not found', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
     expect(src).toContain('deliverLead');
     expect(src).toContain('arrest_not_found');
     expect(src).toContain('arrest_records');
   });
   test('5-02: deliverLead signature has phone, arrestId, stripeLinkId, stripePaymentIntentId', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
     expect(src).toContain('phone, arrestId, stripeLinkId, stripePaymentIntentId');
   });
   test('5-03: sendPaymentLink signature has phone, arrestId, recipientType, recipientId', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
     expect(src).toContain('phone, arrestId, recipientType, recipientId');
   });
   test('5-04: TCPA idempotency key model', () => {
@@ -212,7 +212,7 @@ describe('5. outbound_bot.js — Lead + Payment Link', () => {
   });
   test('5-05: SMS references $30k bail + $75 offer', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
     expect(src).toContain('$30k bail');
     expect(src).toContain('$75');
   });
@@ -222,26 +222,26 @@ describe('5. outbound_bot.js — Lead + Payment Link', () => {
 describe('6. Golden Gavel Award + SCOTUS Monitoring', () => {
   test('6-01: processGoldenGavelAward calls evaluateGavelLevel', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/golden_gavel.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/golden_gavel.js', 'utf8');
     expect(src).toContain('processGoldenGavelAward');
     expect(src).toContain('evaluateGavelLevel');
     expect(src).toContain('gavel_level, golden_gavel, hall_opt_in');
   });
   test('6-02: award only fires when level increases', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/golden_gavel.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/golden_gavel.js', 'utf8');
     expect(src).toContain('newLevel === curre');
   });
   test('6-03: fetchSCOTUSSlipOpinions fetches from supremecourt.gov RSS', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentMonitor.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentMonitor.js', 'utf8');
     expect(src).toContain('fetchSCOTUSSlipOpinions');
     expect(src).toContain('supremecourt.gov');
     expect(src).toContain("'User-Agent': 'JusticeGavel/1.0");
   });
   test('6-04: SCOTUS fetch has 8s timeout via AbortController', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/analytics/precedentMonitor.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/analytics/precedentMonitor.js', 'utf8');
     expect(src).toContain('AbortController');
     expect(src).toContain('8000');
     expect(src).toContain('controller.abort()');
@@ -252,13 +252,13 @@ describe('6. Golden Gavel Award + SCOTUS Monitoring', () => {
 describe('7. checkins.js — 7-Handler Enrollment System', () => {
   test('7-01: has exactly 7 handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/checkins.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/checkins.js', 'utf8');
     const h = src.match(/router\.(post|get|put|delete|patch)\s*\(/g) || [];
     expect(h.length).toBe(7);
   });
   test('7-02: enroll, enrollments, enrollments/:id, history, submit, status, my', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/checkins.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/checkins.js', 'utf8');
     expect(src).toContain("'/enroll'");
     expect(src).toContain("'/enrollments'");
     expect(src).toContain("'/enrollments/:id'");
@@ -273,7 +273,7 @@ describe('7. checkins.js — 7-Handler Enrollment System', () => {
 describe('8. privilege / time / CLE / bondsman badge', () => {
   test('8-01: privilege.js has AI generate + entries CRUD + PDF export', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js', 'utf8');
     expect(src).toContain('/generate');
     expect(src).toContain('AI-generate privilege entries');
     expect(src).toContain('/entries');
@@ -281,20 +281,20 @@ describe('8. privilege / time / CLE / bondsman badge', () => {
   });
   test('8-02: privilege.js has /matter/:matterId for full log', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/privilege.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/privilege.js', 'utf8');
     expect(src).toContain('/matter/:matterId');
     expect(src).toContain('privilege log for a matter');
   });
   test('8-03: time.js has time entries CRUD + billing-summary', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/time.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/time.js', 'utf8');
     expect(src).toContain('/entries');
     expect(src).toContain('billing-summary');
     expect(src).toContain('unbilled');
   });
   test('8-04: cle.js has 4 handlers + transcript + idempotent complete', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/cle.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/cle.js', 'utf8');
     const h = src.match(/router\.(get|post)\s*\(/g) || [];
     expect(h.length).toBe(4);
     expect(src).toContain('/transcript');
@@ -303,7 +303,7 @@ describe('8. privilege / time / CLE / bondsman badge', () => {
   });
   test('8-05: bondsman verified-badge subscribe/cancel/status at $49/mo', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/bondsman.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/bondsman.js', 'utf8');
     expect(src).toContain('verified-badge/subscribe');
     expect(src).toContain('verified-badge/cancel');
     expect(src).toContain('verified-badge/status');
@@ -316,33 +316,33 @@ describe('8. privilege / time / CLE / bondsman badge', () => {
 describe('9. firm_verticals.js — Specialty Tracker Families', () => {
   test('9-01: 58 total handlers confirmed', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete|patch)\s*\(/g) || [];
     expect(h.length).toBe(58);
   });
   test('9-02: plea-offers + padilla-warnings trackers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js', 'utf8');
     expect(src).toContain('/plea-offers');
     expect(src).toContain('/padilla-warnings');
   });
   test('9-03: vop, dv-firearms, bop-exhaustion trackers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js', 'utf8');
     expect(src).toContain('/vop');
     expect(src).toContain('/dv-firearms');
     expect(src).toContain('/bop-exhaustion');
   });
   test('9-04: codefendants, collateral-consequences, ability-to-pay', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js', 'utf8');
     expect(src).toContain('/codefendants');
     expect(src).toContain('/collateral-consequences');
     expect(src).toContain('/ability-to-pay');
   });
   test('9-05: hague, material-support, dual-sovereignty, eviction', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js', 'utf8');
     expect(src).toContain('/hague');
     expect(src).toContain('/material-support');
     expect(src).toContain('/dual-sovereignty');
@@ -381,7 +381,7 @@ describe('10. Regression', () => {
   test('10-08: zero hex violations in useTheme screens', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const dir = '/tmp/JG/frontend/src/screens';
+    const dir = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {

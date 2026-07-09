@@ -20,7 +20,7 @@ describe('SYNTAX2. TypeScript Corruption Final Sweep', () => {
   test('SYNTAX2-01: 0 screens with navigation fragment inside function body', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const scr  = '/tmp/JG/frontend/src/screens';
+    const scr  = '/tmp/JG_fresh/frontend/src/screens';
     const bad  = [];
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const lines = fs.readFileSync(path.join(scr,f),'utf8').split('\n');
@@ -37,7 +37,7 @@ describe('SYNTAX2. TypeScript Corruption Final Sweep', () => {
   });
   test('SYNTAX2-02: CrisisResourcesScreen useEffect does NOT return JSX', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CrisisResourcesScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CrisisResourcesScreen.tsx','utf8');
     // Before fix: mountedRef useEffect contained `return (<View>...</View>)` — 952 chars of JSX
     // React throws error if useEffect returns anything other than a cleanup fn or undefined
     // After fix: `return () => { mountedRef.current = false; };`
@@ -48,7 +48,7 @@ describe('SYNTAX2. TypeScript Corruption Final Sweep', () => {
   });
   test('SYNTAX2-03: DiscoveryScreen has no nav fragment in body', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DiscoveryScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DiscoveryScreen.tsx','utf8');
     expect(src).not.toMatch(/^(?:route,\s*)?navigation\s*\}\s*:\s*ScreenProps/m);
     // Still has route/navigation accessible (from function params above)
     expect(src).toContain('navigation');
@@ -56,7 +56,7 @@ describe('SYNTAX2. TypeScript Corruption Final Sweep', () => {
   test('SYNTAX2-04: All 74 native screens pass full syntax integrity check', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const scr  = '/tmp/JG/frontend/src/screens';
+    const scr  = '/tmp/JG_fresh/frontend/src/screens';
     const issues = [];
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src   = fs.readFileSync(path.join(scr,f),'utf8');
@@ -74,7 +74,7 @@ describe('SYNTAX2. TypeScript Corruption Final Sweep', () => {
   test('SYNTAX2-05: no useEffect returns JSX across all screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const scr  = '/tmp/JG/frontend/src/screens';
+    const scr  = '/tmp/JG_fresh/frontend/src/screens';
     const bad  = [];
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src = fs.readFileSync(path.join(scr,f),'utf8');
@@ -94,9 +94,9 @@ describe('SYNTAX2. TypeScript Corruption Final Sweep', () => {
 describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-01: 0 dead navigates + 0 password without secureTextEntry', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens'; let dead=0,noPw=0;
+    const scr='/tmp/JG_fresh/frontend/src/screens'; let dead=0,noPw=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
       for(const m of s.matchAll(/navigate\(['"]([^'"]+)['"]\)/g))
@@ -122,12 +122,12 @@ describe('GATE. Zero-Defect Production Gates', () => {
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(broken>0)console.log('Broken:',broken);
     expect(inj).toBe(0); expect(broken).toBe(0);
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens'; const all=new Set();
+    const scr='/tmp/JG_fresh/frontend/src/screens'; const all=new Set();
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
       for(const m of s.matchAll(/navigate\(['"]([^'"]+)['"]/g))all.add(m[1]);
@@ -141,7 +141,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-03: 0 FlatList noKey + 0 accessibility + 0 hex', async () => {
     const fs=await import('fs'); const path=await import('path');
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
-    const scr='/tmp/JG/frontend/src/screens'; let noKey=0,acc=0,hex=0;
+    const scr='/tmp/JG_fresh/frontend/src/screens'; let noKey=0,acc=0,hex=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
       for(const m of s.matchAll(/<FlatList\b/g)){
@@ -157,27 +157,27 @@ describe('GATE. Zero-Defect Production Gates', () => {
   });
   test('GATE-04: all prior fixes intact', async () => {
     const fs=await import('fs');
-    expect(fs.readFileSync('/tmp/JG/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
-    const pkg=JSON.parse(fs.readFileSync('/tmp/JG/backend/package.json','utf8'));
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
+    const pkg=JSON.parse(fs.readFileSync('/tmp/JG_fresh/backend/package.json','utf8'));
     expect(pkg.scripts.prestart).toContain('migrate');
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/admin.js','utf8')).toContain('scan_id');
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/analytics.js','utf8')).toContain('matter_taxonomy');
-    expect(fs.readFileSync('/tmp/JG/frontend/src/screens/QuickConnectScreen.tsx','utf8'))
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/admin.js','utf8')).toContain('scan_id');
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/analytics.js','utf8')).toContain('matter_taxonomy');
+    expect(fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/QuickConnectScreen.tsx','utf8'))
       .toContain("api.get('/billing/subscription')");
     for(const f of ['analyze.js','history.js'])
-      expect(fs.readFileSync('/tmp/JG/backend/src/routes/discovery/'+f,'utf8')).toContain('fileSize');
+      expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery/'+f,'utf8')).toContain('fileSize');
     for(const f of ['bondsman.js','connections.js','pi_leads.js']){
-      const src=fs.readFileSync('/tmp/JG/backend/src/routes/billing/'+f,'utf8');
+      const src=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/'+f,'utf8');
       if(src.includes('paymentIntents.create')) expect(src).toContain('metadata');
     }
   });
   test('GATE-05: 437/437 routes all tiers', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let counts={5:0,10:0,15:0,20:0,25:0},total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){

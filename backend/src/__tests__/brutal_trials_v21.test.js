@@ -71,26 +71,26 @@ const mkMatter = (v, o = {}) => ({
 describe('1. admin.js — Health Scan + Audit Log Routes', () => {
   test('1-01: admin.js has health-scan run, latest, history routes', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/admin.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/admin.js', 'utf8');
     expect(src).toContain('/health-scan/run');
     expect(src).toContain('/health-scan/latest');
     expect(src).toContain('/health-scan/history');
   });
   test('1-02: admin.js requires X-Admin-Key header', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/admin.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/admin.js', 'utf8');
     expect(src).toContain('X-Admin-Key');
     expect(src).toContain('ADMIN_KEY');
   });
   test('1-03: admin.js has log/:table/:id for update audit', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/admin.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/admin.js', 'utf8');
     expect(src).toContain('/log/:table/:id');
     expect(src).toContain('update audit log');
   });
   test('1-04: admin.js has lawyers + bail provider management (soft-delete)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/admin.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/admin.js', 'utf8');
     expect(src).toContain('/lawyers');
     expect(src).toContain('/bail');
     expect(src).toContain('soft-delete');
@@ -101,20 +101,20 @@ describe('1. admin.js — Health Scan + Audit Log Routes', () => {
 describe('2. attorney/templates.js — Motion Template System', () => {
   test('2-01: templates.js has GET list, create, PATCH approve', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/templates.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/templates.js', 'utf8');
     expect(src).toContain('templates');
     const h = src.match(/router\.(get|post|put|delete|patch)\s*\(/g) || [];
     expect(h.length).toBeGreaterThanOrEqual(2);
   });
   test('2-02: templates.js imports requireDefender and STATE_BAR_LOOKUP', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/templates.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/templates.js', 'utf8');
     expect(src).toContain('requireDefender');
     expect(src).toContain('STATE_BAR_LOOKUP');
   });
   test('2-03: PATCH /approve route exists for template approval', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/attorney/templates.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/templates.js', 'utf8');
     expect(src).toContain(':id/approve');
   });
 });
@@ -123,24 +123,24 @@ describe('2. attorney/templates.js — Motion Template System', () => {
 describe('3. billing/consumer.js — Consumer Subscription Plans', () => {
   test('3-01: billing/consumer.js imports TIERS and BUSINESS_CONSTANTS', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/consumer.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/consumer.js', 'utf8');
     expect(src).toContain('TIERS');
     expect(src).toContain('BUSINESS_CONSTANTS');
   });
   test('3-02: billing/consumer.js has getOrCreateStripeCustomer', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/consumer.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/consumer.js', 'utf8');
     expect(src).toContain('getOrCreateStripeCustomer');
   });
   test('3-03: billing/consumer.js has 3 route handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/consumer.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/consumer.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
     expect(h.length).toBe(3);
   });
   test('3-04: consumer subscription uses billingLimiter rate protection', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/consumer.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/consumer.js', 'utf8');
     expect(src).toContain('billingLimiter');
   });
 });
@@ -149,20 +149,20 @@ describe('3. billing/consumer.js — Consumer Subscription Plans', () => {
 describe('4. billing/pi_leads.js — PI Lead Marketplace', () => {
   test('4-01: PI lead marketplace has submit, browse, accept', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/pi_leads.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/pi_leads.js', 'utf8');
     expect(src).toContain('PI');
     expect(src).toContain('submit');
     expect(src).toContain('calcLeadFee');
   });
   test('4-02: billing/pi_leads.js imports calcLeadFee from shared', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/pi_leads.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/pi_leads.js', 'utf8');
     expect(src).toContain('calcLeadFee');
     expect(src).toContain('./_shared.js');
   });
   test('4-03: billing/pi_leads.js has 3 handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/pi_leads.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/pi_leads.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
     expect(h.length).toBe(3);
   });
@@ -172,13 +172,13 @@ describe('4. billing/pi_leads.js — PI Lead Marketplace', () => {
 describe('5. webhooks/outbound.js — Outbound Webhook System', () => {
   test('5-01: webhooks/outbound.js has 9 route handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete|patch)\s*\(/g) || [];
     expect(h.length).toBe(9);
   });
   test('5-02: event type catalog has matter, time_entry, invoice, docket events', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain('matter.created');
     expect(src).toContain('time_entry.created');
     expect(src).toContain('invoice.paid');
@@ -187,32 +187,32 @@ describe('5. webhooks/outbound.js — Outbound Webhook System', () => {
   });
   test('5-03: webhooks signed with HMAC-SHA256 in X-JG-Signature header', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain('X-JG-Signature');
     expect(src).toContain('HMAC-SHA256');
     expect(src).toContain('timestamp');
   });
   test('5-04: retry 3 attempts with exponential backoff', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain('3 attempts');
     expect(src).toContain('exponential backoff');
   });
   test('5-05: dispatchWebhookEvent filters by active subscriptions', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain('dispatchWebhookEvent');
     expect(src).toContain("active=1");
     expect(src).toContain('webhook_subscriptions');
   });
   test('5-06: deliveries/:id/retry endpoint exists', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain('/deliveries/:id/retry');
   });
   test('5-07: signPayload format: HMAC-SHA256(secret, timestamp.JSON(payload))', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/outbound.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/outbound.js', 'utf8');
     expect(src).toContain('signPayload');
     expect(src).toContain("timestamp + '.' +");
   });
@@ -222,21 +222,21 @@ describe('5. webhooks/outbound.js — Outbound Webhook System', () => {
 describe('6. firms.js accept-invite + auth GDPR export', () => {
   test('6-01: firms.js /accept-invite requires invite token in body', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/firms.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firms.js', 'utf8');
     expect(src).toContain('/accept-invite');
     expect(src).toContain('Invite token required');
     expect(src).toContain('firm_invites');
   });
   test('6-02: auth.js /export is GDPR/CCPA compliance endpoint', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js', 'utf8');
     expect(src).toContain('/export');
     expect(src).toContain('GDPR');
     expect(src).toContain('CCPA');
   });
   test('6-03: firms.js has 9 route handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/firms.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firms.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete|patch)\s*\(/g) || [];
     expect(h.length).toBe(9);
   });
@@ -246,19 +246,19 @@ describe('6. firms.js accept-invite + auth GDPR export', () => {
 describe('7. twilio.js — sendSms', () => {
   test('7-01: sendSms normalizes phone before sending', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/twilio.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
     expect(src).toContain('normalizePhone(to)');
     expect(src).toContain('invalid_phone');
   });
   test('7-02: sendSms returns mock response when LIVE=false', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/twilio.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
     expect(src).toContain('!LIVE');
     expect(src).toContain('[twilio:mock]');
   });
   test('7-03: TWILIO_FROM is +15550000000 in demo mode', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/twilio.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
     expect(src).toContain('+15550000000');
     expect(src).toContain('TWILIO_FROM');
   });
@@ -268,26 +268,26 @@ describe('7. twilio.js — sendSms', () => {
 describe('8. discovery/_helpers — Document Analysis', () => {
   test('8-01: analyzeDocument is the core AI function', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/discovery/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery/_helpers.js', 'utf8');
     expect(src).toContain('analyzeDocument');
     expect(src).toContain('core AI function');
     expect(src).toContain('PDF, image, DOCX, and text');
   });
   test('8-02: isText function exported from discovery helpers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/discovery/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery/_helpers.js', 'utf8');
     expect(src).toContain('isText');
   });
   test('8-03: safeJsonParse exported — returns fallback on error', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/discovery/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery/_helpers.js', 'utf8');
     expect(src).toContain('safeJsonParse');
     expect(src).toContain('fallback = null');
     expect(src).toContain("} catch { return fallback; }");
   });
   test('8-04: AI limiter is 50 requests per 15 minutes', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/discovery/_helpers.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery/_helpers.js', 'utf8');
     expect(src).toContain('15 * 60 * 1000');
     expect(src).toContain('max: 50');
   });
@@ -306,12 +306,12 @@ describe('8. discovery/_helpers — Document Analysis', () => {
 describe('9. checkAccountInactivity — 90/180/365-Day Thresholds', () => {
   test('9-01: checkAccountInactivity exported from retention.js', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/retention.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/retention.js', 'utf8');
     expect(src).toContain('export async function checkAccountInactivity');
   });
   test('9-02: three inactivity thresholds: 90, 180, 365 days', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/retention.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/retention.js', 'utf8');
     expect(src).toContain('365');
     expect(src).toContain('180');
     expect(src).toContain('90');
@@ -320,13 +320,13 @@ describe('9. checkAccountInactivity — 90/180/365-Day Thresholds', () => {
   });
   test('9-03: alerts firm admins — never auto-deletes data', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/retention.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/retention.js', 'utf8');
     expect(src).toContain('Alerts firm admins');
     expect(src).toContain('never auto-deletes');
   });
   test('9-04: called weekly by nightly scheduler', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/retention.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/retention.js', 'utf8');
     expect(src).toContain('weekly');
   });
   test('9-05: inactivity model — thresholds are cumulative', () => {
@@ -345,7 +345,7 @@ describe('9. checkAccountInactivity — 90/180/365-Day Thresholds', () => {
 describe('10. DB Indexes — Idempotent CREATE IF NOT EXISTS', () => {
   test('10-01: all CREATE INDEX statements use IF NOT EXISTS (idempotent)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const allIdx = src.match(/CREATE INDEX\s+(\w+)/g) || [];
     const idempotent = src.match(/CREATE INDEX IF NOT EXISTS/g) || [];
     // Most indexes use IF NOT EXISTS; at least 95% must be idempotent
@@ -354,7 +354,7 @@ describe('10. DB Indexes — Idempotent CREATE IF NOT EXISTS', () => {
   });
   test('10-02: key indexes exist for performance-critical columns', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const CRITICAL = [
       'idx_cases_user', 'idx_messages_case', 'idx_saved_lawyers_user',
       'idx_push_tokens_user', 'idx_audit_log_firm_ts',
@@ -365,13 +365,13 @@ describe('10. DB Indexes — Idempotent CREATE IF NOT EXISTS', () => {
   });
   test('10-03: 131 total indexes defined', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const idxCount = (src.match(/CREATE INDEX IF NOT EXISTS idx_/g) || []).length;
     expect(idxCount).toBeGreaterThanOrEqual(130);
   });
   test('10-04: partial index on cases court_date (WHERE active=1)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('idx_cases_court_date');
     expect(src).toContain('next_court_date');
     expect(src).toContain('WHERE');
@@ -382,7 +382,7 @@ describe('10. DB Indexes — Idempotent CREATE IF NOT EXISTS', () => {
 describe('11. i18n — Large Category Coverage', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
   };
 
   test('11-01: chat_ keys — free message limit gate', async () => {
@@ -492,7 +492,7 @@ describe('12. Regression — All v1–v20 Confirmed', () => {
   test('12-08: zero hex violations in useTheme screens', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const dir = '/tmp/JG/frontend/src/screens';
+    const dir = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {

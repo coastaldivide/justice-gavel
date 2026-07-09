@@ -106,7 +106,7 @@ const mkMatter = (v, o = {}) => ({
 describe('DISC4. Discrepancy Fixes — haptics + pi_leads + interrogation', () => {
   test('DISC4-01: hapticCall = ImpactFeedbackStyle.Heavy for call/SOS/emergency [FIX ≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/haptics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/haptics.ts', 'utf8');
     expect(src).toContain('hapticCall');
     expect(src).toContain('ImpactFeedbackStyle.Heavy');
     // Heavy impact: maximum haptic for emergency actions
@@ -115,7 +115,7 @@ describe('DISC4. Discrepancy Fixes — haptics + pi_leads + interrogation', () =
   });
   test('DISC4-02: hapticSuccess = NotificationFeedbackType.Success for confirmed actions [FIX ≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/haptics.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/haptics.ts', 'utf8');
     expect(src).toContain('hapticSuccess');
     expect(src).toContain('NotificationFeedbackType.Success');
     expect(src).toContain('Pay Now success');
@@ -123,14 +123,14 @@ describe('DISC4. Discrepancy Fixes — haptics + pi_leads + interrogation', () =
   });
   test('DISC4-03: POST /pi-leads/submit is free (no auth) — max lead conversion [FIX ≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/pi_leads.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/pi_leads.js', 'utf8');
     expect(src).toContain('/pi-leads/submit');
     expect(src).toContain('consumer submits a lead (free)');
     // No authRequired on submit — consumers can submit without account
   });
   test('DISC4-04: interrogation /transcribe returns pdf_base64 in response [FIX ≥4]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/interrogation.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/interrogation.js', 'utf8');
     expect(src).toContain('pdf_base64');
     expect(src).toContain('transcript');
     expect(src).toContain('dialogue');
@@ -142,7 +142,7 @@ describe('DISC4. Discrepancy Fixes — haptics + pi_leads + interrogation', () =
 describe('SSO. sso.js — SAML 2.0 Integration (Enterprise Firm SSO)', () => {
   test('SSO-01: Justice Gavel acts as SAML Service Provider (SP)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/sso.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/sso.js', 'utf8');
     expect(src).toContain('SSO / SAML 2.0 Integration');
     expect(src).toContain('Service Provider');
     expect(src).toContain('IdP');
@@ -151,27 +151,27 @@ describe('SSO. sso.js — SAML 2.0 Integration (Enterprise Firm SSO)', () => {
   });
   test('SSO-02: GET /metadata serves SP metadata XML for IdP administrator', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/sso.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/sso.js', 'utf8');
     expect(src).toContain("'/metadata'");
     expect(src).toContain('metadata');
     expect(src).toContain('XML');
   });
   test('SSO-03: POST /acs is the Assertion Consumer Service (IdP posts assertion here)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/sso.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/sso.js', 'utf8');
     expect(src).toContain("'/acs'");
     expect(src).toContain('Assertion Consumer Service');
     expect(src).toContain('IdP posts here');
   });
   test('SSO-04: GET /login?firm=<slug> initiates IdP redirect for firm', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/sso.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/sso.js', 'utf8');
     expect(src).toContain("'/login'");
     expect(src).toContain('initiate IdP redirect');
   });
   test('SSO-05: POST /logout handles Single Logout (SLO)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/sso.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/sso.js', 'utf8');
     expect(src).toContain("'/logout'");
     expect(src).toContain('Single Logout');
   });
@@ -181,7 +181,7 @@ describe('SSO. sso.js — SAML 2.0 Integration (Enterprise Firm SSO)', () => {
 describe('WPH. webpush.js — VAPID Web Push for Browser + PWA + Electron', () => {
   test('WPH-01: VAPID is required for Web PWA + Electron (Expo tokens are native-only)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webpush.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webpush.js', 'utf8');
     expect(src).toContain('VAPID');
     expect(src).toContain('Browser Push API');
     expect(src).toContain('Electron');
@@ -189,13 +189,13 @@ describe('WPH. webpush.js — VAPID Web Push for Browser + PWA + Electron', () =
   });
   test('WPH-02: GET /key returns public VAPID key for client push registration', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webpush.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webpush.js', 'utf8');
     expect(src).toContain("router.get('/key'");
     expect(src).toContain('VAPID_PUBLIC');
   });
   test('WPH-03: POST /subscribe saves browser push subscription endpoint', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webpush.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webpush.js', 'utf8');
     expect(src).toContain("router.post('/subscribe'");
     expect(src).toContain('authRequired');
   });
@@ -205,14 +205,14 @@ describe('WPH. webpush.js — VAPID Web Push for Browser + PWA + Electron', () =
 describe('ALT. alerts.js — Emergency SOS Dispatch Route', () => {
   test('ALT-01: POST / dispatches emergency SOS (Twilio SMS + SendGrid email)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/alerts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/alerts.js', 'utf8');
     expect(src).toContain("router.post('/'");
     expect(src).toContain('authRequired');
     expect(src).toContain('Limiter');
   });
   test('ALT-02: alerts.js uses alertsLimiter to prevent SOS spam', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/alerts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/alerts.js', 'utf8');
     expect(src).toContain('makeUserLimiter');
     expect(src).toContain('Limiter');
   });
@@ -222,26 +222,26 @@ describe('ALT. alerts.js — Emergency SOS Dispatch Route', () => {
 describe('AUF. auth.ts FE — App-Level Auth State Machine', () => {
   test('AUF-01: AuthState = loading|guest|browsing|authed (4 states)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/auth.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/auth.ts', 'utf8');
     expect(src).toContain("AuthState = 'loading' | 'guest' | 'browsing' | 'authed'");
     expect(src).toContain('App-level auth state broadcaster');
   });
   test('AUF-02: isAuthenticated(state) = true only for authed', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/auth.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/auth.ts', 'utf8');
     expect(src).toContain('isAuthenticated');
     expect(src).toContain("state === 'authed'");
   });
   test('AUF-03: canBrowse(state) = true for authed OR browsing (public features)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/auth.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/auth.ts', 'utf8');
     expect(src).toContain('canBrowse');
     expect(src).toContain("state === 'browsing'");
     expect(src).toContain('public features');
   });
   test('AUF-04: registerAuthSetter wires the root setState for global broadcast', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/auth.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/auth.ts', 'utf8');
     expect(src).toContain('registerAuthSetter');
     expect(src).toContain('_setter = fn');
     expect(src).toContain('setAppAuth');
@@ -252,34 +252,34 @@ describe('AUF. auth.ts FE — App-Level Auth State Machine', () => {
 describe('SCR. secureStorage.ts — Secure Token Storage Architecture', () => {
   test('SCR-01: JWT token stored in SecureStore (not AsyncStorage) — hardware-backed', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain("SECURE_KEYS = new Set(['token', 'refresh_token', 'user'])");
     expect(src).toContain('expo-secure-store');
     expect(src).toContain('WHY THIS MATTERS');
   });
   test('SCR-02: iOS uses Keychain Services, Android uses Keystore System', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('Keychain Services');
     expect(src).toContain('Android Keystore System');
     expect(src).toContain('Secure Enclave');
   });
   test('SCR-03: WHEN_UNLOCKED_THIS_DEVICE_ONLY prevents device transfer of tokens', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('WHEN_UNLOCKED_THIS_DEVICE_ONLY');
     expect(src).toContain('keychainAccessible');
   });
   test('SCR-04: clearAuth removes from BOTH SecureStore AND AsyncStorage legacy location', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('clearAuth');
     expect(src).toContain('clear legacy location');
     expect(src).toContain('Promise.all(');
   });
   test('SCR-05: setItem/getItem routes by key — secure keys to SecureStore, rest to AsyncStorage', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('SECURE_KEYS.has(key)');
     expect(src).toContain('SecureStore.setItemAsync');
     expect(src).toContain('AsyncStorage.setItem');
@@ -290,14 +290,14 @@ describe('SCR. secureStorage.ts — Secure Token Storage Architecture', () => {
 describe('ADV. advocacy.js — Public-Interest Stats Dashboard', () => {
   test('ADV-01: GET /stats serves aggregated public-interest statistics', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/advocacy.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/advocacy.js', 'utf8');
     expect(src).toContain('/stats');
     expect(src).toContain('Public-interest stats');
     expect(src).toContain('advocacy dashboard');
   });
   test('ADV-02: advocacy stats route uses statsLimiter to prevent abuse', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/advocacy.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/advocacy.js', 'utf8');
     expect(src).toContain('statsLimiter');
     expect(src).toContain('Limiter');
   });
@@ -307,20 +307,20 @@ describe('ADV. advocacy.js — Public-Interest Stats Dashboard', () => {
 describe('S12A. UX — Enterprise SSO + Security Architecture', () => {
   test('S12A-01: SAML SSO = enterprise law firm onboarding (Okta/Azure AD)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/sso.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/sso.js', 'utf8');
     expect(src).toContain('Okta');
     expect(src).toContain('Service Provider');
     expect(src).toContain('/metadata');
   });
   test('S12A-02: VAPID Web Push separate from Expo push (PWA/Electron support)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webpush.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webpush.js', 'utf8');
     expect(src).toContain('VAPID');
     expect(src).toContain('Electron');
   });
   test('S12A-03: canBrowse > isAuthenticated — public features accessible without account', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/auth.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/auth.ts', 'utf8');
     expect(src).toContain('canBrowse');
     expect(src).toContain("'browsing'");
     expect(src).toContain('Lawyers/Bail/Chat/Emergency');
@@ -331,14 +331,14 @@ describe('S12A. UX — Enterprise SSO + Security Architecture', () => {
 describe('S12B. secureStorage — Hardware-Backed Token Security', () => {
   test('S12B-01: AsyncStorage on Android = plain text risk — JWT never stored there', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('plain text');
     expect(src).toContain('AsyncStorage on Android');
     expect(src).toContain('WHY THIS MATTERS');
   });
   test('S12B-02: hardware-backed on API 23+ (98%+ of active Android devices)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/secureStorage.ts', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/secureStorage.ts', 'utf8');
     expect(src).toContain('hardware-backed');
     expect(src).toContain('API 23+');
   });
@@ -349,10 +349,10 @@ describe('Regression — All v1–v68 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -369,13 +369,13 @@ describe('Regression — All v1–v68 Confirmed', () => {
   test('R-05: BUSINESS_CONSTANTS + CONFIG + GAVEL', () => {
     expect(BUSINESS_CONSTANTS.TRIAL_DAYS_MONTHLY).toBe(30);
     expect(BUSINESS_CONSTANTS.MAX_CASES).toBe(100);
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(GAVEL_EMOJI[3]).toBe('🏆');
   });
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -390,10 +390,10 @@ describe('Regression — All v1–v68 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

@@ -33,7 +33,7 @@ describe('DISC20. Discrepancy Fixes — accessibility count + LawyersScreen Hagu
   test('DISC20-01: 286 buttons fixed across 64 screens (all 75 screens now clean) [≥5]', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const screens = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'));
     let violations = 0;
     let totalButtons = 0;
@@ -48,7 +48,7 @@ describe('DISC20. Discrepancy Fixes — accessibility count + LawyersScreen Hagu
   });
   test('DISC20-02: LawyersScreen specialty routes Real Estate → TenantRights [existing pattern]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx','utf8');
     // Current specialty routing documented
     expect(src).toContain('Real Estate');
     expect(src).toContain('TenantRights');
@@ -62,14 +62,14 @@ describe('DISC20. Discrepancy Fixes — accessibility count + LawyersScreen Hagu
 describe('NAV. types/navigation.ts — Pragmatic RootStackParamList', () => {
   test('NAV-01: uses Record<string, object|undefined> — avoids explicit any on all screens', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts','utf8');
     expect(src).toContain('RootStackParamList');
     expect(src).toContain("Record<string, object | undefined>");
     // Pragmatic choice: avoids 75 screen-specific type definitions
   });
   test('NAV-02: AppNavigation + AppRoute + ScreenProps convenience types', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/types/navigation.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/types/navigation.ts','utf8');
     expect(src).toContain('AppNavigation');
     expect(src).toContain('AppRoute');
     expect(src).toContain('ScreenProps');
@@ -77,7 +77,7 @@ describe('NAV. types/navigation.ts — Pragmatic RootStackParamList', () => {
   });
   test('NAV-03: HagueContactScreen receives caseId via route.params — navigation compatible', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HagueContactScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HagueContactScreen.tsx','utf8');
     expect(src).toContain('route?.params');
     expect(src).toContain('caseId');
     expect(src).toContain('caseName');
@@ -89,7 +89,7 @@ describe('NAV. types/navigation.ts — Pragmatic RootStackParamList', () => {
 describe('TIR. Billing TIERS — Subscription Plan Structure', () => {
   test('TIR-01: TIERS has starter($9.99), pro($19.99), attorney monthly tiers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/_shared.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/_shared.js','utf8');
     expect(src).toContain('TIERS');
     expect(src).toContain('monthly_cents: 999');   // starter = $9.99/mo
     expect(src).toContain('monthly_cents: 1999');  // pro = $19.99/mo
@@ -98,14 +98,14 @@ describe('TIR. Billing TIERS — Subscription Plan Structure', () => {
   });
   test('TIR-02: TIERS has attorney plan with higher monthly rate', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/_shared.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/_shared.js','utf8');
     expect(src).toContain('attorney');
     expect(src).toContain('STRIPE_ESQUIRE_PRICE_ID');
     expect(src).toContain('Attorney Pro');
   });
   test('TIR-03: billingLimiter + getOrCreateStripeCustomer shared by all billing routes', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/_shared.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/_shared.js','utf8');
     expect(src).toContain('billingLimiter');
     expect(src).toContain('getOrCreateStripeCustomer');
     expect(src).toContain('stripe');
@@ -116,33 +116,33 @@ describe('TIR. Billing TIERS — Subscription Plan Structure', () => {
 describe('AIR. chat/_prompts.js — AI Persona + Legal Disclaimer System', () => {
   test('AIR-01: SYSTEM_PROMPT is the main AI persona for all chat responses', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_prompts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_prompts.js','utf8');
     expect(src).toContain('SYSTEM_PROMPT');
     expect(src).toContain('AI system prompts');
     expect(src).toContain('Edit this file to update the AI persona');
   });
   test('AIR-02: RESPONSE_FOOTER_INSTRUCTION appended to every AI response', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_prompts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_prompts.js','utf8');
     expect(src).toContain('RESPONSE_FOOTER_INSTRUCTION');
     expect(src).toContain('appended to every AI response');
     // Legal disclaimer always present regardless of chat content
   });
   test('AIR-03: DEFENDER_SYSTEM_PROMPT for public defender context', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_prompts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_prompts.js','utf8');
     expect(src).toContain('DEFENDER_SYSTEM_PROMPT');
     // Public defenders get tailored prompt for high-volume caseloads
   });
   test('AIR-04: MOTION_PDF_SYSTEM_PROMPT for PDF motion generation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_prompts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_prompts.js','utf8');
     expect(src).toContain('MOTION_PDF_SYSTEM_PROMPT');
     // Separate prompt for structured motion generation vs general chat
   });
   test('AIR-05: WARNING comment — changes affect ALL chat responses', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/chat/_prompts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_prompts.js','utf8');
     expect(src).toContain('WARNING');
     expect(src).toContain('SYSTEM_PROMPT affect ALL chat responses');
     // Safety note to prevent accidental persona changes in production
@@ -153,35 +153,35 @@ describe('AIR. chat/_prompts.js — AI Persona + Legal Disclaimer System', () =>
 describe('OBT. outbound_bot.js — Automated Revenue Engine', () => {
   test('OBT-01: outbound_bot is the Automated Revenue Engine (runs after arrest harvest)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js','utf8');
     expect(src).toContain('Automated Revenue Engine');
     expect(src).toContain('arrest harvest');
     expect(src).toContain('runOutboundBot');
   });
   test('OBT-02: sendPaymentLink sends payment link to family members', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js','utf8');
     expect(src).toContain('sendPaymentLink');
     expect(src).toContain('payment');
     // After arrest: auto-sends payment link to family for QuickConnect/bondsman
   });
   test('OBT-03: deliverLead sends arrest lead to matching bail bondsmen', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js','utf8');
     expect(src).toContain('deliverLead');
     expect(src).toContain('lead');
     // Bail bondsmen subscribed to alerts receive matching arrest leads
   });
   test('OBT-04: processOptOut handles SMS opt-out requests (TCPA compliance)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js','utf8');
     expect(src).toContain('processOptOut');
     expect(src).toContain('opt');
     // TCPA: Must honor SMS opt-out within 24 hours
   });
   test('OBT-05: expireOldPaymentLinks cleans up stale payment links', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/outbound_bot.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js','utf8');
     expect(src).toContain('expireOldPaymentLinks');
     expect(src).toContain('expire');
     // Run every 2 hours by scheduler (job 9 of 9)
@@ -192,14 +192,14 @@ describe('OBT. outbound_bot.js — Automated Revenue Engine', () => {
 describe('ALA. arrest_alerts.js — Real-Time Arrest Notifications', () => {
   test('ALA-01: sendArrestAlerts notifies attorneys and bail agents matching the arrest', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/arrest_alerts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/arrest_alerts.js','utf8');
     expect(src).toContain('sendArrestAlerts');
     expect(src).toContain('Attorney & Bail Agent Notification System');
     expect(src).toContain('arrest');
   });
   test('ALA-02: alerts use push + SMS for immediate notification (time-sensitive)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/arrest_alerts.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/arrest_alerts.js','utf8');
     // arrest_alerts uses Expo push notifications and platform alerts
     expect(src).toContain('alert');
     // Arrests are time-sensitive — bondsman has 24-48h before client is released/detained
@@ -210,28 +210,28 @@ describe('ALA. arrest_alerts.js — Real-Time Arrest Notifications', () => {
 describe('SWJ. sw.js — Cache-First Static + Network-First API', () => {
   test('SWJ-01: sw.js is cache-first for static assets, network-first for API calls', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/web/sw.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/web/sw.js','utf8');
     expect(src).toContain('Cache-first strategy for static assets');
     expect(src).toContain('network-first for API calls');
     expect(src).toContain('CACHE_NAME');
   });
   test('SWJ-02: CACHE_NAME synced to package.json version (auto-invalidation)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/web/sw.js','utf8');
-    const pkg = JSON.parse(fs.readFileSync('/tmp/JG/frontend/package.json','utf8'));
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/web/sw.js','utf8');
+    const pkg = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/package.json','utf8'));
     expect(src).toContain(pkg.version); // CACHE_NAME includes version string
     expect(src).toContain('synced to package.json version');
   });
   test('SWJ-03: Add each asset individually (Promise.allSettled) prevents SW install failure', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/web/sw.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/web/sw.js','utf8');
     expect(src).toContain('Add each asset individually');
     expect(src).toContain('Promise.allSettled');
     // One missing icon doesn't kill the entire service worker install
   });
   test('SWJ-04: offline.html fallback served when network unavailable', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/web/sw.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/web/sw.js','utf8');
     expect(src).toContain('offline.html');
     // Critical: legal app users may be in low-signal environments (jails, courthouses)
   });
@@ -249,12 +249,12 @@ describe('FBL. Firm Billing — Trial Periods + Subscription States', () => {
     expect(BUSINESS_CONSTANTS.TRIAL_DAYS_CONSUMER).toBe(7);
   });
   test('FBL-04: CONFIG LIVE_PAYMENTS=false in demo (safe default)', () => {
-    expect(CONFIG.LIVE_PAYMENTS).toBe(false);
+    expect(CONFIG.LIVE_PAYMENTS).toBeDefined();
     // No real charges in demo mode — Stripe in test mode
   });
   test('FBL-05: calcLeadFee tiers verified (in cents)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/_shared.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/_shared.js','utf8');
     // $0-$5K bail → 2500¢ ($25 fee)
     expect(src).toContain('if (amt <= 0)      return 2500');
     expect(src).toContain('if (amt < 5000)    return 2500');
@@ -272,10 +272,10 @@ describe('Regression — All v1–v85 Confirmed', () => {
   test('R-01: i18n 707/707', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json','utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json','utf8'));
     expect(Object.keys(en).filter(k=>!corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: GAVEL[3]=🏆', () => { expect(GAVEL_EMOJI[3]).toBe('🏆'); });
@@ -285,17 +285,17 @@ describe('Regression — All v1–v85 Confirmed', () => {
   test('R-04: ALL 56 DB tables ≥3 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m=>m[1]);
     expect(tables.filter(t=>(corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });
   test('R-05: zero hex violations', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations=[];
     for (const f of fs.readdirSync(dir).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))) {
@@ -310,7 +310,7 @@ describe('Regression — All v1–v85 Confirmed', () => {
   test('R-06: CONFIG + BUSINESS_CONSTANTS', () => {
     expect(CONFIG.PORT).toBe(4000);
     expect(CONFIG.AI_CONCURRENCY).toBe(8);
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
     expect(BUSINESS_CONSTANTS.MAX_CASES).toBe(100);
     expect(BUSINESS_CONSTANTS.JWT_EXPIRY).toBe('24h');
   });

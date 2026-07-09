@@ -19,7 +19,7 @@ const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
 describe('UPLOAD. File Upload Security', () => {
   test('UPLOAD-01: discovery/analyze.js multer has 20MB size limit + type whitelist', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/discovery/analyze.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery/analyze.js','utf8');
     // Before fix: multer() with no options — unlimited file size, any type
     // A malicious user could upload a 100MB+ file crashing the Node.js process
     // After fix: 20MB limit + PDF/text/image type whitelist
@@ -31,20 +31,20 @@ describe('UPLOAD. File Upload Security', () => {
   });
   test('UPLOAD-02: discovery/history.js multer has size + type protection', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/discovery/history.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery/history.js','utf8');
     expect(src).toContain('fileSize');
     expect(src).toMatch(/fileFilter|ALLOWED/);
   });
   test('UPLOAD-03: messages.js attachment upload also has file protection', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/messages.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/messages.js','utf8');
     // Messages attachment upload (used by DocumentScannerScreen.web.tsx)
     expect(src).toMatch(/size|MB|fileSize|limit/i);
     expect(src).toMatch(/type|mime/i);
   });
   test('UPLOAD-04: app.js json body limit is 1mb (DoS prevention)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8');
     expect(src).toContain("limit: '1mb'");
     // This prevents DoS via large JSON payloads on non-file endpoints
   });
@@ -63,10 +63,10 @@ describe('DATA. Data Integrity Checks', () => {
         if(!f.endsWith('.js')||f.startsWith('_'))return;
         const src=fs.readFileSync(fp,'utf8');
         const concat=[...src.matchAll(/db\.(get|all|run)\s*\(`[^`]*\+\s*\w+/g)];
-        if(concat.length) bad.push(path.relative('/tmp/JG/backend/src/routes',fp)+': SQL concat');
+        if(concat.length) bad.push(path.relative('/tmp/JG_fresh/backend/src/routes',fp)+': SQL concat');
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(bad.length) console.log('SQL concat:', bad);
     expect(bad.length).toBe(0);
   });
@@ -84,21 +84,21 @@ describe('DATA. Data Integrity Checks', () => {
         for(const m of src.matchAll(/db\.run\s*\(`\s*(?:UPDATE|DELETE)[^`]+`/gsi)){
           const q=m[0]; const t=(q.match(/(?:UPDATE|FROM)\s+(\w+)/i)||[])[1]?.toLowerCase();
           if(t&&USER_TABLES.includes(t)&&!q.includes('user_id')&&!src.slice(Math.max(0,m.index-300),m.index+100).includes('req.user.id'))
-            bad.push(path.relative('/tmp/JG/backend/src/routes',fp)+': '+t);
+            bad.push(path.relative('/tmp/JG_fresh/backend/src/routes',fp)+': '+t);
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(bad.length) console.log('Ownership issues:', bad);
     expect(bad.length).toBe(0);
   });
   test('DATA-03: 0 orphaned route files (all routes mounted in app.js)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const app  = fs.readFileSync('/tmp/JG/backend/src/app.js','utf8');
+    const app  = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8');
     const orphaned = [];
-    for(const f of fs.readdirSync('/tmp/JG/backend/src/routes').filter(f=>f.endsWith('.js')&&!f.startsWith('_'))){
-      const src=fs.readFileSync(path.join('/tmp/JG/backend/src/routes',f),'utf8');
+    for(const f of fs.readdirSync('/tmp/JG_fresh/backend/src/routes').filter(f=>f.endsWith('.js')&&!f.startsWith('_'))){
+      const src=fs.readFileSync(path.join('/tmp/JG_fresh/backend/src/routes',f),'utf8');
       if(!src.toLowerCase().includes('router'))continue;
       const name=f.replace('.js','');
       if(!app.includes(name.replace(/-/g,'_'))&&!app.includes(name)&&!app.includes(name.replace(/_/g,'-')))
@@ -111,7 +111,7 @@ describe('DATA. Data Integrity Checks', () => {
   });
   test('DATA-04: ChatScreen streaming fetch has error handling (Promise reject)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx','utf8');
     // ChatScreen uses raw fetch() for SSE streaming (correct — axios can't stream)
     // It wraps in Promise with reject handler for error propagation
     const streamIdx = src.indexOf('fetch(');
@@ -126,9 +126,9 @@ describe('DATA. Data Integrity Checks', () => {
 describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-01: 0 dead navigates + 0 password without secureTextEntry', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let dead=0,noPw=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -155,12 +155,12 @@ describe('GATE. Zero-Defect Production Gates', () => {
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(broken>0)console.log('Broken:',broken);
     expect(inj).toBe(0); expect(broken).toBe(0);
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens'; const all=new Set();
+    const scr='/tmp/JG_fresh/frontend/src/screens'; const all=new Set();
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
       for(const m of s.matchAll(/navigate\(['"]([^'"]+)['"]/g))all.add(m[1]);
@@ -173,7 +173,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-03: 0 FlatList noKey + 0 accessibility + 0 hex', async () => {
     const fs=await import('fs'); const path=await import('path');
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let noKey=0,acc=0,hex=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -190,23 +190,23 @@ describe('GATE. Zero-Defect Production Gates', () => {
   });
   test('GATE-04: security hardening + startup integrity + payment metadata', async () => {
     const fs=await import('fs');
-    expect(fs.readFileSync('/tmp/JG/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
-    const pkg=JSON.parse(fs.readFileSync('/tmp/JG/backend/package.json','utf8'));
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
+    const pkg=JSON.parse(fs.readFileSync('/tmp/JG_fresh/backend/package.json','utf8'));
     expect(pkg.scripts.prestart).toContain('migrate');
     // PaymentIntent metadata in all billing files
     for(const f of ['bondsman.js','connections.js','pi_leads.js']){
-      const src=fs.readFileSync('/tmp/JG/backend/src/routes/billing/'+f,'utf8');
+      const src=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/'+f,'utf8');
       if(src.includes('paymentIntents.create'))
         expect(src).toContain('metadata');
     }
   });
   test('GATE-05: 437/437 routes all tiers', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let counts={5:0,10:0,15:0,20:0,25:0},total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){

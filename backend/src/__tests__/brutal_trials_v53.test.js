@@ -84,26 +84,26 @@ describe('A11Y. maxFontSizeMultiplier=1.4 — Accessibility Pattern', () => {
   test('A11Y-01: 70 screens use maxFontSizeMultiplier=1.4 on Text components', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const count = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('maxFontSizeMultiplier')).length;
     expect(count).toBeGreaterThanOrEqual(65);
   });
   test('A11Y-02: value is 1.4 — caps font scaling at 140% to prevent layout breaks', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('maxFontSizeMultiplier={1.4}');
   });
   test('A11Y-03: LegalDisclaimerModal has highest density — 13 maxFontSizeMultiplier instances', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LegalDisclaimerModal.tsx', 'utf8');
     const count = (src.match(/maxFontSizeMultiplier/g) || []).length;
     expect(count).toBeGreaterThanOrEqual(13);
   });
   test('A11Y-04: 8 components use maxFontSizeMultiplier (consistent with screen pattern)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/components';
+    const dir  = '/tmp/JG_fresh/frontend/src/components';
     const count = fs.readdirSync(dir).filter(f => f.endsWith('.tsx'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('maxFontSizeMultiplier')).length;
     expect(count).toBeGreaterThanOrEqual(8);
@@ -115,36 +115,36 @@ describe('HAP. Haptics — Semantic Haptic Feedback Pattern', () => {
   test('HAP-01: hapticCall fires on phone dial actions (LawyersScreen, BailSearchScreen, HelpNow, EmergencyShare)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const callScreens = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('hapticCall'));
     expect(callScreens.length).toBeGreaterThanOrEqual(4);
   });
   test('HAP-02: hapticSuccess fires on booking/payment/check-in confirmed', async () => {
     const fs = await import('fs');
-    const qcs = fs.readFileSync('/tmp/JG/frontend/src/screens/QuickConnectScreen.tsx', 'utf8');
-    const cess = fs.readFileSync('/tmp/JG/frontend/src/screens/CheckInScreen.tsx', 'utf8');
+    const qcs = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/QuickConnectScreen.tsx', 'utf8');
+    const cess = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     expect(qcs).toContain('hapticSuccess');
     expect(cess).toContain('hapticSuccess');
   });
   test('HAP-03: hapticWarn fires on errors (QuickConnectScreen GPS fail, EmergencyShare warning)', async () => {
     const fs = await import('fs');
-    const qcs = fs.readFileSync('/tmp/JG/frontend/src/screens/QuickConnectScreen.tsx', 'utf8');
-    const ess = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
+    const qcs = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/QuickConnectScreen.tsx', 'utf8');
+    const ess = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
     expect(qcs).toContain('hapticWarn');
     expect(ess).toContain('hapticWarn');
   });
   test('HAP-04: hapticSelect is universal — 43 screens use it for tab/filter/selection taps', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const selectScreens = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('hapticSelect'));
     expect(selectScreens.length).toBeGreaterThanOrEqual(35);
   });
   test('HAP-05: EmergencyShareScreen has most haptic calls — 7 total (4 call + 2 success + 1 warn)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
     const callCount    = (src.match(/hapticCall\(\)/g)    || []).length;
     const successCount = (src.match(/hapticSuccess\(\)/g) || []).length;
     const warnCount    = (src.match(/hapticWarn\(\)/g)    || []).length;
@@ -158,38 +158,38 @@ describe('HAP. Haptics — Semantic Haptic Feedback Pattern', () => {
 describe('SCROLL. scrollToEnd — Chat-Style Auto-Scroll Pattern', () => {
   test('SCROLL-01: ChatScreen scrollToEnd({ animated: true }) after each message arrives', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('scrollToEnd');
     expect(src).toContain('animated: true');
     expect(src).toContain('listRef');
   });
   test('SCROLL-02: MessagesScreen scrollToEnd triggers on messages.length change', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MessagesScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MessagesScreen.tsx', 'utf8');
     expect(src).toContain('scrollToEnd');
     expect(src).toContain('messages.length');
   });
   test('SCROLL-03: LegalResearchScreen scrollToEnd on search result arrive (animated: false)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LegalResearchScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LegalResearchScreen.tsx', 'utf8');
     expect(src).toContain('scrollToEnd');
     expect(src).toContain("animated: false");
   });
   test('SCROLL-04: TranslatorScreen scrollToEnd on new translation message', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
     expect(src).toContain('scrollToEnd');
     expect(src).toContain('messages.length');
   });
   test('SCROLL-05: OnboardingScreen uses scrollToIndex (not scrollToEnd) for slide navigation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
     expect(src).toContain('scrollToIndex');
     expect(src).not.toContain('scrollToEnd');
   });
   test('SCROLL-06: TermsAcceptanceModal uses text prompt to scroll (not programmatic)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TermsAcceptanceModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TermsAcceptanceModal.tsx', 'utf8');
     expect(src).toContain('Scroll through the summary above to unlock');
     expect(src).toContain('scrolledToBottom');
   });
@@ -199,25 +199,25 @@ describe('SCROLL. scrollToEnd — Chat-Style Auto-Scroll Pattern', () => {
 describe('DB. PRAGMA Settings + FTS5 Full-Text Search', () => {
   test('DB-01: PRAGMA foreign_keys = ON enforces FK constraints on every DB open', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('PRAGMA foreign_keys = ON');
     expect(src).toContain('PRAGMA journal_mode = WAL');
   });
   test('DB-02: WAL mode allows concurrent reads during writes (background jobs)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('journal_mode = WAL');
   });
   test('DB-03: FTS5 virtual tables for full-text search (content= tables, no duplication)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('FTS5 virtual tables');
     expect(src).toContain('content=');
     expect(src).toContain('no data duplication');
   });
   test('DB-04: FTS5 rebuild instruction documented in source', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain("INSERT INTO cases_fts(cases_fts) VALUES('rebuild')");
   });
 });
@@ -227,7 +227,7 @@ describe('S12. UX — Accessibility + Performance', () => {
   test('S12-01: maxFontSizeMultiplier=1.4 caps Dynamic Type at 140% (iOS accessibility)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     // All screens with large text-heavy content use the cap
     const testScreens = ['CaseScreen','LawyersScreen','MotionLibraryScreen','ChatScreen'];
     for (const screen of testScreens) {
@@ -237,15 +237,15 @@ describe('S12. UX — Accessibility + Performance', () => {
   });
   test('S12-02: PRAGMA foreign_keys = ON prevents orphaned records app-wide', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('foreign_keys = ON');
     // Combined with ON DELETE CASCADE — no orphans possible
     expect(src).toContain('ON DELETE CASCADE');
   });
   test('S12-03: WAL journal_mode = high-concurrency pattern for background scheduler', async () => {
     const fs = await import('fs');
-    const dbSrc  = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
-    const schedSrc = fs.readFileSync('/tmp/JG/backend/src/services/scheduler.js', 'utf8');
+    const dbSrc  = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
+    const schedSrc = fs.readFileSync('/tmp/JG_fresh/backend/src/services/scheduler.js', 'utf8');
     // WAL allows scheduler to write while API reads simultaneously
     expect(dbSrc).toContain('WAL');
     expect(schedSrc).toContain('archiveCompletedDocketEntries');
@@ -253,14 +253,14 @@ describe('S12. UX — Accessibility + Performance', () => {
   test('S12-04: hapticSelect used in 35+ screens = consistent touch feedback on all list taps', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const count = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('hapticSelect')).length;
     expect(count).toBeGreaterThanOrEqual(35);
   });
   test('S12-05: scrollToEnd with 100ms setTimeout avoids render race condition', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     // setTimeout 100ms to let FlatList render before scrolling
     expect(src).toContain('setTimeout');
     expect(src).toContain('scrollToEnd');
@@ -273,10 +273,10 @@ describe('Regression — All v1–v52 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -298,7 +298,7 @@ describe('Regression — All v1–v52 Confirmed', () => {
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -313,10 +313,10 @@ describe('Regression — All v1–v52 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

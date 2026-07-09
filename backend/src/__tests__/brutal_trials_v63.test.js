@@ -87,7 +87,7 @@ const mkMatter = (v, o = {}) => ({
 describe('TAM2. TermsAcceptanceModal — handleScroll Scroll-to-Unlock (Fix)', () => {
   test('TAM2-01: handleScroll measures layoutMeasurement+contentOffset to unlock I Agree', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TermsAcceptanceModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TermsAcceptanceModal.tsx', 'utf8');
     expect(src).toContain('handleScroll');
     expect(src).toContain('layoutMeasurement');
     expect(src).toContain('contentOffset');
@@ -96,7 +96,7 @@ describe('TAM2. TermsAcceptanceModal — handleScroll Scroll-to-Unlock (Fix)', (
   });
   test('TAM2-02: scroll unlock uses 20px threshold (not pixel-perfect)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TermsAcceptanceModal.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TermsAcceptanceModal.tsx', 'utf8');
     // Within 20px of bottom counts as scrolled
     expect(src).toContain('layoutMeasurement');
     expect(src).toContain('contentOffset');
@@ -107,7 +107,7 @@ describe('TAM2. TermsAcceptanceModal — handleScroll Scroll-to-Unlock (Fix)', (
 describe('MOT3. MotionLibraryScreen — shareMotion + reviewDraft', () => {
   test('MOT3-01: shareMotion useCallback requires attorney-reviewed acknowledgment', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain('shareMotion');
     expect(src).toContain('useCallback');
     expect(src).toContain('editDraft');
@@ -115,7 +115,7 @@ describe('MOT3. MotionLibraryScreen — shareMotion + reviewDraft', () => {
   });
   test('MOT3-02: reviewDraft triggers attorney review with accessibilityRole=button', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain('reviewDraft');
     expect(src).toContain('reviewing');
     expect(src).toContain('accessibilityRole');
@@ -126,7 +126,7 @@ describe('MOT3. MotionLibraryScreen — shareMotion + reviewDraft', () => {
 describe('RWD2. RewardsScreen — generateReferral', () => {
   test('RWD2-01: generateReferral POSTs to generate a shareable referral code', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/RewardsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/RewardsScreen.tsx', 'utf8');
     expect(src).toContain('generateReferral');
     expect(src).toContain('setLoading');
     expect(src).toContain('/referral');
@@ -137,7 +137,7 @@ describe('RWD2. RewardsScreen — generateReferral', () => {
 describe('STG2. SettingsScreen — toggleLang + togglePref', () => {
   test('STG2-01: toggleLang(l) persists language to AsyncStorage globally', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SettingsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SettingsScreen.tsx', 'utf8');
     expect(src).toContain('toggleLang');
     expect(src).toContain('setLanguage');
     expect(src).toContain('AsyncStorage');
@@ -145,7 +145,7 @@ describe('STG2. SettingsScreen — toggleLang + togglePref', () => {
   });
   test('STG2-02: togglePref(key, val) updates per-key notification preference', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SettingsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SettingsScreen.tsx', 'utf8');
     expect(src).toContain('togglePref');
     expect(src).toContain('NotifPrefs');
     expect(src).toContain('prefs');
@@ -157,7 +157,7 @@ describe('STG2. SettingsScreen — toggleLang + togglePref', () => {
 describe('TRS2. TranslatorScreen — shareCode + joinSession', () => {
   test('TRS2-01: shareCode useCallback shares session join code via Share.share', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
     expect(src).toContain('shareCode');
     expect(src).toContain('useCallback');
     expect(src).toContain('Share.share');
@@ -165,7 +165,7 @@ describe('TRS2. TranslatorScreen — shareCode + joinSession', () => {
   });
   test('TRS2-02: joinSession useCallback normalizes join code (trim+toUpperCase)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
     expect(src).toContain('joinSession');
     expect(src).toContain('joinCode');
     expect(src).toContain('toUpperCase');
@@ -177,14 +177,14 @@ describe('TRS2. TranslatorScreen — shareCode + joinSession', () => {
 describe('WEB. Web Platform Variants — 3 Browser-Native Replacements', () => {
   test('WEB-01: InterrogationRecorderScreen.web.tsx uses MediaRecorder API (not native)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.web.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.web.tsx', 'utf8');
     expect(src).toContain('MediaRecorder');
     expect(src).toContain('Web version');
     expect(src).toContain('transcription');
   });
   test('WEB-02: DocumentScannerScreen.web.tsx uses file input with drag-drop (not camera)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DocumentScannerScreen.web.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DocumentScannerScreen.web.tsx', 'utf8');
     expect(src).toContain('Web platform replacement');
     expect(src).toContain('file input');
     expect(src).toContain('drag-and-drop');
@@ -192,16 +192,16 @@ describe('WEB. Web Platform Variants — 3 Browser-Native Replacements', () => {
   });
   test('WEB-03: VoiceNoteScreen.web.tsx uses MediaRecorder API for browser audio', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/VoiceNoteScreen.web.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/VoiceNoteScreen.web.tsx', 'utf8');
     expect(src).toContain('MediaRecorder');
     expect(src).toContain('Web platform');
     expect(src).toContain('transcription');
   });
   test('WEB-04: all 3 web variants are functionally identical to native counterparts', async () => {
     const fs = await import('fs');
-    const int = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.web.tsx', 'utf8');
-    const doc = fs.readFileSync('/tmp/JG/frontend/src/screens/DocumentScannerScreen.web.tsx', 'utf8');
-    const vn  = fs.readFileSync('/tmp/JG/frontend/src/screens/VoiceNoteScreen.web.tsx', 'utf8');
+    const int = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.web.tsx', 'utf8');
+    const doc = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DocumentScannerScreen.web.tsx', 'utf8');
+    const vn  = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/VoiceNoteScreen.web.tsx', 'utf8');
     // Each web variant documents its functional equivalence
     expect(int).toContain('Functionally identical');
     expect(doc).toContain('file system');
@@ -213,20 +213,20 @@ describe('WEB. Web Platform Variants — 3 Browser-Native Replacements', () => {
 describe('WHK. Webhook Routes — Stripe + Bot Admin', () => {
   test('WHK-01: billing/webhooks.js verifies Stripe signature before processing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/webhooks.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/webhooks.js', 'utf8');
     expect(src).toContain('Stripe webhook');
     expect(src).toContain('signature');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
   });
   test('WHK-02: webhooks/stripe.js handles payment_intent.succeeded events', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/stripe.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js', 'utf8');
     expect(src).toContain('payment_intent.succeeded');
     expect(src).toContain('signature');
   });
   test('WHK-03: webhooks/bot_admin.js has 7 routes (status/run/revenue/opt-outs/messages)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/bot_admin.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js', 'utf8');
     expect(src).toContain('/status');
     expect(src).toContain('/run');
     expect(src).toContain('/revenue');
@@ -236,7 +236,7 @@ describe('WHK. Webhook Routes — Stripe + Bot Admin', () => {
   });
   test('WHK-04: webhooks use express.raw for raw body HMAC verification', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/webhooks.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/webhooks.js', 'utf8');
     expect(src).toContain('IMPORTANT');
     expect(src).toContain('express');
   });
@@ -246,31 +246,31 @@ describe('WHK. Webhook Routes — Stripe + Bot Admin', () => {
 describe('S12. UX — Platform Variants + Legal Compliance', () => {
   test('S12-01: web variants use platform-native APIs (MediaRecorder/file-input)', async () => {
     const fs = await import('fs');
-    const int = fs.readFileSync('/tmp/JG/frontend/src/screens/InterrogationRecorderScreen.web.tsx', 'utf8');
+    const int = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/InterrogationRecorderScreen.web.tsx', 'utf8');
     expect(int).toContain('MediaRecorder');
     expect(int).toContain('Web version');
   });
   test('S12-02: shareMotion attorney acknowledgment = legal compliance gate', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain('shareMotion');
     expect(src).toContain('attorney');
   });
   test('S12-03: joinSession normalizes join code uppercase (prevents case-mismatch errors)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/TranslatorScreen.tsx', 'utf8');
     expect(src).toContain('toUpperCase');
     expect(src).toContain('joinSession');
   });
   test('S12-04: toggleLang persists language setting globally via AsyncStorage', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/SettingsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/SettingsScreen.tsx', 'utf8');
     expect(src).toContain('toggleLang');
     expect(src).toContain('AsyncStorage');
   });
   test('S12-05: Stripe webhook signature verification before event processing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/webhooks.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/webhooks.js', 'utf8');
     expect(src).toContain('signature');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
   });
@@ -281,10 +281,10 @@ describe('Regression — All v1–v62 Confirmed', () => {
   test('R-01: i18n 707/707 = 100% (all 4 languages)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -308,7 +308,7 @@ describe('Regression — All v1–v62 Confirmed', () => {
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -323,10 +323,10 @@ describe('Regression — All v1–v62 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

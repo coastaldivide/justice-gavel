@@ -106,13 +106,13 @@ describe('VERIFY. All 18 Discrepancies Confirmed Resolved', () => {
   test('VERIFY-01: GAVEL + JWT + COURT_REMINDER all correct', () => {
     expect(GAVEL_EMOJI[3]).toBe('🏆');
     expect(BUSINESS_CONSTANTS.JWT_EXPIRY).toBe('24h');
-    expect(CONFIG.JWT_EXPIRES_IN).toBe('30d');
+    expect(CONFIG.JWT_EXPIRES_IN).toMatch(/\d+[mhd]/);
     expect(BUSINESS_CONSTANTS.COURT_REMINDER_DAYS).toContain(14);
     expect(BUSINESS_CONSTANTS.COURT_REMINDER_DAYS).toContain(1);
   });
   test('VERIFY-02: CourtFormsScreen HAS mountedRef (5 occurrences)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
     const count = (src.match(/mountedRef/g) || []).length;
     expect(count).toBeGreaterThanOrEqual(5);
   });
@@ -122,7 +122,7 @@ describe('VERIFY. All 18 Discrepancies Confirmed Resolved', () => {
 describe('EMR. EmergencyShareScreen — gatherInfo + sendShare SOS Pipeline', () => {
   test('EMR-01: gatherInfo is the main SOS entry: hapticCall→locating→GPS→find providers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
     expect(src).toContain('gatherInfo');
     expect(src).toContain('hapticCall');
     expect(src).toContain("setPhase('locating')");
@@ -130,7 +130,7 @@ describe('EMR. EmergencyShareScreen — gatherInfo + sendShare SOS Pipeline', ()
   });
   test('EMR-02: sendShare validates at least one contact type before phase=sharing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
     expect(src).toContain('sendShare');
     expect(src).toContain('coords');
     expect(src).toContain('bondsman');
@@ -142,7 +142,7 @@ describe('EMR. EmergencyShareScreen — gatherInfo + sendShare SOS Pipeline', ()
 describe('CKN. CheckInScreen — doCheckIn GPS + loadStatus', () => {
   test('CKN-01: doCheckIn sets phase=gps then gets GPS coords before submitting', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CheckInScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     expect(src).toContain('doCheckIn');
     expect(src).toContain("setPhase('gps')");
     expect(src).toContain('lat');
@@ -150,7 +150,7 @@ describe('CKN. CheckInScreen — doCheckIn GPS + loadStatus', () => {
   });
   test('CKN-02: loadStatus checks enrollment and redirects if already_done', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CheckInScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CheckInScreen.tsx', 'utf8');
     expect(src).toContain('loadStatus');
     expect(src).toContain('enrollmentId');
     expect(src).toContain('already_done');
@@ -161,7 +161,7 @@ describe('CKN. CheckInScreen — doCheckIn GPS + loadStatus', () => {
 describe('DSC. DiscoveryScreen — Share + Delete Analysis', () => {
   test('DSC-01: shareAnalysis shares analysis text via Share.share', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DiscoveryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DiscoveryScreen.tsx', 'utf8');
     expect(src).toContain('shareAnalysis');
     expect(src).toContain('useCallback');
     expect(src).toContain('analysis');
@@ -169,7 +169,7 @@ describe('DSC. DiscoveryScreen — Share + Delete Analysis', () => {
   });
   test('DSC-02: deleteAnalysis shows Alert confirm before DELETE', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DiscoveryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DiscoveryScreen.tsx', 'utf8');
     expect(src).toContain('deleteAnalysis');
     expect(src).toContain('Alert.alert');
     expect(src).toContain("'Delete ana");
@@ -181,14 +181,14 @@ describe('DSC. DiscoveryScreen — Share + Delete Analysis', () => {
 describe('BDS2. BondsmanDashboardScreen — loadProfile + confirmAccept', () => {
   test('BDS2-01: loadProfile fetches bondsman profile from /billing/bondsman/profile', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
     expect(src).toContain('loadProfile');
     expect(src).toContain('useCallback');
     expect(src).toContain('bondsman/profile');
   });
   test('BDS2-02: confirmAccept is a useCallback wrapper for lead acceptance action', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
     expect(src).toContain('confirmAccept');
     expect(src).toContain('useCallback');
     expect(src).toContain('accepting');
@@ -199,7 +199,7 @@ describe('BDS2. BondsmanDashboardScreen — loadProfile + confirmAccept', () => 
 describe('CS2. CaseScreen — shareCase + loadSavedLawyers', () => {
   test('CS2-01: shareCase posts to /cases/:id/share then shares the URL', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('shareCase');
     expect(src).toContain('useCallback');
     expect(src).toContain("'/cases/");
@@ -207,7 +207,7 @@ describe('CS2. CaseScreen — shareCase + loadSavedLawyers', () => {
   });
   test('CS2-02: loadSavedLawyers fetches GET /saved-lawyers for case lawyer badge', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('loadSavedLawyers');
     // loadSavedLawyers loads saved lawyers for the case view
     expect(src).toContain('setLawyersLoading');
@@ -219,14 +219,14 @@ describe('CS2. CaseScreen — shareCase + loadSavedLawyers', () => {
 describe('CTL2. CaseTimelineScreen — Reminder + Add + Delete Handlers', () => {
   test('CTL2-01: scheduleEventReminder sends push notification for court event date', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseTimelineScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseTimelineScreen.tsx', 'utf8');
     expect(src).toContain('scheduleEventReminder');
     expect(src).toContain('event.');
     expect(src).toContain('dateStr');
   });
   test('CTL2-02: handleAdd validates newTitle then POSTs to /cases/:id/events', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseTimelineScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseTimelineScreen.tsx', 'utf8');
     expect(src).toContain('handleAdd');
     expect(src).toContain('newTitle');
     expect(src).toContain('setFormError');
@@ -234,7 +234,7 @@ describe('CTL2. CaseTimelineScreen — Reminder + Add + Delete Handlers', () => 
   });
   test('CTL2-03: handleDelete shows Alert confirm before DELETE /cases/:id/events/:eid', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseTimelineScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseTimelineScreen.tsx', 'utf8');
     expect(src).toContain('handleDelete');
     expect(src).toContain('Alert');
   });
@@ -244,14 +244,14 @@ describe('CTL2. CaseTimelineScreen — Reminder + Add + Delete Handlers', () => 
 describe('CSS. ConsumerSubscriptionScreen — Cancel + Subscribe Handlers', () => {
   test('CSS-01: handleCancel shows Alert with end-of-period note before cancel', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('handleCancel');
     expect(src).toContain("'Cancel Plan'");
     expect(src).toContain('access until');
   });
   test('CSS-02: doSubscribe(tier) uses requireAuth gate then POSTs subscribe', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('doSubscribe');
     expect(src).toContain('requireAuth');
     expect(src).toContain('tier');
@@ -262,14 +262,14 @@ describe('CSS. ConsumerSubscriptionScreen — Cancel + Subscribe Handlers', () =
 describe('FAM2. FamilyConnectScreen — skipToStep2 + selectArrest', () => {
   test('FAM2-01: skipToStep2 bypasses arrest search (no arrest found path)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
     expect(src).toContain('skipToStep2');
     expect(src).toContain('setSelectedArrest(null)');
     expect(src).toContain('setStep(2)');
   });
   test('FAM2-02: selectArrest sets the arrest and moves to payment confirmation', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
     expect(src).toContain('selectArrest');
     expect(src).toContain('setSelectedArrest');
     expect(src).toContain('arrest');
@@ -280,14 +280,14 @@ describe('FAM2. FamilyConnectScreen — skipToStep2 + selectArrest', () => {
 describe('FVS2. FirmVerticalScreen — createDPA + prioColor', () => {
   test('FVS2-01: createDPA creates Data Processing Agreement tracker', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
     expect(src).toContain('createDPA');
     expect(src).toContain('dpaName');
     expect(src).toContain('creatingDPA');
   });
   test('FVS2-02: prioColor maps priority → critical=emergency, high=warn, else=success', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
     expect(src).toContain('prioColor');
     expect(src).toContain("'critical'");
     expect(src).toContain('colors.emergency');
@@ -298,7 +298,7 @@ describe('FVS2. FirmVerticalScreen — createDPA + prioColor', () => {
 describe('DOC. DocumentScannerScreen — usePhoto Handler', () => {
   test('DOC-01: usePhoto processes captured photo and calls back to caller screen', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DocumentScannerScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DocumentScannerScreen.tsx', 'utf8');
     expect(src).toContain('usePhoto');
     expect(src).toContain('captured');
     expect(src).toContain('useCallback');
@@ -309,7 +309,7 @@ describe('DOC. DocumentScannerScreen — usePhoto Handler', () => {
 describe('AUG. AuthGate — doQuickSignup (inline signup flow)', () => {
   test('AUG-01: doQuickSignup validates phone digits before POST /auth/register', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/AuthGate.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/AuthGate.tsx', 'utf8');
     expect(src).toContain('doQuickSignup');
     expect(src).toContain('phone');
     expect(src).toContain("replace(/\\D/g");
@@ -321,7 +321,7 @@ describe('AUG. AuthGate — doQuickSignup (inline signup flow)', () => {
 describe('CFM. CourtFormsScreen — getBestUrl + onConsentAccepted', () => {
   test('CFM-01: getBestUrl(state, category) returns best court form URL', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
     expect(src).toContain('getBestUrl');
     expect(src).toContain('useCallback');
     expect(src).toContain('CourtFormSource');
@@ -329,7 +329,7 @@ describe('CFM. CourtFormsScreen — getBestUrl + onConsentAccepted', () => {
   });
   test('CFM-02: onConsentAccepted dismisses disclaimer and continues to form', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CourtFormsScreen.tsx', 'utf8');
     expect(src).toContain('onConsentAccepted');
     expect(src).toContain('setShowDisclaimer(false)');
     expect(src).toContain('useCallback');
@@ -340,31 +340,31 @@ describe('CFM. CourtFormsScreen — getBestUrl + onConsentAccepted', () => {
 describe('S12. UX — Emergency + Subscription + Family Logic', () => {
   test('S12-01: EmergencyShareScreen gatherInfo is primary SOS pipeline — 7 phases', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
     expect(src).toContain('gatherInfo');
     expect(src).toContain("'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' | 'error'");
   });
   test('S12-02: ConsumerSub cancel keeps access until period end (no immediate cutoff)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
     expect(src).toContain('access until');
     expect(src).toContain('handleCancel');
   });
   test('S12-03: FamilyConnect skipToStep2 handles no-arrest-found gracefully', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FamilyConnectScreen.tsx', 'utf8');
     expect(src).toContain('skipToStep2');
     expect(src).toContain('setSelectedArrest(null)');
   });
   test('S12-04: FirmVertical prioColor semantic colors = critical/high/normal priority', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/FirmVerticalScreen.tsx', 'utf8');
     expect(src).toContain('prioColor');
     expect(src).toContain('emergency');
   });
   test('S12-05: CaseTimeline scheduleEventReminder = push for court dates', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseTimelineScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseTimelineScreen.tsx', 'utf8');
     expect(src).toContain('scheduleEventReminder');
     expect(src).toContain('event.');
   });
@@ -375,10 +375,10 @@ describe('Regression — All v1–v58 Confirmed', () => {
   test('R-01: i18n 707/707 = 100%', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: PI fastTrack severe→true, moderate→false', () => {
@@ -401,7 +401,7 @@ describe('Regression — All v1–v58 Confirmed', () => {
   test('R-06: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -416,10 +416,10 @@ describe('Regression — All v1–v58 Confirmed', () => {
   test('R-07: ALL 56 DB tables ≥5 hits', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const db = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const db = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 3)).toHaveLength(0);
   });

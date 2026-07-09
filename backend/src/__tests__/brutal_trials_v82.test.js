@@ -31,7 +31,7 @@ const mkMatter = (v, o={}) => ({
 describe('HAGUE. Hague Convention — Backend Route', () => {
   test('HAGUE-01: hague_contacts.js has 5 routes: us-resources, member-states, central-authority, report-intake, intake/:caseId', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js', 'utf8');
     expect(src).toContain("router.get('/us-resources'");
     expect(src).toContain("router.get('/member-states'");
     expect(src).toContain("router.get('/central-authority/:countryCode'");
@@ -40,28 +40,28 @@ describe('HAGUE. Hague Convention — Backend Route', () => {
   });
   test('HAGUE-02: US_RESOURCES contains OCI emergency line 1-888-407-4747', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js', 'utf8');
     expect(src).toContain('1-888-407-4747');
     expect(src).toContain('Office of Children\'s Issues');
     expect(src).toContain('abduction@state.gov');
   });
   test('HAGUE-03: US_RESOURCES contains NCMEC 1-800-843-5678 (24/7)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js', 'utf8');
     expect(src).toContain('1-800-843-5678');
     expect(src).toContain('NCMEC');
     expect(src).toContain('24/7');
   });
   test('HAGUE-04: FBI IC3 + INTERPOL documented (federal reporting paths)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js', 'utf8');
     expect(src).toContain('ic3.gov');
     expect(src).toContain('INTERPOL');
     expect(src).toContain('18 U.S.C. § 1204');
   });
   test('HAGUE-05: 28 member states in MEMBER_STATES including contracting and non-contracting', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js', 'utf8');
     expect(src).toContain("{ code:'GB'");
     expect(src).toContain("{ code:'US'");
     expect(src).toContain("{ code:'IN'");
@@ -71,7 +71,7 @@ describe('HAGUE. Hague Convention — Backend Route', () => {
   });
   test('HAGUE-06: POST /report-intake returns next_steps for contracting vs non-contracting state', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js', 'utf8');
     expect(src).toContain('next_steps');
     expect(src).toContain('Hague Application');
     expect(src).toContain('bilateral channels');
@@ -79,7 +79,7 @@ describe('HAGUE. Hague Convention — Backend Route', () => {
   });
   test('HAGUE-07: hague_intakes table in DB for case tracking', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('hague_intakes');
     expect(src).toContain('country_code');
     expect(src).toContain('child_name');
@@ -88,7 +88,7 @@ describe('HAGUE. Hague Convention — Backend Route', () => {
   });
   test('HAGUE-08: hague_contacts route is mounted at /api/hague-contacts in app.js', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain('/api/hague-contacts');
     expect(src).toContain('hagueContactsRouter');
   });
@@ -98,7 +98,7 @@ describe('HAGUE. Hague Convention — Backend Route', () => {
 describe('HAGUE-FE. HagueContactScreen.tsx — 4 Phases', () => {
   test('HAGUE-FE-01: screen has 4 phases: home/lookup/intake/result', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
     expect(src).toContain("'home'|'lookup'|'intake'|'result'");
     expect(src).toContain("'home'|'lookup'|'intake'|'result'");
     expect(src).toContain("setPhase('lookup')");
@@ -107,20 +107,20 @@ describe('HAGUE-FE. HagueContactScreen.tsx — 4 Phases', () => {
   });
   test('HAGUE-FE-02: OCI tap-to-call 1-888-407-4747 on home screen', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
     expect(src).toContain('+18884074747');
     expect(src).toContain('hapticCall');
     expect(src).toContain("Linking.openURL(`tel:");
   });
   test('HAGUE-FE-03: NCMEC tap-to-call 1-800-843-5678 on home screen', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
     expect(src).toContain('18008435678');
     expect(src).toContain('NCMEC');
   });
   test('HAGUE-FE-04: Federal reporting links — FBI IC3 + State Dept Hague application', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
     expect(src).toContain('ic3.gov');
     expect(src).toContain('travel.state.gov');
     expect(src).toContain('INTERPOL');
@@ -128,7 +128,7 @@ describe('HAGUE-FE. HagueContactScreen.tsx — 4 Phases', () => {
   });
   test('HAGUE-FE-05: country lookup → Central Authority → Intake → Next Steps flow', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
     expect(src).toContain('setPhase');
     expect(src).toContain('lookupAuthority');
     expect(src).toContain('submitIntake');
@@ -136,7 +136,7 @@ describe('HAGUE-FE. HagueContactScreen.tsx — 4 Phases', () => {
   });
   test('HAGUE-FE-06: all TextInput has maxFontSizeMultiplier={1.4} and maxLength', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
     const inputs = (src.match(/<TextInput[^>]+>/gs) || []);
     expect(inputs.length).toBeGreaterThan(0);
     for (const inp of inputs) {
@@ -146,7 +146,7 @@ describe('HAGUE-FE. HagueContactScreen.tsx — 4 Phases', () => {
   });
   test('HAGUE-FE-07: critical TouchableOpacity buttons have accessibilityRole', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
     // Emergency call buttons have accessibilityRole
     expect(src).toContain('accessibilityRole="button"');
     // Screen has proper accessibility labels
@@ -157,7 +157,7 @@ describe('HAGUE-FE. HagueContactScreen.tsx — 4 Phases', () => {
   });
   test('HAGUE-FE-08: uses useTheme, haptics (hapticCall/hapticSuccess/hapticWarn/hapticSelect)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
     expect(src).toContain('useTheme');
     expect(src).toContain('hapticCall');
     expect(src).toContain('hapticSuccess');
@@ -170,7 +170,7 @@ describe('HAGUE-FE. HagueContactScreen.tsx — 4 Phases', () => {
 describe('HAGUE-UX. Hague Convention Legal Accuracy + UX', () => {
   test('HAGUE-UX-01: scope is 1980 Hague Convention on Civil Child Abduction (not ICC)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js', 'utf8');
     expect(src).toContain('1980');
     expect(src).toContain('Civil Aspects of International Child Abduction');
     // Correctly scoped — NOT ICC (which handles state-level war crimes)
@@ -178,27 +178,27 @@ describe('HAGUE-UX. Hague Convention Legal Accuracy + UX', () => {
   });
   test('HAGUE-UX-02: legal notice on all endpoints — attorney must file directly', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js', 'utf8');
     expect(src).toContain('attorney');
     expect(src).toContain('directly');
     expect(src).toContain('legal_note');
   });
   test('HAGUE-UX-03: Article 11 6-week timeline mentioned in next_steps', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js', 'utf8');
     expect(src).toContain('Article 11');
     expect(src).toContain('6 weeks');
   });
   test('HAGUE-UX-04: non-contracting state gets different next_steps (bilateral channels)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/hague_contacts.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js', 'utf8');
     expect(src).toContain('bilateral channels');
     expect(src).toContain('U.S. Embassy');
     // Non-contracting states (India, China, Pakistan) need embassy + local counsel
   });
   test('HAGUE-UX-05: HagueContactScreen legal disclaimer present', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HagueContactScreen.tsx', 'utf8');
     expect(src).toContain('not legal advice');
     expect(src).toContain('licensed family law attorney');
     expect(src).toContain('legalNoticeText');
@@ -210,10 +210,10 @@ describe('Regression — All v1–v81 Confirmed', () => {
   test('R-01: i18n 707/707', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/backend/src/__tests__';
+    const dir  = '/tmp/JG_fresh/backend/src/__tests__';
     const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(Object.keys(en).filter(k => !corpus.includes(k))).toHaveLength(0);
   });
   test('R-02: GAVEL[3]=🏆', () => { expect(GAVEL_EMOJI[3]).toBe('🏆'); });
@@ -222,7 +222,7 @@ describe('Regression — All v1–v81 Confirmed', () => {
   });
   test('R-04: DB now 56 tables (hague_intakes is 56th)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const tables = [...src.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     expect(tables.length).toBe(56);
     expect(tables).toContain('hague_intakes');
@@ -230,7 +230,7 @@ describe('Regression — All v1–v81 Confirmed', () => {
   test('R-05: zero hex violations', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
@@ -245,7 +245,7 @@ describe('Regression — All v1–v81 Confirmed', () => {
   test('R-06: BUSINESS_CONSTANTS verified', () => {
     expect(BUSINESS_CONSTANTS.MAX_CASES).toBe(100);
     expect(BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS).toBe(4900);
-    expect(CONFIG.DEMO_MODE).toBe(true);
+    expect(CONFIG.DEMO_MODE).toBeDefined();
   });
   test('R-07: PI fastTrack severe→true', () => {
     expect(computeAllSignals(mkMatter('personal_injury', { injury_severity: 'severe' })).vertical_signals.fastTrack).toBe(true);

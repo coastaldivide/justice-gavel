@@ -20,7 +20,7 @@ const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
 describe('SVC. Service Files Complete Audit', () => {
   test('SVC-01: jobPoller.ts calls /jobs/:id — not a hardcoded string', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/jobPoller.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/jobPoller.ts','utf8');
     // pollJob imports from services/jobPoller which calls api.get('/jobs/${jobId}')
     expect(src).toContain('/jobs/${jobId}');
     expect(src).toContain('pollJob');
@@ -29,7 +29,7 @@ describe('SVC. Service Files Complete Audit', () => {
   });
   test('SVC-02: offlineCache.ts — write() and read() internally wrapped in try/catch', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/offlineCache.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/offlineCache.ts','utf8');
     // Cache failure must always be silent — app never crashes for cache issues
     // The write() helper: try { await AsyncStorage.multiSet(...) } catch {}
     expect(src).toContain('async function write');
@@ -40,13 +40,13 @@ describe('SVC. Service Files Complete Audit', () => {
   });
   test('SVC-03: location.ts requests permission before getting location', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/location.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/location.ts','utf8');
     expect(src).toContain('requestForegroundPermissionsAsync');
     expect(src).toContain('permissionGranted');
   });
   test('SVC-04: api.ts has circuit breaker + error normalization + 401 handler', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/api.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts','utf8');
     expect(src).toMatch(/checkCircuit|circuitBreaker|circuit/i);
     expect(src).toContain('ECONNABORTED');
     expect(src).toContain("check your connection");
@@ -56,7 +56,7 @@ describe('SVC. Service Files Complete Audit', () => {
   });
   test('SVC-05: webCompat.ts — all 17 dynamic imports wrapped in try/catch', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/utils/webCompat.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/utils/webCompat.ts','utf8');
     // Before fix: 17 await import() calls without try/catch
     // If any native module is unavailable (e.g. expo-haptics on web),
     // the entire shim would throw, crashing the calling screen
@@ -75,7 +75,7 @@ describe('SVC. Service Files Complete Audit', () => {
   });
   test('SVC-06: auth.ts service — registerAuthSetter and setAppAuth exist', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/services/auth.ts','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/auth.ts','utf8');
     expect(src).toContain('registerAuthSetter');
     expect(src).toContain('setAppAuth');
     expect(src).toContain('canBrowse');
@@ -86,20 +86,20 @@ describe('SVC. Service Files Complete Audit', () => {
 describe('MW. Backend Middleware Audit', () => {
   test('MW-01: auth.js middleware sets req.user + calls next() + returns 401', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/auth.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/auth.js','utf8');
     expect(src).toContain('req.user');
     expect(src).toContain('next()');
     expect(src).toMatch(/401|err401/);
   });
   test('MW-02: sharedAiLimiter exports perUserAiLimit and makeUserLimiter', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/sharedAiLimiter.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/sharedAiLimiter.js','utf8');
     expect(src).toContain('perUserAiLimit');
     expect(src).toContain('makeUserLimiter');
   });
   test('MW-03: routeHelpers.js has all error functions returning res.status().json()', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/utils/routeHelpers.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/utils/routeHelpers.js','utf8');
     for(const fn of ['err400','err401','err403','err404','err500']){
       expect(src).toContain(fn);
     }
@@ -111,7 +111,7 @@ describe('MW. Backend Middleware Audit', () => {
 describe('BEH. Behavioral Simulation — All Screen Categories', () => {
   test('BEH-01: firm_verticals.js (131k) — 58 routes, all have auth', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/firm_verticals.js','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firm_verticals.js','utf8');
     const routes = [...src.matchAll(/router\.(get|post|put|delete|patch)\s*\(['"]/g)];
     expect(routes.length).toBeGreaterThanOrEqual(50);
     // Every async handler has try/catch
@@ -127,8 +127,8 @@ describe('BEH. Behavioral Simulation — All Screen Categories', () => {
   });
   test('BEH-02: ChatScreen uses jobPoller service (not manual polling)', async () => {
     const fs = await import('fs');
-    const chat   = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx','utf8');
-    const poller = fs.readFileSync('/tmp/JG/frontend/src/services/jobPoller.ts','utf8');
+    const chat   = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx','utf8');
+    const poller = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/jobPoller.ts','utf8');
     // ChatScreen imports and uses pollJob
     expect(chat).toContain("from '../services/jobPoller.js'");
     expect(chat).toContain('pollJob');
@@ -139,7 +139,7 @@ describe('BEH. Behavioral Simulation — All Screen Categories', () => {
   });
   test('BEH-03: MotionLibraryScreen generates AI motion + polls job', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx','utf8');
     expect(src).toContain('/motions/generate');
     expect(src).toMatch(/pollJob|jobId/);
     expect(src).toContain('catch');
@@ -147,7 +147,7 @@ describe('BEH. Behavioral Simulation — All Screen Categories', () => {
   test('BEH-04: all async handlers in large screens have error handling', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const scr  = '/tmp/JG/frontend/src/screens';
+    const scr  = '/tmp/JG_fresh/frontend/src/screens';
     const bad  = [];
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src = fs.readFileSync(path.join(scr,f),'utf8');
@@ -170,9 +170,9 @@ describe('BEH. Behavioral Simulation — All Screen Categories', () => {
 describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-01: 0 dead navigates + 0 password without secureTextEntry', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let dead=0,noPw=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -199,12 +199,12 @@ describe('GATE. Zero-Defect Production Gates', () => {
         }
       }
     };
-    wd('/tmp/JG/backend/src/routes');
+    wd('/tmp/JG_fresh/backend/src/routes');
     if(broken>0) console.log('Broken imports:', broken);
     expect(inj).toBe(0); expect(broken).toBe(0);
-    const nav=fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx','utf8');
+    const nav=fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg=new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
-    const scr='/tmp/JG/frontend/src/screens'; const all=new Set();
+    const scr='/tmp/JG_fresh/frontend/src/screens'; const all=new Set();
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
       for(const m of s.matchAll(/navigate\(['"]([^'"]+)['"]/g))all.add(m[1]);
@@ -217,7 +217,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
   test('GATE-03: 0 FlatList no keyExtractor + 0 accessibility + 0 hex violations', async () => {
     const fs=await import('fs'); const path=await import('path');
     const BRAND=new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
-    const scr='/tmp/JG/frontend/src/screens';
+    const scr='/tmp/JG_fresh/frontend/src/screens';
     let noKey=0,acc=0,hex=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const s=fs.readFileSync(path.join(scr,f),'utf8');
@@ -234,20 +234,20 @@ describe('GATE. Zero-Defect Production Gates', () => {
   });
   test('GATE-04: security hardening + startup integrity', async () => {
     const fs=await import('fs');
-    expect(fs.readFileSync('/tmp/JG/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
-    expect(fs.existsSync('/tmp/JG/backend/src/routes/referrals.js')).toBe(false);
-    const pkg=JSON.parse(fs.readFileSync('/tmp/JG/backend/package.json','utf8'));
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
+    expect(fs.existsSync('/tmp/JG_fresh/backend/src/routes/referrals.js')).toBe(false);
+    const pkg=JSON.parse(fs.readFileSync('/tmp/JG_fresh/backend/package.json','utf8'));
     expect(pkg.scripts.prestart).toContain('migrate');
-    const db=fs.readFileSync('/tmp/JG/backend/src/db/index.js','utf8');
+    const db=fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js','utf8');
     expect(db).toContain('Users table column bootstrap');
   });
   test('GATE-05: 437/437 routes all tiers', async () => {
     const fs=await import('fs'); const path=await import('path');
-    const dir='/tmp/JG/backend/src/__tests__';
+    const dir='/tmp/JG_fresh/backend/src/__tests__';
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
-    const routesDir='/tmp/JG/backend/src/routes';
+    const routesDir='/tmp/JG_fresh/backend/src/routes';
     let counts={5:0,10:0,15:0,20:0,25:0},total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){

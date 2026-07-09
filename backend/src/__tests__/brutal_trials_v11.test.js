@@ -670,14 +670,14 @@ describe('10. LawyerSkeletonCard — Shimmer Animation', () => {
 
   test('10-01: LawyerSkeletonCard uses Animated.loop + Animated.sequence', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
     expect(src).toContain('Animated.loop');
     expect(src).toContain('Animated.sequence');
   });
 
   test('10-02: shimmer cycles 0→1→0 (300ms in, 900ms out)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
     expect(src).toContain('toValue: 1');
     expect(src).toContain('toValue: 0');
     expect(src).toContain('duration: 900');
@@ -685,33 +685,33 @@ describe('10. LawyerSkeletonCard — Shimmer Animation', () => {
 
   test('10-03: opacity interpolated from shimmer value [0.4, 0.85]', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
     expect(src).toContain('inputRange: [0, 1]');
     expect(src).toContain('outputRange: [0.4, 0.85]');
   });
 
   test('10-04: animation cleanup uses stopAnimation (not stop)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
     expect(src).toContain('shimmer.stopAnimation');
   });
 
   test('10-05: LawyerSkeletonCard uses useNativeDriver: true (GPU)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
     expect(src).toContain('useNativeDriver: true');
   });
 
   test('10-06: LawyerSkeletonCard exported as both named and default', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
     expect(src).toContain('export { SkeletonCard }');
     expect(src).toContain('export default React.memo');
   });
 
   test('10-07: shimmer bg uses colors.bgSubtle with fallback', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
     expect(src).toContain("colors?.bgSubtle || '#E8EEF4'");
   });
 });
@@ -723,7 +723,7 @@ describe('11. i18n — 707-Key Value Correctness', () => {
 
   test('11-01: whn_ keys exist (200 "What Happens Next" flow keys)', async () => {
     const fs  = await import('fs');
-    const en  = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en  = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     const whnKeys = Object.keys(en).filter(k => k.startsWith('whn_'));
     expect(whnKeys.length).toBeGreaterThanOrEqual(150);
     expect(en['whn_title']).toBe('What Happens Next');
@@ -733,7 +733,7 @@ describe('11. i18n — 707-Key Value Correctness', () => {
 
   test('11-02: booking_ keys cover full booking flow', async () => {
     const fs  = await import('fs');
-    const en  = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en  = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(en['booking_title']).toBe('Book a Consultation');
     expect(en['booking_select_duration']).toBe('Select consultation length');
     expect(en['booking_min']).toBe('min');
@@ -742,7 +742,7 @@ describe('11. i18n — 707-Key Value Correctness', () => {
 
   test('11-03: chat_ key group covers AI chat flow', async () => {
     const fs  = await import('fs');
-    const en  = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en  = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     const chatKeys = Object.keys(en).filter(k => k.startsWith('chat'));
     expect(chatKeys.length).toBeGreaterThanOrEqual(20);
     expect(en['chat']).toBe('Ask a Question');
@@ -750,7 +750,7 @@ describe('11. i18n — 707-Key Value Correctness', () => {
 
   test('11-04: disc_ key group covers discovery flow', async () => {
     const fs  = await import('fs');
-    const en  = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en  = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     const discKeys = Object.keys(en).filter(k => k.startsWith('disc_'));
     expect(discKeys.length).toBeGreaterThanOrEqual(20);
     expect(en['disc_title']).toBeDefined();
@@ -758,7 +758,7 @@ describe('11. i18n — 707-Key Value Correctness', () => {
 
   test('11-05: gg_ key group covers Golden Gavel gamification', async () => {
     const fs  = await import('fs');
-    const en  = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en  = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     const ggKeys = Object.keys(en).filter(k => k.startsWith('gg_'));
     expect(ggKeys.length).toBeGreaterThanOrEqual(10);
     expect(en['gg_title']).toBeDefined();
@@ -766,7 +766,7 @@ describe('11. i18n — 707-Key Value Correctness', () => {
 
   test('11-06: case_ key group has 37+ case management keys', async () => {
     const fs  = await import('fs');
-    const en  = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en  = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     const caseKeys = Object.keys(en).filter(k => k.startsWith('case_'));
     expect(caseKeys.length).toBeGreaterThanOrEqual(30);
     expect(en['case_tab_cases']).toBeDefined();
@@ -774,7 +774,7 @@ describe('11. i18n — 707-Key Value Correctness', () => {
 
   test('11-07: crisis_ key group covers crisis resources', async () => {
     const fs  = await import('fs');
-    const en  = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en  = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     const crisisKeys = Object.keys(en).filter(k => k.startsWith('crisis_'));
     expect(crisisKeys.length).toBeGreaterThanOrEqual(10);
     expect(en['crisis_header_title']).toBeDefined();
@@ -783,7 +783,7 @@ describe('11. i18n — 707-Key Value Correctness', () => {
   test('11-08: all 4 language files have identical set of keys (zero drift)', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/i18n';
+    const dir  = '/tmp/JG_fresh/frontend/src/i18n';
     const en   = JSON.parse(fs.readFileSync(path.join(dir, 'en.json'), 'utf8'));
     const enSet = new Set(Object.keys(en));
     for (const lang of ['es.json', 'pt.json', 'vi.json']) {
@@ -798,14 +798,14 @@ describe('11. i18n — 707-Key Value Correctness', () => {
 
   test('11-09: all 707 English values are non-empty strings', async () => {
     const fs  = await import('fs');
-    const en  = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en  = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     const empty = Object.entries(en).filter(([, v]) => typeof v !== 'string' || v.trim() === '');
     expect(empty).toHaveLength(0);
   });
 
   test('11-10: all 707 Spanish values are non-empty strings', async () => {
     const fs  = await import('fs');
-    const es  = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/es.json', 'utf8'));
+    const es  = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/es.json', 'utf8'));
     const empty = Object.entries(es).filter(([, v]) => typeof v !== 'string' || v.trim() === '');
     expect(empty).toHaveLength(0);
   });
@@ -818,33 +818,33 @@ describe('12. DB DEFAULT Semantics — Schema Contracts', () => {
 
   test('12-01: firms.plan defaults to "trial"', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain("DEFAULT 'trial'");
     expect(src).toContain("trial | pro | enterprise");
   });
 
   test('12-02: firms.seat_limit defaults to 10', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('DEFAULT 10');
   });
 
   test('12-03: firm_members.firm_role defaults to "associate"', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain("DEFAULT 'associate'");
     expect(src).toContain("firm_role");
   });
 
   test('12-04: firm_members.status defaults to "active"', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain("DEFAULT 'active'");
   });
 
   test('12-05: matter_team_members: can_edit=0, can_message=1, can_view_docs=1 by default', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     // Security default: can_edit=0 (no write by default), can_view=1 (read by default)
     expect(src).toContain('can_edit      INTEGER NOT NULL DEFAULT 0');
     expect(src).toContain('can_message   INTEGER NOT NULL DEFAULT 1');
@@ -853,19 +853,19 @@ describe('12. DB DEFAULT Semantics — Schema Contracts', () => {
 
   test('12-06: ethics_wall defaults to 0 (no wall by default)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('ethics_wall   INTEGER NOT NULL DEFAULT 0');
   });
 
   test('12-07: matters.status defaults to "active"', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain("status           TEXT    DEFAULT 'active'");
   });
 
   test('12-08: created_at/updated_at default to datetime("now")', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain("DEFAULT (datetime('now'))");
   });
 
@@ -886,14 +886,14 @@ describe('13. research.js — AI Research Route', () => {
 
   test('13-01: research.js has 6 route handlers', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/research.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/research.js', 'utf8');
     const handlers = src.match(/router\.(get|post|delete)\s*\(/g) || [];
     expect(handlers.length).toBeGreaterThanOrEqual(5);
   });
 
   test('13-02: research.js uses async job queue (enqueue)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/research.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/research.js', 'utf8');
     expect(src).toContain('enqueue');
     expect(src).toContain('jobId');
     expect(src).toContain("async: true");
@@ -901,7 +901,7 @@ describe('13. research.js — AI Research Route', () => {
 
   test('13-03: research /ask returns jobId + session_id (async model)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/research.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/research.js', 'utf8');
     expect(src).toContain('jobId');
     expect(src).toContain('session_id');
     expect(src).toContain("status: 'pending'");
@@ -909,27 +909,27 @@ describe('13. research.js — AI Research Route', () => {
 
   test('13-04: research /status returns has_access + subscription', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/research.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/research.js', 'utf8');
     expect(src).toContain('has_access');
     expect(src).toContain('subscription');
   });
 
   test('13-05: research /session/:id returns full session + messages', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/research.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/research.js', 'utf8');
     expect(src).toContain('session');
     expect(src).toContain('messages');
   });
 
   test('13-06: research is rate-limited per user (perUserAiLimit)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/research.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/research.js', 'utf8');
     expect(src).toContain('perUserAiLimit');
   });
 
   test('13-07: research subscription is $49/mo add-on', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/research.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/research.js', 'utf8');
     expect(src).toContain('$49');
   });
 });
@@ -941,7 +941,7 @@ describe('14. Screen Contracts — Share, Clipboard, Linking, Focus', () => {
 
   test('14-01: CaseScreen Share.share has message + title fields', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     const shareIdx = src.indexOf('Share.share');
     expect(shareIdx).toBeGreaterThan(0);
     const shareBlock = src.slice(shareIdx, shareIdx + 100);
@@ -951,28 +951,28 @@ describe('14. Screen Contracts — Share, Clipboard, Linking, Focus', () => {
 
   test('14-02: EmergencyScreen uses tel: scheme for phone calls', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/EmergencyScreen.tsx', 'utf8');
     expect(src).toContain('tel:');
     expect(src).toContain('Linking.openURL');
   });
 
   test('14-03: JustArrestedScreen tel: call has .catch fallback', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
     expect(src).toContain('tel:');
     expect(src).toContain('.catch(');
   });
 
   test('14-04: ChatScreen uses expo-clipboard for copy', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/ChatScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/ChatScreen.tsx', 'utf8');
     expect(src).toContain('Clipboard');
     expect(src).toContain('expo-clipboard');
   });
 
   test('14-05: MotionLibraryScreen Clipboard.setString or setStringAsync', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MotionLibraryScreen.tsx', 'utf8');
     expect(src).toContain('Clipboard');
     const hasSetString = src.includes('setString') || src.includes('setStringAsync');
     expect(hasSetString).toBe(true);
@@ -980,25 +980,25 @@ describe('14. Screen Contracts — Share, Clipboard, Linking, Focus', () => {
 
   test('14-06: LawyersScreen useFocusEffect reloads data on focus', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/LawyersScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/LawyersScreen.tsx', 'utf8');
     expect(src).toContain('useFocusEffect');
   });
 
   test('14-07: MessagesScreen useFocusEffect for message thread refresh', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/MessagesScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/MessagesScreen.tsx', 'utf8');
     expect(src).toContain('useFocusEffect');
   });
 
   test('14-08: CaseScreen useFocusEffect keeps case fresh on return', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/CaseScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/CaseScreen.tsx', 'utf8');
     expect(src).toContain('useFocusEffect');
   });
 
   test('14-09: DeadlineCalculatorScreen Share includes app name in message', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/DeadlineCalculatorScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/DeadlineCalculatorScreen.tsx', 'utf8');
     expect(src).toContain('Share.share');
     expect(src).toContain('Justice Gavel');
   });
@@ -1011,7 +1011,7 @@ describe('15. Regression — All Prior Fixes Confirmed', () => {
 
   test('15-01: HomeScreen PTR: RefreshControl + loadAll + setRefreshing(false)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(src).toContain('RefreshControl');
     expect(src).toContain('loadAll');
     expect(src).toContain('setRefreshing(false)');
@@ -1019,7 +1019,7 @@ describe('15. Regression — All Prior Fixes Confirmed', () => {
 
   test('15-02: messages.js N+1 fix: lawyerUserMap', async () => {
     const fs = await import('fs');
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/messages.js', 'utf8')).toContain('lawyerUserMap');
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/messages.js', 'utf8')).toContain('lawyerUserMap');
   });
 
   test('15-03: Family signal: expedTRO requires BOTH crisis AND dv_flag', () => {
@@ -1076,7 +1076,7 @@ describe('15. Regression — All Prior Fixes Confirmed', () => {
   test('15-10: zero hex violations in useTheme screens', async () => {
     const fs   = await import('fs');
     const path = await import('path');
-    const dir  = '/tmp/JG/frontend/src/screens';
+    const dir  = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'",
                            "'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];

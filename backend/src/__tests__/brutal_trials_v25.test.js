@@ -70,32 +70,32 @@ const mkMatter = (v, o = {}) => ({
 describe('1. middleware/auth.js — JWT Auth', () => {
   test('1-01: exports authRequired and optionalAuth', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/auth.js', 'utf8');
     expect(src).toContain('export function authRequired');
     expect(src).toContain('optionalAuth');
   });
   test('1-02: uses HS256 algorithm-pinning (prevents confusion attacks)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/auth.js', 'utf8');
     expect(src).toContain("ALGORITHMS  = ['HS256']");
     expect(src).toContain('algorithm confusion attacks');
   });
   test('1-03: distinguishes expired vs invalid tokens for client UX', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/auth.js', 'utf8');
     expect(src).toContain('expired');
     expect(src).toContain('invalid');
     expect(src).toContain('token refresh');
   });
   test('1-04: JWT_SECRET is a lazy getter (not evaluated at import time)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/auth.js', 'utf8');
     expect(src).toContain("JWT_SECRET  = () => process.env.JWT_SECRET");
     expect(src).toContain("'dev_secret_change_me'");
   });
   test('1-05: optionalAuth proceeds regardless (no 401 on missing token)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/middleware/auth.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/middleware/auth.js', 'utf8');
     expect(src).toContain('optionalAuth');
     expect(src).toContain('proceeds regardless');
   });
@@ -110,24 +110,24 @@ describe('1. middleware/auth.js — JWT Auth', () => {
 describe('2. billing/connections.js + billing/subscriptions.js', () => {
   test('2-01: connections.js handles QuickConnect $20 instant matchmaking', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/connections.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/connections.js', 'utf8');
     expect(src).toContain('QuickConnect');
     expect(src).toContain('$20 instant matchmaking');
     expect(src).toContain('getOrCreateStripeCustomer');
   });
   test('2-02: connections.js handles Emergency family connection', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/connections.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/connections.js', 'utf8');
     expect(src).toContain('Emergency family connection');
   });
   test('2-03: connections.js uses BUSINESS_CONSTANTS for pricing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/connections.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/connections.js', 'utf8');
     expect(src).toContain('BUSINESS_CONSTANTS');
   });
   test('2-04: subscriptions.js handles attorney + general subscriptions', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/subscriptions.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/subscriptions.js', 'utf8');
     expect(src).toContain('Attorney & general subscriptions');
     expect(src).toContain('subscribe');
     expect(src).toContain('cancel');
@@ -135,14 +135,14 @@ describe('2. billing/connections.js + billing/subscriptions.js', () => {
   });
   test('2-05: subscriptions.js has 4 route handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/subscriptions.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/subscriptions.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
     expect(h.length).toBe(4);
   });
   test('2-06: both use billingLimiter rate protection', async () => {
     const fs = await import('fs');
-    const conn = fs.readFileSync('/tmp/JG/backend/src/routes/billing/connections.js', 'utf8');
-    const subs = fs.readFileSync('/tmp/JG/backend/src/routes/billing/subscriptions.js', 'utf8');
+    const conn = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/connections.js', 'utf8');
+    const subs = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/subscriptions.js', 'utf8');
     expect(conn).toContain('billingLimiter');
     expect(subs).toContain('billingLimiter');
   });
@@ -152,24 +152,24 @@ describe('2. billing/connections.js + billing/subscriptions.js', () => {
 describe('3. Stripe Webhook System', () => {
   test('3-01: billing/webhooks.js requires express.raw() body parser', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/webhooks.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/webhooks.js', 'utf8');
     expect(src).toContain('express.raw()');
     expect(src).toContain('signature verification will fail');
   });
   test('3-02: billing/webhooks.js verifies Stripe signature before processing', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/webhooks.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/webhooks.js', 'utf8');
     expect(src).toContain('Stripe signature');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
   });
   test('3-03: local dev command: stripe listen --forward-to', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/billing/webhooks.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/webhooks.js', 'utf8');
     expect(src).toContain('stripe listen --forward-to');
   });
   test('3-04: webhooks/stripe.js handles 5 payment event types', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/stripe.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js', 'utf8');
     expect(src).toContain('payment_intent.succeeded');
     expect(src).toContain('payment_link.completed');
     expect(src).toContain('invoice.payment_succeeded');
@@ -178,7 +178,7 @@ describe('3. Stripe Webhook System', () => {
   });
   test('3-05: webhooks/stripe.js uses express.raw() and STRIPE_WEBHOOK_SECRET', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/webhooks/stripe.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js', 'utf8');
     expect(src).toContain('express.raw()');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
     expect(src).toContain('Signature verified');
@@ -202,20 +202,20 @@ describe('3. Stripe Webhook System', () => {
 describe('4. bail.js — GPS Bail Agent Search', () => {
   test('4-01: bail.js has haversine distance calculation (inline, not service)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/bail.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/bail.js', 'utf8');
     expect(src).toContain('haversine');
     expect(src).toContain('Math.PI / 180');
     expect(src).toContain('const R = 6371');
   });
   test('4-02: bail.js has 1 route handler', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/bail.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/bail.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
     expect(h.length).toBe(1);
   });
   test('4-03: bail.js uses authRequired middleware', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/bail.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/bail.js', 'utf8');
     expect(src).toContain('authRequired');
   });
   test('4-04: haversine radius constant = 6371 km', () => {
@@ -236,23 +236,23 @@ describe('4. bail.js — GPS Bail Agent Search', () => {
 describe('5. sendgrid.js — parseEmailIntent (6th export)', () => {
   test('5-01: sendgrid exports parseEmailIntent', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/sendgrid.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/sendgrid.js', 'utf8');
     expect(src).toContain('parseEmailIntent');
   });
   test('5-02: sendgrid has exactly 6 exported functions', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/sendgrid.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/sendgrid.js', 'utf8');
     const fns = src.match(/export\s+(?:async\s+)?function\s+\w+/g) || [];
     expect(fns.length).toBe(6);
   });
   test('5-03: sendgrid SENDGRID_FROM is alerts@justicegavel.app', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/sendgrid.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/sendgrid.js', 'utf8');
     expect(src).toContain('alerts@justicegavel.app');
   });
   test('5-04: sendgrid mock mode returns { mock: true }', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/services/sendgrid.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/sendgrid.js', 'utf8');
     expect(src).toContain('mock: true');
     expect(src).toContain('!SENDGRID_LIVE');
   });
@@ -262,7 +262,7 @@ describe('5. sendgrid.js — parseEmailIntent (6th export)', () => {
 describe('6. i18n Final Sweep 1 — messages/translator/saved/tr/msg', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
   };
   test('6-01: messages_ full screen labels (7 keys)', async () => {
     const en = await getEn();
@@ -306,7 +306,7 @@ describe('6. i18n Final Sweep 1 — messages/translator/saved/tr/msg', () => {
 describe('7. i18n Final Sweep 2 — civil/offline/nav/emergency/app', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
   };
   test('7-01: civil_ cross-navigation subtitles', async () => {
     const en = await getEn();
@@ -345,7 +345,7 @@ describe('7. i18n Final Sweep 2 — civil/offline/nav/emergency/app', () => {
 describe('8. i18n Final Sweep 3 — onboard/qc/help/res/whn navigation', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
   };
   test('8-01: onboard_ slide 4 + browse CTAs', async () => {
     const en = await getEn();
@@ -425,7 +425,7 @@ describe('9. Regression — All v1–v24 Confirmed', () => {
   });
   test('9-07: nav_ labels correct', async () => {
     const fs = await import('fs');
-    const en = JSON.parse(fs.readFileSync('/tmp/JG/frontend/src/i18n/en.json', 'utf8'));
+    const en = JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
     expect(en['nav_home']).toBe('Home');
     expect(en['nav_chat']).toBe('Ask');
     expect(en['nav_more']).toBe('More');
@@ -436,7 +436,7 @@ describe('9. Regression — All v1–v24 Confirmed', () => {
   test('9-09: zero hex violations in useTheme screens', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const dir = '/tmp/JG/frontend/src/screens';
+    const dir = '/tmp/JG_fresh/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {
