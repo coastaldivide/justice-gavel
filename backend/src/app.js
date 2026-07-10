@@ -46,7 +46,7 @@ import piLeadsRouter    from './routes/pi_leads.js';
 import billingRouter    from './routes/billing/index.js';
 
 // ── Webhook routes ────────────────────────────────────────────────────────────
-import twilioWebhookRouter from './routes/webhooks/twilio.js';
+// Twilio webhook router removed — not using Twilio
 import stripeWebhookRouter from './routes/webhooks/stripe.js';
 import botAdminRouter      from './routes/webhooks/bot_admin.js';
 import goldenGavelRouter     from './routes/golden_gavel.js';
@@ -86,7 +86,8 @@ import res                          from './routes/resources.js';
 const _missing = [];
 if (!process.env.STRIPE_SECRET)       _missing.push('STRIPE_SECRET (payments will use demo mode)');
 if (!process.env.ANTHROPIC_API_KEY)   _missing.push('ANTHROPIC_API_KEY (AI chat + match disabled)');
-if (!process.env.TWILIO_ACCOUNT_SID)  _missing.push('TWILIO_ACCOUNT_SID (SMS bot disabled)');
+// TWILIO_ACCOUNT_SID removed — Twilio not used (Push + Resend instead)
+  // if (!process.env.TWILIO_ACCOUNT_SID)  _missing.push('TWILIO_ACCOUNT_SID disabled)');
 if (!process.env.RESEND_API_KEY)    _missing.push('RESEND_API_KEY (email alerts disabled)');
 if (!process.env.OPENAI_API_KEY)       _missing.push('OPENAI_API_KEY (Whisper transcription disabled)');
 if (!process.env.GOOGLE_PLACES_KEY)   _missing.push('GOOGLE_PLACES_KEY (Google Places fallback disabled)');
@@ -467,7 +468,7 @@ app.use('/api/pi-leads',  piLeadsRouter);
 app.use('/api/billing',    billingRouter);
 
 // ── Webhook routes ─────────────────────────────────────────────────────────────
-// REMOVED: app.use('/webhooks/twilio',  twilioWebhookRouter);  // Twilio not in use  // Twilio inbound SMS
+// REMOVED: // twilio webhook route removed  // Twilio not in use  // Twilio inbound SMS
 app.use('/api/bot',          botAdminRouter);
 app.use('/api/golden-gavel',  goldenGavelRouter);
 app.use('/api/recovery-agents', recoveryAgentsRouter);

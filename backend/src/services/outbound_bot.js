@@ -28,7 +28,9 @@ import logger from '../utils/logger.js';
 import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { sendSms, normalizePhone } from './twilio.js';
+// SMS replaced by Expo Push + Resend email (Twilio not used)
+import { normalizePhone } from '../utils/sanitize.js';
+const sendSms = async () => null; // stub — use pushDelivery.js or email.js instead
 import { sendEmail } from './email.js';
 import { createPaymentLink, calcStripeFee, STRIPE_LIVE } from '../payments/stripe.js';
 

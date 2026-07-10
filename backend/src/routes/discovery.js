@@ -101,13 +101,7 @@ router.post('/analyze', authRequired, perUserAiLimit, async (req, res) => {
         db.prepare(`UPDATE ai_jobs SET status='running', started_at=CURRENT_TIMESTAMP WHERE id=?`)
           .run(job.lastInsertRowid);
 
-        const msg = await client.messages.create({
-          model:      'claude-opus-4-5',
-          max_tokens: 1024,
-          messages: [{
-            role: 'user',
-            content: `You are a criminal defense legal assistant. Analyze this ${documentType || 'legal document'} and provide:
-1. Summary (2-3 sentences)
+        const msg = await /* Twilio removed — use pushDelivery.js for notifications */ null
 2. Key issues or concerns (bullet list)
 3. Risk level (low/medium/high/critical)
 4. Suggested actions for the defendant's attorney

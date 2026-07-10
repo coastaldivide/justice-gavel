@@ -4,7 +4,8 @@ import { Router }       from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
 import { googleMapsLink } from '../services/geolink.js';
-import { sendSms } from '../services/twilio.js';
+// SMS via Twilio removed — alerts sent via Expo Push + Resend email
+const sendSms = async () => null;
 import { sendEmail } from '../services/email.js';
 import logger from '../utils/logger.js';
 
