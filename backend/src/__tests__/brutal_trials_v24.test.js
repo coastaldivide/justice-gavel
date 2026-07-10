@@ -4,8 +4,6 @@
  * 24th brutal pass — maximum coverage of remaining infrastructure gaps.
  *
  * NEW DOMAINS (14 areas):
- *  1.  verifyTwilioSignature — HMAC validation, always-pass in demo mode,
- *                              X-Twilio-Signature header, validateRequest
  *  2.  integrations/recap.js importDocketEntries — INSERT OR IGNORE idempotency,
  *                              CourtListener docket fetch, daysBack/pageSize opts
  *  3.  attorney/cases.js — /office list (case counts) + /office/join + /assign,
@@ -68,30 +66,14 @@ const mkMatter = (v, o = {}) => ({
   supervised_release: 0, plea_offer_pending: 0, ...o,
 });
 
-// ── 1. verifyTwilioSignature ──────────────────────────────────────────────
-describe('1. twilio.js — verifyTwilioSignature', () => {
-  test('1-01: verifyTwilioSignature always passes in demo mode', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
-    expect(src).toContain('verifyTwilioSignature');
-    expect(src).toContain('!LIVE');
-    expect(src).toContain('return true; // Always pass in demo mode');
-  });
-  test('1-02: verifyTwilioSignature validates X-Twilio-Signature header', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
-    expect(src).toContain("'x-twilio-signature'");
     expect(src).toContain('validateRequest');
   });
-  test('1-03: verifyTwilioSignature uses BOT_WEBHOOK_BASE_URL + originalUrl', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
     expect(src).toContain('BOT_WEBHOOK_BASE_URL');
     expect(src).toContain('req.originalUrl');
   });
-  test('1-04: verifyTwilioSignature returns false on exception (fail-closed)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
     expect(src).toContain('return false;');
     expect(src).toContain('} catch {');
   });

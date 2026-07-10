@@ -101,7 +101,8 @@ router.post('/analyze', authRequired, perUserAiLimit, async (req, res) => {
         db.prepare(`UPDATE ai_jobs SET status='running', started_at=CURRENT_TIMESTAMP WHERE id=?`)
           .run(job.lastInsertRowid);
 
-        const msg = await /* Twilio removed — use pushDelivery.js for notifications */ null
+        // Notification sent via Expo Push (pushDelivery.js) not SMS
+        const msg = null
 2. Key issues or concerns (bullet list)
 3. Risk level (low/medium/high/critical)
 4. Suggested actions for the defendant's attorney

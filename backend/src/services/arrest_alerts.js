@@ -105,7 +105,7 @@ function detectAreas(charges) {
 
 // ── Send alert (email via SendGrid / push notification) ───────────────────────
 async function sendAlert(recipient, message, type, db) {
-  // In production: integrate with SendGrid or Twilio
+  // In production: handled by Resend email + Expo Push
   // For now: log and record in DB
   logger.info(`  📧 ${type} alert → ${recipient.name} (${recipient.email || 'no email'})`);
   logger.info(`     Subject: ${message.subject}`);

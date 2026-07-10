@@ -374,7 +374,6 @@ describe('GATE. Zero-Defect Production Gates', () => {
     const fs=await import('fs');
     expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
     expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
-    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8')).toContain('STOP');
     expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/chat/_helpers.js','utf8')).toContain('AbortController');
     expect(fs.readFileSync('/tmp/JG_fresh/frontend/src/services/api.ts','utf8')).toContain('REFRESH_THRESHOLD_MS');
     const prov=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/providers.js','utf8');

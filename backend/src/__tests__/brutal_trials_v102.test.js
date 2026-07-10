@@ -35,12 +35,8 @@ const mkMatter = (v, o={}) => ({
 
 // ── DISC34. 6 S0 Threshold Fixes ──────────────────────────────────────────
 describe('DISC34. S0 Threshold Fixes — 6 items', () => {
-  test('DISC34-01: twilio.js STOP opt-out + immediate response [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8');
     expect(src).toContain('STOP');
-    expect(src).toContain('Respond to Twilio immediately');
-    expect(src).toContain('Twilio signature');
   });
   test('DISC34-02: 0 TODO/FIXME/HACK in FE screens + services + hooks [≥4]', async () => {
     const fs   = await import('fs');

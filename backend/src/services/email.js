@@ -2,7 +2,7 @@
  * services/email.js — Resend email service
  *
  * Replaces SendGrid. API is cleaner, deliverability is better,
- * and it's not owned by Twilio.
+ * Superior deliverability, cleaner API.
  *
  * All functions are drop-in replacements for the old sendgrid.js exports.
  */

@@ -1,7 +1,6 @@
 /**
  * JUSTICE GAVEL — BRUTAL TRIALS v25
  * ═══════════════════════════════════════════════════════════════════════════
- * 25th brutal pass — auth middleware, billing subsystem, stripe/twilio
  * webhooks, bail.js, sendgrid parseEmailIntent, and the final i18n sweep.
  *
  * NEW DOMAINS (15 areas):

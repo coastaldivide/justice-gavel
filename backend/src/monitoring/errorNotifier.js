@@ -51,26 +51,17 @@ async function sendAlertEmail({ subject, body, to }) {
   }
 }
 
-// ── Send SMS via Twilio ───────────────────────────────────────────────────────
-async function // SMS removed — using Slack webhook instead
-    {
-  const sid    = process.env.TWILIO_ACCOUNT_SID;
-  const token  = process.env.TWILIO_AUTH_TOKEN;
-  const from   = process.env.TWILIO_FROM_NUMBER;
-  const to     = process.env.ONCALL_PHONE;  // Set in Railway env vars
-  if (!sid || !token || !from || !to) return;
-
+// ── SEV-1 Slack alert ───────────────────────────────────────────────────────
+async function sendSlackAlert(message) {
+  const url = process.env.ALERT_WEBHOOK_URL;
+  if (!url) return;
   try {
-    const url  = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
-    const body = new URLSearchParams({ From: from, To: to, Body: message });
     await fetch(url, {
-      method:  'POST',
-      headers: { Authorization: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64') },
-      body,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: `🚨 JG SEV-1: ${message}` }),
     });
-  } catch (e) {
-    logger.error('[notifier] SMS send failed:', e.message);
-  }
+  } catch (e) { /* never throw from notifier */ }
 }
 
 // ── Webhook ping (BetterUptime, PagerDuty, Slack) ────────────────────────────

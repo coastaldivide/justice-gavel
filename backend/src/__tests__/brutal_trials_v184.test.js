@@ -1,6 +1,5 @@
 // JUSTICE GAVEL — BRUTAL TRIALS v184
 // BACKEND SERVICES DEEP AUDIT: aiQueue, pushDelivery, encryption,
-// twilio, sendgrid, outbound_bot, healthScan, retention, scheduler.
 // Every backend service file read for the first time in any pass.
 
 import { jest } from '@jest/globals';
@@ -159,20 +158,9 @@ describe('EMAIL. SendGrid Email Service', () => {
 });
 
 // ── SMS SERVICE ───────────────────────────────────────────────────────────
-describe('SMS. Twilio SMS Service', () => {
-  test('SMS-01: twilio mock mode via LIVE_SMS env var', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js','utf8');
-    expect(src).toContain('sendSms');
-    const hasDemoGuard = src.includes('LIVE_SMS') || src.includes('TWILIO_LIVE') || src.includes('getTwilioClient');
-    expect(hasDemoGuard).toBe(true);
-    expect(src).toContain('catch');
-  });
   test('SMS-02: normalizePhone handles E.164 format', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js','utf8');
     expect(src).toContain('normalizePhone');
-    // Normalizes to E.164 for Twilio
     expect(src).toMatch(/\+1|\+?1?\s*\(?[0-9]/);
   });
 });

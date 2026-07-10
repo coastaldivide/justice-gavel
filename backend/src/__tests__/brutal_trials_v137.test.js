@@ -1,7 +1,6 @@
 // JUSTICE GAVEL - BRUTAL TRIALS v137
 // 137th pass: PERFECT STATE CONFIRMED + Architecture final hardening
 // 2 S0 fixes + AppNavigator.tsx (21K) + navigation types
-// + webhooks/stripe.js + webhooks/twilio.js
 // + firm_verticals.js deep (32 weak routes push to ≥10)
 // + matters.js + cases.js weak routes + privilege weak routes
 
@@ -160,21 +159,8 @@ describe('NAV. AppNavigator.tsx — Navigation Architecture (21,826 chars)', () 
   });
 });
 
-// ── WBH2. webhooks/stripe.js + webhooks/twilio.js ────────────────────────
-describe('WBH2. webhooks/stripe.js + webhooks/twilio.js — Inbound Webhooks', () => {
-  test('WBH2-01: webhooks/stripe.js — POST / Stripe event verification', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js','utf8');
     expect(src.length).toBeGreaterThan(4000);
-    expect(src).toContain('constructWebhookEvent') || expect(src).toContain('stripe');
-    // Uses constructWebhookEvent from stripe.js to verify HMAC signature
-  });
-  test('WBH2-02: webhooks/twilio.js — POST / SMS/call inbound from Twilio', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8');
-    expect(src.length).toBeGreaterThan(4000);
-    expect(src).toContain('twilio') || expect(src).toContain('Twilio');
-    // Receives Twilio webhook for SMS replies and phone verification callbacks
   });
 });
 

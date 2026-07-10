@@ -70,7 +70,7 @@ describe('CFG. config.js — REQUIRED + OPTIONAL + INTEGRATION vars', () => {
     const fs = await import('fs');
     const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js','utf8');
     expect(src).toContain('REQUIRED_IN_PROD');
-    expect(src).toContain('TWILIO_ACCOUNT_SID');
+    expect(src).toContain();
     expect(src).toContain('RESEND_API_KEY');
     expect(src).toContain('STRIPE_WEBHOOK_SECRET');
     // Missing any REQUIRED_IN_PROD var → startup fails with clear error

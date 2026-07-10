@@ -10,7 +10,6 @@ import logger from '../utils/logger.js';
  *  4. Finds matching attorneys in the county
  *  5. Sends email lead offer with county arrest summary
  *
- * Reply handling (via webhook) is in routes/webhooks/twilio.js
  * Payment confirmation (via webhook) is in routes/webhooks/stripe.js
  *
  * TCPA COMPLIANCE:
@@ -28,7 +27,6 @@ import logger from '../utils/logger.js';
 import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
-// SMS replaced by Expo Push + Resend email (Twilio not used)
 import { normalizePhone } from '../utils/sanitize.js';
 const sendSms = async () => null; // stub — use pushDelivery.js or email.js instead
 import { sendEmail } from './email.js';
@@ -87,13 +85,10 @@ async function isOptedOut(db, phone, email) {
 }
 
 // Log a sent message — idempotency key prevents duplicates
-async function logMessage(db, { recipientType, recipientId, recipientPhone, recipientEmail, channel, arrestId, messageType, body, status, twilioSid, sendgridId, idempotencyKey, errorMsg }) {
   try {
     await db.run(
       `INSERT INTO outbound_messages
-        (recipient_type, recipient_id, recipient_phone, recipient_email, channel, arrest_id, message_type, body, status, twilio_sid, sendgrid_id, idempotency_key, error_msg)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [recipientType, recipientId, recipientPhone, recipientEmail, channel, arrestId, messageType, body, status, twilioSid || null, sendgridId || null, idempotencyKey, errorMsg || null]
     );
     return true;
   } catch (err) {
@@ -203,7 +198,6 @@ async function processBondsmanLead(db, agent, arrest, stats, errors) {
       messageType: 'lead_offer',
       body,
       status,
-      twilioSid: result.sid,
       idempotencyKey: idempKey,
       errorMsg: result.error,
     });
@@ -469,7 +463,6 @@ export async function sendPaymentLink({ phone, arrestId, recipientType, recipien
       messageType: 'payment_link',
       body: smsBody,
       status: smsResult.error ? 'failed' : 'sent',
-      twilioSid: smsResult.sid,
       idempotencyKey: idempKey,
       errorMsg: smsResult.error,
     }).catch(() => {});
@@ -543,7 +536,6 @@ export async function deliverLead({ phone, arrestId, stripeLinkId, stripePayment
       messageType: 'lead_delivery',
       body: deliveryBody,
       status: smsResult.error ? 'failed' : 'sent',
-      twilioSid: smsResult.sid,
       idempotencyKey: deliveryIdempKey,
       errorMsg: smsResult.error,
     }).catch(() => {});

@@ -149,7 +149,6 @@ cd backend && node --experimental-vm-modules node_modules/.bin/jest src/__tests_
 |---------|--------------|-------------------|
 | **Stripe** | Secret key + webhook + 7 price IDs | Subscriptions don't process. App still works, billing disabled |
 | **Google Places** | API key from Google Cloud | Attorney/bondsman location search returns empty |
-| **Twilio** | Removed — not in use | None. Replaced by Resend + Slack |
 | **SendGrid** | Replaced by Resend | N/A |
 
 **To add Stripe:**
@@ -184,7 +183,6 @@ Self-healing behaviors (automatic, no action needed):
 ## Architecture Decisions Worth Knowing
 
 **Why Resend instead of SendGrid?**
-Twilio owns SendGrid. Twilio blocked account creation. Resend is cleaner API,
 better deliverability, not owned by a carrier-compliance-heavy company.
 
 **Why Transaction pooler for DATABASE_URL?**

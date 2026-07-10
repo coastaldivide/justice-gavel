@@ -129,7 +129,6 @@ beforeAll(async () => {
   encrypt = enc.encrypt;
   decrypt = enc.decrypt;
 
-  const tw = await import('../services/twilio.js');
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
 
@@ -778,7 +777,7 @@ describe('8. config.js — CONFIG Object', () => {
   test('8-08: OPTIONAL_WARNINGS has at least 7 entries', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
-    const OPTIONAL_KEYS = ['TWILIO_ACCOUNT_SID','RESEND_API_KEY','SENTRY_DSN',
+    const OPTIONAL_KEYS = ['RESEND_API_KEY','SENTRY_DSN',
                            'GOOGLE_PLACES_KEY','ADMIN_KEY','STRIPE_WEBHOOK_SECRET','EXPO_ACCESS_TOKEN'];
     for (const key of OPTIONAL_KEYS) {
       expect(src).toContain(key);

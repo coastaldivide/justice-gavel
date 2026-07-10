@@ -1,6 +1,5 @@
 // JUSTICE GAVEL - BRUTAL TRIALS v141
 // 141st pass: Layer audit findings
-// 6 new services: aiQueue + contentRefresh + healthScan + outbound_bot + sendgrid + twilio
 // precedentRegistry 2 new exports: getApproachingStale + getCircuitSplitEntries
 // stripeAch guard correct + billing/index.js + 2 S0 fixes
 
@@ -153,18 +152,8 @@ describe('SGR. sendgrid.js — SendGrid Email Service (6,912 chars)', () => {
   });
 });
 
-// ── TWL. twilio.js — SMS Service ──────────────────────────────────────────
-describe('TWL. twilio.js — Twilio SMS Service (3,630 chars)', () => {
-  test('TWL-01: sendSms + verifyTwilioSignature', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js','utf8');
-    expect(src).toContain('sendSms');
-    expect(src).toContain('verifyTwilioSignature');
-    // verifyTwilioSignature: validates inbound webhook HMAC (webhooks/twilio.js)
-  });
   test('TWL-02: parseIntent + normalizePhone', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js','utf8');
     expect(src).toContain('parseIntent');
     expect(src).toContain('normalizePhone');
     // parseIntent: classifies inbound SMS (STOP, HELP, YES, arrest alert reply)

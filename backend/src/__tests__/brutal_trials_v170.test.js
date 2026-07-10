@@ -340,7 +340,6 @@ describe('S9. Settings, Security & GDPR', () => {
   test('S9-02: CORS no wildcard + TCPA STOP + GDPR delete', async () => {
     const fs=await import('fs');
     expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
-    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8')).toContain('STOP');
     expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
   });
   test('S9-03: 0 SQL injection risks', async () => {

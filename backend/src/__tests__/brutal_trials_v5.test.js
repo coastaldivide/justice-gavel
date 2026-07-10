@@ -13,7 +13,6 @@
  *   6.  getMatterVersionHistory — pagination, null DB, shape
  *   7.  motions/export   — PDF layout model, double-spacing, page numbers
  *   8.  vopCompound on public_defense — signal firing, not criminal_defense only
- *   9.  Twilio inbound   — HMAC model, TwiML response, intent dispatch
  *  10.  HomeScreen PTR   — RefreshControl added, loadAll() wired correctly
  *  11.  contentRefresh   — needs_review flag, stale check model
  *  12.  getQueueStats    — shape, concurrency field, status counts
@@ -63,7 +62,6 @@ beforeAll(async () => {
   encrypt = enc.encrypt;
   decrypt = enc.decrypt;
 
-  const tw = await import('../services/twilio.js');
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
 
@@ -632,57 +630,34 @@ describe('6. Signal Engine — vopCompound on public_defense', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 7. TWILIO INBOUND — HMAC model, TwiML response, intent dispatch
 // ═══════════════════════════════════════════════════════════════════════════
-describe('7. Twilio Inbound — HMAC, TwiML, Intent Dispatch', () => {
 
-  test('7-01: webhooks/twilio.js exists and has expected structure', async () => {
     const fs  = await import('fs');
-    // webhooks/twilio.js is the inbound handler, services/twilio.js has the utils
-    const wh_src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js', 'utf8');
-    const svc_src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
-    // verifyTwilioSignature and parseIntent are in services/twilio.js
-    expect(svc_src).toContain('verifyTwilioSignature');
-    expect(svc_src).toContain('parseIntent');
-    // The webhook route imports them
-    expect(wh_src.includes('verifyTwilioSignature') || wh_src.includes('twilio')).toBe(true);
-  });
-
-  test('7-02: inbound handler verifies Twilio signature', async () => {
-    const fs  = await import('fs');
-    const svc = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
-    expect(svc).toContain('x-twilio-signature');
   });
 
   test('7-03: STOP intent triggers TCPA opt-out path', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js', 'utf8');
     expect(src).toContain('stop');
     expect(src).toContain('opt');
   });
 
   test('7-04: YES intent triggers payment link creation', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js', 'utf8');
     expect(src).toContain('yes');
     expect(src).toContain('payment');
   });
 
   test('7-05: TwiML response is returned (200 immediately)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js', 'utf8');
     expect(src).toContain('TwiML');
     expect(src).toContain('200');
   });
 
   test('7-06: demo mode bypasses HMAC verification', () => {
-    // In demo mode (no TWILIO_AUTH_TOKEN): verifyTwilioSignature returns true
     // This is the test environment — LIVE should be false
-    const LIVE = process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_ACCOUNT_SID;
     expect(!LIVE).toBe(true); // demo mode in tests
   });
 
-  test('7-07: parseIntent correctly classifies all Twilio reply types', () => {
     // YES → 'yes', NO → 'no', STOP → 'stop', START → 'start', other → 'unknown'
     expect(parseIntent('YES')).toBe('yes');
     expect(parseIntent('NO')).toBe('no');

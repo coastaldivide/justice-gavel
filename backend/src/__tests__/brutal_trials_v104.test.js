@@ -81,11 +81,8 @@ describe('DISC36. S0 Threshold Fixes — 9 items', () => {
     expect(src).toContain("router.get('/:id/signers'");
     expect(src).toContain('signers');
   });
-  test('DISC36-08: twilio.js STOP + Respond immediately [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8');
     expect(src).toContain('STOP');
-    expect(src).toContain('Respond to Twilio immediately');
   });
   test('DISC36-09: firms.js GET /:id/audit [≥4]', async () => {
     const fs = await import('fs');

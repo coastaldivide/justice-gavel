@@ -71,7 +71,7 @@
 ✅ AES-256 encryption
 ✅ Self-healing infrastructure (watchdog, circuit breakers)
 ✅ Sentry error tracking (US region)
-✅ Resend email service (replaces Twilio/SendGrid)
+✅ Resend email service (replaces SendGrid)
 ✅ All 8 Stripe price IDs configured
 ✅ 28 database performance indexes
 ✅ Full-text search indexes on attorney names

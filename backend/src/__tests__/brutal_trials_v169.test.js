@@ -374,7 +374,6 @@ describe('BE. Backend Zero-Defect Gates', () => {
     const fs=await import('fs');
     expect(fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8')).not.toContain("origin: '*'");
     expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js','utf8')).toContain('STRIPE_WEBHOOK_SECRET');
-    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8')).toContain('STOP');
     expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
   });
 });

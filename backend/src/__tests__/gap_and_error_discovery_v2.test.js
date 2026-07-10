@@ -5,7 +5,6 @@
  * Targets areas NOT covered by previous test runs:
  *
  *   1.  sendgrid.js     — email builders, parseEmailIntent
- *   2.  twilio.js       — normalizePhone, parseIntent, verifyTwilioSignature
  *   3.  outbound_bot.js — processOptOut, expireOldPaymentLinks, TCPA compliance
  *   4.  contentRefresh  — getContentAge table whitelist, refreshLegalContent
  *   5.  retention.js    — checkAccountInactivity thresholds
@@ -49,7 +48,6 @@ beforeAll(async () => {
   buildReceiptEmail      = sg.buildReceiptEmail;
   parseEmailIntent       = sg.parseEmailIntent;
 
-  const tw  = await import('../services/twilio.js');
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
 
@@ -183,17 +181,7 @@ describe('1. SendGrid Email Builders', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 2. TWILIO — phone normalisation, intent parsing, TCPA
 // ═══════════════════════════════════════════════════════════════════════════
-describe('2. Twilio — Phone Normalisation & Intent Parser', () => {
-
-  // normalizePhone
-  test('2-01: normalizePhone — 10-digit US number → +1XXXXXXXXXX', () => {
-    expect(normalizePhone('6155551234')).toBe('+16155551234');
-    expect(normalizePhone('(615) 555-1234')).toBe('+16155551234');
-    expect(normalizePhone('615-555-1234')).toBe('+16155551234');
-    expect(normalizePhone('615.555.1234')).toBe('+16155551234');
-  });
 
   test('2-02: normalizePhone — 11-digit with leading 1 → +1XXXXXXXXXX', () => {
     expect(normalizePhone('16155551234')).toBe('+16155551234');

@@ -154,9 +154,7 @@ node backend/src/scripts/import_doi_bondsmen.js --file fl_bail.csv --state FL
 
 ## 🟢 PRIORITY 4 — Post-Launch Enhancements
 
-### 4A. Attorney Claiming Flow ✅ CODE COMPLETE — needs TWILIO + SENDGRID keys
 - Outbound bot (`outbound_bot.js`) already built
-- Needs: Production SendGrid + Twilio keys
 - When attorney receives lead → auto-text/email with claim link
 - Attorney signs up, verifies bar number, upgrades profile
 
@@ -192,9 +190,6 @@ node backend/src/scripts/import_doi_bondsmen.js --file fl_bail.csv --state FL
 ANTHROPIC_API_KEY=         # AI chat, motions, research
 GOOGLE_PLACES_KEY=         # Attorney/bondsman scraping (~$14 one-time)
 STRIPE_SECRET=             # Subscription payments
-TWILIO_ACCOUNT_SID=        # SMS alerts (outbound bot, arrest monitor)
-TWILIO_AUTH_TOKEN=
-TWILIO_FROM_NUMBER=
 SENDGRID_API_KEY=          # Email notifications
 JWT_SECRET=                # Auth tokens (generate: openssl rand -hex 32)
 LIVE_REFRESH=true          # Enables nightly data refresh scheduler

@@ -1,7 +1,6 @@
 /**
  * middleware/circuitBreaker.js — Circuit breaker for external services
  *
- * Prevents cascading failures when Anthropic / Stripe / Twilio are down.
  * States: CLOSED (normal) → OPEN (tripped) → HALF_OPEN (testing recovery)
  *
  * Thresholds:

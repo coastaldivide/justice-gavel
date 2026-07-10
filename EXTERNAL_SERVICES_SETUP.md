@@ -15,7 +15,6 @@ Every external service has a graceful fallback:
 |---|---|
 | Stripe | All payments return `{ demo: true }`. No charges. |
 | SendGrid | Emails logged to console. Never sent. |
-| Twilio | SMS logged to console. Never sent. |
 | Expo Push | Push tokens accepted and stored. Delivery logged only. |
 | AI (Anthropic) | **No fallback** — key required for AI features to work. |
 | Google Places | Returns empty results with a warning log. |
@@ -140,21 +139,15 @@ LIVE_EMAIL=true
 
 ---
 
-### 5. Twilio (SMS)
 SMS for: health scan CRITICAL+HIGH findings, subscription lapse alerts,
 crisis escalation notifications to attorneys.
 
 **Steps:**
-1. `console.twilio.com` → Account Info (Account SID + Auth Token visible on dashboard)
 2. Phone Numbers → Buy a Number (choose a local or toll-free number)
 3. For production: complete carrier registration for A2P 10DLC
    (required by US carriers for business SMS — 1-2 day approval)
 
 ```env
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_FROM_NUMBER=+1XXXXXXXXXX
-TWILIO_PHONE_NUMBER=+1XXXXXXXXXX
 ADMIN_ALERT_SMS=+15551234567
 LIVE_SMS=true
 ```
@@ -390,9 +383,6 @@ ADMIN_ALERT_EMAIL=admin@yourfirm.com
 LIVE_EMAIL=true
 
 # ── SMS ──
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
-TWILIO_FROM_NUMBER=
 ADMIN_ALERT_SMS=+1XXXXXXXXXX
 LIVE_SMS=true
 

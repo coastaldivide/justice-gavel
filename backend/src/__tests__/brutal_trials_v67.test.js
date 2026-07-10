@@ -42,7 +42,6 @@
  *
  * APP2  app.js startup config check:
  *       Missing env keys logged at startup (does NOT crash — demo mode)
- *       Stripe + Twilio + SendGrid checked at startup
  *       Request ID middleware: adds X-Request-ID header for log correlation
  *
  * SWF   sw.js individual asset fix:

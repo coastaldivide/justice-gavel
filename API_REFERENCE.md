@@ -963,8 +963,6 @@ All authenticated endpoints require: `Authorization: Bearer <jwt_token>`
 | `STRIPE_WEBHOOK_SECRET` | Production | Stripe webhook signing secret |
 | `ANTHROPIC_API_KEY` | AI features | Powers AI chat, motion generation, matching |
 | `OPENAI_API_KEY` | AI features | Powers Whisper audio transcription |
-| `TWILIO_ACCOUNT_SID` | SMS | Arrest alert text messages |
-| `TWILIO_AUTH_TOKEN` | SMS | Twilio authentication |
 | `SENDGRID_API_KEY` | Email | System emails and weekly digests |
 | `SENTRY_DSN` | Monitoring | Crash reporting (get from sentry.io) |
 | `POSTGRES_URL` | Production | PostgreSQL connection string — auto-switches from SQLite |

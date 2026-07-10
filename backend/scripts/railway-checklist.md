@@ -78,13 +78,8 @@ These were generated and are pre-filled in `setup-railway.sh`:
 
 ---
 
-## STEP 6 — Twilio (5 min)
 
-[ ] console.twilio.com → Account Info
-    - Copy Account SID → `TWILIO_ACCOUNT_SID`
-    - Copy Auth Token → `TWILIO_AUTH_TOKEN`
 [ ] Phone Numbers → Buy a Number (local Tennessee number recommended)
-    Copy → `TWILIO_FROM_NUMBER`
 [ ] For production: Messaging → Senders → A2P 10DLC Registration
     (Takes 1-2 days, required by US carriers for business SMS)
 

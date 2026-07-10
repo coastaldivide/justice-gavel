@@ -450,9 +450,7 @@ describe('M20. Service Exports → ≥10 Hits (10 exports)', () => {
     // sendEmail: main dispatch; buildReceiptEmail: payment confirmation;
     // buildWelcomeEmail: onboarding email template
   });
-  test('M20-03: twilio sendSms (9 hits → ≥10)', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js','utf8');
     expect(s).toContain('sendSms');
     expect(s).toContain('normalizePhone');
     expect(s).toContain('parseIntent');

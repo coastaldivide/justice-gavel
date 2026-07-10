@@ -42,7 +42,7 @@ const DATA_TABLE: DataRow[] = [
     category: 'Account Information',
     examples: 'Name, email, phone number, password (hashed)',
     purpose: 'Create and manage your account; authentication',
-    shared: 'Not sold. Shared only with Twilio (SMS) and SendGrid (email)',
+    shared: 'Not sold. Shared only with Resend (email) and Expo (push notifications)',
     retention: 'Until account deletion + 30 days',
   },
   {
@@ -142,7 +142,6 @@ const SECTIONS: Section[] = [
       '• Anthropic -- AI responses (claude.ai privacy policy)\n' +
       '• OpenAI -- Audio transcription (openai.com/policies)\n' +
       '• Stripe -- Payment processing (stripe.com/privacy)\n' +
-      '• Twilio -- SMS alerts (twilio.com/legal/privacy)\n' +
       '• SendGrid -- Email notifications (sendgrid.com/policies)\n' +
       '• Sentry -- Crash reporting (sentry.io/privacy)\n' +
       '• Expo / AWS -- App infrastructure\n\n' +

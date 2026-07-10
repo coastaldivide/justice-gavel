@@ -162,7 +162,6 @@ describe('A. Backend — All Issues Fixed', () => {
     expect(app).not.toContain("origin: '*'");
   });
 
-  test('A-14: webhook auth — Stripe HMAC + Twilio signature + bot ADMIN_KEY', async () => {
     const fs=await import('fs');
     const stripe=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js','utf8');
     const bot=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js','utf8');
@@ -327,9 +326,7 @@ describe('C. Data — All TODO Items Resolved', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('D. Legal Compliance — Zero Risk Items', () => {
-  test('D-01: TCPA — STOP opt-out handled in Twilio webhook', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8');
     expect(src).toContain('STOP');
   });
 

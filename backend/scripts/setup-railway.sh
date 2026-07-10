@@ -71,10 +71,6 @@ STRIPE_LEGAL_RADAR_ANNUAL_ID=""   # price_1Tb1wQ2... annual
 RESEND_API_KEY=""             # resend.com → API Keys
 SENDGRID_API_KEY=""  # legacy — not used, Resend handles email           # SG.xxxxxx
 
-# Twilio (console.twilio.com → Account Info)
-TWILIO_ACCOUNT_SID=""         # ACxxxxxxx
-TWILIO_AUTH_TOKEN=""
-TWILIO_FROM_NUMBER=""         # +1XXXXXXXXXX
 
 # Google Places (console.cloud.google.com → APIs → Credentials)
 GOOGLE_PLACES_KEY=""
@@ -166,9 +162,6 @@ set_var "SENDGRID_FROM_EMAIL"   "$SENDGRID_FROM_EMAIL"
 set_var "LIVE_EMAIL"            "$LIVE_EMAIL"
 
 # SMS
-set_var "TWILIO_ACCOUNT_SID"    "$TWILIO_ACCOUNT_SID"
-set_var "TWILIO_AUTH_TOKEN"     "$TWILIO_AUTH_TOKEN"
-set_var "TWILIO_FROM_NUMBER"    "$TWILIO_FROM_NUMBER"
 set_var "LIVE_SMS"              "$LIVE_SMS"
 
 # Push

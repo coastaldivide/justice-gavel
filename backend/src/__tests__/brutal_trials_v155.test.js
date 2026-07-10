@@ -186,13 +186,9 @@ describe('M21b. Service Exports → ≥20 Hits (32 exports)', () => {
       expect(s).toContain(e);
     // TCPA: processOptOut handles STOP/UNSUBSCRIBE; expireOldPaymentLinks: 72hr cleanup
   });
-  test('M21b-04: twilio all 6 exports', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js','utf8');
-    for (const e of ['sendSms','verifyTwilioSignature','parseIntent',
-                     'normalizePhone','TWILIO_FROM','TWILIO_LIVE'])
+                     'normalizePhone',])
       expect(s).toContain(e);
-    // TWILIO_LIVE: Twilio client; TWILIO_FROM: sender E.164 number
   });
   test('M21b-05: contentRefresh + healthScan + pushDelivery', async () => {
     const fs=await import('fs');

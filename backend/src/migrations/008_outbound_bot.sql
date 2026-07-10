@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS outbound_messages (
   message_type      TEXT NOT NULL,          -- 'lead_offer' | 'payment_link' | 'lead_delivery' | 'opt_out_confirm' | 'weekly_intel'
   body              TEXT,
   status            TEXT DEFAULT 'sent',    -- 'sent' | 'delivered' | 'failed' | 'bounced'
-  twilio_sid        TEXT,
+  sms_sid        TEXT,
   sendgrid_id       TEXT,
   idempotency_key   TEXT UNIQUE,           -- prevents duplicate sends
   sent_at           TEXT DEFAULT (datetime('now')),
@@ -24,7 +24,6 @@ CREATE INDEX IF NOT EXISTS idx_om_arrest     ON outbound_messages(arrest_id);
 CREATE INDEX IF NOT EXISTS idx_om_idem       ON outbound_messages(idempotency_key);
 CREATE INDEX IF NOT EXISTS idx_om_sent       ON outbound_messages(sent_at);
 
--- Inbound replies parsed from Twilio webhooks
 CREATE TABLE IF NOT EXISTS inbound_replies (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
   from_phone        TEXT NOT NULL,

@@ -57,7 +57,6 @@ beforeAll(async () => {
   encrypt = enc.encrypt;
   decrypt = enc.decrypt;
 
-  const tw = await import('../services/twilio.js');
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
 
@@ -901,11 +900,9 @@ describe('12. app.js — Server Configuration', () => {
     expect(SHUTDOWN_DELAY_MS).toBeLessThan(10000);
   });
 
-  test('12-10: form-encoded bodies handled (for Twilio webhook)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain('urlencoded');
-    expect(src).toContain('Twilio');
   });
 });
 

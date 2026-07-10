@@ -163,10 +163,8 @@ describe('GED. gap_and_error_discovery_v2.test.js — 162 Gap + Error Tests', ()
     expect(src).toContain('SendGrid Email Builders');
     expect(src).toContain('email');
   });
-  test('GED-02: Twilio phone normalisation + intent parser', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync('/tmp/JG_fresh/backend/src/__tests__/gap_and_error_discovery_v2.test.js','utf8');
-    expect(src).toContain('Twilio');
     expect(src).toContain('Phone Normalisation');
     expect(src).toContain('Intent Parser');
   });

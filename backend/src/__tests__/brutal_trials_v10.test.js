@@ -61,7 +61,6 @@ beforeAll(async () => {
   encrypt = enc.encrypt;
   decrypt = enc.decrypt;
 
-  const tw = await import('../services/twilio.js');
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
 

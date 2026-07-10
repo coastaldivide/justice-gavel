@@ -98,13 +98,9 @@ describe('MNT. 6 Low Mount Points — Routes Confirmed Active', () => {
     expect(src).toContain("router.post('/subscriptions'");
     // Outbound webhooks: firms subscribe to event notifications — avg 30 hits
   });
-  test('MNT-06: /webhooks/twilio — Twilio inbound SMS handler mounted', async () => {
     const fs = await import('fs');
     const app = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8');
-    expect(app).toContain('/webhooks/twilio');
     expect(src.length).toBeGreaterThan(4000);
-    // Twilio inbound: parses SMS replies using twilio.js parseIntent()
   });
 });
 

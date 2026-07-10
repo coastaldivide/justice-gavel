@@ -169,7 +169,6 @@ describe('DBT. DB Tables at 3-4 Hits — Architecture Push', () => {
     expect(src).toContain('webhook_deliveries');
     expect(src).toContain('callback_requests');
     // webhook_deliveries: stores every outbound webhook attempt + result
-    // callback_requests: inbound webhook callbacks (Stripe, Twilio, etc.)
   });
   test('DBT-03: role_permissions + conflict_waivers + web_push_subscriptions', async () => {
     const fs = await import('fs');

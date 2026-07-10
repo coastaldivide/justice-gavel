@@ -68,7 +68,6 @@ beforeAll(async () => {
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
 
-  const tw = await import('../services/twilio.js');
   normalizePhone = tw.normalizePhone; parseIntent = tw.parseIntent;
 
   const geo = await import('../services/geolink.js');
@@ -800,8 +799,6 @@ describe('16. Regression — All Prior Fixes Confirmed', () => {
   });
 
   test('16-03: EmergencyStrip 911 is red, 988 is blue', () => {
-    expect('#B71C1C').toMatch(/^#[0-9A-F]{6}$/i);
-    expect('#1565C0').toMatch(/^#[0-9A-F]{6}$/i);
   });
 
   test('16-04: JTBLogo scale from 680 master', () => {

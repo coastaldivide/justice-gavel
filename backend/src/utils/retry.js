@@ -68,7 +68,7 @@ export function withDbRetry(fn) {
 }
 
 /**
- * Retry for external API calls (Stripe, Anthropic, Twilio).
+ * Retry for external API calls (Stripe, Anthropic, Resend).
  * Respects 429 rate limits with Retry-After header.
  */
 export async function withApiRetry(fn, serviceName = 'api') {

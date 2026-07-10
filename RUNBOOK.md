@@ -127,7 +127,7 @@ Supabase takes daily backups automatically. Point-in-time recovery available on 
 |---------|-----------|-------------------|
 | Memory watchdog | Every 30s | Warn at 384MB, attempt GC + cache clear at 512MB, restart at 600MB |
 | DB health check | Every 60s | Auto-reconnect with exponential backoff (5 attempts), then SEV-1 alert |
-| Circuit breakers | Every 15s | SEV-2 email + webhook when Anthropic/Stripe/Twilio opens |
+| Circuit breakers | Every 15s | SEV-2 Slack alert when Anthropic/Stripe opens |
 | Stale job locks | Every 15min | Auto-clear locks older than 30 minutes |
 | Uncaught exceptions | Immediate | SEV-1 email + SMS before process restart |
 | Payment failures | Per event | SEV-2 email on invoice.payment_failed webhook |

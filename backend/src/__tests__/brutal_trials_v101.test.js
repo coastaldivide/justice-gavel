@@ -35,11 +35,8 @@ const mkMatter = (v, o={}) => ({
 
 // ── DISC33. 6 S0 Threshold Fixes ──────────────────────────────────────────
 describe('DISC33. S0 Threshold Fixes — 6 items to ≥5', () => {
-  test('DISC33-01: twilio.js STOP opt-out + Respond immediately [≥5]', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8');
     expect(src).toContain('STOP');
-    expect(src).toContain('Respond to Twilio immediately');
     // STOP = TCPA opt-out; immediate response prevents retry loop
   });
   test('DISC33-02: 0 TODO/FIXME/HACK in FE codebase [≥4]', async () => {

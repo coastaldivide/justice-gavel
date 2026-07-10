@@ -116,7 +116,7 @@ describe('ENV. .env Completeness', () => {
     const fs=await import('fs');
     const env=fs.readFileSync('/tmp/JG_fresh/backend/.env','utf8');
     const keys=['JWT_SECRET','ENCRYPTION_KEY','GOOGLE_PLACES_KEY',
-                'ADMIN_KEY','TWILIO_FROM_NUMBER','CORS_ORIGIN'];
+                'ADMIN_KEY','CORS_ORIGIN'];
     for (const k of keys) expect(env).toContain(k);
   });
   test('ENV-02: VAPID + Stripe price IDs documented in .env', async () => {

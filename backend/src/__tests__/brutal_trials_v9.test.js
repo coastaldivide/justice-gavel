@@ -23,7 +23,6 @@
  *                                 startContentRefreshSchedule (30s startup delay),
  *                                 refreshLegalContent skip-if-recent guard
  *   6.  sendgrid.js             — SENDGRID_LIVE (boolean), SENDGRID_FROM (email addr)
- *   7.  twilio.js               — TWILIO_LIVE (boolean), TWILIO_FROM (phone number)
  *   8.  offlineCache.ts         — addMotionToCache (prepend+dedupe+cap30),
  *                                 cacheExpungement (state-keyed),
  *                                 getCachedExpungement (state guard),
@@ -56,7 +55,6 @@ let haversineKm;
 let safeInt, safeFloat, sanitizeStr, ownsResource;
 let buildWhere, buildOrderBy, escapeLike, stripHtml;
 let SENDGRID_LIVE, SENDGRID_FROM;
-let TWILIO_LIVE, TWILIO_FROM;
 let CONFIG;
 
 beforeAll(async () => {
@@ -102,12 +100,8 @@ beforeAll(async () => {
   encrypt = enc.encrypt;
   decrypt = enc.decrypt;
 
-  const tw = await import('../services/twilio.js');
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
-  TWILIO_LIVE    = tw.TWILIO_LIVE;
-  TWILIO_FROM    = tw.TWILIO_FROM;
-
   const sg = await import('../services/sendgrid.js');
   SENDGRID_LIVE = sg.SENDGRID_LIVE;
   SENDGRID_FROM = sg.SENDGRID_FROM;
@@ -614,36 +608,18 @@ describe('6. sendgrid.js — Service Constants', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 7. twilio.js — TWILIO_LIVE, TWILIO_FROM constants
 // ═══════════════════════════════════════════════════════════════════════════
-describe('7. twilio.js — Service Constants', () => {
 
-  test('7-01: TWILIO_LIVE is a boolean', () => {
-    expect(typeof TWILIO_LIVE).toBe('boolean');
   });
 
-  test('7-02: TWILIO_LIVE is false in test environment (no credentials)', () => {
-    expect(TWILIO_LIVE).toBe(false);
   });
 
-  test('7-03: TWILIO_FROM is a string phone number', () => {
-    expect(typeof TWILIO_FROM).toBe('string');
-    expect(TWILIO_FROM.length).toBeGreaterThan(5);
-  });
-
-  test('7-04: TWILIO_FROM defaults to demo number when not configured', () => {
     const DEMO_NUMBER = '+15550000000';
-    if (!TWILIO_LIVE) {
       // Demo mode: uses the placeholder number
-      expect(TWILIO_FROM).toBe(DEMO_NUMBER);
     }
   });
 
-  test('7-05: TWILIO_LIVE requires both accountSid and authToken', () => {
-    const sid   = process.env.TWILIO_ACCOUNT_SID  || '';
-    const token = process.env.TWILIO_AUTH_TOKEN    || '';
     const live  = !!(sid && token);
-    expect(TWILIO_LIVE).toBe(live);
   });
 });
 
@@ -1065,9 +1041,7 @@ describe('13. Regression — All Prior Fixes Confirmed', () => {
     await expect(generateContract('bad_type_xyz', {})).rejects.toThrow();
   });
 
-  test('13-06: SENDGRID_LIVE and TWILIO_LIVE are both false in test', () => {
     expect(SENDGRID_LIVE).toBe(false);
-    expect(TWILIO_LIVE).toBe(false);
   });
 
   test('13-07: all screens have zero raw hex violations', async () => {

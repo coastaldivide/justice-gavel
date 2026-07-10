@@ -81,7 +81,6 @@ beforeAll(async () => {
   haversineKm   = geo.haversineKm;
   bboxFromLatLng= geo.bboxFromLatLng;
 
-  const tw = await import('../services/twilio.js');
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
 

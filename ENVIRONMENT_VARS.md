@@ -28,12 +28,8 @@ LIVE_PAYMENTS=true         # Enable live Stripe charges
 
 ## SMS / Email
 ```
-TWILIO_ACCOUNT_SID=        # Arrest alerts, SMS verification
-TWILIO_AUTH_TOKEN=
-TWILIO_FROM_NUMBER=+1XXXXXXXXXX
 SENDGRID_API_KEY=          # Transactional email
 ALERT_EMAIL_FROM=alerts@justicegavel.app
-LIVE_SMS=true              # Enable live Twilio SMS
 LIVE_EMAIL=true            # Enable live SendGrid email
 ```
 

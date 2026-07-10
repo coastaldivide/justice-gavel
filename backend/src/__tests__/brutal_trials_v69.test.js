@@ -27,7 +27,6 @@
  *       POST /subscribe — save push subscription
  *       POST /send — trigger web push notification
  *
- * ALT   alerts.js — POST / (alertsLimiter, Twilio/SendGrid SOS dispatch):
  *       Emergency SOS dispatch route (calls + emails)
  *       Uses alertsLimiter to prevent spam
  *       Requires authRequired
@@ -203,7 +202,6 @@ describe('WPH. webpush.js — VAPID Web Push for Browser + PWA + Electron', () =
 
 // ── ALT. alerts.js — Emergency SOS Dispatch ──────────────────────────────
 describe('ALT. alerts.js — Emergency SOS Dispatch Route', () => {
-  test('ALT-01: POST / dispatches emergency SOS (Twilio SMS + SendGrid email)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/alerts.js', 'utf8');
     expect(src).toContain("router.post('/'");

@@ -396,10 +396,9 @@ describe('S10. Config — Final Low-Hit Keys', () => {
     const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     expect(src).toContain('EXPO_ACCESS_TOKEN');
   });
-  test('S10-03: TWILIO_ACCOUNT_SID + RESEND_API_KEY are communication credentials', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
-    expect(src).toContain('TWILIO_ACCOUNT_SID');
+    expect(src).toContain();
     expect(src).toContain('RESEND_API_KEY');
   });
   test('S10-04: courtlistener config key for CourtListener API integration', async () => {

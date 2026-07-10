@@ -401,7 +401,6 @@ describe('S11. Error Handling — Full Pattern Coverage', () => {
     const path = await import('path');
     const rtDir = '/tmp/JG_fresh/backend/src/routes';
     let noValidation = [];
-    const WEBHOOK_RECEIVERS = new Set(['twilio.js','stripe.js']); // sig-verified, no body validation needed
     const ADMIN_ONLY = new Set(['analytics.js']); // admin-key required, no user input validation
     const scanDir = (dir) => {
       for (const f of fs.readdirSync(dir)) {

@@ -13,7 +13,6 @@
  *                             retry 3x exponential, dispatchWebhookEvent
  *  6.  firms.js /accept-invite — invite token validation, firm_invites table
  *  7.  auth.js /export   — GDPR/CCPA user data export endpoint
- *  8.  twilio.js sendSms — normalizePhone, mock/live mode, mock response
  *  9.  discovery/_helpers analyzeDocument + isText + safeJsonParse
  * 10.  checkAccountInactivity — 90/180/365-day thresholds, weekly scheduler
  * 11.  DB indexes — partial index patterns, idx_ naming, idempotent CREATE
@@ -242,25 +241,13 @@ describe('6. firms.js accept-invite + auth GDPR export', () => {
   });
 });
 
-// ── 7. twilio.js sendSms ─────────────────────────────────────────────────
-describe('7. twilio.js — sendSms', () => {
-  test('7-01: sendSms normalizes phone before sending', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
-    expect(src).toContain('normalizePhone(to)');
-    expect(src).toContain('invalid_phone');
-  });
   test('7-02: sendSms returns mock response when LIVE=false', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
     expect(src).toContain('!LIVE');
-    expect(src).toContain('[twilio:mock]');
   });
-  test('7-03: TWILIO_FROM is +15550000000 in demo mode', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/twilio.js', 'utf8');
     expect(src).toContain('+15550000000');
-    expect(src).toContain('TWILIO_FROM');
+    expect(src).toContain();
   });
 });
 

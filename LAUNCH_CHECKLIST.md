@@ -39,7 +39,7 @@
 - [x] Sentry error monitoring
 - [x] /health endpoint: DB + Stripe + AI checks
 - [x] Graceful shutdown on SIGTERM (10s drain)
-- [x] Circuit breaker: Anthropic, Stripe, Twilio, SendGrid
+- [x] Circuit breaker: Anthropic, Stripe, Resend
 - [x] Refresh token cleanup scheduled job
 - [x] GDPR/CCPA data export endpoint
 

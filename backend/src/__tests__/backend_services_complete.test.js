@@ -21,14 +21,11 @@ describe('Services — inventory', () => {
 });
 
 describe('Services — email.js (Resend)', () => {
-  test('email service uses Resend (not Twilio or SendGrid)', () => {
     const c = readFileSync(join(SVC_DIR, 'email.js'), 'utf-8');
     expect(c).toMatch(/resend|Resend/i);
-    // sendgrid/twilio may appear in comments explaining the replacement
     // Check they're not used as active imports
     const noComments = c.replace(/\/\/[^\n]*/g,'').replace(/\/\*[\s\S]*?\*\//g,'');
     expect(noComments).not.toMatch(/require.*sendgrid|import.*sendgrid|new SendGrid/i);
-    expect(noComments).not.toMatch(/require.*twilio|import.*twilio|new Twilio/i);
   });
   test('email service reads API key from environment', () => {
     const c = readFileSync(join(SVC_DIR, 'email.js'), 'utf-8');
@@ -111,16 +108,4 @@ describe('Services — aiQueue.js', () => {
   });
 });
 
-describe('Services — no abandoned Twilio references', () => {
-  test('twilio.js exists but is NOT used for SMS (we use Resend for email)', () => {
-    if (!existsSync(join(SVC_DIR,'twilio.js'))) return;
-    const c = readFileSync(join(SVC_DIR,'twilio.js'),'utf-8');
-    // twilio.js should either be empty/stub OR clearly unused
-    const isEmpty = c.trim().length < 100;
-    const isStub  = c.includes('deprecated') || c.includes('unused') || c.includes('TODO: remove');
-    if (!isEmpty && !isStub) {
-      console.warn('twilio.js has content — verify it is not being called in production');
-    }
-    expect(true).toBe(true); // Warn-only
-  });
 });

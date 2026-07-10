@@ -16,7 +16,6 @@ jest.mock('../db/index.js', () => ({
   }),
 }));
 jest.mock('../services/sendgrid.js', () => ({ sendEmail: jest.fn().mockResolvedValue({ ok: true }) }));
-jest.mock('../services/twilio.js',   () => ({ sendSms:   jest.fn().mockResolvedValue({ ok: true }) }));
 jest.mock('../services/pushDelivery.js', () => ({ sendPushToUser: jest.fn().mockResolvedValue({ sent: 1 }) }));
 
 // ─── SECTION TESTS ───────────────────────────────────────────────────────────

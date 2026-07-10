@@ -32,9 +32,7 @@ if (!DEMO_MODE) {
 
 // ── Optional features — degrade gracefully if absent ──────────────────────────
 const OPTIONAL_WARNINGS = {
-  // Existing infrastructure
-  TWILIO_ACCOUNT_SID:    'SMS alerts disabled — emergency SOS will only email contacts',
-  RESEND_API_KEY:      'Email alerts disabled — emergency SOS will only SMS contacts',
+  // Existing infrastructure  RESEND_API_KEY:      'Email alerts disabled — emergency SOS will only SMS contacts',
   SENTRY_DSN:            'Error tracking disabled — errors will only appear in PM2 logs',
   GOOGLE_PLACES_KEY:     'Google Places fallback disabled — GPS city lookup may fail',
   ADMIN_KEY:             'Admin API unprotected — set ADMIN_KEY to restrict provider DB access',
@@ -162,8 +160,7 @@ export const ALL_ENV_VARS = {
   STRIPE_ESQUIRE_ANNUAL_ID:(process.env.STRIPE_ESQUIRE_ANNUAL_ID || 'price_1Tb1l32XUfNqC3X4BRSRCuQa')  || '',
   STRIPE_LEGAL_RADAR_ID: (process.env.STRIPE_LEGAL_RADAR_ID || 'price_1Tb1vn2XUfNqC3X4U1jojSNW')   || '',
 
-  // ── Twilio ───────────────────────────────────────────────────────────────
-      
+        
   // ── SendGrid ─────────────────────────────────────────────────────────────
   RESEND_API_KEY:         process.env.RESEND_API_KEY           || '',
   ALERT_EMAIL_FROM:         process.env.ALERT_EMAIL_FROM           || 'alerts@justicegavel.app',

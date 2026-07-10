@@ -171,9 +171,7 @@ describe('SCHEMA. Complete DB Schema Coverage', () => {
 
 // ── Legal compliance still intact ────────────────────────────────────────
 describe('COMPLIANCE. Legal Compliance Checks', () => {
-  test('COMPLIANCE-01: TCPA opt-out in twilio webhook', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8');
     expect(src).toContain('STOP');
     // TCPA 47 CFR 64.1200 — STOP must be honored immediately
   });
@@ -222,7 +220,6 @@ describe('SECURITY. Critical Security Checks', () => {
     const app=fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8');
     expect(app).not.toContain("origin: '*'");
   });
-  test('SEC-03: All webhooks verified (Stripe HMAC + Twilio signature + ADMIN_KEY)', async () => {
     const fs=await import('fs');
     const stripe=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js','utf8');
     const bot=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js','utf8');

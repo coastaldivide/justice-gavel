@@ -1,6 +1,5 @@
 // JUSTICE GAVEL - BRUTAL TRIALS v100
 // 100TH PASS — CENTENNIAL
-// S0 threshold fixes + webhooks/stripe + webhooks/twilio + async safety audit
 // + TODO/FIXME 0 count confirmed + final comprehensive verification
 
 import { jest } from '@jest/globals';
@@ -107,34 +106,17 @@ describe('WHS. webhooks/stripe.js — Stripe Payment Event Handler', () => {
   });
 });
 
-// ── WHT. webhooks/twilio.js — SMS Reply Handler ───────────────────────────
-describe('WHT. webhooks/twilio.js — Inbound SMS Opt-Out Handler', () => {
-  test('WHT-01: POST / handles inbound SMS replies from bondsmen', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8');
-    expect(src).toContain('Inbound SMS reply handler');
-    expect(src).toContain('Twilio');
-    expect(src).toContain('outbound SMS');
-  });
-  test('WHT-02: Twilio signature verification (skipped in demo mode)', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8');
-    expect(src).toContain('Verifies Twilio signature');
     expect(src).toContain('demo mode');
     // Real mode: HMAC verification prevents spoofed SMS replies
   });
   test('WHT-03: YES | NO | STOP intent parsing — TCPA opt-out compliance', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8');
     expect(src).toContain('YES');
     expect(src).toContain('STOP');
     // YES = confirm, NO = decline, STOP = opt-out (TCPA required)
   });
-  test('WHT-04: respond to Twilio immediately — prevents timeout retry loop', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8');
-    expect(src).toContain('Respond to Twilio immediately');
-    // Twilio retries if no 2xx within 15s — respond first, process async
   });
 });
 

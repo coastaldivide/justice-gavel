@@ -34,5 +34,4 @@ export function getBreaker(name, fn, options = {}) {
 // ── Pre-built breakers for common services ────────────────────────────────────
 export const anthropicBreaker = (fn) => getBreaker('anthropic', fn, { timeout: 120000 });
 export const stripeBreaker    = (fn) => getBreaker('stripe',    fn, { timeout: 10000  });
-export const twilioBreaker    = (fn) => getBreaker('twilio',    fn, { timeout: 8000   });
 export const sendgridBreaker  = (fn) => getBreaker('sendgrid',  fn, { timeout: 8000   });

@@ -46,7 +46,6 @@ import piLeadsRouter    from './routes/pi_leads.js';
 import billingRouter    from './routes/billing/index.js';
 
 // ── Webhook routes ────────────────────────────────────────────────────────────
-// Twilio webhook router removed — not using Twilio
 import stripeWebhookRouter from './routes/webhooks/stripe.js';
 import botAdminRouter      from './routes/webhooks/bot_admin.js';
 import goldenGavelRouter     from './routes/golden_gavel.js';
@@ -86,8 +85,6 @@ import res                          from './routes/resources.js';
 const _missing = [];
 if (!process.env.STRIPE_SECRET)       _missing.push('STRIPE_SECRET (payments will use demo mode)');
 if (!process.env.ANTHROPIC_API_KEY)   _missing.push('ANTHROPIC_API_KEY (AI chat + match disabled)');
-// TWILIO_ACCOUNT_SID removed — Twilio not used (Push + Resend instead)
-  // if (!process.env.TWILIO_ACCOUNT_SID)  _missing.push('TWILIO_ACCOUNT_SID disabled)');
 if (!process.env.RESEND_API_KEY)    _missing.push('RESEND_API_KEY (email alerts disabled)');
 if (!process.env.OPENAI_API_KEY)       _missing.push('OPENAI_API_KEY (Whisper transcription disabled)');
 if (!process.env.GOOGLE_PLACES_KEY)   _missing.push('GOOGLE_PLACES_KEY (Google Places fallback disabled)');
@@ -276,7 +273,6 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '2mb' })); // also handles Twilio form-encoded
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -468,7 +464,6 @@ app.use('/api/pi-leads',  piLeadsRouter);
 app.use('/api/billing',    billingRouter);
 
 // ── Webhook routes ─────────────────────────────────────────────────────────────
-// REMOVED: // twilio webhook route removed  // Twilio not in use  // Twilio inbound SMS
 app.use('/api/bot',          botAdminRouter);
 app.use('/api/golden-gavel',  goldenGavelRouter);
 app.use('/api/recovery-agents', recoveryAgentsRouter);

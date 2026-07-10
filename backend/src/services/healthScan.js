@@ -44,7 +44,7 @@
 import cron from 'node-cron';
 import { getDb }        from '../db/index.js';
 import { sendEmail }    from './email.js';
-// SMS via Twilio removed — health alerts go through Slack webhook or Resend email
+// Health alerts via Slack webhook (ALERT_WEBHOOK_URL) and Resend email
 const sendSms = async () => null;
 import { sendPushToUser } from './pushDelivery.js';
 import { checkStaleness, runBiasAudit,

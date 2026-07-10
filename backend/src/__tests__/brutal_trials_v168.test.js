@@ -240,7 +240,6 @@ describe('ALL. 75-Screen Zero-Defect Verification', () => {
                      'customer.subscription.deleted','customer.subscription.updated',
                      'checkout.session.completed'])
       expect(stripe).toContain(ev);
-    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/twilio.js','utf8')).toContain('STOP');
     expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/auth.js','utf8')).toContain('DELETE FROM users');
   });
   test('ALL-08: discovery + motions/generate + /family/contacts all exist', async () => {
