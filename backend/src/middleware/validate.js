@@ -40,8 +40,11 @@ export const createMatterSchema = {
   title:       { type: 'string', required: true, minLength: 2, maxLength: 200 },
   client_name: { type: 'string', required: true, minLength: 2, maxLength: 200 },
   matter_type: { type: 'string', enum: ['criminal','civil','MDL','bankruptcy','constitutional','IP','antitrust','immigration'] },
+  notes:       { type: 'string', maxLength: 100_000 },  // full case notes
+  jurisdiction:{ type: 'string', maxLength: 50 },
 };
-export const sendMessageSchema    = { body: { type: 'string', required: true, minLength: 1, maxLength: 2000 } };
+// body limit depends on message_type — validated in route handler
+export const sendMessageSchema    = { body: { type: 'string', required: true, minLength: 1, maxLength: 50_000 } };
 export const ragQuerySchema       = { query: { type: 'string', required: true, minLength: 5, maxLength: 500 } };
 export const bailCalcSchema       = { bail_amount: { type: 'number', required: true, min: 0 }, months: { type: 'number', min: 1, max: 60 } };
 export const videoSessionSchema   = { topic: { type: 'string', maxLength: 100 } };

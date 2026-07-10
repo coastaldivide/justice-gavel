@@ -98,10 +98,13 @@ export function useRealtimeMessages(caseId: string | number | null) {
   }, [caseId]);
 
   // Send a message
-  const sendMessage = useCallback(async (body: string) => {
+  const sendMessage = useCallback(async (body: string, type: 'chat' | 'note' = 'chat') => {
     if (!caseId || !body.trim()) return;
+    // 'chat' = quick message (10K), 'note' = legal correspondence (50K)
+    const maxLen = type === 'note' ? 50_000 : 10_000;
+    if (body.length > maxLen) { setError(`Message exceeds ${maxLen.toLocaleString()} character limit`); return; }
     try {
-      const { data } = await api.post(`/messages/${caseId}`, { body });
+      const { data } = await api.post(`/messages/${caseId}`, { body, message_type: type });
       // Optimistic update (Realtime will also fire, deduplication handles it)
       setMessages(prev => {
         if (prev.some(m => m.id === data.message.id)) return prev;

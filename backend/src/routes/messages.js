@@ -78,7 +78,10 @@ router.post('/:caseId', authRequired, async (req, res) => {
   const { body }   = req.body;
 
   if (!body?.trim()) return err400(res, 'Message body required');
-  const safeBody = truncateStr(sanitizeStr(body), 2000);
+  // message_type: 'chat' (quick message) | 'note' (full legal correspondence)
+  const msgType  = req.body.message_type === 'note' ? 'note' : 'chat';
+  const maxLen   = msgType === 'note' ? 50_000 : 10_000;
+  const safeBody = truncateStr(sanitizeStr(body), maxLen);
 
   try {
     const db = await getDb();
@@ -92,9 +95,9 @@ router.post('/:caseId', authRequired, async (req, res) => {
 
     const result = await db.run(
       `INSERT INTO case_messages
-         (case_id, sender_id, sender_type, body, sent_at)
-       VALUES (?, ?, 'user', ?, datetime('now'))`,
-      [caseId, req.user.id, safeBody]
+         (case_id, sender_id, sender_type, body, message_type, sent_at)
+       VALUES (?, ?, 'user', ?, ?, datetime('now'))`,
+      [caseId, req.user.id, safeBody, msgType]
     );
 
     const msg = await db.get(
