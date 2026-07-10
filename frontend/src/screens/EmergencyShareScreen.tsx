@@ -306,7 +306,7 @@ if (phase === 'ready') return (
         <View style={styles.contactsList}>
           <Text maxFontSizeMultiplier={1.4} style={styles.contactsLabel}>Will be sent to:</Text>
           {contacts.map((c, i) => (
-            <View key={i} style={styles.contactRow}>
+            <View key={`contact-${i}`} style={styles.contactRow}>
               <Text maxFontSizeMultiplier={1.4} style={styles.contactNum}>{i + 1}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.contactVal}>{c}</Text>
             </View>
@@ -494,7 +494,7 @@ if (phase === 'ready') return (
       <View style={styles.contactsList}>
         <Text maxFontSizeMultiplier={1.4} style={styles.contactsLabel}>Sending to:</Text>
         {contacts.map((c, i) => (
-          <View key={i} style={styles.contactRow}>
+          <View key={`contact-${i}`} style={styles.contactRow}>
             <Text maxFontSizeMultiplier={1.4} style={styles.contactNum}>{i + 1}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.contactVal}>{c}</Text>
           </View>

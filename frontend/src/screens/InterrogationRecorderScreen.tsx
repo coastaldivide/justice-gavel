@@ -404,7 +404,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
             </Text>
             {dialogue.length > 0 ? (
               dialogue.map((line, i) => (
-                <View key={i} style={[styles.dialogueLine,
+                <View key={`dialogue-${i}`} style={[styles.dialogueLine,
                   { backgroundColor: i % 2 === 0 ? colors.bgSubtle : colors.bgCard }]}>
                   <Text maxFontSizeMultiplier={1.2} style={[styles.dialogueTs, { color: colors.textFaint }]}>
                     {line.timestamp}
@@ -451,7 +451,7 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
             '📤 Lets you share the PDF with your attorney instantly',
             '🔒 Recording stays on your device until you share it',
           ].map((item, i) => (
-            <Text key={i} maxFontSizeMultiplier={1.3} style={[styles.infoItem, { color: colors.textSecond }]}>
+            <Text key={`item-${i}`} maxFontSizeMultiplier={1.3} style={[styles.infoItem, { color: colors.textSecond }]}>
               {item}
             </Text>
           ))}

@@ -107,7 +107,7 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
       {/* Accordion sections */}
       {SECTIONS.map((sec, idx) => (
         <View
-          key={idx}
+          key={`SECTIONS-${idx}`}
           style={[s.section, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
         >
           <TouchableOpacity

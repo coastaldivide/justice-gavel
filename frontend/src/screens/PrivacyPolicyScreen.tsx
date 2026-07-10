@@ -305,7 +305,7 @@ export default function PrivacyPolicyScreen({ navigation }: ScreenProps): React.
           'Location is used in real-time only -- never stored.',
           'You can delete your account and all data anytime.',
         ].map((item, i) => (
-          <Text key={i} maxFontSizeMultiplier={1.3} style={[styles.summaryItem,
+          <Text key={`item-${i}`} maxFontSizeMultiplier={1.3} style={[styles.summaryItem,
             { color: isDark ? colors.legal : colors.legalDark }]}>
             ✓  {item}
           </Text>
@@ -335,7 +335,7 @@ export default function PrivacyPolicyScreen({ navigation }: ScreenProps): React.
       {tableExpanded && (
         <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
           {DATA_TABLE.map((row, i) => (
-            <View key={i} style={[styles.tableRow,
+            <View key={`DATA_TAB-${i}`} style={[styles.tableRow,
               { backgroundColor: i % 2 === 0 ? colors.bgCard : colors.bgSubtle,
                 borderBottomColor: colors.border }]}>
               <Text maxFontSizeMultiplier={1.2} style={[styles.tableCategory,
@@ -367,7 +367,7 @@ export default function PrivacyPolicyScreen({ navigation }: ScreenProps): React.
 
       {/* ── Full sections ────────────────────────────────────────── */}
       {SECTIONS.map((section, idx) => (
-        <View key={idx} style={[styles.section, { backgroundColor: colors.bgCard,
+        <View key={`SECTIONS-${idx}`} style={[styles.section, { backgroundColor: colors.bgCard,
           borderLeftColor: colors.legalDark }]}>
           <Text maxFontSizeMultiplier={1.2} style={[styles.sectionHeading,
             { color: colors.textPrimary }]}>

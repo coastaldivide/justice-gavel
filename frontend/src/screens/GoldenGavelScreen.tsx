@@ -333,7 +333,7 @@ export default function GoldenGavelScreen({ navigation }: ScreenProps): React.JS
           {hall.length === 0 ? (
             <Text style={{color:colors.textSecond,textAlign:'center',marginTop:24}}>No Hall of Fame entries yet — case evaluations will appear here after attorney review.</Text>
           ) : hall.map((entry, i) => (
-            <View key={i} style={[styles.hallCard, {
+            <View key={`hall-${i}`} style={[styles.hallCard, {
               backgroundColor: entry.featured ? colors.warnBg : colors.bgCard,
               borderColor: entry.featured ? colors.gold : GAVEL_COLOR[entry.gavel_level as GavelLevel]?.border || colors.border,
             }]}>

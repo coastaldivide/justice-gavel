@@ -171,7 +171,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
         <View style={s.card}>
           <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Next Steps</Text>
           {(intakeResult.next_steps || []).map((step: string, i: number) => (
-            <View key={i} style={s.stepRow}>
+            <View key={`item-${i}`} style={s.stepRow}>
               <Text maxFontSizeMultiplier={1.4} style={s.stepNum}>{i + 1}</Text>
               <Text maxFontSizeMultiplier={1.4} style={s.stepText}>{step}</Text>
             </View>

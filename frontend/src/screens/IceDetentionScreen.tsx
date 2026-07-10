@@ -357,7 +357,7 @@ export default function IceDetentionScreen(): React.JSX.Element {
       {/* Rights */}
       <Text style={[s.sectionLabel, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>YOUR RIGHTS / SUS DERECHOS</Text>
       {L.rights.map((r, i) => (
-        <View key={i} style={[s.rightCard, { backgroundColor: r.bg, borderColor: r.color }]}>
+        <View key={`rights-${i}`} style={[s.rightCard, { backgroundColor: r.bg, borderColor: r.color }]}>
           <View style={s.rightTop}>
             <Text style={s.rightIcon} maxFontSizeMultiplier={1.4}>{r.icon}</Text>
             <Text style={[s.rightTitle, { color: r.color }]} maxFontSizeMultiplier={1.4}>{r.title}</Text>
@@ -371,7 +371,7 @@ export default function IceDetentionScreen(): React.JSX.Element {
       {/* Steps */}
       <Text style={[s.sectionLabel, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>{L.stepsTitle}</Text>
       {L.steps.map((step, i) => (
-        <View key={i} style={[s.stepRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        <View key={`steps-${i}`} style={[s.stepRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={s.stepBubble}>
             <Text style={s.stepBubbleTxt} maxFontSizeMultiplier={1.4}>{i + 1}</Text>
           </View>
@@ -396,7 +396,7 @@ export default function IceDetentionScreen(): React.JSX.Element {
       {/* Legal resources */}
       <Text style={[s.sectionLabel, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>{L.legalTitle}</Text>
       {L.resources.map((r, i) => (
-        <View key={i} style={[
+        <View key={`resource-${i}`} style={[
           s.resourceCard,
           { backgroundColor: r.highlight ? COLORS.legalBg : colors.bgCard, borderColor: r.highlight ? COLORS.legal : colors.border },
         ]}>

@@ -105,7 +105,7 @@ export default function JustArrestedScreen({ navigation }: ScreenProps): React.J
         {/* Progress bar */}
         <View style={styles.progressRow}>
           {STEPS.map((_, i) => (
-            <View key={i} style={[
+            <View key={`STEPS-${i}`} style={[
               styles.progressDot,
               { backgroundColor: i <= step ? colors.bgCard : 'rgba(255,255,255,0.3)' }
             ]} />

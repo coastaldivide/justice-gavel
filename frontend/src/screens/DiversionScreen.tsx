@@ -386,7 +386,7 @@ export default function DiversionScreen({ navigation, route }: ScreenProps): Rea
           'Diversion must be requested -- judges and prosecutors rarely offer it unsolicited.',
           'Even a public defender can file a diversion application.',
         ].map((s, i) => (
-          <View key={i} style={styles.actionItem}>
+          <View key={`item-${i}`} style={styles.actionItem}>
             <Text maxFontSizeMultiplier={1.4} style={styles.actionNum}>{i + 1}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.actionText}>{s}</Text>
           </View>

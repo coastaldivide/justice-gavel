@@ -642,7 +642,7 @@ export default function DeadlineCalculatorScreen(): React.JSX.Element {
           { color: colors.legalDark, label: '> 30 days -- Scheduled' },
           { color: colors.textSecond, label: 'Past / not applicable' },
         ].map((item, i) => (
-          <View key={i} style={styles.legendRow}>
+          <View key={`item-${i}`} style={styles.legendRow}>
             <View style={[styles.legendDot, { backgroundColor: item.color }]} />
             <Text maxFontSizeMultiplier={1.4} style={[styles.legendText, { color: colors.textSecond }]}>{item.label}</Text>
           </View>
@@ -653,7 +653,7 @@ export default function DeadlineCalculatorScreen(): React.JSX.Element {
       <View style={styles.deadlineList}>
         {DEADLINE_RULES.map((rule, i) => (
           <DeadlineRow
-            key={i}
+            key={`DEADLINE-${i}`}
             rule={rule}
             arrest={arrestDate}
             judgment={judgmentDate}

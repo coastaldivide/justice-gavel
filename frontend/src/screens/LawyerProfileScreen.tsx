@@ -38,7 +38,7 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
     )}
       <View style={{ flexDirection:'row', gap:2 }}>
         {[1,2,3,4,5].map(i => (
-          <Text key={i} style={{ fontSize:14, color: i<=filled ? COLORS.gold : COLORS.border }}>
+          <Text key={`item-${i}`} style={{ fontSize:14, color: i<=filled ? COLORS.gold : COLORS.border }}>
             ★
           </Text>
         ))}
@@ -373,7 +373,7 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
             {reviews.length === 0 ? (
               <Text style={{color: colors.textMuted, textAlign: 'center', padding: 16}}>No reviews yet</Text>
             ) : reviews.map((r, i) => (
-              <View key={i} style={[s.reviewCard, { backgroundColor:colors.bgCard,
+              <View key={`reviews-${i}`} style={[s.reviewCard, { backgroundColor:colors.bgCard,
                 borderColor:colors.border }]}>
                 <View style={{ flexDirection:'row', justifyContent:'space-between',
                   marginBottom:6 }}>

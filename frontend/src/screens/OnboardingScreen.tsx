@@ -239,7 +239,7 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
           const inputRange = [(i-1)*width, i*width, (i+1)*width];
           const w = scrollX.interpolate({ inputRange, outputRange: [8, 24, 8], extrapolate: 'clamp' });
           const o = scrollX.interpolate({ inputRange, outputRange: [0.35, 1, 0.35], extrapolate: 'clamp' });
-          return <Animated.View key={i} style={[styles.dot, { width: w, opacity: o }]} />;
+          return <Animated.View key={`item-${i}`} style={[styles.dot, { width: w, opacity: o }]} />;
         })}
       </View>
 

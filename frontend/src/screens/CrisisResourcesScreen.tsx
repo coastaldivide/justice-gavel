@@ -173,7 +173,7 @@ export default function CrisisResourcesScreen({ route, navigation }: ScreenProps
       <View style={[styles.groundingCard, { backgroundColor: colors.bgCard }]}>
         <Text maxFontSizeMultiplier={1.4} style={styles.groundingLabel}>{t('crisis_grounding_label')}</Text>
         {GROUNDING.map((g, i) => (
-          <View key={i} style={styles.groundingRow}>
+          <View key={`GROUNDIN-${i}`} style={styles.groundingRow}>
             <Text maxFontSizeMultiplier={1.4} style={styles.groundingIcon}>{g.icon}</Text>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.groundingTitle, { color: colors.textPrimary }]}>{g.title}</Text>

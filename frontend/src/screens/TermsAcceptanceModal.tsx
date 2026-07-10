@@ -148,7 +148,7 @@ export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
             </View>
           )}
 {SUMMARY_POINTS.map((pt, i) => (
-            <View key={i} style={s.point}>
+            <View key={`point-${i}`} style={s.point}>
               <Text maxFontSizeMultiplier={1.4} style={s.pointIcon}>{pt.icon}</Text>
               <View style={s.pointBody}>
                 <Text maxFontSizeMultiplier={1.4} style={s.pointTitle}>{pt.title}</Text>

@@ -791,7 +791,8 @@ export default function SettingsScreen({ route, navigation }: any) {
               backgroundColor:colors.bgCard, borderRadius:10, padding:14,
               marginBottom:8, borderWidth:1, borderColor:colors.border }}
             onPress={async () => {
-              const isAvailable = await StoreReview.isAvailableAsync();
+              let isAvailable = false;
+        try { isAvailable = await StoreReview.isAvailableAsync(); } catch (_) {}
               if (isAvailable) {
                 await StoreReview.requestReview();
               }

@@ -99,7 +99,7 @@ export default function LegalDisclaimerScreen({ onAccepted }: Props) {
             </View>
           )}
 {DISCLAIMER_SECTIONS.map((sec, i) => (
-          <View key={i} style={s.section}>
+          <View key={`section-${i}`} style={s.section}>
             <View style={s.sectionHeader}>
               <Text style={s.sectionIcon} maxFontSizeMultiplier={1.4}>{sec.icon}</Text>
               <Text style={s.sectionTitle} maxFontSizeMultiplier={1.4}>{sec.title}</Text>

@@ -450,7 +450,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
               <View style={[styles.resultSection, { backgroundColor: isDark ? colors.legalBg : colors.legalBg, borderColor: colors.legal }]}>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.resultSectionTitle, { color: COLORS.legal }]}>Next steps</Text>
                 {note.next_steps.map((s, i) => (
-                  <View key={i} style={styles.resultBulletRow}>
+                  <View key={`next_ste-${i}`} style={styles.resultBulletRow}>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.resultBullet, { color: COLORS.legal }]}>›</Text>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.resultBulletText, { color: colors.textSecond }]}>{s}</Text>
                   </View>
@@ -462,7 +462,7 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
               <View style={[styles.resultSection, { backgroundColor: isDark ? colors.bailBg : colors.warnBg, borderColor: colors.warn }]}>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.resultSectionTitle, { color: COLORS.bail }]}>⚑ Flagged</Text>
                 {note.flags.map((f, i) => (
-                  <View key={i} style={styles.resultBulletRow}>
+                  <View key={`flags-${i}`} style={styles.resultBulletRow}>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.resultBullet, { color: COLORS.bail }]}>!</Text>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.resultBulletText, { color: colors.textSecond }]}>{f}</Text>
                   </View>

@@ -281,7 +281,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
           {/* Rights */}
           <View style={styles.cardBody}>
             {card.rights.map((right, i) => (
-              <View key={i} style={styles.rightRow}>
+              <View key={`rights-${i}`} style={styles.rightRow}>
                 <View style={styles.rightNumberBadge}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.rightNumberText}>{i + 1}</Text>
                 </View>
@@ -296,7 +296,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
           {/* Emergency footer */}
           <View style={styles.cardFooter}>
             {card.emergency.map((line, i) => (
-              <Text maxFontSizeMultiplier={1.4} key={i} style={styles.emergencyLine}>{line}</Text>
+              <Text maxFontSizeMultiplier={1.4} key={`emergenc-${i}`} style={styles.emergencyLine}>{line}</Text>
             ))}
             <Text maxFontSizeMultiplier={1.4} style={styles.cardBrandLine}>{card.brandLine}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.cardLegalNote}>{card.footer}</Text>

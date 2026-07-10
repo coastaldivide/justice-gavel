@@ -224,7 +224,7 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
                   {recentSearches.map((q, i) => (
                     <TouchableOpacity
                       accessibilityRole="button"
-                      key={i}
+                      key={`recentSe-${i}`}
                       style={[s.resultRow, { backgroundColor: colors.bgCard,
                         borderColor: colors.border }]}
                       onPress={() => { setQuery(q); doSearch(q); }}

@@ -248,7 +248,7 @@ export default function TermsOfServiceScreen({ navigation }: ScreenProps): React
 
       {/* ── Sections ────────────────────────────────────────────── */}
       {SECTIONS.map((section, idx) => (
-        <View key={idx} style={[styles.section, { backgroundColor: colors.bgCard,
+        <View key={`SECTIONS-${idx}`} style={[styles.section, { backgroundColor: colors.bgCard,
           borderLeftColor: idx === 0 ? colors.emergency :
                           idx === 4 ? colors.warnDark :
                           idx === 6 ? colors.legal : colors.border }]}>

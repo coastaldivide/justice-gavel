@@ -307,7 +307,7 @@ function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPE
                     </Text>
                   )}
                   {reviewResult.issues?.map((issue, i) => (
-                    <Text key={i} maxFontSizeMultiplier={1.4} style={{ fontSize:12,
+                    <Text key={`item-${i}`} maxFontSizeMultiplier={1.4} style={{ fontSize:12,
                       lineHeight:18, color:COLORS.warnDark, marginBottom:2 }}>
                       • {issue}
                     </Text>

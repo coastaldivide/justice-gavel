@@ -124,7 +124,7 @@ export default function HousingRightsScreen(): React.JSX.Element {
 
       {/* Section cards */}
       {allSections.map((sec: any, idx: number) => (
-        <View key={idx} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+        <View key={`allSecti-${idx}`} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           {sec.title ? <Text style={[styles.cardTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{sec.title}</Text> : null}
           {sec.body  ? <Text style={[styles.cardBody,  { color: colors.textMuted  }]} maxFontSizeMultiplier={1.4}>{sec.body}</Text>  : null}
           {sec.steps ? sec.steps.map((step: string, si: number) => (
