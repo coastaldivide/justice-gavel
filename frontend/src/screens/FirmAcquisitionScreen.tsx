@@ -417,6 +417,7 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
               placeholderTextColor={colors.textMuted}
               autoCapitalize="words"
               editable={!activating}
+          returnKeyType="done" blurOnSubmit={true}
             />
 
             <View style={s.trialPerks}>

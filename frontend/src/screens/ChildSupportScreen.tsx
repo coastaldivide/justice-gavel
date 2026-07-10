@@ -144,6 +144,7 @@ export default function ChildSupportScreen({ navigation }: any) {
               keyboardType="numeric"
               value={p1Income}
               onChangeText={setP1Income}
+          returnKeyType="done" blurOnSubmit={true}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -155,6 +156,7 @@ export default function ChildSupportScreen({ navigation }: any) {
               keyboardType="numeric"
               value={p2Income}
               onChangeText={setP2Income}
+          returnKeyType="done" blurOnSubmit={true}
             />
           </View>
         </View>
@@ -183,6 +185,7 @@ export default function ChildSupportScreen({ navigation }: any) {
           keyboardType="numeric"
           value={custody}
           onChangeText={setCustody}
+          returnKeyType="done" blurOnSubmit={true}
         />
         <Text style={[s.hint, { color: COLORS.textMuted }]} maxFontSizeMultiplier={1.4}>50 = equal shared custody</Text>
 
@@ -208,6 +211,7 @@ export default function ChildSupportScreen({ navigation }: any) {
               keyboardType="numeric"
               value={alimonyAmt}
               onChangeText={setAlimonyAmt}
+          returnKeyType="done" blurOnSubmit={true}
             />
           </>
         )}

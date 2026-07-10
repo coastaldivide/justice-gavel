@@ -147,6 +147,7 @@ export default function CourtLocatorScreen(): React.JSX.Element {
           }}
           autoCapitalize="words"
           clearButtonMode="while-editing"
+          returnKeyType="search" blurOnSubmit={true}
         />
       </View>
 

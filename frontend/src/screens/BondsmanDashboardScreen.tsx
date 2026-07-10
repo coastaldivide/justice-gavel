@@ -499,7 +499,7 @@ export default function BondsmanDashboardScreen({ navigation }: ScreenProps): Re
           { label:'Avg Bail',   value: leads.length ? '$'+Math.round(leads.reduce((s: number, l: import('../types/api').BondsmanLead) => s + (l.bail_amount ?? 0),0)/leads.length).toLocaleString() : '--', color:colors.warnDark },
           { label:'High Value', value: String(leads.filter((l: import('../types/api').BondsmanLead) => (l.bail_amount ?? 0) >= 25000).length), color:colors.navy },
         ].map((s,i) => (
-          <View key={i} style={{ flex:1, backgroundColor:colors.bgCard, borderRadius:8,
+          <View key={`row-${i}`} style={{ flex:1, backgroundColor:colors.bgCard, borderRadius:8,
             padding:8, alignItems:'center', borderWidth:1, borderColor:colors.border }}>
             <Text testID="stat-avg-bail" maxFontSizeMultiplier={1.4} style={{ fontSize:16, fontWeight:'800', color:s.color }}>{s.value}</Text>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize:10, color:colors.textMuted, marginTop:1, textAlign:'center' }}>{s.label}</Text>

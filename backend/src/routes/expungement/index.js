@@ -33,7 +33,7 @@ router.post('/referral', authRequired, async (req, res) => {
        VALUES (?, ?, ?, ?, datetime('now'))`,
       [req.user.id, case_id || null, state || null, partner]
     ).catch(() => {});
-    res.json({ logged: true });
+    return res.json({ logged: true });
   } catch { res.json({ logged: false }); }
 });
 

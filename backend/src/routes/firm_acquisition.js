@@ -455,8 +455,8 @@ router.post('/checklist/:key', authRequired, routeLimiter, async (req, res) => {
       [ctx.firm_id, key, new Date().toISOString()]
     );
 
-    res.json({ marked: true, key, firm_id: ctx.firm_id });
-        res.json({ ok: true });
+    return res.json({ marked: true, key, firm_id: ctx.firm_id });
+  // (removed dead code: res.json({ ok: true });)
     } catch (e) {
     logger.error('[firm-acq/checklist POST]', e.message);
     res.status(500).json({ error: 'Could not mark checklist item.' });

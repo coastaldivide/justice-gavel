@@ -104,6 +104,7 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
             style={{ margin:6, padding:6, backgroundColor:card, borderRadius:8,
               color:text, fontSize:12, borderWidth:1, borderColor:border }}
             autoCapitalize="characters" maxLength={2}
+          returnKeyType="search" blurOnSubmit={true}
           />
           <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

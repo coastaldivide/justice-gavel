@@ -171,7 +171,7 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
     await db.exec('COMMIT');
     res.json({ success: true, fee_charged: `$${(feeCents/100).toFixed(0)}`, arrest });
   } catch (e) {
-    if (db) try { await db.run('ROLLBACK'); } catch (_) {}
+    if (db) try { await db.run('ROLLBACK'); } catch (_) { logger?.warn?.("[bondsman] suppressed:", _?.message); }
     logger.error('[billing] accept lead error:', e.message);
     res.status(500).json({ error: 'Server error. Please try again.' });
   }

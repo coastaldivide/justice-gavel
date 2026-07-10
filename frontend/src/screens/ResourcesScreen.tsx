@@ -132,6 +132,7 @@ export default function ResourcesScreen(): React.JSX.Element {
             paddingVertical:10, color:text, fontSize:15,
             borderWidth:1, borderColor: colors.border,
           }}
+          returnKeyType="search" blurOnSubmit={true}
         />
       </View>
 

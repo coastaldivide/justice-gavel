@@ -952,6 +952,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               multiline
               maxLength={500}
               accessibilityLabel="Message to send to selected attorneys"
+          returnKeyType="search" blurOnSubmit={true}
             />
             {bulkResult && (
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,

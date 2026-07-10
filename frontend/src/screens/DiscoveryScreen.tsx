@@ -150,7 +150,7 @@ function Section({
         <View style={styles.sectionBody}>
           {(items || []).map((item, i) => (
             <TouchableOpacity accessibilityRole="button"
-              key={i}
+              key={`row-${i}`}
               style={styles.itemRow}
               onPress={() => Clipboard.setString(item)}
               accessibilityLabel={`Copy item: ${item}`}

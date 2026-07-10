@@ -129,6 +129,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
             style={{ backgroundColor: colors.bgCard, borderRadius: 10, padding: 12,
               color: colors.textPrimary, fontSize: 14, borderWidth: 1, borderColor: colors.border }}
             accessibilityLabel="Officer name or badge number"
+          returnKeyType="done" blurOnSubmit={true}
           />
           <TextInput
             value={location}
@@ -138,6 +139,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
             style={{ backgroundColor: colors.bgCard, borderRadius: 10, padding: 12,
               color: colors.textPrimary, fontSize: 14, borderWidth: 1, borderColor: colors.border }}
             accessibilityLabel="Location"
+          returnKeyType="done" blurOnSubmit={true}
           />
         </View>
       )}
@@ -214,6 +216,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
               color: colors.textPrimary, fontSize: 13, borderWidth: 1, borderColor: colors.border,
               minHeight: 80 }}
             accessibilityLabel="Additional notes"
+          returnKeyType="done" blurOnSubmit={true}
           />
           <TouchableOpacity
             onPress={reset}

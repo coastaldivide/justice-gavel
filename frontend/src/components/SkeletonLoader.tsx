@@ -85,7 +85,7 @@ export function SkeletonProfile() {
       <SkeletonBlock width="35%" height={13} style={{ alignSelf: 'center', marginTop: 6 }} />
       <View style={{ marginTop: 24, gap: 12 }}>
         {[1,2,3,4].map(i => (
-          <View key={i} style={sk.profileRow}>
+          <View key={`skeleton-i`} style={sk.profileRow}>
             <SkeletonBlock width={20} height={20} radius={4} />
             <SkeletonBlock width="70%" height={14} />
             <SkeletonBlock width="20%" height={14} />
@@ -100,7 +100,7 @@ export function SkeletonCaseList() {
   return (
     <View style={{ gap: 12, padding: 16 }}>
       {[1,2,3].map(i => (
-        <View key={i} style={sk.caseItem}>
+        <View key={`skeleton-i`} style={sk.caseItem}>
           <View style={sk.caseHeader}>
             <SkeletonBlock width="55%" height={15} />
             <SkeletonBlock width={70} height={24} radius={12} />
@@ -148,7 +148,7 @@ export function SkeletonLoader({ rows = 3, label, style }: SkeletonLoaderProps) 
         <SkeletonBlock width="45%" height={12} radius={4} style={{ marginBottom: 4 }} />
       )}
       {Array.from({ length: rows }, (_, i) => (
-        <View key={i} style={{ gap: 8 }}>
+        <View key={`skeleton-i`} style={{ gap: 8 }}>
           <SkeletonBlock width="100%" height={14} />
           <SkeletonBlock width={`${60 + (i * 11) % 30}%`} height={11} />
         </View>

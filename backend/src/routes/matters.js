@@ -195,7 +195,7 @@ router.post('/', authRequired, matterLimiter, auditLog('matter', 'create'), asyn
             ]
           ).catch(() => {}); // ignore if docket_entries table has different schema
         }
-      } catch (_e) {} // Non-blocking — never fail matter creation
+      } catch (_e) { logger?.warn?.("[matters] suppressed:", _e?.message); } // Non-blocking — never fail matter creation
     });
 
     // Dispatch webhook if user belongs to a firm

@@ -162,7 +162,7 @@ function SavedCard({
       {lawyer.specialties?.length > 0 && (
         <View style={styles.tagRow}>
           {lawyer.specialties.slice(0, 4).map((s, i) => (
-            <View key={i} style={[styles.tag, { backgroundColor: COLORS.navy + '12', borderColor: COLORS.navy + '30' }]}>
+            <View key={`row-${i}`} style={[styles.tag, { backgroundColor: COLORS.navy + '12', borderColor: COLORS.navy + '30' }]}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.tagText, { color: COLORS.navy }]}>{s}</Text>
             </View>
           ))}

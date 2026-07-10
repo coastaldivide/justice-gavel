@@ -102,7 +102,7 @@ export default function ContactsScreen(): React.JSX.Element {
       <Text maxFontSizeMultiplier={1.4} style={[styles.sectionHint, { color: colors.textMuted }]}>Enter a phone number or email address</Text>
 
       {contacts.map((c, i) => (
-        <View key={i} style={styles.contactRow}>
+        <View key={`row-${i}`} style={styles.contactRow}>
           <View style={[styles.inputWrap, { flex: 1, marginBottom: 0, backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.numBadge}>{i + 1}</Text>
             <TextInput

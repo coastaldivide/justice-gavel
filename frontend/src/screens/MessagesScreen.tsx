@@ -155,13 +155,13 @@ function HighlightedText({ text, style }: { text: string; style?: object }) {
     <Text maxFontSizeMultiplier={1.4} style={style}>
       {parts.map((part, i) => {
         if (part.startsWith('*') && part.endsWith('*')) {
-          return <Text maxFontSizeMultiplier={1.4} key={i} style={{ fontStyle: 'italic', color: COLORS.navy }}>{part.slice(1,-1)}</Text>;
+          return <Text maxFontSizeMultiplier={1.4} key={`row-${i}`} style={{ fontStyle: 'italic', color: COLORS.navy }}>{part.slice(1,-1)}</Text>;
         }
         if (/v\..*\d+\s+\S+\s+\d+/.test(part)) {
           // Tappable citation -- opens CourtListener for instant verification
           return (
             <Text maxFontSizeMultiplier={1.4}
-              key={i}
+              key={`row-${i}`}
               style={{ fontFamily: 'monospace', fontSize: 12, color: COLORS.navy,
                 fontWeight: '700', textDecorationLine: 'underline' }}
               onPress={() => openVerify(part)}
@@ -173,7 +173,7 @@ function HighlightedText({ text, style }: { text: string; style?: object }) {
             </Text>
           );
         }
-        return <Text maxFontSizeMultiplier={1.4} key={i}>{part}</Text>;
+        return <Text maxFontSizeMultiplier={1.4} key={`row-${i}`}>{part}</Text>;
       })}
     </Text>
   );
@@ -733,7 +733,7 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
 
         {/* ── Thread ──────────────────────────────────────────────────────── */}
         {messages.map((msg, i) => (
-          <ResearchBubble key={i} msg={msg} />
+          <ResearchBubble key={`row-${i}`} msg={msg} />
         ))}
 
         {/* Searching indicator */}

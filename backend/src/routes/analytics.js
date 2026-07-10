@@ -103,7 +103,7 @@ router.get('/monitor/status', authRequired, async (req, res) => {
     let memb = null;
     try { memb = await getFirmMembership(db,req.user.id); } catch(dbE) { /* demo mode — no firm tables */ }
     if (memb && !hasMinRole(memb.role,'firm_admin')) return err403(res,'Requires firm_admin+.');
-    res.json({ ...checkStaleness(), demo: !memb });
+    return res.json({ ...checkStaleness(), demo: !memb });
   } catch(e) { logger.warn('[analytics/monitor/status]',e.message); res.json({ status:'unavailable', demo:true }); }
 });
 

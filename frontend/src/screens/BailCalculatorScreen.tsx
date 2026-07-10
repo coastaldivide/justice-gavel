@@ -119,6 +119,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
             paddingVertical: 10, color: text, fontSize: 14, marginBottom: 12,
             borderWidth: 1, borderColor: colors.border,
           }}
+          returnKeyType="search" blurOnSubmit={true}
         />
 
         {loading && <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} />}

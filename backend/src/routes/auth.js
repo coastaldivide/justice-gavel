@@ -249,7 +249,7 @@ router.post('/register', authRateLimit, registerLimiter, async (req, res) => {
     res.json(sign(user));
   } catch (e) {
     // ROLLBACK if db was initialized
-    try { await db.run('ROLLBACK'); } catch (_) {}
+    try { await db.run('ROLLBACK'); } catch (_) { logger?.warn?.("[auth] suppressed:", _?.message); }
     logger.error('[auth/register]', e.message);
     res.status(500).json({ error: 'Registration failed' });
   }

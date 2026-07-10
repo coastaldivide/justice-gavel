@@ -9,8 +9,8 @@ export async function createCoinbaseCharge({ amount, currency='USD', user, meta 
       pricing_type: 'fixed_price',
       local_price: { amount: String(amount), currency },
       metadata: { user: user?.email || 'anon' },
-      redirect_url: meta?.successUrl || 'http://localhost:19006',
-      cancel_url: meta?.cancelUrl || 'http://localhost:19006'
+      redirect_url: meta?.successUrl || process.env.APP_URL || 'http://localhost:19006',
+      cancel_url: meta?.cancelUrl || process.env.APP_URL || 'http://localhost:19006'
     })
   });
   if(!r.ok){ return { provider:'coinbase-error', status:r.status, url:null }; }
