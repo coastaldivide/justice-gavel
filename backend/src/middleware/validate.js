@@ -1,97 +1,47 @@
 /**
- * middleware/validate.js — Zod request validation
- *
- * All POST/PUT endpoints declare their schema here.
- * Invalid requests get 422 with field-level errors — never 500.
- * This prevents malformed data from reaching the database layer.
+ * middleware/validate.js — Typed request validation schemas
  */
-
-import { z } from 'zod';
-
-export function validate(schema) {
+function schemaValidator(schema) {
   return (req, res, next) => {
-    const result = schema.safeParse(req.body);
-    if (!result.success) {
-      const errors = result.error.errors.map(e => ({
-        field:   e.path.join('.'),
-        message: e.message,
-        code:    e.code,
-      }));
-      return res.status(422).json({
-        error:  'Validation failed.',
-        code:   'validation_error',
-        errors,
-      });
+    const errors = [];
+    const body   = req.body || {};
+    for (const [field, rules] of Object.entries(schema)) {
+      const val = body[field];
+      if (rules.required && (val === undefined || val === null || val === ''))
+        { errors.push({ field, error: `${field} is required` }); continue; }
+      if (val === undefined || val === null) continue;
+      if (rules.type === 'string'  && typeof val !== 'string')  errors.push({ field, error: `${field} must be a string` });
+      if (rules.type === 'number'  && typeof val !== 'number')  errors.push({ field, error: `${field} must be a number` });
+      if (rules.minLength && String(val).length < rules.minLength) errors.push({ field, error: `${field} min ${rules.minLength} chars` });
+      if (rules.maxLength && String(val).length > rules.maxLength) errors.push({ field, error: `${field} max ${rules.maxLength} chars` });
+      if (rules.min !== undefined && Number(val) < rules.min)  errors.push({ field, error: `${field} >= ${rules.min}` });
+      if (rules.max !== undefined && Number(val) > rules.max)  errors.push({ field, error: `${field} <= ${rules.max}` });
+      if (rules.enum && !rules.enum.includes(val)) errors.push({ field, error: `${field} must be: ${rules.enum.join('|')}` });
     }
-    req.validated = result.data;
+    if (errors.length > 0) return res.status(400).json({ error: 'Validation failed', fields: errors });
     next();
   };
 }
 
-// ── Auth schemas ─────────────────────────────────────────────────────────────
-export const registerSchema = z.object({
-  identifier:  z.string().min(3).max(120).trim(),
-  password:    z.string().min(8).max(128)
-                 .regex(/[A-Z]/, 'Must contain uppercase letter')
-                 .regex(/[0-9]/, 'Must contain a number'),
-  displayName: z.string().min(1).max(60).trim().optional(),
-});
+export const validate = (schema) => schemaValidator(schema);
 
-export const loginSchema = z.object({
-  identifier: z.string().min(1).max(120).trim(),
-  password:   z.string().min(1).max(128),
-});
+const STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID',
+  'IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT',
+  'NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','federal'];
 
-export const resetPasswordSchema = z.object({
-  token:    z.string().min(20).max(200),
-  password: z.string().min(8).max(128)
-              .regex(/[A-Z]/, 'Must contain uppercase letter')
-              .regex(/[0-9]/, 'Must contain a number'),
-});
-
-// ── Case schemas ─────────────────────────────────────────────────────────────
-export const createCaseSchema = z.object({
-  title:           z.string().min(1).max(200).trim(),
-  description:     z.string().max(5000).trim().optional(),
-  status:          z.enum(['open','closed','pending','active']).default('open'),
-  charge_type:     z.string().max(100).trim().optional(),
-  jurisdiction:    z.string().max(100).trim().optional(),
-  court_date:      z.string().datetime().optional().nullable(),
-  attorney_id:     z.number().int().positive().optional().nullable(),
-});
-
-// ── Bail schemas ─────────────────────────────────────────────────────────────
-export const bailCalculateSchema = z.object({
-  state:        z.string().length(2).toUpperCase(),
-  charge_type:  z.enum(['felony','misdemeanor','dui','domestic','sexual','dismissed']),
-  severity:     z.enum(['low','medium','high','extreme']).default('medium'),
-  prior_record: z.enum(['none','minor','significant','extensive']).default('none'),
-  flight_risk:  z.enum(['low','medium','high']).default('low'),
-  employed:     z.boolean().default(true),
-  ice_hold:     z.boolean().default(false),
-  violent:      z.boolean().default(false),
-});
-
-// ── Review schemas ────────────────────────────────────────────────────────────
-export const createReviewSchema = z.object({
-  entity_type: z.enum(['lawyer','bail_agent','bondsman','provider']),
-  entity_id:   z.number().int().positive(),
-  rating:      z.number().int().min(1).max(5),
-  comment:     z.string().max(2000).trim().optional(),
-  anonymous:   z.boolean().default(false),
-});
-
-// ── Chat schemas ──────────────────────────────────────────────────────────────
-export const chatMessageSchema = z.object({
-  message:    z.string().min(1).max(4000).trim(),
-  session_id: z.string().max(100).optional().nullable(),
-  case_id:    z.number().int().positive().optional().nullable(),
-  mode:       z.enum(['consumer','defender']).default('consumer'),
-});
-
-// ── Subscription schemas ──────────────────────────────────────────────────────
-export const subscribeSchema = z.object({
-  tier:         z.enum(['legal_radar','advisor','legal_pro','esquire',
-                         'advisor_annual','pro_annual','esquire_annual']),
-  payment_method_id: z.string().min(2).max(200).optional(),
-});
+export const createCaseSchema = {
+  title:      { type: 'string', required: true, minLength: 2,  maxLength: 200 },
+  charge:     { type: 'string', maxLength: 500 },
+  state:      { type: 'string', enum: STATES },
+  status:     { type: 'string', enum: ['open','closed','dismissed','pending','appealing'] },
+};
+export const createMatterSchema = {
+  title:       { type: 'string', required: true, minLength: 2, maxLength: 200 },
+  client_name: { type: 'string', required: true, minLength: 2, maxLength: 200 },
+  matter_type: { type: 'string', enum: ['criminal','civil','MDL','bankruptcy','constitutional','IP','antitrust','immigration'] },
+};
+export const sendMessageSchema    = { body: { type: 'string', required: true, minLength: 1, maxLength: 2000 } };
+export const ragQuerySchema       = { query: { type: 'string', required: true, minLength: 5, maxLength: 500 } };
+export const bailCalcSchema       = { bail_amount: { type: 'number', required: true, min: 0 }, months: { type: 'number', min: 1, max: 60 } };
+export const videoSessionSchema   = { topic: { type: 'string', maxLength: 100 } };

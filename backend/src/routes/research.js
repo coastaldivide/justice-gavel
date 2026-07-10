@@ -26,6 +26,7 @@ import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt
 import express         from 'express';
 import { enqueue }     from '../services/aiQueue.js';
 import { getDb } from '../db/index.js';
+import { ragSearch } from '../services/rag.js';
 import { authRequired } from '../middleware/auth.js';
 
 // ── AI-specific rate limiter (50 requests / 15 min per user/IP) ─────────────
@@ -285,6 +286,49 @@ router.get('/status', authRequired, async (req, res) => {
     res.json({ has_access: hasAccess, subscription: sub || null });
   } catch (e) {
     res.json({ has_access: false, subscription: null, demo: false });
+  }
+});
+
+
+// ── RAG Legal Research — grounded in retrieved case law ────────────────────
+// Replaces plain Claude queries with retrieval-augmented generation.
+// Embeds the user query → searches pgvector index → Claude cites real docs.
+router.post('/rag', authRequired, async (req, res) => {
+  const { query, practice_area, jurisdiction } = req.body;
+  if (!query || typeof query !== 'string' || query.trim().length < 5) {
+    return res.status(400).json({ error: 'query must be at least 5 characters' });
+  }
+
+  try {
+    const result = await ragSearch(query.trim(), {
+      practiceArea: practice_area || null,
+      jurisdiction: jurisdiction  || null,
+    });
+
+    return res.json({
+      answer:    result.answer,
+      citations: result.citations,
+      docs_used: result.docsUsed,
+      from_rag:  result.fromRAG,
+      latency_ms:result.latencyMs,
+    });
+  } catch (e) {
+    logger?.warn('[research/rag]', e?.message);
+    return res.status(500).json({ error: 'Research temporarily unavailable' });
+  }
+});
+
+// ── Index a legal document (admin only) ────────────────────────────────────
+router.post('/index', authRequired, async (req, res) => {
+  if (!req.user?.is_admin) return res.status(403).json({ error: 'Admin only' });
+  const { doc_type, citation, title, content, jurisdiction, practice_area, year, source_url } = req.body;
+  if (!citation || !content || !title) return res.status(400).json({ error: 'citation, title, content required' });
+  try {
+    const { indexLegalDocument } = await import('../services/rag.js');
+    const doc = await indexLegalDocument({ docType: doc_type, citation, title, content, jurisdiction, practiceArea: practice_area, year, sourceUrl: source_url });
+    return res.json(doc);
+  } catch (e) {
+    return res.status(500).json({ error: e?.message });
   }
 });
 

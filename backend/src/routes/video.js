@@ -1,0 +1,150 @@
+/**
+ * routes/video.js — Attorney-client video consultations via Daily.co
+ *
+ * Daily.co: embedded WebRTC, HIPAA BAA available, $0 until 10K participant-min/mo
+ * No SDK install needed — works via iframe in WebView on mobile + web.
+ *
+ * Endpoints:
+ *   POST /video/session         → create a session room, return token + URL
+ *   GET  /video/session/:id     → get session status
+ *   DELETE /video/session/:id   → end/close session
+ *
+ * Feature gate: Legal Pro ($34.99) and Esquire tiers only.
+ * Sessions expire after 2 hours and are deleted from Daily.co automatically.
+ *
+ * Env vars:
+ *   DAILY_API_KEY    — from dashboard.daily.co → developers → API keys
+ */
+
+import { Router }       from 'express';
+import { authRequired } from '../middleware/auth.js';
+import { getDb }        from '../db/index.js';
+import { err400, err403 } from '../utils/routeHelpers.js';
+import { sanitizeStr }  from '../utils/sanitize.js';
+import { canAccessFeature } from '../utils/subscriptionStateMachine.js';
+import { auditLog }     from '../utils/auditLog.js';
+import logger           from '../utils/logger.js';
+
+const router   = Router();
+const DAILY_KEY = process.env.DAILY_API_KEY;
+const DAILY_BASE = 'https://api.daily.co/v1';
+
+async function dailyRequest(method, path, body = null) {
+  if (!DAILY_KEY) throw new Error('DAILY_API_KEY not configured');
+  const res = await fetch(`${DAILY_BASE}${path}`, {
+    method,
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${DAILY_KEY}`,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => res.status);
+    throw new Error(`Daily.co ${method} ${path}: ${err}`);
+  }
+  return res.json();
+}
+
+// ── POST /video/session — create a video consultation room ─────────────────
+router.post('/session', authRequired, async (req, res) => {
+  const { matter_id, attorney_id, scheduled_for, topic } = req.body;
+
+  // Feature gate — Legal Pro and above
+  const db  = await getDb();
+  const sub = await db.get(`SELECT tier FROM user_subscriptions WHERE user_id = ?`, [req.user.id])
+              .catch(() => null);
+  if (!canAccessFeature(sub?.tier, 'video_consultation')) {
+    return res.status(403).json({
+      error:    'Video consultations require a Legal Pro or Esquire subscription.',
+      upgrade:  true,
+      tier_needed: 'legal_pro',
+    });
+  }
+
+  try {
+    // Create a private Daily.co room
+    const safeTopic = sanitizeStr(topic || 'Legal Consultation').slice(0, 60);
+    const expiresAt = Math.floor(Date.now() / 1000) + 2 * 3600; // 2 hours
+
+    const room = await dailyRequest('POST', '/rooms', {
+      name:       `jg-${req.user.id}-${Date.now()}`,
+      privacy:    'private',
+      properties: {
+        exp:                 expiresAt,
+        max_participants:    4,           // defendant + attorney + 2 co-counsel
+        enable_chat:         false,        // use our own messages.js
+        enable_screenshare:  true,
+        lang:                'en',
+        start_video_off:     false,
+        start_audio_off:     false,
+      },
+    });
+
+    // Generate meeting token for this user
+    const token = await dailyRequest('POST', '/meeting-tokens', {
+      properties: {
+        room_name:    room.name,
+        user_name:    req.user.name || 'Client',
+        user_id:      String(req.user.id),
+        exp:          expiresAt,
+        is_owner:     false,
+      },
+    });
+
+    // Log session in DB
+    await db.run(
+      `INSERT INTO video_sessions
+         (user_id, matter_id, attorney_id, daily_room_name, daily_room_url,
+          topic, scheduled_for, expires_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, datetime(?, 'unixepoch'), datetime('now'))`,
+      [req.user.id, matter_id || null, attorney_id || null,
+       room.name, room.url, safeTopic,
+       scheduled_for || null, expiresAt]
+    ).catch(e => logger.warn('[video] session log failed:', e?.message));
+
+    await auditLog({ userId: req.user.id, action: 'VIDEO_SESSION_CREATED',
+      entityType: 'video', entityId: room.name, req });
+
+    return res.json({
+      room_url:    room.url,
+      room_name:   room.name,
+      token:       token.token,
+      expires_at:  new Date(expiresAt * 1000).toISOString(),
+      join_url:    `${room.url}?t=${token.token}`,
+      topic:       safeTopic,
+    });
+
+  } catch (e) {
+    logger.warn('[video/session]', e?.message);
+    // Graceful degradation: if Daily.co is down, suggest phone call
+    return res.status(503).json({
+      error: 'Video service temporarily unavailable. Please call your attorney directly.',
+      fallback: 'phone',
+    });
+  }
+});
+
+// ── GET /video/session/:name — session status ─────────────────────────────
+router.get('/session/:name', authRequired, async (req, res) => {
+  try {
+    const room = await dailyRequest('GET', `/rooms/${req.params.name}`);
+    return res.json({ active: true, room });
+  } catch {
+    return res.json({ active: false });
+  }
+});
+
+// ── DELETE /video/session/:name — end session early ──────────────────────
+router.delete('/session/:name', authRequired, async (req, res) => {
+  try {
+    await dailyRequest('DELETE', `/rooms/${req.params.name}`);
+    await auditLog({ userId: req.user.id, action: 'VIDEO_SESSION_ENDED',
+      entityType: 'video', entityId: req.params.name, req });
+    return res.json({ ended: true });
+  } catch (e) {
+    return res.json({ ended: true, note: 'Room may have already expired' });
+  }
+});
+
+export default router;

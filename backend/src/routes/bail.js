@@ -8,6 +8,34 @@ import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.
 
 const router = Router();
 
+// ── Mandatory Minimum Flags ──────────────────────────────────────────────────
+// Federal charges with mandatory consecutive sentences that courts cannot waive.
+// Source: USSC 2023 guidelines + 18 USC 924(c), 21 USC 841(b)(1)
+const MANDATORY_MINIMUMS = {
+  // 18 USC 924(c) — drug + firearm offense
+  '924(c)':       { years: 5,  note: '18 USC 924(c): mandatory 5yr consecutive for drug+firearm. 2nd offense = 25yr.' },
+  '924(c)(1)(A)': { years: 5,  note: '18 USC 924(c): firearm brandished adds 7yr mandatory minimum.' },
+  // Drug trafficking — 21 USC 841(b)(1)
+  '841(b)(1)(A)': { years: 10, note: '21 USC 841(b)(1)(A): 10yr mandatory for large drug quantities. Life if death results.' },
+  '841(b)(1)(B)': { years: 5,  note: '21 USC 841(b)(1)(B): 5yr mandatory for medium drug quantities.' },
+  // Armed career criminal — 18 USC 924(e)
+  '924(e)':       { years: 15, note: '18 USC 924(e) ACCA: 15yr mandatory for felon with 3+ violent/drug priors.' },
+  // Sex offenses — 18 USC 2252
+  '2252':         { years: 5,  note: '18 USC 2252: 5yr mandatory for child exploitation material.' },
+  // Human trafficking — 18 USC 1591
+  '1591':         { years: 15, note: '18 USC 1591: 15yr mandatory for sex trafficking of a minor.' },
+};
+
+function checkMandatoryMinimum(charge) {
+  if (!charge) return null;
+  for (const [pattern, info] of Object.entries(MANDATORY_MINIMUMS)) {
+    if (charge.includes(pattern)) return { statute: pattern, ...info };
+  }
+  return null;
+}
+
+
+
 // GET /api/bail?state=TN — return bail schedules for state (no GPS needed)
 router.get('/', async (req, res) => {
   const { state } = req.query;
