@@ -100,3 +100,18 @@
   [ ] Then follow REQUIRED BEFORE LAUNCH steps above
 
 Estimated time to launch from this state: 2-3 days for one developer.
+
+## KNOWN ISSUES FOR RUSSELL — Phase 1 fixes during integration testing
+
+### FlatList inside ScrollView (CheckInManagerScreen.tsx)
+  File: frontend/src/screens/CheckInManagerScreen.tsx
+  Issue: FlatList is nested inside a ScrollView causing dual-scroll conflict.
+  Fix:   Either (a) add scrollEnabled={false} to the FlatList, or
+              (b) replace the outer ScrollView with a View and let FlatList scroll.
+  Line:  Search for '<FlatList' in the file.
+  Time:  ~10 minutes
+
+### FlatList inside ScrollView (CourtFormsScreen.tsx) — verify in integration testing
+  File: frontend/src/screens/CourtFormsScreen.tsx
+  Scanner flagged it but nested structure was a false positive.
+  Verify during integration testing on a device.
