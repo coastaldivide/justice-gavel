@@ -27,6 +27,7 @@
 import { err400, err403, err404, err500, safeInt,
          sanitizeStr, truncateStr }          from '../utils/routeHelpers.js';
 import { Router }                             from 'express';
+import { createCourtDateEvent, updateCourtDateEvent } from '../services/googleCalendar.js';
 import { authRequired }                       from '../middleware/auth.js';
 import { getDb }                              from '../db/index.js';
 import { makeUserLimiter }                    from '../middleware/sharedAiLimiter.js';

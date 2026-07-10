@@ -636,4 +636,100 @@ router.get('/upcoming', authRequired, async (req, res) => {
   }
 });
 
+
+// ── Signed URL — temporary authenticated download link ───────────────────────
+// Documents are stored in Supabase Storage (bucket: 'case-documents').
+// Signed URLs expire after 1 hour to prevent unauthorized access.
+router.get('/:id/download-url', authRequired, async (req, res) => {
+  const { id } = req.params;
+  const ctx = req.firmCtx;
+  try {
+    const db = await getDb();
+
+    // Verify the requesting user/firm owns this document
+    const entry = await db.get(
+      `SELECT de.*, m.firm_id FROM docket_entries de
+         LEFT JOIN matters m ON de.matter_id = m.id
+        WHERE de.id = ?
+          AND (de.user_id = ? OR m.firm_id = ?)`,
+      [id, req.user.id, ctx?.firm_id]
+    );
+    if (!entry) return err404(res, 'Document not found');
+    if (!entry.storage_path) return err400(res, 'Document has no stored file');
+
+    // Generate a 1-hour signed URL from Supabase Storage
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+
+    const { data, error } = await supabase.storage
+      .from('case-documents')
+      .createSignedUrl(entry.storage_path, 3600); // 1 hour
+
+    if (error) {
+      logger?.warn('[docket/download-url] storage error:', error.message);
+      return err400(res, 'Could not generate download link');
+    }
+
+    return res.json({
+      url:        data.signedUrl,
+      expires_in: 3600,
+      filename:   entry.filename || 'document',
+      content_type: entry.content_type || 'application/octet-stream',
+    });
+  } catch (e) {
+    logger?.warn('[docket/download-url]', e?.message);
+    return err400(res, 'Download URL generation failed');
+  }
+});
+
+// ── Upload — store to Supabase Storage, save path in docket_entries ──────────
+router.post('/upload', authRequired, async (req, res) => {
+  const ctx = req.firmCtx;
+  try {
+    // File arrives as base64 in JSON body (React Native / web)
+    const { matter_id, filename, content_type, data_base64, notes } = req.body;
+    if (!data_base64 || !filename) return err400(res, 'filename and data_base64 required');
+
+    const MAX_MB = 100;
+    const bytes  = Buffer.from(data_base64, 'base64');
+    if (bytes.length > MAX_MB * 1024 * 1024) return err400(res, `File exceeds ${MAX_MB}MB`);
+
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+
+    // Path: firm_id/matter_id/timestamp-filename
+    const safe  = filename.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100);
+    const path  = `${ctx?.firm_id || req.user.id}/${matter_id || 'personal'}/${Date.now()}-${safe}`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from('case-documents')
+      .upload(path, bytes, { contentType: content_type || 'application/octet-stream' });
+
+    if (uploadErr) {
+      logger?.warn('[docket/upload] storage error:', uploadErr.message);
+      return err400(res, 'File upload failed');
+    }
+
+    // Record in docket_entries
+    const db = await getDb();
+    const result = await db.run(
+      `INSERT INTO docket_entries
+         (user_id, matter_id, filename, content_type, storage_path, file_size_bytes, notes, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      [req.user.id, matter_id || null, safe, content_type || null, path, bytes.length, notes || null]
+    );
+
+    return res.json({ id: result.lastID, filename: safe, storage_path: path, size: bytes.length });
+  } catch (e) {
+    logger?.warn('[docket/upload]', e?.message);
+    return err400(res, 'Upload failed');
+  }
+});
+
 export default router;
