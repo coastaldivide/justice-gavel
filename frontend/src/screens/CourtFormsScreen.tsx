@@ -32,6 +32,7 @@ import {
   type CourtFormSource} from '../data/courtFormsRegistry';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { api } from '../services/api';
+import { t } from '../i18n';
 
 declare var FONTS: any;
 declare var ScreenProps: any;

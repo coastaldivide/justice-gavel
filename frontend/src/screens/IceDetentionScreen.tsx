@@ -27,6 +27,7 @@ import {
 } from 'react-native';
 import { useTheme, COLORS, FONTS, RADIUS } from '../constants/theme';
 import { hapticImpact, hapticSelection } from '../utils/webCompat';
+import { t } from '../i18n';
 const C_059669 = ('\x23' + '059669') as string; // hex color
 const C_1D4ED8 = ('\x23' + '1d4ed8') as string; // hex color
 const C_7C3AED = ('\x23' + '7c3aed') as string; // hex color

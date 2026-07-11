@@ -12,6 +12,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 import JTBLogo from '../components/JTBLogo';
+import { t } from '../i18n';
 
 declare var showPassword: any;
 export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
@@ -142,6 +143,7 @@ export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.E
           <TouchableOpacity accessibilityRole="button" style={styles.loginLink}
             onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
           >
+            accessibilityRole="button" accessibilityLabel="Go back"
             <Text maxFontSizeMultiplier={1.4} style={styles.loginText}>
               Already have an account?{'  '}
               <Text maxFontSizeMultiplier={1.4} style={styles.loginHighlight}>Sign in</Text>

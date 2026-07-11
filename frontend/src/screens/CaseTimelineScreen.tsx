@@ -20,6 +20,7 @@ import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webC
 import { cacheTimeline, getCachedTimeline } from '../services/offlineCache';
 import { useFocusEffect } from '@react-navigation/native';
 import SkeletonLoader from '../components/SkeletonLoader';
+import { t } from '../i18n';
 
 const EVENT_ICONS: Record<string, string> = {
   arrest:          '🔒',

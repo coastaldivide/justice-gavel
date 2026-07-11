@@ -6,6 +6,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setContacts, getContacts } from '../services/storage';
 import {  useTheme, COLORS } from '../constants/theme';
+import { t } from '../i18n';
 
 interface Contact { value: string; label: string; }
 

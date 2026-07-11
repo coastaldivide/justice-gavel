@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {View, Text, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import { api, cachedGet } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
+import { t } from '../i18n';
 
 type DUILaw = {
   id: number; state: string;

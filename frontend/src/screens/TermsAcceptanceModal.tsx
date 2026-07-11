@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 import { useTheme, TYPE, FONTS } from '../constants/theme';
 import api from '../services/api';
+import { t } from '../i18n';
 
 const TOS_VERSION = '2.1';  // Must match CURRENT_TOS_VERSION in auth.js
 

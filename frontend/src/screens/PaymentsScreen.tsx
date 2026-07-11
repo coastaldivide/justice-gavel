@@ -22,6 +22,7 @@ import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 import { useStripe } from '@stripe/stripe-react-native';
 import { useAuthGate } from '../components/AuthGate';
+import { t } from '../i18n';
 
 declare var amt: any;
 declare var data: any;
@@ -367,6 +368,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
           style={[styles.payBtn, loading && styles.payBtnDisabled]}
           onPress={onPay}
           disabled={loading}>
+          accessibilityRole="button" accessibilityLabel="Continue to payment"
           {loading
             ? <ActivityIndicator color={colors.bgCard} />
             : <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>Pay ${(parseFloat(amount || '0') || 0).toFixed(2)} with {selectedMethod.label}</Text>

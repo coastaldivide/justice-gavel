@@ -25,6 +25,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingVi
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { t } from '../i18n';
 
 declare var ScreenProps: any;
 declare var onVerified: any;
@@ -79,6 +80,20 @@ export default function AgeGateScreen({ route, navigation }: any) {
   // ── Under 18 screen ────────────────────────────────────────────────────────
   if (phase === 'underage') return (
     <View style={styles.screen}>
+      {/* ── Emergency bypass — always accessible regardless of age gate ─── */}
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Emergency')}
+        accessibilityRole="button"
+        accessibilityLabel="Emergency help — get immediate legal assistance without age verification"
+        style={{ backgroundColor: '#c0392b', borderRadius: 10, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
+      >
+        <View style={{ flex: 1 }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>🚨 Need help right now?</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 2 }}>Emergency access — no setup required</Text>
+        </View>
+        <Text style={{ color: '#fff', fontSize: 20 }}>→</Text>
+      </TouchableOpacity>
+
       <View style={styles.centered}>
         <Text maxFontSizeMultiplier={1.4} style={styles.underageEmoji}>👨‍👩‍👧</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.underageTitle}>

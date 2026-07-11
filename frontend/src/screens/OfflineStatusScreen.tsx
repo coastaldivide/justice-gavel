@@ -12,6 +12,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useTheme, RADIUS } from '../constants/theme';
+import { t } from '../i18n';
 import {
   isOnline, getLastOnlineAt, cacheAgeLabel,
   getCachedCases, getCachedMotions, getCachedLawyers, getCachedLessons,

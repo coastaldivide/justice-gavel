@@ -23,6 +23,7 @@ import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
+import { t } from '../i18n';
 
 declare var data: any;
 type Step = 'type' | 'severity' | 'details' | 'submitted';

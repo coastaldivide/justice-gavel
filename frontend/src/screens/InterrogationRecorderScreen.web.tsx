@@ -17,6 +17,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api } from '../services/api';
+import { t } from '../i18n';
 
 type Step = 'idle' | 'recording' | 'uploading' | 'done' | 'error';
 
@@ -107,6 +108,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
         onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
         accessibilityRole="button"
       >
+        accessibilityRole="button" accessibilityLabel="Go back"
         <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>← Back</Text>
       </TouchableOpacity>
 
@@ -167,6 +169,7 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
               borderColor: '#FF5252',
             }}
           >
+            accessibilityRole="button" accessibilityLabel="Start recording"
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 36 }}>
               {step === 'recording' ? '⏹' : '🎙️'}
             </Text>

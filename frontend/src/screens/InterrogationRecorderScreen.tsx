@@ -23,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api} from '../services/api';
 import { useTheme } from '../constants/theme';
 import { getToken } from '../utils/secureStorage';
+import { t } from '../i18n';
 
 type Phase = 'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'error';
 

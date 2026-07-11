@@ -37,6 +37,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
+import { t } from '../i18n';
 
 declare var copyTimer: any;
 declare var histFilter: any;

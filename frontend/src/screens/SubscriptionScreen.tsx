@@ -16,6 +16,7 @@ import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
+import { t } from '../i18n';
 
 declare var data: any;
 declare var error: any;
@@ -123,6 +124,7 @@ function TierCard({ tier, active, onSubscribe, loading }: any) {
           onPress={() => onSubscribe(tier.key)}
           disabled={loading}
         >
+          accessibilityRole="button" accessibilityLabel="Subscribe"
           {loading
             ? <ActivityIndicator color={COLORS.bgCard} size="small" />
             : <>
@@ -355,6 +357,7 @@ export default function SubscriptionScreen({ navigation }: ScreenProps): React.J
           onPress={() => handleSubscribe('intel')}
           disabled={subscribing === 'intel'}
         >
+          accessibilityRole="button" accessibilityLabel="Subscribe"
           {subscribing === 'intel'
             ? <ActivityIndicator color={colors.bgCard} size="small" />
             : <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>Add Intel Reports -- $49/mo</Text>

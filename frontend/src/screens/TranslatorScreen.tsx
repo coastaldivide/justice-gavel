@@ -38,6 +38,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Activi
 import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { t } from '../i18n';
 
 declare var events: any;
 declare var load: any; // hoisted from component scope

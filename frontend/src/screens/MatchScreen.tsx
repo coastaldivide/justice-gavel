@@ -18,6 +18,7 @@ import { api } from '../services/api';
 import { getLocationWithCity, formatDistance } from '../services/location';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { t } from '../i18n';
 
 declare var CASE_TYPES: any;
 declare var Picker: any;

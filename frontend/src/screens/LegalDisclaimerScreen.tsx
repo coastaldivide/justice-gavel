@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { COLORS } from '../constants/theme';
 import { api } from '../services/api';
+import { t } from '../i18n';
 
 const VERSION = '2026-01-01.1';
 

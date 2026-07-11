@@ -52,6 +52,7 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
 }
 
 import Analytics from '../services/analytics';
+import { t } from '../i18n';
 declare var onRefresh: any;
 declare var refreshing: any;
 declare var load: any; // hoisted from component scope

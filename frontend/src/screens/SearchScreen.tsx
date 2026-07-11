@@ -15,6 +15,7 @@ import { api } from '../services/api';
 import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { getUserState } from '../utils/userState';
+import { t } from '../i18n';
 import {
   cacheSearch, getCachedSearch,
   saveRecentSearch, getRecentSearches, clearRecentSearches } from '../services/offlineCache';

@@ -13,6 +13,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   AppState, Platform, StatusBar, Text, TouchableOpacity, View,
 } from 'react-native';
+import FeedbackButton from './src/components/FeedbackButton';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -365,6 +366,8 @@ function AppInner() {
           )}
         </RootStack.Navigator>
       </NavigationContainer>
+      {/* Beta feedback — only shows in dev/beta builds */}
+      <FeedbackButton screen="App" />
       </>
     <TermsAcceptanceModal
       visible={tosNeeded}

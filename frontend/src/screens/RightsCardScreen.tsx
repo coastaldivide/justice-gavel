@@ -351,6 +351,7 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
             disabled={sharing}
             activeOpacity={0.85}
           >
+            accessibilityRole="button" accessibilityLabel="Navigate"
             {sharing
               ? <ActivityIndicator color={colors.bgCard} />
               : <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>

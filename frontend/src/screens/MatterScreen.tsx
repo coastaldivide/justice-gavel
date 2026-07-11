@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { api } from '../services/api';
+import { t } from '../i18n';
 
 interface Props {
   route: { params: { matterId: string } };
@@ -65,6 +66,7 @@ export default function MatterScreen({ route, navigation }: Props) {
 
       <TouchableOpacity style={styles.btn} accessibilityRole="button"
         onPress={() => navigation.navigate('VideoConsultation', { matterId })}>
+        accessibilityRole="button" accessibilityLabel="Navigate"
         <Text style={styles.btnText}>Schedule Video Consultation</Text>
       </TouchableOpacity>
     </ScrollView>

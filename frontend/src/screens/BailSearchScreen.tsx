@@ -217,6 +217,7 @@ export default function BailSearchScreen(): React.JSX.Element {
             style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20,
               backgroundColor: sortBy === s ? colors.blue : colors.bgCard,
               borderWidth: 1, borderColor: sortBy === s ? colors.blue : colors.border }}>
+            accessibilityRole="button" accessibilityLabel="Sort"
             <Text maxFontSizeMultiplier={1.4} style={{ color: sortBy === s ? colors.bgCard : colors.textSecond, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>
               {s === 'rating' ? 'Rating' : s === 'distance' ? 'Nearest' : 'Low Rate'}
             </Text>
@@ -417,6 +418,7 @@ export default function BailSearchScreen(): React.JSX.Element {
                 onPress={() => { setLocationDenied(false); setCityQuery(''); search(city); }}
                 activeOpacity={0.75}
               >
+                accessibilityRole="search" accessibilityLabel="Search"
                 <Text maxFontSizeMultiplier={1.4} style={styles.cityRowIcon}>📍</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.cityRowText}>{city}</Text>
               </TouchableOpacity>

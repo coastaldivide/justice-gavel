@@ -93,7 +93,34 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
             fontWeight:'900', color:colors.textPrimary, marginBottom:8, textAlign:'center' }}>
             ⚖️ Justice Gavel
           </Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, lineHeight:24,
+          
+        {/* ── Emergency fast-track — top of onboarding, no account required ── */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#c0392b',
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+          onPress={() => navigation.navigate('Emergency')}
+          accessibilityRole="button"
+          accessibilityLabel="Just arrested - get immediate help now"
+          accessibilityHint="Opens emergency screen without requiring sign up"
+        >
+          <View style={{ flex: 1 }}>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+              🚨 Just arrested or detained?
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 2 }}>
+              Get immediate help — no sign-up required
+            </Text>
+          </View>
+          <Text style={{ color: '#fff', fontSize: 22 }}>→</Text>
+        </TouchableOpacity>
+<Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, lineHeight:24,
             color:colors.textMuted, textAlign:'center', marginBottom:32 }}>
             What brings you here today?
           </Text>
@@ -184,6 +211,17 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
       {/* Logo + Social proof */}
       <View style={styles.logoWrap}>
         <JTBLogo size={50} />
+
+        {/* ── Crisis resource footer ───────────────────────────────────────── */}
+        <View style={{ marginTop: 24, paddingTop: 16, borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.15)' }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, textAlign: 'center', marginBottom: 4 }}>
+            Need free legal help right now?
+          </Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: '#85B7EB', fontSize: 13, textAlign: 'center', fontWeight: '600' }}>
+            Public Defender Project: 1-800-341-0059 · ACLU: 1-212-549-2500
+          </Text>
+        </View>
+
       </View>
       <View style={{
         flexDirection:'row', alignItems:'center', justifyContent:'center',

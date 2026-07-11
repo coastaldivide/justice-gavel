@@ -6,6 +6,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
+import { t } from '../i18n';
 
 interface GavelCriteria {
   avg_rating?: number;

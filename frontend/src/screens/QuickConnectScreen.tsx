@@ -366,6 +366,7 @@ export default function QuickConnectScreen({ route, navigation }: ScreenProps): 
                 onPress={() => navigation.navigate('MoreTab', { screen: 'Bail' })}
           activeOpacity={0.85}
               >
+                accessibilityRole="button" accessibilityLabel="Navigate"
                 <Text maxFontSizeMultiplier={1.4} style={styles.demoHelpBtnText}>🔓 Find a Bail Agent Free Instead →</Text>
               </TouchableOpacity>
             </View>

@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {View, Text, FlatList, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView} from 'react-native';
 import {api} from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
+import { t } from '../i18n';
 
 type Courthouse = {
   id: number;
@@ -124,6 +125,7 @@ export default function CourtLocatorScreen(): React.JSX.Element {
               backgroundColor: courtMode===mode ? colors.primary : card,
               borderWidth:1.5, borderColor: courtMode===mode ? colors.primary : (colors.border),
             }}>
+            accessibilityRole="search" accessibilityLabel="Search"
             <Text maxFontSizeMultiplier={1.4} style={{ color: courtMode===mode ? colors.bgCard : text,
               fontWeight:'700', fontSize:13 }}>
               {mode==='state' ? '🏛️ State Courts' : '⚖️ Federal Courts'}
@@ -157,6 +159,7 @@ export default function CourtLocatorScreen(): React.JSX.Element {
       {error ? (<>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign: 'center', margin: 20 }}>{error}</Text>
         <TouchableOpacity accessibilityRole="button" onPress={() => doSearch('Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:'#fff',fontWeight:'700'}}>Retry</Text></TouchableOpacity>
+      accessibilityRole="search" accessibilityLabel="Search"
       </>) : null}
       <FlatList
           keyboardShouldPersistTaps="handled"

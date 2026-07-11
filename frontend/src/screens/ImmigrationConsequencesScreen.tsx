@@ -20,6 +20,7 @@ import React, { useState, useCallback } from 'react';
 
 import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator} from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
+import { t } from '../i18n';
 
 type Tab = 'consequences' | 'status';
 

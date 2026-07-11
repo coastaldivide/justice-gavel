@@ -17,6 +17,7 @@ import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
+import { t } from '../i18n';
 
 declare var setContacts: any;
 function callPhone(phone: string) {

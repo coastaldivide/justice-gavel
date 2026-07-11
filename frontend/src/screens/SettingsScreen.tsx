@@ -420,6 +420,7 @@ export default function SettingsScreen({ route, navigation }: any) {
               accessibilityRole="button"
               onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })}
             >
+              accessibilityRole="button" accessibilityLabel="Navigate"
               <InfoRow icon="🏆" label="Account status" value="Golden Gavel  ›" />
             </TouchableOpacity>
           : <InfoRow icon="⚖️" label="Golden Gavel" value="Check eligibility  ›" />

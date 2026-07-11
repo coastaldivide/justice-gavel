@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+import { t } from '../i18n';
 
 declare var setError: any;
 declare var setWallTapCount: any;

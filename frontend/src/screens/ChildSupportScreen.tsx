@@ -6,6 +6,7 @@ import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
   StyleSheet, Switch, Alert } from 'react-native';
 import { COLORS } from '../constants/theme';
+import { t } from '../i18n';
 
 // Income shares model — the majority US approach
 // Guideline figures approximate mean combined obligation tables (simplified)

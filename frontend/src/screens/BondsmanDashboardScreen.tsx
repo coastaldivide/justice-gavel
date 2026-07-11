@@ -21,6 +21,7 @@ import {  useTheme, COLORS } from '../constants/theme';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 import { useAuthGate } from '../components/AuthGate';
+import { t } from '../i18n';
 
 declare var _fetchError: any;
 declare var confirmAccept: any; // hoisted from component scope
@@ -71,6 +72,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
       onPress={() => setExpanded(e => !e)}
       activeOpacity={0.85}
     >
+      accessibilityRole="button" accessibilityLabel="Toggle expand"
       {/* Top row */}
       <View style={styles.cardTop}>
         <View style={{ flex: 1 }}>

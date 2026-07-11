@@ -28,6 +28,7 @@ import {  useTheme, RADIUS, FONTS, TYPE, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { api } from '../services/api';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { t } from '../i18n';
 
 declare var CameraType: any;
 export default function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {

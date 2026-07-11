@@ -26,6 +26,7 @@ import OfflineBanner from '../components/OfflineBanner';
 import { ScreenCapture } from '../utils/webCompat';
 import { daysUntil, formatDate} from '../utils/dateUtils';
 import { useFocusEffect } from '@react-navigation/native';
+import { t } from '../i18n';
 
 declare var profile: any;
 declare var setError: any;
@@ -412,6 +413,7 @@ export default function AttorneyDashboardScreen({ navigation }: ScreenProps): Re
                     style={{ paddingHorizontal:12, paddingVertical:5, borderRadius:16,
                       borderWidth:1, borderColor:sortBy===opt?colors.navy:colors.border,
                       backgroundColor:sortBy===opt?colors.navy:colors.bgCard }}>
+                    accessibilityRole="button" accessibilityLabel="Sort"
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, fontWeight:'600',
                       color:sortBy===opt?colors.bgCard:colors.textMuted }}>
                       {opt==='date'?'📅 Soonest':opt==='name'?'🔤 Name':'⚡ Status'}

@@ -23,6 +23,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { daysUntil, formatDate} from '../utils/dateUtils';
 import { useAuthGate } from '../components/AuthGate';
+import { t } from '../i18n';
 
 declare var loading: any;
 declare var setLoading: any;

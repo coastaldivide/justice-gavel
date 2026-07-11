@@ -1,6 +1,6 @@
 {
   "name": "justicegavel-backend",
-  "version": "8.7.0",
+  "version": "8.7.5",
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
@@ -49,7 +49,8 @@
     "predeploy": "node --experimental-vm-modules src/scripts/db-health.js",
     "deploy:check": "npm run predeploy && npm test",
     "i18n:validate": "node --experimental-vm-modules src/scripts/validate-i18n.js",
-    "prestart": "node src/db/migrate.js 2>/dev/null || echo \"Migration skipped\""
+    "prestart": "node src/db/migrate.js 2>/dev/null || echo \"Migration skipped\"",
+    "seed:rag": "node --experimental-vm-modules backend/scripts/seed-rag.js"
   },
   "dependencies": {
     "@sentry/node": "7.120.4",

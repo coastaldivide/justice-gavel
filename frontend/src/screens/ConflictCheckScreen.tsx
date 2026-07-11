@@ -9,6 +9,7 @@ import {
   ActivityIndicator, StyleSheet, Alert,
 } from 'react-native';
 import { api } from '../services/api';
+import { t } from '../i18n';
 
 interface ConflictResult {
   found: boolean;

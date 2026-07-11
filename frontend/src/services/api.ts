@@ -39,10 +39,16 @@ const instance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Inject auth token on every request
+// Inject auth token + language header on every request
 instance.interceptors.request.use(async (config) => {
   const token = await getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Accept-Language from stored preference
+  try {
+    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+    const lang = await AsyncStorage.getItem('lang').catch(() => null);
+    if (lang) config.headers['Accept-Language'] = lang;
+  } catch { /* non-fatal */ }
   return config;
 });
 

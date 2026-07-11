@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import {useTheme} from '../constants/theme';
+import { t } from '../i18n';
 
 const EFFECTIVE_DATE  = 'May 1, 2026';
 const COMPANY         = 'Justice Gavel LLC';

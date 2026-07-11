@@ -7,6 +7,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { t } from '../i18n';
 
 declare var data: any;
 declare var load: any;

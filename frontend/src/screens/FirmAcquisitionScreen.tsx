@@ -24,6 +24,7 @@ import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
 import type {} from '../types/navigation';
 import { useAuthGate } from '../components/AuthGate';
+import { t } from '../i18n';
 
 type Flow = 'browse' | 'activate' | 'status';
 
@@ -296,17 +297,20 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('DeadlineCalculator')}
                       >
+                accessibilityRole="button" accessibilityLabel="Navigate"
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📅</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Deadline calculator</Text>
               </TouchableOpacity>
               <TouchableOpacity
           accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('MatterIntelligence')}
                       >
+                accessibilityRole="button" accessibilityLabel="Navigate"
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📁</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Create matter</Text>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical', { tab: 'pricing' })}
                       >
+                accessibilityRole="button" accessibilityLabel="Navigate"
                 <AppIcon name="card-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Upgrade plan</Text>
               </TouchableOpacity>

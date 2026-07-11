@@ -23,6 +23,7 @@ import * as Location from 'expo-location';
 import { api } from '../services/api';
 import {useTheme} from '../constants/theme';
 import EmergencyStrip from '../components/EmergencyStrip';
+import { t } from '../i18n';
 
 type Agent = {
   id: number;
@@ -311,6 +312,7 @@ export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React
           disabled={!selectedState || loading}
           activeOpacity={0.85}
         >
+          accessibilityRole="search" accessibilityLabel="Search"
           <Text maxFontSizeMultiplier={1.2} style={[styles.searchBtnText,
             { color: selectedState ? '#fff' : colors.textMuted }]}>
             {loading ? 'Searching…' : '🔍  Search Recovery Agents'}

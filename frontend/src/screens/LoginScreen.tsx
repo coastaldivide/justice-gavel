@@ -17,6 +17,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 import { track, identify } from '../services/analytics';
+import { t } from '../i18n';
 
 declare var JusticeGavelLogo: any;
 declare var showPassword: any;
@@ -154,6 +155,7 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
               ]);
             }}
           >
+            accessibilityRole="button" accessibilityLabel="Cancel"
             <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>Forgot password?</Text>
           </TouchableOpacity>
 

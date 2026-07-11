@@ -26,6 +26,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Linking , ActivityIndicator, RefreshControl} from 'react-native';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { t } from '../i18n';
 
 type Situation = 'eviction_notice' | 'lockout' | 'utility_shutoff' | 'harassment' | 'mold_habitability' | '';
 

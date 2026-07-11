@@ -14,6 +14,7 @@ const openBrowserAsync = (url: string) => Linking.openURL(url);
 // TODO: import useThemeColors after adding to userState.ts
 const useThemeColors = () => ({ bg: '#f9fafb', textPrimary: '#111', textSecondary: '#666', navy: '#042C53' });
 import { api } from '../services/api';
+import { t } from '../i18n';
 
 interface Props {
   route: { params?: { matterId?: string; attorneyId?: string; topic?: string } };
@@ -87,6 +88,7 @@ export default function VideoConsultationScreen({ route, navigation }: Props) {
           <Text style={styles.startBtnText}>Open Video Call</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cancelBtn} onPress={endSession}>
+        accessibilityRole="button" accessibilityLabel="Start video call"
           <Text style={[styles.cancelText, { color: colors.textSecondary }]}>End Session</Text>
         </TouchableOpacity>
       </View>
@@ -140,6 +142,8 @@ export default function VideoConsultationScreen({ route, navigation }: Props) {
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelBtn}>
+        accessibilityRole="button" accessibilityLabel="End session"
+        accessibilityRole="button" accessibilityLabel="Go back"
         <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
       </TouchableOpacity>
     </View>

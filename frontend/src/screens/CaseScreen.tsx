@@ -1089,6 +1089,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               caseId: cases[0]?.id,
               caseTitle: cases[0]?.title})}
           >
+            accessibilityRole="button" accessibilityLabel="Navigate"
             <View style={[styles.toolCardIcon, { backgroundColor: '#EF5350' + '18' }]}>
               <AppIcon name="document-outline" size={20} color={COLORS.navy} />
             </View>
@@ -1111,6 +1112,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               caseId:    cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
               caseTitle: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
           >
+            accessibilityRole="button" accessibilityLabel="Navigate"
             <View style={[styles.toolCardIcon, { backgroundColor: colors.blue + '18' }]}>
               <AppIcon name="search-outline" size={20} color={COLORS.navy} />
             </View>
@@ -1132,6 +1134,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             onPress={() => navigation.navigate('LegalResearch', {
               caseContext: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
           >
+            accessibilityRole="button" accessibilityLabel="Navigate"
             <View style={[styles.toolCardIcon, { backgroundColor: colors.legal + '18' }]}>
               <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
             </View>
@@ -1154,6 +1157,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               caseTitle:     cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title,
               existingNotes: ''})}
           >
+            accessibilityRole="button" accessibilityLabel="Navigate"
             <View style={[styles.toolCardIcon, { backgroundColor: COLORS.navy + '18' }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>🎙</Text>
             </View>
@@ -1195,6 +1199,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: COLORS.emergency + '40', borderWidth: 1.5 }]}
             onPress={() => navigation.navigate('DeadlineCalculator')}
           >
+            accessibilityRole="button" accessibilityLabel="Navigate"
             <View style={[styles.toolCardIcon, { backgroundColor: COLORS.emergency + '18' }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>⏰</Text>
             </View>
@@ -1220,6 +1225,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
                     caseId: ca.id, caseTitle: ca.title
                   })}
                 >
+                  accessibilityRole="button" accessibilityLabel="Navigate"
                   <Text maxFontSizeMultiplier={1.4} style={[styles.caseToolTitle, { color: colors.steel }]}
                     numberOfLines={1}>📁 {String(ca.title)}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.caseToolCta, { color: COLORS.navy }]}>Analyze docs →</Text>

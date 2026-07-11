@@ -25,6 +25,7 @@ import React, { useState, useMemo } from 'react';
 import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
 import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Share, KeyboardAvoidingView, Platform, RefreshControl} from 'react-native';
 import { getUserState } from '../utils/userState';
+import { t } from '../i18n';
 
 declare var data: any;
 declare var setRemindLoading: any;

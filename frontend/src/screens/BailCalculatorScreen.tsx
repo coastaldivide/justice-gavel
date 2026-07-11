@@ -11,6 +11,7 @@ import {View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, 
 import { Picker } from '@react-native-picker/picker';
 import { api, cachedGet } from '../services/api';
 import { useTheme } from '../constants/theme';
+import { t } from '../i18n';
 
 declare var bondAmount: any;
 const STATES = [
@@ -257,6 +258,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
             accessibilityRole="button"
             onPress={() => navigation.navigate('BailTab')}
           >
+            accessibilityRole="button" accessibilityLabel="Navigate"
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
               🔓 Find a Bail Bondsman Near You
             </Text>
@@ -278,6 +280,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
             onPress={() => navigation.navigate('LawyersTab')}
             activeOpacity={0.85}
           >
+            accessibilityRole="button" accessibilityLabel="Navigate"
             <Text maxFontSizeMultiplier={1.2}
               style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>
               ⚖️ Find Attorneys Near You

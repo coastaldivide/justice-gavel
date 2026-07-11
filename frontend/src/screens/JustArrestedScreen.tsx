@@ -56,6 +56,7 @@ const STEPS = [
 
 import Analytics from '../services/analytics';
 import { PlaceholderIllustration } from '../components/PlaceholderIllustration';
+import { t } from '../i18n';
 export default function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);

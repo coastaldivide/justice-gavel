@@ -45,4 +45,45 @@ router.get('/summary', async (req, res) => {
   }
 });
 
+
+// ── POST /feedback/ui — in-app UI feedback from beta users ────────────────
+// screen: which screen had the issue
+// issue: brief description
+// contact: optional email/phone for follow-up
+router.post('/ui', async (req, res) => {
+  const { screen, issue, contact, device_info } = req.body || {};
+  if (!issue?.trim()) return res.status(400).json({ error: 'issue description required' });
+
+  try {
+    const db = await getDb();
+    await db.run(
+      `INSERT INTO feedback (user_id, screen, issue, contact, device_info, created_at)
+       VALUES (?,?,?,?,?,NOW())`,
+      [req.user?.id || null, screen || 'unknown', issue.slice(0, 2000),
+       contact?.slice(0, 200) || null, device_info?.slice(0, 500) || null]
+    ).catch(() => {});
+
+    // Notify Slack (non-blocking)
+    const webhookUrl = process.env.ALERT_WEBHOOK_URL;
+    if (webhookUrl) {
+      fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: [
+            '*New UI Feedback*',
+            `Screen: ${screen || 'unknown'}`,
+            `Issue: ${issue.slice(0, 500)}`,
+            contact ? `Contact: ${contact}` : null,
+          ].filter(Boolean).join('\n'),
+        }),
+      }).catch(() => {});
+    }
+
+    return res.json({ received: true, message: 'Thank you — your feedback helps us improve Justice Gavel.' });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not submit feedback' });
+  }
+});
+
 export default router;

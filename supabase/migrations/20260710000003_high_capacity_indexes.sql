@@ -165,3 +165,33 @@ UPDATE lessons SET points = CASE difficulty WHEN 'advanced' THEN 30 WHEN 'interm
 ALTER TABLE golden_gavel_log ADD COLUMN IF NOT EXISTS event_type TEXT;
 ALTER TABLE golden_gavel_log ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 0;
 ALTER TABLE golden_gavel_log ADD COLUMN IF NOT EXISTS reference_id BIGINT;
+
+-- Firm discovery columns
+ALTER TABLE firms ADD COLUMN IF NOT EXISTS public_listing      BOOLEAN DEFAULT FALSE;
+ALTER TABLE firms ADD COLUMN IF NOT EXISTS accepting_clients   BOOLEAN DEFAULT TRUE;
+ALTER TABLE firms ADD COLUMN IF NOT EXISTS free_consultation   BOOLEAN DEFAULT FALSE;
+ALTER TABLE firms ADD COLUMN IF NOT EXISTS practice_areas      TEXT;
+ALTER TABLE firms ADD COLUMN IF NOT EXISTS website             TEXT;
+ALTER TABLE firms ADD COLUMN IF NOT EXISTS phone               TEXT;
+ALTER TABLE firms ADD COLUMN IF NOT EXISTS description         TEXT;
+ALTER TABLE firms ADD COLUMN IF NOT EXISTS referral_code       TEXT UNIQUE DEFAULT UPPER(SUBSTRING(MD5(RANDOM()::TEXT), 1, 8));
+ALTER TABLE firms ADD COLUMN IF NOT EXISTS city                TEXT;
+ALTER TABLE firms ADD COLUMN IF NOT EXISTS state               TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_firms_state     ON firms(state) WHERE public_listing = true;
+CREATE INDEX IF NOT EXISTS idx_firms_referral  ON firms(referral_code);
+
+-- Firm invitations
+ALTER TABLE firm_invites ADD COLUMN IF NOT EXISTS invited_by BIGINT;
+ALTER TABLE firm_invites ADD COLUMN IF NOT EXISTS email      TEXT;
+ALTER TABLE firm_invites ADD COLUMN IF NOT EXISTS role       TEXT DEFAULT 'attorney';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_firm_invites_unique ON firm_invites(firm_id, email);
+
+-- UI feedback from beta users
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS screen      TEXT;
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS issue       TEXT;
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS contact     TEXT;
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS device_info TEXT;
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS resolved    BOOLEAN DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at DESC);
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;

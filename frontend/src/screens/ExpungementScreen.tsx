@@ -22,6 +22,7 @@ import { cacheExpungement } from '../services/offlineCache';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { getUserState } from '../utils/userState';
+import { t } from '../i18n';
 
 declare var onRefresh: any;
 declare var refreshing: any;

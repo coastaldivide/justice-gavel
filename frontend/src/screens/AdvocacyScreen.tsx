@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
+import { t } from '../i18n';
 
 declare var data: any;
 interface Stats {

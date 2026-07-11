@@ -31,6 +31,7 @@ import { getLocation } from '../services/location';
 import { getContacts } from '../services/storage';
 import { haptic, hapticCall, hapticSuccess, hapticWarn } from '../services/haptics';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
+import { t } from '../i18n';
 declare var name: any; // hoisted from component scope
 
 declare var load: any;

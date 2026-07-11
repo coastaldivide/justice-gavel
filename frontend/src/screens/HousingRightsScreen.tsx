@@ -21,6 +21,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator} from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { t } from '../i18n';
 
 type Tab = 'record' | 'eviction';
 

@@ -512,6 +512,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
           style={styles.ctaCard}
           onPress={() => navigation.navigate('MoreTab', { screen: 'HelpNow' })}
         >
+          accessibilityRole="button" accessibilityLabel="Navigate"
           <AppIcon name="flash" size={20} color={COLORS.emergency} />
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaLabel}>HELP NOW</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaSub}>Bail + Lawyer</Text>
@@ -521,6 +522,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
           style={styles.ctaCard}
           onPress={() => navigation.navigate('ChatTab')}
         >
+          accessibilityRole="button" accessibilityLabel="Navigate"
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaIcon}>💬</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaLabel}>AI Help</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaSub}>Ask a question</Text>
@@ -530,6 +532,7 @@ export default function WhatHappensNextScreen({ route, navigation }: ScreenProps
           style={styles.ctaCard}
           onPress={() => navigation.navigate('MoreTab', { screen: 'Education' })}
         >
+          accessibilityRole="button" accessibilityLabel="Navigate"
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaIcon}>📚</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaLabel}>Know Rights</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.ctaSub}>All lessons</Text>

@@ -11,6 +11,7 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
  *   T1-B  Added isDefender prop to Bubble
  *   T1-C  Removed stray '>' after conditional close on avatar row
  *   T1-D  Changed <View onLongPress> → <Pressable> (View ignores touch props)
+        accessibilityRole="button" accessibilityLabel="Open chat options"
  *   T1-E  Fixed msg.reply/msg.content → msg.text in long-press handler
  *   T1-F  Added Alert to react-native imports
  *   T1-G  Replaced module-scope colors.* refs in PROMPT_CATEGORIES with hex literals
@@ -151,6 +152,7 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
         </View>
       )}
       <Pressable
+        accessibilityRole="button" accessibilityLabel="Attach file"
         onLongPress={handleLongPress}
         delayLongPress={400}
         style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}

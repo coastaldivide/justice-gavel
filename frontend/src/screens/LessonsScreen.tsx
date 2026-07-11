@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, cachedGet } from '../services/api';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
 import { COLORS, RADIUS, useTheme } from '../constants/theme';
+import { t } from '../i18n';
 
 declare var load: any;
 declare var refreshing: any;
@@ -96,6 +97,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
                 onPress={() => setExpanded(open ? null : item.id)}
                 activeOpacity={0.85}
               >
+                accessibilityRole="button" accessibilityLabel="Toggle expand"
                 <View style={styles.cardTop}>
                   <View style={[styles.doneCircle, done && styles.doneCircleDone]}>
                     {done && <Text maxFontSizeMultiplier={1.4} style={styles.doneCheck}>✓</Text>}

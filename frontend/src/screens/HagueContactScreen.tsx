@@ -26,6 +26,7 @@ import {
 import { useTheme } from '../constants/theme';
 import { haptic, hapticCall, hapticSelect, hapticSuccess, hapticWarn } from '../services/haptics';
 import api from '../services/api';
+import { t } from '../i18n';
 
 declare var Platform: any;
 // ── Member state list (subset — full list from API) ─────────────────────────

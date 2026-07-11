@@ -20,6 +20,7 @@ import {
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
 import type {} from '../types/navigation';
+import { t } from '../i18n';
 
 type Tab = 'outcome' | 'motions' | 'diversion' | 'escalation' | 'analytics';
 

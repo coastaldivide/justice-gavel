@@ -87,6 +87,7 @@ import TermsOfServiceScreen from '../screens/TermsOfServiceScreen';
 import PrivacyPolicyScreen  from '../screens/PrivacyPolicyScreen';
 import RecoveryAgentsScreen from '../screens/RecoveryAgentsScreen';
 import FirmVerticalScreen from '../screens/FirmVerticalScreen';
+import FirmDiscoveryScreen from '../screens/FirmDiscoveryScreen';
 import FirmAcquisitionScreen from '../screens/FirmAcquisitionScreen';
 import MatterIntelligenceScreen from '../screens/MatterIntelligenceScreen';
 import { Analytics } from '../services/analytics';
@@ -249,7 +250,11 @@ function MoreNavigator() {
       <MoreStack.Screen name="Settings"              component={SettingsScreen}
 options={{ title: '⚙️ Settings' }} />
           <MoreStack.Screen name="VideoConsultation" component={VideoConsultationScreen} options={{ title: 'Video Consultation', headerShown: true }} />
-      <MoreStack.Screen name="ConflictCheck"       component={ConflictCheckScreen}       options={{ title: 'Conflict Check',      headerShown: true }} />
+      <MoreStack.Screen name="FirmDiscovery"
+          component={FirmDiscoveryScreen}
+          options={{ title: "Find a Firm" }}
+        />
+        <MoreStack.Screen name="ConflictCheck"       component={ConflictCheckScreen}       options={{ title: 'Conflict Check',      headerShown: true }} />
       <MoreStack.Screen name="Matter"              component={MatterScreen}              options={{ title: 'Matter Detail',       headerShown: true }} />
 </MoreStack.Navigator>
     </ErrorBoundary>

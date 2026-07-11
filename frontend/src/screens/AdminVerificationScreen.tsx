@@ -17,6 +17,7 @@ import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, ActivityIndicator } from 'react-native';
 import { api }      from '../services/api';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
+import { t } from '../i18n';
 
 interface PendingAtty {
   user_id:      number;

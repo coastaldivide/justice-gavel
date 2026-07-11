@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api } from '../services/api';
+import { t } from '../i18n';
 
 export default function DocumentScannerScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
@@ -51,6 +52,7 @@ export default function DocumentScannerScreen(): React.JSX.Element {
         style={{ marginBottom: 8 }}
         accessibilityRole="button"
       >
+        accessibilityRole="button" accessibilityLabel="Go back"
         <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>← Back</Text>
       </TouchableOpacity>
 

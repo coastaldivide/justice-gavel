@@ -28,6 +28,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Activit
 import { FileSystem } from '../utils/webCompat';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { t } from '../i18n';
 
 declare var data: any;
 declare var load: any;

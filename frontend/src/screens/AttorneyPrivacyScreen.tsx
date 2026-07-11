@@ -6,6 +6,7 @@ import {
   StyleSheet, Linking, Alert,
 } from 'react-native';
 import { COLORS } from '../constants/theme';
+import { t } from '../i18n';
 
 const SECTIONS = [
   {
@@ -153,6 +154,7 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
           style={[s.contactBtn, s.contactBtnOutline, { borderColor: COLORS.navy }]}
           onPress={() => Linking.openURL('mailto:privacy@justicegavel.app').catch(() => Alert.alert('Email', 'privacy@justicegavel.app'))}
         >
+          accessibilityRole="button" accessibilityLabel="Send email"
           <Text style={[s.contactBtnText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>Request Data Deletion</Text>
         </TouchableOpacity>
       </View>

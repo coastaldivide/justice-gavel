@@ -8,6 +8,7 @@ import {View, Text, FlatList, RefreshControl, TouchableOpacity, TextInput, Linki
 import { api, cachedGet }           from '../services/api';
 import { cacheResources, getCachedResources } from '../services/offlineCache';
 import {  useTheme, COLORS }      from '../constants/theme';
+import { t } from '../i18n';
 
 
 const CATEGORIES = [
@@ -256,6 +257,7 @@ export default function ResourcesScreen(): React.JSX.Element {
                         <TouchableOpacity accessibilityRole="button"
                           onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => {})}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
+                          accessibilityRole="button" accessibilityLabel="Make phone call"
                           <AppIcon name="call-outline" size={20} color="#1B5E20" />
                           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary, fontWeight:'600', fontSize:14 }}>
                             {item.phone}

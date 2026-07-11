@@ -491,4 +491,116 @@ router.get('/trial-status', authRequired, async (req, res) => {
   }
 });
 
+
+// ── GET /firms/directory — public list of firms accepting new clients ──────
+router.get('/directory', apiLimiter, async (req, res) => {
+  const { state, practice_area, page = '1' } = req.query;
+  const offset = (parseInt(page, 10) - 1) * 20;
+  try {
+    const db = await getDb();
+    const params = [];
+    let sql = `SELECT f.id, f.name, f.city, f.state, f.practice_areas,
+                      f.accepting_clients, f.free_consultation, f.website,
+                      f.referral_code, COUNT(fm.id) as attorney_count
+               FROM firms f
+               LEFT JOIN firm_members fm ON fm.firm_id = f.id AND fm.active = true
+               WHERE f.public_listing = true AND f.accepting_clients = true `;
+    if (state)          { sql += 'AND f.state = ? '; params.push(state); }
+    if (practice_area)  { sql += 'AND f.practice_areas LIKE ? '; params.push('%' + practice_area + '%'); }
+    sql += 'GROUP BY f.id ORDER BY attorney_count DESC, f.name ASC LIMIT 20 OFFSET ?';
+    params.push(offset);
+    const firms = await db.all(sql, params).catch(() => []);
+    return res.json({ firms, page: parseInt(page, 10), count: firms.length });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not load firm directory' });
+  }
+});
+
+// ── GET /firms/:id/public-profile — public firm card for clients ───────────
+router.get('/:id/public-profile', apiLimiter, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'Invalid firm ID' });
+  try {
+    const db = await getDb();
+    const firm = await db.get(
+      `SELECT id, name, city, state, practice_areas, accepting_clients,
+              free_consultation, website, phone, description, referral_code
+       FROM firms WHERE id = ? AND public_listing = true`,
+      [id]
+    ).catch(() => null);
+    if (!firm) return res.status(404).json({ error: 'Firm not found or not public' });
+    const members = await db.all(
+      `SELECT u.id, u.display_name, fm.firm_role FROM firm_members fm
+       JOIN users u ON u.id = fm.user_id WHERE fm.firm_id = ? AND fm.active = true LIMIT 10`,
+      [id]
+    ).catch(() => []);
+    return res.json({ ...firm, attorneys: members });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not load firm profile' });
+  }
+});
+
+// ── POST /firms/:id/invite — send email invitation to join firm ───────────
+router.post('/:id/invite', authRequired, async (req, res) => {
+  const fid         = parseInt(req.params.id, 10);
+  const { email, role = 'attorney' } = req.body;
+  if (!fid || !email) return res.status(400).json({ error: 'firm id and email required' });
+  try {
+    const db = await getDb();
+    // Verify requester is a firm admin
+    const member = await db.get(
+      `SELECT firm_role FROM firm_members WHERE firm_id = ? AND user_id = ? AND active = true`,
+      [fid, req.user.id]
+    ).catch(() => null);
+    if (!member || !['firm_admin','owner'].includes(member.firm_role)) {
+      return res.status(403).json({ error: 'Only firm admins can send invitations' });
+    }
+    const firm = await db.get('SELECT name, referral_code FROM firms WHERE id = ?', [fid]).catch(() => null);
+    if (!firm) return res.status(404).json({ error: 'Firm not found' });
+
+    // Store invitation
+    await db.run(
+      `INSERT INTO firm_invites (firm_id, invited_by, email, role, created_at)
+       VALUES (?,?,?,?,NOW()) ON CONFLICT (firm_id, email) DO UPDATE SET role=?, created_at=NOW()`,
+      [fid, req.user.id, email.toLowerCase(), role, role]
+    );
+
+    // Send invitation email (non-blocking)
+    const { sendEmail } = await import('../services/email.js').catch(() => ({}));
+    if (sendEmail) {
+      sendEmail({
+        to:      email,
+        subject: `You've been invited to join ${firm.name} on Justice Gavel`,
+        text:    `You have been invited to join the ${firm.name} team on Justice Gavel.
+
+Download the app and use code ${firm.referral_code} to join your firm.
+
+Justice Gavel: https://justicegavel.com`,
+      }).catch(() => {});
+    }
+
+    return res.status(201).json({ invited: true, email, firm_name: firm.name });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not send invitation' });
+  }
+});
+
+// ── GET /firms/referral/:code — look up firm by referral code ─────────────
+router.get('/referral/:code', apiLimiter, async (req, res) => {
+  const code = req.params.code?.toUpperCase().trim();
+  if (!code || code.length < 4) return res.status(400).json({ error: 'Invalid code' });
+  try {
+    const db = await getDb();
+    const firm = await db.get(
+      `SELECT id, name, city, state, practice_areas, free_consultation
+       FROM firms WHERE UPPER(referral_code) = ? AND public_listing = true`,
+      [code]
+    ).catch(() => null);
+    if (!firm) return res.status(404).json({ error: 'Firm not found. Check your code and try again.' });
+    return res.json({ found: true, firm });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not look up referral code' });
+  }
+});
+
 export default router;

@@ -352,6 +352,7 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
           onPress={() => onSubscribe('legal_research_annual')}
           disabled={loading}
         >
+          accessibilityRole="button" accessibilityLabel="Subscribe"
           <Text maxFontSizeMultiplier={1.4} style={[styles.annualBtnText, { color: COLORS.navy }]}>
             Annual -- $374.99/yr · Save $224/yr
           </Text>

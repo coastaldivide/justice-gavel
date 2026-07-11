@@ -20,6 +20,7 @@ import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { t } from '../i18n';
 
 declare var data: any;
 declare var setError: any;
@@ -198,6 +199,7 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
           disabled={loading}
           activeOpacity={0.85}
         >
+          accessibilityRole="button" accessibilityLabel="Subscribe"
           {loading
             ? <ActivityIndicator color={COLORS.bgCard} size="small" />
             : <>
@@ -412,6 +414,7 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
           accessibilityRole="button"
         onPress={() => Alert.alert('Restore Purchases', 'Checking your previous purchases...\n\nIf you had an active subscription it will be restored. This may take a moment.', [{ text: 'OK' }])}
         style={{ alignItems: 'center', paddingVertical: 16 }}>
+        accessibilityRole="button" accessibilityLabel="Continue to payment"
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 12, lineHeight: 20, textDecorationLine: 'underline' }}>Restore Purchases</Text>
       </TouchableOpacity>
       <View style={{ height: 40 }} />
