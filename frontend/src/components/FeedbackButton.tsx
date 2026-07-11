@@ -6,9 +6,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, Modal, TextInput,
-  StyleSheet, Alert, ActivityIndicator,
+  StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { api } from '../services/api';
+import { useToast } from './Toast';
 
 interface Props {
   screen: string;   // current screen name for logging
@@ -19,19 +20,20 @@ export default function FeedbackButton({ screen }: Props) {
   const [issue, setIssue]         = useState('');
   const [contact, setContact]     = useState('');
   const [loading, setLoading]     = useState(false);
+  const { showToast } = useToast();
 
   // Only show in development / beta builds
   if (!__DEV__ && process.env.EXPO_PUBLIC_BETA !== 'true') return null;
 
   const submit = async () => {
-    if (!issue.trim()) { Alert.alert('Please describe the issue'); return; }
+    if (!issue.trim()) { showToast('Please describe the issue before submitting.', 'warning'); return; }
     setLoading(true);
     try {
       await api.post('/feedback/ui', { screen, issue: issue.trim(), contact: contact.trim() });
-      Alert.alert('Thank you', 'Your feedback has been received.');
+      showToast('Thank you — feedback received!', 'success');
       setIssue(''); setContact(''); setVisible(false);
     } catch {
-      Alert.alert('Error', 'Could not submit — please try again.');
+      showToast('Could not submit. Please try again.', 'error');
     } finally {
       setLoading(false);
     }

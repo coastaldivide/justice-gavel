@@ -2,6 +2,7 @@ import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import { EmptyState } from '../components/EmptyState';
 import LawyerSkeletonCard from '../components/LawyerSkeletonCard';
+import ErrorState from '../components/ErrorState';
 import { t } from '../i18n';
 import type { ScreenProps } from '../types/navigation';
 import { haptic, hapticCall } from '../services/haptics';

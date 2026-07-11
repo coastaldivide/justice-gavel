@@ -11,6 +11,7 @@ import {View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, 
 import { Picker } from '@react-native-picker/picker';
 import { api, cachedGet } from '../services/api';
 import { useTheme } from '../constants/theme';
+import ErrorState from '../components/ErrorState';
 import { t } from '../i18n';
 
 declare var bondAmount: any;
@@ -37,6 +38,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
   const [refreshTick, setRefreshTick] = React.useState(0);
   const [state, setState] = useState('TN');
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [refreshing, setRefreshing] = React.useState(false);

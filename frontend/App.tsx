@@ -13,6 +13,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   AppState, Platform, StatusBar, Text, TouchableOpacity, View,
 } from 'react-native';
+import { linkingConfig } from './src/navigation/LinkingConfig';
+import { ToastProvider } from './src/components/Toast';
 import FeedbackButton from './src/components/FeedbackButton';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -318,9 +320,9 @@ function AppInner() {
     <ErrorBoundary>
       <>
       <OfflineBanner />
-      <NavigationContainer
+      <ToastProvider>
+      <NavigationContainer linking={linkingConfig}
           ref={navigationRef}
-          linking={linking}
           onStateChange={(state) => {
             // Track every screen navigation for funnel analysis in Mixpanel
             if (!state) return;
@@ -366,6 +368,7 @@ function AppInner() {
           )}
         </RootStack.Navigator>
       </NavigationContainer>
+      </ToastProvider>
       {/* Beta feedback — only shows in dev/beta builds */}
       <FeedbackButton screen="App" />
       </>

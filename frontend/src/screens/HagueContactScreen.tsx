@@ -19,7 +19,7 @@ import { AppIcon } from '../components/AppIcon';
 
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, KeyboardAvoidingView, ScrollView, TouchableOpacity,
+  View, Text, KeyboardAvoidingView, ScrollView, RefreshControl, TouchableOpacity,
   StyleSheet, Alert, ActivityIndicator, Linking,
   TextInput,
 } from 'react-native';

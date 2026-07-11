@@ -3,9 +3,10 @@
  * Allows firm attorneys to check for conflicts before accepting a client.
  * Legal Pro + Esquire tier only.
  */
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList,
+  View, Text, TextInput, TouchableOpacity, FlatList, RefreshControl,
   ActivityIndicator, StyleSheet, Alert,
 } from 'react-native';
 import { api } from '../services/api';
@@ -20,6 +21,7 @@ interface ConflictResult {
 interface Props { navigation: any; }
 
 export default function ConflictCheckScreen({ navigation }: Props) {
+  const [refreshing, setRefreshing] = React.useState(false);
   const [parties, setParties]   = useState<string>('');
   const [result, setResult]     = useState<ConflictResult | null>(null);
   const [loading, setLoading]   = useState(false);
@@ -97,6 +99,7 @@ export default function ConflictCheckScreen({ navigation }: Props) {
 
           {result.matches.length > 0 && (
             <FlatList
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => setRefreshing(false)} />}
               data={result.matches}
               keyExtractor={(item, idx) => `conflict-${idx}`}
               renderItem={({ item }) => (

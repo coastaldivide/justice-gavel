@@ -4,6 +4,7 @@
  * and tap through to a firm's public profile before contacting them.
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import {
   View, Text, TextInput, FlatList, TouchableOpacity,
   ActivityIndicator, StyleSheet, RefreshControl, Alert,

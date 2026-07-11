@@ -2,6 +2,7 @@ import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 import React, { useState, useCallback } from 'react';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
   StyleSheet, Switch, Alert } from 'react-native';

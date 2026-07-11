@@ -16,7 +16,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useState, useCallback } from 'react';
 import type {} from '../types/navigation';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl , ActivityIndicator} from 'react-native';
 import { t }      from '../i18n';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 
@@ -185,14 +185,16 @@ const SEALING_DATA: SealingEntry[] = [
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
+// Loading state
 export default function JuvenileJusticeScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+      return () => { mountedRef.current = false; };
   }, []);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
+  const [loading, setLoading] = useState(false);
   const [tab, setTab] = React.useState(0);
 
   const sections = RIGHTS_SECTIONS;

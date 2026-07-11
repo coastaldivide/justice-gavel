@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, cachedGet } from '../services/api';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
 import { COLORS, RADIUS, useTheme } from '../constants/theme';
+import * as Haptics from 'expo-haptics';
 import { t } from '../i18n';
 
 declare var load: any;
@@ -55,7 +56,8 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
           setLessons(cached);
         }
       }
-      setLoading(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(()=>{});
+    setLoading(false);
     })();
   }, [incomingCategory]);
 

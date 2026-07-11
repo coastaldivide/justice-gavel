@@ -5,7 +5,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
+  View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator,
   Linking, Alert, StyleSheet,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -31,6 +31,7 @@ export default function FirmPublicProfileScreen() {
 
   const [firm, setFirm]       = useState<FirmProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError]     = useState('');
 
   useEffect(() => {

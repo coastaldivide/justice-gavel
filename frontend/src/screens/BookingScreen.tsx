@@ -9,7 +9,7 @@ import type { ScreenProps } from '../types/navigation';
  * 3-step booking flow: duration → date/time → confirm
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { api } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
@@ -87,6 +87,7 @@ export default function BookingScreen({ route, navigation }: ScreenProps): React
   const [notes, setNotes]         = useState('');
   const [booking, setBooking]     = useState(false);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [confirmed, setConfirmed] = useState<any>(null);
   const [callbackPhone, setCallbackPhone] = useState('');
   const [sendingCallback, setSendingCallback] = useState(false);
