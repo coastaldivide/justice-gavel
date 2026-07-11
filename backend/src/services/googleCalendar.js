@@ -18,6 +18,21 @@
  *   (OAuth tokens stored per-user in attorneys.google_refresh_token)
  */
 
+
+// Fetch with timeout — prevents hanging external API calls
+async function fetchWithTimeout(url, options = {}, timeoutMs = 10_000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
 import logger from '../utils/logger.js';
 
 /**
@@ -41,7 +56,7 @@ export async function createCourtDateEvent(refreshToken, {
 
   try {
     // Exchange refresh token for access token
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    const tokenRes = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -82,7 +97,7 @@ export async function createCourtDateEvent(refreshToken, {
       colorId: '3', // sage green — distinguishable from personal events
     };
 
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       'https://www.googleapis.com/calendar/v3/calendars/primary/events',
       {
         method:  'POST',
@@ -115,7 +130,7 @@ export async function createCourtDateEvent(refreshToken, {
 export async function updateCourtDateEvent(refreshToken, eventId, updates) {
   if (!refreshToken || !eventId) return null;
   try {
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    const tokenRes = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -151,7 +166,7 @@ export async function updateCourtDateEvent(refreshToken, eventId, updates) {
 export async function deleteCourtDateEvent(refreshToken, eventId) {
   if (!refreshToken || !eventId) return null;
   try {
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    const tokenRes = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({

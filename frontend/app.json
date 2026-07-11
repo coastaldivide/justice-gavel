@@ -2,7 +2,7 @@
   "expo": {
     "name": "Justice Gavel",
     "slug": "justice-gavel",
-    "version": "8.4.1",
+    "version": "8.5.0",
     "orientation": "portrait",
     "platforms": [
       "ios",
@@ -16,7 +16,7 @@
       "_apiBase_instructions": "BEFORE BUILDING: replace apiBase with your deployed backend URL. E.g. https://your-app.railway.app \u2014 see DevHandoff doc.",
       "EXPO_PUBLIC_SENTRY_DSN": "",
       "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+        "projectId": "PENDING_EAS_INIT"
       },
       "reviewNotes": "Reviewer credentials: see App Store Connect > App Review Notes. Subscription purchase on iOS opens the web browser to justicegavel.app/subscribe \u2014 this is the intended behavior per Apple guideline \u00a73.1.1 compliance while native StoreKit integration is in development. All other features are fully functional.",
       "supabaseUrl": "https://yjeplvvnlennyxixwxfq.supabase.co",
@@ -31,7 +31,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.justicegavel.mobile",
-      "buildNumber": "841",
+      "buildNumber": "850",
       "infoPlist": {
         "NSCalendarsUsageDescription": "Justice Gavel adds your court dates to your calendar so you never miss a hearing.",
         "NSCalendarsWriteOnlyAccessUsageDescription": "Justice Gavel adds your court dates to your calendar so you never miss a hearing.",
@@ -132,7 +132,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "app.justicegavel.mobile",
-      "versionCode": 841,
+      "versionCode": 850,
       "permissions": [
         "READ_MEDIA_IMAGES",
         "CAMERA",
@@ -225,7 +225,7 @@
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/REPLACE_WITH_EAS_PROJECT_ID"
+      "url": "https://u.expo.dev/PENDING_EAS_INIT"
     },
     "runtimeVersion": {
       "policy": "appVersion"

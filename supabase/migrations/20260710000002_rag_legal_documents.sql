@@ -121,3 +121,6 @@ CREATE INDEX IF NOT EXISTS idx_video_sessions_matter ON video_sessions(matter_id
 ALTER TABLE case_messages ADD COLUMN IF NOT EXISTS message_type TEXT DEFAULT 'chat';
 -- 'chat' = quick in-app message (10K chars)
 -- 'note' = full legal correspondence / demand letter (50K chars)
+
+ALTER TABLE research_queries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE video_sessions  ENABLE ROW LEVEL SECURITY;

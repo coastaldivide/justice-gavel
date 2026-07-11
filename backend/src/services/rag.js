@@ -1,3 +1,18 @@
+
+// External fetch with 15s timeout (embeddings + Anthropic can be slow)
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15_000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
 /**
  * services/rag.js — Retrieval-Augmented Generation for Legal Research
  *
@@ -24,7 +39,7 @@ const SUPABASE_REST    = `${SUPABASE_URL}/rest/v1/rpc/search_legal_docs`;
 
 // ── Step 1: Embed the user query ───────────────────────────────────────────
 async function embedQuery(text) {
-  const res = await fetch(EMBED_URL, {
+  const res = await fetchWithTimeout(EMBED_URL, {
     method:  'POST',
     headers: {
       'Content-Type':  'application/json',
@@ -40,7 +55,7 @@ async function embedQuery(text) {
 
 // ── Step 2: Retrieve relevant legal documents ──────────────────────────────
 async function retrieveDocs(embedding, queryText, { practiceArea, jurisdiction } = {}) {
-  const res = await fetch(SUPABASE_REST, {
+  const res = await fetchWithTimeout(SUPABASE_REST, {
     method:  'POST',
     headers: {
       'Content-Type':  'application/json',
@@ -89,7 +104,7 @@ Instructions:
 
 // ── Step 4: Generate answer with Claude ───────────────────────────────────
 async function generateAnswer(prompt) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
     method:  'POST',
     headers: {
       'Content-Type':      'application/json',
