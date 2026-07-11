@@ -399,7 +399,6 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
           maxLength={6}
           keyboardType="default"
           autoFocus
-          accessibilityLabel="Session code"
 
           returnKeyType="next"
           blurOnSubmit
@@ -413,7 +412,6 @@ export default function TranslatorScreen({ route, navigation }: ScreenProps): Re
             joinCode.length !== 6 && { opacity: 0.45 }]}
           onPress={joinSession}
           disabled={joinCode.length !== 6}
-          accessibilityLabel="Join session"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.joinBtnText}>Join Session →</Text>
         </TouchableOpacity>

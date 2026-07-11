@@ -52,7 +52,6 @@ export default function DocumentScannerScreen(): React.JSX.Element {
         style={{ marginBottom: 8 }}
         accessibilityRole="button"
       >
-        accessibilityRole="button" accessibilityLabel="Go back"
         <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>← Back</Text>
       </TouchableOpacity>
 

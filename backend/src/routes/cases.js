@@ -121,7 +121,15 @@ router.post('/', authRequired, validate(createCaseSchema), casesLimiter, async (
     const safeState  = state ? sanitizeStr(String(state), 3).toUpperCase() : null;
 
     const r = await db.run(
-      `INSERT INTO cases (user_id, title, status, next_court_date, notes, state,
+      `-- Idempotency: prevent duplicate case creation
+        const recent = await db.get(
+      `SELECT id FROM cases WHERE user_id = ? AND title = ?
+       AND created_at > datetime('now','-10 seconds') LIMIT 1`,
+      [req.user.id, (req.body.title || '').trim()]
+    ).catch(() => null);
+    if (recent) return res.status(409).json({ error: 'Duplicate case — please wait before submitting again', existingId: recent.id });
+
+INSERT INTO cases (user_id, title, status, next_court_date, notes, state,
          bail_amount_cents, related_case_id, capital_case, co_defendant_count, bail_status)
        VALUES (?,?,?,?,?,?,
          ?, ?, ?, ?, ?)`,

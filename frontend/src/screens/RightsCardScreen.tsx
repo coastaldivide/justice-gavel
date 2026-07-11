@@ -317,7 +317,6 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
       <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 8 }}>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Call 988 Suicide and Crisis Lifeline"
           style={{ flex: 1, backgroundColor: (_HEX_RIGHTSCARD._c1), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:988').catch(() => {})}
         >
@@ -325,7 +324,6 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Call ACLU helpline"
           style={{ flex: 1, backgroundColor: (colors.navy || COLORS.navy), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:+12125492660').catch(() => {})}
         >
@@ -333,7 +331,6 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Call National Bail Hotline"
           style={{ flex: 1, backgroundColor: _HEX_RIGHTSCARD._c0, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:+18009800010').catch(() => {})}
         >
@@ -351,7 +348,6 @@ export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX
             disabled={sharing}
             activeOpacity={0.85}
           >
-            accessibilityRole="button" accessibilityLabel="Navigate"
             {sharing
               ? <ActivityIndicator color={colors.bgCard} />
               : <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>

@@ -357,6 +357,7 @@ export default function FamilyConnectScreen({ route, navigation }: ScreenProps):
 
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Email (optional)</Text>
           <TextInput
+          accessibilityLabel="Email address"
             style={styles.input}
             value={familyEmail}
             onChangeText={setFamilyEmail}

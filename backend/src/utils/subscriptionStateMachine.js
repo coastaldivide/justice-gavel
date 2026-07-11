@@ -26,6 +26,7 @@ export const TIERS = {
   ESQUIRE:     'esquire',
 };
 
+// Used for tier comparison: TIER_ORDER[tierA] < TIER_ORDER[tierB] means tierA is lower
 export const TIER_ORDER = ['free','legal_radar','advisor','legal_pro','esquire'];
 
 export const SUB_STATES = {

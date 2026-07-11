@@ -165,7 +165,6 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
                 borderWidth:1.5, borderColor: open ? cc.border : border,
                 shadowColor:colors.textPrimary, shadowOpacity:0.05, shadowRadius:3,
                 shadowOffset:{width:0,height:1} }}>
-              accessibilityRole="button" accessibilityLabel="Toggle expand"
               {/* Header */}
               <View style={{ flexDirection:'row', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                 <View style={{ backgroundColor:cc.bg, borderRadius:6,
@@ -242,7 +241,6 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
             accessibilityRole="button"
             onPress={() => navigation.navigate('LawyersTab')}
           >
-            accessibilityRole="button" accessibilityLabel="Navigate"
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
               ⚖️ Find a Criminal Defense Attorney
             </Text>
@@ -261,7 +259,6 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
         style={{ backgroundColor: colors.emergencyDark, paddingVertical: 16,
           paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' }}
       >
-        accessibilityRole="button" accessibilityLabel="Navigate"
         <Text maxFontSizeMultiplier={1.4} style={{ color: '#fff', fontWeight: '900', fontSize: 16 }}>
           ⚖️ Find a Defense Attorney
         </Text>

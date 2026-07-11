@@ -1,3 +1,4 @@
+// DEV ONLY — never run in production
 import { initDb, db } from '../db/index.js';
 
 const RESOURCES = [

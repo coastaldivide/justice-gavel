@@ -146,8 +146,7 @@ export default function DocumentScannerScreen({ navigation, route }: ScreenProps
         </Text>
         <TouchableOpacity accessibilityRole="button"
           style={[s.btn, { backgroundColor: colors.navy }]}
-          onPress={requestPermission}
-         accessibilityLabel="Allow Camera">
+          onPress={requestPermission}>
           <Text maxFontSizeMultiplier={1.4} style={s.btnText}>Allow Camera</Text>
         </TouchableOpacity>
       </View>

@@ -82,6 +82,7 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
       {/* State filter */}
       <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
         <TextInput
+          accessibilityLabel="Filter by state (e.g. TN, CA, TX)…"
           value={state}
           onChangeText={v => setState(v.toUpperCase().slice(0, 2))}
           placeholder="Filter by state (e.g. TN, CA, TX)…"
@@ -169,7 +170,6 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
                   shadowColor: colors.textPrimary, shadowOpacity: 0.05, shadowRadius: 3,
                   shadowOffset: { width: 0, height: 1 },
                 }}>
-                accessibilityRole="button" accessibilityLabel="Toggle expand"
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
                   <View style={{ backgroundColor: ct.bg, borderRadius: 8,
                     paddingHorizontal: 8, paddingVertical: 3 }}>
@@ -211,7 +211,6 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
                         accessibilityRole="button"
                         onPress={() => openMaps(item.address, item.lat, item.lng)}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        accessibilityRole="button" accessibilityLabel="View on map"
                         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>📍</Text>
                         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontSize: 13,
                           fontWeight: '600', flex: 1 }}>{item.address}</Text>

@@ -90,8 +90,8 @@ export default function AdvocacyScreen(): React.JSX.Element {
           {/* Key stats grid */}
           <Text maxFontSizeMultiplier={1.4} style={styles.sectionTitle}>Network stats</Text>
           <View style={styles.statsGrid}>
-            <StatCard icon="⚖️" value={stats.lawyerCount}    label="Active lawyers"    color={colors.navy} />
-            <StatCard icon="🔓" value={stats.bailCount}      label="Bail agents"       color={colors.warnDark} />
+            <StatCard icon="⚖️" value={stats.lawyerCount}    label={t("advocacy.stats.active_lawyers")}    color={colors.navy} />
+            <StatCard icon="🔓" value={stats.bailCount}      label={t("advocacy.stats.bail_agents")}       color={colors.warnDark} />
             <StatCard icon="📍" value={stats.citiesCovered}  label="Cities covered"   color={colors.legalDark} />
             <StatCard icon="🚨" value={stats.alertsSent}     label="SOS alerts sent"  color={colors.emergencyDark} />
             <StatCard icon="👥" value={stats.userCount}      label="Registered users" color={colors.blue} />

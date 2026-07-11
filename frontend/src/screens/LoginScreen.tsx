@@ -74,7 +74,6 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
 
         {/* Browse without account -- TOP of form, first thing seen */}
         <TouchableOpacity accessibilityRole="button" style={styles.topBrowseBtn} onPress={browseAsGuest} activeOpacity={0.85}
-          accessibilityLabel="OR SIGN IN"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.topBrowseBtnText}>🔍  Search Without an Account</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.topBrowseBtnSub}>Find lawyers & bail agents instantly -- no sign-up</Text>
@@ -155,7 +154,6 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
               ]);
             }}
           >
-            accessibilityRole="button" accessibilityLabel="Cancel"
             <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>Forgot password?</Text>
           </TouchableOpacity>
 

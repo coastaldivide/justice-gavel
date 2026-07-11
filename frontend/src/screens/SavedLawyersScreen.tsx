@@ -195,14 +195,12 @@ function SavedCard({
           onPress={() => navigation.navigate('MoreTab', {
             screen: 'Booking',
             params: { lawyerName: lawyer.name, lawyerPhone: lawyer.phone || '', lawyerId: lawyer.provider_id } })}
-          accessibilityLabel={`Book consultation with ${lawyer.name}`}
           >
           <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📅 Book</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.actionBtn, { backgroundColor: COLORS.warnDark }]}
-          accessibilityLabel="\u2b50 Review" onPress={() => setReviewing(r => !r)}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>⭐ Review</Text>
         </TouchableOpacity>

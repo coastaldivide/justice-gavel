@@ -99,7 +99,6 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
         </Text>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Full Privacy Policy \u2192" onPress={() => Linking.openURL('https://justicegavel.app/privacy').catch(() => {})}
         >
           <Text style={[s.fullPolicyLink, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>Full Privacy Policy →</Text>
         </TouchableOpacity>
@@ -145,7 +144,6 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
         <TouchableOpacity
           accessibilityRole="button"
           style={[s.contactBtn, { backgroundColor: COLORS.navy }]}
-          accessibilityLabel="Contact Legal Team" onPress={() => Linking.openURL('mailto:legal@justicegavel.app').catch(() => Alert.alert('Email', 'legal@justicegavel.app'))}
         >
           <Text style={s.contactBtnText} maxFontSizeMultiplier={1.4}>Contact Legal Team</Text>
         </TouchableOpacity>
@@ -154,7 +152,6 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
           style={[s.contactBtn, s.contactBtnOutline, { borderColor: COLORS.navy }]}
           onPress={() => Linking.openURL('mailto:privacy@justicegavel.app').catch(() => Alert.alert('Email', 'privacy@justicegavel.app'))}
         >
-          accessibilityRole="button" accessibilityLabel="Send email"
           <Text style={[s.contactBtnText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>Request Data Deletion</Text>
         </TouchableOpacity>
       </View>

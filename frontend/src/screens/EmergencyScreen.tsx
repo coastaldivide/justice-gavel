@@ -125,7 +125,6 @@ export default function EmergencyScreen({ route, navigation }: ScreenProps) {
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.stripBtn, { backgroundColor: colors.emergencyDark }]}
-          accessibilityLabel="\ud83d\udea8  CALL 911" onPress={() => call('911')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>🚨  CALL 911</Text>
         </TouchableOpacity>

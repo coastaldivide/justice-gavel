@@ -107,7 +107,6 @@ export default function PILeadScreen({ navigation, route }: ScreenProps): React.
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
-          accessibilityLabel="\u2696\ufe0f  Browse Lawyers Now" onPress={() => navigation.navigate('LawyersTab')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>⚖️  Browse Lawyers Now</Text>
         </TouchableOpacity>

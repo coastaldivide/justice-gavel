@@ -123,7 +123,6 @@ export default function AgeGateScreen({ route, navigation }: any) {
       __DEV__ && console.warn('[AgeGateScreen.tsx]', e?.message);
     }
   }}
-          accessibilityLabel="I am the parent or guardian"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.familyBtnText}>
             I'm a parent or guardian -- get help now →

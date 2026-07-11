@@ -352,7 +352,6 @@ if (phase === 'ready') return (
         <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('tel:988').catch(() => {})}
-          accessibilityLabel="Call or text 988 Suicide and Crisis Lifeline"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.bgSubtle }]}>
             <AppIcon name="call-outline" size={20} color="#1B5E20" />
@@ -367,7 +366,6 @@ if (phase === 'ready') return (
         <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('sms:741741&body=HOME').catch(() => {})}
-          accessibilityLabel="Text HOME to 741741 Crisis Text Line"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.legalBg }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>💬</Text>
@@ -382,7 +380,6 @@ if (phase === 'ready') return (
         <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('tel:18009506264').catch(() => {})}
-          accessibilityLabel="Call NAMI Helpline 1-800-950-6264"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.warnBg }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>🧠</Text>
@@ -397,7 +394,6 @@ if (phase === 'ready') return (
         <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('tel:18007994889').catch(() => {})}
-          accessibilityLabel="Call SAMHSA National Helpline"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.bgSubtle }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>🏥</Text>
@@ -449,8 +445,7 @@ if (phase === 'ready') return (
       <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Could not send</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity
-  accessibilityRole="button"
-         accessibilityLabel="Try Again">
+  accessibilityRole="button">
         <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
       </TouchableOpacity>
     </View>

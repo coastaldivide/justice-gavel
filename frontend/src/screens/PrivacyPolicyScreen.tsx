@@ -391,7 +391,6 @@ export default function PrivacyPolicyScreen({ navigation }: ScreenProps): React.
           style={[styles.rightsBtn, { backgroundColor: colors.legalDark }]}
           onPress={() => openEmail(CONTACT_EMAIL)}
           activeOpacity={0.85}
-          accessibilityLabel="Request data access or correction"
         >
           <Text maxFontSizeMultiplier={1.3} style={styles.rightsBtnText}>
             📋 Request Data Access / Correction

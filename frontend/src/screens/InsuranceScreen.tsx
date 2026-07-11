@@ -115,7 +115,6 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
       {/* Get quote */}
       <TouchableOpacity
         accessibilityRole="button" activeOpacity={0.6} style={[styles.quoteBtn, { backgroundColor: selected.color }]} onPress={getQuote} disabled={getting}
-        accessibilityLabel="Retry →"
       >
         {getting ? <ActivityIndicator color={colors.bgCard} /> : <Text maxFontSizeMultiplier={1.4} style={styles.quoteBtnText}>Get my quote for {selected.label}</Text>}
       </TouchableOpacity>

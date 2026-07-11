@@ -257,7 +257,6 @@ function ResearchBubble({ msg }: { msg: Message }) {
               }
             } catch { Alert.alert('Export failed', 'Could not generate PDF.'); }
           }}
-          accessibilityLabel="Export as PDF"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>PDF Export</Text>
         </TouchableOpacity>
@@ -341,7 +340,6 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
           style={[styles.subscribeBtn, { backgroundColor: COLORS.navy }, loading && { opacity: 0.6 }]}
           onPress={() => onSubscribe('legal_research')}
           disabled={loading}
-          accessibilityLabel="Subscribe to Legal Research for $49.99/mo"
         >
           {loading
             ? <ActivityIndicator color={COLORS.bgCard} />
@@ -352,7 +350,6 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
           onPress={() => onSubscribe('legal_research_annual')}
           disabled={loading}
         >
-          accessibilityRole="button" accessibilityLabel="Subscribe"
           <Text maxFontSizeMultiplier={1.4} style={[styles.annualBtnText, { color: COLORS.navy }]}>
             Annual -- $374.99/yr · Save $224/yr
           </Text>
@@ -782,7 +779,6 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
           onChangeText={setQuery}
           multiline
           maxLength={2000}
-          accessibilityLabel="Legal research query"
           onSubmitEditing={() => runSearch(query)}
 
           returnKeyType="next"

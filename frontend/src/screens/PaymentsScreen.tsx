@@ -298,6 +298,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
         <View style={styles.amountRow}>
           <Text maxFontSizeMultiplier={1.4} style={styles.currencySymbol}>$</Text>
           <TextInput
+          accessibilityLabel="0.00"
             style={styles.amountInput}
             value={amount}
             onChangeText={v => setAmount(v.replace(/[^0-9.]/g, ''))}

@@ -113,6 +113,7 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
           SEARCH CHARGE TYPE
         </Text>
         <TextInput
+          accessibilityLabel="e.g. DUI, assault, theft…"
           value={filter}
           onChangeText={setFilter}
           placeholder="e.g. DUI, assault, theft…"
@@ -260,7 +261,6 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
             accessibilityRole="button"
             onPress={() => navigation.navigate('BailTab')}
           >
-            accessibilityRole="button" accessibilityLabel="Navigate"
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
               🔓 Find a Bail Bondsman Near You
             </Text>
@@ -282,7 +282,6 @@ export default function BailCalculatorScreen({ route, navigation }: ScreenProps)
             onPress={() => navigation.navigate('LawyersTab')}
             activeOpacity={0.85}
           >
-            accessibilityRole="button" accessibilityLabel="Navigate"
             <Text maxFontSizeMultiplier={1.2}
               style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>
               ⚖️ Find Attorneys Near You

@@ -1,3 +1,4 @@
+import type { NavigationProp } from '@react-navigation/native';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import { EmptyState } from '../components/EmptyState';
@@ -95,7 +96,7 @@ function TagRow({ items, color = COLORS.steel }: { items: string[]; color?: stri
 }
 
 // ── Lawyer card ───────────────────────────────────────────────────────────────
-const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: Record<string,any>; navigation: any }) {
+const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: Record<string,any>; navigation: NavigationProp<any> }) {
 
   // ── Subscription tier check for soft upsell ────────────────────────────────
   const [isPro, setIsPro] = useState(false);
@@ -299,7 +300,6 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
               lawyerId:    item.id } })}
           activeOpacity={0.85}
         >
-          accessibilityRole="button" accessibilityLabel="Navigate"
           <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, styles.bookBtnText]}>📅 Book Consult</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -308,7 +308,6 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
           onPress={openSecureMessage}
           disabled={caseLoading}
           activeOpacity={0.85}
-          accessibilityLabel={`Send encrypted message to ${item?.name}`}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, styles.secureBtnText]}>
             {caseLoading ? '…' : '🔒 Message'}
@@ -316,7 +315,6 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         </TouchableOpacity>
         <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setExpanded(e => !e)}
         >
-          accessibilityRole="button" accessibilityLabel="Toggle expand"
           <Text maxFontSizeMultiplier={1.4} style={styles.secondaryBtnText}>{expanded ? t('lawyers_less') : t('lawyers_more')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -674,7 +672,6 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
             <TouchableOpacity
           accessibilityRole="button" onPress={() => { if (searchDebounce.current) clearTimeout(searchDebounce.current); searchDebounce.current = setTimeout(() => { setCoords(null); setManualCity(''); fetchLawyers(); }, 300); }}
               >
-              accessibilityRole="button" accessibilityLabel="Refresh"
               <Text maxFontSizeMultiplier={1.4} style={styles.locationLabel}>📍 {locationLabel}  <Text maxFontSizeMultiplier={1.4} style={styles.refreshGps}>↺ refresh</Text></Text>
             </TouchableOpacity>
           )}
@@ -754,7 +751,6 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
                   })}
                   activeOpacity={0.85}
                 >
-                  accessibilityRole="button" accessibilityLabel="Navigate"
                   <Text maxFontSizeMultiplier={1.4} style={styles.walkthroughBannerText}>
                     📖 Know what to expect with a {caseType} charge →
                   </Text>
@@ -828,7 +824,6 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
                   }}
                   activeOpacity={0.8}
                 >
-                  accessibilityRole="button" accessibilityLabel="Navigate"
                   <Text maxFontSizeMultiplier={1.4} style={styles.needBtnIcon}>{n.icon}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.needBtnLabel, { color: n.color }]}>{n.label}</Text>
                 </TouchableOpacity>
@@ -946,7 +941,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               color:colors.textMuted, marginBottom:12 }}>
               Your message will be sent to all selected attorneys. The first to respond wins.
             </Text>
-            <TextInput testID="lawyers-search-input"
+            <TextInput
               style={{ borderWidth:1, borderColor:colors.inputBorder, borderRadius:10,
                 padding:12, fontSize:14, lineHeight:21, color:colors.inputText,
                 backgroundColor:colors.inputBg, minHeight:100, textAlignVertical:'top',

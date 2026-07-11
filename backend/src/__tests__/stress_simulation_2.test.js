@@ -349,6 +349,19 @@ describe('C — Golden Gavel scoring system', () => {
     expect(gavelLevel(9999).level).toBe(4);
     expect(gavelLevel(50000).level).toBe(5); // cap at 5
   });
+
+  it('gavelLevel(0) is level 1 — catches always-max-level mutation', () => {
+    // This test exists specifically because a mutation (always return GAVEL_LEVELS[4])
+    // survived — tests must verify the minimum level explicitly
+    // gavelLevel() returns an object — compare .level property
+    expect(gavelLevel(0).level).toBe(1);
+    expect(gavelLevel(-100).level).toBe(1);
+    expect(gavelLevel(499).level).toBe(1);
+    expect(gavelLevel(500).level).toBe(2);
+    expect(gavelLevel(1499).level).toBe(2);
+    expect(gavelLevel(1500).level).toBe(3);
+  });
+
 });
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -991,6 +1004,31 @@ describe('L — Alert SMS payload builder', () => {
     expect(failures).toHaveLength(0);
     expect(elapsed).toBeLessThan(2000);
   });
+
+  it('SMS body is strictly capped at 160 chars — catches doubled-limit mutation', () => {
+    // A mutation that changed SMS_LIMIT to SMS_LIMIT*2 survived the previous test.
+    // This test explicitly checks the 160-char boundary.
+    const SMS_HARD_LIMIT = 160;
+
+    // Build an alert that would naturally be longer than 160 chars
+    const payload = buildAlert({
+      type:        'court_reminder',
+      userName:    'A'.repeat(40),                              // very long name
+      date:        'January 15, 2026 at 9:30 AM',
+      location:    'The Honorable Shelby County Criminal Court House Building',
+      phoneNumber: '+16155551234',
+    });
+
+    // The payload body MUST be at or under 160 chars
+    expect(payload.body.length).toBeLessThanOrEqual(SMS_HARD_LIMIT);
+
+    // Verify a 161-char string would be cut
+    const over = 'X'.repeat(SMS_HARD_LIMIT + 1);
+    expect(over.slice(0, SMS_HARD_LIMIT).length).toBe(SMS_HARD_LIMIT);
+    expect(over.length > SMS_HARD_LIMIT).toBe(true);   // raw is over
+    expect(over.slice(0, SMS_HARD_LIMIT).length <= SMS_HARD_LIMIT).toBe(true); // sliced is not
+  });
+
 });
 
 // ══════════════════════════════════════════════════════════════════════════

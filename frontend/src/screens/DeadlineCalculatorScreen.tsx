@@ -600,7 +600,6 @@ export default function DeadlineCalculatorScreen(): React.JSX.Element {
           placeholderTextColor={colors.textSecond}
           keyboardType="default"
           returnKeyType="next"
-          accessibilityLabel="Arrest date"
           blurOnSubmit
         />
         <Text maxFontSizeMultiplier={1.4} style={[styles.inputLabel, { color: colors.textMuted, marginTop: 12 }]}>

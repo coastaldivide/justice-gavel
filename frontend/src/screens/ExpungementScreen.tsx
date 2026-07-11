@@ -550,7 +550,6 @@ export default function ExpungementScreen({ route, navigation }: ScreenProps): R
                   borderBottomWidth: 1, borderBottomColor: colors.border }}>
                   <TouchableOpacity
   accessibilityRole="button"
-          accessibilityLabel="\u2190 Close" onPress={() => setShowPetition(false)}
                     >
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16,
                       color: colors.navy }}>← Close</Text>

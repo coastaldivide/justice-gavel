@@ -307,7 +307,6 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
           style={styles.micBtnWrap}
           onPress={startRecording}
           activeOpacity={0.85}
-          accessibilityLabel="Start recording voice note"
         >
           <View style={[styles.micBtn, { backgroundColor: COLORS.navy }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.micIcon}>🎙</Text>
@@ -404,7 +403,6 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
           value={textIn}
           onChangeText={setTextIn}
           textAlignVertical="top"
-          accessibilityLabel="Type your case note"
 
           returnKeyType="next"
           blurOnSubmit
@@ -415,7 +413,6 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
             !textIn.trim() && { opacity: 0.45 }]}
           onPress={processText}
           disabled={!textIn.trim()}
-          accessibilityLabel="Structure this note"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.processBtnText}>Structure This Note →</Text>
         </TouchableOpacity>
@@ -485,7 +482,6 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
           value={editText}
           onChangeText={setEditText}
           textAlignVertical="top"
-          accessibilityLabel="Edit structured note before saving"
         />
 
         <TouchableOpacity
@@ -493,7 +489,6 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
           style={[styles.saveBtn, { backgroundColor: COLORS.navy }, saving && { opacity: 0.6 }]}
           onPress={saveToCase}
           disabled={saving}
-          accessibilityLabel="Save note to case"
         >
           {saving
             ? <ActivityIndicator color={colors.bgCard} />
@@ -511,7 +506,6 @@ export default function VoiceNoteScreen({ route, navigation }: ScreenProps): Rea
       setLoading(false);
     }
           }}
-          accessibilityLabel="Share note"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.shareNoteBtnText, { color: COLORS.navy }]}>↑  Share Note</Text>
         </TouchableOpacity>

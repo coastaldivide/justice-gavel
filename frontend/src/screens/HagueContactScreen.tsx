@@ -245,6 +245,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
 
         <Text maxFontSizeMultiplier={1.4} style={s.label}>Date of Abduction / Wrongful Retention *</Text>
         <TextInput
+          accessibilityLabel="YYYY-MM-DD"
           style={s.input}
           value={abductionDate}
           onChangeText={setAbductionDate}
@@ -277,7 +278,6 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           style={[s.btnPrimary, submitting && s.btnDisabled]}
           onPress={submitIntake}
           disabled={submitting}
-          accessibilityLabel="Submit Hague intake record"
         >
           {submitting
             ? <ActivityIndicator color="#fff" />
@@ -383,7 +383,6 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           accessibilityRole="button"
           style={s.contactRow}
           onPress={() => callNumber('+18884074747')}
-          accessibilityLabel="Call Office of Children's Issues emergency line"
           accessibilityHint="24/7 emergency line for US citizens abroad"
         >
           <View style={s.contactInfo}>
@@ -400,7 +399,6 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           accessibilityRole="button"
           style={s.contactRow}
           onPress={() => callNumber('18008435678')}
-          accessibilityLabel="Call NCMEC 24/7 hotline"
         >
           <View style={s.contactInfo}>
             <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🔴 NCMEC — 24/7 Hotline</Text>
@@ -418,7 +416,6 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           accessibilityRole="button"
           style={s.reportRow}
           onPress={() => openUrl('https://www.ic3.gov')}
-          accessibilityLabel="Open FBI IC3 reporting portal"
         >
           <Text maxFontSizeMultiplier={1.4} style={s.reportIcon}>🏛</Text>
           <View style={s.reportInfo}>
@@ -431,7 +428,6 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           accessibilityRole="button"
           style={s.reportRow}
           onPress={() => openUrl('https://travel.state.gov/content/travel/en/International-Parental-Child-Abduction/prevention/hague-convention.html')}
-          accessibilityLabel="Open State Department Hague application"
         >
           <AppIcon name="document-text-outline" size={20} color={colors.navy} />
           <View style={s.reportInfo}>
@@ -444,7 +440,6 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
           accessibilityRole="button"
           style={s.reportRow}
           onPress={() => openUrl('https://www.interpol.int/Crimes/Crimes-against-children/Child-abduction')}
-          accessibilityLabel="Open INTERPOL child abduction information"
         >
           <Text maxFontSizeMultiplier={1.4} style={s.reportIcon}>🌐</Text>
           <View style={s.reportInfo}>

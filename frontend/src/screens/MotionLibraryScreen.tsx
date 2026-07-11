@@ -392,7 +392,6 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
         style={[styles.statusBadgeBtn, { backgroundColor: cfg.bg, borderColor: cfg.color + '60' }]}
         onPress={() => setShowPicker(p => !p)}
         disabled={updating}
-        accessibilityLabel={`Filing status: ${cfg.label}. Tap to change.`}
       >
         <Text maxFontSizeMultiplier={1.4} style={[styles.statusBadgeText, { color: cfg.color }]}>
           {updating ? '…' : `${cfg.icon} ${cfg.label}`}
@@ -927,7 +926,6 @@ const loadHistory = useCallback(async () => {
               ]
             );
           }}
-          accessibilityLabel={`Generate ${selected.label} for $9.99`}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.generateBtnText}>
             Generate {selected.label} -- $9.99 →

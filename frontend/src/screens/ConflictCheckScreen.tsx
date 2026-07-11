@@ -67,7 +67,6 @@ export default function ConflictCheckScreen({ navigation }: Props) {
         multiline
         numberOfLines={6}
         returnKeyType="default"
-        accessibilityLabel="Party names for conflict check"
         maxLength={10000}
       />
 

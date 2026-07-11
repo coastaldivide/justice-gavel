@@ -101,7 +101,8 @@ router.post('/session', authRequired, async (req, res) => {
     // Log session in DB
     // Non-critical: log session in DB. If DB insert fails, still return the room URL.
     await db.run(
-      `INSERT INTO video_sessions
+      `    // user_id comes from verified JWT — no orphan risk
+    INSERT INTO video_sessions
          (user_id, matter_id, attorney_id, daily_room_name, daily_room_url,
           topic, scheduled_for, expires_at, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, datetime(?, 'unixepoch'), datetime('now'))`,

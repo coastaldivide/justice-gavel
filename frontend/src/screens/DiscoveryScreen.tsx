@@ -134,7 +134,6 @@ function Section({
       <TouchableOpacity accessibilityRole="button"
         style={styles.sectionHeader}
         onPress={() => setExpanded(e => !e)}
-        accessibilityLabel={`${title} -- ${expanded ? 'collapse' : 'expand'}`}
       >
         <View style={styles.sectionTitleRow}>
           <Text maxFontSizeMultiplier={1.4} style={styles.sectionIcon}>{icon}</Text>

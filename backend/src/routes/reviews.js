@@ -61,8 +61,8 @@ router.get('/', async (req, res) => {
     }
 
     const d = await getReviewsDb();
-  if (!d) return res.json([]);
-    if (!d) return res.json([]);
+  if (!d) return res.json({ reviews: [], count: 0 });
+    if (!d) return res.json({ reviews: [], count: 0 });
 
     const rows = await d.all(
       `SELECT ${REVIEW_COLS} FROM reviews WHERE entity_type=? AND entity_id=? ORDER BY id DESC LIMIT 50`,
@@ -94,7 +94,7 @@ router.post('/', authRequired, validate(createReviewSchema), reviewsLimiter, asy
     const safeComment = rawComment ? truncateStr(sanitizeStr(String(rawComment), 1000), 1000) : '';
 
     const d = await getReviewsDb();
-  if (!d) return res.json([]);
+  if (!d) return res.json({ reviews: [], count: 0 });
     if (!d) return res.status(503).json({ error: 'Review service temporarily unavailable.' });
 
     // One review per user per entity
@@ -134,7 +134,7 @@ router.get('/summary', async (req, res) => {
     }
 
     const d = await getReviewsDb();
-  if (!d) return res.json([]);
+  if (!d) return res.json({ reviews: [], count: 0 });
     if (!d) return res.json({ avg_rating: null, count: 0, top_reviews: [] });
 
     const safeType = sanitizeStr(entity_type, 30);

@@ -152,6 +152,7 @@ export default function ChildSupportScreen({ navigation }: any) {
           <View style={{ flex: 1 }}>
             <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Parent 2</Text>
             <TextInput
+          accessibilityLabel="e.g. 3000"
               style={inputStyle}
               placeholder="e.g. 3000"
               placeholderTextColor={COLORS.textMuted}
@@ -181,6 +182,7 @@ export default function ChildSupportScreen({ navigation }: any) {
         {/* Custody split */}
         <Text style={labelStyle} maxFontSizeMultiplier={1.4}>Parent 1 physical custody (%)</Text>
         <TextInput
+          accessibilityLabel="e.g. 70 (parent 1 has 70%)"
           style={inputStyle}
           placeholder="e.g. 70 (parent 1 has 70%)"
           placeholderTextColor={COLORS.textMuted}

@@ -326,7 +326,6 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.toggleBtn, !annual && styles.toggleBtnActive]}
-          accessibilityLabel="Monthly" onPress={() => setAnnual(false)}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, !annual && styles.toggleBtnTextActive]}>Monthly</Text>
         </TouchableOpacity>
@@ -414,7 +413,6 @@ export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps):
           accessibilityRole="button"
         onPress={() => Alert.alert('Restore Purchases', 'Checking your previous purchases...\n\nIf you had an active subscription it will be restored. This may take a moment.', [{ text: 'OK' }])}
         style={{ alignItems: 'center', paddingVertical: 16 }}>
-        accessibilityRole="button" accessibilityLabel="Continue to payment"
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 12, lineHeight: 20, textDecorationLine: 'underline' }}>Restore Purchases</Text>
       </TouchableOpacity>
       <View style={{ height: 40 }} />

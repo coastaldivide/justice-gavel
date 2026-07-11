@@ -303,7 +303,9 @@ router.post('/:id/complete', authRequired, lessonsLimiter, async (req, res) => {
     const existing = await db.get('SELECT id, user_id, lesson_id, completed, completed_at FROM lesson_progress WHERE user_id=? AND lesson_id=? LIMIT 1', [user_id, lesson_id]);
     if (!existing) {
       await db.run(
-        'INSERT INTO lesson_progress (user_id, lesson_id, completed, completed_at) VALUES (?,?,1, datetime("now"))',
+        '    if (!lessonId || isNaN(parseInt(lessonId, 10)))
+      return res.status(400).json({ error: 'Invalid lesson id' });
+    INSERT INTO lesson_progress (user_id, lesson_id, completed, completed_at) VALUES (?,?,1, datetime("now"))',
         [user_id, lesson_id]
       );
     }

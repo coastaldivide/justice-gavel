@@ -856,7 +856,6 @@ export default function ChatScreen({ navigation, route }: ScreenProps) {
           accessibilityRole="button"
           style={styles.iconBtn}
           onPress={() => navigation.navigate('MoreTab', { screen: 'VoiceNote' })}
-          accessibilityLabel="Use voice input"
           accessibilityHint="Opens voice recorder to transcribe and send a message"
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>🎙</Text>

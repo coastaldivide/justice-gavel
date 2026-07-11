@@ -270,7 +270,6 @@ export default function InterrogationRecorderScreen({ navigation }: ScreenProps)
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.emergencyBtn, { backgroundColor: colors.emergency }]}
-          accessibilityLabel="\ud83d\udea8 CALL 911" onPress={() => Linking.openURL('tel:911').catch(() => {})}
         >
           <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>🚨 CALL 911</Text>
         </TouchableOpacity>

@@ -55,6 +55,7 @@ const PII_PATTERNS = [
   { re: /\b\d{3}-\d{2}-\d{4}\b/g, mask: () => '***-**-****' }, // SSN
 ];
 
+// Used for masking PII in log output before writing to external services
 export function maskPII(str) {
   if (typeof str !== 'string') return str;
   let masked = str;

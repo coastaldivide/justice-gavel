@@ -99,7 +99,6 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
                 onPress={() => setExpanded(open ? null : item.id)}
                 activeOpacity={0.85}
               >
-                accessibilityRole="button" accessibilityLabel="Toggle expand"
                 <View style={styles.cardTop}>
                   <View style={[styles.doneCircle, done && styles.doneCircleDone]}>
                     {done && <Text maxFontSizeMultiplier={1.4} style={styles.doneCheck}>✓</Text>}
@@ -174,7 +173,6 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
           </View>
         )}
         <FlatList
-          accessibilityLabel="Legal lessons list"
           getItemLayout={(_, index) => ({ length: 110, offset: 110 * index, index })}
           initialNumToRender={10}
           maxToRenderPerBatch={10}

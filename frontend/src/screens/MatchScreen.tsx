@@ -217,6 +217,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
           blurOnSubmit
         />
                   <TextInput
+          accessibilityLabel="Briefly describe your situation (optional)"
                     style={[styles.msgInput, styles.msgInputTall, { borderColor: COLORS.border, color: COLORS.textPrimary, backgroundColor: COLORS.bg }]}
                     placeholder="Briefly describe your situation (optional)"
                     placeholderTextColor={COLORS.textSecond}
@@ -384,6 +385,7 @@ export default function MatchScreen(): React.JSX.Element {
         <View style={styles.section}>
           <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>Describe your situation (optional)</Text>
           <TextInput
+          accessibilityLabel="e.g. I was pulled over and charged with a DUI last night. I need someone who speaks Spanish and offers payment plans."
             style={styles.textArea}
             multiline
               maxLength={2000}

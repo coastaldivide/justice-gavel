@@ -88,6 +88,7 @@ export default function ContactsScreen(): React.JSX.Element {
       <View style={[styles.inputWrap, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
         <AppIcon name="person-outline" size={20} color={COLORS.navy} />
         <TextInput
+          accessibilityLabel="e.g. Jamie Smith"
           style={[styles.input, { color: colors.textPrimary }]}
           placeholder="e.g. Jamie Smith"
           placeholderTextColor={colors.textMuted}

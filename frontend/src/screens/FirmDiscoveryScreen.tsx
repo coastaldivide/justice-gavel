@@ -118,14 +118,12 @@ export default function FirmDiscoveryScreen() {
           placeholderTextColor={colors.textMuted}
           autoCapitalize="characters"
           maxLength={12}
-          accessibilityLabel="Enter firm referral code"
         />
         <TouchableOpacity
           style={s.codeBtn}
           onPress={redeemCode}
           disabled={codeLoading}
           accessibilityRole="button"
-          accessibilityLabel="Redeem referral code"
         >
           {codeLoading
             ? <ActivityIndicator color="#fff" size="small" />
@@ -144,7 +142,6 @@ export default function FirmDiscoveryScreen() {
           placeholderTextColor={colors.textMuted}
           maxLength={2}
           autoCapitalize="characters"
-          accessibilityLabel="Filter by state abbreviation"
         />
         <TextInput
           style={[s.filterInput, { flex: 2, color: colors.textPrimary, borderColor: colors.border }]}

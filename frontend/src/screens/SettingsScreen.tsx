@@ -22,7 +22,7 @@ import AsyncStorage          from '@react-native-async-storage/async-storage';
 import { ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import Constants   from 'expo-constants';
 import { api } from '../services/api';
-import { setLang } from '../i18n';
+import { setLang, t } from '../i18n'  // t() already available;
 import { getUserState, STATE_NAMES } from '../utils/userState';
 import { clearAuth } from '../utils/secureStorage';
 import { setAppAuth } from '../services/auth';
@@ -81,7 +81,6 @@ function TierGatedRow({
           onValueChange={onChange}
           trackColor={{ true: COLORS.steel, false: COLORS.border }}
           thumbColor={COLORS.bgCard}
-          accessibilityLabel={label}
           accessibilityRole="switch"
           accessibilityState={{ checked: value }}
         />
@@ -114,7 +113,6 @@ function TierGatedRow({
       {/* Official Court Forms -- all 50 states */}
       <TouchableOpacity accessibilityRole="button"
         onPress={goToCourtForms}
-        accessibilityLabel="Official Court Forms"
         style={{ flexDirection:'row', alignItems:'center', paddingVertical:14, paddingHorizontal:4, borderBottomWidth:StyleSheet.hairlineWidth, borderBottomColor:COLORS.border }}>
         <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
         <View style={{ flex:1 }}>
@@ -413,15 +411,14 @@ export default function SettingsScreen({ route, navigation }: any) {
       {/* ── Account ──────────────────────────────────────────────────────── */}
       <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>Account</Text>
       <View style={card}>
-        <InfoRow icon="👤" label="Display name" value={user.displayName || user.name} />
+        <InfoRow icon="👤" label={t("settings.display_name")} value={user.displayName || user.name} />
         {!!user.email && <InfoRow icon="✉️" label="Email" value={user.email} />}
         {goldenGavel
           ? <TouchableOpacity
               accessibilityRole="button"
               onPress={() => navigation.navigate('MoreTab', { screen: 'GoldenGavel' })}
             >
-              accessibilityRole="button" accessibilityLabel="Navigate"
-              <InfoRow icon="🏆" label="Account status" value="Golden Gavel  ›" />
+              <InfoRow icon="🏆" label={t("settings.account_status")} value="Golden Gavel  ›" />
             </TouchableOpacity>
           : <InfoRow icon="⚖️" label="Golden Gavel" value="Check eligibility  ›" />
         }

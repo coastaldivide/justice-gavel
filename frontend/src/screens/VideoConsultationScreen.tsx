@@ -88,7 +88,6 @@ export default function VideoConsultationScreen({ route, navigation }: Props) {
           <Text style={styles.startBtnText}>Open Video Call</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cancelBtn} onPress={endSession}>
-        accessibilityRole="button" accessibilityLabel="Start video call"
           <Text style={[styles.cancelText, { color: colors.textSecondary }]}>End Session</Text>
         </TouchableOpacity>
       </View>
@@ -133,7 +132,6 @@ export default function VideoConsultationScreen({ route, navigation }: Props) {
         onPress={startSession}
         disabled={loading}
         accessibilityRole="button"
-        accessibilityLabel="Start video consultation"
       >
         {loading
           ? <ActivityIndicator color="#fff" />
@@ -143,7 +141,6 @@ export default function VideoConsultationScreen({ route, navigation }: Props) {
 
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelBtn}>
         accessibilityRole="button" accessibilityLabel="End session"
-        accessibilityRole="button" accessibilityLabel="Go back"
         <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
       </TouchableOpacity>
     </View>

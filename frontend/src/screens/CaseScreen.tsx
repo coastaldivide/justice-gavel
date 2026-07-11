@@ -112,7 +112,6 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
       <TouchableOpacity
           accessibilityRole="button" testID="case-share-sheet"
         style={styles.shareBtn}
-        accessibilityLabel="\ud83d\udd17  Share Link" onPress={() => onShare(item)}
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>🔗  Share Link</Text>
       </TouchableOpacity>
@@ -120,7 +119,6 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
         accessibilityRole="button"
         style={[styles.shareBtn, { borderColor: 'rgba(133,183,235,0.33)', backgroundColor: COLORS.bgCard }]}
         onPress={() => onInvite(item)}
-        accessibilityLabel={`Invite a family member to ${item.title}`}
       >
         <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: COLORS.steel }]}>👨‍👩‍👧  Invite Family</Text>
       </TouchableOpacity>
@@ -129,7 +127,6 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
           accessibilityRole="button"
           style={styles.calendarBtn}
           onPress={() => onCalendar(item)}
-          accessibilityLabel={`Add ${item.title} court date to calendar`}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.calendarBtnText}>📅  Add to Calendar</Text>
         </TouchableOpacity>
@@ -141,7 +138,6 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
           onPress={() => navigation?.navigate('Discovery', {
             caseId: item.id, caseTitle: item.title
           })}
-          accessibilityLabel={`Analyze discovery documents for ${item.title}`}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.discoveryBtnText}>🔍 Analyze discovery docs →</Text>
         </TouchableOpacity>
@@ -701,7 +697,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'cases' && styles.tabBtnActive]}
-          accessibilityLabel="{t('case_tab_cases')}" onPress={() => setActiveTab('cases')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'cases' && styles.tabBtnTextActive]}>{t('case_tab_cases')}</Text>
         </TouchableOpacity>
@@ -709,7 +704,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'messages' && styles.tabBtnActive]}
           onPress={() => setActiveTab('messages')}
-          accessibilityLabel={`Messages${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'messages' && styles.tabBtnTextActive]}>
@@ -726,7 +720,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'tools' && styles.tabBtnActive]}
           onPress={() => setActiveTab('tools')}
-          accessibilityLabel="Defender Tools"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'tools' && styles.tabBtnTextActive]}>
             {t('case_tab_tools')}
@@ -913,7 +906,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           )}
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Case title <Text maxFontSizeMultiplier={1.4} style={styles.required}>*</Text></Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>Describe the matter briefly, e.g. "DUI charge -- Shelby County" or "Assault charge appeal"</Text>
-          <TextInput testID="case-title-input"
+          <TextInput
+          accessibilityLabel="e.g. DUI arrest Memphis TN Oct 2025" testID="case-title-input"
             style={styles.textInput}
             placeholder="e.g. DUI arrest Memphis TN Oct 2025"
             placeholderTextColor={colors.textMuted}
@@ -974,6 +968,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>State (2-letter code)</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldHint}>Used for expungement eligibility checks -- e.g. TN, CA, FL</Text>
           <TextInput
+          accessibilityLabel="e.g. TN"
             style={styles.textInput}
             placeholder="e.g. TN"
             placeholderTextColor={colors.textMuted}
@@ -1015,6 +1010,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             </TouchableOpacity>
           </View>
           <TextInput
+          accessibilityLabel="e.g. Attorney: John Smith, 615-555-0101. Charged with DUI first offense. Pre-trial hearing Nov 15."
             style={[styles.textInput, styles.textArea]}
             placeholder={"e.g. Attorney: John Smith, 615-555-0101. Charged with DUI first offense. Pre-trial hearing Nov 15."}
             placeholderTextColor={colors.textMuted}
@@ -1089,7 +1085,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               caseId: cases[0]?.id,
               caseTitle: cases[0]?.title})}
           >
-            accessibilityRole="button" accessibilityLabel="Navigate"
             <View style={[styles.toolCardIcon, { backgroundColor: '#EF5350' + '18' }]}>
               <AppIcon name="document-outline" size={20} color={COLORS.navy} />
             </View>
@@ -1112,7 +1107,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               caseId:    cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
               caseTitle: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
           >
-            accessibilityRole="button" accessibilityLabel="Navigate"
             <View style={[styles.toolCardIcon, { backgroundColor: colors.blue + '18' }]}>
               <AppIcon name="search-outline" size={20} color={COLORS.navy} />
             </View>
@@ -1134,7 +1128,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             onPress={() => navigation.navigate('LegalResearch', {
               caseContext: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
           >
-            accessibilityRole="button" accessibilityLabel="Navigate"
             <View style={[styles.toolCardIcon, { backgroundColor: colors.legal + '18' }]}>
               <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
             </View>
@@ -1157,7 +1150,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               caseTitle:     cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title,
               existingNotes: ''})}
           >
-            accessibilityRole="button" accessibilityLabel="Navigate"
             <View style={[styles.toolCardIcon, { backgroundColor: COLORS.navy + '18' }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>🎙</Text>
             </View>
@@ -1199,7 +1191,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: COLORS.emergency + '40', borderWidth: 1.5 }]}
             onPress={() => navigation.navigate('DeadlineCalculator')}
           >
-            accessibilityRole="button" accessibilityLabel="Navigate"
             <View style={[styles.toolCardIcon, { backgroundColor: COLORS.emergency + '18' }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>⏰</Text>
             </View>
@@ -1225,7 +1216,6 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
                     caseId: ca.id, caseTitle: ca.title
                   })}
                 >
-                  accessibilityRole="button" accessibilityLabel="Navigate"
                   <Text maxFontSizeMultiplier={1.4} style={[styles.caseToolTitle, { color: colors.steel }]}
                     numberOfLines={1}>📁 {String(ca.title)}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.caseToolCta, { color: COLORS.navy }]}>Analyze docs →</Text>

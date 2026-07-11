@@ -270,6 +270,7 @@ export default function ArrestMonitorScreen({ route, navigation }: ScreenProps):
           blurOnSubmit
         />
                   <TextInput
+          accessibilityLabel="State"
                     style={[styles.formInput, { width: 70 }]}
                     placeholder="State"
                     placeholderTextColor={COLORS.textSecond}

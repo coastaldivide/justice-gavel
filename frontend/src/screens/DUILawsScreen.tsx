@@ -175,10 +175,10 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
             {/* Tab content */}
             {tab === 'first' && (
               <View style={{ gap:8 }}>
-                <Row label="Jail time" value={`${fmtDays(selected.first_jail_min)} - ${fmtDays(selected.first_jail_max)}`} text={text} sub={sub} card={card} />
+                <Row label={t("dui.consequence.jail_time")} value={`${fmtDays(selected.first_jail_min)} - ${fmtDays(selected.first_jail_max)}`} text={text} sub={sub} card={card} />
                 <Row label="Fine" value={`${fmtMoney(selected.first_fine_min)} - ${fmtMoney(selected.first_fine_max)}`} text={text} sub={sub} card={card} />
-                <Row label="License suspension" value={fmtDays(selected.first_license_days)} text={text} sub={sub} card={card} />
-                <Row label="Ignition interlock" value={selected.ignition_interlock || 'Varies'} text={text} sub={sub} card={card} />
+                <Row label={t("dui.consequence.license_suspension")} value={fmtDays(selected.first_license_days)} text={text} sub={sub} card={card} />
+                <Row label={t("dui.consequence.ignition_interlock")} value={selected.ignition_interlock || 'Varies'} text={text} sub={sub} card={card} />
                 <Row label="Felony at BAC" value={selected.felony_threshold ? fmtBAC(selected.felony_threshold) : 'No threshold'} text={text} sub={sub} card={card} />
               </View>
             )}
@@ -187,7 +187,7 @@ export default function DUILawsScreen({ route, navigation }: ScreenProps): React
               <View style={{ gap:8 }}>
                 <Row label="Jail time (min)" value={fmtDays(selected.second_jail_min)} text={text} sub={sub} card={card} />
                 <Row label="Fine (min)" value={fmtMoney(selected.second_fine_min)} text={text} sub={sub} card={card} />
-                <Row label="License suspension" value={fmtDays(selected.second_license_days)} text={text} sub={sub} card={card} />
+                <Row label={t("dui.consequence.license_suspension")} value={fmtDays(selected.second_license_days)} text={text} sub={sub} card={card} />
                 <InfoBox text={`Second offense penalties are significantly higher. Third offense is typically a felony in most states regardless of BAC.`} isDark={isDark} color={colors.emergencyDark} />
               </View>
             )}

@@ -56,7 +56,6 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
       }}>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="CALL 911"
           style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10,
             paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:911').catch(() => {})}
@@ -479,7 +478,6 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
         accessibilityRole="button"
         onPress={() => navigation.navigate('BailCalculator')}
         style={{ marginTop: 8, padding: 12, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
-        accessibilityRole="button" accessibilityLabel="Navigate"
         <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 14 }}>💰 Bail Amount Calculator</Text>
         <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>See typical bail ranges by charge type</Text>
       </TouchableOpacity>
@@ -595,7 +593,6 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
 
         <TouchableOpacity
           accessibilityRole="button" style={styles.refreshBtn} onPress={fetchBoth}
-          accessibilityLabel="fetch Both"
           activeOpacity={0.85}>
           <Text maxFontSizeMultiplier={1.4} style={styles.refreshBtnText}>↺  Refresh Results</Text>
         </TouchableOpacity>
@@ -609,7 +606,6 @@ export default function HelpNowScreen({ route, navigation }: ScreenProps): React
         style={{ flexDirection:'row', alignItems:'center', justifyContent:'center',
           paddingVertical:10, paddingHorizontal:16, gap:6 }}
       >
-        accessibilityRole="button" accessibilityLabel="Navigate"
         <Text maxFontSizeMultiplier={1.2} style={{ fontSize:11, color:'rgba(255,255,255,0.6)' }}>
           ⚖️ Attorney or bondsman? Get real-time arrest alerts →
         </Text>

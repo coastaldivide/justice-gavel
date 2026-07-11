@@ -407,7 +407,6 @@ export default function LawyerProfileScreen({ navigation, route }: ScreenProps):
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button" style={[s.actionBtn, { backgroundColor:colors.legal }]}
-          accessibilityLabel="\ud83d\udcac Send Message" onPress={() => { hapticImpact(); handleMessage(); }}
                   >
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>💬 Send Message</Text>
         </TouchableOpacity>
