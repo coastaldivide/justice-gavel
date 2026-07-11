@@ -99,7 +99,9 @@ export default function AgeGateScreen({ route, navigation }: any) {
 
             // Mark verified=false so gate shows again next time,
             // but set a family-mode flag and let the adult proceed
-            await AsyncStorage.setItem('age_verified', 'family_mode');
+            try {
+              await AsyncStorage.setItem('age_verified', 'family_mode');
+            } catch (_) { /* non-fatal — family mode flag re-set on next launch */ }
             if (onVerified) onVerified(); else navigation.navigate('Onboarding');
 
     } catch (e: any) {

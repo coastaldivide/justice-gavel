@@ -1353,3 +1353,73 @@ ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS category      TEXT;
 ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS jurisdiction  TEXT;
 ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS notes         TEXT;
 ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS status        TEXT DEFAULT 'active';
+
+-- ── 5 remaining missing tables found in v8.6.3 scan ──────────────────────────
+
+CREATE TABLE IF NOT EXISTS firm_members (
+  id           BIGSERIAL PRIMARY KEY,
+  firm_id      BIGINT NOT NULL,
+  user_id      BIGINT NOT NULL,
+  firm_role    TEXT   NOT NULL DEFAULT 'member',
+  invited_by   BIGINT,
+  active       BOOLEAN DEFAULT TRUE,
+  joined_at    TIMESTAMPTZ DEFAULT NOW(),
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_firm_members_unique ON firm_members(firm_id, user_id);
+CREATE INDEX        IF NOT EXISTS idx_firm_members_user   ON firm_members(user_id) WHERE active=true;
+CREATE INDEX        IF NOT EXISTS idx_firm_members_firm   ON firm_members(firm_id) WHERE active=true;
+ALTER TABLE firm_members ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS lesson_progress (
+  id           BIGSERIAL PRIMARY KEY,
+  user_id      BIGINT NOT NULL,
+  lesson_id    BIGINT NOT NULL,
+  completed    BOOLEAN DEFAULT FALSE,
+  completed_at TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_lesson_progress_unique ON lesson_progress(user_id, lesson_id);
+CREATE INDEX        IF NOT EXISTS idx_lesson_progress_user   ON lesson_progress(user_id);
+ALTER TABLE lesson_progress ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS provider_update_log (
+  id          BIGSERIAL PRIMARY KEY,
+  table_name  TEXT NOT NULL,
+  record_id   BIGINT NOT NULL,
+  field       TEXT,
+  old_value   TEXT,
+  new_value   TEXT,
+  source      TEXT,
+  changed_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_pul_table_record ON provider_update_log(table_name, record_id);
+ALTER TABLE provider_update_log ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS case_status_history (
+  id          BIGSERIAL PRIMARY KEY,
+  case_id     BIGINT NOT NULL,
+  user_id     BIGINT,
+  old_status  TEXT,
+  new_status  TEXT NOT NULL,
+  note        TEXT,
+  changed_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_csh_case ON case_status_history(case_id, changed_at DESC);
+ALTER TABLE case_status_history ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS checkin_records (
+  id              BIGSERIAL PRIMARY KEY,
+  enrollment_id   BIGINT NOT NULL,
+  lat             NUMERIC(10,6),
+  lng             NUMERIC(10,6),
+  location_label  TEXT,
+  selfie_url      TEXT,
+  notes           TEXT,
+  status          TEXT DEFAULT 'completed',
+  device_info     TEXT,
+  checked_in_at   TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_checkin_records_enrollment ON checkin_records(enrollment_id);
+CREATE INDEX IF NOT EXISTS idx_checkin_records_time       ON checkin_records(checked_in_at DESC);
+ALTER TABLE checkin_records ENABLE ROW LEVEL SECURITY;
