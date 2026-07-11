@@ -221,7 +221,18 @@ async function sendSlackAlert(msg) {
   } catch {}
 }
 
+
+// ── Interval registry ─────────────────────────────────────────────────────────
+let _watchdogsStarted = false;
+const _intervals       = [];
+
 export function startAllWatchdogs() {
+  if (_watchdogsStarted) {
+    // Already running — clear existing before restarting to prevent duplicates
+    _intervals.forEach(clearInterval);
+    _intervals.length = 0;
+  }
+  _watchdogsStarted = true;
   if (process.env.NODE_ENV === 'test') return;  // Don't run in tests
 
   startMemoryWatchdog();

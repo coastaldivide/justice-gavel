@@ -318,12 +318,12 @@ export default function SettingsScreen({ route, navigation }: any) {
   const toggleLang = async (l: string) => {
     setLanguage(l);
     setLang(l);
-    await AsyncStorage.setItem('lang', l);
+    await AsyncStorage.setItem('lang', l).catch(() => {}); // non-fatal storage write
   };
 
   const toggleMaster = async (val: boolean) => {
     setNotifMaster(val);
-    await AsyncStorage.setItem('notifs', String(val));
+    await AsyncStorage.setItem('notifs', String(val)).catch(() => {}); // non-fatal storage write
   };
 
   const togglePref = async (key: keyof NotifPrefs, val: boolean) => {

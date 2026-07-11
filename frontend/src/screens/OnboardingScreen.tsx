@@ -163,7 +163,7 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
   };
 
   const goToLogin = async () => {
-    await AsyncStorage.setItem('onboarding_done', 'true');
+    await AsyncStorage.setItem('onboarding_done', 'true').catch(() => {}); // non-fatal storage write
     navigation.navigate('AgeGate');
   };
 

@@ -108,7 +108,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     }
     // Log event before processing (idempotency gate)
     await db.run(
-      'INSERT OR IGNORE INTO stripe_event_log (stripe_event_id, event_type, created_at) VALUES (?,?,datetime(\'now\'))',
+      'INSERT INTO stripe_event_log (stripe_event_id, event_type, processed_at) VALUES (?,?,NOW()) ON CONFLICT (stripe_event_id) DO NOTHING',
       [eventId, event.type]
     ).catch(() => {}); // non-fatal if table doesn't exist yet
 

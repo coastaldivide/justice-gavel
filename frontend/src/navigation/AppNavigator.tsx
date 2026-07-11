@@ -301,7 +301,6 @@ function GuestNavigator() {
       <GuestStack.Screen name="Login"      component={LoginScreen} />
       <GuestStack.Screen name="Register"   component={RegisterScreen} options={{ headerShown: true, title: 'Create Account', ...HDR }} />
       <GuestStack.Screen name="AttorneyPrivacy" component={AttorneyPrivacyScreen} />
-      <GuestStack.Screen name="ChildSupport" component={ChildSupportScreen} />
           <GuestStack.Screen name="LegalDisclaimer" component={LegalDisclaimerScreen} />
       </GuestStack.Navigator>
     </ErrorBoundary>

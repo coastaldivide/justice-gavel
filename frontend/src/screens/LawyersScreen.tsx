@@ -176,7 +176,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         // Preserve save intent -- complete after login
         await AsyncStorage.setItem('pending_save_lawyer', JSON.stringify({
           provider_id: item.id, name: item?.name, phone: item?.phone,
-          address: item?.address, specialties: item.specialties || [], rating: item?.rating }));
+          address: item?.address, specialties: item.specialties || [], rating: item?.rating })).catch(() => {}); // non-fatal(() => {}); // non-fatal
         navigation.navigate('MoreTab', { screen: 'Login' });
         setSaving(false); return;
       }

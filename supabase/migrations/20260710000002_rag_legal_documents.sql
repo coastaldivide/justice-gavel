@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS legal_documents (
   jurisdiction   TEXT,            -- 'federal' | 'CA' | 'NY' | 'TX' etc.
   practice_area  TEXT,            -- 'criminal' | 'immigration' | 'civil_rights' | 'bail'
   year           INTEGER,         -- year of case / statute last amended
-  embedding      vector(1536),    -- OpenAI ada-002 OR Supabase gte-small (512-dim)
+  embedding      vector(384),    -- OpenAI ada-002 OR Supabase gte-small (512-dim)
   token_count    INTEGER,
   source_url     TEXT,
   created_at     TIMESTAMPTZ DEFAULT NOW(),
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS legal_documents (
 
 -- ── Search function: hybrid (semantic + keyword) ───────────────────────────
 CREATE OR REPLACE FUNCTION search_legal_docs(
-  query_embedding vector(1536),
+  query_embedding vector(384),
   query_text      TEXT,
   practice_filter TEXT   DEFAULT NULL,
   juris_filter    TEXT   DEFAULT NULL,
@@ -69,8 +69,9 @@ AS $$
 $$;
 
 -- ── Indexes ────────────────────────────────────────────────────────────────
+-- IVFFlat index: lists=50 appropriate for <100K legal documents (increase to 200+ at scale)
 CREATE INDEX IF NOT EXISTS idx_legal_docs_embedding
-  ON legal_documents USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+  ON legal_documents USING ivfflat (embedding vector_cosine_ops) WITH (lists = 50);
 CREATE INDEX IF NOT EXISTS idx_legal_docs_fts
   ON legal_documents USING gin(to_tsvector('english', content || ' ' || title));
 CREATE INDEX IF NOT EXISTS idx_legal_docs_practice
@@ -123,4 +124,5 @@ ALTER TABLE case_messages ADD COLUMN IF NOT EXISTS message_type TEXT DEFAULT 'ch
 -- 'note' = full legal correspondence / demand letter (50K chars)
 
 ALTER TABLE research_queries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE legal_documents  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE video_sessions  ENABLE ROW LEVEL SECURITY;

@@ -87,9 +87,17 @@ function randomId(): string {
 }
 
 async function getSessionId(): Promise<string> {
-  let id = await AsyncStorage.getItem('chat_session_id');
-  if (!id) { id = randomId(); await AsyncStorage.setItem('chat_session_id', id); }
-  return id;
+  try {
+    let id = await AsyncStorage.getItem('chat_session_id');
+    if (!id) {
+      id = randomId();
+      await AsyncStorage.setItem('chat_session_id', id).catch(() => {}); // non-fatal if storage full
+    }
+    return id;
+  } catch (_) {
+    // AsyncStorage unavailable — use in-memory session ID (resets on restart)
+    return randomId();
+  }
 }
 
 // ── hasValidConsent — AsyncStorage-based consent check ────────────────────────

@@ -64,7 +64,7 @@ export default function LessonsScreen({ navigation, route }: ScreenProps) {
       await api.post(`/lessons/${id}/complete`, { user_id: userId });
       const next = new Set(completed).add(id);
       setCompleted(next);
-      await AsyncStorage.setItem('completed_lessons', JSON.stringify(Array.from(next)));
+      await AsyncStorage.setItem('completed_lessons', JSON.stringify(Array.from(next))).catch(() => {}); // non-fatal storage write
       // Update local points
       const stored = await AsyncStorage.getItem(`points_${userId}`);
       const newPts = (parseInt(stored || '0', 10) + pts);

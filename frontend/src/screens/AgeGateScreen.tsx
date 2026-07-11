@@ -68,7 +68,11 @@ export default function AgeGateScreen({ route, navigation }: any) {
     }
 
     // 18 or older -- mark verified and proceed
-    await AsyncStorage.setItem('age_verified', 'true');
+    try {
+      await AsyncStorage.setItem('age_verified', 'true');
+    } catch (_) {
+      // Storage unavailable — still proceed, gate will re-show on next launch
+    }
     if (onVerified) onVerified(); else navigation.navigate('Onboarding');
   };
 

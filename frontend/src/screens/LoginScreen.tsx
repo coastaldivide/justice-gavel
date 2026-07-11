@@ -46,7 +46,7 @@ export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Elem
   };
 
   const browseAsGuest = async () => {
-    await AsyncStorage.setItem('onboarding_done', 'true');
+    await AsyncStorage.setItem('onboarding_done', 'true').catch(() => {}); // non-fatal storage write
     setAppAuth('browsing');
   };
 

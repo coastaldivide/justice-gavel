@@ -226,7 +226,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
           purpose: purpose.key,
         }
       });
-      await AsyncStorage.setItem('last_payment_method', method);
+      await AsyncStorage.setItem('last_payment_method', method).catch(() => {}); // non-fatal storage write
       setLastMethod(method);
 
       if (res.data?.clientSecret) {

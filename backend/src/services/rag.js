@@ -1,5 +1,7 @@
 
 // External fetch with 15s timeout (embeddings + Anthropic can be slow)
+// Embedding model: Supabase gte-small (384 dimensions, no API key needed)
+// Schema uses vector(384) — if switching to OpenAI ada-002, change to vector(1536)
 async function fetchWithTimeout(url, options = {}, timeoutMs = 15_000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
