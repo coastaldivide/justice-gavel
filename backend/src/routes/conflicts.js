@@ -54,7 +54,11 @@ function normalizeName(raw) {
 function fuzzyMatch(needle, haystack) {
   const n = normalizeName(needle);
   const h = normalizeName(haystack);
-  return n === h || h.includes(n) || n.includes(h);
+  if (n === h || h.includes(n) || n.includes(h)) return true;
+  // Compact fallback: strips spaces → matches o'brien vs obrien, etc.
+  const nc = compactName(needle);
+  const hc = compactName(haystack);
+  return nc === hc || hc.includes(nc) || nc.includes(hc);
 }
 
 // ethics_wall_log, conflict_waivers, conflict_index, matter_team_members, soc2_controls — managed by db/index.js Year 1.5.
