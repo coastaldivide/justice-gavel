@@ -195,3 +195,49 @@ ALTER TABLE feedback ADD COLUMN IF NOT EXISTS device_info TEXT;
 ALTER TABLE feedback ADD COLUMN IF NOT EXISTS resolved    BOOLEAN DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at DESC);
 ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
+
+-- SCAN-3: reviews table missing columns used by reviews.js route
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS created_at   TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS entity_type  TEXT DEFAULT 'provider';
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS entity_id    BIGINT;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS verified     BOOLEAN DEFAULT FALSE;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS anonymous    BOOLEAN DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_reviews_entity ON reviews(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_created ON reviews(provider_id, created_at DESC);
+
+-- TQ-2: Performance indexes for v8.7.x new tables/columns
+
+-- Alert log (heavily queried by user_id in descending time order)
+CREATE INDEX IF NOT EXISTS idx_alert_log_user_time
+  ON alert_log(user_id, sent_at DESC);
+
+-- Lesson progress streak query (needs date ordering per user)
+CREATE INDEX IF NOT EXISTS idx_lesson_progress_streak
+  ON lesson_progress(user_id, completed_at DESC)
+  WHERE completed = TRUE;
+
+-- Golden gavel event log
+CREATE INDEX IF NOT EXISTS idx_golden_gavel_user
+  ON golden_gavel_log(user_id, created_at DESC);
+
+-- Firm invitations (unique invite lookup)
+CREATE INDEX IF NOT EXISTS idx_firm_invites_email
+  ON firm_invites(email, firm_id);
+
+-- Active checkin enrollments with next scheduled date
+CREATE INDEX IF NOT EXISTS idx_checkin_active_due
+  ON checkin_enrollments(next_check_in_at)
+  WHERE active = TRUE;
+
+-- Firm directory compound (state + open firms)
+CREATE INDEX IF NOT EXISTS idx_firms_directory
+  ON firms(state, public_listing, accepting_clients)
+  WHERE public_listing = TRUE;
+
+-- Case status history per case
+CREATE INDEX IF NOT EXISTS idx_case_status_history_case
+  ON case_status_history(case_id, created_at DESC);
+
+-- Video sessions per user
+CREATE INDEX IF NOT EXISTS idx_video_sessions_user
+  ON video_sessions(user_id, created_at DESC);

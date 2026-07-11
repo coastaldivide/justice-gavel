@@ -335,6 +335,7 @@ router.post('/index', authRequired, async (req, res) => {
 
 // ── GET /research/topics — discovery entry point ──────────────────────────
 router.get('/topics', (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
   res.json({
     topics: [
       { category: 'Know Your Rights',   practice_area: 'criminal',    questions: ['What are my Miranda rights?','Can police search my car?','What if I am arrested?'] },

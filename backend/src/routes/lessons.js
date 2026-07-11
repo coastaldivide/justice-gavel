@@ -452,9 +452,9 @@ router.get('/streak/:userId', authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const progress = await db.all(
-      `SELECT completed_at::DATE as day, COUNT(*) as lessons
+      `SELECT DATE(completed_at) as day  -- Postgres: ::DATE; SQLite: DATE(), COUNT(*) as lessons
        FROM lesson_progress WHERE user_id = ? AND completed = true
-       AND completed_at > NOW() - INTERVAL '365 days'
+       AND completed_at > NOW() - INTERVAL '365 days'  -- Postgres/Supabase only
        GROUP BY day ORDER BY day DESC`,
       [uid]
     ).catch(() => []);

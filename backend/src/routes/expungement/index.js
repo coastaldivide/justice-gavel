@@ -101,6 +101,7 @@ router.get('/petition-checklist', authRequired, async (req, res) => {
     GA: ['GCIC background report', 'Petition to restrict record'],
   };
 
+    res.setHeader('Cache-Control', 'public, max-age=3600');
   return res.json({
     state,
     checklist: [...common, ...(stateSpecific[state.toUpperCase()] || [])],

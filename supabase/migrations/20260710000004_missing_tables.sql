@@ -1596,3 +1596,43 @@ INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VA
  'The same act can sometimes be charged in both federal and state court without violating double jeopardy (the "dual sovereignty" doctrine). Federal charges: Prosecuted by US Attorneys in federal district court. Federal cases often involve: drug trafficking across state lines, bank fraud, tax crimes, immigration offenses, firearms by prohibited persons, cybercrimes. Federal sentences are generally longer. Parole does not exist in the federal system — you serve at least 85% of your sentence. State charges: Prosecuted by district attorneys or state attorneys. Most crimes (assault, murder, DUI, robbery, possession) are state crimes. If you face both: Do not make any statement to any law enforcement without an attorney present. The two cases may move on different timelines. Evidence from one case can be used in the other.',
  'advanced', 14, 30)
 ON CONFLICT DO NOTHING;
+
+-- SCAN-1: feedback table missing core columns
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS user_id     BIGINT;
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS rating      INTEGER CHECK (rating BETWEEN 1 AND 5);
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS comment     TEXT;
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS created_at  TIMESTAMPTZ DEFAULT NOW();
+CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id, created_at DESC);
+
+-- SCAN-2: firms base table was missing entirely — created here with full schema
+-- (ALTER TABLE adds in 003 will apply on top of this)
+CREATE TABLE IF NOT EXISTS firms (
+  id               BIGSERIAL PRIMARY KEY,
+  name             TEXT NOT NULL,
+  owner_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  vertical         TEXT,
+  pricing_tier     TEXT DEFAULT 'starter',
+  plan             TEXT DEFAULT 'trial',
+  seat_limit       INTEGER DEFAULT 5,
+  -- Discovery columns (also set by ALTER TABLE in 003)
+  public_listing   BOOLEAN DEFAULT FALSE,
+  accepting_clients BOOLEAN DEFAULT TRUE,
+  free_consultation BOOLEAN DEFAULT FALSE,
+  practice_areas   TEXT,
+  website          TEXT,
+  phone            TEXT,
+  description      TEXT,
+  referral_code    TEXT UNIQUE,
+  city             TEXT,
+  state            TEXT,
+  -- Timestamps
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_firms_owner    ON firms(owner_id);
+CREATE INDEX IF NOT EXISTS idx_firms_state_dir ON firms(state, accepting_clients, public_listing)
+  WHERE public_listing = TRUE AND accepting_clients = TRUE;
+CREATE INDEX IF NOT EXISTS idx_firms_referral ON firms(referral_code) WHERE referral_code IS NOT NULL;
+
+ALTER TABLE firms ENABLE ROW LEVEL SECURITY;

@@ -493,8 +493,11 @@ router.get('/trial-status', authRequired, async (req, res) => {
 
 
 // ── GET /firms/directory — public list of firms accepting new clients ──────
-router.get('/directory', apiLimiter, async (req, res) => {
-  const { state, practice_area, page = '1' } = req.query;
+router.get('/directory', directoryLimiter, async (req, res) => {
+  const { practice_area, page = '1' } = req.query;
+    const state = req.query.state
+      ? req.query.state.replace(/[^A-Z]/gi,'').toUpperCase().slice(0,2) // 2-char alpha only
+      : null;
   const offset = (parseInt(page, 10) - 1) * 20;
   try {
     const db = await getDb();
@@ -510,7 +513,19 @@ router.get('/directory', apiLimiter, async (req, res) => {
     sql += 'GROUP BY f.id ORDER BY attorney_count DESC, f.name ASC LIMIT 20 OFFSET ?';
     params.push(offset);
     const firms = await db.all(sql, params).catch(() => []);
-    return res.json({ firms, page: parseInt(page, 10), count: firms.length });
+    // Get total count for pagination
+    const countRow = await db.get(
+      `SELECT COUNT(*) as n FROM firms WHERE public_listing = true AND accepting_clients = true` +
+      (state ? ' AND state = ?' : ''),
+      state ? [state] : []
+    ).catch(() => ({ n: 0 }));
+    return res.json({
+      firms,
+      page:        parseInt(page, 10),
+      count:       firms.length,
+      total_count: parseInt(countRow?.n ?? 0, 10),
+      total_pages: Math.ceil((countRow?.n ?? 0) / 20),
+    });
   } catch (e) {
     return res.status(500).json({ error: 'Could not load firm directory' });
   }
@@ -541,7 +556,7 @@ router.get('/:id/public-profile', apiLimiter, async (req, res) => {
 });
 
 // ── POST /firms/:id/invite — send email invitation to join firm ───────────
-router.post('/:id/invite', authRequired, async (req, res) => {
+router.post('/:id/invite', authRequired, inviteLimiter, async (req, res) => {
   const fid         = parseInt(req.params.id, 10);
   const { email, role = 'attorney' } = req.body;
   if (!fid || !email) return res.status(400).json({ error: 'firm id and email required' });

@@ -215,6 +215,7 @@ router.post('/calculate', apiLimiter, validate(bailCalculateSchema), async (req,
 
 // GET /api/bail/immigration — ICE bond schedule
 router.get('/immigration', apiLimiter, (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=1800');
   res.json({
     minimum_bond:    1500,
     maximum_bond:    25000,

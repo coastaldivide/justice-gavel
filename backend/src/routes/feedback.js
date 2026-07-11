@@ -6,6 +6,14 @@ import { getDb }        from '../db/index.js';
 import { optionalAuth } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
 const router = Router();
+
+// ── Input sanitizer (XSS prevention for feedback fields) ─────────────────
+const sanitize = str => String(str || '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;').replace(/'/g,'&#x27;').replace(/\/g,'&#x2F;')
+  .trim();
+
+
 const feedbackLimiter = rateLimit({ windowMs: 10*60*1000, max: 5, message: { error: 'Too many submissions. Try again in 10 minutes.' } });
 
 router.post('/', feedbackLimiter, optionalAuth, async (req, res) => {
@@ -51,7 +59,11 @@ router.get('/summary', async (req, res) => {
 // issue: brief description
 // contact: optional email/phone for follow-up
 router.post('/ui', async (req, res) => {
-  const { screen, issue, contact, device_info } = req.body || {};
+  const raw = req.body || {};
+  const screen = sanitize(raw.screen).slice(0, 100);
+  const issue  = sanitize(raw.issue).slice(0, 2000);
+  const contact= sanitize(raw.contact).slice(0, 200);
+  const device_info = sanitize(raw.device_info).slice(0, 500);
   if (!issue?.trim()) return res.status(400).json({ error: 'issue description required' });
 
   try {
