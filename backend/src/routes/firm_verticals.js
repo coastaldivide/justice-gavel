@@ -1948,7 +1948,7 @@ router.post('/collateral-consequences', authRequired, routeLimiter, async (req, 
     }
 
     const r = await db.run(
-      `INSERT INTO collateral_consequences (${cols.join(',')}) VALUES (${cols.map(()=>'?').join(',')})`,
+      `INSERT INTO collateral_consequences (professional_license_at_risk,employment_background_check_flag,public_housing_disqualified,section_8_disqualified,federal_student_loans_affected,pell_grant_affected,voting_rights_lost,jury_duty_disqualified,firearm_prohibition,deportable_offense,inadmissibility_trigger,mandatory_deportation,naturalization_bar,sex_offender_registration,residence_restrictions,internet_restrictions,snap_affected,tanf_affected,social_security_affected,child_custody_impact,foster_care_adoption_bar,military_service_bar,government_employment_bar,security_clearance_revoked,drivers_license_suspended) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       vals
     );
     res.status(201).json({ created: true, id: r.lastID });

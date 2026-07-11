@@ -1424,3 +1424,32 @@ CREATE TABLE IF NOT EXISTS checkin_records (
 CREATE INDEX IF NOT EXISTS idx_checkin_records_enrollment ON checkin_records(enrollment_id);
 CREATE INDEX IF NOT EXISTS idx_checkin_records_time       ON checkin_records(checked_in_at DESC);
 ALTER TABLE checkin_records ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE pi_leads ADD COLUMN IF NOT EXISTS lead_fee_cents BIGINT DEFAULT 0;
+
+-- collateral_consequences whitelist columns
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS professional_license_at_risk TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS employment_background_check_flag TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS public_housing_disqualified TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS section_8_disqualified TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS federal_student_loans_affected TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS pell_grant_affected TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS voting_rights_lost TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS jury_duty_disqualified TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS firearm_prohibition TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS deportable_offense TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS inadmissibility_trigger TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS mandatory_deportation TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS naturalization_bar TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS sex_offender_registration TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS residence_restrictions TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS internet_restrictions TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS snap_affected TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS tanf_affected TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS social_security_affected TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS child_custody_impact TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS foster_care_adoption_bar TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS military_service_bar TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS government_employment_bar TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS security_clearance_revoked TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS drivers_license_suspended TEXT;
