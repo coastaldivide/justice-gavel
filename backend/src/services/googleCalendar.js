@@ -143,7 +143,7 @@ export async function updateCourtDateEvent(refreshToken, eventId, updates) {
     const { access_token } = await tokenRes.json();
     if (!access_token) return null;
 
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
       {
         method:  'PATCH',
@@ -179,7 +179,7 @@ export async function deleteCourtDateEvent(refreshToken, eventId) {
     const { access_token } = await tokenRes.json();
     if (!access_token) return null;
 
-    await fetch(
+    await fetchWithTimeout(
       `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
       { method: 'DELETE', headers: { 'Authorization': `Bearer ${access_token}` } }
     );

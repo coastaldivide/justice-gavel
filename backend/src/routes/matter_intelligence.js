@@ -1327,6 +1327,7 @@ router.get('/:id/analytics', authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const matterId = parseInt(req.params.id, 10);
+    if (!matterId || isNaN(matterId)) return res.status(400).json({ error: 'Invalid matter ID' });
     // Pull together case analytics from related tables
     const events = await db.get(
       'SELECT COUNT(*) as n FROM case_events WHERE matter_id = ?', [matterId]

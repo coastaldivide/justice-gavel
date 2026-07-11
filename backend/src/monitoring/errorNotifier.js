@@ -1,3 +1,15 @@
+
+// Short timeout for monitoring calls — can't have notifier hang on slow endpoints
+async function fetchNotify(url, opts) {
+  const ctrl = new AbortController();
+  const id   = setTimeout(() => ctrl.abort(), 5000); // 5s max for notifications
+  try {
+    const r = await fetchNotify(url, { ...opts, signal: ctrl.signal });
+    clearTimeout(id);
+    return r;
+  } catch { clearTimeout(id); }
+}
+
 /**
  * monitoring/errorNotifier.js — Critical error notifications
  *
@@ -35,7 +47,7 @@ async function sendAlertEmail({ subject, body, to }) {
   if (!apiKey) return;
 
   try {
-    await fetch('https://api.sendgrid.com/v3/mail/send', {
+    await fetchNotify('https://api.sendgrid.com/v3/mail/send', {
       method:  'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -56,7 +68,7 @@ async function sendSlackAlert(message) {
   const url = process.env.ALERT_WEBHOOK_URL;
   if (!url) return;
   try {
-    await fetch(url, {
+    await fetchNotify(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: `🚨 JG SEV-1: ${message}` }),
@@ -69,7 +81,7 @@ async function pingWebhook(payload) {
   const url = process.env.ALERT_WEBHOOK_URL;  // Slack/Discord/PagerDuty webhook
   if (!url) return;
   try {
-    await fetch(url, {
+    await fetchNotify(url, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(payload),

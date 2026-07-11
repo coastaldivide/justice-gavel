@@ -57,7 +57,11 @@ export async function hasValidConsent(): Promise<boolean> {
 }
 
 export async function storeConsent(): Promise<void> {
-  await AsyncStorage.setItem(CONSENT_KEY, 'true');
+  try {
+    await AsyncStorage.setItem(CONSENT_KEY, 'true');
+  } catch (_) {
+    // Non-fatal — if storage fails, consent is re-asked on next launch
+  }
 }
 
 export async function clearConsent(): Promise<void> {

@@ -248,7 +248,10 @@ function MoreNavigator() {
       <MoreStack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ title: "Privacy Policy" }} />
       <MoreStack.Screen name="Settings"              component={SettingsScreen}
 options={{ title: '⚙️ Settings' }} />
-    </MoreStack.Navigator>
+          <MoreStack.Screen name="VideoConsultation" component={VideoConsultationScreen} options={{ title: 'Video Consultation', headerShown: true }} />
+      <MoreStack.Screen name="ConflictCheck"       component={ConflictCheckScreen}       options={{ title: 'Conflict Check',      headerShown: true }} />
+      <MoreStack.Screen name="Matter"              component={MatterScreen}              options={{ title: 'Matter Detail',       headerShown: true }} />
+</MoreStack.Navigator>
     </ErrorBoundary>
   );
 }
@@ -345,5 +348,3 @@ export function trackScreenChange(state: Record<string, unknown> | undefined) {
     Analytics.track('screen_view', { screen: route.name } as any);
   }
 }
-      <GuestStack.Screen name="ChildSupport" component={ChildSupportScreen} options={{ headerShown: false }} />
-

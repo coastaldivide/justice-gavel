@@ -213,7 +213,10 @@ async function sendSlackAlert(msg) {
   const url = process.env.ALERT_WEBHOOK_URL;
   if (!url) return;
   try {
+    // 5s timeout — Slack webhook must not block self-healing watchdog
+const _ctrl = new AbortController(); const _tid = setTimeout(() => _ctrl.abort(), 5000);
     await fetch(url, {
+      signal: _ctrl.signal,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: msg }),

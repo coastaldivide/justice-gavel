@@ -186,7 +186,7 @@ export async function indexLegalDocument({
   try {
     const embedding = await embedQuery(`${title}. ${content.slice(0, 400)}`);
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/legal_documents`, {
+    const res = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/legal_documents`, {
       method:  'POST',
       headers: {
         'Content-Type':  'application/json',

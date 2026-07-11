@@ -1303,3 +1303,53 @@ CREATE TABLE IF NOT EXISTS webhook_subscriptions (
 );
 
 ALTER TABLE webhook_subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- ── Column additions for column-mismatch fixes ────────────────────────────────
+-- arrest_monitors: route uses watch_name and active, schema has name only
+ALTER TABLE arrest_monitors ADD COLUMN IF NOT EXISTS watch_name TEXT;
+ALTER TABLE arrest_monitors ADD COLUMN IF NOT EXISTS active     BOOLEAN DEFAULT TRUE;
+ALTER TABLE callback_requests ADD COLUMN IF NOT EXISTS duration_min INTEGER DEFAULT 30;
+ALTER TABLE callback_requests ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE civil_attorney_profiles ADD COLUMN IF NOT EXISTS firm_name      TEXT;
+ALTER TABLE civil_attorney_profiles ADD COLUMN IF NOT EXISTS practice_type  TEXT;
+ALTER TABLE civil_attorney_profiles ADD COLUMN IF NOT EXISTS license_state  TEXT;
+ALTER TABLE civil_attorney_profiles ADD COLUMN IF NOT EXISTS counties       JSONB;
+ALTER TABLE civil_attorney_profiles ADD COLUMN IF NOT EXISTS max_lead_fee   BIGINT DEFAULT 0;
+ALTER TABLE research_sessions ADD COLUMN IF NOT EXISTS title TEXT;
+ALTER TABLE web_push_subscriptions ADD COLUMN IF NOT EXISTS auth       TEXT;
+ALTER TABLE web_push_subscriptions ADD COLUMN IF NOT EXISTS platform   TEXT;
+ALTER TABLE web_push_subscriptions ADD COLUMN IF NOT EXISTS user_agent TEXT;
+ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS session_id TEXT;
+ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS role       TEXT;
+ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS content    TEXT;
+
+-- ── Additional column fixes from Pass 5 scan ─────────────────────────────────
+
+-- bondsman_profiles: route inserts geographic/business fields
+ALTER TABLE bondsman_profiles ADD COLUMN IF NOT EXISTS license_state   TEXT;
+ALTER TABLE bondsman_profiles ADD COLUMN IF NOT EXISTS counties        JSONB;
+ALTER TABLE bondsman_profiles ADD COLUMN IF NOT EXISTS states          JSONB;
+ALTER TABLE bondsman_profiles ADD COLUMN IF NOT EXISTS min_bail_amount BIGINT DEFAULT 0;
+ALTER TABLE bondsman_profiles ADD COLUMN IF NOT EXISTS max_bail_amount BIGINT;
+
+-- pi_leads: route inserts full case details
+ALTER TABLE pi_leads ADD COLUMN IF NOT EXISTS user_id       BIGINT;
+ALTER TABLE pi_leads ADD COLUMN IF NOT EXISTS incident_date TEXT;
+ALTER TABLE pi_leads ADD COLUMN IF NOT EXISTS severity      TEXT;
+ALTER TABLE pi_leads ADD COLUMN IF NOT EXISTS lat           NUMERIC(10,6);
+ALTER TABLE pi_leads ADD COLUMN IF NOT EXISTS lng           NUMERIC(10,6);
+ALTER TABLE pi_leads ADD COLUMN IF NOT EXISTS contact_name  TEXT;
+ALTER TABLE pi_leads ADD COLUMN IF NOT EXISTS contact_phone TEXT;
+ALTER TABLE pi_leads ADD COLUMN IF NOT EXISTS contact_email TEXT;
+ALTER TABLE pi_leads ADD COLUMN IF NOT EXISTS status        TEXT DEFAULT 'pending';
+
+-- collateral_consequences: dynamic INSERT uses cols.join — needs dynamic schema
+-- The route builds INSERT dynamically from validated field set
+-- Add the most common columns referenced in the route
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS firm_id       BIGINT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS matter_id     BIGINT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS consequence   TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS category      TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS jurisdiction  TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS notes         TEXT;
+ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS status        TEXT DEFAULT 'active';
