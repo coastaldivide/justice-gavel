@@ -151,9 +151,7 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
       currency: 'usd',
       customer: customerId,
       confirm: true,
-      automatic_payment_methods: { enabled: true, allow_redirects: 'never' ,
-        metadata: { user_id: String(req.user.id), source: 'bondsman' },
-      },
+      automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
       description: `Lead: ${arrest.name} — Bail $${arrest.bail_amount?.toLocaleString()} — ${arrest.county} County`,
       metadata: { bondsman_id: String(req.user.id), arrest_id: String(arrestId) }
     });

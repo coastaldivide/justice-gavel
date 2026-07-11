@@ -8,7 +8,7 @@ import rateLimit        from 'express-rate-limit';
 import Stripe           from 'stripe';
 import logger           from '../../utils/logger.js';
 
-const stripeKey = process.env.STRIPE_SECRET || '';
+const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
 const stripe    = stripeKey ? new Stripe(stripeKey) : null;
 const LIVE      = !!stripeKey;
 
@@ -127,14 +127,19 @@ export function effectiveMonthlyRate(tierKey) {
 // OR release ($0 bail) = no lead fee — bondsman not needed
 // Fee scales with bail amount since larger bail = more valuable connection
 export function calcLeadFee(bailAmount) {
-  const amt = Math.max(0, parseFloat(bailAmount) || 0); // guard: NaN/negative → 0
-  if (amt <= 0)       return 0;        // $0 = own recognizance release, no bondsman needed
-  if (amt < 1000)     return 1000;     // $10 minimum lead fee
-  if (amt < 5000)     return 2500;     // $25
-  if (amt < 25000)    return 5000;     // $50
-  if (amt < 100000)   return 10000;    // $100
-  if (amt < 500000)   return 15000;    // $150
-  return 25000;                        // $250 — high-bail cases ($500k+)
+  // Lead fee scales with bail amount — bondsman earns 10% of bail as premium.
+  // A $100k bail earns the bondsman $10k premium; we earn a referral fee.
+  // Fee tiers revised to be proportional to case value.
+  const amt = Math.max(0, parseFloat(bailAmount) || 0);
+  if (amt <= 0)        return 0;        // own-recognizance: no bondsman needed
+  if (amt < 1000)      return 1500;     // $15   — minor bail (< $1k)
+  if (amt < 5000)      return 3500;     // $35   — misdemeanor range
+  if (amt < 25000)     return 7500;     // $75   — low felony range
+  if (amt < 100000)    return 15000;    // $150  — mid felony range
+  if (amt < 250000)    return 25000;    // $250  — serious felony
+  if (amt < 500000)    return 40000;    // $400  — high felony ($250k–$500k bail)
+  if (amt < 1000000)   return 60000;    // $600  — major case ($500k–$1M bail)
+  return 100000;                        // $1000 — murder/federal ($1M+ bail)
 }
 
 export async function getOrCreateStripeCustomer(user) {

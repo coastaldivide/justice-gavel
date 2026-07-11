@@ -30,7 +30,7 @@ async function getExpoConsult() {
 
 
 const router = Router();
-const stripeKey = process.env.STRIPE_SECRET || '';
+const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
 const stripe    = stripeKey ? new Stripe(stripeKey) : null;
 const LIVE      = !!stripeKey;
 
@@ -38,7 +38,10 @@ const LIVE      = !!stripeKey;
 const FEE_BY_DURATION = { 15: 1000, 30: 1500, 60: 2500 };
 
 // ── Generate available slots for next 14 days ─────────────────────────────────
-// Returns morning + afternoon windows regardless of DB lawyer availability
+// generateSlots: deterministic placeholder until real CalDAV integration.
+// For production: call GET /api/caldav/lawyer/:id to fetch real availability.
+// The slot times returned here are cross-checked against consultation_bookings
+// to exclude already-booked slots in the route handler.
 function generateSlots(startDate = new Date()) {
   const slots = [];
   const TIMES = ['9:00 AM','10:00 AM','11:00 AM','1:00 PM','2:00 PM','3:00 PM','4:00 PM'];
@@ -76,8 +79,30 @@ function generateSlots(startDate = new Date()) {
 // GET /api/consultations/slots/:lawyerId
 router.get('/slots/:lawyerId', async (req, res) => {
   try {
-    const slots = generateSlots();
-    res.json({ lawyer_id: req.params.lawyerId, slots });
+    const db = await getDb();
+    const lawyerId = req.params.lawyerId;
+
+    // Get already-booked slots for this lawyer in the next 14 days
+    const booked = await db.all(
+      `SELECT date_slot, time_slot FROM consultation_bookings
+       WHERE lawyer_id = ? AND status NOT IN ('cancelled')
+         AND date_slot >= date('now')`,
+      [lawyerId]
+    ).catch(() => []);
+
+    const bookedSet = new Set(booked.map(b => `${b.date_slot}|${b.time_slot}`));
+
+    // Generate slots and mark confirmed-booked ones as unavailable
+    const rawSlots = generateSlots();
+    const slots = rawSlots.map(day => ({
+      ...day,
+      times: day.times.map(t => ({
+        ...t,
+        available: t.available && !bookedSet.has(`${day.date}|${t.time}`),
+      })),
+    }));
+
+    res.json({ lawyer_id: lawyerId, slots, source: 'generated' });
   } catch (e) {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
@@ -91,7 +116,7 @@ router.get('/', authRequired, async (req, res) => {
     const db = await getDb();
     const rows = await db.all(
       `SELECT id, user_id, lawyer_id, lawyer_name, lawyer_phone, date_slot, time_slot, duration_min, notes, status, created_at FROM consultation_bookings WHERE user_id=? ORDER BY date_slot DESC, time_slot ASC LIMIT ? OFFSET ?
-      --SC, time_slot ASC`,
+       ORDER BY date_slot ASC, time_slot ASC`,
       [req.user.id, pgSize, page * pgSize]
     );
     res.json({ consultations: rows, page, pageSize: pgSize, hasMore: rows.length === pgSize });
@@ -211,11 +236,11 @@ router.post('/callback-request', authRequired, consultationsLimiter, async (req,
     const { lawyer_id, phone, notes: rawNotes = '', duration_min = 30 } = req.body;
     const notes = rawNotes ? truncateStr(sanitizeStr(String(rawNotes), 2000), 2000) : '';
     if (!phone) return err400(res, 'Phone number required');
-    (await db.run(
+    await db.run(
       `INSERT INTO callback_requests (user_id, lawyer_id, phone, notes, duration_min)
        VALUES (?,?,?,?,?)`,
       [req.user.id, lawyer_id || null, phone, notes, duration_min]
-    )).catch(() => ({ lastID: 0 }));
+    ).catch(e => logger.warn('[consultations] callback_request insert:', e?.message));
 
     // Push notification to the lawyer if they have a registered account
     // (graceful — no crash if push fails)

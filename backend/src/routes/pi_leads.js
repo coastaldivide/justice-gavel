@@ -34,7 +34,7 @@ const piLeadLimiter = rateLimit({
 
 const ALLOWED_PI_COLS = new Set(['state','type','status','assigned_attorney_id']);
 const router = Router();
-const STRIPE_KEY = process.env.STRIPE_SECRET || '';
+const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
 
 // ── Lead fee schedule ─────────────────────────────────────────────────────────
 function calcCivilLeadFee(leadType, severity = 'moderate') {

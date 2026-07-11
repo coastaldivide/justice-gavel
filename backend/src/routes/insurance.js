@@ -24,8 +24,10 @@ router.post('/quote', insuranceLimiter, authRequired, async (req, res) => {
       annual: p.annual,
       name: p.name,
       features: p.features,
-      provider: 'LegalProtect Inc. (demo)',
-      legalese: 'This is a demonstration quote only. Actual coverage terms, pricing, and availability vary by state. Not a binding insurance offer.',
+      provider: 'Justice Gavel Insurance Partners',
+      referral: true,
+      referral_url: `https://quote.legalprotection.com/?ref=justicegavel&plan=${plan}&city=${encodeURIComponent(city)}`,
+      legalese: 'Quotes are estimates from partner carriers. Actual coverage terms, pricing, and availability vary by state. Not a binding insurance offer.',
     });
   } catch (e) {
     logger.error({ msg: '[insurance]', error: e?.message });

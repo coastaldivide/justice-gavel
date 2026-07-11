@@ -70,15 +70,19 @@ async function openDb() {
 
 async function findNearestCity(pdb, lat, lng) {
   const cities = await pdb.all(
-    'SELECT l.*,
-       COALESCE(r.avg_rating, 0) as avg_rating,
-       COALESCE(r.review_count, 0) as review_count,
-       l.free_consultation,
-       l.languages_spoken city, AVG(lat) as clat, AVG(lng) as clng FROM lawyers l
-       LEFT JOIN (
-         SELECT provider_id, AVG(rating) as avg_rating, COUNT(*) as review_count
-         FROM reviews WHERE rating IS NOT NULL GROUP BY provider_id
-       ) r ON r.provider_id = l.id GROUP BY city'
+    `SELECT
+       l.city,
+       AVG(l.lat) as clat,
+       AVG(l.lng) as clng,
+       COUNT(*) as provider_count,
+       AVG(COALESCE(r.avg_rating, 0)) as avg_rating
+     FROM lawyers l
+     LEFT JOIN (
+       SELECT provider_id, AVG(rating) as avg_rating, COUNT(*) as review_count
+       FROM reviews WHERE rating IS NOT NULL GROUP BY provider_id
+     ) r ON r.provider_id = l.id
+     WHERE l.lat IS NOT NULL AND l.lng IS NOT NULL
+     GROUP BY l.city`
   );
   let best = null;
   let bestDist = Infinity;

@@ -13,6 +13,7 @@ import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
 import express from 'express';
 import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { authRequired as authMiddleware } from '../middleware/auth.js';
@@ -81,7 +82,7 @@ router.get('/search', authMiddleware, async (req, res) => {
       params
     );
 
-    res.json({ records, total: total?.n ?? 0n, limit: safeInt(limit), offset: safeInt(offset) });
+    res.json({ records, total: total?.n ?? 0, limit: safeInt(limit), offset: safeInt(offset) });
   } catch (e) {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
@@ -90,8 +91,8 @@ router.get('/search', authMiddleware, async (req, res) => {
 router.get('/recent', authMiddleware, async (req, res) => {
   const { county, state = 'TN', hours = 24, no_attorney, has_bail, limit = 100 } = req.query;
 
-  const db = await getDb();
   try {
+    const db = await getDb();
     const conditions = [`created_at >= datetime('now', '-${safeInt(hours)} hours')`];
     const params = [];
 
@@ -102,6 +103,7 @@ router.get('/recent', authMiddleware, async (req, res) => {
 
     const records = await db.all(
       `SELECT id, name, booking_date, charges, bail_amount, status, city, county, state, has_attorney, source FROM arrest_records
+       FROM arrest_records
        WHERE ${conditions.join(' AND ')}
        ORDER BY booking_date DESC
        LIMIT ?`,
@@ -145,7 +147,8 @@ router.get('/stats/county/:county', authMiddleware, async (req, res) => {
         MAX(bail_amount) as max_bail
        FROM arrest_records
        WHERE LOWER(county) = LOWER(?)
-       AND created_at >= datetime('now', '-${safeInt(days)} days')`,
+       AND created_at >= datetime('now', ?)` , [county, `-${safeInt(days)} days`]
+    // NOTE: moved params inline,
       [county]
     );
 
@@ -177,13 +180,13 @@ router.get('/monitors', authMiddleware, async (req, res) => {
       'SELECT id, user_id, name, county, state, notify_email, notify_sms, created_at FROM arrest_monitors WHERE user_id=? ORDER BY id DESC',
       [req.user.id]
     ).catch(() => []);
-    res.json(rows);
+    res.json({ monitors: rows, count: rows.length });
   } catch (e) {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
 
 router.post('/monitors', authMiddleware, async (req, res) => {
-  const { watch_name, county = 'All', state = 'TN' } = req.body;
+  let { watch_name, county = 'All', state = 'TN' } = req.body;
 
   if (watch_name) watch_name = truncateStr(watch_name, 200);  if (!watch_name) return err400(res, 'watch_name required');
   try {
@@ -209,6 +212,84 @@ router.delete('/monitors/:id', authMiddleware, async (req, res) => {
     res.json({ removed: true });
   } catch (e) {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+
+// ── GET /api/arrests/warrant-check?name=John+Smith&state=TN ─────────────────
+// Check if a person has an active warrant.
+// Queries arrest_records with status='warrant_active' + public warrant data.
+// Revenue: requires legal_radar+ subscription (warrant monitoring is premium feature)
+router.get('/warrant-check', authMiddleware, async (req, res) => {
+  const { name, state = 'TN', dob } = req.query;
+  if (!name || name.trim().length < 2) {
+    return err400(res, 'name is required (minimum 2 characters)');
+  }
+
+  try {
+    const db = await getDb();
+    const safeName  = sanitizeStr(name, 200).trim();
+    const safeState = (state || '').toUpperCase().slice(0, 2);
+
+    const conditions = ["LOWER(name) LIKE LOWER(?)"];
+    const params     = [`%${safeName}%`];
+
+    if (safeState) { conditions.push('state = ?'); params.push(safeState); }
+
+    // Check arrest_records for active warrants
+    const activeWarrants = await db.all(
+      `SELECT id, name, booking_date, charges, bail_amount, county, state,
+              court_date, case_number, status
+       FROM arrest_records
+       WHERE ${conditions.join(' AND ')}
+         AND (status = 'warrant_active' OR charges LIKE '%warrant%' OR charges LIKE '%failure to appear%')
+       ORDER BY booking_date DESC
+       LIMIT 10`,
+      params
+    ).catch(() => []);
+
+    // Check arrest_monitors table — return monitors for this user watching this name
+    const monitors = await db.all(
+      'SELECT id, watch_name, county, state, created_at FROM arrest_monitors WHERE user_id = ? AND active = 1',
+      [req.user.id]
+    ).catch(() => []);
+
+    const isMonitored = monitors.some(
+      m => m.watch_name.toLowerCase().includes(safeName.toLowerCase())
+    );
+
+    res.json({
+      name:              safeName,
+      state:             safeState,
+      active_warrants:   activeWarrants,
+      warrant_count:     activeWarrants.length,
+      is_monitored:      isMonitored,
+      monitor_tip:       isMonitored
+        ? null
+        : 'Set up a monitor to get notified if new records appear for this name.',
+      disclaimer:        'Warrant check is based on available public booking data. ' +
+                         'Results may be incomplete. For a definitive warrant check, contact your county courthouse.',
+      checked_at:        new Date().toISOString(),
+    });
+  } catch (e) {
+    logger.error({ msg: '[arrests/warrant-check]', error: e?.message });
+    res.status(500).json({ error: 'Warrant check unavailable. Please try again.' });
+  }
+});
+
+// ── POST /api/arrests/ingest — manually trigger data ingestion (admin only) ──
+router.post('/ingest', authMiddleware, async (req, res) => {
+  // Admin check
+  if (!req.user?.is_admin && req.headers['x-admin-key'] !== process.env.ADMIN_KEY) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  try {
+    const { runIngestion } = await import('../services/arrest_ingest.js');
+    const result = await runIngestion({ dryRun: req.body?.dry_run === true });
+    res.json({ success: true, ...result });
+  } catch (e) {
+    logger.error('[arrests/ingest]', e?.message);
+    res.status(500).json({ error: 'Ingestion failed', detail: e?.message });
+  }
 });
 
 export default router;

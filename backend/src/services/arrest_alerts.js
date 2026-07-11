@@ -15,6 +15,7 @@ import logger from '../utils/logger.js';
  */
 
 import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -105,18 +106,43 @@ function detectAreas(charges) {
 
 // ── Send alert (email via SendGrid / push notification) ───────────────────────
 async function sendAlert(recipient, message, type, db) {
-  // In production: handled by Resend email + Expo Push
-  // For now: log and record in DB
   logger.info(`  📧 ${type} alert → ${recipient.name} (${recipient.email || 'no email'})`);
-  logger.info(`     Subject: ${message.subject}`);
 
-  // Record in DB that alert was sent
+  // Record in DB regardless of delivery
   await db.run(
     `INSERT INTO attorney_alerts
       (recipient_id, recipient_type, subject, body, count, sent_at)
      VALUES (?,?,?,?,?,datetime('now'))`,
     [recipient.id, type, message.subject, message.body, message.count]
-  );
+  ).catch(e => logger.warn('[alerts] DB insert error:', e?.message));
+
+  // ── Send real email via Resend ──────────────────────────────────────────────
+  const RESEND_KEY = process.env.RESEND_API_KEY;
+  if (RESEND_KEY && recipient.email) {
+    try {
+      const resp = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${RESEND_KEY}`,
+        },
+        body: JSON.stringify({
+          from:    'Justice Gavel Alerts <alerts@justicegavel.app>',
+          to:      [recipient.email],
+          subject: message.subject,
+          text:    message.body,
+        }),
+      });
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => '');
+        logger.warn(`[alerts] Resend error ${resp.status}:`, errText.slice(0, 200));
+      } else {
+        logger.info(`[alerts] ✅ Email delivered → ${recipient.email}`);
+      }
+    } catch (emailErr) {
+      logger.warn('[alerts] Email send failed (non-fatal):', emailErr?.message);
+    }
+  }
 
   return true;
 }
@@ -170,16 +196,16 @@ export async function sendArrestAlerts(options = {}) {
     // Find arrests in attorney's county matching their specialties
     for (const [county, arrests] of Object.entries(byCounty)) {
       // Geography match — attorney's city should be in this county's cities
-      const countyConfig = Object.values({
-        davidson: { cities: ['Nashville'] },
-        shelby: { cities: ['Memphis'] },
-        knox: { cities: ['Knoxville'] },
-        hamilton: { cities: ['Chattanooga'] },
-      }).find(c => c.cities.some(city =>
-        attorneyCity.toLowerCase().includes(city.toLowerCase())
-      ));
+      // Geographic match: attorney is notified if their city is in the same state as the arrests,
+      // OR if county name matches. Expanded from TN-only to nationwide.
+      const arrestState    = (arrests[0]?.state || '').toUpperCase();
+      const arrestCounty   = (county || '').toLowerCase();
+      const attyStateLower = (attorney.state || '').toLowerCase();
 
-      if (!countyConfig && county !== 'Davidson' && county !== 'Shelby') continue;
+      // Skip if attorney is in a completely different state
+      // (allow through if neither has state data — legacy records)
+      if (attorney.state && arrests[0]?.state &&
+          attorney.state.toUpperCase() !== arrestState) continue;
 
       // Filter arrests matching attorney specialties
       const relevantArrests = arrests.filter(a =>
@@ -213,7 +239,8 @@ export async function sendArrestAlerts(options = {}) {
   const ids = newArrests.map(a => a.id);
   if (ids.length && !options.dryRun) {
     await db.run(
-      `UPDATE arrest_records SET alert_sent = 1 WHERE id IN (${ids.join(',')})`,
+      `UPDATE arrest_records SET alert_sent = 1 WHERE id IN (${ids.map(() => '?').join(',')})`,
+      ids
     );
   }
 
