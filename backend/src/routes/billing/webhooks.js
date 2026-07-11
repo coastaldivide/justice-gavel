@@ -94,6 +94,24 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
   try {
     const db = await getDb();
+
+    // ── Idempotency: reject duplicate Stripe events ──────────────────────
+    // Stripe may retry webhooks — ensure each event_id is processed only once
+    const eventId = event.id;
+    const existing = await db.get(
+      'SELECT id FROM stripe_event_log WHERE stripe_event_id = ?',
+      [eventId]
+    ).catch(() => null);
+    if (existing) {
+      logger.info('[webhook] duplicate event ignored:', eventId);
+      return res.json({ received: true, duplicate: true });
+    }
+    // Log event before processing (idempotency gate)
+    await db.run(
+      'INSERT OR IGNORE INTO stripe_event_log (stripe_event_id, event_type, created_at) VALUES (?,?,datetime(\'now\'))',
+      [eventId, event.type]
+    ).catch(() => {}); // non-fatal if table doesn't exist yet
+
     switch (event.type) {
       case 'customer.subscription.deleted':
       await audit(AUDIT_ACTIONS.SUBSCRIPTION_CANCELLED, { userId: event?.data?.object?.metadata?.user_id });
@@ -302,6 +320,22 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
           title: '💳 Refund Issued',
           body:  `A refund of $${amt} has been issued to your original payment method.`,
         }).catch(() => {});
+      }
+      break;
+    }
+
+
+    case 'charge.dispute.created':
+    case 'charge.dispute.funds_withdrawn': {
+      // A chargeback was filed — flag the user's account
+      const charge = event.data.object;
+      const custId = charge.customer;
+      if (custId) {
+        await db.run(
+          "UPDATE user_subscriptions SET dispute_flag = true WHERE stripe_customer_id = ?",
+          [custId]
+        ).catch(() => {});
+        logger.warn('[webhook] dispute filed for customer:', custId);
       }
       break;
     }

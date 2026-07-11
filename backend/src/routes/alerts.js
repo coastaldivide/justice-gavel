@@ -46,4 +46,42 @@ router.post('/', authRequired, alertsLimiter, async (req,res)=>{
     res.json({ ok:true, results });
   } catch (e) { logger.error('[alerts]', e.message); res.status(500).json({ error: 'Alert failed' }); }
 });
+
+// ── GET /alerts/family-contacts — retrieve stored emergency contacts ─────────
+router.get('/family-contacts', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const contacts = await db.all(
+      'SELECT id, name, phone, email, relationship FROM family_contacts WHERE user_id = ? ORDER BY created_at',
+      [req.user.id]
+    );
+    return res.json({ contacts });
+  } catch (e) {
+    logger?.warn('[alerts/family-contacts]', e?.message);
+    return res.json({ contacts: [] });
+  }
+});
+
+// ── POST /alerts/family-contacts — add/update emergency contact ─────────────
+router.post('/family-contacts', authRequired, async (req, res) => {
+  const { name, phone, email, relationship } = req.body;
+  if (!name?.trim() || (!phone?.trim() && !email?.trim())) {
+    return res.status(400).json({ error: 'name and phone or email required' });
+  }
+  try {
+    const db = await getDb();
+    // Max 3 emergency contacts per user
+    const count = await db.get('SELECT COUNT(*) as n FROM family_contacts WHERE user_id = ?', [req.user.id]);
+    if ((count?.n || 0) >= 3) return res.status(400).json({ error: 'Maximum 3 emergency contacts' });
+    const r = await db.run(
+      'INSERT INTO family_contacts (user_id, name, phone, email, relationship, created_at) VALUES (?,?,?,?,?,datetime("now"))',
+      [req.user.id, name.trim(), phone?.trim() || null, email?.trim() || null, relationship?.trim() || null]
+    );
+    return res.json({ id: r.lastID, name, phone, email, relationship });
+  } catch (e) {
+    logger?.warn('[alerts/family-contacts/add]', e?.message);
+    return res.status(500).json({ error: 'Failed to add contact' });
+  }
+});
+
 export default router;

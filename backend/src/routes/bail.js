@@ -8,6 +8,22 @@ import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.
 
 const router = Router();
 
+// ── Installment Plan — Integer Cents (IEEE 754 safe) ─────────────────────
+function calcInstallmentPlan(premiumDollars, months = 3) {
+  if (!premiumDollars || premiumDollars <= 0 || months <= 0) return null;
+  if (!Number.isSafeInteger(Math.round(premiumDollars * 100))) return null;
+  const premiumCents = Math.round(premiumDollars * 100);
+  const monthlyCents = Math.ceil(premiumCents / months);
+  return {
+    monthly:  monthlyCents / 100,
+    total:    (monthlyCents * months) / 100,
+    months,
+    note: `${months} equal payments of $${(monthlyCents/100).toFixed(2)}`,
+  };
+}
+
+
+
 // ── Mandatory Minimum Flags ──────────────────────────────────────────────────
 // Federal charges with mandatory consecutive sentences that courts cannot waive.
 // Source: USSC 2023 guidelines + 18 USC 924(c), 21 USC 841(b)(1)

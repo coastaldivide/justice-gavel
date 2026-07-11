@@ -208,6 +208,19 @@ export async function runHealthCheck() {
 }
 
 // ── Start all watchdogs ────────────────────────────────────────────────────────
+
+async function sendSlackAlert(msg) {
+  const url = process.env.ALERT_WEBHOOK_URL;
+  if (!url) return;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: msg }),
+    });
+  } catch {}
+}
+
 export function startAllWatchdogs() {
   if (process.env.NODE_ENV === 'test') return;  // Don't run in tests
 

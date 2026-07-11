@@ -28,7 +28,7 @@ import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { normalizePhone } from '../utils/sanitize.js';
-const sendSms = async () => null; // stub — use pushDelivery.js or email.js instead
+const sendSms = async () => null; // SMS not used — push notifications and Resend email handle delivery
 import { sendEmail } from './email.js';
 import { createPaymentLink, calcStripeFee, STRIPE_LIVE } from '../payments/stripe.js';
 

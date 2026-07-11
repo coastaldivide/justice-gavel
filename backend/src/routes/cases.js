@@ -121,8 +121,10 @@ router.post('/', authRequired, validate(createCaseSchema), casesLimiter, async (
     const safeState  = state ? sanitizeStr(String(state), 3).toUpperCase() : null;
 
     const r = await db.run(
-      `INSERT INTO cases (user_id, title, status, next_court_date, notes, state)
-       VALUES (?,?,?,?,?,?)`,
+      `INSERT INTO cases (user_id, title, status, next_court_date, notes, state,
+         bail_amount_cents, related_case_id, capital_case, co_defendant_count, bail_status)
+       VALUES (?,?,?,?,?,?,
+         ?, ?, ?, ?, ?)`,
       [
         req.user.id, safeTitle.trim(), safeStatus,
         next_court_date ? sanitizeStr(String(next_court_date), 20) : null,

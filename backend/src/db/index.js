@@ -19,8 +19,11 @@ async function initPostgres(url) {
   const pool = new pg.Pool({
     connectionString: url,
     ssl: url.includes('localhost') ? false : { rejectUnauthorized: false },
-    max: 10,
-    connectionTimeoutMillis: 10000,
+    max:                    20,    // 20 app connections → PgBouncer handles DB-side limiting
+    idleTimeoutMillis:   30000,    // close idle connections after 30s
+    connectionTimeoutMillis: 8000, // fail fast if pool exhausted
+    statement_timeout:   30000,    // no query runs > 30s (prevent long-lock queries)
+    query_timeout:       25000,    // slightly under statement_timeout
   });
 
   await pool.query('SELECT 1'); // test connection

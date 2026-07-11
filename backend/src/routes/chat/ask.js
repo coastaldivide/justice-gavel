@@ -138,4 +138,7 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, 
   }
 });
 
+// For streaming responses, use POST /api/chat/stream (stream.js)
+// ask.js handles non-streaming (complete response) requests
 export default router;
+

@@ -17,6 +17,7 @@
 import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { Router } from 'express';
+import { sendPushNotification } from '../services/pushDelivery.js';
 import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
 import Stripe from 'stripe';
@@ -335,3 +336,14 @@ router.get('/family-contacts', authRequired, async (req, res) => {
     res.json({ contacts });
   } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });
+
+    // ── Push notification on missed check-in ─────────────────────────────────
+    if (status === 'missed') {
+      const token = await db.get('SELECT token FROM push_tokens WHERE user_id = ?', [userId]).catch(() => null);
+      if (token?.token) {
+        sendPushNotification(token.token, {
+          title: 'Missed Check-In',
+          body:  'You missed your scheduled check-in. Contact your attorney immediately.',
+        }).catch(() => {}); // non-blocking — don't fail check-in on push failure
+      }
+    }
