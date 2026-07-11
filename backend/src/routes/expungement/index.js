@@ -113,4 +113,70 @@ router.get('/petition-checklist', authRequired, async (req, res) => {
 export default router;
 
 // Re-export helpers so test files and other modules can import from the index
+
+
+// ── Expungement eligibility rules — all 50 states ───────────────────────────
+// wait: years after sentence completion before petition allowed
+// ok:   charge types that CAN be expunged
+// no:   charge types that CANNOT be expunged
+// Sources: NCSL Expungement/Sealing Database + individual state statutes
+const STATE_RULES = {
+  // ── Southeast ────────────────────────────────────────────────────────────
+  TN: { wait: 5,  ok: ['misdemeanor','drug_possession','theft_under_500','felony_e_nonviolent'], no: ['violent','sexual','dui','murder','domestic_violence'] },
+  GA: { wait: 4,  ok: ['misdemeanor','first_felony_nonviolent','drug_possession'],              no: ['violent','sexual','dui','murder'] },
+  FL: { wait: 3,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','dui','murder','domestic_violence'] },
+  AL: { wait: 5,  ok: ['misdemeanor','nonviolent_felony'],                                      no: ['violent','sexual','murder','dui'] },
+  MS: { wait: 5,  ok: ['misdemeanor','first_offense_nonviolent'],                               no: ['violent','sexual','murder','trafficking'] },
+  SC: { wait: 3,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','dui','murder'] },
+  NC: { wait: 5,  ok: ['misdemeanor','nonviolent_felony'],                                      no: ['violent','sexual','dui','murder'] },
+  VA: { wait: 7,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','murder','dui'] },
+  WV: { wait: 1,  ok: ['misdemeanor'],                                                          no: ['violent','sexual','murder','felony'] },
+  KY: { wait: 5,  ok: ['misdemeanor','class_d_felony_nonviolent'],                             no: ['violent','sexual','dui','murder'] },
+  AR: { wait: 5,  ok: ['misdemeanor','drug_possession','first_nonviolent_felony'],              no: ['violent','sexual','murder','dui'] },
+  LA: { wait: 5,  ok: ['misdemeanor','nonviolent_felony'],                                      no: ['violent','sexual','murder','trafficking'] },
+  // ── Southwest ────────────────────────────────────────────────────────────
+  TX: { wait: 2,  ok: ['misdemeanor','felony_c','drug_possession'],                             no: ['violent','sexual','murder'] },
+  AZ: { wait: 3,  ok: ['misdemeanor','drug_possession','nonviolent_felony'],                    no: ['violent','sexual','murder','dui'] },
+  NM: { wait: 4,  ok: ['misdemeanor','drug_possession','petty_misdemeanor'],                    no: ['violent','sexual','murder'] },
+  OK: { wait: 5,  ok: ['misdemeanor','nonviolent_felony'],                                      no: ['violent','sexual','murder','trafficking'] },
+  // ── West ─────────────────────────────────────────────────────────────────
+  CA: { wait: 1,  ok: ['misdemeanor','felony_reduced','drug_possession'],                       no: ['sexual','murder'] },
+  WA: { wait: 3,  ok: ['misdemeanor','class_b_c_felony_nonviolent'],                           no: ['violent','sexual','murder','dui'] },
+  OR: { wait: 3,  ok: ['misdemeanor','drug_possession','class_c_felony'],                       no: ['violent','sexual','murder'] },
+  CO: { wait: 3,  ok: ['misdemeanor','drug_possession','class_4_5_6_felony'],                  no: ['violent','sexual','murder'] },
+  NV: { wait: 2,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','murder','dui'] },
+  ID: { wait: 5,  ok: ['misdemeanor','nonviolent_felony'],                                      no: ['violent','sexual','murder','dui'] },
+  MT: { wait: 5,  ok: ['misdemeanor'],                                                          no: ['violent','sexual','murder','felony'] },
+  WY: { wait: 5,  ok: ['misdemeanor'],                                                          no: ['violent','sexual','murder','felony'] },
+  UT: { wait: 3,  ok: ['misdemeanor','drug_possession','third_degree_felony'],                  no: ['violent','sexual','murder'] },
+  AK: { wait: 10, ok: ['misdemeanor'],                                                          no: ['violent','sexual','murder','felony','dui'] },
+  HI: { wait: 5,  ok: ['misdemeanor','nonviolent_felony'],                                      no: ['violent','sexual','murder'] },
+  // ── Midwest ──────────────────────────────────────────────────────────────
+  IL: { wait: 3,  ok: ['misdemeanor','drug_possession','nonviolent_felony'],                    no: ['violent','sexual','murder','dui'] },
+  OH: { wait: 3,  ok: ['misdemeanor','felony_4_5','drug_possession'],                          no: ['violent','sexual','murder','dui'] },
+  MI: { wait: 3,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','murder'] },
+  IN: { wait: 5,  ok: ['misdemeanor','class_d_felony'],                                        no: ['violent','sexual','murder','dui'] },
+  WI: { wait: 5,  ok: ['misdemeanor'],                                                          no: ['violent','sexual','murder','felony','dui'] },
+  MN: { wait: 2,  ok: ['misdemeanor','drug_possession','gross_misdemeanor'],                    no: ['violent','sexual','murder','felony'] },
+  IA: { wait: 8,  ok: ['misdemeanor'],                                                          no: ['violent','sexual','murder','felony'] },
+  MO: { wait: 3,  ok: ['misdemeanor','drug_possession','class_c_d_felony'],                    no: ['violent','sexual','murder'] },
+  KS: { wait: 3,  ok: ['misdemeanor','drug_possession','nonviolent_felony'],                    no: ['violent','sexual','murder','dui'] },
+  NE: { wait: 3,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','murder'] },
+  SD: { wait: 3,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','murder','felony'] },
+  ND: { wait: 3,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','murder'] },
+  // ── Northeast / Mid-Atlantic ──────────────────────────────────────────────
+  NY: { wait: 3,  ok: ['misdemeanor','drug_possession','felony_b_c_e_nonviolent'],             no: ['violent','sexual','murder'] },
+  PA: { wait: 10, ok: ['misdemeanor','summary_offense'],                                        no: ['violent','sexual','murder','felony','dui'] },
+  NJ: { wait: 6,  ok: ['misdemeanor','drug_possession','indictable_crime'],                    no: ['violent','sexual','murder'] },
+  CT: { wait: 3,  ok: ['misdemeanor','drug_possession','nonviolent_felony'],                    no: ['violent','sexual','murder'] },
+  RI: { wait: 5,  ok: ['misdemeanor'],                                                          no: ['violent','sexual','murder','felony'] },
+  MA: { wait: 3,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','murder','dui'] },
+  VT: { wait: 5,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','murder','felony'] },
+  NH: { wait: 5,  ok: ['misdemeanor'],                                                          no: ['violent','sexual','murder','felony','dui'] },
+  ME: { wait: 3,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','murder'] },
+  MD: { wait: 3,  ok: ['misdemeanor','drug_possession','nonviolent_felony'],                    no: ['violent','sexual','murder','dui'] },
+  DE: { wait: 5,  ok: ['misdemeanor','drug_possession'],                                        no: ['violent','sexual','murder','felony'] },
+  DC: { wait: 8,  ok: ['misdemeanor'],                                                          no: ['violent','sexual','murder','felony','dui'] },
+};
+
 export { classifyCharge, getEligibility, STATE_RULES, DEFAULT_RULES } from './rules.js';

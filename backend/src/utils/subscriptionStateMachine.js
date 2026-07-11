@@ -145,6 +145,15 @@ export function getTier(sub) {
  * @param {string} feature — feature key from FEATURE_TIERS
  * @returns {boolean}
  */
+
+// ── Performance cache — computed once at module load ────────────────────────
+// Avoids O(n) Object.entries filter on every free/degraded tier gate check
+const _FREE_FEATURES_CACHE = new Set(
+  Object.entries(FEATURE_TIERS)
+    .filter(([, v]) => Array.isArray(v) && v.includes('free'))
+    .map(([k]) => k)
+);
+
 export function canAccessFeature(sub, feature) {
   // Resolve alias → canonical name
   const f = FEATURE_ALIASES[feature] || feature;
@@ -154,10 +163,7 @@ export function canAccessFeature(sub, feature) {
 
   // Degraded/free users only get always-free features
   if (level === 'degraded' || level === 'free') {
-    const freeFeatures = Object.entries(FEATURE_TIERS)
-      .filter(([k,v]) => Array.isArray(v) && v.includes('free'))
-      .map(([k]) => k);
-    return freeFeatures.includes(f);
+    return _FREE_FEATURES_CACHE.has(f);
   }
 
   // Full/grace access: check tier
