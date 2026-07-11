@@ -157,8 +157,8 @@ export default function OnboardingScreen({ route, navigation }: ScreenProps) {
 
   const browseNow = async () => {
     if (selectedState) { await setUserState(selectedState).catch(()=>{}); }
-      AsyncStorage.setItem('onboarding_done', 'true');
-    await AsyncStorage.setItem('has_browsed', 'true');
+      AsyncStorage.setItem('onboarding_done', 'true').catch(() => {});
+    await AsyncStorage.setItem('has_browsed', 'true').catch(() => {});
     setAppAuth('browsing');
   };
 
