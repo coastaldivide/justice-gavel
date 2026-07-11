@@ -1363,6 +1363,7 @@ CREATE TABLE IF NOT EXISTS firm_members (
   firm_role    TEXT   NOT NULL DEFAULT 'member',
   invited_by   BIGINT,
   active       BOOLEAN DEFAULT TRUE,
+  status       TEXT DEFAULT 'active',  -- text alias for active flag used in some routes
   joined_at    TIMESTAMPTZ DEFAULT NOW(),
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
