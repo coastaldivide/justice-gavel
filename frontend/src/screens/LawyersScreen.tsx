@@ -808,7 +808,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
                   key={n.key}
                   style={[styles.needBtn, { backgroundColor: n.bg, borderColor: n.color + '55' }]}
                   onPress={async () => { try {
-                    await AsyncStorage.setItem('lawyers_need_shown', 'true');
+                    await AsyncStorage.setItem('lawyers_need_shown', 'true').catch(() => {});
                     setShowNeedModal(false);
                     // Route specialty needs to dedicated screens first
                     if (n.key === 'Real Estate') {

@@ -58,7 +58,7 @@ export async function isOnline(): Promise<boolean> {
 
 export async function markOnline(): Promise<void> {
   try {
-    await AsyncStorage.setItem(CACHE_KEYS.lastOnlineAt, new Date().toISOString());
+    await AsyncStorage.setItem(CACHE_KEYS.lastOnlineAt, new Date().toISOString()).catch(() => {});
   } catch {}
 }
 
@@ -188,8 +188,8 @@ export async function clearAllCaches(): Promise<void> {
 // ── Bail agent cache (7-day TTL) ─────────────────────────────────────────────
 export async function cacheBailAgents(agents: unknown[]): Promise<void> {
   try {
-    await AsyncStorage.setItem(CACHE_KEYS.bailAgents,   JSON.stringify(agents));
-    await AsyncStorage.setItem(CACHE_KEYS.bailAgentsAt, String(Date.now()));
+    await AsyncStorage.setItem(CACHE_KEYS.bailAgents,   JSON.stringify(agents)).catch(() => {});
+    await AsyncStorage.setItem(CACHE_KEYS.bailAgentsAt, String(Date.now())).catch(() => {});
   } catch {}
 }
 
@@ -207,8 +207,8 @@ export async function getCachedBailAgents(): Promise<{ agents: unknown[]; age: s
 // ── Resources cache (1-day TTL) ───────────────────────────────────────────────
 export async function cacheResources(items: unknown[]): Promise<void> {
   try {
-    await AsyncStorage.setItem(CACHE_KEYS.resources,   JSON.stringify(items));
-    await AsyncStorage.setItem(CACHE_KEYS.resourcesAt, String(Date.now()));
+    await AsyncStorage.setItem(CACHE_KEYS.resources,   JSON.stringify(items)).catch(() => {});
+    await AsyncStorage.setItem(CACHE_KEYS.resourcesAt, String(Date.now())).catch(() => {});
   } catch {}
 }
 
@@ -227,10 +227,7 @@ const TIMELINE_TTL = 1 * 60 * 60 * 1000; // 1 hour
 
 export async function cacheTimeline(caseId: number, events: unknown[]): Promise<void> {
   try {
-    await AsyncStorage.setItem(
-      `jg_timeline_${caseId}`,
-      JSON.stringify({ data: events, ts: Date.now() })
-    );
+    await AsyncStorage.setItem(`jg_timeline_${caseId}`,JSON.stringify({ data: events, ts: Date.now() })).catch(() => {});
   } catch {}
 }
 
@@ -253,10 +250,7 @@ export async function cacheSearch(
   query: string, results: unknown
 ): Promise<void> {
   try {
-    await AsyncStorage.setItem(
-      'jg_last_search',
-      JSON.stringify({ query, results, ts: Date.now() })
-    );
+    await AsyncStorage.setItem('jg_last_search',JSON.stringify({ query, results, ts: Date.now() })).catch(() => {});
   } catch {}
 }
 
@@ -278,7 +272,7 @@ export async function saveRecentSearch(query: string): Promise<void> {
     const raw = await AsyncStorage.getItem('jg_recent_searches');
     const history: string[] = raw ? JSON.parse(raw) : [];
     const deduped = [query, ...history.filter(q => q !== query)].slice(0, 5);
-    await AsyncStorage.setItem('jg_recent_searches', JSON.stringify(deduped));
+    await AsyncStorage.setItem('jg_recent_searches', JSON.stringify(deduped)).catch(() => {});
   } catch {}
 }
 

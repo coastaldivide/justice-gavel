@@ -448,7 +448,8 @@ router.get('/progress/me', authRequired, async (req, res) => {
 
 // ── GET /lessons/streak/:userId — current streak and stats ───────────────
 router.get('/streak/:userId', authRequired, async (req, res) => {
-  const uid = parseInt(req.params.userId, 10) || req.user.id;
+  const _rawUid = parseInt(req.params.userId, 10);
+  const uid    = isNaN(_rawUid) || _rawUid <= 0 ? req.user.id : _rawUid;
   try {
     const db = await getDb();
     const progress = await db.all(

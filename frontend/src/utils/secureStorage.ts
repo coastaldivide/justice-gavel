@@ -11,7 +11,7 @@
  *     Android — Android Keystore System (hardware-backed on API 23+)
  *
  * USAGE:
- *   Replace: await AsyncStorage.setItem('token', jwt)
+ *   Old pattern: AsyncStorage.setItem('token', jwt)
  *   With:    await setSecure('token', jwt)
  *
  *   Replace: await AsyncStorage.getItem('token')

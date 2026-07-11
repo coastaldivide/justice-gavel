@@ -54,7 +54,7 @@ export default function FirmPublicProfileScreen() {
   };
 
   const contactFirm = () => {
-    navigation.navigate('Lawyers', { prefilterFirmId: firmId });
+    navigation.navigate('LawyersTab');  // Opens the Lawyers tab to find attorneys
   };
 
   if (loading) return (
