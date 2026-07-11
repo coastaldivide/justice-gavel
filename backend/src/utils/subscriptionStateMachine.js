@@ -46,29 +46,63 @@ const FEATURE_TIERS = {
   emergency:            ['free','legal_radar','advisor','legal_pro','esquire'],
   crisis:               ['free','legal_radar','advisor','legal_pro','esquire'],
   attorney_search:      ['free','legal_radar','advisor','legal_pro','esquire'],
-  bondsman_search:      ['free','legal_radar','advisor','legal_pro','esquire'],
+  bondsman_search:      ['legal_radar','advisor','legal_pro','esquire'],
   // Radar+ features
   ai_chat:              ['legal_radar','advisor','legal_pro','esquire'],
   ai_chat_daily_limit:  3,  // legal_radar gets 3/day
   case_tracking:        ['legal_radar','advisor','legal_pro','esquire'],
-  expungement_check:    ['legal_radar','advisor','legal_pro','esquire'],
+  expungement_check:    ['free','legal_radar','advisor','legal_pro','esquire'],
   research:             ['legal_radar','advisor','legal_pro','esquire'],
   // Advisor+ features
   attorney_match:       ['advisor','legal_pro','esquire'],
   ai_chat_10perday:     ['advisor','legal_pro','esquire'],
-  motions:              ['advisor','legal_pro','esquire'],
+  motions:              ['legal_pro','esquire'],
   documents:            ['advisor','legal_pro','esquire'],
   // Legal Pro+ features
   video_consultation:   ['legal_pro','esquire'],
   unlimited_ai:         ['legal_pro','esquire'],
   matter_intelligence:  ['legal_pro','esquire'],
-  firm_platform:        ['legal_pro','esquire'],
+  firm_platform:        ['esquire'],
   conflict_check:       ['legal_pro','esquire'],
   // Esquire only
   priority_support:     ['esquire'],
   white_glove:          ['esquire'],
   api_access:           ['esquire'],
 };
+
+// ── Feature name aliases ─────────────────────────────────────────────────────
+// Canonical names in FEATURE_TIERS are short. Aliases let routes and
+// frontend use descriptive names without breaking the state machine.
+const FEATURE_ALIASES = {
+  // Free-tier aliases
+  know_your_rights:          'rights_cards',
+  immigration_rights:        'rights_cards',
+  emergency_contacts:        'emergency',
+  crisis_resources:          'crisis',
+  expungement_checker:       'expungement_check',
+  child_support_calculator:  'bail_calculator',   // same free tier
+  bail_info:                 'bail_calculator',
+
+  // Legal Radar aliases
+  bondsman_directory:        'bondsman_search',
+
+  // Advisor aliases
+  attorney_matching:         'attorney_match',
+
+  // Legal Pro aliases
+  ai_legal_chat:             'ai_chat',
+  document_scanner:          'documents',
+  case_timeline:             'case_tracking',
+  matter_management:         'case_tracking',
+  petition_drafting:         'motions',
+  legal_research:            'research',
+
+  // Esquire aliases
+  firm_management:           'firm_platform',
+  white_glove_support:       'white_glove',
+};
+
+
 
 /**
  * Returns the effective access level given a subscription row.
@@ -112,6 +146,9 @@ export function getTier(sub) {
  * @returns {boolean}
  */
 export function canAccessFeature(sub, feature) {
+  // Resolve alias → canonical name
+  const f = FEATURE_ALIASES[feature] || feature;
+
   const level = getAccessLevel(sub);
   const tier  = getTier(sub);
 
@@ -120,11 +157,11 @@ export function canAccessFeature(sub, feature) {
     const freeFeatures = Object.entries(FEATURE_TIERS)
       .filter(([k,v]) => Array.isArray(v) && v.includes('free'))
       .map(([k]) => k);
-    return freeFeatures.includes(feature);
+    return freeFeatures.includes(f);
   }
 
   // Full/grace access: check tier
-  const allowed = FEATURE_TIERS[feature];
+  const allowed = FEATURE_TIERS[f];
   if (!allowed) return false;
   if (!Array.isArray(allowed)) return false;
   return allowed.includes(tier);
