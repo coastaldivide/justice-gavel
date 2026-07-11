@@ -26,7 +26,7 @@ import { auditLog }     from '../utils/auditLog.js';
 import logger           from '../utils/logger.js';
 
 const router   = Router();
-const DAILY_KEY = process.env.DAILY_API_KEY;
+const DAILY_KEY = process.env.DAILY_API_KEY || null;  // null → 503 handled in POST /session
 const DAILY_BASE = 'https://api.daily.co/v1';
 
 async function dailyRequest(method, path, body = null) {
@@ -48,12 +48,18 @@ async function dailyRequest(method, path, body = null) {
 
 // ── POST /video/session — create a video consultation room ─────────────────
 router.post('/session', authRequired, async (req, res) => {
+  try {
   const { matter_id, attorney_id, scheduled_for, topic } = req.body;
 
   // Feature gate — Legal Pro and above
   const db  = await getDb();
   const sub = await db.get(`SELECT tier FROM user_subscriptions WHERE user_id = ?`, [req.user.id])
               .catch(() => null);
+  if (!process.env.DAILY_API_KEY) {
+    logger.warn('DAILY_API_KEY not set — video sessions disabled');
+    return res.status(503).json({ error: 'Video consultations temporarily unavailable.' });
+  }
+
   if (!canAccessFeature(sub?.tier, 'video_consultation')) {
     return res.status(403).json({
       error:    'Video consultations require a Legal Pro or Esquire subscription.',

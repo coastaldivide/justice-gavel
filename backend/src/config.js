@@ -162,7 +162,7 @@ export const ALL_ENV_VARS = {
 
         
   // ── SendGrid ─────────────────────────────────────────────────────────────
-  RESEND_API_KEY:         process.env.RESEND_API_KEY           || '',
+  RESEND_API_KEY:         process.env.RESEND_API_KEY           || null,  // null disables email
   ALERT_EMAIL_FROM:         process.env.ALERT_EMAIL_FROM           || 'alerts@justicegavel.app',
 
   // ── Google / Maps ────────────────────────────────────────────────────────

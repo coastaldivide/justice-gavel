@@ -238,15 +238,15 @@ export default function ChildSupportScreen({ navigation }: any) {
             <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.combined)}</Text>
           </View>
           <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Base obligation ({children} child{parseInt(children) > 1 ? 'ren' : ''})</Text>
+            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Base obligation ({children} child{Number(children) > 1 ? 'ren' : ''})</Text>
             <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.baseObligation)}/mo</Text>
           </View>
           <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Parent 1 share ({Math.round(parseFloat(custody || '70'))}% custody)</Text>
+            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Parent 1 share ({Math.round(Number(custody) || 70)}% custody)</Text>
             <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.parent1Obligation)}/mo</Text>
           </View>
           <View style={[s.resultRow, { borderBottomColor: COLORS.border }]}>
-            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Parent 2 share ({100 - Math.round(parseFloat(custody || '70'))}% custody)</Text>
+            <Text style={[s.resultLabel, { color: COLORS.textSecond }]} maxFontSizeMultiplier={1.4}>Parent 2 share ({100 - (Math.round(Number(custody) || 70))}% custody)</Text>
             <Text style={[s.resultValue, { color: COLORS.textPrimary }]} maxFontSizeMultiplier={1.4}>{fmt(result.parent2Obligation)}/mo</Text>
           </View>
 

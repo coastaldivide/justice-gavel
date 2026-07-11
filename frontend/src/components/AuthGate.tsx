@@ -71,8 +71,8 @@ export function useAuthGate(navigation: any, quickMode = false) {
         password: pin + pin, // double PIN as password (6+ chars)
         displayName: undefined,
       });
-      await setToken(res.data.token);
-      try { await AsyncStorage.setItem('user', JSON.stringify(res.data.user)); } catch {} // storage failure is non-fatal
+      await setToken(res.data?.token);
+      try { await AsyncStorage.setItem('user', JSON.stringify(res.data?.user)); } catch {} // storage failure is non-fatal
       setAppAuth('authed');
       setVisible(false);
       // Execute the pending action

@@ -210,7 +210,8 @@ export async function runHealthCheck() {
 // ── Start all watchdogs ────────────────────────────────────────────────────────
 
 async function sendSlackAlert(msg) {
-  const url = process.env.ALERT_WEBHOOK_URL;
+  const url = process.env.ALERT_WEBHOOK_URL || null;
+  if (!url) { return; }  // Slack webhook optional — silent skip
   if (!url) return;
   try {
     // 5s timeout — Slack webhook must not block self-healing watchdog

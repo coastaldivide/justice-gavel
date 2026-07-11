@@ -572,7 +572,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
     try {
       const lawyerIds = res.data?.slice(0, 10).map((l: Record<string, unknown>) => l.id);
       const reviews = await Promise.allSettled(
-        lawyerIds.map((id: number) =>
+        (lawyerIds ?? []).map((id: number) =>
           api.get('/reviews/summary', { params: { entity_type:'lawyer', entity_id:id } })
             .then(r => [id, r.data] as [number, any])
         )

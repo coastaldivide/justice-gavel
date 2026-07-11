@@ -42,6 +42,7 @@ async function loadMatter(db, matterId, userId) {
   const memb = await getFirmMembership(db, userId);
   if (!memb) return { error:'403', memb:null, matter:null };
   const m = await db.get(
+  if (!m) return res.status(404).json({error: 'Not found'});
     `SELECT m.id, m.firm_id, m.title, m.vertical, m.evidence_score,
             m.vulnerability_level, m.time_pressure, m.status, m.matter_taxonomy AS taxonomy,
             m.jurisdiction, m.prior_adjudications, m.prior_appeals,

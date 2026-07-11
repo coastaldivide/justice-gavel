@@ -140,6 +140,7 @@ router.post('/entries', authRequired, timeLimiter, async (req, res) => {
     );
 
     const entry = await db.get('SELECT id, firm_id, matter_id, matter_table, user_id, entry_date, hours, rate_cents, narrative, task_code, activity_code, billing_status, invoice_id, created_at, updated_at FROM time_entries WHERE id=?', [r.lastID]);
+    if (!entry) return res.status(404).json({error: 'Not found'});
     res.json({ ...entry, amount_cents: Math.round((entry.hours || 0) * (entry.rate_cents || 0)) });
   } catch (e) {
     logger.error('[time/entries/create]', e.message);
@@ -255,6 +256,7 @@ router.put('/entries/:id', authRequired, async (req, res) => {
     params.push(safeInt(req.params.id));
     await db.run(`UPDATE time_entries SET ${updates.join(',')} WHERE id=?`, params);
     const updated = await db.get('SELECT id, firm_id, matter_id, matter_table, user_id, entry_date, hours, rate_cents, narrative, task_code, activity_code, billing_status, invoice_id, created_at, updated_at FROM time_entries WHERE id=?', [safeInt(req.params.id)]);
+    if (!updated) return res.status(404).json({error: 'Not found'});
     res.json({ ...updated, amount_cents: Math.round((updated.hours||0)*(updated.rate_cents||0)) });
   } catch (e) {
     res.status(500).json({ error: 'Could not update time entry.' });

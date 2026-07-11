@@ -417,13 +417,13 @@ export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
       `📄 ${analysis.filename} -- Discovery Analysis`,
       `\nSUMMARY\n${analysis.summary}`,
       analysis.key_facts?.length
-        ? `\nKEY FACTS\n${analysis.key_facts.map((f,i) => `${i+1}. ${f}`).join('\n')}`
+        ? `\nKEY FACTS\n${(analysis.key_facts ?? []).map((f,i) => `${i+1}. ${f}`).join('\n')}`
         : '',
       analysis.inconsistencies?.length
-        ? `\n⚠️ INCONSISTENCIES\n${analysis.inconsistencies.map((f,i) => `${i+1}. ${f}`).join('\n')}`
+        ? `\n⚠️ INCONSISTENCIES\n${(analysis.inconsistencies ?? []).map((f,i) => `${i+1}. ${f}`).join('\n')}`
         : '',
       analysis.questions?.length
-        ? `\nCROSS-EXAMINATION QUESTIONS\n${analysis.questions.map((f,i) => `${i+1}. ${f}`).join('\n')}`
+        ? `\nCROSS-EXAMINATION QUESTIONS\n${(analysis.questions ?? []).map((f,i) => `${i+1}. ${f}`).join('\n')}`
         : '',
     ].filter(Boolean).join('\n');
     try {

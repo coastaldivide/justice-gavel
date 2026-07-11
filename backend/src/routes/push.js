@@ -164,6 +164,7 @@ router.get('/preferences', authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const user = await db.get(
+    if (!user) return res.status(404).json({error: 'Not found'});
       `SELECT notif_court_reminders, notif_legal_tips, notif_arrest_alerts,
               notif_marketing, notif_checkin_reminders
        FROM users WHERE id=?`,

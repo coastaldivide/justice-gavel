@@ -35,6 +35,11 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 10_000) {
 
 import logger from '../utils/logger.js';
 
+// Google Calendar is optional — disabled if OAuth credentials missing
+const GCAL_ENABLED = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+if (!GCAL_ENABLED) console.warn('[googleCalendar] Credentials missing — calendar sync disabled');
+
+
 /**
  * Create a Google Calendar event for a court date.
  * @param {string} refreshToken  — attorney's stored Google OAuth refresh token
@@ -60,8 +65,8 @@ export async function createCourtDateEvent(refreshToken, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id:     process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        client_id:     process.env.GOOGLE_CLIENT_ID     || '',
+        client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
         refresh_token: refreshToken,
         grant_type:    'refresh_token',
       }),
@@ -134,8 +139,8 @@ export async function updateCourtDateEvent(refreshToken, eventId, updates) {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id:     process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        client_id:     process.env.GOOGLE_CLIENT_ID     || '',
+        client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
         refresh_token: refreshToken,
         grant_type:    'refresh_token',
       }),
@@ -170,8 +175,8 @@ export async function deleteCourtDateEvent(refreshToken, eventId) {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id:     process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        client_id:     process.env.GOOGLE_CLIENT_ID     || '',
+        client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
         refresh_token: refreshToken,
         grant_type:    'refresh_token',
       }),

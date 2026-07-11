@@ -936,6 +936,7 @@ const TAXONOMY_VERTICAL = {
 async function getMatter(db, matterId, firmId, userId = null) {
   // Try matter + vertical fields
   const m = await db.get(
+  if (!m) return res.status(404).json({error: 'Not found'});
     `SELECT m.id, m.firm_id, m.created_by, m.title, m.matter_type,
         m.practice_group, m.client_name, m.jurisdiction, m.status, m.priority,
         m.vertical, m.time_pressure, m.vulnerability_level,

@@ -354,6 +354,7 @@ router.put('/subscriptions/:id', authRequired, requireFirmRole('firm_admin'), as
     await db.run(`UPDATE webhook_subscriptions SET ${updates.join(',')} WHERE id=?`, params);
 
     const updated = await db.get('SELECT id, firm_id, name, url, events, active, last_triggered_at, failure_count, created_by, created_at, updated_at FROM webhook_subscriptions WHERE id=? LIMIT 1', [safeInt(req.params.id)]);
+    if (!updated) return res.status(404).json({error: 'Not found'});
     res.json({
       ...updated,
       events: (() => { try { return JSON.parse(updated.events); } catch { return []; } })(),

@@ -10,7 +10,10 @@
 import { Resend } from 'resend';
 import logger     from '../utils/logger.js';
 
-const resend    = new Resend(process.env.RESEND_API_KEY);
+if (!process.env.RESEND_API_KEY) {
+  console.warn('[email] RESEND_API_KEY missing — email disabled');
+}
+process.env.RESEND_API_KEY);
 const FROM      = process.env.SENDGRID_FROM_EMAIL || 'noreply@justicegavel.app';
 const FROM_NAME = 'Justice Gavel';
 const LIVE      = process.env.LIVE_EMAIL === 'true';

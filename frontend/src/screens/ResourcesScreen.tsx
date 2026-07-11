@@ -189,7 +189,7 @@ export default function ResourcesScreen(): React.JSX.Element {
       ) : (
         <FlatList
           keyboardShouldPersistTaps="handled"
-          data={filtered}
+          data={filtered ?? []}
           keyExtractor={i => String(i.id)}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}
           contentContainerStyle={{ paddingHorizontal:16, paddingBottom:24 }}

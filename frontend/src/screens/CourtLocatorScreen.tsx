@@ -67,7 +67,7 @@ export default function CourtLocatorScreen(): React.JSX.Element {
       const res = await api.get(endpoint);
       // Normalize federal courts to match courthouse schema
       const raw = res.data || [];
-      const normalized = courtMode === 'federal' ? raw.map((fc: Record<string, unknown>) => ({
+      const normalized = courtMode === 'federal' ? (raw ?? []).map((fc: Record<string, unknown>) => ({
         ...fc,
         name: fc.name,
         address: fc.address,

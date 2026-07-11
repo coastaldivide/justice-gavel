@@ -161,7 +161,7 @@ export default function FirmDiscoveryScreen() {
         <ActivityIndicator style={{ marginTop: 60 }} color={colors.blue} />
       ) : (
         <FlatList
-          data={firms}
+          data={firms ?? []}
           keyExtractor={item => String(item.id)}
           renderItem={renderFirm}
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}

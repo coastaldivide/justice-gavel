@@ -176,7 +176,7 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
       </View>
 
       <FlatList
-        data={grouped}
+        data={grouped ?? []}
         keyExtractor={item => item.type}
         contentContainerStyle={s.list}
         keyboardShouldPersistTaps="handled"

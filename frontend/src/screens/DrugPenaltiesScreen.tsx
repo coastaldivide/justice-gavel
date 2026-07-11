@@ -85,7 +85,7 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
     return () => { cancel = true; };
   }, [state, refreshTick]);
 
-  const offenseTypes = ['ALL', ...Array.from(new Set(penalties.map(p => p.offense_type)))];
+  const offenseTypes = ['ALL', ...Array.from(new Set((penalties ?? []).map(p => p.offense_type)))];
   const filtered = offenseFilter === 'ALL' ? penalties
     : penalties.filter(p => p.offense_type === offenseFilter);
 

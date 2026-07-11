@@ -733,6 +733,7 @@ async function runRuntimeSOC2Checks(db, firmId) {
 
   // CC6.1 — RBAC permissions seeded
   const rbacCount = await db.get('SELECT COUNT(*) as n FROM role_permissions').catch(() => ({ n: 0 }));
+  if (!rbacCount) return res.status(404).json({error: 'Not found'});
   checks.rbac_permissions_seeded = { pass: rbacCount.n > 0, value: rbacCount.n };
 
   // CC6.2 — SSO configured for firm
@@ -743,6 +744,7 @@ async function runRuntimeSOC2Checks(db, firmId) {
 
   // CC6.3 — Ethics wall system in use
   const wallCount = await db.get(
+  if (!wallCount) return res.status(404).json({error: 'Not found'});
     'SELECT COUNT(*) as n FROM ethics_wall_log WHERE firm_id=? AND action IN (\'set\',\'auto_set\')',
     [firmId]
   ).catch(() => ({ n: 0 }));
@@ -750,6 +752,7 @@ async function runRuntimeSOC2Checks(db, firmId) {
 
   // CC7.2 — Audit log in use
   const auditCount = await db.get(
+  if (!auditCount) return res.status(404).json({error: 'Not found'});
     'SELECT COUNT(*) as n FROM audit_log WHERE firm_id=?', [firmId]
   ).catch(() => ({ n: 0 }));
   checks.audit_log_active = { pass: auditCount.n > 0, value: `${auditCount.n} entries` };
@@ -768,6 +771,7 @@ async function runRuntimeSOC2Checks(db, firmId) {
 
   // CC2.1 — Conflict screening active
   const conflictCount = await db.get(
+  if (!conflictCount) return res.status(404).json({error: 'Not found'});
     'SELECT COUNT(*) as n FROM conflict_index WHERE firm_id=?', [firmId]
   ).catch(() => ({ n: 0 }));
   checks.conflict_screening = { pass: true, value: `${conflictCount.n} parties indexed` };

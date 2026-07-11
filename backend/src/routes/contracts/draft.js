@@ -158,6 +158,7 @@ router.get('/', authRequired, async (req, res) => {
 
     const rows  = await db.all(sql, params);
     const total = await db.get(
+    if (!total) return res.status(404).json({error: 'Not found'});
       'SELECT COUNT(*) as n FROM contracts WHERE user_id=?', [req.user.id]
     );
 
@@ -233,6 +234,7 @@ router.put('/:id', authRequired, async (req, res) => {
     );
 
     const updated = await db.get('SELECT id, user_id, contract_type, title, party_a, party_b, fields, draft, status, execution_date, expiry_date, renewal_date, value_cents, paid_cents, created_at, updated_at FROM contracts WHERE id=? LIMIT 1', [safeInt(req.params.id)]);
+    if (!updated) return res.status(404).json({error: 'Not found'});
     try { updated.fields = JSON.parse(updated.fields); } catch { updated.fields = {}; }
     res.json(updated);
   } catch (e) {

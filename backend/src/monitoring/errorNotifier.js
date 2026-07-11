@@ -43,7 +43,7 @@ function shouldAlert(code) {
 
 // ── Send email via SendGrid ───────────────────────────────────────────────────
 async function sendAlertEmail({ subject, body, to }) {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = process.env.RESEND_API_KEY || null;
   if (!apiKey) return;
 
   try {
@@ -65,7 +65,8 @@ async function sendAlertEmail({ subject, body, to }) {
 
 // ── SEV-1 Slack alert ───────────────────────────────────────────────────────
 async function sendSlackAlert(message) {
-  const url = process.env.ALERT_WEBHOOK_URL;
+  const url = process.env.ALERT_WEBHOOK_URL || null;
+  if (!url) { return; }  // Slack webhook optional — silent skip
   if (!url) return;
   try {
     await fetchNotify(url, {
@@ -78,7 +79,8 @@ async function sendSlackAlert(message) {
 
 // ── Webhook ping (BetterUptime, PagerDuty, Slack) ────────────────────────────
 async function pingWebhook(payload) {
-  const url = process.env.ALERT_WEBHOOK_URL;  // Slack/Discord/PagerDuty webhook
+  const url = process.env.ALERT_WEBHOOK_URL || null;
+  if (!url) { return; }  // Slack webhook optional — silent skip  // Slack/Discord/PagerDuty webhook
   if (!url) return;
   try {
     await fetchNotify(url, {

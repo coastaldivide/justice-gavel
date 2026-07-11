@@ -233,7 +233,7 @@ export default function PaymentsScreen({ route, navigation }: ScreenProps): Reac
       if (res.data?.clientSecret) {
         // Native Stripe PaymentSheet — no browser redirect needed
         const { error: initError } = await initPaymentSheet({
-          paymentIntentClientSecret: res.data.clientSecret,
+          paymentIntentClientSecret: res.data?.clientSecret,
           merchantDisplayName: 'Justice Gavel',
           allowsDelayedPaymentMethods: false,
         });
