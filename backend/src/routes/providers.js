@@ -70,7 +70,15 @@ async function openDb() {
 
 async function findNearestCity(pdb, lat, lng) {
   const cities = await pdb.all(
-    'SELECT city, AVG(lat) as clat, AVG(lng) as clng FROM lawyers GROUP BY city'
+    'SELECT l.*,
+       COALESCE(r.avg_rating, 0) as avg_rating,
+       COALESCE(r.review_count, 0) as review_count,
+       l.free_consultation,
+       l.languages_spoken city, AVG(lat) as clat, AVG(lng) as clng FROM lawyers l
+       LEFT JOIN (
+         SELECT provider_id, AVG(rating) as avg_rating, COUNT(*) as review_count
+         FROM reviews WHERE rating IS NOT NULL GROUP BY provider_id
+       ) r ON r.provider_id = l.id GROUP BY city'
   );
   let best = null;
   let bestDist = Infinity;
@@ -401,6 +409,49 @@ router.get('/coverage', async (req, res) =>{
 
   } catch (_e) {
     res.status(500).json({ error: 'Internal server error.', code: 'server_error' });
+  }
+});
+
+
+// ── GET /providers/:id/reviews ────────────────────────────────────────────
+router.get('/:id/reviews', apiLimiter, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'Invalid provider id' });
+  try {
+    const db = await getDb();
+    const reviews = await db.all(
+      `SELECT id, rating, comment, created_at
+       FROM reviews WHERE provider_id = ? ORDER BY created_at DESC LIMIT 50`,
+      [id]
+    ).catch(() => []);
+    const avg = reviews.length
+      ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10
+      : null;
+    return res.json({ provider_id: id, avg_rating: avg, count: reviews.length, reviews });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not fetch reviews' });
+  }
+});
+
+// ── POST /providers/:id/reviews — submit a rating ─────────────────────────
+router.post('/:id/reviews', authRequired, async (req, res) => {
+  const id     = parseInt(req.params.id, 10);
+  const rating = parseInt(req.body.rating, 10);
+  const comment = (req.body.comment || '').slice(0, 1000);
+  if (!id || isNaN(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: 'provider_id and rating 1-5 required' });
+  }
+  try {
+    const db = await getDb();
+    await db.run(
+      `INSERT INTO reviews (provider_id, user_id, rating, comment, created_at)
+       VALUES (?,?,?,?,NOW())
+       ON CONFLICT (provider_id, user_id) DO UPDATE SET rating=?, comment=?, created_at=NOW()`,
+      [id, req.user.id, rating, comment, rating, comment]
+    );
+    return res.status(201).json({ submitted: true });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not submit review' });
   }
 });
 

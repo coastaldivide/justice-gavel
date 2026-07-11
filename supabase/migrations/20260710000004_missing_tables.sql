@@ -1453,3 +1453,146 @@ ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS military_service_ba
 ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS government_employment_bar TEXT;
 ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS security_clearance_revoked TEXT;
 ALTER TABLE collateral_consequences ADD COLUMN IF NOT EXISTS drivers_license_suspended TEXT;
+
+-- ── Seed 20 lessons for the Justice Gavel education module ────────────────
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+
+('Miranda Rights: What They Mean and When They Apply',
+ 'know_your_rights', 
+ 'When police arrest you, they must read you the Miranda warning before any custodial interrogation. Your Miranda rights are: (1) You have the right to remain silent. (2) Anything you say can and will be used against you in a court of law. (3) You have the right to an attorney. (4) If you cannot afford an attorney, one will be appointed for you. Key fact: Miranda rights only apply during custodial interrogation — when you are both in custody AND being questioned. If you are not under arrest, police do not have to read you Miranda. What to do: Say clearly "I am invoking my right to remain silent and my right to counsel." Then stop talking. Do not explain yourself. Do not argue. Just stop talking.',
+ 'beginner', 8, 10)
+
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Can Police Search My Car?',
+ 'know_your_rights',
+ 'Police need either your consent, a warrant, or a recognized exception to search your vehicle. Exceptions include: (1) Probable cause — if police smell marijuana or see contraband in plain view; (2) Search incident to arrest — if you are arrested, police may search the immediate area; (3) Inventory search — after impoundment. Your rights: You can refuse consent to a search. Say clearly: "I do not consent to a search of my vehicle." This refusal cannot be used against you. Even if police search anyway, a refusal creates a record that may help suppress evidence later. Do not physically resist. If a K9 is used, the dog''s alert alone can establish probable cause in most states.',
+ 'beginner', 6, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('What Happens at Arraignment',
+ 'court_process',
+ 'An arraignment is usually your first formal court appearance after arrest, typically within 24-72 hours. What happens: (1) You are formally informed of the charges against you; (2) You enter a plea — guilty, not guilty, or no contest; (3) The judge decides on bail. What to do: In almost all cases, plead NOT GUILTY at arraignment. This preserves all your rights and gives your attorney time to review the case. Pleading guilty at arraignment gives up the right to negotiate, suppress evidence, or challenge the charges. You can always change your plea later. Do not plead guilty at arraignment without first consulting an attorney.',
+ 'beginner', 5, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('How Bail Is Set',
+ 'bail',
+ 'Bail is money paid to the court as a guarantee you will appear for future hearings. The judge sets bail at arraignment based on: (1) Severity of the charge; (2) Your criminal history; (3) Flight risk — do you have ties to the community, employment, family?; (4) Danger to the community; (5) Your financial resources. Types of release: (a) Own recognizance (OR) — released on your promise to appear, no money required; (b) Cash bail — you or family pay the full amount; (c) Bond through a bondsman — you pay 10% premium, bondsman guarantees the rest; (d) Property bond — real estate as collateral. If you cannot afford bail: Request a bail reduction hearing. Show your ties to the community, employment, and family. Get an attorney to argue for lower bail.',
+ 'beginner', 7, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Understanding a Plea Deal',
+ 'court_process',
+ 'About 97% of criminal convictions come from plea deals, not trials. A plea deal is an agreement where you plead guilty to a lesser charge or receive a lighter sentence in exchange for avoiding trial. Pros: Certainty, less severe sentence than risking trial, case resolved faster. Cons: Gives up right to trial, creates criminal record, may have collateral consequences (immigration, employment, housing). Key points: (1) You are never required to accept a plea deal; (2) The prosecutor must honor a deal they make in writing; (3) A judge can reject a plea deal but usually accepts it; (4) You have the right to a trial by jury if you reject all plea deals. Always review a plea deal with your attorney before accepting.',
+ 'intermediate', 10, 20)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Expungement: Clearing Your Record',
+ 'expungement',
+ 'Expungement removes arrests or convictions from your public criminal record. After expungement, you can legally say you were not arrested or convicted (with some exceptions). Who can get expungement: Requirements vary by state, but generally — first-time offenders, non-violent offenses, completed sentence and probation, waited the required time period (often 1-5 years). What is never expungeable: Most violent felonies, sex offenses, murder. Benefits: Employment background checks, housing applications, professional licenses, and personal privacy. Steps: (1) Check your state''s eligibility rules; (2) Obtain certified court records; (3) File the petition with the court; (4) Attend a hearing (sometimes); (5) If granted, notify relevant agencies.',
+ 'beginner', 8, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Bail Bondsman: How It Works',
+ 'bail',
+ 'A bail bondsman (or bail bond agent) posts bail on your behalf in exchange for a non-refundable premium — typically 10% of the total bail amount. Example: If bail is $10,000, you pay the bondsman $1,000. The bondsman posts the full $10,000 with the court. You must attend all court dates. If you fail to appear, the bondsman has the right to find you and return you to custody. They may hire a bounty hunter. The $1,000 premium is gone regardless of outcome. Collateral: The bondsman may require collateral — property, car, or co-signer — especially for large bail amounts. Always get a receipt and keep the bondsman''s contact number. Missing court is a serious additional crime.',
+ 'beginner', 6, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Probation: Rules and Consequences',
+ 'supervision',
+ 'Probation is a court-ordered supervision program as an alternative to (or after) incarceration. Common conditions include: regular check-ins with a probation officer, drug testing, travel restrictions, no new arrests, community service, paying fines and restitution, maintaining employment or school. Consequences of violating probation: The court can revoke probation and impose the original jail sentence. This is called a probation violation or "VOP." If you are accused of a violation: You have the right to a hearing. The standard of proof is lower than a criminal trial (preponderance of evidence, not beyond reasonable doubt). Contact your attorney immediately. Do not wait. Common violations that lead to revocation: positive drug tests, missing check-ins, new criminal charges, leaving the jurisdiction.',
+ 'intermediate', 9, 20)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Know Your Rights with ICE',
+ 'immigration',
+ 'If ICE approaches you: (1) Do not run. Do not physically resist. (2) Stay calm and ask: "Am I free to go?" If yes, walk away calmly. (3) If not free to go, say: "I am exercising my right to remain silent." (4) Do not answer questions about your birthplace, citizenship status, or how you entered the US. At your home: You do NOT have to open the door. Ask through the door: "Do you have a judicial warrant?" A deportation order is NOT a judicial warrant. Only a warrant signed by a judge allows officers to enter your home without consent. At work or in public: You may refuse to answer questions. Keep a lawyer''s phone number memorized or written on your arm. You have the right to make a phone call after arrest.',
+ 'beginner', 8, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Domestic Violence: Legal Protections',
+ 'domestic_violence',
+ 'If you are experiencing domestic violence, legal protections include: (1) Emergency Protective Order (EPO) — police can issue this at the scene, usually lasts 3-7 days; (2) Temporary Restraining Order (TRO) — obtained at court, lasts until hearing; (3) Permanent Protective Order — issued after a hearing, can last years. How to get a protective order: Go to your local courthouse (civil or family court). You do not need an attorney. File a petition describing the abuse. A judge can issue an emergency order the same day without notifying the abuser. The abuser is then served and a hearing scheduled. Safety planning: Create a go-bag with ID, medication, money, and important documents. Memorize a safe number. Tell a trusted person your plan. National DV Hotline: 1-800-799-7233.',
+ 'beginner', 10, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Drug Charges: Understanding the Law',
+ 'drug_offenses',
+ 'Drug charges range from simple possession to trafficking, with dramatically different penalties. Key distinctions: (1) Possession — having a controlled substance for personal use; (2) Possession with intent to distribute — larger quantities, packaging materials, or messages suggesting sales; (3) Distribution/trafficking — selling or transporting. Sentence factors: Type of drug (Schedule I-V), weight/quantity, prior record, proximity to school zones. Defenses: Illegal search (Fourth Amendment), chain of custody issues, actual innocence, lack of knowledge. Diversion programs: Many states offer first-time offenders drug court or treatment programs that result in dismissal. Ask your attorney about eligibility. Marijuana: Even where state law has changed, federal law still classifies marijuana as Schedule I. Be aware of where you are.',
+ 'intermediate', 10, 20)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Finding a Public Defender',
+ 'getting_help',
+ 'If you cannot afford a private attorney, you have a constitutional right to a free public defender (Gideon v. Wainwright, 1963). How to get one: At your first court appearance (arraignment), tell the judge you cannot afford an attorney and request a public defender. You may need to complete a financial affidavit proving your income. Public defenders are real lawyers: They are licensed attorneys. Many are experienced and dedicated advocates. The challenge is caseload — public defenders often handle hundreds of cases. How to work effectively with your PD: Respond to every call immediately. Write down everything that happened. Bring all documents to meetings. Be honest — attorney-client privilege protects what you say. If you have a conflict with your PD, you can request a different one, but this is not always granted.',
+ 'beginner', 7, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Collateral Consequences of a Criminal Record',
+ 'expungement',
+ 'A criminal conviction does not end when your sentence ends. Collateral consequences follow you for years or permanently. Employment: Most employers run background checks. Many states have "ban the box" laws limiting when employers can ask about criminal history. Housing: Landlords and public housing authorities can deny applications based on criminal records. Professional licenses: Many licenses (nursing, law, teaching, real estate) require disclosure and may be denied or revoked. Immigration: Criminal convictions can trigger deportation, bar re-entry, or affect naturalization — even for lawful permanent residents. Voting rights: Vary by state. Some restore rights automatically after sentence; others require a process. Child custody: Courts consider criminal history in custody decisions. Student aid: Drug convictions can affect federal financial aid eligibility.',
+ 'intermediate', 12, 20)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Preliminary Hearings vs Grand Jury',
+ 'court_process',
+ 'After arrest for a felony, the prosecution must show there is enough evidence to proceed to trial. They do this through either a preliminary hearing or a grand jury. Preliminary hearing: An open hearing before a judge. Both sides present evidence. The defendant can cross-examine witnesses. You have the right to be present. Grand jury: A secret proceeding. The defendant has no right to be present or present evidence. The prosecutor controls the process. Federal courts use grand juries for felonies. State courts vary. What this means for you: At a preliminary hearing, your attorney can challenge evidence, create a record for trial, and sometimes get charges reduced or dismissed. Do not waive a preliminary hearing without your attorney''s advice.',
+ 'advanced', 15, 30)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Child Support: How It Works',
+ 'family_law',
+ 'Child support is money paid by a non-custodial parent to help cover a child''s expenses. How it is calculated: Most states use an income shares model (both parents'' incomes considered) or a percentage of income model. Courts also consider: number of children, custody arrangement, childcare costs, health insurance, and special needs. Getting an order: Either parent can file for child support through the family court or through the state child support agency (free). Modifying support: Either parent can request a modification if circumstances change significantly (job loss, income increase, child''s needs change). Enforcing support: The state can enforce through wage garnishment, tax refund intercept, license suspension, and contempt of court. If you owe child support: Contact the child support agency immediately if you cannot pay. Arrears grow with interest.',
+ 'beginner', 9, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('The Fourth Amendment: Search and Seizure',
+ 'know_your_rights',
+ 'The Fourth Amendment protects you against unreasonable searches and seizures by government officials. What police need to search: Generally a warrant based on probable cause, signed by a judge. Exceptions to the warrant requirement: (1) Consent — you agree to the search; (2) Plain view — contraband is visible without any search; (3) Search incident to lawful arrest; (4) Exigent circumstances — emergency, hot pursuit; (5) Automobile exception — probable cause to search a vehicle; (6) Stop and frisk (Terry stop) — reasonable suspicion of criminal activity and armed. If your rights were violated: Evidence obtained through an illegal search may be suppressed (excluded) from trial through a motion to suppress. This is the "exclusionary rule." Tell your attorney about any search immediately.',
+ 'intermediate', 12, 20)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Mandatory Minimums and Sentencing Guidelines',
+ 'sentencing',
+ 'Mandatory minimum sentences are fixed prison terms required by law for certain crimes, regardless of individual circumstances. The judge has no discretion to sentence below the minimum. Common mandatory minimums: Drug trafficking (5-10 years for certain quantities), firearms offenses (additional years), certain sex offenses, repeat felony offenders (three strikes). Federal sentencing guidelines: A point system that calculates a recommended sentence range based on offense level and criminal history. Judges can depart from guidelines in limited circumstances. Strategies to reduce sentence: Cooperation with prosecutors (5K1 motion), safety valve provision for first-time drug offenders, substantial assistance. Your attorney should review all potential mandatory minimums before you decide how to proceed.',
+ 'advanced', 15, 30)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Bail Reform: Know Your State',
+ 'bail',
+ 'Several states have eliminated or significantly reformed cash bail. New Jersey eliminated cash bail for most defendants in 2017. New York reformed bail laws significantly in 2019-2020. California passed AB-1481 expanding OR release. Illinois ended cash bail in 2023 under the SAFE-T Act. What this means: In reform states, judges focus on risk assessment rather than ability to pay. You may be released on conditions rather than cash. For defendants: Even in reform states, serious charges still lead to detention. Always attend all court dates — your release conditions depend on it. For non-reform states: Cash bail remains the primary mechanism. The bail calculator in this app can help estimate your costs.',
+ 'intermediate', 8, 20)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Understanding Probation Check-Ins',
+ 'supervision',
+ 'Regular check-ins with your probation officer are one of the most important conditions of probation. What to expect: Scheduled meetings (weekly, monthly, or quarterly depending on your case), drug tests, verification of employment and address, review of any police contact. How to succeed: Show up on time. Notify your PO immediately of any changes — address, job, travel plans. Do not miss a single check-in without calling ahead. Bring required documentation. Be honest — lying to a PO is itself a violation. Using the Justice Gavel check-in tool: Use the app to log your check-ins and set reminders before each due date. If you miss a scheduled check-in, contact your PO and your attorney the same day.',
+ 'beginner', 6, 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO lessons (title, category, body, difficulty, duration_min, points) VALUES
+('Federal vs State Criminal Charges',
+ 'court_process',
+ 'The same act can sometimes be charged in both federal and state court without violating double jeopardy (the "dual sovereignty" doctrine). Federal charges: Prosecuted by US Attorneys in federal district court. Federal cases often involve: drug trafficking across state lines, bank fraud, tax crimes, immigration offenses, firearms by prohibited persons, cybercrimes. Federal sentences are generally longer. Parole does not exist in the federal system — you serve at least 85% of your sentence. State charges: Prosecuted by district attorneys or state attorneys. Most crimes (assault, murder, DUI, robbery, possession) are state crimes. If you face both: Do not make any statement to any law enforcement without an attorney present. The two cases may move on different timelines. Evidence from one case can be used in the other.',
+ 'advanced', 14, 30)
+ON CONFLICT DO NOTHING;

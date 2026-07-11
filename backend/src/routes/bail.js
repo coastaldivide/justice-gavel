@@ -8,6 +8,21 @@ import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.
 
 const router = Router();
 
+// ── Build share-ready summary for bail result ─────────────────────────────
+function buildShareSummary({ state, charge_type, bail_amount, premium, plan, mandatory_minimum }) {
+  if (!bail_amount) return null;
+  let txt = `Justice Gavel Bail Summary\n`;
+  txt += `State: ${state} | Charge: ${charge_type}\n`;
+  txt += `Bail Set: $${bail_amount.toLocaleString()}\n`;
+  if (premium) txt += `Bond Premium (10%): $${premium.toLocaleString()}\n`;
+  if (plan)    txt += `Payment Option: $${plan.monthly}/mo for ${plan.months} months\n`;
+  if (mandatory_minimum?.years) txt += `Mandatory Minimum: ${mandatory_minimum.years} years\n`;
+  txt += `\nGet help at: https://justicegavel.com`;
+  return txt;
+}
+
+
+
 // ── Installment Plan — Integer Cents (IEEE 754 safe) ─────────────────────
 function calcInstallmentPlan(premiumDollars, months = 3) {
   if (!premiumDollars || premiumDollars <= 0 || months <= 0) return null;
@@ -213,6 +228,35 @@ router.get('/immigration', apiLimiter, (req, res) => {
     ],
     redetermination: 'Detainee can request bond redetermination hearing before immigration judge within 10 days of initial custody.',
     no_bond_bars: ['Mandatory detention (certain criminal convictions, 8 U.S.C. § 1226(c))', 'Arrival without inspection with no credible fear claim', 'Prior removal order', 'Terrorism or security grounds'],
+  });
+});
+
+
+// ── GET /bail/estimate-total — full cost estimate including fees ──────────
+router.get('/estimate-total', apiLimiter, async (req, res) => {
+  const bail     = parseFloat(req.query.bail_amount || '0');
+  const months   = Math.min(parseInt(req.query.months || '3'), 60);
+  const rate     = parseFloat(req.query.rate || '0.10');
+
+  if (!bail || bail <= 0) return res.status(400).json({ error: 'bail_amount required' });
+
+  const premium      = Math.ceil(bail * rate * 100) / 100;
+  const court_fees   = 250;   // typical court appearance fees
+  const ankle_monitor= 150;   // if ordered (30 days)
+  const attorney_est  = bail < 10000 ? 1500 : bail < 50000 ? 3500 : 7500;
+  const total_est    = premium + court_fees + ankle_monitor + attorney_est;
+
+  return res.json({
+    bail_amount:      bail,
+    premium,
+    estimated_fees: {
+      bond_premium:    premium,
+      court_fees,
+      ankle_monitor,
+      attorney_retainer: attorney_est,
+      total:           total_est,
+    },
+    note: 'Estimates only. Court fees, monitoring, and attorney costs vary by county.',
   });
 });
 

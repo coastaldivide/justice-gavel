@@ -410,4 +410,85 @@ router.post('/accept-invite', authRequired, async (req, res) => {
   }
 });
 
+
+// ── GET /firms/:id/invoice-summary — billable, paid, overdue totals ───────
+router.get('/:id/invoice-summary', authRequired, async (req, res) => {
+  const fid = parseInt(req.params.id, 10);
+  if (!fid) return res.status(400).json({ error: 'Invalid firm ID' });
+  try {
+    const db = await getDb();
+    const rows = await db.all(
+      `SELECT status, COALESCE(SUM(amount_cents),0) as total_cents, COUNT(*) as count
+       FROM invoices WHERE firm_id = ? GROUP BY status`,
+      [fid]
+    ).catch(() => []);
+
+    const summary = { billed: 0, paid: 0, overdue: 0, draft: 0 };
+    for (const r of rows) {
+      summary[r.status] = Math.round(r.total_cents / 100);
+    }
+    summary.outstanding = summary.billed - summary.paid;
+    return res.json({ firm_id: fid, summary, currency: 'USD' });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not fetch invoice summary' });
+  }
+});
+
+// ── GET /firms/:id/time-entries — billable time grouped by matter ─────────
+router.get('/:id/time-entries', authRequired, async (req, res) => {
+  const fid = parseInt(req.params.id, 10);
+  if (!fid) return res.status(400).json({ error: 'Invalid firm ID' });
+  try {
+    const db = await getDb();
+    const entries = await db.all(
+      `SELECT te.matter_id, m.title as matter_title,
+              SUM(te.duration_minutes) as total_minutes,
+              SUM(te.duration_minutes * te.rate_cents / 60) as billable_cents,
+              COUNT(*) as entry_count
+       FROM time_entries te
+       LEFT JOIN matters m ON m.id = te.matter_id
+       WHERE te.firm_id = ?
+       GROUP BY te.matter_id, m.title
+       ORDER BY billable_cents DESC LIMIT 50`,
+      [fid]
+    ).catch(() => []);
+
+    return res.json({
+      firm_id: fid,
+      entries: entries.map(e => ({
+        ...e,
+        total_hours:     Math.round(e.total_minutes / 60 * 10) / 10,
+        billable_dollars: Math.round(e.billable_cents / 100),
+      })),
+    });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not fetch time entries' });
+  }
+});
+
+// ── GET /firms/trial-status — current trial days remaining ─────────────────
+router.get('/trial-status', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const trial = await db.get(
+      `SELECT ft.firm_id, ft.trial_end_at, ft.plan,
+              GREATEST(0, EXTRACT(DAY FROM ft.trial_end_at - NOW())) as days_remaining
+       FROM firm_trials ft
+       JOIN firm_members fm ON fm.firm_id = ft.firm_id
+       WHERE fm.user_id = ? AND ft.active = true LIMIT 1`,
+      [req.user.id]
+    ).catch(() => null);
+
+    if (!trial) return res.json({ in_trial: false });
+    return res.json({
+      in_trial:        true,
+      days_remaining:  parseInt(trial.days_remaining, 10),
+      plan:            trial.plan,
+      trial_ends:      trial.trial_end_at,
+    });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not fetch trial status' });
+  }
+});
+
 export default router;

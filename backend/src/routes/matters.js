@@ -840,4 +840,34 @@ router.get('/retention-status', authRequired, async (req, res) => {
   }
 });
 
+
+// ── PATCH /matters/:id/status — update status with audit trail ───────────
+router.patch('/:id/status', authRequired, async (req, res) => {
+  const id         = parseInt(req.params.id, 10);
+  const new_status = req.body.status;
+  const note       = (req.body.note || '').slice(0, 500);
+
+  if (!id || !new_status) return res.status(400).json({ error: 'id and status required' });
+  const valid = ['active','pending','closed','on_hold','archived'];
+  if (!valid.includes(new_status)) return res.status(400).json({ error: `status must be one of: ${valid.join(', ')}` });
+
+  try {
+    const db = await getDb();
+    const matter = await db.get('SELECT status FROM matters WHERE id = ?', [id]).catch(() => null);
+    if (!matter) return res.status(404).json({ error: 'Matter not found' });
+
+    await db.run('UPDATE matters SET status = ?, updated_at = NOW() WHERE id = ?', [new_status, id]);
+    // Non-blocking audit trail
+    db.run(
+      `INSERT INTO case_status_history (case_id, user_id, old_status, new_status, note)
+       VALUES (?,?,?,?,?)`,
+      [id, req.user.id, matter.status, new_status, note || null]
+    ).catch(() => {});
+
+    return res.json({ id, old_status: matter.status, new_status, updated: true });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not update status' });
+  }
+});
+
 export default router;

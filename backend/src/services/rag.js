@@ -132,6 +132,55 @@ async function generateAnswer(prompt) {
  * @param {string} opts.jurisdiction — 'federal'|'CA'|'NY' etc.
  * @returns {{ answer: string, citations: Array, docsUsed: number, fromRAG: boolean }}
  */
+
+// ── Build suggested follow-up questions based on query context ────────────
+function buildSuggestedQuestions(query, practiceArea) {
+  const q = query.toLowerCase();
+  const area = (practiceArea || '').toLowerCase();
+
+  const suggestions = [];
+
+  if (q.includes('bail') || area === 'bail') {
+    suggestions.push(
+      'What factors does a judge consider when setting bail?',
+      'Can bail be reduced after it is set?',
+      'What happens if I cannot afford bail?'
+    );
+  } else if (q.includes('right') || q.includes('arrest')) {
+    suggestions.push(
+      'What are my Miranda rights and when do they apply?',
+      'Can I refuse a search without a warrant?',
+      'What should I say (and not say) when arrested?'
+    );
+  } else if (q.includes('expunge') || q.includes('record')) {
+    suggestions.push(
+      'How long does an expungement take?',
+      'Will expunged records appear on background checks?',
+      'What crimes can never be expunged?'
+    );
+  } else if (q.includes('plea') || q.includes('guilty')) {
+    suggestions.push(
+      'What is the difference between a plea deal and going to trial?',
+      'Can I withdraw a guilty plea after I enter it?',
+      'What is an Alford plea?'
+    );
+  } else if (area === 'immigration' || q.includes('immigr') || q.includes('deport')) {
+    suggestions.push(
+      'What are my rights if ICE comes to my home?',
+      'How long can I be detained without a hearing?',
+      'What is voluntary departure and is it better than deportation?'
+    );
+  } else {
+    suggestions.push(
+      'How do I find a public defender?',
+      'What is the statute of limitations for my charge?',
+      'What happens at an arraignment?'
+    );
+  }
+
+  return suggestions.slice(0, 3);
+}
+
 export async function ragSearch(query, opts = {}) {
   const t0 = Date.now();
 

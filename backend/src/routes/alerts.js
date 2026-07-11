@@ -18,7 +18,24 @@ router.post('/', authRequired, alertsLimiter, async (req,res)=>{
     }
     const db   = await getDb();
     const link = googleMapsLink(lat, lng);
-    const msg = `Emergency: ${userName} needs help. Location: ${link}`;
+    const category = ['emergency','court_reminder','missed_checkin','arrest'].includes(req.body.category)
+      ? req.body.category : 'emergency';
+
+    const templates = {
+      emergency:       `🚨 EMERGENCY: ${userName} needs immediate help. Location: ${link}`,
+      court_reminder:  `⚖️ COURT REMINDER: ${userName} has a court appearance. Please provide support. Location: ${link}`,
+      missed_checkin:  `⚠️ MISSED CHECK-IN: ${userName} missed their scheduled check-in. Location last known: ${link}`,
+      arrest:          `🔴 ARREST ALERT: ${userName} has been arrested and needs assistance. Location: ${link}`,
+    };
+    const msg = templates[category] || templates.emergency;
+
+    // Log alert to database (non-fatal if fails)
+    const db = await getDb();
+    db.run(
+      `INSERT INTO alert_log (user_id, category, message, lat, lng, contact_count, sent_at)
+       VALUES (?,?,?,?,?,?,NOW())`,
+      [req.user?.id || null, category, msg, lat, lng, contacts.length]
+    ).catch(() => {});
     // Send to both contacts in parallel — each is independent
     // Promise.allSettled ensures both fire even if one fails, and preserves order
     const settled = await Promise.allSettled(
@@ -81,6 +98,22 @@ router.post('/family-contacts', authRequired, async (req, res) => {
   } catch (e) {
     logger?.warn('[alerts/family-contacts/add]', e?.message);
     return res.status(500).json({ error: 'Failed to add contact' });
+  }
+});
+
+
+// ── GET /alerts/history — user's sent alert log ───────────────────────────
+router.get('/history', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const alerts = await db.all(
+      `SELECT id, category, message, lat, lng, contact_count, sent_at
+       FROM alert_log WHERE user_id = ? ORDER BY sent_at DESC LIMIT 50`,
+      [req.user.id]
+    ).catch(() => []);
+    return res.json({ alerts, count: alerts.length });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not fetch alert history' });
   }
 });
 

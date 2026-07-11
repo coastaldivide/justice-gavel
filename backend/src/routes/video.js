@@ -107,7 +107,20 @@ router.post('/session', authRequired, async (req, res) => {
     await auditLog({ userId: req.user.id, action: 'VIDEO_SESSION_CREATED',
       entityType: 'video', entityId: room.name, req });
 
+
+  // ── Pre-session checklist ─────────────────────────────────────────────────
+  const preSessionChecklist = [
+    { item: 'Ensure microphone and camera are working', done: false },
+    { item: 'Find a private, quiet location', done: false },
+    { item: 'Charge your device (at least 50%)', done: false },
+    { item: 'Write down your key questions in advance', done: false },
+    { item: 'Have your case documents accessible', done: false },
+    { item: 'Note your attorney's contact number in case of disconnection', done: false },
+  ];
+
     return res.json({
+      session_duration_minutes: 60,
+      pre_session_checklist: preSessionChecklist,
       room_url:    room.url,
       room_name:   room.name,
       token:       token.token,
@@ -145,6 +158,26 @@ router.delete('/session/:name', authRequired, async (req, res) => {
     return res.json({ ended: true });
   } catch (e) {
     return res.json({ ended: true, note: 'Room may have already expired' });
+  }
+});
+
+
+// ── GET /video/sessions/me — user's video session history ────────────────
+router.get('/sessions/me', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const sessions = await db.all(
+      `SELECT vs.room_name, vs.room_url, vs.matter_id, vs.created_at, vs.ended_at,
+              m.title as matter_title
+       FROM video_sessions vs
+       LEFT JOIN matters m ON m.id = vs.matter_id
+       WHERE vs.user_id = ?
+       ORDER BY vs.created_at DESC LIMIT 20`,
+      [req.user.id]
+    ).catch(() => []);
+    return res.json({ sessions, count: sessions.length });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not fetch session history' });
   }
 });
 

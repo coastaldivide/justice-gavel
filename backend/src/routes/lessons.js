@@ -265,6 +265,21 @@ const STATE_RIGHTS = {
 };
 
 const router = Router();
+
+// ── Filtering helper ─────────────────────────────────────────────────────
+async function getLessons(db, filters = {}) {
+  const { category, difficulty } = filters;
+  let sql    = 'SELECT id, title, category, body as content, difficulty, duration_min, ';
+  sql       += "CASE difficulty WHEN 'beginner' THEN 10 WHEN 'intermediate' THEN 20 WHEN 'advanced' THEN 30 ELSE 10 END as points ";
+  sql       += 'FROM lessons WHERE 1=1 ';
+  const params = [];
+  if (category)   { sql += 'AND category = ? '; params.push(category); }
+  if (difficulty) { sql += 'AND difficulty = ? '; params.push(difficulty); }
+  sql += 'ORDER BY difficulty ASC, id ASC LIMIT 200';
+  return db.all(sql, params).catch(() => []);
+}
+
+
 const lessonsLimiter = makeUserLimiter({ windowMs: 3600000, max: 100, message: 'Lesson completion limit reached. Try again later.' });
 
 
@@ -427,6 +442,47 @@ router.get('/progress/me', authRequired, async (req, res) => {
   } catch (e) {
     logger.error({ msg: '[lessons]', error: e?.message });
     return res.status(500).json({ error: 'Could not load progress' });
+  }
+});
+
+
+// ── GET /lessons/streak/:userId — current streak and stats ───────────────
+router.get('/streak/:userId', authRequired, async (req, res) => {
+  const uid = parseInt(req.params.userId, 10) || req.user.id;
+  try {
+    const db = await getDb();
+    const progress = await db.all(
+      `SELECT completed_at::DATE as day, COUNT(*) as lessons
+       FROM lesson_progress WHERE user_id = ? AND completed = true
+       AND completed_at > NOW() - INTERVAL '365 days'
+       GROUP BY day ORDER BY day DESC`,
+      [uid]
+    ).catch(() => []);
+
+    // Calculate current streak (consecutive days)
+    let streak = 0;
+    let today  = new Date(); today.setHours(0,0,0,0);
+    for (const row of progress) {
+      const rowDay = new Date(row.day); rowDay.setHours(0,0,0,0);
+      const diffDays = Math.round((today - rowDay) / 86400000);
+      if (diffDays === streak) { streak++; today = rowDay; }
+      else break;
+    }
+
+    const totalCompleted = await db.get(
+      'SELECT COUNT(*) as n, COALESCE(SUM(l.points),0) as total_points FROM lesson_progress lp JOIN lessons l ON l.id = lp.lesson_id WHERE lp.user_id = ? AND lp.completed = true',
+      [uid]
+    ).catch(() => ({ n: 0, total_points: 0 }));
+
+    return res.json({
+      user_id:          uid,
+      streak_days:      streak,
+      total_completed:  totalCompleted?.n || 0,
+      total_points:     totalCompleted?.total_points || 0,
+      last_7_days:      progress.slice(0, 7),
+    });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not fetch streak' });
   }
 });
 

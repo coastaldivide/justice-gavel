@@ -124,3 +124,44 @@ ALTER TABLE stripe_event_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS dispute_flag BOOLEAN DEFAULT FALSE;
 ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
 CREATE INDEX IF NOT EXISTS idx_subs_customer ON user_subscriptions(stripe_customer_id) WHERE stripe_customer_id IS NOT NULL;
+
+-- Lawyer profile enhancements (Feature 3)
+ALTER TABLE lawyers ADD COLUMN IF NOT EXISTS languages_spoken TEXT DEFAULT 'English';
+ALTER TABLE lawyers ADD COLUMN IF NOT EXISTS free_consultation BOOLEAN DEFAULT FALSE;
+ALTER TABLE lawyers ADD COLUMN IF NOT EXISTS avg_response_hours INTEGER;
+
+-- Reviews table unique constraint (one review per user per provider)
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS provider_id BIGINT;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS user_id BIGINT;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS rating INTEGER;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS comment TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reviews_provider_user ON reviews(provider_id, user_id);
+
+ALTER TABLE checkin_enrollments ADD COLUMN IF NOT EXISTS supervisor_note TEXT;
+ALTER TABLE checkin_enrollments ADD COLUMN IF NOT EXISTS next_check_in_at TIMESTAMPTZ;
+
+-- Alert history log (Feature 5)
+CREATE TABLE IF NOT EXISTS alert_log (
+  id            BIGSERIAL PRIMARY KEY,
+  user_id       BIGINT,
+  category      TEXT DEFAULT 'emergency',
+  message       TEXT,
+  lat           NUMERIC(10,6),
+  lng           NUMERIC(10,6),
+  contact_count INTEGER DEFAULT 0,
+  sent_at       TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_alert_log_user ON alert_log(user_id, sent_at DESC);
+ALTER TABLE alert_log ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS rate_cents INTEGER DEFAULT 25000; -- $250/hr default
+ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS firm_id BIGINT;
+
+-- Lesson points column
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 10;
+UPDATE lessons SET points = CASE difficulty WHEN 'advanced' THEN 30 WHEN 'intermediate' THEN 20 ELSE 10 END WHERE points = 10;
+
+-- Golden Gavel event log
+ALTER TABLE golden_gavel_log ADD COLUMN IF NOT EXISTS event_type TEXT;
+ALTER TABLE golden_gavel_log ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 0;
+ALTER TABLE golden_gavel_log ADD COLUMN IF NOT EXISTS reference_id BIGINT;

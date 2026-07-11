@@ -43,6 +43,7 @@ import consultationsRouter from './routes/consultations.js';
 import checkinsRouter      from './routes/checkins.js';
 import familyRouter       from './routes/family.js';
 import expungementRouter   from './routes/expungement/index.js';
+import immigrationRouter   from './routes/immigration.js';
 import piLeadsRouter    from './routes/pi_leads.js';
 import billingRouter    from './routes/billing/index.js';
 
@@ -441,6 +442,7 @@ app.use('/api/consultations', consultationsRouter);
 app.use('/api/family', familyRouter);
 app.use('/api/checkins',      checkinsRouter);
 app.use('/api/expungement',   expungementRouter);
+app.use('/api/immigration',   immigrationRouter);
 app.use('/api/contracts',     contractsRouter);
 app.use('/api/sso',           ssoRouter);
 app.use('/api/time',        timeRouter);

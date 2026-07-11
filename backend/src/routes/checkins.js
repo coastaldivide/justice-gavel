@@ -323,6 +323,96 @@ router.get('/my/:enrollmentId', async (req, res) => {
   }
 });
 
+
+// ── POST /checkins/remind-all — send push to all users with check-in due today ──
+// Called by scheduler or admin. Sends push to users whose expected_time is today.
+router.post('/remind-all', async (req, res) => {
+  // Admin or internal call only (no auth required from external, but rate limited)
+  try {
+    const db = await getDb();
+    const dueToday = await db.all(
+      `SELECT ce.user_id, pt.token
+       FROM checkin_enrollments ce
+       JOIN push_tokens pt ON pt.user_id = ce.user_id
+       WHERE ce.active = true
+         AND DATE(ce.next_check_in_at) = CURRENT_DATE
+         AND pt.token IS NOT NULL`,
+      []
+    ).catch(() => []);
+
+    let sent = 0;
+    await Promise.allSettled(
+      dueToday.map(async ({ user_id, token }) => {
+        await sendPushNotification(token, {
+          title: 'Check-In Reminder',
+          body:  'Your scheduled check-in is due today. Open Justice Gavel to check in.',
+          data:  { screen: 'CheckIn' },
+        }).catch(() => {});
+        sent++;
+      })
+    );
+    return res.json({ reminded: sent, total_due: dueToday.length });
+  } catch (e) {
+    return res.status(500).json({ error: 'Reminder dispatch failed' });
+  }
+});
+
+// ── GET /checkins/compliance-report/:enrollmentId ─────────────────────────
+router.get('/compliance-report/:enrollmentId', authRequired, async (req, res) => {
+  const eid = parseInt(req.params.enrollmentId, 10);
+  if (!eid) return res.status(400).json({ error: 'Invalid enrollment ID' });
+  try {
+    const db = await getDb();
+    const enrollment = await db.get(
+      'SELECT * FROM checkin_enrollments WHERE id = ? AND user_id = ?',
+      [eid, req.user.id]
+    ).catch(() => null);
+    if (!enrollment) return res.status(404).json({ error: 'Enrollment not found' });
+
+    const records = await db.all(
+      `SELECT status, checked_in_at FROM checkin_records
+       WHERE enrollment_id = ? ORDER BY checked_in_at ASC`,
+      [eid]
+    ).catch(() => []);
+
+    const total_required = records.length;
+    const completed      = records.filter(r => r.status === 'completed').length;
+    const missed         = records.filter(r => r.status === 'missed').length;
+    const compliance_pct = total_required > 0
+      ? Math.round((completed / total_required) * 100) : 100;
+
+    return res.json({
+      enrollment_id: eid,
+      total_required,
+      completed,
+      missed,
+      pending: total_required - completed - missed,
+      compliance_pct,
+      status: compliance_pct >= 90 ? 'good' : compliance_pct >= 70 ? 'warning' : 'critical',
+      records: records.slice(-30),  // last 30 records
+    });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not generate report' });
+  }
+});
+
+// ── PATCH /checkins/enrollments/:id/note — supervisor adds note ───────────
+router.patch('/enrollments/:id/note', authRequired, async (req, res) => {
+  const eid  = parseInt(req.params.id, 10);
+  const note = (req.body.note || '').slice(0, 1000);
+  if (!eid || !note) return res.status(400).json({ error: 'id and note required' });
+  try {
+    const db = await getDb();
+    await db.run(
+      `UPDATE checkin_enrollments SET supervisor_note = ?, updated_at = NOW() WHERE id = ?`,
+      [note, eid]
+    );
+    return res.json({ updated: true, enrollment_id: eid });
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not save note' });
+  }
+});
+
 export default router;
 
 // GET /api/family/contacts — list user's emergency contacts

@@ -332,4 +332,21 @@ router.post('/index', authRequired, async (req, res) => {
   }
 });
 
+
+// ── GET /research/topics — discovery entry point ──────────────────────────
+router.get('/topics', (req, res) => {
+  res.json({
+    topics: [
+      { category: 'Know Your Rights',   practice_area: 'criminal',    questions: ['What are my Miranda rights?','Can police search my car?','What if I am arrested?'] },
+      { category: 'Bail & Bond',        practice_area: 'bail',        questions: ['How is bail amount set?','What is a bail bondsman?','Can I get bail reduced?'] },
+      { category: 'Expungement',        practice_area: 'expungement', questions: ['Am I eligible for expungement?','How long does it take?','What does it cost?'] },
+      { category: 'Court Process',      practice_area: 'criminal',    questions: ['What happens at arraignment?','What is a preliminary hearing?','What is a plea deal?'] },
+      { category: 'Immigration Rights', practice_area: 'immigration', questions: ['What are my rights if detained by ICE?','What is voluntary departure?','How do I request asylum?'] },
+      { category: 'Child Support',      practice_area: 'family',      questions: ['How is child support calculated?','Can I modify a child support order?','What if the other parent does not pay?'] },
+      { category: 'Domestic Violence',  practice_area: 'dv',          questions: ['How do I get a protective order?','What evidence do I need?','Will my children be affected?'] },
+      { category: 'Drug Charges',       practice_area: 'drug',        questions: ['What is the difference between possession and trafficking?','Can drug charges be expunged?','What are diversion programs?'] },
+    ]
+  });
+});
+
 export default router;
