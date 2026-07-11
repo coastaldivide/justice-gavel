@@ -17,7 +17,23 @@
  */
 
 import logger from '../utils/logger.js';
-import { getDb } from '../db/index.js';
+import { open }  from 'sqlite';
+import sqlite3   from 'sqlite3';
+import path      from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname  = path.dirname(fileURLToPath(import.meta.url));
+const ARREST_DB  = path.resolve(__dirname, '../../demo.db');  // dev: demo.db | prod: use getDb()
+
+async function getDb() {
+  // In production (DATABASE_URL set): use main Postgres via getDb()
+  if (process.env.DATABASE_URL) {
+    const { getDb: pgGetDb } = await import('../db/index.js');
+    return pgGetDb();
+  }
+  // Dev fallback: same SQLite path used by arrests.js
+  return open({ filename: ARREST_DB, driver: sqlite3.Database });
+}
 
 // ── Source definitions ─────────────────────────────────────────────────────
 // Each source has a fetch() that returns normalized arrest records.
