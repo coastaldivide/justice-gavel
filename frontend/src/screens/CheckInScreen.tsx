@@ -202,7 +202,7 @@ export default function CheckInScreen({ route, navigation }: ScreenProps): React
   // ── Loading ────────────────────────────────────────────────────────────────
   if (phase === 'loading') return (
     <View style={styles.center}>
-      <SkeletonLoader rows={4} label="Check-In" />
+      <SkeletonLoader count={4} label="Check-In" />
       <Text maxFontSizeMultiplier={1.4} style={styles.loadingText}>Loading your check-in…</Text>
     </View>
   );

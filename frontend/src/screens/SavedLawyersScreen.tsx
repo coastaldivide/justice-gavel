@@ -364,7 +364,7 @@ export default function SavedLawyersScreen({ navigation }: any): React.JSX.Eleme
     setLawyers(prev => prev.map(l => l.id === id ? { ...l, notes: note } : l));
   }, []);
 
-  if (loading) return <SkeletonLoader rows={5} label="Saved Lawyers" />;
+  if (loading) return <SkeletonLoader count={5} label="Saved Lawyers" />;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>

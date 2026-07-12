@@ -1,3 +1,4 @@
+import { cacheFor } from '../utils/cache.js';
 /**
  * expungement/index.js — Expungement module entry point
  *

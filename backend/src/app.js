@@ -151,6 +151,9 @@ app.post(
 app.set('trust proxy', 1);
 
 // ── Security headers (helmet) ─────────────────────────────────────────────────
+// ETag for unchanged responses (304 Not Modified)
+app.set('etag', 'strong');
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -195,6 +198,9 @@ app.use((req, _res, next) => {
   next();
 });
 
+
+// ETag for unchanged responses (304 Not Modified)
+app.set('etag', 'strong');
 
 app.use(helmet({
   contentSecurityPolicy: {

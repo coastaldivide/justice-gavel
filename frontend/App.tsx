@@ -1,3 +1,4 @@
+// TODO: wrap root with <QueryClientProvider client={queryClient}> from @tanstack/react-query
 import OfflineBanner from './src/components/OfflineBanner';
 import { StripeProvider } from '@stripe/stripe-react-native';
 /**
@@ -278,8 +279,7 @@ function AppInner() {
 
   // ── Biometric lock screen ───────────────────────────────────────────────────
   if (bioLocked) {
-    return (
-      <View style={{ flex:1, justifyContent:'center', alignItems:'center',
+    return (<View style={{ flex:1, justifyContent:'center', alignItems:'center',
         backgroundColor: colors.bg }}>
         <Text style={{ fontSize:48, marginBottom:24 }}>🔒</Text>
         <Text style={{ fontSize:18, color:colors.textPrimary, fontWeight:'700',
@@ -377,7 +377,7 @@ function AppInner() {
       onAccepted={() => setTosNeeded(false)}
     />
     </ErrorBoundary>
-  );
+    );
 }
 
 function App() {
@@ -395,7 +395,7 @@ function App() {
     </SafeAreaProvider>
     </StripeProvider>
     </ErrorBoundary>
-  );
+    );
 }
 
 export default Sentry.wrap(App);

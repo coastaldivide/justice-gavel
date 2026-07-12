@@ -229,7 +229,7 @@ export default function GoldenGavelScreen({ navigation }: ScreenProps): React.JS
     setOptingIn(false);
   };
 
-  if (loading) return <SkeletonLoader rows={5} label="Progress" />;
+  if (loading) return <SkeletonLoader count={5} label="Progress" />;
 
   return (
     <ScrollView

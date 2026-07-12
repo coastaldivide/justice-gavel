@@ -1,3 +1,4 @@
+import { cacheFor } from '../utils/cache.js';
 /**
  * immigration.js — Immigration legal rights and tools
  * Covers: asylum, detention rights, voluntary departure, DACA, VAWA, TPS
@@ -11,7 +12,7 @@ import { getDb }        from '../db/index.js';
 const router = Router();
 
 // ── GET /immigration/rights — Know your rights as an immigrant ────────────
-router.get('/rights', apiLimiter, (req, res) => {
+router.get('/rights', cacheFor(24 * 60), apiLimiter, (req, res) => {
   const lang = req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
   
   const rights = {
@@ -96,7 +97,7 @@ router.post('/voluntary-departure', authRequired, (req, res) => {
 });
 
 // ── GET /immigration/relief-options — summary of available relief ─────────
-router.get('/relief-options', apiLimiter, (req, res) => {
+router.get('/relief-options', cacheFor(60), apiLimiter, (req, res) => {
   return res.json({
     options: [
       { name: 'Asylum',              eligibility: 'Fear of persecution based on race, religion, nationality, political opinion, or social group', deadline: 'Must apply within 1 year of entry', path: '/immigration/asylum-clock' },

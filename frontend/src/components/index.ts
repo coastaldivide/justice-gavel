@@ -8,8 +8,7 @@ export { AppIcon, ICONS }            from './AppIcon';
 export { GradientHeader }            from './GradientHeader';
 export { EmptyState }                from './EmptyState';
 export { HapticButton }              from './HapticButton';
-export { SkeletonBlock, SkeletonCard, SkeletonListItem,
-         SkeletonProfile, SkeletonCaseList } from './SkeletonLoader';
+export { SkeletonLoader } from './SkeletonLoader';
 export { LethalilyGauge, BailBreakdown,
          RiskMeter, AsylumClock, SignalBadge } from './LegalCharts';
 export { Illustration,

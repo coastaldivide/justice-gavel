@@ -1,3 +1,4 @@
+// T4-05: wrap heavy useEffect bodies with InteractionManager.runAfterInteractions
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
