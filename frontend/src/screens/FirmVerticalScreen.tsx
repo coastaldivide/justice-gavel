@@ -1,3 +1,4 @@
+import { useForm, Controller } from 'react-hook-form';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -110,6 +111,17 @@ const ISO_DATE_RE_FV = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const isValidDateFV  = (s: string) => ISO_DATE_RE_FV.test(s);
 
 function FirmVerticalScreen({ navigation }: any) {
+  // react-hook-form: migrating from 5 individual useState form fields
+  const { control, handleSubmit, setValue, formState: { errors: formErrors } } = useForm({
+    defaultValues: {
+      firm: '',
+      acName: '',
+      acNotes: '',
+      dpaName: '',
+      troName: '',
+    },
+  });
+
   const { showToast } = useToast();
   const { colors } = useTheme();
   const s = styles(colors);

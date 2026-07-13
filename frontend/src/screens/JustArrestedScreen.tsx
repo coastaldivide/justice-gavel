@@ -227,6 +227,32 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection or try again.</Text>
         </View>
       )}
+      
+
+  {/* What Happens Next — absorbed from WhatHappensNextScreen */}
+  <View style={[styles.sectionCard, { backgroundColor: colors.card ?? '#fff', marginTop: 16 }]}>
+    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+      📅 What Happens Next
+    </Text>
+    {[
+      { time: 'Within 24–48 hours', title: 'Arraignment', desc: 'You will appear before a judge who will read the charges and set bail. This is when you enter your plea.' },
+      { time: 'First 30 days', title: 'Discovery', desc: 'Your attorney reviews evidence. Prosecution must share all evidence they plan to use against you.' },
+      { time: '1–6 months', title: 'Pre-trial Motions', desc: 'Your attorney may file motions to suppress evidence or dismiss charges.' },
+      { time: 'Varies', title: 'Plea Deal or Trial', desc: 'Most cases resolve with a plea agreement. If not, a trial is scheduled before a judge or jury.' },
+      { time: 'After verdict', title: 'Sentencing', desc: 'If convicted, sentencing may follow immediately or be scheduled for a later date.' },
+    ].map((step, i) => (
+      <View key={i} style={styles.timelineStep}>
+        <View style={[styles.timelineDot, { backgroundColor: colors.primary }]} />
+        {i < 4 && <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />}
+        <View style={styles.timelineContent}>
+          <Text style={[styles.timelineTime, { color: colors.primary }]}>{step.time}</Text>
+          <Text style={[styles.timelineTitle, { color: colors.text }]}>{step.title}</Text>
+          <Text style={[styles.timelineDesc, { color: (colors as any).subtext ?? '#6B7280' }]}>{step.desc}</Text>
+        </View>
+      </View>
+    ))}
+  </View>
+
       </ScrollView>
 
       {/* ── Bottom nav ─────────────────────────── */}
@@ -261,6 +287,16 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
 }
 
 const makeStyles = (colors: any) => StyleSheet.create({
+    sectionCard:    { borderRadius: 12, padding: 16, marginHorizontal: 0 },
+    sectionTitle:   { fontSize: 16, fontWeight: '700', marginBottom: 12 },
+    timelineStep:   { flexDirection: 'row', marginBottom: 0, position: 'relative', paddingLeft: 28 },
+    timelineDot:    { width: 10, height: 10, borderRadius: 5, position: 'absolute', left: 0, top: 4 },
+    timelineLine:   { width: 2, position: 'absolute', left: 4, top: 14, bottom: -8 },
+    timelineContent:{ flex: 1, paddingBottom: 16 },
+    timelineTime:   { fontSize: 11, fontWeight: '700', marginBottom: 2 },
+    timelineTitle:  { fontSize: 14, fontWeight: '600', marginBottom: 3 },
+    timelineDesc:   { fontSize: 13, lineHeight: 18 },
+
   header:      { paddingHorizontal: 20, paddingTop: 48, paddingBottom: 20 },
   stepLabel:   { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
   titleRow:    { flexDirection: 'row', alignItems: 'center', gap: 14 },

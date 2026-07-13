@@ -37,12 +37,11 @@ import ContactsScreen from '../screens/ContactsScreen';
 import CourtFormsScreen from '../screens/CourtFormsScreen';
 import CourtLocatorScreen from '../screens/CourtLocatorScreen';
 import CrisisResourcesScreen from '../screens/CrisisResourcesScreen';
-import DUILawsScreen from '../screens/DUILawsScreen';
+import LegalPenaltiesScreen from '../screens/LegalPenaltiesScreen';
 import DeadlineCalculatorScreen from '../screens/DeadlineCalculatorScreen';
 import DiscoveryScreen from '../screens/DiscoveryScreen';
 import DiversionScreen from '../screens/DiversionScreen';
 import DocumentScannerScreen from '../screens/DocumentScannerScreen';
-import DrugPenaltiesScreen from '../screens/DrugPenaltiesScreen';
 import EmergencyScreen from '../screens/EmergencyScreen';
 import EmergencyShareScreen from '../screens/EmergencyShareScreen';
 import ExpungementScreen from '../screens/ExpungementScreen';
@@ -62,10 +61,8 @@ import LegalResearchScreen from '../screens/LegalResearchScreen';
 import LessonsScreen from '../screens/LessonsScreen';
 import LoginScreen from '../screens/LoginScreen';
 import MatchScreen from '../screens/MatchScreen';
-import MentalHealthDiversionScreen from '../screens/MentalHealthDiversionScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import MotionLibraryScreen from '../screens/MotionLibraryScreen';
-import OfflineStatusScreen from '../screens/OfflineStatusScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import PILeadScreen from '../screens/PILeadScreen';
 import PaymentsScreen from '../screens/PaymentsScreen';
@@ -81,7 +78,6 @@ import SubscriptionScreen from '../screens/SubscriptionScreen';
 import TenantRightsScreen from '../screens/TenantRightsScreen';
 import TranslatorScreen from '../screens/TranslatorScreen';
 import VoiceNoteScreen from '../screens/VoiceNoteScreen';
-import WhatHappensNextScreen from '../screens/WhatHappensNextScreen';
 import InterrogationRecorderScreen from '../screens/InterrogationRecorderScreen';
 import TermsOfServiceScreen from '../screens/TermsOfServiceScreen';
 import PrivacyPolicyScreen  from '../screens/PrivacyPolicyScreen';
@@ -210,7 +206,7 @@ function MoreNavigator() {
       <MoreStack.Screen name="CheckIn"               component={CheckInScreen}               options={{ title: '✓ Daily Check-In', headerStyle: { backgroundColor: COLORS.navy }, headerTintColor: '#fff' }} />
       <MoreStack.Screen name="CheckInManager"        component={CheckInManagerScreen}        options={{ title: '📋 Check-In Manager' }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: '📋 Clear My Record' }} />
-      <MoreStack.Screen name="WhatHappensNext"       component={WhatHappensNextScreen}       options={{ title: '⚖️ What Happens Next' }} />
+      <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: '⚖️ What Happens Next' }} />
       <MoreStack.Screen name="EmergencyShare"        component={EmergencyShareScreen}        options={{ title: '🚨 Emergency Share', headerStyle: { backgroundColor: '#B71C1C' }, headerTintColor: '#fff' }} />
       <MoreStack.Screen name="CrisisResources"       component={CrisisResourcesScreen}       options={{ title: '💙 Crisis Support', headerStyle: { backgroundColor: '#1565C0' }, headerTintColor: '#fff' }} />
       <MoreStack.Screen name="Diversion"             component={DiversionScreen}             options={{ title: '🤝 Diversion Eligibility' }} />
@@ -229,14 +225,13 @@ function MoreNavigator() {
         <MoreStack.Screen name="HagueContact"
           component={HagueContactScreen}
           options={{ title: '🌐 Hague Convention' }} />
-      <MoreStack.Screen name="MentalHealthDiversion" component={MentalHealthDiversionScreen} options={{ title: '🧠 Mental Health & Law' }} />
-      <MoreStack.Screen name="OfflineStatus"         component={OfflineStatusScreen}         options={{ title: '📵 Offline Mode' }} />
+      <MoreStack.Screen name="MentalHealthDiversion" component={DiversionScreen} options={{ title: '🧠 Mental Health & Law' }} />
       <MoreStack.Screen name="FamilyCourt"           component={FamilyCourtScreen}           options={{ title: '👨‍👩‍👧 Family Court' }} />
       <MoreStack.Screen name="ImmigrationConsequences" component={ImmigrationConsequencesScreen} options={{ title: '🌎 Immigration Consequences' }} />
       <MoreStack.Screen name="HousingRights"         component={HousingRightsScreen}         options={{ title: '🏘️ Housing Rights' }} />
       <MoreStack.Screen name="AttorneyDashboard"     component={AttorneyDashboardScreen}     options={{ title: '⚖️ Attorney Dashboard' }} />
-      <MoreStack.Screen name="DUILaws"               component={DUILawsScreen}               options={{ title: '🚗 DUI Laws by State' }} />
-      <MoreStack.Screen name="DrugPenalties"         component={DrugPenaltiesScreen}         options={{ title: '💊 Drug Charge Penalties' }} />
+      <MoreStack.Screen name="DUILaws"               component={LegalPenaltiesScreen}               options={{ title: '🚗 DUI Laws by State' }} />
+      <MoreStack.Screen name="DrugPenalties"         component={LegalPenaltiesScreen}         options={{ title: '💊 Drug Charge Penalties' }} />
       <MoreStack.Screen name="SpecialtyCourts"       component={SpecialtyCourtsScreen}       options={{ title: '⚖️ Specialty Courts' }} />
       <MoreStack.Screen name="CourtLocator"          component={CourtLocatorScreen}          options={{ title: '🏛️ Court Locator' }} />
       <MoreStack.Screen name="BailCalculator"        component={BailCalculatorScreen}        options={{ title: '💰 Bail Calculator' }} />
