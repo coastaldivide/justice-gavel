@@ -303,7 +303,7 @@ const _HEX_ICEDETENTION = {
   _c11: C_ECFDF5,
 } as const;
 
-export default function IceDetentionScreen(): React.JSX.Element {
+function IceDetentionScreen(): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const [lang, setLang] = useState<Lang>('en');
   const L = CONTENT[lang];
@@ -493,3 +493,4 @@ const makeStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   disclaimer:    { marginHorizontal: 16, borderRadius: RADIUS.md, borderWidth: 1, padding: 14 },
   disclaimerTxt: { fontSize: 11, lineHeight: 17 },
 });
+export default React.memo(IceDetentionScreen);

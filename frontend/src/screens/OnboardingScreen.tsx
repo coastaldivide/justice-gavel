@@ -61,7 +61,7 @@ const SLIDES = [
   { key: 'free',    icon: '✅', titleKey: 'onboard_slide4_title', bodyKey: 'onboard_slide4_body', accent: COLORS.legal },
 ];
 
-export default function OnboardingScreen({ route, navigation }: ScreenProps) {
+function OnboardingScreen({ route, navigation }: ScreenProps) {
   useEffect(() => {
     detectAndSaveUserState().catch(() => {});
   }, []);
@@ -380,3 +380,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flex: 1.5, paddingVertical: 16,
     borderRadius: RADIUS.md, alignItems: 'center' },
   loginBtnText: { color: COLORS.textMuted, fontSize: 12, lineHeight: 20, ...FONTS.medium } });
+export default React.memo(OnboardingScreen);

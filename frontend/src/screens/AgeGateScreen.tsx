@@ -35,7 +35,7 @@ const MAX_YEAR     = CURRENT_YEAR - 18;    // must be born ≤ 18 years ago
 
 type Phase = 'entry' | 'underage';
 
-export default function AgeGateScreen({ route, navigation }: any) {
+function AgeGateScreen({ route, navigation }: any) {
   const { colors: COLORS } = useTheme();
   const styles = makeStyles(COLORS);
   const [year, setYear]   = useState('');
@@ -285,3 +285,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(AgeGateScreen);

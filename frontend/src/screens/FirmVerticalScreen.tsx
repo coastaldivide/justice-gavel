@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -109,7 +110,8 @@ const FEATURE_FLAGS: Record<string, { key: string; label: string; desc: string }
 const ISO_DATE_RE_FV = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const isValidDateFV  = (s: string) => ISO_DATE_RE_FV.test(s);
 
-export default function FirmVerticalScreen({ navigation }: any) {
+function FirmVerticalScreen({ navigation }: any) {
+  const { showToast } = useToast();
   const { colors } = useTheme();
   const s = styles(colors);
 
@@ -213,7 +215,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
         setTiers(pricingResult.value.data?.tiers || []);
       }
     } catch (e: any) {
-      if (e?.response?.status !== 400) Alert.alert('Could not Load', 'Could not load firm configuration.');
+      if (e?.response?.status !== 400) showToast('Could not load firm configuration.');
     } finally {
       setLoading(false);
       setRefresh(false);
@@ -264,7 +266,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
     try {
       const res = await api.get(`/firm-verticals/deadlines?trigger_date=${trigDate}`);
       setDeadlines(res.data?.deadlines || []);
-    } catch { Alert.alert('Calculation Error', 'Could not compute deadlines.'); }
+    } catch { showToast('Could not compute deadlines.'); }
     finally { setDLLoading(false); }
   }, [firm, trigDate]);
 
@@ -278,16 +280,16 @@ export default function FirmVerticalScreen({ navigation }: any) {
       const payload: any = { vertical: selectedV };
       Object.keys(features).forEach(k => { payload[k] = features[k]; });
       await api.put('/firm-verticals/mine', payload);
-      Alert.alert('Saved', 'Vertical configuration updated.');
+      showToast('Vertical configuration updated.');
       loadAll();
-    } catch { Alert.alert('Save Failed', 'Could not save configuration.'); }
+    } catch { showToast('Could not save configuration.'); }
     finally { setSaving(false); }
   };
 
   // ── Mission verify submit ──────────────────────────────────────────────────
   const submitMission = async () => {
     if (!missionEIN.trim() && !missionWeb.trim()) {
-      Alert.alert('Required', 'Provide your EIN or organization website for verification.');
+      showToast('Provide your EIN or organization website for verification.');
       return;
     }
     setSubMV(true);
@@ -295,7 +297,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
       await api.post('/firm-verticals/mine/mission-verify', {
         org_type: missionOrg, ein: missionEIN.trim(), website: missionWeb.trim(),
       });
-      Alert.alert('Submitted', 'Mission pricing request received. Review takes 1–3 business days.');
+      showToast('Mission pricing request received. Review takes 1–3 business days.');
       setMissionEIN(''); setMissionWeb('');
     } catch (e: any) {
       Alert.alert('Submission Failed', e?.response?.data?.error || 'Could not submit request.');
@@ -305,8 +307,8 @@ export default function FirmVerticalScreen({ navigation }: any) {
   // ── Create asylum clock ────────────────────────────────────────────────────
   const createAC = async () => {
     if (creatingAC) return;
-    if (!acName.trim()) { Alert.alert('Required', 'Client name is required.'); return; }
-    if (!isValidDateFV(acStart)) { Alert.alert('Invalid date', 'Clock start date must be YYYY-MM-DD (e.g. 2024-06-01).'); return; }
+    if (!acName.trim()) { showToast('Client name is required.'); return; }
+    if (!isValidDateFV(acStart)) { showToast('Clock start date must be YYYY-MM-DD (e.g. 2024-06-01).'); return; }
     setCreatingAC(true);
     try {
       await api.post('/firm-verticals/asylum-clocks', {
@@ -325,14 +327,14 @@ export default function FirmVerticalScreen({ navigation }: any) {
   // ── Create DPA tracker ────────────────────────────────────────────────────
   const createDPA = async () => {
     if (creatingDPA) return;
-    if (!dpaName.trim()) { Alert.alert('Required', 'Client name is required.'); return; }
+    if (!dpaName.trim()) { showToast('Client name is required.'); return; }
     try {
-      if (dpaWellsDue.trim() && !isValidDateFV(dpaWellsDue.trim())) { Alert.alert('Invalid date', 'Wells due must be YYYY-MM-DD.'); return; }
-      if (dpaSubDue.trim() && !isValidDateFV(dpaSubDue.trim())) { Alert.alert('Invalid date', 'Subpoena due must be YYYY-MM-DD.'); return; }
-      if (dpaSignDue.trim() && !isValidDateFV(dpaSignDue.trim())) { Alert.alert('Invalid date', 'DPA signing deadline must be YYYY-MM-DD.'); return; }
+      if (dpaWellsDue.trim() && !isValidDateFV(dpaWellsDue.trim())) { showToast('Wells due must be YYYY-MM-DD.'); return; }
+      if (dpaSubDue.trim() && !isValidDateFV(dpaSubDue.trim())) { showToast('Subpoena due must be YYYY-MM-DD.'); return; }
+      if (dpaSignDue.trim() && !isValidDateFV(dpaSignDue.trim())) { showToast('DPA signing deadline must be YYYY-MM-DD.'); return; }
       const cleanedFine = dpaFineM.replace(/,/g, '').trim();  // strip commas (e.g. '1,000' → '1000')
       const parsedFine  = parseFloat(cleanedFine);
-      if (cleanedFine && isNaN(parsedFine)) { Alert.alert('Invalid amount', 'Base fine must be a number (e.g. 12.5 for $12.5M).'); return; }
+      if (cleanedFine && isNaN(parsedFine)) { showToast('Base fine must be a number (e.g. 12.5 for $12.5M).'); return; }
       const fineC = cleanedFine && !isNaN(parsedFine) ? Math.round(parsedFine * 100) : 0;
       setCreatingDPA(true);
       await api.post('/firm-verticals/dpa', {
@@ -352,7 +354,7 @@ export default function FirmVerticalScreen({ navigation }: any) {
   // ── Create TRO tracker ────────────────────────────────────────────────────
   const createTRO = async () => {
     if (creatingTRO) return;
-    if (!troName.trim()) { Alert.alert('Required', 'Client name is required.'); return; }
+    if (!troName.trim()) { showToast('Client name is required.'); return; }
     try {
       setCreatingTRO(true);
       await api.post('/firm-verticals/tro', {
@@ -980,3 +982,4 @@ const styles = (c: any) => StyleSheet.create({
   graceBannerTitle: { fontSize: 16, fontWeight: '700', color: c.warn, marginBottom: 4 },
   graceBannerBody:  { fontSize: 14, color: c.textSecond, lineHeight: 20 },
 });
+export default React.memo(FirmVerticalScreen);

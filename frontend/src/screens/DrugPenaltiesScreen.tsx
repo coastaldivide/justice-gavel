@@ -3,7 +3,7 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
 import { AppIcon } from '../components/AppIcon';
 import LegalNotice from '../components/LegalNotice';
 import type { ScreenProps } from '../types/navigation';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback} from 'react';
 import {View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { api, cachedGet } from '../services/api';
@@ -50,7 +50,7 @@ function fmtFine(min:number, max:number) {
   return `${f(min)} - ${f(max)}`;
 }
 
-export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) {
+function DrugPenaltiesScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -280,3 +280,4 @@ export default function DrugPenaltiesScreen({ route, navigation }: ScreenProps) 
 }
 
 const styles = StyleSheet.create({});
+export default React.memo(DrugPenaltiesScreen);

@@ -186,7 +186,7 @@ const SEALING_DATA: SealingEntry[] = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 // Loading state
-export default function JuvenileJusticeScreen(): React.JSX.Element {
+function JuvenileJusticeScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -299,3 +299,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
   cardBody: { fontSize: 14, lineHeight: 20, color: colors.textSecond },
 });
+export default React.memo(JuvenileJusticeScreen);

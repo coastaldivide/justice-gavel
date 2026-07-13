@@ -105,7 +105,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Element {
 
   // Schedule push reminder for a timeline event
   const scheduleEventReminder = async (event: CaseEvent) => {
@@ -554,3 +554,4 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
   saveBtn:      { flex:2, borderRadius:RADIUS.md, paddingVertical:14, alignItems:'center' },
   saveBtnText:  { fontSize:TYPE.base, lineHeight:21, ...FONTS.bold },
 });
+export default React.memo(CaseTimelineScreen);

@@ -219,7 +219,7 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
   );
 }
 
-export default function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
+function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
@@ -516,3 +516,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(ConsumerSubscriptionScreen);

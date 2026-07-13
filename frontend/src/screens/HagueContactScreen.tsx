@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
@@ -56,7 +57,8 @@ interface HagueContactScreenProps {
   route: any;
 }
 
-export default function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
+function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
+  const { showToast } = useToast();
   const { colors } = useTheme();
   const { caseId, caseName } = route?.params || {};
 
@@ -97,7 +99,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
       if (mountedRef.current) setAuthorityData(res.data || null);
     } catch {
       hapticWarn();
-      Alert.alert('Lookup Failed', 'Could not load authority information. Check HCCH at hcch.net directly.');
+      showToast('Could not load authority information. Check HCCH at hcch.net directly.');
     } finally {
       if (mountedRef.current) setLoadingAuth(false);
     }
@@ -125,11 +127,11 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
 
   const submitIntake = useCallback(async () => {
     if (!caseId) {
-      return Alert.alert('No Case', 'Open from a specific case to record intake.');
+      return showToast('Open from a specific case to record intake.');
     }
-    if (!childName.trim()) return Alert.alert('Required', 'Child name is required.');
-    if (!selectedCountry) return Alert.alert('Required', 'Select destination country first.');
-    if (!abductionDate.trim()) return Alert.alert('Required', 'Abduction date is required.');
+    if (!childName.trim()) return showToast('Child name is required.');
+    if (!selectedCountry) return showToast('Select destination country first.');
+    if (!abductionDate.trim()) return showToast('Abduction date is required.');
 
     if (mountedRef.current) setSubmitting(true);
     try {
@@ -147,7 +149,7 @@ export default function HagueContactScreen({ navigation, route }: HagueContactSc
       if (mountedRef.current) setPhase('result');
     } catch {
       hapticWarn();
-      Alert.alert('Could not Load', 'Failed to record intake. Please try again.');
+      showToast('Failed to record intake. Please try again.');
     } finally {
       if (mountedRef.current) setSubmitting(false);
     }
@@ -519,3 +521,4 @@ const styles = (colors: any) => StyleSheet.create({
   legalNotice:        { marginTop: 24, padding: 14, backgroundColor: colors.card, borderRadius: 10 },
   legalNoticeText:    { fontSize: 12, color: colors.textMuted, lineHeight: 18 },
 });
+export default React.memo(HagueContactScreen);

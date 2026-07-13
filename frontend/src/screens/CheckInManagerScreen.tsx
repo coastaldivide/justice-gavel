@@ -263,7 +263,7 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
 }
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
-export default function CheckInManagerScreen({ route, navigation }: ScreenProps) {
+function CheckInManagerScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
@@ -543,3 +543,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(CheckInManagerScreen);

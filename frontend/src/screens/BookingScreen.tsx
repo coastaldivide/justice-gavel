@@ -49,7 +49,7 @@ function buildDays(): { date: string; label: string; times: { time: string; avai
   return days;
 }
 
-export default function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
 
   // Load attorney's weekly availability so users know best times to expect responses
@@ -471,3 +471,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(BookingScreen);

@@ -1,8 +1,9 @@
+import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform} from 'react-native';
+import React, { useRef, useEffect, useState, useCallback} from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setContacts, getContacts } from '../services/storage';
 import {  useTheme, COLORS } from '../constants/theme';
@@ -10,7 +11,8 @@ import { t } from '../i18n';
 
 interface Contact { value: string; label: string; }
 
-export default function ContactsScreen(): React.JSX.Element {
+function ContactsScreen(): React.JSX.Element {
+  const { showToast } = useToast();
   const [submitting, setSubmitting] = React.useState(false);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -60,7 +62,7 @@ export default function ContactsScreen(): React.JSX.Element {
     await setContacts(values);
     setSaving(false);
     setSaved(true);
-    Alert.alert('Saved', 'Your emergency contacts have been saved.');
+    showToast('Your emergency contacts have been saved.');
   };
 
   const typeHint = (val: string) => {
@@ -177,3 +179,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   tipsTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 8 },
   tipItem: { fontSize: 12, lineHeight: 20 },
 });
+export default React.memo(ContactsScreen);

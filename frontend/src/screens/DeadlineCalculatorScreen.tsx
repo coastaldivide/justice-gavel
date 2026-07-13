@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -23,7 +24,7 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
  */
 import React, { useState, useMemo } from 'react';
 import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
-import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Share, KeyboardAvoidingView, Platform, RefreshControl} from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Share, KeyboardAvoidingView, Platform, RefreshControl, Alert} from 'react-native';
 import { getUserState } from '../utils/userState';
 import { t } from '../i18n';
 
@@ -367,6 +368,7 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
   rule: DeadlineRule; arrest: Date | null; judgment: Date | null;
   today: Date; colors: ThemeColors; isDark: boolean; state?: string;
 }) {
+  const { showToast } = useToast();
   const [remindLoading, setRemindLoading] = useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -377,14 +379,13 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
       const { default: Calendar } = await import('expo-calendar');
       const { status } = await Calendar.requestCalendarPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Calendar access denied',
-          'Enable calendar access in Settings to add deadlines.');
+        showToast('Enable calendar access in Settings to add deadlines.');
         return;
       }
       const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
       const defaultCal = calendars.find(cal => cal.isPrimary) || calendars[0];
       if (!defaultCal) {
-        Alert.alert('No calendar found', 'Could not locate a calendar on this device.');
+        showToast('Could not locate a calendar on this device.');
         return;
       }
       const start = new Date(dueDate);
@@ -408,7 +409,7 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
         [{ text: 'OK' }]
       );
     } catch {
-      Alert.alert('Calendar error', 'Could not add event. Please try again.');
+      showToast('Could not add event. Please try again.');
     }
   }, []);
 
@@ -501,7 +502,8 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function DeadlineCalculatorScreen(): React.JSX.Element {
+function DeadlineCalculatorScreen(): React.JSX.Element {
+  const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -516,7 +518,7 @@ export default function DeadlineCalculatorScreen(): React.JSX.Element {
       const remind3Days = new Date(deadline);
       remind3Days.setDate(remind3Days.getDate() - 3);
       if (remind3Days <= new Date()) {
-        Alert.alert('Too close', 'This deadline is within 3 days -- act today.');
+        showToast('This deadline is within 3 days -- act today.');
         return;
       }
       setRemindLoading(true);
@@ -756,3 +758,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(DeadlineCalculatorScreen);

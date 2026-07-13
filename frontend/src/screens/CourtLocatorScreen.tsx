@@ -4,7 +4,8 @@ import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
 import React, { useState, useEffect, useCallback } from 'react';
-import {View, Text, FlatList, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView} from 'react-native';
+import {View, Text, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView} from 'react-native';
+import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import {api} from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { t } from '../i18n';
@@ -34,7 +35,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function CourtLocatorScreen(): React.JSX.Element {
+function CourtLocatorScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -161,15 +162,12 @@ export default function CourtLocatorScreen(): React.JSX.Element {
         <TouchableOpacity accessibilityRole="button" onPress={() => doSearch('Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:'#fff',fontWeight:'700'}}>Retry</Text></TouchableOpacity>
       accessibilityRole="search" accessibilityLabel="Search"
       </>) : null}
-      <FlatList
-          keyboardShouldPersistTaps="handled"
-        initialNumToRender={10}
-        maxToRenderPerBatch={8}
-        windowSize={5}
-        removeClippedSubviews={true}
-        onRefresh={onRefresh}
+      <FlashList
+          initialNumToRender={10}
+          onRefresh={onRefresh}
         refreshing={refreshing}
-        data={results}
+        estimatedItemSize={80}
+          data={results}
         keyExtractor={i => String(i.id)}
         contentContainerStyle={{ padding: 16, paddingTop: 4, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
         ListEmptyComponent={
@@ -289,3 +287,4 @@ export default function CourtLocatorScreen(): React.JSX.Element {
     </KeyboardAvoidingView>
   );
 }
+export default React.memo(CourtLocatorScreen);

@@ -21,7 +21,7 @@ import { t } from '../i18n';
 
 declare var JusticeGavelLogo: any;
 declare var showPassword: any;
-export default function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
+function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [identifier, setIdentifier] = useState('');
@@ -280,3 +280,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   topBrowseBtnSub:  { color: 'rgba(255,255,255,0.65)', fontSize: 11, marginTop: 3 },
   privacy: { textAlign: 'center', color: COLORS.textMuted, fontSize: 11, marginTop: 28, letterSpacing: 0.5 },
 });
+export default React.memo(LoginScreen);

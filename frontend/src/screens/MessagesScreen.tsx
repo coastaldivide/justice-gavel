@@ -453,7 +453,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   cutoffBanner:  { borderRadius: 8, borderWidth: 1, padding: 8, marginBottom: 10 },
   cutoffText:    { fontSize: 11, lineHeight: 16 },
 });
-export default function LegalResearchScreen({ route, navigation }: ScreenProps) {
+function LegalResearchScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
@@ -804,3 +804,4 @@ export default function LegalResearchScreen({ route, navigation }: ScreenProps) 
 
 // Module-level fallback for helper components
 }
+export default React.memo(LegalResearchScreen);

@@ -61,7 +61,7 @@ const TILES = [
 
 const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
-export default function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -590,3 +590,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
     minHeight: 72 },
 
 });
+export default React.memo(HomeScreen);

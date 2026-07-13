@@ -102,7 +102,7 @@ const FALLBACK_CRISIS_RESOURCES = [
   { id: 'f5', name: 'National Alliance on Eating Disorders', phone: '1-866-662-1235', url: 'https://www.allianceforeatingdisorders.com', category: 'CRISIS_LINE', description: 'Mon-Fri 9am-9pm ET' },
 ];
 
-export default function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -346,3 +346,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
 
 });
+export default React.memo(CrisisResourcesScreen);

@@ -12,7 +12,7 @@ interface Props {
   navigation: any;
 }
 
-export default function MatterScreen({ route, navigation }: Props) {
+function MatterScreen({ route, navigation }: Props) {
   const { matterId } = route.params;
   const [matter, setMatter]   = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -87,3 +87,4 @@ const styles = StyleSheet.create({
   btn:      { backgroundColor: '#042C53', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 24 },
   btnText:  { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
+export default React.memo(MatterScreen);

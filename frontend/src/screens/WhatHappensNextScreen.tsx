@@ -374,7 +374,7 @@ const STATE_PROCESS_NOTES: Record<string, { title: string; body: string; color: 
   },
 };
 
-export default function WhatHappensNextScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function WhatHappensNextScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -622,3 +622,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(WhatHappensNextScreen);

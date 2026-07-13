@@ -96,7 +96,7 @@ const EVICTION_SECTIONS = [
   },
 ];
 
-export default function HousingRightsScreen(): React.JSX.Element {
+function HousingRightsScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -167,3 +167,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   disclaimer:      { borderTopWidth: 1, paddingTop: 12 },
   disclaimerText:  { fontSize: 11, lineHeight: 17, textAlign: 'center' },
 });
+export default React.memo(HousingRightsScreen);

@@ -69,7 +69,7 @@ type Props = {
   onDecline?: () => void;
 };
 
-export default function TermsAcceptanceModal({ visible, onAccepted }: Props) {
+function TermsAcceptanceModal({ visible, onAccepted }: Props) {
   const { colors } = useTheme();
   const s = styles(colors, TYPE, FONTS);
 
@@ -285,3 +285,4 @@ const styles = (colors: any, TYPE: any, FONT: any) => StyleSheet.create({
   acceptBtnText:      { color: '#fff', fontSize: 15, fontFamily: FONT.bold },
   versionNote:        { fontSize: 10, color: colors.subtext, textAlign: 'center', opacity: 0.7 },
 });
+export default React.memo(TermsAcceptanceModal);

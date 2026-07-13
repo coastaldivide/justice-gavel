@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -54,7 +55,8 @@ const TIER_COLORS: Record<string, string> = {
   enterprise: COLORS.emergency,
 };
 
-export default function FirmAcquisitionScreen({ navigation }: any) {
+function FirmAcquisitionScreen({ navigation }: any) {
+  const { showToast } = useToast();
   const { colors } = useTheme();
   const s = styles(colors);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
@@ -149,8 +151,8 @@ export default function FirmAcquisitionScreen({ navigation }: any) {
 
   // ── Activate trial ────────────────────────────────────────────────────────
   const activateTrial = async () => {
-    if (!firmName.trim()) { Alert.alert('Required', 'Firm name is required.'); return; }
-    if (firmName.trim().length < 2) { Alert.alert('Too short', 'Firm name must be at least 2 characters.'); return; }
+    if (!firmName.trim()) { showToast('Firm name is required.'); return; }
+    if (firmName.trim().length < 2) { showToast('Firm name must be at least 2 characters.'); return; }
     const canProceed = await (requireAuth as any)();
     if (canProceed === false) return;
     setActiv(true);
@@ -537,3 +539,4 @@ const styles = (c: any) => StyleSheet.create({
   upgradeBtn:     { flex: 1, paddingVertical: 10, borderRadius: RADIUS.sm, alignItems: 'center' },
   upgradeBtnText: { fontSize: TYPE.sm, fontFamily: FONT.semiBold, color: COLORS.surface },
 });
+export default React.memo(FirmAcquisitionScreen);

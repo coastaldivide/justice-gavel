@@ -330,7 +330,7 @@ function getOfflineAnswer(query: string): string | null {
 // T1-J: function signature is on one line; all hooks are inside the function body
 const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
-export default function ChatScreen({ navigation, route }: ScreenProps) {
+function ChatScreen({ navigation, route }: ScreenProps) {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
 
@@ -956,3 +956,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(ChatScreen);

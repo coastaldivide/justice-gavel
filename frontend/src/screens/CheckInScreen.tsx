@@ -40,7 +40,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | null {
+function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | null {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -542,3 +542,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   helpBlockBtn:   { backgroundColor: COLORS.navy, borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center' },
   helpBlockBtnText: { color: COLORS.bgCard, ...FONTS.heavy, fontSize: 12 },
 });
+export default React.memo(CheckInScreen);

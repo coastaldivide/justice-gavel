@@ -497,7 +497,7 @@ function getRelevantMotions(charges: string | null): string[] {
   return [...relevant];
 }
 
-export default function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -1336,3 +1336,4 @@ const egStyles = StyleSheet.create({
   exportBtnDisabled: { backgroundColor:COLORS.border },
   exportBtnText: { fontSize:14,
     lineHeight: 21, color:COLORS.bgCard, fontWeight:'700' } });
+export default React.memo(MotionLibraryScreen);

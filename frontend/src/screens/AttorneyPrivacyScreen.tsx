@@ -1,9 +1,10 @@
+import { useToast } from '../components/ToastProvider';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Linking, Alert,
+  StyleSheet, Linking,
 } from 'react-native';
 import { COLORS } from '../constants/theme';
 import { t } from '../i18n';
@@ -73,7 +74,8 @@ This disclaimer is non-removable and appears on all AI output delivered to clien
   },
 ];
 
-export default function AttorneyPrivacyScreen({ navigation }: any) {
+function AttorneyPrivacyScreen({ navigation }: any) {
+  const { showToast } = useToast();
   const colors = COLORS;
   const [expanded, setExpanded] = useState<number | null>(0);
 
@@ -150,7 +152,7 @@ export default function AttorneyPrivacyScreen({ navigation }: any) {
         <TouchableOpacity
           accessibilityRole="button"
           style={[s.contactBtn, s.contactBtnOutline, { borderColor: COLORS.navy }]}
-          onPress={() => Linking.openURL('mailto:privacy@justicegavel.app').catch(() => Alert.alert('Email', 'privacy@justicegavel.app'))}
+          onPress={() => Linking.openURL('mailto:privacy@justicegavel.app').catch(() => showToast('privacy@justicegavel.app'))}
         >
           <Text style={[s.contactBtnText, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>Request Data Deletion</Text>
         </TouchableOpacity>
@@ -184,3 +186,4 @@ const s = StyleSheet.create({
   contactBtnOutline:{ backgroundColor: 'transparent', borderWidth: 1.5 },
   contactBtnText:   { color: '#fff', fontSize: 14, fontWeight: '700' },
 });
+export default React.memo(AttorneyPrivacyScreen);

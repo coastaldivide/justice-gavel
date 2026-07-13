@@ -1,6 +1,6 @@
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback} from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
@@ -27,7 +27,7 @@ function StatCard({ icon, value, label, color }: { icon: string; value: string |
   );
 }
 
-export default function AdvocacyScreen(): React.JSX.Element {
+function AdvocacyScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -168,3 +168,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(AdvocacyScreen);

@@ -31,7 +31,7 @@ const TWO_PARTY_STATES = new Set([
   'CA','CT','FL','IL','MD','MA','MI','MT','NH','OR','PA','WA','WI'
 ]);
 
-export default function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Element {
+function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -520,3 +520,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   infoTitle:     { fontSize: 13, fontWeight: '800', marginBottom: 10 },
   infoItem:      { fontSize: 12, lineHeight: 22 },
 });
+export default React.memo(InterrogationRecorderScreen);

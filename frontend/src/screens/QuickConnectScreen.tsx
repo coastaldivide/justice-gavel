@@ -126,7 +126,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
 
@@ -611,3 +611,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(QuickConnectScreen);

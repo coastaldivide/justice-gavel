@@ -21,7 +21,7 @@ import { t } from '../i18n';
 
 type Step = 'idle' | 'recording' | 'uploading' | 'done' | 'error';
 
-export default function InterrogationRecorderScreen(): React.JSX.Element {
+function InterrogationRecorderScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [step,       setStep]       = useState<Step>('idle');
@@ -237,3 +237,4 @@ export default function InterrogationRecorderScreen(): React.JSX.Element {
     </ScrollView>
   );
 }
+export default React.memo(InterrogationRecorderScreen);

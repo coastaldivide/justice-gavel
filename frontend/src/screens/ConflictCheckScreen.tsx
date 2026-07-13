@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 /**
  * ConflictCheckScreen.tsx — Attorney conflict of interest check
  * Allows firm attorneys to check for conflicts before accepting a client.
@@ -5,9 +6,10 @@
  */
 import React, { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
+import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, RefreshControl,
-  ActivityIndicator, StyleSheet, Alert,
+  View, Text, TextInput, TouchableOpacity, RefreshControl,
+  ActivityIndicator, StyleSheet,
 } from 'react-native';
 import { api } from '../services/api';
 import { t } from '../i18n';
@@ -20,7 +22,8 @@ interface ConflictResult {
 
 interface Props { navigation: any; }
 
-export default function ConflictCheckScreen({ navigation }: Props) {
+function ConflictCheckScreen({ navigation }: Props) {
+  const { showToast } = useToast();
   const [refreshing, setRefreshing] = React.useState(false);
   const [parties, setParties]   = useState<string>('');
   const [result, setResult]     = useState<ConflictResult | null>(null);
@@ -30,7 +33,7 @@ export default function ConflictCheckScreen({ navigation }: Props) {
   const runCheck = useCallback(async () => {
     const names = parties.split('\n').map(n => n.trim()).filter(Boolean);
     if (names.length === 0) {
-      Alert.alert('Input Required', 'Enter at least one party name');
+      showToast('Enter at least one party name');
       return;
     }
     setLoading(true); setError(null); setResult(null);
@@ -41,9 +44,7 @@ export default function ConflictCheckScreen({ navigation }: Props) {
       setResult(data);
     } catch (e: any) {
       if (e?.response?.status === 403) {
-        Alert.alert('Upgrade Required', 'Conflict checks require a Legal Pro subscription.',
-          [{ text: 'Cancel', style: 'cancel' },
-           { text: 'Upgrade', onPress: () => navigation.navigate('Subscription') }]);
+        showToast('Conflict checks require a Legal Pro subscription.');
       } else {
         setError(e?.response?.data?.error || 'Conflict check failed');
       }
@@ -97,7 +98,7 @@ export default function ConflictCheckScreen({ navigation }: Props) {
           </View>
 
           {result.matches.length > 0 && (
-            <FlatList
+            <FlashList
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => setRefreshing(false)} />}
               data={result.matches}
               keyExtractor={(item, idx) => `conflict-${idx}`}
@@ -137,3 +138,4 @@ const styles = StyleSheet.create({
   matchMatter:  { fontSize: 13, color: '#374151', marginBottom: 2 },
   matchRole:    { fontSize: 12, color: '#9ca3af', fontStyle: 'italic' },
 });
+export default React.memo(ConflictCheckScreen);

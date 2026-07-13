@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { AppIcon } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
@@ -15,7 +16,7 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-  StyleSheet, Alert, RefreshControl,
+  StyleSheet, RefreshControl,
 } from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
@@ -42,7 +43,8 @@ const PRIORITY_COLORS: Record<string, string> = {
   high: COLORS.emergency, normal: COLORS.blue, low: COLORS.textMuted,
 };
 
-export default function MatterIntelligenceScreen({ route, navigation }: any) {
+function MatterIntelligenceScreen({ route, navigation }: any) {
+  const { showToast } = useToast();
   const { matterId, matterTitle } = route.params || {};
   const { colors } = useTheme();
   const s = styles(colors);
@@ -95,7 +97,7 @@ export default function MatterIntelligenceScreen({ route, navigation }: any) {
         // Non-blocking: let the user see what loaded, surface incomplete state in header
         setPartialLoad(true);
       } else if (failures.length === 6) {
-        Alert.alert('Load Failed', 'Could not load matter intelligence.');
+        showToast('Could not load matter intelligence.');
       }
     } catch (e: any) {
       if (isMounted.current) setErrorMsg('Could not load data. Pull to retry.');
@@ -502,3 +504,4 @@ const styles = (c: any) => StyleSheet.create({
   escalFlagLabel:   { fontSize: TYPE.xs, color: c.textMuted, marginBottom: 4 },
   escalFlagVal:     { fontSize: TYPE.md, fontFamily: FONT.bold, color: c.textMuted },
 });
+export default React.memo(MatterIntelligenceScreen);

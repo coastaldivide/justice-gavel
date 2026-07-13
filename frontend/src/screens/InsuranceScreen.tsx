@@ -26,7 +26,7 @@ const FEATURES = [
   { label: 'Covers family members',   basic: false, pro: false, family: true },
 ];
 
-export default function InsuranceScreen({ navigation }: ScreenProps): React.JSX.Element {
+function InsuranceScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -199,3 +199,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   enrollBtn: { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28 },
   enrollBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21 } });
+export default React.memo(InsuranceScreen);

@@ -154,7 +154,7 @@ const US_STATES = [
     'VA','WA','WV','WI','WY','DC',
   ];
 
-export default function DiversionScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+function DiversionScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
@@ -532,3 +532,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(DiversionScreen);

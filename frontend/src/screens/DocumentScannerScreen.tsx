@@ -31,7 +31,7 @@ import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webC
 import { t } from '../i18n';
 
 declare var CameraType: any;
-export default function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const { caseId, onCapture } = (route?.params ?? {}) as {
     caseId?: number;
     onCapture?: (uri: string) => void;
@@ -266,3 +266,4 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
   previewBtnText:{ color: COLORS.bgCard, fontSize: TYPE.base, lineHeight: 21, ...FONTS.bold },
   previewHint:  { position: 'absolute', top: 20, alignSelf: 'center',
                   color: 'rgba(255,255,255,0.7)', fontSize: 12, lineHeight: 18 } });
+export default React.memo(DocumentScannerScreen);

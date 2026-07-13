@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 /**
  * VideoConsultationScreen.tsx
  * Secure attorney-client video consultations (Legal Pro + Esquire tiers).
@@ -7,7 +8,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Platform, Alert,
+  ActivityIndicator, Platform,
 } from 'react-native';
 import { Linking } from 'react-native'; // open Daily.co session in system browser
 const openBrowserAsync = (url: string) => Linking.openURL(url);
@@ -21,7 +22,8 @@ interface Props {
   navigation: any;
 }
 
-export default function VideoConsultationScreen({ route, navigation }: Props) {
+function VideoConsultationScreen({ route, navigation }: Props) {
+  const { showToast } = useToast();
   const { matterId, attorneyId, topic } = route.params || {};
   const colors = useThemeColors();
 
@@ -45,14 +47,7 @@ export default function VideoConsultationScreen({ route, navigation }: Props) {
       setInSession(true);
     } catch (e: any) {
       if (e?.response?.status === 403 && e?.response?.data?.upgrade) {
-        Alert.alert(
-          'Upgrade Required',
-          'Video consultations are available on Legal Pro and Esquire plans.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Upgrade', onPress: () => navigation.navigate('Subscription') },
-          ]
-        );
+        showToast('Video consultations are available on Legal Pro and Esquire plans.');
       } else {
         setError(e?.response?.data?.error || 'Could not start video session');
       }
@@ -166,3 +161,4 @@ const styles = StyleSheet.create({
                  paddingHorizontal: 32, paddingVertical: 14, borderRadius: 30 },
   endBtnText:  { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
+export default React.memo(VideoConsultationScreen);

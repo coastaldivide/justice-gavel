@@ -111,7 +111,7 @@ const GUIDANCE: Record<string, { urgent: string[]; rights: string[]; deadline?: 
   },
 };
 
-export default function TenantRightsScreen(): React.JSX.Element {
+function TenantRightsScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -203,3 +203,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(TenantRightsScreen);

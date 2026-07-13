@@ -182,7 +182,7 @@ function CriteriaSection({ title, progress, criteria, earned }:
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
+function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -416,3 +416,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(GoldenGavelScreen);

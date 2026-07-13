@@ -203,7 +203,7 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
   );
 }
 
-export default function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -789,3 +789,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(ExpungementScreen);

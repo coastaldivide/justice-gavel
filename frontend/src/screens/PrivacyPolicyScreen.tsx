@@ -239,7 +239,7 @@ const SECTIONS: Section[] = [
   },
 ];
 
-export default function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
+function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
   const [tableExpanded, setTableExpanded] = useState(false);
@@ -467,3 +467,4 @@ const styles = StyleSheet.create({
   footer:           { margin: 16, borderRadius: 12, padding: 20, alignItems: 'center' },
   footerText:       { fontSize: 12, textAlign: 'center' },
 });
+export default React.memo(PrivacyPolicyScreen);

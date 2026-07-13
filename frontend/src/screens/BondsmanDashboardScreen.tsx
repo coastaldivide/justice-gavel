@@ -312,7 +312,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element {
+function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
 
@@ -754,3 +754,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(BondsmanDashboardScreen);

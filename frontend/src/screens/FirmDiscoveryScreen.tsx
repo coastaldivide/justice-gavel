@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 /**
  * FirmDiscoveryScreen.tsx — Public firm directory for defendants and clients
  * Lets users browse firms by state/practice area, enter a referral code,
@@ -5,9 +6,10 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
+import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import {
-  View, Text, TextInput, FlatList, TouchableOpacity,
-  ActivityIndicator, StyleSheet, RefreshControl, Alert,
+  View, Text, TextInput, TouchableOpacity,
+  ActivityIndicator, StyleSheet, RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { api } from '../services/api';
@@ -26,7 +28,8 @@ interface Firm {
   referral_code: string;
 }
 
-export default function FirmDiscoveryScreen() {
+function FirmDiscoveryScreen() {
+  const { showToast } = useToast();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [firms, setFirms]           = useState<Firm[]>([]);
@@ -57,14 +60,14 @@ export default function FirmDiscoveryScreen() {
 
   const redeemCode = async () => {
     const c = code.trim().toUpperCase();
-    if (!c || c.length < 4) { Alert.alert('Enter a referral code'); return; }
+    if (!c || c.length < 4) { showToast('Enter a referral code'); return; }
     setCodeLoading(true);
     try {
       const res = await api.get(`/firms/referral/${c}`);
       const firm = res.data?.firm;
       if (firm) navigation.navigate('FirmPublicProfile', { firmId: firm.id, firmName: firm.name });
     } catch {
-      Alert.alert('Not found', 'No firm found with that referral code. Check the code and try again.');
+      showToast('No firm found with that referral code. Check the code and try again.');
     } finally {
       setCodeLoading(false);
     }
@@ -157,7 +160,8 @@ export default function FirmDiscoveryScreen() {
       {loading ? (
         <ActivityIndicator style={{ marginTop: 60 }} color={colors.blue} />
       ) : (
-        <FlatList
+        <FlashList
+          estimatedItemSize={80}
           data={firms ?? []}
           keyExtractor={item => String(item.id)}
           renderItem={renderFirm}
@@ -201,3 +205,4 @@ const s = StyleSheet.create({
   emptyTitle:  { fontSize: 17, fontWeight: '700', marginBottom: 8 },
   emptyBody:   { fontSize: 14, textAlign: 'center', lineHeight: 20, maxWidth: 280 },
 });
+export default React.memo(FirmDiscoveryScreen);

@@ -303,7 +303,7 @@ function SavedCard({
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
+function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -485,3 +485,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(SavedLawyersScreen);

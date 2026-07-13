@@ -287,7 +287,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
-export default function MatchScreen(): React.JSX.Element {
+function MatchScreen(): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = React.useRef(true);
@@ -548,3 +548,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(MatchScreen);

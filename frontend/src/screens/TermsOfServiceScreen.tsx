@@ -202,7 +202,7 @@ const SECTIONS: Section[] = [
   },
 ];
 
-export default function TermsOfServiceScreen({ navigation }: ScreenProps): React.JSX.Element {
+function TermsOfServiceScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -314,3 +314,4 @@ const styles = StyleSheet.create({
   footerBtnText:   { fontSize: 13, fontWeight: '700' },
   footerCopy:      { fontSize: 11, textAlign: 'center', lineHeight: 17 },
 });
+export default React.memo(TermsOfServiceScreen);

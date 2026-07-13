@@ -111,7 +111,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const { colors, isDark } = useTheme();
@@ -611,3 +611,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(FamilyConnectScreen);

@@ -83,7 +83,7 @@ function fmt(n: number) {
   return '$' + n.toLocaleString('en-US');
 }
 
-export default function ChildSupportScreen({ navigation }: any) {
+function ChildSupportScreen({ navigation }: any) {
   const colors = COLORS;
   const [p1Income, setP1Income] = useState('');
   const [p2Income, setP2Income] = useState('');
@@ -309,3 +309,4 @@ const s = StyleSheet.create({
   alimonyLabel: { fontSize: 13 },
   disclaimer:   { fontSize: 11, lineHeight: 16, padding: 16, paddingTop: 12 },
 });
+export default React.memo(ChildSupportScreen);

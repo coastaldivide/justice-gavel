@@ -104,7 +104,7 @@ const allMethods = [
   ];
 
 // Stripe PaymentSheet hook — enables native card sheet instead of browser redirect
-export default function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -470,3 +470,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(PaymentsScreen);

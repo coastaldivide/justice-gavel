@@ -49,7 +49,7 @@ const _HEX_RIGHTSCARD = {
   _c1: C_DC2626,
 } as const;
 
-export default function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
+function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [cardError, setCardError] = React.useState<string|null>(null);
@@ -511,3 +511,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
     fontStyle: 'italic',
   },
 });
+export default React.memo(RightsCardScreen);

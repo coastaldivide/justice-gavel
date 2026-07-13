@@ -473,7 +473,7 @@ function SkeletonCard({ colors }: { colors: Record<string, any> }) {
   );
 }
 
-export default function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
+function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [page, setPage] = React.useState(1);
   const [hasMore, setHasMore] = React.useState(true);
 
@@ -1175,3 +1175,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(LawyersScreen);

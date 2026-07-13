@@ -15,7 +15,7 @@ import JTBLogo from '../components/JTBLogo';
 import { t } from '../i18n';
 
 declare var showPassword: any;
-export default function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
+function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [showTerms, setShowTerms] = React.useState(false);
@@ -214,3 +214,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(RegisterScreen);

@@ -15,7 +15,7 @@ import { useTheme } from '../constants/theme';
 import { api } from '../services/api';
 import { t } from '../i18n';
 
-export default function DocumentScannerScreen(): React.JSX.Element {
+function DocumentScannerScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [scanning,  setScanning]  = useState(false);
@@ -120,3 +120,4 @@ export default function DocumentScannerScreen(): React.JSX.Element {
     </ScrollView>
   );
 }
+export default React.memo(DocumentScannerScreen);

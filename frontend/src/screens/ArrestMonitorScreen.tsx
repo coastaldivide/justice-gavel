@@ -31,7 +31,7 @@ interface Watch {
   active: number;
 }
 
-export default function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -385,3 +385,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   infoCard:  { backgroundColor: COLORS.bg, borderRadius: RADIUS.lg, padding: 16, borderWidth: 1, borderColor: COLORS.border },
   infoTitle: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },
   infoText:  { fontSize: 12, color: COLORS.textMuted, lineHeight: 17 }});
+export default React.memo(ArrestMonitorScreen);

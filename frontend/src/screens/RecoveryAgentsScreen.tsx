@@ -58,7 +58,7 @@ const US_STATES = [
   // Not included: IL, KY, DC -- commercial bail effectively banned there
 ];
 
-export default function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
+function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
 
   const [agents, setAgents]       = useState<Agent[]>([]);
@@ -470,3 +470,4 @@ const styles = StyleSheet.create({
                    borderWidth: 1 },
   webBtnText:    { fontWeight: '700', fontSize: 13 },
 });
+export default React.memo(RecoveryAgentsScreen);

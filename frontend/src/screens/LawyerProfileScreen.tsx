@@ -56,7 +56,7 @@ import { t } from '../i18n';
 declare var onRefresh: any;
 declare var refreshing: any;
 declare var load: any; // hoisted from component scope
-export default function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Element {
 
   const submitReview = async () => {
     if (userRating === 0) return;
@@ -470,3 +470,4 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
                  backgroundColor:C.bg, borderTopWidth:1, borderTopColor:C.border },
   actionBtn:   { borderRadius:RADIUS.md, paddingVertical:14, alignItems:'center' },
   actionBtnText:{ fontSize:TYPE.base, lineHeight:21, ...FONTS.bold, color:COLORS.bgCard } });
+export default React.memo(LawyerProfileScreen);

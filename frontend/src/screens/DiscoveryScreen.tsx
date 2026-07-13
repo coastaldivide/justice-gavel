@@ -218,7 +218,7 @@ const DOC_TYPES = [
     t('disc_doc_da'),      t('disc_doc_tox'),        t('disc_doc_transcript'),
   ];
 
-export default function DiscoveryScreen({ route, navigation }: ScreenProps) {
+function DiscoveryScreen({ route, navigation }: ScreenProps) {
   React.useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
@@ -864,3 +864,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(DiscoveryScreen);

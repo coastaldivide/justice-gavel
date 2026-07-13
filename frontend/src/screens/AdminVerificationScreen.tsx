@@ -29,7 +29,7 @@ interface PendingAtty {
   provider_id:  number | null;
 }
 
-export default function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element {
+function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -228,3 +228,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   rejectBtn:     { flex: 1, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center', borderWidth: 1, backgroundColor: 'transparent' },
   rejectBtnText: { color: '#EF5350', fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 });
+export default React.memo(AdminVerificationScreen);

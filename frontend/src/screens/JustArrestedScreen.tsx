@@ -57,7 +57,7 @@ const STEPS = [
 import Analytics from '../services/analytics';
 import { PlaceholderIllustration } from '../components/PlaceholderIllustration';
 import { t } from '../i18n';
-export default function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
+function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [step, setStep] = useState(0);
@@ -298,3 +298,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(JustArrestedScreen);

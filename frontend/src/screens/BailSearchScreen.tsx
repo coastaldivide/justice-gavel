@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { cacheBailAgents, getCachedBailAgents } from '../services/offlineCache';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
@@ -6,7 +7,7 @@ import { AppIcon } from '../components/AppIcon';
 import { t, initLang } from '../i18n';
 import { haptic, hapticCall } from '../services/haptics';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ActivityIndicator, Alert, Animated, FlatList, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, FlatList, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getLocation, formatDistance } from '../services/location';
 import { api }             from '../services/api';
 import { getUserState } from '../utils/userState';
@@ -19,7 +20,8 @@ declare var locationDenied: any;
 declare var setCity: any;
 declare var setCityQuery: any;
 declare var setLocationDenied: any;
-function callPhone(phone: string) { hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
+function callPhone(phone: string) {
+  const { showToast } = useToast(); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
 function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
@@ -63,7 +65,8 @@ function SkeletonCard({ colors }: { colors: ThemeColors }) {
   );
 }
 
-export default function BailSearchScreen(): React.JSX.Element {
+function BailSearchScreen(): React.JSX.Element {
+  const { showToast } = useToast();
 
   const userStateRef = React.useRef<string>('');
   React.useEffect(() => {
@@ -164,14 +167,7 @@ export default function BailSearchScreen(): React.JSX.Element {
       if (retryCount >= 1) {
         setLocationDenied(true);
       } else {
-        Alert.alert(
-          'Search failed',
-          'Could not connect. Check your internet connection.',
-          [
-            { text: 'Try Again', onPress: () => search() },
-            { text: 'Pick a City', onPress: () => setLocationDenied(true) },
-          ]
-        );
+        showToast('Could not connect. Check your internet connection.');
       }
     }
     setLoading(false);
@@ -555,3 +551,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   hoursText: { fontSize: 11, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   licensePill: { backgroundColor: colors.legal, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 6, alignSelf: 'flex-start' },
   licensePillText: { fontSize: 11, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' }});
+export default React.memo(BailSearchScreen);

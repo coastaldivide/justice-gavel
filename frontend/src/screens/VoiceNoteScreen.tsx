@@ -102,7 +102,7 @@ function useTimer(running: boolean) {
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const mountedRef = React.useRef(true);
@@ -606,3 +606,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(VoiceNoteScreen);

@@ -26,7 +26,7 @@ const RIGHTS_CARDS = [
   { icon: '📞', title: 'Your phone call', body: 'You have the right to a call. Call family or a lawyer. Do not discuss your case on the call.' },
 ];
 
-export default function EmergencyScreen({ route, navigation }: ScreenProps) {
+function EmergencyScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -366,3 +366,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(EmergencyScreen);

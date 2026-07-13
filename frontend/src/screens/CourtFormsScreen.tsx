@@ -74,7 +74,7 @@ const FORM_CATEGORIES = [
 
 type Phase = 'state_select' | 'category_select' | 'form_display' | 'ai_guide';
 
-export default function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null {
+function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null {
   const { colors } = useTheme();
   const s = styles(COLORS, FONTS);
 
@@ -623,3 +623,4 @@ const styles = (C: any, F: any) => StyleSheet.create({
     lineHeight: 21, fontFamily: F.regular, color: C.textMuted },
   aiGuideContent:  { backgroundColor: C.bgCard, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.border },
   aiGuideText:     { fontSize: 14, fontFamily: F.regular, color: C.textPrimary, lineHeight: 22 }});
+export default React.memo(CourtFormsScreen);

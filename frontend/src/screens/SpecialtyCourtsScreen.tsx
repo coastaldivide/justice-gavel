@@ -4,7 +4,8 @@ import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
 import type {} from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Linking, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
+import { View, Text, TouchableOpacity, RefreshControl, Linking, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
+import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { api, cachedGet } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { t } from '../i18n';
@@ -23,7 +24,7 @@ const COURT_TYPES = [
   { key: 'Mental Health Court',label: 'Mental Health Courts', icon: '🧠',  color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
 ];
 
-export default function SpecialtyCourtsScreen(): React.JSX.Element {
+function SpecialtyCourtsScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -101,7 +102,8 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
       <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false}
+        <ScrollView
+          horizontal showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 8, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
         {COURT_TYPES.map(t => (
           <TouchableOpacity
@@ -146,16 +148,12 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
         <><Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign:"center", margin:16 }}>{error}</Text>
         <TouchableOpacity accessibilityRole="button" onPress={load} style={{marginTop:8,padding:10,backgroundColor:(colors.navy || COLORS.navy),borderRadius:8,alignItems:'center'}} accessibilityLabel="Retry"><Text maxFontSizeMultiplier={1.4} style={{color:'#fff',fontWeight:'700'}}>Retry</Text></TouchableOpacity></> 
       ) : null}
-      {!loading && !error && <FlatList
+      {!loading && !error && <FlashList
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load().catch(() => {}); setRefreshing(false); }} />}
-          keyboardShouldPersistTaps="handled"
           data={filtered}
           keyExtractor={i => String(i.id)}
           contentContainerStyle={{ padding: 16, paddingTop: 4 }}
           initialNumToRender={10}
-          maxToRenderPerBatch={8}
-          windowSize={5}
-          removeClippedSubviews={true}
           renderItem={({ item }) => {
             const open = expanded === item.id;
             const ct = COURT_TYPES.find(t => t.key === item.court_type) || COURT_TYPES[0];
@@ -260,3 +258,4 @@ export default function SpecialtyCourtsScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({});
+export default React.memo(SpecialtyCourtsScreen);

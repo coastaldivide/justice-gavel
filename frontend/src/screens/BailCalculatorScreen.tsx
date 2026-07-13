@@ -6,7 +6,7 @@ import {} from '../components/LegalCharts';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 import EmergencyStrip from '../components/EmergencyStrip';
 import type { ScreenProps } from '../types/navigation';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback} from 'react';
 import {View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { api, cachedGet } from '../services/api';
@@ -27,7 +27,7 @@ type Schedule = {
   severity: string; bail_min: number; bail_max: number | null; bail_note?: string;
 };
 
-export default function BailCalculatorScreen({ route, navigation }: ScreenProps) {
+function BailCalculatorScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -321,3 +321,4 @@ function Row({ label, value, text, sub, highlight }:
 }
 
 const styles = StyleSheet.create({});
+export default React.memo(BailCalculatorScreen);

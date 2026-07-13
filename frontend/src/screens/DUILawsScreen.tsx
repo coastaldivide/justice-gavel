@@ -43,7 +43,7 @@ function fmtDays(d: number) {
 function fmtMoney(n: number) { return n ? '$'+n.toLocaleString() : 'None'; }
 function fmtBAC(n: number) { return n ? `${n.toFixed(2)}%` : '0.00%'; }
 
-export default function DUILawsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function DUILawsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -262,3 +262,4 @@ function InfoBox({text:t,isDark,color}:{text:string;isDark:boolean;color:string}
 }
 
 const styles = StyleSheet.create({});
+export default React.memo(DUILawsScreen);

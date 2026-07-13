@@ -46,7 +46,7 @@ const SEVERITIES = [
   { key: 'catastrophic', label: 'Catastrophic', sub: 'Permanent disability or death',      color: COLORS.emergencyDark, bg: COLORS.emergencyBg,  fee: '$499.99' },
 ];
 
-export default function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -356,3 +356,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(PILeadScreen);

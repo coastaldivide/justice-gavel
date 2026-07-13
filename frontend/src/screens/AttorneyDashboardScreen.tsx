@@ -173,7 +173,7 @@ function AvailabilityGrid({ userId }: { userId: number }) {
   );
 }
 
-export default function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element | null {
+function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element | null {
 
   // Prevent screenshots on this sensitive screen (Android FLAG_SECURE + iOS)
   React.useEffect(() => {
@@ -916,3 +916,4 @@ const styles = makeStyles(COLORS);
                 </TouchableOpacity>
               )}
             </View>
+export default React.memo(AttorneyDashboardScreen);

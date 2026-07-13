@@ -130,7 +130,7 @@ const CUSTODY_SECTIONS = [
 //   },
 // ];
 
-export default function FamilyCourtScreen(): React.JSX.Element {
+function FamilyCourtScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -201,3 +201,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   disclaimer:      { borderTopWidth: 1, paddingTop: 12 },
   disclaimerText:  { fontSize: 11, lineHeight: 17, textAlign: 'center' },
 });
+export default React.memo(FamilyCourtScreen);

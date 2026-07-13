@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -22,7 +23,7 @@ import { AppIcon } from '../components/AppIcon';
  *   3. HelpNowScreen bottom CTA
  */
 import React, { useState, useEffect, useRef} from 'react';
-import { ActivityIndicator, Alert, BackHandler, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, RefreshControl} from 'react-native';
+import { ActivityIndicator, BackHandler, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, RefreshControl} from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -40,7 +41,8 @@ type Phase = 'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' |
 
 // Message template lines are built inside buildMessage()
 
-export default function EmergencyShareScreen({ route, navigation }: ScreenProps) {
+function EmergencyShareScreen({ route, navigation }: ScreenProps) {
+  const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -187,7 +189,7 @@ export default function EmergencyShareScreen({ route, navigation }: ScreenProps)
 
   const sendShare = async () => {
     if (!coords && !bondsman && !lawyer) {
-      Alert.alert('Nothing to share', 'No location or contacts found.');
+      showToast('No location or contacts found.');
       return;
     }
 
@@ -676,3 +678,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
     fontSize: 11,
     color: colors.steel,
     fontStyle: 'italic' } });
+export default React.memo(EmergencyShareScreen);

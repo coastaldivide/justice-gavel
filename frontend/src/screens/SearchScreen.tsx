@@ -10,7 +10,8 @@ import { AppIcon } from '../components/AppIcon';
  * Uses /api/search with 300ms debounce.
  */
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform} from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform} from 'react-native';
+import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { api } from '../services/api';
 import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
@@ -52,7 +53,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
+function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const userStateRef = React.useRef<string>('');
   React.useEffect(() => {
@@ -175,16 +176,13 @@ export default function SearchScreen({ navigation }: ScreenProps): React.JSX.Ele
         )}
       </View>
 
-      <FlatList
-        data={grouped ?? []}
+      <FlashList
+        estimatedItemSize={80}
+          data={grouped ?? []}
         keyExtractor={item => item.type}
         contentContainerStyle={s.list}
-        keyboardShouldPersistTaps="handled"
-        initialNumToRender={6}
-        maxToRenderPerBatch={6}
-        windowSize={5}
-        removeClippedSubviews={true}
-        onRefresh={onRefresh}
+          initialNumToRender={6}
+          onRefresh={onRefresh}
         refreshing={refreshing}
         ListEmptyComponent={
           searched && !loading ? (
@@ -330,3 +328,4 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
   emptyIcon:    { fontSize:48, marginBottom:16 },
   emptyTitle:   { fontSize:TYPE.lg, lineHeight:27, ...FONTS.semiBold, marginBottom:8, textAlign:'center' },
   emptySub:     { fontSize:TYPE.base, lineHeight:21, textAlign:'center' } });
+export default React.memo(SearchScreen);

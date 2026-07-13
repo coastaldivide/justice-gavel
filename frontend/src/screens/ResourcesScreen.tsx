@@ -4,7 +4,8 @@ import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
 import SkeletonLoader from '../components/SkeletonLoader';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {View, Text, FlatList, RefreshControl, TouchableOpacity, TextInput, Linking, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
+import {View, Text, RefreshControl, TouchableOpacity, TextInput, Linking, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
+import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { api, cachedGet }           from '../services/api';
 import { cacheResources, getCachedResources } from '../services/offlineCache';
 import {  useTheme, COLORS }      from '../constants/theme';
@@ -59,7 +60,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function ResourcesScreen(): React.JSX.Element {
+function ResourcesScreen(): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -188,16 +189,13 @@ export default function ResourcesScreen(): React.JSX.Element {
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList
-          keyboardShouldPersistTaps="handled"
+        <FlashList
+          estimatedItemSize={80}
           data={filtered ?? []}
           keyExtractor={i => String(i.id)}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}
           contentContainerStyle={{ paddingHorizontal:16, paddingBottom:24 }}
           initialNumToRender={15}
-          maxToRenderPerBatch={20}
-          windowSize={10}
-          removeClippedSubviews
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color:sub, textAlign:'center', marginTop:40 }}>
               🔍 No resources found{q ? ` for "${q}"` : ''}.
@@ -308,3 +306,4 @@ export default function ResourcesScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({});
+export default React.memo(ResourcesScreen);

@@ -163,7 +163,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
   </View>
 );
 
-export default function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [isOffline, setIsOffline] = React.useState(false);
 
   // ── Offline detection ──────────────────────────────────────
@@ -692,3 +692,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(HelpNowScreen);

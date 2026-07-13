@@ -184,7 +184,7 @@ function LangPicker({
 }
 
 // ── Main screen ────────────────────────────────────────────────────────────
-export default function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [submitting, setSubmitting] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -765,3 +765,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
+export default React.memo(TranslatorScreen);

@@ -1,12 +1,13 @@
+import { useToast } from '../components/ToastProvider';
 /**
  * FirmPublicProfileScreen.tsx — Public-facing firm profile for clients
  * Navigated to from FirmDiscoveryScreen when user taps a firm card.
  * Shows firm details, attorneys, practice areas, and contact options.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback} from 'react';
 import {
   View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator,
-  Linking, Alert, StyleSheet,
+  Linking, StyleSheet,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { api } from '../services/api';
@@ -23,7 +24,8 @@ interface FirmProfile {
   description: string; referral_code: string; attorneys: Attorney[];
 }
 
-export default function FirmPublicProfileScreen() {
+function FirmPublicProfileScreen() {
+  const { showToast } = useToast();
   const navigation = useNavigation<any>();
   const route      = useRoute<RouteProp<Record<string, RouteParams>, string>>();
   const { colors } = useTheme();
@@ -43,14 +45,14 @@ export default function FirmPublicProfileScreen() {
   }, [firmId]);
 
   const callFirm = () => {
-    if (!firm?.phone) { Alert.alert('No phone number listed'); return; }
-    Linking.openURL(`tel:${firm.phone}`).catch(() => Alert.alert('Could not open phone'));
+    if (!firm?.phone) { showToast('No phone number listed'); return; }
+    Linking.openURL(`tel:${firm.phone}`).catch(() => showToast('Could not open phone'));
   };
 
   const openWebsite = () => {
-    if (!firm?.website) { Alert.alert('No website listed'); return; }
+    if (!firm?.website) { showToast('No website listed'); return; }
     const url = firm.website.startsWith('http') ? firm.website : `https://${firm.website}`;
-    Linking.openURL(url).catch(() => Alert.alert('Could not open website'));
+    Linking.openURL(url).catch(() => showToast('Could not open website'));
   };
 
   const contactFirm = () => {
@@ -211,3 +213,4 @@ const s = StyleSheet.create({
                  alignItems: 'center', justifyContent: 'center', minHeight: 48 },
   btnText:     { color: '#fff', fontWeight: '700', fontSize: 14 },
 });
+export default React.memo(FirmPublicProfileScreen);

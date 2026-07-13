@@ -1,9 +1,10 @@
+import { useToast } from '../components/ToastProvider';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Alert,
+  StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { COLORS } from '../constants/theme';
 import { api } from '../services/api';
@@ -43,7 +44,8 @@ interface Props {
   onAccepted: () => void;
 }
 
-export default function LegalDisclaimerScreen({ onAccepted }: Props) {
+function LegalDisclaimerScreen({ onAccepted }: Props) {
+  const { showToast } = useToast();
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
   const [loading, setLoading] = React.useState(false);
   const [accepting, setAccepting] = useState(false);
@@ -57,7 +59,7 @@ export default function LegalDisclaimerScreen({ onAccepted }: Props) {
 
   const handleAccept = async () => {
     if (!agreed) {
-      Alert.alert('Please confirm', 'You must check the confirmation box to continue.');
+      showToast('You must check the confirmation box to continue.');
       return;
     }
     setAccepting(true);
@@ -70,7 +72,7 @@ export default function LegalDisclaimerScreen({ onAccepted }: Props) {
           }
       onAccepted();
     } catch {
-      Alert.alert('Error', 'Could not record your acceptance. Please check your connection and try again.');
+      showToast('Could not record your acceptance. Please check your connection and try again.');
     } finally {
       setAccepting(false);
     }
@@ -192,3 +194,4 @@ const s = StyleSheet.create({
   scrollHint:       { backgroundColor: COLORS.navy, padding: 10, alignItems: 'center' },
   scrollHintText:   { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' },
 });
+export default React.memo(LegalDisclaimerScreen);

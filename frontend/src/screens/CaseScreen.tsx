@@ -231,7 +231,7 @@ const _HEX_CASE = {
 
 const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
-export default function CaseScreen({ route, navigation }: any) {
+function CaseScreen({ route, navigation }: any) {
   React.useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
@@ -1367,3 +1367,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
+export default React.memo(CaseScreen);

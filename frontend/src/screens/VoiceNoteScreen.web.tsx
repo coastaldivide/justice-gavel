@@ -15,7 +15,7 @@ import { useTheme } from '../constants/theme';
 import { api } from '../services/api';
 import { t } from '../i18n';
 
-export default function VoiceNoteScreen(): React.JSX.Element {
+function VoiceNoteScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [recording, setRecording] = useState(false);
@@ -129,3 +129,4 @@ export default function VoiceNoteScreen(): React.JSX.Element {
     </ScrollView>
   );
 }
+export default React.memo(VoiceNoteScreen);

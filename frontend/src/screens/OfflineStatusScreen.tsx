@@ -60,7 +60,7 @@ const ONLINE_ONLY = [
   { icon: '🔓', label: 'Quick Connect / Emergency',  note: 'Provider matching requires connection.' },
 ];
 
-export default function OfflineStatusScreen({ navigation }: ScreenProps): React.JSX.Element {
+function OfflineStatusScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -229,3 +229,4 @@ const styles = StyleSheet.create({
   pill:           { borderRadius: 20, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
   pillText:       { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
 });
+export default React.memo(OfflineStatusScreen);

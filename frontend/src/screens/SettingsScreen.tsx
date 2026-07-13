@@ -236,7 +236,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
-export default function SettingsScreen({ route, navigation }: any) {
+function SettingsScreen({ route, navigation }: any) {
 
   // Prevent screenshots on this sensitive screen (Android FLAG_SECURE + iOS)
   React.useEffect(() => {
@@ -813,3 +813,4 @@ export default function SettingsScreen({ route, navigation }: any) {
       </ScrollView>
   );
 }
+export default React.memo(SettingsScreen);
