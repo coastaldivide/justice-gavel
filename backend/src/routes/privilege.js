@@ -36,7 +36,7 @@ const router     = Router();
 const privLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 100, message: 'Privilege log limit reached.' });
 const aiLimiter   = makeUserLimiter({ windowMs: 3_600_000, max: 20,  message: 'AI privilege generation limit reached.' });
 
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
 
 const PRIVILEGE_BASES = {
   attorney_client: {

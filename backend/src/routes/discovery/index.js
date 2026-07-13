@@ -11,7 +11,7 @@ import analyzeRouter from './analyze.js';
 import historyRouter from './history.js';
 
 
-if (!process.env.ANTHROPIC_API_KEY) {
+if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
   logger.error('[discovery] ANTHROPIC_API_KEY not set — AI discovery disabled');
 }
 

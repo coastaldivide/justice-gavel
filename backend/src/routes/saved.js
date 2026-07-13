@@ -27,7 +27,7 @@ router.get('/lawyers', authRequired, async (req, res) => {
     );
     return res.json(lawyers.map(l => ({
       ...l,
-      specialties:  (() => { try { return JSON.parse(l.specialties); } catch { return []; } })(),
+      specialties:  (() => { try { return safeJson(l.specialties); } catch { return []; } })(),
       gavel_level:  l.gavel_level  || 0,
       golden_gavel: !!(l.golden_gavel || l.gavel_level >= 3),
     })));

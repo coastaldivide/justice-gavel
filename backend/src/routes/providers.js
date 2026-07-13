@@ -97,7 +97,7 @@ async function findNearestCity(pdb, lat, lng) {
 
 function safeParseJson(val, fallback) {
   if (!val) return fallback;
-  try { return JSON.parse(val); } catch { return fallback; }
+  try { return safeJson(val); } catch { return fallback; }
 }
 
 function applyFilters(rows, { caseType, language, proBonoOnly, slidingScaleOnly }) {
@@ -471,7 +471,7 @@ router.get('/lawyers/:id', async (req, res) => {
     const lawyer = await db.get('SELECT * FROM lawyers WHERE id = ?', [id]);
     if (!lawyer) return res.status(404).json({ error: 'Attorney not found' });
     // Parse specialties if stored as JSON string
-    try { lawyer.specialties = JSON.parse(lawyer.specialties); } catch {}
+    try { lawyer.specialties = safeJson(lawyer.specialties); } catch {}
     // Fetch reviews
     const reviews = await db.all(
       'SELECT id, rating, comment, created_at FROM reviews_app WHERE provider_id = ? ORDER BY created_at DESC LIMIT 20',

@@ -29,7 +29,7 @@ import logger              from '../../utils/logger.js';
 
 const router      = Router();
 const pdfLimiter  = makeUserLimiter({ windowMs: 3_600_000, max: 30, message: 'PDF export limit reached.' });
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
 
 // ── POST /api/motions/export/preview — render any motion text to PDF ──────────
 router.post('/preview', authRequired, pdfLimiter, async (req, res) => {
@@ -79,7 +79,7 @@ router.get('/:id/pdf', authRequired, pdfLimiter, async (req, res) => {
     if (!motion) return err404(res, 'Motion not found.');
 
     let fields = {};
-    try { fields = JSON.parse(motion.case_fields || '{}'); } catch {}
+    try { fields = safeJson(motion.case_fields, {}); } catch {}
 
     const meta = {
       motion_type:    motion.motion_type,
@@ -151,7 +151,7 @@ OUTPUT ONLY the cleaned motion text. No explanatory notes. No markdown.`;
       const refined = data.content?.[0]?.text || motion.draft;
 
       let fields = {};
-      try { fields = JSON.parse(motion.case_fields || '{}'); } catch {}
+      try { fields = safeJson(motion.case_fields, {}); } catch {}
 
       const meta = {
         motion_type:    motion.motion_type,

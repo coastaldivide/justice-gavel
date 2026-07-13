@@ -339,8 +339,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             {cases.length > 0 && (
               <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
                 {cases.length} active {cases.length === 1 ? 'case' : 'cases'}
-                {cases.filter((c: any) => c.escalation?.level === 'critical').length > 0
-                  ? ` · ${cases.filter((c: any) => c.escalation?.level === 'critical').length} 🚨 critical`
+                {(cases ?? []).filter((c: any) => c.escalation?.level === 'critical').length > 0
+                  ? ` · ${(cases ?? []).filter((c: any) => c.escalation?.level === 'critical').length} 🚨 critical`
                   : ''}
               </Text>
             )}

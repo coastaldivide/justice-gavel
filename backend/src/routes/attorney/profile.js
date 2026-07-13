@@ -47,7 +47,7 @@ router.get('/profile', authRequired, async (req, res) => {
       office_name:      user.office_name,
       bio:              user.bio,
       phone:            user.phone,
-      specialties:      user.specialties ? (() => { try { return JSON.parse(user.specialties); } catch { return []; } })().catch?.() || [] : [],
+      specialties:      user.specialties ? (() => { try { return safeJson(user.specialties); } catch { return []; } })().catch?.() || [] : [],
       stats: {
         active_cases:       activeCases.n,
         motions_generated:  completedMotions.n,
@@ -88,7 +88,7 @@ router.get('/profile/availability', authRequired, async (req, res) => {
       [req.user.id]
     );
     const schedule = row?.weekly_availability
-      ? JSON.parse(row.weekly_availability)
+      ? safeJson(row.weekly_availability)
       : {};
     return res.json({ schedule, note: row?.availability_note || '' });
   } catch (e) {

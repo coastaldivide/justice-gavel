@@ -28,6 +28,7 @@
  */
 
 import { runHealthScan }       from '../services/healthScan.js';
+import { asyncRoute } from '../utils/routeHelpers.js';
 import { hasMinRole }         from '../middleware/rbac.js';
 import { makeUserLimiter }    from '../middleware/sharedAiLimiter.js';
 import { err400, escapeLike, err401, err403, err404, err409, err422, err500, err502,
@@ -131,7 +132,7 @@ async function openDb() {
 }
 
 function safeParseJson(v, fallback) {
-  try { return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+  try { return v ? safeJson(v) : fallback; } catch { return fallback; }
 }
 
 function formatRow(row) {
@@ -475,8 +476,8 @@ router.get('/health-scan/latest', authRequired, async (req, res) => {
       completed_at: result.completed_at,
       elapsed_ms:   result.elapsed_ms,
       overall:      result.overall,
-      summary:      JSON.parse(result.summary_json || '{}'),
-      findings:     JSON.parse(result.findings_json || '[]'),
+      summary:      safeJson(result.summary_json, {}),
+      findings:     safeJson(result.findings_json, []),
     });
   } catch (e) {
     logger.error('[admin/health-scan/latest]', e.message);
@@ -511,7 +512,7 @@ router.get('/health-scan/history', authRequired, async (req, res) => {
         completed_at: r.completed_at,
         elapsed_ms:   r.elapsed_ms,
         overall:      r.overall,
-        summary:      JSON.parse(r.summary_json || '{}'),
+        summary:      safeJson(r.summary_json, {}),
       })),
     });
   } catch (e) {
@@ -524,7 +525,7 @@ router.get('/health-scan/history', authRequired, async (req, res) => {
 export default router;
 
 // GET /api/attorney/pending-verification — admin: attorneys awaiting bar verification
-router.get('/attorney/pending-verification', authRequired, async (req, res) => {
+router.get('/attorney/pending-verification', authRequired, asyncRoute(async (req, res) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
     const db = await getDb();

@@ -1,3 +1,4 @@
+import { safeJson } from '../utils/routeHelpers.js';
 /**
  * contracts/_helpers.js — DB schema + core AI functions
  *
@@ -14,7 +15,7 @@ import { enqueue } from '../../services/aiQueue.js';
 import logger      from '../../utils/logger.js';
 import { CONTRACT_TYPES } from './_contract_types.js';
 
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
 const API_URL       = 'https://api.anthropic.com/v1/messages';
 const MODEL         = 'claude-sonnet-4-20250514';
 
@@ -187,7 +188,7 @@ ${contractText.slice(0, 12000)}`;
 
   try {
     const clean = raw.replace(/```json|```/g, '').trim();
-    return JSON.parse(clean);
+    return safeJson(clean);
   } catch (e) {
     logger.warn('[contracts/review] JSON parse failed — returning raw text', e?.message);
     return {
@@ -256,7 +257,7 @@ ${revisedText.slice(0, 6000)}`;
 
   try {
     const clean = raw.replace(/```json|```/g, '').trim();
-    return JSON.parse(clean);
+    return safeJson(clean);
   } catch (e) {
     logger.warn('[contracts/redline] JSON parse:', e?.message);
     return { risk_delta: 'neutral', summary: raw.slice(0, 300), changes: [] };
@@ -311,7 +312,7 @@ ${contractText.slice(0, 8000)}`;
 
   try {
     const clean = raw.replace(/```json|```/g, '').trim();
-    return JSON.parse(clean);
+    return safeJson(clean);
   } catch (e) {
     logger.warn('[contracts/negotiation] JSON parse:', e?.message);
     return { strategy: raw.slice(0, 300), opening_position: [], must_haves: [], trade_offs: [], walk_away_triggers: [] };

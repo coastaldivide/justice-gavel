@@ -156,7 +156,7 @@ async function caldavPut(conn, uid, ical) {
   const isDemo = !conn.access_token || conn.access_token.startsWith('demo_');
   if (isDemo) return { demo: true, uid, href: `demo://${uid}.ics` };
 
-  const meta      = (() => { try { return JSON.parse(conn.metadata || '{}'); } catch { return {}; } })();
+  const meta      = (() => { try { return safeJson(conn.metadata, {}); } catch { return {}; } })();
   const calendarUrl = meta.calendar_url || conn.instance_url;
   if (!calendarUrl) throw new Error('No calendar URL configured. Set calendar_url in connection metadata.');
 
@@ -257,7 +257,7 @@ export async function syncCalendar({ db, conn: _conn, ctx, entity_type, directio
             [result.href, existing.id]
           );
         } else {
-          const meta = (() => { try { return JSON.parse(conn.metadata || '{}'); } catch { return {}; } })();
+          const meta = (() => { try { return safeJson(conn.metadata, {}); } catch { return {}; } })();
           await db.run(
             `INSERT INTO calendar_push_events
                (connection_id, docket_entry_id, external_uid, external_href, calendar_url,
@@ -319,7 +319,7 @@ router.post('/push/:entryId', authRequired, calLimiter, async (req, res) => {
 
     // Upsert record
     const existingEvt = await db.get('SELECT id FROM calendar_push_events WHERE docket_entry_id=? AND connection_id=?', [entryId, conn.id]).catch(() => null);
-    const meta = (() => { try { return JSON.parse(conn.metadata || '{}'); } catch { return {}; } })();
+    const meta = (() => { try { return safeJson(conn.metadata, {}); } catch { return {}; } })();
     if (existingEvt) {
       await db.run(
         "UPDATE calendar_push_events SET external_href=?, sync_status='synced', last_sync_at=datetime('now') WHERE id=?",

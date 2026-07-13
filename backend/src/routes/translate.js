@@ -32,7 +32,7 @@ import { enqueue } from '../services/aiQueue.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
 
 const LANG_NAMES = {
   en: 'English',
@@ -95,7 +95,7 @@ ${text}`,
 
 // ── POST /api/translate/message — standalone translation ─────────────────────
 // ── API key guard — fail fast with clear error rather than cryptic undefined ─
-if (!process.env.ANTHROPIC_API_KEY) {
+if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
   logger.error('[translate.js] ANTHROPIC_API_KEY not set — all AI routes will fail');
 }
 

@@ -34,6 +34,7 @@
  */
 
 import { Router }      from 'express';
+import { asyncRoute } from '../utils/routeHelpers.js';
 import { createHmac, randomBytes } from 'crypto';
 import { getDb }       from '../../db/index.js';
 import { authRequired } from '../../middleware/auth.js';
@@ -190,7 +191,7 @@ export async function dispatchWebhookEvent(db, firmId, eventType, payload) {
 
     const matching = subscriptions.filter(sub => {
       try {
-        const events = JSON.parse(sub.events || '[]');
+        const events = safeJson(sub.events, []);
         return events.includes(eventType) || events.includes('*');
       } catch (e) {
         logger.warn('[webhooks/outbound] events parse:', e?.message);
@@ -296,7 +297,7 @@ router.get('/subscriptions', authRequired, requireFirmRole('partner'), async (re
     res.json({
       subscriptions: rows.map(s => ({
         ...s,
-        events: (() => { try { return JSON.parse(s.events); } catch { return []; } })(),
+        events: (() => { try { return safeJson(s.events); } catch { return []; } })(),
         secret: '[hidden]',
       })),
       count: rows.length,
@@ -317,7 +318,7 @@ router.get('/subscriptions/:id', authRequired, requireFirmRole('partner'), async
 
     res.json({
       ...sub,
-      events: (() => { try { return JSON.parse(sub.events); } catch { return []; } })(),
+      events: (() => { try { return safeJson(sub.events); } catch { return []; } })(),
       secret: '[hidden]',
     });
   } catch (e) {
@@ -357,7 +358,7 @@ router.put('/subscriptions/:id', authRequired, requireFirmRole('firm_admin'), as
     if (!updated) return res.status(404).json({error: 'Not found'});
     res.json({
       ...updated,
-      events: (() => { try { return JSON.parse(updated.events); } catch { return []; } })(),
+      events: (() => { try { return safeJson(updated.events); } catch { return []; } })(),
       secret: '[hidden]',
     });
   } catch (e) {
@@ -447,7 +448,7 @@ router.get('/deliveries/:subId', authRequired, requireFirmRole('partner'), async
 });
 
 // POST /deliveries/:id/retry — manually retry a failed delivery
-router.post('/deliveries/:id/retry', authRequired, requireFirmRole('firm_admin'), async (req, res) => {
+router.post('/deliveries/:id/retry', authRequired, requireFirmRole('firm_admin'), asyncRoute(async (req, res) => {
   try {
     const db       = await getDb();
     const ctx      = req.firmCtx;
@@ -459,7 +460,7 @@ router.post('/deliveries/:id/retry', authRequired, requireFirmRole('firm_admin')
 
     // Re-parse original payload
     let payload;
-    try { payload = JSON.parse(delivery.payload); } catch { payload = {}; }
+    try { payload = safeJson(delivery.payload); } catch { payload = {}; }
 
     const result = await deliverWebhook(db, sub, delivery.event_type, payload?.data || payload);
     res.json({ retried: true, success: result.success, status: result.status, delivery_ms: result.delivery_ms });

@@ -125,7 +125,7 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       }).catch(() => {})
     );
     AsyncStorage.getItem('user').then(u => {
-      if (u) { const user = JSON.parse(u); setDisplayName(user.displayName || user.name || ''); }
+      if (u) { const user = (() => { try { return JSON.parse(u); } catch { return null; } })(); setDisplayName(user.displayName || user.name || ''); }
     }).catch(() => {});
     // Unread message badge
     secureStorage.getToken().then(t => {

@@ -1,3 +1,4 @@
+import { safeJson } from '../utils/routeHelpers.js';
 /**
  * discovery/_helpers.js — File type validation, AI analysis, DB schema
  *
@@ -12,7 +13,7 @@ import multer             from 'multer';
 import rateLimit          from 'express-rate-limit';
 
 export function safeJsonParse(str, fallback = null) {
-  try { return str ? JSON.parse(str) : fallback; } catch { return fallback; }
+  try { return str ? safeJson(str) : fallback; } catch { return fallback; }
 }
 
 const aiLimiter = rateLimit({
@@ -215,7 +216,7 @@ ${text}` }];
 }
 
 export async function analyzeDocument(file, filename = 'document', docType = '', caseContext = '') {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
     throw new Error('ANTHROPIC_API_KEY not configured. Add it to backend/.env to enable document analysis.');
   }
 
@@ -241,7 +242,7 @@ If a field is not visible in the document, use an empty string. Do not guess.`;
     const fileBlocks = await buildContentBlocks(file);
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': (process.env.ANTHROPIC_API_KEY ?? ''), 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
       temperature: 0.2,
@@ -323,7 +324,7 @@ Rules:
     method: 'POST',
     headers: {
       'Content-Type':      'application/json',
-      'x-api-key':         process.env.ANTHROPIC_API_KEY,
+      'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
@@ -349,7 +350,7 @@ Rules:
   const clean = text.replace(/```json|```/g, '').trim();
 
   try {
-    return JSON.parse(clean);
+    return safeJson(clean);
   } catch (e) {
     logger.warn('[discovery/structureAnalysis] JSON parse:', e?.message);
     return {

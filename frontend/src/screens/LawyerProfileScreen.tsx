@@ -192,7 +192,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
   );
 
   const specialties = typeof lawyer.specialties === 'string'
-    ? JSON.parse(lawyer.specialties || '[]').catch?.() || lawyer.specialties.split(',')
+    ? (() => { try { return JSON.parse(lawyer.specialties || '[]'); } catch { return lawyer.specialties?.split(',') ?? []; } })()
     : (lawyer.specialties || []);
 
   const langs = typeof lawyer.languages === 'string'

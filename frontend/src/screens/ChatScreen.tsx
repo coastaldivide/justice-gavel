@@ -435,7 +435,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
         '',
       ].filter(Boolean).join('\n');
 
-      const body = messages.map(m => {
+      const body = (messages ?? []).map(m => {
         const sender = m.role === 'assistant' ? 'Justice Gavel AI' : 'You';
         return `[${sender}]\n${m.text}`;
       }).join('\n\n---\n\n');

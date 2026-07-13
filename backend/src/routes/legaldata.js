@@ -56,7 +56,7 @@ router.get("/:type", authRequired, async (req, res) => {
     // Parse JSON columns
     const parsed = rows.map(r => {
       if (r.covers) {
-        try { r.covers = JSON.parse(r.covers); } catch {}
+        try { r.covers = safeJson(r.covers); } catch {}
       }
       return r;
     });

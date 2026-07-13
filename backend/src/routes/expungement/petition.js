@@ -14,7 +14,7 @@ const router = Router();
 
 
 router.post('/petition', authRequired, async (req, res) => {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
     return res.status(503).json({ error: 'AI petition generation temporarily unavailable.' });
   }
   try {
@@ -57,7 +57,7 @@ Note at the top in ALL CAPS: THIS IS AN AI-GENERATED DRAFT — NOT REVIEWED BY A
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',
-        'x-api-key':         process.env.ANTHROPIC_API_KEY,
+        'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({

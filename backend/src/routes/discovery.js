@@ -1,3 +1,4 @@
+import { safeJson } from '../utils/routeHelpers.js';
 import { Router }        from 'express';
 import { authRequired }   from '../middleware/auth.js';
 import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
@@ -20,7 +21,7 @@ router.get('/status', authRequired, async (req, res) => {
     res.json({
       jobId:     job.id,
       status:    job.status,           // pending|running|done|failed
-      output:    job.output ? JSON.parse(job.output) : null,
+      output:    job.output ? safeJson(job.output) : null,
       error:     job.error  || null,
       createdAt: job.created_at,
       completedAt: job.completed_at || null,

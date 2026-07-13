@@ -27,7 +27,7 @@ const router = Router();
 
 router.post('/ask', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, async (req, res) => {
   // Fail fast if API key is missing — avoids DB queries for a non-starter request
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
     return res.status(503).json({
       error:   'AI service not configured.',
       code:    'api_key_missing',

@@ -1,4 +1,5 @@
 import { cacheFor } from '../utils/cache.js';
+import { asyncRoute } from '../utils/routeHelpers.js';
 /**
  * immigration.js — Immigration legal rights and tools
  * Covers: asylum, detention rights, voluntary departure, DACA, VAWA, TPS
@@ -48,7 +49,7 @@ router.get('/rights', cacheFor(24 * 60), apiLimiter, (req, res) => {
 });
 
 // ── POST /immigration/asylum-clock — calculate days on asylum clock ────────
-router.post('/asylum-clock', authRequired, async (req, res) => {
+router.post('/asylum-clock', authRequired, asyncRoute(async (req, res) => {
   const { filing_date, case_type = 'defensive' } = req.body;
   if (!filing_date) return res.status(400).json({ error: 'filing_date required (YYYY-MM-DD)' });
 

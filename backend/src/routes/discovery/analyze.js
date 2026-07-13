@@ -30,7 +30,7 @@ import {
   ensureTables, hasDiscoveryPro, analyzeDocument,
 } from './_helpers.js';
 
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
 const STRIPE_SECRET  = process.env.STRIPE_SECRET;
 
 const aiLimiter = rateLimit({

@@ -205,7 +205,7 @@ router.get('/redline/:id', authRequired, async (req, res) => {
       [safeInt(req.params.id), req.user.id]
     );
     if (!row) return err404(res, 'Redline not found.');
-    try { row.changes = JSON.parse(row.changes); } catch { row.changes = []; }
+    try { row.changes = safeJson(row.changes); } catch { row.changes = []; }
     res.json(row);
   } catch (e) {
     res.status(500).json({ error: 'Could not load redline.' });

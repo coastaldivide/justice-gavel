@@ -1,4 +1,5 @@
 import logger from '../utils/logger.js';
+import { asyncRoute } from '../utils/routeHelpers.js';
 /**
  * recovery_agents.js — Fugitive Recovery Agent directory
  *
@@ -171,7 +172,7 @@ router.get('/laws/:state', authRequired, apiLimiter, async (req, res) => {
 });
 
 // ── GET /api/recovery-agents/laws — all states summary ───────────────────────
-router.get('/laws', authRequired, apiLimiter, async (req, res) => {
+router.get('/laws', authRequired, apiLimiter, asyncRoute(async (req, res) => {
   res.json({
     laws: RECOVERY_LAWS,
     summary: {

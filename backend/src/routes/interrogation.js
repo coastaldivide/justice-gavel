@@ -19,6 +19,7 @@
  */
 
 import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, API_URLS } from '../utils/routeHelpers.js';
+import { asyncRoute } from '../utils/routeHelpers.js';
 import express  from 'express';
 import multer   from 'multer';
 import FormData from 'form-data';
@@ -108,7 +109,7 @@ async function transcribeAudio(buffer, mimetype, filename) {
 
 // ── Claude speaker tagging ────────────────────────────────────────────────────
 async function tagSpeakers(transcript, segments, context = {}) {
-  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+  const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
 
   const segText = segments.length > 0
     ? segments.map(s => `[${Math.floor(s.start)}s] ${s.text}`).join('\n')
@@ -455,7 +456,7 @@ router.post('/transcribe', authRequired, (req, res, next) => {
 
 // ── GET /api/interrogation/recording-law ─────────────────────────────────────
 // Returns recording law for a given state (call before showing the recorder)
-router.get('/recording-law', async (req, res) => {
+router.get('/recording-law', asyncRoute(async (req, res) => {
   const { state } = req.query;
   res.json(getRecordingLaw(state));
 });

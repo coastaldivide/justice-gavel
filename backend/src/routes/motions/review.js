@@ -48,7 +48,7 @@ router.patch('/:id/status', authRequired, async (req, res) => {
 // ── GET /api/motions/history ──────────────────────────────────────────────────
 
 router.post('/review', authRequired, perUserAiLimit, async (req, res) => {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
     logger.error('[motions/review] ANTHROPIC_API_KEY not set');
     return res.status(503).json({ error: 'AI review temporarily unavailable.' });
   }
@@ -95,7 +95,7 @@ Respond ONLY with the JSON object. No other text.`;
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',
-        'x-api-key':         process.env.ANTHROPIC_API_KEY,
+        'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({

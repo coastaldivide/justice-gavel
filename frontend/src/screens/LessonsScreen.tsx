@@ -80,12 +80,12 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
   };
 
   const displayLessons = filterCat
-    ? lessons.filter(l => l.category === filterCat)
+    ? (lessons ?? []).filter(l => l.category === filterCat)
     : lessons;
 
   const { totalPts, earnedPts, pct } = React.useMemo(() => {
-    const total  = lessons.reduce((s, l) => s + l.points, 0);
-    const earned = lessons.filter(l => completed.has(l.id)).reduce((s, l) => s + l.points, 0);
+    const total  = (lessons ?? []).reduce((s, l) => s + l.points, 0);
+    const earned = (lessons ?? []).filter(l => completed.has(l.id)).reduce((s, l) => s + l.points, 0);
     return { totalPts: total, earnedPts: earned, pct: total > 0 ? earned / total : 0 };
   }, [lessons, completed]);
 

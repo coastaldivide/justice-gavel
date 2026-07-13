@@ -1049,7 +1049,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             accessibilityRole="button"
             style={[styles.toolCard, styles.toolCard, { backgroundColor: COLORS.navy, borderColor: COLORS.navy }]}
             onPress={() => {
-              const activeCase = cases.find((ca: any) => ['Open','Active'].includes(ca.status));
+              const activeCase = (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status));
               const ctx = activeCase
                 ? [
                     `Case: ${activeCase.title}`,
@@ -1109,8 +1109,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             accessibilityRole="button"
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('Discovery', {
-              caseId:    cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
-              caseTitle: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
+              caseId:    (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
+              caseTitle: (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
           >
             <View style={[styles.toolCardIcon, { backgroundColor: colors.blue + '18' }]}>
               <AppIcon name="search-outline" size={20} color={COLORS.navy} />
@@ -1131,7 +1131,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             accessibilityRole="button"
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('LegalResearch', {
-              caseContext: cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
+              caseContext: (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
           >
             <View style={[styles.toolCardIcon, { backgroundColor: colors.legal + '18' }]}>
               <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
@@ -1151,8 +1151,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
           <TouchableOpacity accessibilityRole="button"
             style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('VoiceNote', {
-              caseId:        cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
-              caseTitle:     cases.find((ca: any) => ['Open','Active'].includes(ca.status))?.title,
+              caseId:        (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
+              caseTitle:     (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status))?.title,
               existingNotes: ''})}
           >
             <View style={[styles.toolCardIcon, { backgroundColor: COLORS.navy + '18' }]}>
@@ -1213,7 +1213,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolsSectionLabel, { color: colors.textMuted, marginTop: 14 }]}>
                 Analyze by case
               </Text>
-              {cases.filter((ca: any) => ['Open','Active','Pending'].includes(ca.status)).slice(0,5).map((ca: any) => (
+              {(cases ?? []).filter((ca: any) => ['Open','Active','Pending'].includes(ca.status)).slice(0,5).map((ca: any) => (
                 <TouchableOpacity accessibilityRole="button"
                   key={String(ca.id)}
                   style={[styles.caseToolRow, { backgroundColor: isDark ? colors.bg : COLORS.bg, borderColor: colors.surface }]}

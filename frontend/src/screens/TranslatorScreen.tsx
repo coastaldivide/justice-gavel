@@ -566,7 +566,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
             </Text>
           </View>
         )}
-        {messages.map((msg, i) => (
+        {(messages ?? []).map((msg, i) => (
           <TurnBubble
             key={msg.id ?? i}
             msg={msg}

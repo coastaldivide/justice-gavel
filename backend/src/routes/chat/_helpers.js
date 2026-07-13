@@ -48,7 +48,7 @@ export function detectLawyerHandoff(userMessage, reply) {
 export function buildCaseNote(caseContext, mode = 'consumer') {
   if (!caseContext) return '';
   try {
-    const ctx = typeof caseContext === 'string' ? JSON.parse(caseContext) : caseContext;
+    const ctx = typeof caseContext === 'string' ? safeJson(caseContext) : caseContext;
     const parts = ['\n\n[ACTIVE CASE CONTEXT]'];
 
     if (ctx.title)           parts.push(`Case: ${ctx.title}`);
@@ -139,7 +139,7 @@ export async function callClaude(opts) {
     method: 'POST',
     headers: {
       'Content-Type':      'application/json',
-      'x-api-key':         process.env.ANTHROPIC_API_KEY,
+      'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({

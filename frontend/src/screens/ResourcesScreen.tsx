@@ -95,10 +95,10 @@ function ResourcesScreen(): React.JSX.Element {
   // Filter whenever category or search changes
   useEffect(() => {
     let list = allItems;
-    if (category !== 'ALL') list = list.filter(i => i.category === category);
+    if (category !== 'ALL') list = (list ?? []).filter(i => i.category === category);
     if (q.trim()) {
       const lower = q.toLowerCase();
-      list = list.filter(i =>
+      list = (list ?? []).filter(i =>
         i.title?.toLowerCase().includes(lower) ||
         i.body?.toLowerCase().includes(lower)  ||
         i.state?.toLowerCase().includes(lower)

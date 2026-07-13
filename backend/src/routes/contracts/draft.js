@@ -183,7 +183,7 @@ router.get('/:id', authRequired, async (req, res) => {
     if (!row) return err404(res, 'Contract not found.');
 
     // Parse JSON fields
-    try { row.fields = JSON.parse(row.fields); } catch { row.fields = {}; }
+    try { row.fields = safeJson(row.fields); } catch { row.fields = {}; }
 
     // Load execution status
     const signers = await db.all(
@@ -235,7 +235,7 @@ router.put('/:id', authRequired, async (req, res) => {
 
     const updated = await db.get('SELECT id, user_id, contract_type, title, party_a, party_b, fields, draft, status, execution_date, expiry_date, renewal_date, value_cents, paid_cents, created_at, updated_at FROM contracts WHERE id=? LIMIT 1', [safeInt(req.params.id)]);
     if (!updated) return res.status(404).json({error: 'Not found'});
-    try { updated.fields = JSON.parse(updated.fields); } catch { updated.fields = {}; }
+    try { updated.fields = safeJson(updated.fields); } catch { updated.fields = {}; }
     res.json(updated);
   } catch (e) {
     logger.error('[contracts/update]', e.message);

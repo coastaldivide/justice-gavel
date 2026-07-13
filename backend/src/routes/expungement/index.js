@@ -1,4 +1,5 @@
 import { cacheFor } from '../utils/cache.js';
+import { asyncRoute } from '../utils/routeHelpers.js';
 /**
  * expungement/index.js — Expungement module entry point
  *
@@ -80,7 +81,7 @@ router.post('/eligibility', authRequired, async (req, res) => {
 });
 
 // ── GET /expungement/petition-checklist — documents needed by state ────────
-router.get('/petition-checklist', authRequired, async (req, res) => {
+router.get('/petition-checklist', authRequired, asyncRoute(async (req, res) => {
   const { state } = req.query;
   if (!state) return res.status(400).json({ error: 'state required' });
 

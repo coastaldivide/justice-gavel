@@ -29,6 +29,7 @@
  */
 
 import { Router }          from 'express';
+import { asyncRoute } from '../utils/routeHelpers.js';
 import { randomUUID }      from 'crypto';
 import { createVerify }    from 'crypto';
 import { getDb }           from '../db/index.js';
@@ -524,7 +525,7 @@ router.delete('/config/:firmId', authRequired, requireFirmRole('firm_admin'), as
 });
 
 // GET /api/sso/test/:firmId — verify config is reachable (no actual SAML exchange)
-router.get('/test/:firmId', authRequired, requireFirmRole('firm_admin'), async (req, res) => {
+router.get('/test/:firmId', authRequired, requireFirmRole('firm_admin'), asyncRoute(async (req, res) => {
   try {
     const db     = await getDb();
     const ctx    = req.firmCtx;

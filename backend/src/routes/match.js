@@ -196,7 +196,7 @@ async function generateMatchReports(candidates, userSituation, caseType, languag
     method: 'POST',
     headers: {
       'Content-Type':      'application/json',
-      'x-api-key':         process.env.ANTHROPIC_API_KEY,
+      'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
@@ -218,7 +218,7 @@ async function generateMatchReports(candidates, userSituation, caseType, languag
 
   try {
     const clean = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(clean);
+    return safeJson(clean);
   } catch (e) {
     logger.warn('[match/parseAiReport] JSON parse:', e?.message);
     return [];
@@ -265,7 +265,7 @@ router.get('/lawyers', authRequired, perUserAiLimit, async (req, res) => {
         return res.json(fallback.map((l, i) => formatLawyer(l, i + 1, null, null)));
       }
 
-      const apiKeyMissing = !process.env.ANTHROPIC_API_KEY;
+      const apiKeyMissing = !(process.env.ANTHROPIC_API_KEY ?? '');
       const cands = candidates.slice(0, limit);
 
       // Async: enqueue AI report generation — return jobId immediately
@@ -355,7 +355,7 @@ function buildFallbackReport(l, caseType, language) {
 function safeParseJson(val, fallback) {
   if (!val) return fallback;
   try {
-    const parsed = JSON.parse(val);
+    const parsed = safeJson(val);
     // If the caller expects an array, enforce it — JSON.parse('null') = null
     if (Array.isArray(fallback) && !Array.isArray(parsed)) return fallback;
     return parsed;

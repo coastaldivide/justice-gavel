@@ -13,7 +13,7 @@ import { enqueue }      from '../../services/aiQueue.js';
 import logger             from '../../utils/logger.js';
 import { MOTION_TYPES } from './_motion_types.js';
 
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
 
 // motion_history managed by db/index.js Year 2 block.
 // ensureTables kept as a no-op export to avoid import-side errors in legacy callers.

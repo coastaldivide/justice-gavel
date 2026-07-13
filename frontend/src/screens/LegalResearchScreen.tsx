@@ -742,7 +742,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
         )}
 
         {/* ── Thread ──────────────────────────────────────────────────────── */}
-        {messages.map((msg, i) => (
+        {(messages ?? []).map((msg, i) => (
           <ResearchBubble key={`msg-${i}`} msg={msg} />
         ))}
 

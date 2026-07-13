@@ -290,9 +290,9 @@ function BailSearchScreen(): React.JSX.Element {
           removeClippedSubviews={true}
           data={(() => {
                 let result = [...items];
-                if (filterVerified)  result = result.filter((b: BailAgent) => b.jtb_verified);
-                if (filterAvailNow)  result = result.filter((b: BailAgent) => b.available_24h || b.hours?.toLowerCase?.().includes('24'));
-                if (filterPaymentPlan) result = result.filter((b: BailAgent) => b.payment_plans || b.notes?.toLowerCase?.().includes('payment') || b.notes?.toLowerCase?.().includes('plan'));
+                if (filterVerified)  result = (result ?? []).filter((b: BailAgent) => b.jtb_verified);
+                if (filterAvailNow)  result = (result ?? []).filter((b: BailAgent) => b.available_24h || b.hours?.toLowerCase?.().includes('24'));
+                if (filterPaymentPlan) result = (result ?? []).filter((b: BailAgent) => b.payment_plans || b.notes?.toLowerCase?.().includes('payment') || b.notes?.toLowerCase?.().includes('plan'));
                 if (sortBy === 'rating') result.sort((a: BailAgent, b: BailAgent) => (b.rating||0)-(a.rating||0));
                 if (sortBy === 'rate')   result.sort((a: BailAgent, b: BailAgent) => (a.rate||0)-(b.rate||0));
                 if (sortBy === 'distance') result.sort((a: BailAgent, b: BailAgent) => (a.distanceKm||999)-(b.distanceKm||999));

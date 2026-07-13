@@ -42,7 +42,7 @@ const resetLimiter = rateLimit({
 
 // ── Refresh token helpers ─────────────────────────────────────────────────────
 const JWT_REFRESH_SECRET = () => process.env.JWT_REFRESH_SECRET
-  || process.env.JWT_SECRET + '_refresh'  // fallback: derive from main secret
+  || (process.env.JWT_SECRET ?? 'change-me-in-production') + '_refresh'  // fallback: derive from main secret
   || 'dev_refresh_secret_change_me';
 
 async function issueTokenPair(user, db) {
@@ -418,7 +418,7 @@ router.post('/refresh', async (req, res) => {
     const jwt_mod = await import('jsonwebtoken');
     const db = await getDb();
     const JWT_REFRESH_SECRET_FN = () => process.env.JWT_REFRESH_SECRET
-      || (process.env.JWT_SECRET + '_refresh')
+      || ((process.env.JWT_SECRET ?? 'change-me-in-production') + '_refresh')
       || 'dev_refresh_secret_change_me';
 
     // 1. Verify refresh token signature and expiry

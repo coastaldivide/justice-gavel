@@ -29,7 +29,7 @@ const aiLimiter = rateLimit({
 const router = Router();
 
 router.post('/stream', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, async (req, res) => {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
     return res.status(503).json({
       error:   'AI service not configured.',
       code:    'api_key_missing',
@@ -147,7 +147,7 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, perUserAiLimi
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',
-        'x-api-key':         process.env.ANTHROPIC_API_KEY,
+        'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
@@ -183,7 +183,7 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, perUserAiLimi
         const data = line.slice(6).trim();
         if (data === '[DONE]') continue;
         try {
-          const parsed = JSON.parse(data);
+          const parsed = safeJson(data);
           if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
             const token = parsed.delta.text ?? '';
             fullText += token;

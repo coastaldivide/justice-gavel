@@ -1,4 +1,5 @@
 import { requireDisclaimer } from '../middleware/disclaimer.js';
+import { asyncRoute } from '../utils/routeHelpers.js';
 /**
  * research.js — AI Legal Research ($49/mo add-on)
  *
@@ -42,7 +43,7 @@ const aiLimiter = rateLimit({
 });
 
 const router = express.Router();
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
 const STRIPE_SECRET  = process.env.STRIPE_SECRET;
 
 // Tables are defined in db/index.js Year 2 block — no per-request DDL needed.
@@ -148,7 +149,7 @@ async function callResearch(history, query) {
 
 // ── POST /api/research/ask ────────────────────────────────────────────────────
 // ── API key guard — fail fast with clear error rather than cryptic undefined ─
-if (!process.env.ANTHROPIC_API_KEY) {
+if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
   logger.error('[research.js] ANTHROPIC_API_KEY not set — all AI routes will fail');
 }
 
@@ -319,7 +320,7 @@ router.post('/rag', authRequired, async (req, res) => {
 });
 
 // ── Index a legal document (admin only) ────────────────────────────────────
-router.post('/index', authRequired, async (req, res) => {
+router.post('/index', authRequired, asyncRoute(async (req, res) => {
   if (!req.user?.is_admin) return res.status(403).json({ error: 'Admin only' });
   const { doc_type, citation, title, content, jurisdiction, practice_area, year, source_url } = req.body;
   if (!citation || !content || !title) return res.status(400).json({ error: 'citation, title, content required' });

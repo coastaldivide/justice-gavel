@@ -99,6 +99,69 @@ if (_missing.length > 0) {
   logger.info('✅  All API keys configured — running in LIVE mode');
 }
 
+
+// ── Process crash prevention ────────────────────────────────────────────────
+// Prevents uncaught exceptions and unhandled promise rejections from
+// taking down the entire Node process. Logs the error and continues.
+// Without this: one bad async call crashes ALL users simultaneously.
+
+process.on('uncaughtException', (err, origin) => {
+  console.error('[process] uncaughtException:', err.message, '| origin:', origin);
+  console.error(err.stack?.split('
+').slice(0,5).join('
+'));
+  // Don't exit — keep serving other users
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[process] unhandledRejection at:', promise, '| reason:', reason?.message ?? reason);
+  // Don't exit — keep serving other users
+});
+
+// ── Graceful shutdown ────────────────────────────────────────────────────────
+// SIGTERM (Railway deploy, scale-down): finish in-flight requests, then exit
+let _shuttingDown = false;
+process.on('SIGTERM', () => {
+  if (_shuttingDown) return;
+  _shuttingDown = true;
+  console.log('[process] SIGTERM received — graceful shutdown starting');
+  // Give in-flight requests 10 seconds to complete
+  setTimeout(() => {
+    console.log('[process] Graceful shutdown complete');
+    process.exit(0);
+  }, 10_000).unref();
+});
+
+process.on('SIGINT', () => {
+  console.log('[process] SIGINT — exiting');
+  process.exit(0);
+});
+
+
+// ── Startup environment validation ──────────────────────────────────────────
+// Warn on missing critical env vars at startup — better than crashing later.
+const REQUIRED_ENV = [
+  'JWT_SECRET', 'JWT_REFRESH_SECRET', 'SUPABASE_URL', 'ANTHROPIC_API_KEY',
+];
+const OPTIONAL_ENV = [
+  'STRIPE_SECRET_KEY', 'RESEND_API_KEY', 'JUDYRECORDS_API_KEY',
+];
+
+const missingRequired = REQUIRED_ENV.filter(k => !process.env[k]);
+const missingOptional = OPTIONAL_ENV.filter(k => !process.env[k]);
+
+if (missingRequired.length > 0) {
+  console.error('[startup] ⛔ Missing REQUIRED env vars:', missingRequired.join(', '));
+  console.error('[startup] App will run in degraded mode — some features will fail.');
+}
+if (missingOptional.length > 0) {
+  console.warn('[startup] ⚠ Missing optional env vars:', missingOptional.join(', '));
+  if (missingOptional.includes('STRIPE_SECRET_KEY'))
+    console.warn('[startup]   Stripe disabled — no billing charges will process');
+  if (missingOptional.includes('JUDYRECORDS_API_KEY'))
+    console.warn('[startup]   Judyrecords disabled — arrest feed using seed data only');
+}
+
 const app = express();
 // ── CORS: multi-origin allowlist + dev tunnel support ────────────────────────
 const _rawOrigins = process.env.CORS_ORIGIN || '';
@@ -481,17 +544,7 @@ app.use('/api/attorney',       attorneyPlatformRouter);
 app.use('/api/jobs',           jobsRouter);           // async AI job polling        // Bot monitoring + manual trigger
 
 // Sentry error handler registered above via Sentry.Handlers.errorHandler()
-app.use((req, res) => res.status(404).json({ error: 'Not found. It may have been moved or deleted.' }));
 
-
-// ── API documentation ─────────────────────────────────────────────────────────
-// GET /api/docs       → OpenAPI 3.0 JSON spec
-// GET /api/docs/ui    → (future) Swagger UI
-app.get('/api/docs', (_req, res) => {
-  import('./docs/openapi.js').then(({ openApiSpec }) => {
-    res.json(openApiSpec);
-  }).catch(e => res.status(500).json({ error: e.message }));
-});
 
 // ── Sentry error handler (must be last middleware) ───────────────────────────
 // Captures all errors that reach Express's error handling layer
@@ -500,13 +553,52 @@ if (Sentry?.Handlers?.errorHandler) {
 }
 
 // ── Generic 500 handler (after Sentry) ───────────────────────────────────────
-app.use((err, _req, res, _next) => {
-  const status = err.statusCode || err.status || 500;
-  res.status(status).json({
-    error: status >= 500 ? 'Internal server error.' : (err.message || 'Request failed.'),
-    code:  err.code || 'server_error',
+
+});
+
+
+// ── 404 — route not found ────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({
+    error:  'Not found',
+    path:   req.path,
+    method: req.method,
+    hint:   'Check the API documentation for valid endpoints.',
   });
 });
+
+// ── Global error handler ─────────────────────────────────────────────────────
+// Catches everything: route errors, async throws, express middleware failures.
+// MUST have 4 params (err, req, res, next) to be recognised as error middleware.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, _next) => {
+  const status  = err.status || err.statusCode || 500;
+  const isProd  = process.env.NODE_ENV === 'production';
+  const message = isProd && status >= 500
+    ? 'An unexpected error occurred. Our team has been notified.'
+    : err.message || 'Internal server error';
+
+  // Never log 4xx as errors — they're client mistakes, not server crashes
+  if (status >= 500) {
+    console.error('[global_error]', {
+      status,
+      message:  err.message,
+      path:     req.path,
+      method:   req.method,
+      stack:    err.stack?.split('\n').slice(0,5).join(' | '),
+    });
+  }
+
+  if (!res.headersSent) {
+    res.status(status).json({
+      error:   message,
+      status,
+      path:    req.path,
+      ...(isProd ? {} : { stack: err.stack?.split('\n').slice(0,4) }),
+    });
+  }
+});
+
 
 export default app;
 
@@ -529,27 +621,3 @@ function gracefulShutdown(signal) {
 }
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
-
-// ── 404 catch-all ─────────────────────────────────────────────────────────────
-app.use((req, res) => {
-  res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
-});
-
-// ── Global error handler ──────────────────────────────────────────────────────
-// Catches any error thrown synchronously or via next(err) from route handlers.
-// eslint-disable-next-line no-unused-vars
-app.use((err, req, res, next) => {
-  const status = err.status || err.statusCode || 500;
-  const message = status < 500
-    ? err.message
-    : 'Internal server error. Please try again.';
-  if (status >= 500) {
-    logger.error({ msg: 'Unhandled error', path: req.path, method: req.method, error: err?.message, stack: err?.stack?.split('\n')[1] });
-  }
-  if (!res.headersSent) res.status(status).json({ error: message });
-});
-
-// ── Sentry error handler — must be after routes, before other error handlers ──
-if (process.env.SENTRY_DSN) {
-  Sentry.setupExpressErrorHandler(app);
-}
