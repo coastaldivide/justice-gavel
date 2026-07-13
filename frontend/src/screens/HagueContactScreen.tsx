@@ -22,8 +22,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, KeyboardAvoidingView, ScrollView, RefreshControl, TouchableOpacity,
   StyleSheet, Alert, ActivityIndicator, Linking,
-  TextInput,
-} from 'react-native';
+  TextInput, LayoutAnimation, InteractionManager} from 'react-native';
 import { useTheme } from '../constants/theme';
 import { haptic, hapticCall, hapticSelect, hapticSuccess, hapticWarn } from '../services/haptics';
 import api from '../services/api';
@@ -64,7 +63,12 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
 
   const [phase, setPhase] = useState<'home'|'lookup'|'intake'|'result'>('home');
   const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  React.useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    });
+    return () => _task.cancel();
+  }, []);
   const [usResources, setUsResources] = useState<any>(null);
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [authorityData, setAuthorityData] = useState<any>(null);

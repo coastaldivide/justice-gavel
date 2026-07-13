@@ -16,7 +16,7 @@ import { GradientHeader } from '../components/GradientHeader';
 import { api } from '../services/api';
 import React, { useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshControl} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshControl, LayoutAnimation} from 'react-native';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
@@ -105,6 +105,7 @@ const FALLBACK_CRISIS_RESOURCES = [
 function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);

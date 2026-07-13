@@ -1,3 +1,4 @@
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -15,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import React, { useCallback, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Linking, Modal, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, Modal, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
 import { getLocation } from '../services/location';
 import { t, initLang } from '../i18n';
 import { haptic, hapticCall } from '../services/haptics';
@@ -26,7 +27,8 @@ declare var onRefresh: any;
 declare var refreshing: any;
 declare var sort: any;
 declare var load: any; // hoisted from component scope
-function callPhone(p: string) { hapticCall(); Linking.openURL('tel:' + p.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
+function callPhone(p: string) {
+  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + p.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
 function openDir(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
@@ -168,6 +170,7 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
   // ── Offline detection ──────────────────────────────────────
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     const unsub = NetInfo.addEventListener(state => {
       setIsOffline(!(state.isConnected && state.isInternetReachable));
     });

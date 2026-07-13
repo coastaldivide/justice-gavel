@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -29,7 +31,7 @@ import type { ScreenProps } from '../types/navigation';
 import React, {
   useState, useEffect, useCallback, useRef, useMemo
 } from 'react';
-import { View, Text, Linking, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, Clipboard, RefreshControl} from 'react-native';
+import { View, Text, Linking, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, Clipboard, RefreshControl, LayoutAnimation, InteractionManager} from 'react-native';
 import { api } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
@@ -61,6 +63,8 @@ type Phase = 'paywall' | 'home' | 'searching' | 'thread' | 'history';
 
 // ── Markdown + Citation renderer ─────────────────────────────────────────────
 function MarkdownText({ text, style }: { text: string; style?: object }) {
+  const { showToast } = useToast();
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
   const { colors, isDark } = useTheme();
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
@@ -182,12 +186,14 @@ function HighlightedText({ text, style }: { text: string; style?: object }) {
 
 // ── Message bubble (research thread) ─────────────────────────────────────────
 function ResearchBubble({ msg }: { msg: Message }) {
+  const { showToast } = useToast();
   const styles = makeStyles(COLORS);
   const { colors, isDark } = useTheme();
   const isUser = msg.role === 'user';
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
     Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
@@ -255,7 +261,7 @@ function ResearchBubble({ msg }: { msg: Message }) {
               } else {
                 await Print.printAsync({ html });
               }
-            } catch { Alert.alert('Export failed', 'Could not generate PDF.'); }
+            } catch { showToast('Could not generate PDF.'); }
           }}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.copyBtnText, { color: COLORS.navy }]}>PDF Export</Text>
@@ -456,6 +462,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   cutoffText:    { fontSize: 11, lineHeight: 16 },
 });
 function LegalResearchScreen({ route, navigation }: ScreenProps) {
+  const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
@@ -481,12 +488,15 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
 
   // Check access on mount
   useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
     api.get('/research/status')
       .then(r => {
         setHasAccess(r.data?.has_access);
         if (!r.data?.has_access) setPhase('paywall');
       })
       .catch(() => setHasAccess(true)); // fail open in demo
+    });
+    return () => _task.cancel();
   }, []);
 
   // Header buttons
@@ -529,7 +539,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
         await api.post('/billing/subscribe', { tier, provider_type: 'addon' });
         setHasAccess(true);
         setPhase('home');
-        Alert.alert('Welcome!', 'Your Legal Research trial is active. Start searching.');
+        showToast('Your Legal Research trial is active. Start searching.');
       } catch (e: any) {
         const msg = e.response?.data?.error || 'Could not start subscription.';
         Alert.alert('Subscription error', msg);

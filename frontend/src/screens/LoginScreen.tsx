@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import { useForm, Controller } from 'react-hook-form';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -8,7 +10,7 @@ import { AppIcon } from '../components/AppIcon';
 import React, { useState, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
 import {  } from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { setAppAuth } from '../services/auth';
@@ -22,6 +24,7 @@ import { t } from '../i18n';
 declare var JusticeGavelLogo: any;
 declare var showPassword: any;
 function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [identifier, setIdentifier] = useState('');
@@ -142,13 +145,13 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
               // forgot password
 
               const email = identifier.trim();
-              if (!email) { Alert.alert('Enter your email first', 'Type your email above then tap "Forgot password?"'); return; }
+              if (!email) { showToast('Type your email above then tap "Forgot password?"'); return; }
               Alert.alert('Reset Password', `Send a reset link to ${email}?`, [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Send Link', onPress: () => {
                     api.post('/auth/forgot-password', { email })
-                      .then(() => Alert.alert('Sent ✓', 'Check your email for a password reset link. It expires in 1 hour.'))
-                      .catch(() => Alert.alert('Could not send', 'Check the email address and try again.'));
+                      .then(() => showToast('Check your email for a password reset link. It expires in 1 hour.'))
+                      .catch(() => showToast('Check the email address and try again.'));
                   }
                 },
               ]);

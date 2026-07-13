@@ -9,7 +9,7 @@ import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Linking, Alert, ActivityIndicator, RefreshControl} from 'react-native';
+  ScrollView, Linking, Alert, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocation } from '../services/location';
 import { getContacts } from '../services/storage';
@@ -29,6 +29,7 @@ const RIGHTS_CARDS = [
 function EmergencyScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);

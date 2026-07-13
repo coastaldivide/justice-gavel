@@ -16,7 +16,7 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
  *   2. Direct navigation if defendant has the app
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Animated, KeyboardAvoidingView, Platform, RefreshControl} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Animated, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation, InteractionManager} from 'react-native';
 import { api } from '../services/api';
 import { haptic, hapticSelect, hapticSuccess } from '../services/haptics';
 import { getLocation } from '../services/location';
@@ -52,7 +52,12 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
   const enrollmentId = (route?.params as import('../types/api').RouteParams)?.enrollmentId;
 
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    });
+    return () => _task.cancel();
+  }, []);
 
   const [phase, setPhase]         = useState<CheckInPhase>('loading');
   const [enrollment, setEnrollment] = useState<any>(null);

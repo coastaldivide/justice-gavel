@@ -4,7 +4,7 @@ import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
 import SkeletonLoader from '../components/SkeletonLoader';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {View, Text, RefreshControl, TouchableOpacity, TextInput, Linking, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
+import {View, Text, RefreshControl, TouchableOpacity, TextInput, Linking, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { api, cachedGet }           from '../services/api';
 import { cacheResources, getCachedResources } from '../services/offlineCache';
@@ -63,7 +63,8 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
 function ResourcesScreen(): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
 
   const [allItems,  setAllItems]  = useState<any[]>([]);
   const [filtered,  setFiltered]  = useState<any[]>([]);

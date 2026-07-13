@@ -34,7 +34,7 @@ import type { ScreenProps } from '../types/navigation';
 import React, {
   useState, useEffect, useCallback, useRef
 } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, Share, Clipboard, RefreshControl} from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, Share, Clipboard, RefreshControl, InteractionManager} from 'react-native';
 import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
@@ -65,6 +65,10 @@ interface TurnMessage {
 type Phase = 'setup' | 'session' | 'join';
 
 function getLang(code: string) {
+  React.useEffect(() => {
+    const t = InteractionManager.runAfterInteractions(() => {});
+    return () => t.cancel();
+  }, []);
   return LANGUAGES.find(l => l.code === code) || LANGUAGES[0];
 }
 

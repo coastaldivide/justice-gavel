@@ -1,3 +1,4 @@
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -11,7 +12,7 @@ import { AppIcon } from '../components/AppIcon';
 
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
@@ -87,6 +88,7 @@ const INTEL_TIER = {
 };
 
 function TierCard({ tier, active, onSubscribe, loading }: any) {
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
   return (
     <View style={[styles.tierCard, tier.highlight && styles.tierCardHighlight]}>
       {tier.badge && (
@@ -146,7 +148,8 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
 
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading]           = useState(true);

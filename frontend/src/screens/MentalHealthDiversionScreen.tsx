@@ -16,7 +16,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useState, useCallback } from 'react';
 import type {} from '../types/navigation';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Linking , ActivityIndicator} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Linking , ActivityIndicator, LayoutAnimation} from 'react-native';
 import { t }      from '../i18n';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 
@@ -181,6 +181,7 @@ const NAV_STEPS: NavStep[] = [
 function MentalHealthDiversionScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
       return () => { mountedRef.current = false; };
   }, []);

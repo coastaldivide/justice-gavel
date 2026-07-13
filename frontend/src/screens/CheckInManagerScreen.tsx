@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
@@ -17,7 +19,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, FlatList, TextInput, Modal, ActivityIndicator, Alert, RefreshControl, KeyboardAvoidingView} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, FlatList, TextInput, Modal, ActivityIndicator, Alert, RefreshControl, KeyboardAvoidingView, InteractionManager} from 'react-native';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
@@ -47,6 +49,12 @@ function statusColor(row: DefendantRow): { color: string; bg: string; label: str
 
 // ── Enroll Modal ──────────────────────────────────────────────────────────────
 function EnrollModal({ visible, onClose, onEnrolled }: any) {
+  const { showToast } = useToast();
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
+  React.useEffect(() => {
+    const t = InteractionManager.runAfterInteractions(() => {});
+    return () => t.cancel();
+  }, []);
   const [mgmtError, setMgmtError] = React.useState<string|null>(null);
   const [name, setName]       = useState('');
   const [phone, setPhone]     = useState('');
@@ -58,7 +66,7 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
   const reset = () => { setName(''); setPhone(''); setCaseNum(''); setCourtDate(''); };
 
   const save = async () => {
-    if (!name.trim()) { Alert.alert('Required', 'Enter defendant name.'); return; }
+    if (!name.trim()) { showToast('Enter defendant name.'); return; }
     setSaving(true);
     try {
       const res = await api.post('/checkins/enroll', {
@@ -264,6 +272,7 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 function CheckInManagerScreen({ route, navigation }: ScreenProps) {
+  const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
@@ -283,7 +292,7 @@ function CheckInManagerScreen({ route, navigation }: ScreenProps) {
       setData(res.data || null);
     } catch (e: any) {
       if (e.response?.status !== 401) {
-        Alert.alert('Could not load', 'Check your connection and pull down to refresh.');
+        showToast('Check your connection and pull down to refresh.');
       }
     } finally {
       setLoading(false);

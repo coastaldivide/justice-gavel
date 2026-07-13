@@ -15,7 +15,7 @@ import { AppIcon } from '../components/AppIcon';
 import { api } from '../services/api';
 import React, { useState, useCallback } from 'react';
 
-import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, LayoutAnimation} from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { t } from '../i18n';
 
@@ -133,6 +133,7 @@ const CUSTODY_SECTIONS = [
 function FamilyCourtScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);

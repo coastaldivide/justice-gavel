@@ -9,7 +9,7 @@ declare var navigator: any;
  * and saves as a case note -- same flow as native.
  */
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, LayoutAnimation} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api } from '../services/api';

@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -28,7 +29,7 @@ import type { ScreenProps } from '../types/navigation';
  *   2. Direct navigation (standalone use)
  */
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { Linking, Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Alert, Clipboard, KeyboardAvoidingView, Platform, Animated, Share } from 'react-native';
+import { Linking, Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Alert, Clipboard, KeyboardAvoidingView, Platform, Animated, Share, LayoutAnimation, InteractionManager} from 'react-native';
 import { api }         from '../services/api';
 import { pollJob } from '../services/jobPoller';
 import { cacheMotions, markOnline } from '../services/offlineCache';
@@ -341,6 +342,7 @@ function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPE
 
 // ── History item ──────────────────────────────────────────────────────────────
 function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
+  const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const m = MOTION_TYPES.find(t => t.key === item.motion_type);
   const [showPicker, setShowPicker] = useState(false);
@@ -358,7 +360,7 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
       setStatus(s);
       onStatusChange?.(item.id, s);
     } catch {
-      Alert.alert('Could not update status', 'Check your connection and try again.');
+      showToast('Check your connection and try again.');
     } finally {
       setUpdating(false);
     }
@@ -498,15 +500,20 @@ function getRelevantMotions(charges: string | null): string[] {
 }
 
 function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
 
   const userStateRef = React.useRef<string>('');
   React.useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
     getUserState().then((s: any) => { if (s?.code) userStateRef.current = s.code; }).catch(() => {});
+    });
+    return () => _task.cancel();
   }, []);
 
   // AI motion review pass
@@ -752,7 +759,7 @@ const loadHistory = useCallback(async () => {
         await Print.printAsync({ html });
       }
     } catch {
-      Alert.alert('Export failed', 'Could not generate PDF. Try copying the text instead.');
+      showToast('Could not generate PDF. Try copying the text instead.');
     }
   }, [editDraft, selected, caseTitle]);
 

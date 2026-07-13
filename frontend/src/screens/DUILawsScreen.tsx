@@ -6,7 +6,7 @@ import LegalNotice from '../components/LegalNotice';
 import type { ScreenProps } from '../types/navigation';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState, useEffect, useCallback } from 'react';
-import {View, Text, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
+import {View, Text, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, StyleSheet, LayoutAnimation} from 'react-native';
 import { api, cachedGet } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { t } from '../i18n';
@@ -46,6 +46,7 @@ function fmtBAC(n: number) { return n ? `${n.toFixed(2)}%` : '0.00%'; }
 function DUILawsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);

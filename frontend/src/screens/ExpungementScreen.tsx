@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -16,7 +18,7 @@ import LegalNotice from '../components/LegalNotice';
  */
 import React, { useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
 import { api, cachedGet } from '../services/api';
 import { cacheExpungement } from '../services/offlineCache';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
@@ -110,6 +112,8 @@ const STATE_CARDS: Record<string, {
 function ExpungementCountdown({ waitYears, caseDate, navigation }: {
   waitYears: number; caseDate: string; navigation: Record<string, any>;
 }) {
+  const { showToast } = useToast();
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -151,7 +155,7 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
           : `You'll get a reminder 30 days before your eligibility date.`
       );
     } catch {
-      Alert.alert('Could not set reminder', 'Make sure notifications are enabled in Settings.');
+      showToast('Make sure notifications are enabled in Settings.');
     }
   }, [eligible, isEligible, now]);
 
@@ -204,10 +208,15 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
 }
 
 function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
+    });
+    return () => _task.cancel();
   }, []);
 
 
@@ -226,8 +235,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       setPetitionDraft(res.data?.draft || '');
       setShowPetition(true);
     } catch {
-      Alert.alert('Could not generate petition',
-        'Check your connection and try again.');
+      showToast('Check your connection and try again.');
     } finally {
       setGenPetition(false);
     }

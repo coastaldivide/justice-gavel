@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 /**
@@ -24,7 +25,7 @@ import type { ScreenProps } from '../types/navigation';
 import React, {
   useState, useEffect, useRef, useCallback
 } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, ActivityIndicator, Alert, TextInput, Platform, KeyboardAvoidingView, Share, RefreshControl} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, ActivityIndicator, Alert, TextInput, Platform, KeyboardAvoidingView, Share, RefreshControl, LayoutAnimation, InteractionManager} from 'react-native';
 import { FileSystem } from '../utils/webCompat';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
@@ -45,11 +46,13 @@ interface StructuredNote {
 
 // ── Animated pulse ring ───────────────────────────────────────────────────────
 function PulseRing({ active }: { active: boolean }) {
+  const { showToast } = useToast();
   const scale  = useRef(new Animated.Value(1)).current;
   const opac   = useRef(new Animated.Value(0)).current;
   const anim   = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (active) {
       anim.current = Animated.loop(
         Animated.parallel([
@@ -103,10 +106,12 @@ function useTimer(running: boolean) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const [submitting, setSubmitting] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
@@ -116,6 +121,8 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
         recordingRef.current = null;
       }
     };
+    });
+    return () => _task.cancel();
   }, []);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -240,7 +247,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       setEditText(formatNoteForCase(res.data?.note));
       setPhase('result');
     } catch {
-      Alert.alert('Recording Error', 'Could not structure your note. Try again.');
+      showToast('Could not structure your note. Try again.');
       setPhase('text_input');
     }
   }, [textIn]);
@@ -260,7 +267,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       if (onSave) onSave(combined);
       navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab');
     } catch {
-      Alert.alert('Could not save', 'Check your connection and try again.');
+      showToast('Check your connection and try again.');
     } finally {
       setSaving(false);
     }

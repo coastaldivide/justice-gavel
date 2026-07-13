@@ -1,8 +1,9 @@
+import { useToast } from '../components/ToastProvider';
 import { AppIcon } from '../components/AppIcon';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
@@ -81,6 +82,7 @@ interface HallEntry {
 
 // ── Criterion row ─────────────────────────────────────────────────────────────
 function CritRow({ label, met }: { label: string; met: boolean }) {
+  const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   return (
@@ -183,10 +185,12 @@ function CriteriaSection({ title, progress, criteria, earned }:
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
 
   const { colors, isDark } = useTheme();
   const [status,    setStatus]    = useState<Status | null>(null);
@@ -220,11 +224,11 @@ function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
     setOptingIn(true);
     try {
       await api.post('/golden-gavel/hall/opt-in', {});
-      Alert.alert('Added to Hall of Justice', 'Your name and impact are now publicly listed.');
+      showToast('Your name and impact are now publicly listed.');
       load(true);
     } catch {
       setLoading(false);
-      Alert.alert('Could not opt in', 'Check your connection and try again.');
+      showToast('Check your connection and try again.');
     }
     setOptingIn(false);
   };

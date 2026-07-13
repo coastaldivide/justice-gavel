@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 // T4-05: wrap heavy useEffect bodies with InteractionManager.runAfterInteractions
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -9,7 +10,7 @@ import { EmptyState } from '../components/EmptyState';
 import React, { useState, useEffect, useCallback } from 'react';
 import { FileSystem, ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type {} from '../types/navigation';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList, Modal, ScrollView, Linking, ActivityIndicator, RefreshControl, Share, KeyboardAvoidingView, Platform, AccessibilityInfo} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList, Modal, ScrollView, Linking, ActivityIndicator, RefreshControl, Share, KeyboardAvoidingView, Platform, AccessibilityInfo, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
 import { cacheAgeLabel, cacheCases, cacheSavedLawyers, getCachedLawyers } from '../services/offlineCache';
 import { t }   from '../i18n';
@@ -52,6 +53,7 @@ interface Case {
 }
 
 const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCalendar, onShare, onInvite }: any) {
+  const { showToast } = useToast();
   const color = STATUS_COLORS[item.status] || COLORS.textMuted;
   const hasDate = !!item.next_court_date;
   const days = hasDate
@@ -75,7 +77,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                     const remind = new Date(d);
                     remind.setDate(d.getDate()-1);
                     if (remind <= new Date()) {
-                      Alert.alert('Too soon','Court date is tomorrow or today.');
+                      showToast('Court date is tomorrow or today.');
                       return;
                     }
                     try {
@@ -86,7 +88,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                         notification_type: 'court_reminder',
                       });
                       Alert.alert('Reminder set ✓', 'We\'ll remind you the day before court.');
-                    } catch { Alert.alert('Could not set reminder'); }
+                    } catch { showToast('Could not set reminder'); }
                   }}
                   accessibilityLabel="Set court date reminder"
                 >
@@ -232,7 +234,9 @@ const _HEX_CASE = {
 const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
 function CaseScreen({ route, navigation }: any) {
+  const { showToast } = useToast();
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
@@ -284,7 +288,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
         dialogTitle: 'Export Case Summary',
       });
     } catch {
-      Alert.alert('Export failed', 'Could not generate PDF. Try again.');
+      showToast('Could not generate PDF. Try again.');
     }
   };
 
@@ -653,7 +657,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
   // ── Calendar sync ──────────────────────────────────────────────────────────
   const addToCalendar = useCallback(async (cas: Case) => {
     if (!cas.next_court_date) {
-      Alert.alert('No court date', 'Add a court date to this case first.');
+      showToast('Add a court date to this case first.');
       return;
     }
     try {
@@ -661,14 +665,14 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
   if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
       const { status } = await Calendar.requestCalendarPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Allow calendar access in Settings to add court dates.');
+        showToast('Allow calendar access in Settings to add court dates.');
         return;
       }
       // Get default calendar
       const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
       const writeable  = calendars.find(cal => cal.allowsModifications && (cal.type as any) !== 'birthday');
       if (!writeable) {
-        Alert.alert('No calendar found', 'Could not find a writable calendar on this device.');
+        showToast('Could not find a writable calendar on this device.');
         return;
       }
       const courtDate  = new Date(cas.next_court_date + 'T09:00:00');
@@ -687,7 +691,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
     } catch (e: any) {
       // eslint-disable-next-line react-hooks/exhaustive-deps
       __DEV__ && console.warn(e?.message);
-      Alert.alert('Could not add to calendar', 'Check your calendar permissions in Settings.');
+      showToast('Check your calendar permissions in Settings.');
     }
   }, [selectedCase, gated, unlock, unlocking]);
 

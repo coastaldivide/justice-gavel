@@ -23,8 +23,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator, Alert, RefreshControl,
-  Switch, Platform, KeyboardAvoidingView,
-} from 'react-native';
+  Switch, Platform, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
 import type {} from '../types/navigation';
@@ -116,14 +115,18 @@ function FirmVerticalScreen({ navigation }: any) {
   const s = styles(colors);
 
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
   const [tab, setTab]               = useState<Tab>('setup');
   // Read initial tab from navigation params (e.g. FirmAcquisition sends { tab: 'pricing' })
   React.useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
     const initialTab = (route?.params as Record<string,string>)?.tab as Tab | undefined;
     if (initialTab && ['setup','pricing','tracker','dpa','asylum'].includes(initialTab)) {
       setTab(initialTab);
     }
+    });
+    return () => _task.cancel();
   }, []);
 
   const [loading, setLoading]       = useState(true);

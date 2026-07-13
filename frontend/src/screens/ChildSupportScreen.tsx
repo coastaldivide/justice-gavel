@@ -1,11 +1,12 @@
+import { useToast } from '../components/ToastProvider';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 import React, { useState, useCallback } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
-  StyleSheet, Switch, Alert } from 'react-native';
+  StyleSheet, Switch } from 'react-native';
 import { COLORS } from '../constants/theme';
 import { t } from '../i18n';
 
@@ -20,6 +21,10 @@ function calculateSupport(
   monthsAlimony: number,
   alimonyAmount: number,
 ) {
+  const { showToast } = useToast();
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, []);
   const combined = parent1Income + parent2Income;
   if (combined <= 0 || numChildren <= 0) return null;
 
@@ -84,6 +89,7 @@ function fmt(n: number) {
 }
 
 function ChildSupportScreen({ navigation }: any) {
+  const { showToast } = useToast();
   const colors = COLORS;
   const [p1Income, setP1Income] = useState('');
   const [p2Income, setP2Income] = useState('');
@@ -98,15 +104,15 @@ function ChildSupportScreen({ navigation }: any) {
     const p1Num = parseFloat(p1Income);
     const p2Num = parseFloat(p2Income);
     if (!p1Income || isNaN(p1Num) || p1Num <= 0) {
-      Alert.alert('Invalid Input', 'Please enter a valid income for Parent 1.');
+      showToast('Please enter a valid income for Parent 1.');
       return;
     }
     if (!p2Income || isNaN(p2Num) || p2Num <= 0) {
-      Alert.alert('Invalid Input', 'Please enter a valid income for Parent 2.');
+      showToast('Please enter a valid income for Parent 2.');
       return;
     }
     if (parseInt(children||'0') < 1 || parseInt(children||'0') > 10) {
-      Alert.alert('Invalid Input', 'Number of children must be between 1 and 10.');
+      showToast('Number of children must be between 1 and 10.');
       return;
     }
 

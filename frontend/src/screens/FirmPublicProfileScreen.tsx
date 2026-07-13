@@ -7,8 +7,7 @@ import { useToast } from '../components/ToastProvider';
 import React, { useState, useEffect, useCallback} from 'react';
 import {
   View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator,
-  Linking, StyleSheet,
-} from 'react-native';
+  Linking, StyleSheet, LayoutAnimation} from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { api } from '../services/api';
 import { t } from '../i18n';
@@ -37,6 +36,7 @@ function FirmPublicProfileScreen() {
   const [error, setError]     = useState('');
 
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     navigation.setOptions({ title: firmName || 'Firm Profile' });
     api.get(`/firms/${firmId}/public-profile`)
       .then(r => setFirm(r.data))

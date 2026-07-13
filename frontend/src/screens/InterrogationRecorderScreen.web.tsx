@@ -12,8 +12,7 @@ declare var navigator: any;
 import React, { useState, useRef, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  ActivityIndicator, TextInput,
-} from 'react-native';
+  ActivityIndicator, TextInput, LayoutAnimation} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api } from '../services/api';

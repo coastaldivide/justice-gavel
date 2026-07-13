@@ -17,8 +17,7 @@ import React, { useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Linking, Alert,
-} from 'react-native';
+  StyleSheet, Linking, Alert, LayoutAnimation} from 'react-native';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import {useTheme} from '../constants/theme';
 import { t } from '../i18n';

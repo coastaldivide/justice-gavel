@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -17,7 +18,7 @@ import { AppIcon } from '../components/AppIcon';
 import React, { useRef, useEffect, useState } from 'react';
 import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
 import type {} from '../types/navigation';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert, Share, ActivityIndicator, RefreshControl} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert, Share, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
 import AsyncStorage          from '@react-native-async-storage/async-storage';
 import { ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import Constants   from 'expo-constants';
@@ -237,9 +238,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
 function SettingsScreen({ route, navigation }: any) {
+  const { showToast } = useToast();
 
   // Prevent screenshots on this sensitive screen (Android FLAG_SECURE + iOS)
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     ScreenCapture.preventScreenCaptureAsync().catch(() => {});
     return () => { ScreenCapture.allowScreenCaptureAsync().catch(() => {}); };
   }, []);
@@ -568,7 +571,7 @@ function SettingsScreen({ route, navigation }: any) {
 
           try {
             await api.post('/push/test', { message: 'Justice Gavel push notifications are working ✓' });
-            Alert.alert('Test sent', 'Check your device notifications.');
+            showToast('Check your device notifications.');
           } catch (e: any) {
             Alert.alert('Push test failed', e.response?.data?.error || e.message);
           }
@@ -770,7 +773,7 @@ function SettingsScreen({ route, navigation }: any) {
                 const { default: Share } = await import('react-native').then(m => ({ default: m.Share }));
                 await Share.share({ message: data, title: 'My Justice Gavel Data Export' });
               } catch {
-                Alert.alert('Export failed', 'Could not export your data. Please try again.');
+                showToast('Could not export your data. Please try again.');
               }
             }}>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.textMuted,

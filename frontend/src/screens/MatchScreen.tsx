@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -12,7 +14,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, TextInput, Linking, ActivityIndicator, Platform, KeyboardAvoidingView, Modal, Alert } from 'react-native';
+import { View, Text, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, TextInput, Linking, ActivityIndicator, Platform, KeyboardAvoidingView, Modal, LayoutAnimation} from 'react-native';
 import PracticeAreaSelector, {} from '../components/PracticeAreaSelector';
 import { api } from '../services/api';
 import { getLocationWithCity, formatDistance } from '../services/location';
@@ -32,7 +34,9 @@ const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 
 // ── Contact helpers ───────────────────────────────────────────────────────────
 
-function callPhone(phone: string) { Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
+function callPhone(phone: string) {
+  const { showToast } = useToast();
+  const bottomSheetRef = React.useRef<BottomSheet>(null); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
 function sendSMS(phone: string)   { Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
 function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
@@ -51,6 +55,7 @@ function openWebsite(url: string) {
 // ── Match result card ─────────────────────────────────────────────────────────
 
 function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
+  const { showToast } = useToast();
   const rankColors = [COLORS.emergencyDark, COLORS.warnDark, COLORS.legalDark];
   const rankColor = rankColors[rank - 1] ?? COLORS.navy;
 
@@ -245,7 +250,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                         setMsgSent(true);
                         setMsgName(''); setMsgPhone(''); setMsgNote('');
                       } catch {
-                        Alert.alert('Could not send', 'Check your connection and try again.');
+                        showToast('Check your connection and try again.');
                       } finally {
                         setMsgSending(false);
                       }
@@ -291,7 +296,8 @@ function MatchScreen(): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
   const [situation, setSituation] = useState('');
   const [caseType, setCaseType] = useState('');
   const [language, setLanguage] = useState('');

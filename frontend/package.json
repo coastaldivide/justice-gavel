@@ -1,6 +1,6 @@
 {
   "name": "justicegavel",
-  "version": "8.7.24",
+  "version": "8.7.25",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
@@ -26,6 +26,7 @@
   "dependencies": {
     "@expo/metro-runtime": "55.0.10",
     "@expo/vector-icons": "^15.1.1",
+    "@gorhom/bottom-sheet": "^5.2.14",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/netinfo": "11.3.2",
     "@react-native-picker/picker": "2.6.1",
@@ -66,6 +67,7 @@
     "posthog-react-native": "3.3.7",
     "react": "18.2.0",
     "react-dom": "19.2.5",
+    "react-hook-form": "^7.81.0",
     "react-native": "^0.86.0",
     "react-native-markdown-display": "7.0.2",
     "react-native-reanimated": "^4.4.0",

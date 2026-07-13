@@ -7,7 +7,7 @@ import { AppIcon } from '../components/AppIcon';
 import { t, initLang } from '../i18n';
 import { haptic, hapticCall } from '../services/haptics';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ActivityIndicator, Animated, FlatList, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, FlatList, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
 import { getLocation, formatDistance } from '../services/location';
 import { api }             from '../services/api';
 import { getUserState } from '../utils/userState';
@@ -34,6 +34,7 @@ function openDirections(lat: number, lng: number, name: string) {
 function SkeletonCard({ colors }: { colors: ThemeColors }) {
   const shimmer = React.useRef(new Animated.Value(0)).current;
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     Animated.loop(
       Animated.sequence([
         Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: true }),

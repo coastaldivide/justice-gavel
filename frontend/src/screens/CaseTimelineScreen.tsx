@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -12,7 +14,7 @@ import { CaseStatusBadge } from '../components/CaseStatusBadge';
  * Navigated to from CaseScreen with params: { caseId, caseTitle }
  */
 import React, { useState, useCallback, useRef } from 'react';
-import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, RefreshControl, Platform, ActivityIndicator, KeyboardAvoidingView} from 'react-native';
+import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, RefreshControl, Platform, ActivityIndicator, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, RADIUS, SHADOW, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
@@ -85,6 +87,7 @@ interface CaseEvent {
 }
 
 function formatEventDate(dateStr: string | null): string {
+  const { showToast } = useToast();
   if (!dateStr) return '';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
@@ -106,6 +109,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
 );
 
 function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
 
   // Schedule push reminder for a timeline event
   const scheduleEventReminder = async (event: CaseEvent) => {
@@ -115,7 +119,7 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
     const remind = new Date(eventDate);
     remind.setDate(remind.getDate() - 1); // 1 day before
     if (remind <= new Date()) {
-      Alert.alert('Too soon', 'This event is too close to set a reminder.');
+      showToast('This event is too close to set a reminder.');
       return;
     }
     try {
@@ -127,7 +131,7 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
       });
       Alert.alert('Reminder set ✓', "You'll get a notification the day before.");
     } catch {
-      Alert.alert('Could not set reminder', 'Make sure notifications are enabled.');
+      showToast('Make sure notifications are enabled.');
     }
   };
 
@@ -136,7 +140,12 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   };
 
   const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  React.useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    });
+    return () => _task.cancel();
+  }, []);
 
   const { colors } = useTheme();
   const [_fetchError, _setFetchError] = useState<string|null>(null);

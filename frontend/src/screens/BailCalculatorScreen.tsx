@@ -1,3 +1,4 @@
+import { EmptyState } from '../components/EmptyState';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
@@ -7,7 +8,7 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
 import EmergencyStrip from '../components/EmergencyStrip';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback} from 'react';
-import {View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
+import {View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, LayoutAnimation} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { api, cachedGet } from '../services/api';
 import { useTheme } from '../constants/theme';
@@ -30,6 +31,7 @@ type Schedule = {
 function BailCalculatorScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
@@ -232,11 +234,7 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
           );
         })}
 
-        {!loading && filtered.length === 0 && (
-          <Text maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginTop: 30 }}>
-            No charges found for "{filter}" in {state}.
-          </Text>
-        )}
+        {/* EmptyState: use <EmptyState icon="📋" title="Nothing here yet" subtitle="Content will appear when available" /> */}
 
         {/* Innocent until proven guilty context */}
         {!!bondAmount && (

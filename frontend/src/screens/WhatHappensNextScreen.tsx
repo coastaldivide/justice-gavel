@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -17,7 +18,7 @@ import { AppIcon } from '../components/AppIcon';
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { Alert, ActivityIndicator, View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Dimensions, RefreshControl} from 'react-native';
+import { Alert, ActivityIndicator, View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Dimensions, RefreshControl, LayoutAnimation} from 'react-native';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
@@ -199,9 +200,11 @@ const CHARGE_TO_WALKTHROUGH: Record<string, string> = {
 function StepCard({ step, color, isActive, onPress }: {
   step: Step; color: string; isActive: boolean; onPress: () => void;
 }) {
+  const { showToast } = useToast();
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     Animated.timing(anim, {
       toValue: isActive ? 1 : 0,
       duration: 260,
@@ -283,7 +286,7 @@ function StepCard({ step, color, isActive, onPress }: {
                 });
                 Alert.alert('Reminder set ✓', 'We\'ll remind you about this step tomorrow.');
               } catch {
-                Alert.alert('Could not set reminder', 'Make sure notifications are enabled in Settings and you are signed in.');
+                showToast('Make sure notifications are enabled in Settings and you are signed in.');
               }
             }}
             accessibilityLabel="Set a reminder for this step"

@@ -16,8 +16,7 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-  StyleSheet, RefreshControl,
-} from 'react-native';
+  StyleSheet, RefreshControl, LayoutAnimation} from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
 import type {} from '../types/navigation';
@@ -105,6 +104,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
   }, [matterId]);
 
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     isMounted.current = true;
     load();
     return () => { isMounted.current = false; };

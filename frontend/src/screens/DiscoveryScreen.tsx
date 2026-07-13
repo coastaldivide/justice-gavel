@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -25,7 +27,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ActivityIndicator, Alert, Animated, Clipboard, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Clipboard, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
 import { FileSystem, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { api } from '../services/api';
 import { t }   from '../i18n';
@@ -57,10 +59,13 @@ type Phase = 'upload' | 'analyzing' | 'result' | 'history';
 
 // ── Animated progress bar ─────────────────────────────────────────────────────
 function ProgressBar({ active }: { active: boolean }) {
+  const { showToast } = useToast();
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
   const progress = useRef(new Animated.Value(0)).current;
   const anim     = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (active) {
       progress.setValue(0);
       anim.current = Animated.timing(progress, {
@@ -219,9 +224,13 @@ const DOC_TYPES = [
   ];
 
 function DiscoveryScreen({ route, navigation }: ScreenProps) {
+  const { showToast } = useToast();
   React.useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
+    });
+    return () => _task.cancel();
   }, []);
   const { colors, isDark } = useTheme();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
@@ -293,7 +302,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       if (result.canceled || !result.assets?.length) return;
       const asset = result.assets[0];
       if (asset.size && asset.size > 32 * 1024 * 1024) {
-        Alert.alert('File too large', 'Maximum PDF size is 32MB.');
+        showToast('Maximum PDF size is 32MB.');
         return;
       }
       setFile({ name: asset.name, uri: asset.uri, size: asset.size || 0 });

@@ -21,7 +21,7 @@ import { GradientHeader } from '../components/GradientHeader';
  */
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Linking, LayoutAnimation} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
@@ -36,6 +36,9 @@ const MAX_YEAR     = CURRENT_YEAR - 18;    // must be born ≤ 18 years ago
 type Phase = 'entry' | 'underage';
 
 function AgeGateScreen({ route, navigation }: any) {
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, []);
   const { colors: COLORS } = useTheme();
   const styles = makeStyles(COLORS);
   const [year, setYear]   = useState('');

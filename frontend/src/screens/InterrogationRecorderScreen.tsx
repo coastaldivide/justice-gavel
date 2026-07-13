@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -14,7 +15,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import {
   View, Text, TouchableOpacity, ScrollView, Alert,
-  ActivityIndicator, StyleSheet, Linking, Share, RefreshControl, Platform} from 'react-native';
+  ActivityIndicator, StyleSheet, Linking, Share, RefreshControl, Platform, LayoutAnimation, InteractionManager} from 'react-native';
 // Audio -- native only. Web uses MediaRecorder API (see handleWebRecord below)
 const Audio = Platform.OS === 'web' ? null : require('expo-av').Audio;
 import * as Location from 'expo-location';
@@ -32,6 +33,7 @@ const TWO_PARTY_STATES = new Set([
 ]);
 
 function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -60,12 +62,16 @@ function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Ele
   const mountedRef   = useRef(true);
 
   useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       clearInterval(timerRef.current);
       if (recordingRef.current) recordingRef.current.stopAndUnloadAsync().catch(() => {});
     };
+    });
+    return () => _task.cancel();
   }, []);
 
   // Load user state for consent law check
@@ -223,7 +229,7 @@ function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Ele
         message: 'My police encounter transcript from Justice Gavel',
       });
     } catch {
-      Alert.alert('Save failed', 'Could not save PDF. Please try again.');
+      showToast('Could not save PDF. Please try again.');
     }
   };
 

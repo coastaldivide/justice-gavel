@@ -1,10 +1,11 @@
+import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon, ICONS } from '../components/AppIcon';
 import { GradientHeader } from '../components/GradientHeader';
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, AccessibilityInfo} from 'react-native';
+import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, AccessibilityInfo, LayoutAnimation, InteractionManager} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { getContacts } from '../services/storage';
@@ -62,8 +63,10 @@ const TILES = [
 const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
 function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
@@ -102,9 +105,12 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
     initLang();
     loadAll();
   // eslint-disable-next-line react-hooks/exhaustive-deps
+    });
+    return () => _task.cancel();
   }, []);
 
   // Pull-to-refresh and mount loader
@@ -158,7 +164,7 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           const userData = await AsyncStorage.getItem('user');
           const user = userData ? JSON.parse(userData) : {};
           await api.post('/alerts', { userName: user.displayName || user.name || 'User', contacts: active, lat, lng });
-          Alert.alert('Alert sent!', 'Your emergency contacts have been notified.');
+          showToast('Your emergency contacts have been notified.');
         } catch (e: any) {
           Alert.alert('Could not send', e.message || 'Check your connection and try again.');
         } finally { setSosSending(false); }

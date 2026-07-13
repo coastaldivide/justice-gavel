@@ -24,8 +24,7 @@ import { AppIcon } from '../components/AppIcon';
 import React, { useState, useRef, useCallback } from 'react';
 import {
   Modal, View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Platform, Linking,
-} from 'react-native';
+  StyleSheet, ActivityIndicator, Platform, Linking, LayoutAnimation} from 'react-native';
 import { useTheme, TYPE, FONTS } from '../constants/theme';
 import api from '../services/api';
 import { t } from '../i18n';
@@ -70,6 +69,9 @@ type Props = {
 };
 
 function TermsAcceptanceModal({ visible, onAccepted }: Props) {
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, []);
   const { colors } = useTheme();
   const s = styles(colors, TYPE, FONTS);
 

@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -12,7 +13,7 @@ import { AppIcon } from '../components/AppIcon';
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Alert, Linking, KeyboardAvoidingView, Platform, RefreshControl} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Alert, Linking, KeyboardAvoidingView, Platform, RefreshControl, InteractionManager} from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
@@ -21,6 +22,11 @@ import { t } from '../i18n';
 
 declare var setContacts: any;
 function callPhone(phone: string) {
+  const { showToast } = useToast();
+  React.useEffect(() => {
+    const t = InteractionManager.runAfterInteractions(() => {});
+    return () => t.cancel();
+  }, []);
   Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
 }
 
@@ -112,6 +118,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const [submitting, setSubmitting] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const { colors, isDark } = useTheme();
@@ -157,7 +164,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
   const searchArrests = async () => {
     if (!searchName.trim()) {
-      Alert.alert('Enter a name', 'Enter the first or last name of the person who was arrested.');
+      showToast('Enter the first or last name of the person who was arrested.');
       return;
     }
     setSearching(true);
@@ -171,7 +178,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         Alert.alert('No records found', 'We don\'t have a record matching that name yet. You can still connect with attorneys and bail agents by continuing without an arrest record.');
       }
     } catch (e: any) {
-      Alert.alert('Search failed', 'Could not search right now. Check your connection and try again.');
+      showToast('Could not search right now. Check your connection and try again.');
     } finally {
       setSearching(false);
     }
@@ -188,8 +195,8 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   };
 
   const proceedToPayment = () => {
-    if (!familyName.trim()) { Alert.alert('Required', 'Please enter your name.'); return; }
-    if (!familyPhone.trim()) { Alert.alert('Required', 'Please enter your phone number.'); return; }
+    if (!familyName.trim()) { showToast('Please enter your name.'); return; }
+    if (!familyPhone.trim()) { showToast('Please enter your phone number.'); return; }
     // Require account before charging -- browsing users get sign-in prompt
     requireAuth(() => handleConnect());
   };
@@ -206,7 +213,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       });
       setResult(res.data || null);
     } catch (e: any) {
-      Alert.alert('Could not connect', 'Something went wrong. Check your connection and try again.');
+      showToast('Something went wrong. Check your connection and try again.');
       setStep(2);
     } finally {
       setPaying(false);

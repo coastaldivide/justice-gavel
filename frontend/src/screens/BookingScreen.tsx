@@ -1,3 +1,4 @@
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -9,7 +10,7 @@ import type { ScreenProps } from '../types/navigation';
  * 3-step booking flow: duration → date/time → confirm
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Linking, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
@@ -55,6 +56,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   // Load attorney's weekly availability so users know best times to expect responses
   const { lawyerName, lawyerId } = (route?.params as import('../types/api').RouteParams) ?? {};
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (!lawyerId) return;
     api.get('/attorney/profile/availability', { params: { lawyerId } })
       .then(r => setLawyerAvail(r.data || []))

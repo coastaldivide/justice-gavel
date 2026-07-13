@@ -23,7 +23,7 @@ import { AppIcon } from '../components/AppIcon';
 import { api } from '../services/api';
 import React, { useState } from 'react';
 
-import { View, Text, StyleSheet, ScrollView, Linking , ActivityIndicator, RefreshControl} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Linking , ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { t } from '../i18n';
@@ -114,6 +114,7 @@ const GUIDANCE: Record<string, { urgent: string[]; rights: string[]; deadline?: 
 function TenantRightsScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);

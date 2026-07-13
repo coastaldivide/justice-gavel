@@ -4,8 +4,7 @@ import { AppIcon } from '../components/AppIcon';
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Linking,
-} from 'react-native';
+  StyleSheet, Linking, LayoutAnimation} from 'react-native';
 import { COLORS } from '../constants/theme';
 import { t } from '../i18n';
 
@@ -75,6 +74,9 @@ This disclaimer is non-removable and appears on all AI output delivered to clien
 ];
 
 function AttorneyPrivacyScreen({ navigation }: any) {
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, []);
   const { showToast } = useToast();
   const colors = COLORS;
   const [expanded, setExpanded] = useState<number | null>(0);

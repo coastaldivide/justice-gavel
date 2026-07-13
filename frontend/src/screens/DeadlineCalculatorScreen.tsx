@@ -24,7 +24,7 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
  */
 import React, { useState, useMemo } from 'react';
 import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
-import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Share, KeyboardAvoidingView, Platform, RefreshControl, Alert} from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Share, KeyboardAvoidingView, Platform, RefreshControl, Alert, LayoutAnimation} from 'react-native';
 import { getUserState } from '../utils/userState';
 import { t } from '../i18n';
 
@@ -506,6 +506,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);

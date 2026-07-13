@@ -8,8 +8,7 @@ import { useToast } from '../components/ToastProvider';
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Platform,
-} from 'react-native';
+  ActivityIndicator, Platform, LayoutAnimation} from 'react-native';
 import { Linking } from 'react-native'; // open Daily.co session in system browser
 const openBrowserAsync = (url: string) => Linking.openURL(url);
 // TODO: import useThemeColors after adding to userState.ts
@@ -23,6 +22,9 @@ interface Props {
 }
 
 function VideoConsultationScreen({ route, navigation }: Props) {
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, []);
   const { showToast } = useToast();
   const { matterId, attorneyId, topic } = route.params || {};
   const colors = useThemeColors();

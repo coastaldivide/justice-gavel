@@ -41,7 +41,7 @@ import React, {
 import {
   ActivityIndicator, Alert, FlatList, KeyboardAvoidingView,
   Platform, Pressable, Share, StyleSheet, Text, TextInput,
-  TouchableOpacity, View, AccessibilityInfo} from 'react-native';
+  TouchableOpacity, View, AccessibilityInfo, LayoutAnimation, InteractionManager} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { track } from '../services/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -365,7 +365,11 @@ function ChatScreen({ navigation, route }: ScreenProps) {
 
   // ── Effects ───────────────────────────────────────────────────────────────────
   useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     return () => { mountedRef.current = false; };
+    });
+    return () => _task.cancel();
   }, []);
 
   useEffect(() => {

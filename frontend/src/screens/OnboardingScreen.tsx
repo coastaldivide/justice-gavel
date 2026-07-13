@@ -10,7 +10,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, FlatList, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, FlatList, Animated, LayoutAnimation} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
 import { t, initLang } from '../i18n';
@@ -63,6 +63,7 @@ const SLIDES = [
 
 function OnboardingScreen({ route, navigation }: ScreenProps) {
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     detectAndSaveUserState().catch(() => {});
   }, []);
 

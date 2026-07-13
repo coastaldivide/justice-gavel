@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -22,7 +23,7 @@ import type {} from '../types/navigation';
  *   3. LawyersScreen header → bookmark icon
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator, Linking, RefreshControl, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator, Linking, RefreshControl, Platform, KeyboardAvoidingView, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
@@ -46,6 +47,7 @@ interface SavedLawyer {
 }
 
 function callPhone(phone: string) {
+  const { showToast } = useToast();
   Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
 }
 function sendSMS(phone: string) {
@@ -63,6 +65,7 @@ function SavedCard({
   onNoteChange: (id: number, note: string) => void;
   navigation: any;
 }) {
+  const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [note,        setNote]        = useState(lawyer.notes || '');
@@ -80,14 +83,14 @@ function SavedCard({
       onNoteChange(lawyer.id, note.trim());
       setEditingNote(false);
     } catch {
-      Alert.alert('Could not save note', 'Check your connection and try again.');
+      showToast('Check your connection and try again.');
     } finally {
       setSaving(false);
     }
   }, [lawyer.id, note, onNoteChange]);
 
   const submitReview = async () => {
-    if (rating === 0) { Alert.alert('Rate first', 'Tap a star to rate before submitting.'); return; }
+    if (rating === 0) { showToast('Tap a star to rate before submitting.'); return; }
     setSubmitting(true);
     try {
       await api.post('/reviews', {
@@ -96,7 +99,7 @@ function SavedCard({
         rating,
         comment:     reviewText.trim(),
         anonymous:   0 });
-      Alert.alert('Review submitted ✓', 'Thank you -- your review helps others find good attorneys.');
+      showToast('Thank you -- your review helps others find good attorneys.');
       setReviewing(false);
       setRating(0);
       setReviewText('');
@@ -304,10 +307,12 @@ function SavedCard({
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
+  const { showToast } = useToast();
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
 
   const { colors, isDark } = useTheme();
   const [lawyers,   setLawyers]   = useState<SavedLawyer[]>([]);
@@ -352,7 +357,7 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
               await api.delete(`/saved/lawyers/${id}`);
               setLawyers(prev => prev.filter(l => l.id !== id));
             } catch {
-              Alert.alert('Could not remove', 'Check your connection and try again.');
+              showToast('Check your connection and try again.');
             }
           },
         },

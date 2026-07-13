@@ -4,8 +4,7 @@ import { AppIcon } from '../components/AppIcon';
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, ActivityIndicator,
-} from 'react-native';
+  StyleSheet, ActivityIndicator, LayoutAnimation} from 'react-native';
 import { COLORS } from '../constants/theme';
 import { api } from '../services/api';
 import { t } from '../i18n';
@@ -45,6 +44,9 @@ interface Props {
 }
 
 function LegalDisclaimerScreen({ onAccepted }: Props) {
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, []);
   const { showToast } = useToast();
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
   const [loading, setLoading] = React.useState(false);

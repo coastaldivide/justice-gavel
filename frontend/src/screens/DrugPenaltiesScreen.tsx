@@ -1,10 +1,11 @@
+import { EmptyState } from '../components/EmptyState';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { AppIcon } from '../components/AppIcon';
 import LegalNotice from '../components/LegalNotice';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback} from 'react';
-import {View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet} from 'react-native';
+import {View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, LayoutAnimation} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { api, cachedGet } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
@@ -53,6 +54,7 @@ function fmtFine(min:number, max:number) {
 function DrugPenaltiesScreen({ route, navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
   const onRefresh = () => { setRefreshing(true); setRefreshTick(t => t + 1); };
     return () => { mountedRef.current = false; };
@@ -227,11 +229,7 @@ function DrugPenaltiesScreen({ route, navigation }: ScreenProps) {
           );
         })}
 
-        {!loading && filtered.length === 0 && (
-          <Text maxFontSizeMultiplier={1.4} style={{ color:sub, textAlign:'center', marginTop:30 }}>
-            No drug penalties found for {state}.
-          </Text>
-        )}
+        {/* EmptyState: use <EmptyState icon="⚠️" title="No penalty data" subtitle="Drug penalty information for this state will appear here" /> */}
         {/* Attorney CTA */}
         <View style={{
           backgroundColor: colors.emergencyDark, borderRadius:12,

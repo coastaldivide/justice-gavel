@@ -1,10 +1,12 @@
+import { useToast } from '../components/ToastProvider';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView} from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
 /**
  * BondsmanDashboardScreen -- Real-time lead feed for bail bondsmen
  *
@@ -27,6 +29,7 @@ declare var _fetchError: any;
 declare var confirmAccept: any; // hoisted from component scope
 // ── Lead fee display helper ───────────────────────────────────────────────────
 function leadFeeLabel(bailAmount: number): string {
+  const { showToast } = useToast();
   if (!bailAmount || bailAmount <= 0) return '$25';
   if (bailAmount < 5000)   return '$25';
   if (bailAmount < 25000)  return '$75';
@@ -164,6 +167,8 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
 
 // ── Profile setup modal ───────────────────────────────────────────────────────
 function ProfileModal({ visible, onClose, onSaved }: any) {
+  const { showToast } = useToast();
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
   const [company, setCompany] = useState('');
   const [license, setLicense]         = useState('');
   const [licenseState, setLicenseState] = useState('');
@@ -171,7 +176,7 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
-    if (!company.trim()) { Alert.alert('Required', 'Enter your company name.'); return; }
+    if (!company.trim()) { showToast('Enter your company name.'); return; }
     setSaving(true);
     try {
       await api.post('/billing/bondsman/profile', {
@@ -182,7 +187,7 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
         states: licenseState ? [licenseState.toUpperCase()] : []});
       onSaved();
     } catch (e: any) {
-      Alert.alert('Connection issue', 'Check your internet and pull down to refresh.');
+      showToast('Check your internet and pull down to refresh.');
     } finally {
       setSaving(false);
     }
@@ -313,18 +318,24 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
 
   // Prevent screenshots on this sensitive screen
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     ScreenCapture.preventScreenCaptureAsync().catch(() => {});
     return () => { ScreenCapture.allowScreenCaptureAsync().catch(() => {}); };
   }, []);
 
   // Mounted guard
   const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  React.useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => { return () => { mountedRef.current = false; };
+    });
+    return () => _task.cancel();
+  }, []);
   const [leads, setLeads]         = useState<any[]>([]);
   const [profile, setProfile]     = useState<any>(null);
   const [loading, setLoading]     = useState(true);
@@ -395,7 +406,7 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       setBadgeStatus({ active: true, verified_badge: true });
       Alert.alert('✅ Badge Activated!', res.data?.message);
     } catch (e: any) {
-      Alert.alert('Connection issue', 'Check your internet and pull down to refresh.');
+      showToast('Check your internet and pull down to refresh.');
     } finally { setBadgeLoading(false); }
   });
 
@@ -406,9 +417,9 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
         try {
           await api.post('/billing/bondsman/verified-badge/cancel');
           setBadgeStatus({ active: false, verified_badge: false });
-          Alert.alert('Cancelled', 'Badge subscription cancelled.');
+          showToast('Badge subscription cancelled.');
         } catch (e: any) {
-          Alert.alert('Connection issue', 'Check your internet and pull down to refresh.');
+          showToast('Check your internet and pull down to refresh.');
         }
       }},
     ]);
@@ -428,7 +439,7 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       loadLeads(true);
       setAcceptedMsg(`Lead accepted. ${res.data?.fee_charged || ''} charged.`);
     } catch (e: any) {
-      Alert.alert('Payment issue', 'Could not process payment. Check your card details and try again.');
+      showToast('Could not process payment. Check your card details and try again.');
     } finally {
       setAccepting(false);
     }

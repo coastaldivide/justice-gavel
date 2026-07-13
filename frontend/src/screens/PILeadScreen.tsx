@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -18,7 +19,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, RefreshControl} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
@@ -47,11 +48,13 @@ const SEVERITIES = [
 ];
 
 function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1200)
@@ -73,7 +76,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const submit = () => requireAuth(async () => {
     hapticImpact();
     if (!description.trim() || description.trim().length < 20) {
-      Alert.alert('Add a bit more detail', 'Please describe what happened in a few sentences so attorneys can evaluate your case.');
+      showToast('Please describe what happened in a few sentences so attorneys can evaluate your case.');
       return;
     }
     if (mountedRef.current) setLoading(true);
@@ -89,7 +92,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
       }
       if (mountedRef.current) setStep('submitted');
     } catch {
-      Alert.alert('Could not submit', 'Check your connection and try again.');
+      showToast('Check your connection and try again.');
     } finally {
       if (mountedRef.current) setLoading(false);
     }

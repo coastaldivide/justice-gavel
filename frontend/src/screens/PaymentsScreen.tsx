@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -14,7 +16,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
@@ -59,6 +61,8 @@ const MORE_METHODS = [
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function PurposeCard({ p, selected, onSelect }: any) {
+  const { showToast } = useToast();
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
   return (
     <TouchableOpacity
           accessibilityRole="button"
@@ -105,8 +109,10 @@ const allMethods = [
 
 // Stripe PaymentSheet hook — enables native card sheet instead of browser redirect
 function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
@@ -161,7 +167,7 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         dialogTitle: 'Save or share your receipt',
       });
     } catch {
-      Alert.alert('Could not generate receipt', 'Check your connection and try again.');
+      showToast('Check your connection and try again.');
     } finally {
       setGeneratingReceipt(false);
     }

@@ -4,7 +4,7 @@ import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
 import React, { useState, useEffect, useCallback } from 'react';
-import {View, Text, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView} from 'react-native';
+import {View, Text, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import {api} from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
@@ -38,6 +38,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
 function CourtLocatorScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);

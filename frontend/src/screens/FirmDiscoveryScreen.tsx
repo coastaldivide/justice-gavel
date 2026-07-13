@@ -5,7 +5,7 @@ import { useToast } from '../components/ToastProvider';
  * and tap through to a firm's public profile before contacting them.
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import {
   View, Text, TextInput, TouchableOpacity,
@@ -56,7 +56,8 @@ function FirmDiscoveryScreen() {
     }
   }, [stateFilter, areaFilter]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); load(); }, [load]);
 
   const redeemCode = async () => {
     const c = code.trim().toUpperCase();

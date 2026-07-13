@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { AppIcon } from '../components/AppIcon';
@@ -17,7 +18,7 @@ import ScreenHeader from '../components/ScreenHeader';
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import {View, Text, FlatList, TouchableOpacity, StyleSheet, Linking, Alert, ActivityIndicator, Switch, ScrollView} from 'react-native';
+import {View, Text, FlatList, TouchableOpacity, StyleSheet, Linking, Alert, ActivityIndicator, Switch, ScrollView, LayoutAnimation} from 'react-native';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as Location from 'expo-location';
 import { api } from '../services/api';
@@ -59,6 +60,7 @@ const US_STATES = [
 ];
 
 function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const { colors, isDark } = useTheme();
 
   const [agents, setAgents]       = useState<Agent[]>([]);
@@ -74,6 +76,7 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const mountedRef = useRef(true);
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     // Get user location for proximity sorting
     Location.requestForegroundPermissionsAsync().then(({ status }) => {
@@ -91,7 +94,7 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   var search = useCallback(async () => {
     if (!selectedState) {
-      Alert.alert('Select a state', 'Choose a state to search for recovery agents.');
+      showToast('Choose a state to search for recovery agents.');
       return;
     }
     hapticImpact();

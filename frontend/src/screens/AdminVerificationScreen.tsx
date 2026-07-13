@@ -14,7 +14,7 @@ import { AppIcon } from '../components/AppIcon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, ActivityIndicator, LayoutAnimation} from 'react-native';
 import { api }      from '../services/api';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { t } from '../i18n';
@@ -36,6 +36,7 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
   // Admin-only gate
   const [isAuthorized, setIsAuthorized] = React.useState<boolean>(false);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     AsyncStorage.getItem('user').then(raw => {
       if (raw) {
         const u = (() => { try { return JSON.parse(raw); } catch { return null; } })();

@@ -23,7 +23,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, FlatList, Linking, StyleSheet, TextInput, Platform, ActivityIndicator, Alert, KeyboardAvoidingView, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, FlatList, Linking, StyleSheet, TextInput, Platform, ActivityIndicator, Alert, KeyboardAvoidingView, RefreshControl, LayoutAnimation} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import {  useTheme, COLORS } from '../constants/theme';
 import {

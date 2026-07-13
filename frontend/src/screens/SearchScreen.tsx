@@ -10,7 +10,7 @@ import { AppIcon } from '../components/AppIcon';
  * Uses /api/search with 300ms debounce.
  */
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform} from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { api } from '../services/api';
 import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
@@ -57,6 +57,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const userStateRef = React.useRef<string>('');
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     getUserState().then(s => { if (s?.code) userStateRef.current = s.code; }).catch(() => {});
   }, []);
 

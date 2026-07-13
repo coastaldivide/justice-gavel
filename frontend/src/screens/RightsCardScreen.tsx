@@ -14,7 +14,7 @@ import { AppIcon } from '../components/AppIcon';
  * Free for 24 Hour Advisor+ subscribers. Unsubscribed users see a preview + upgrade prompt.
  * Designed for TikTok virality: "Print this before you go out tonight"
  */
-import { Linking } from 'react-native';
+import { Linking, LayoutAnimation, InteractionManager} from 'react-native';
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useState, useEffect, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
@@ -62,7 +62,12 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
   }, []);
 
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    });
+    return () => _task.cancel();
+  }, []);
 
   const [state, setState]       = useState('');
   const [card, setCard]         = useState<CardData | null>(null);

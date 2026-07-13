@@ -23,8 +23,7 @@ import { GradientHeader } from '../components/GradientHeader';
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Linking, Alert, Share,
-} from 'react-native';
+  Linking, Alert, Share, LayoutAnimation} from 'react-native';
 import { useTheme, COLORS, FONTS, RADIUS } from '../constants/theme';
 import { hapticImpact, hapticSelection } from '../utils/webCompat';
 import { t } from '../i18n';

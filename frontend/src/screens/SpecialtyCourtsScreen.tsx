@@ -4,7 +4,7 @@ import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
 import type {} from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, RefreshControl, Linking, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet} from 'react-native';
+import { View, Text, TouchableOpacity, RefreshControl, Linking, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { api, cachedGet } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
@@ -27,6 +27,7 @@ const COURT_TYPES = [
 function SpecialtyCourtsScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);

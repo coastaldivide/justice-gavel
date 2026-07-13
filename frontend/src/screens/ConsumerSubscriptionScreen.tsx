@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -14,7 +16,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
 import { api } from '../services/api';
 
 import { useAuthGate } from '../components/AuthGate';
@@ -152,6 +154,8 @@ const TIERS = [
 ];
 
 function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
+  const { showToast } = useToast();
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
   return (
     <View style={[styles.card, tier.highlight && styles.cardHighlight]}
       testID="consumer-subscription-screen">
@@ -220,10 +224,16 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
 }
 
 function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    });
+    return () => _task.cancel();
+  }, []);
 
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -292,7 +302,7 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
         try {
           await api.post('/billing/cancel');
           setSubscription(null);
-          Alert.alert('Cancelled', 'Your plan has been cancelled.');
+          showToast('Your plan has been cancelled.');
         } catch (e: any) {
           Alert.alert('Payment could not be processed. Please check your payment details and try again, or contact support.', 'Please try again. If this keeps happening, check your internet connection.');
         }

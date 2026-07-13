@@ -18,7 +18,7 @@ import { haptic, hapticSelect, hapticSuccess, hapticWarn } from '../services/hap
  *   3. Result: bondsman card + lawyer card, both with direct Call buttons
  */
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
 import { getLocation } from '../services/location';
 import { api } from '../services/api';
 import PracticeAreaSelector from '../components/PracticeAreaSelector';
@@ -132,7 +132,12 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  React.useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    });
+    return () => _task.cancel();
+  }, []);
 
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);

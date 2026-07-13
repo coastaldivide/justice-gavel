@@ -18,7 +18,7 @@ import { AppIcon } from '../components/AppIcon';
 import { api } from '../services/api';
 import React, { useState, useRef, useCallback } from 'react';
 
-import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, LayoutAnimation} from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { t } from '../i18n';
@@ -99,6 +99,7 @@ const EVICTION_SECTIONS = [
 function HousingRightsScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);

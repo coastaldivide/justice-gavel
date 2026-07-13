@@ -3,7 +3,7 @@
  * Shows matter details, assigned attorney, court dates, linked cases, billing.
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, StyleSheet, Alert, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
 import { t } from '../i18n';
 
@@ -31,7 +31,8 @@ function MatterScreen({ route, navigation }: Props) {
     }
   }, [matterId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); load(); }, [load]);
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" /></View>;
   if (error)   return <View style={styles.center}><Text accessibilityRole="alert">{error}</Text></View>;

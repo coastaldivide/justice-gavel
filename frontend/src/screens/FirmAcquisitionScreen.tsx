@@ -19,8 +19,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator, Alert, RefreshControl,
-  KeyboardAvoidingView, Platform,
-} from 'react-native';
+  KeyboardAvoidingView, Platform, LayoutAnimation, InteractionManager} from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
 import type {} from '../types/navigation';
@@ -62,7 +61,12 @@ function FirmAcquisitionScreen({ navigation }: any) {
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
 
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    });
+    return () => _task.cancel();
+  }, []);
   const [flow, setFlow]           = useState<Flow>('browse');
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefresh]  = useState(false);

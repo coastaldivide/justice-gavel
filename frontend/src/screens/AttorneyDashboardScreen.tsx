@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -18,7 +19,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, KeyboardAvoidingView, Platform} from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, KeyboardAvoidingView, Platform, LayoutAnimation, InteractionManager} from 'react-native';
 import { api }      from '../services/api';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import OfflineBanner from '../components/OfflineBanner';
@@ -67,6 +68,7 @@ const DAY_LABELS: Record<string, string>  = { mon:'Mon',tue:'Tue',wed:'Wed',thu:
 const SLOT_LABELS: Record<string, string> = { morning:'AM',afternoon:'PM',evening:'Eve' };
 
 function AvailabilityGrid({ userId }: { userId: number }) {
+  const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [schedule, setSchedule] = React.useState<Record<string, string[]>>({});
@@ -75,9 +77,13 @@ function AvailabilityGrid({ userId }: { userId: number }) {
   const [saved, setSaved]       = React.useState(false);
 
   React.useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     api.get('/attorney/profile/availability')
       .then(r => { setSchedule(r.data?.schedule || {}); setNote(r.data?.note || ''); })
       .catch(() => {});
+    });
+    return () => _task.cancel();
   }, []);
 
   const toggle = (day: string, slot: string) => {
@@ -174,6 +180,7 @@ function AvailabilityGrid({ userId }: { userId: number }) {
 }
 
 function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element | null {
+  const { showToast } = useToast();
 
   // Prevent screenshots on this sensitive screen (Android FLAG_SECURE + iOS)
   React.useEffect(() => {
@@ -276,7 +283,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
   };
 
   const saveProfile = async () => {
-      if (!barInput?.trim()) { Alert.alert('Bar Number Required', 'Please enter your state bar number.'); return; }
+      if (!barInput?.trim()) { showToast('Please enter your state bar number.'); return; }
       setSavingProfile(true);
     try {
       await api.patch('/attorney/profile', { bar_number: barInput, is_defender: 1 });
@@ -286,7 +293,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
           office_name: officeNameInput.trim(),
         });
       }
-      Alert.alert('Saved', 'Profile updated.');
+      showToast('Profile updated.');
       loadAll();
     } catch (e: any) { Alert.alert('Dashboard Error', e.response?.data?.error || 'Could not save'); }
     setSavingProfile(false);

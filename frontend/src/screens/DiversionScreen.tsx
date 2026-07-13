@@ -19,7 +19,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useCallback, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl} from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, LayoutAnimation, InteractionManager} from 'react-native';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
@@ -156,17 +156,21 @@ const US_STATES = [
 
 function DiversionScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
 
   const [divLoading,       setDivLoading]       = React.useState(true);
   const [divError,         setDivError]         = React.useState(false);
   const [diversionLesson, setDiversionLesson] = React.useState<any>(null);
   React.useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
     setDivLoading(true);
     api.get("/lessons?category=Court%20Process&limit=5").then(r => {
       const d = ((r as any).data || []).find((l: any) => l.title?.toLowerCase().includes('diversion'));
       if (d) setDiversionLesson(d);
     }).catch(() => { setDivError(true); }).finally(() => setDivLoading(false));
+    });
+    return () => _task.cancel();
   }, []);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);

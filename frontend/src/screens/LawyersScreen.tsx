@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import type { NavigationProp } from '@react-navigation/native';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -19,7 +21,7 @@ import { haptic, hapticCall } from '../services/haptics';
  */
 
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
-import { Alert, Animated, FlatList, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, FlatList, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { api } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -55,7 +57,9 @@ const CITIES_FILTERED = CITIES.filter(Boolean);
 const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo'];
 const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 
-function callPhone(phone: string) { hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}); }
+function callPhone(phone: string) {
+  const { showToast } = useToast();
+  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}); }
 function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => {}); }
 function openDirections(lat: number, lng: number, name: string) {
   const encoded = encodeURIComponent(name);
@@ -97,10 +101,12 @@ function TagRow({ items, color = COLORS.steel }: { items: string[]; color?: stri
 
 // ── Lawyer card ───────────────────────────────────────────────────────────────
 const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: Record<string,any>; navigation: NavigationProp<any> }) {
+  const { showToast } = useToast();
 
   // ── Subscription tier check for soft upsell ────────────────────────────────
   const [isPro, setIsPro] = useState(false);
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     AsyncStorage.getItem('user_subscription')
       .then(tier => setIsPro(!!tier && tier !== 'free'))
       .catch(() => {});
@@ -142,7 +148,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
           screen: 'Messages',
           params: { caseId, caseTitle } });
       } catch {
-        Alert.alert('Could not open messages', 'Check your connection and try again.');
+        showToast('Check your connection and try again.');
       } finally {
         setCaseLoading(false);
       }
@@ -156,6 +162,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
 
   // Complete any pending save from before login
   useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
     AsyncStorage.getItem('pending_save_lawyer').then(async pending => {
       if (!pending) return;
       const token = await secureStorage.getToken();
@@ -167,6 +174,8 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         if (mountedRef.current) setSaved(true);
       } catch (e: any) { __DEV__ && console.warn(e?.message); }
     }).catch(() => {});
+    });
+    return () => _task.cancel();
   }, []);
 
   const toggleSave = async () => {

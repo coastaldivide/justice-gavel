@@ -10,7 +10,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, LayoutAnimation} from 'react-native';
 import { useTheme, RADIUS } from '../constants/theme';
 import { t } from '../i18n';
 import {
@@ -64,7 +64,8 @@ function OfflineStatusScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
-  React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
 
   const { colors } = useTheme();
   const [online, setOnline]         = useState<boolean | null>(null);

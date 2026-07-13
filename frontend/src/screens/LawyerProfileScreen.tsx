@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
@@ -12,13 +13,14 @@ import { AppIcon } from '../components/AppIcon';
  * Navigation params: { lawyerId: number, lawyerData?: object }
  */
 import React, { useState, useCallback, useEffect } from 'react';
-import { ActivityIndicator, Alert, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, RefreshControl } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, RefreshControl, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
+  const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const [fetchError, setFetchError] = React.useState<string|null>(null);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -57,6 +59,7 @@ declare var onRefresh: any;
 declare var refreshing: any;
 declare var load: any; // hoisted from component scope
 function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
 
   const submitReview = async () => {
     if (userRating === 0) return;
@@ -75,7 +78,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         comment: reviewText.trim(),
         created_at: new Date().toISOString() }, ...prev]);
     } catch {
-      Alert.alert('Could not submit review', 'Check your connection and try again.');
+      showToast('Check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -89,6 +92,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (lawyer?.id) Analytics.lawyerView(lawyer.id, lawyer.city || '', lawyer.specialties || ''); return () => { mountedRef.current = false; }; }, []);
 
   const [lawyer, setLawyer]   = useState<any>(preload || null);
@@ -156,7 +160,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
       await api.post('/saved/lawyers', { lawyer_id: lawyer.id });
       Alert.alert('Saved', `${lawyer.name} has been saved to your attorneys.`);
     } catch {
-      Alert.alert('Could not complete that action', 'Could not save attorney. Please try again.');
+      showToast('Could not save attorney. Please try again.');
     }
   };
 
@@ -166,7 +170,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
     const url = Platform.OS === 'ios'
       ? `maps://maps.apple.com/?address=${addr}&q=${encodeURIComponent(lawyer.name)}`
       : `https://www.google.com/maps/search/?api=1&query=${addr}`;
-    Linking.openURL(url).catch(() => Alert.alert('Maps', 'Could not open maps app.'));
+    Linking.openURL(url).catch(() => showToast('Could not open maps app.'));
   };
 
 

@@ -5,7 +5,7 @@ import { useToast } from '../components/ToastProvider';
  * Legal Pro + Esquire tier only.
  */
 import React, { useCallback, useState } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import {
   View, Text, TextInput, TouchableOpacity, RefreshControl,
@@ -23,6 +23,9 @@ interface ConflictResult {
 interface Props { navigation: any; }
 
 function ConflictCheckScreen({ navigation }: Props) {
+  React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, []);
   const { showToast } = useToast();
   const [refreshing, setRefreshing] = React.useState(false);
   const [parties, setParties]   = useState<string>('');

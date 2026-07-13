@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 /**
  * DocumentScannerScreen -- In-app document camera and attachment
  *
@@ -15,7 +16,7 @@
  *   onCapture? -- callback with the captured image URI
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View, AppState } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View, AppState, LayoutAnimation} from 'react-native';
 // Camera -- native only. Web uses <input type="file" accept="image/*"> fallback
 const CameraView = Platform.OS === 'web'
   ? null
@@ -32,6 +33,7 @@ import { t } from '../i18n';
 
 declare var CameraType: any;
 function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const { caseId, onCapture } = (route?.params ?? {}) as {
     caseId?: number;
     onCapture?: (uri: string) => void;
@@ -40,6 +42,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
   const { colors }                      = useTheme();
   const [isCameraActive, setIsCameraActive] = React.useState(true);
   React.useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     const sub = AppState.addEventListener('change', state => {
       setIsCameraActive(state === 'active');
     });
@@ -73,7 +76,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
       );
       if (mountedRef.current) setCaptured(processed.uri);
     } catch {
-      Alert.alert('Capture failed', 'Could not take photo. Please try again.');
+      showToast('Could not take photo. Please try again.');
     }
   }, []);
 
@@ -115,8 +118,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
         [{ text: 'OK', onPress: () => navigation.canGoBack() ? navigation.goBack() : null }]
       );
     } catch {
-      Alert.alert('Upload failed',
-        'Could not upload the document. Check your connection and try again.');
+      showToast('Could not upload the document. Check your connection and try again.');
     } finally {
       if (mountedRef.current) setUploading(false);
     }
