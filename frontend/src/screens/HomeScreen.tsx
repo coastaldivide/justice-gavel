@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
@@ -64,6 +65,7 @@ const TILES = [
 const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
 function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
@@ -147,20 +149,13 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     const contacts = await getContacts();
     const active = (contacts as string[]).filter((c: string) => c?.trim());
     if (active.length === 0) {
-      Alert.alert(
-        'No emergency contacts',
-        'Add contacts so they can be alerted when you need help.',
-        [
-          { text: 'Add Now', onPress: () => (navigation as any).navigate('MoreTab', { screen: 'Contacts' }) },
-          { text: 'Later', style: 'cancel' },
-        ]
-      );
+      confirm('No emergency contacts', 'Add contacts so they can be alerted when you need help.',
+      { confirmLabel: 'Add Now' }).then(ok => { if (ok) (navigation as any).navigate('MoreTab', { screen: 'Contacts' }); });
       return;
     }
-    Alert.alert('Send SOS?', `This will alert ${active.length} contact(s) with your location.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Send now', style: 'destructive', onPress: async () => {
-        setSosSending(true);
+confirm('Send SOS?', `This will alert ${active.length} contact(s) with your location.`,
+      { confirmLabel: 'Send now' }).then(async ok => { if (!ok) return;
+      setSosSending(true);
         try {
           const { lat, lng } = await getLocation();
           const userData = await AsyncStorage.getItem('user');
@@ -169,9 +164,8 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           showToast('Your emergency contacts have been notified.');
         } catch (e: any) {
           showToast(e.message || 'Check your connection and try again.', 'error');
-        } finally { setSosSending(false); }
-      }}
-    ]);
+        } finally { setSosSending(false);
+    })
   };
 
   const navigate = (nav: string) => {

@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
@@ -304,6 +305,7 @@ const _HEX_ICEDETENTION = {
 } as const;
 
 function IceDetentionScreen(): React.JSX.Element {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const [lang, setLang] = useState<Lang>('en');
@@ -318,14 +320,14 @@ function IceDetentionScreen(): React.JSX.Element {
   const openLink = useCallback((url: string) => {
     hapticImpact();
     Linking.openURL(url).catch(() =>
-      Alert.alert('Could not open link', 'Please visit ' + url)
+      showToast('Please visit the URL directly.', 'warning')
     );
   }, []);
 
   const callNumber = useCallback((phone: string) => {
     hapticImpact();
     Linking.openURL('tel:' + phone.replace(/[^\d+]/g, '')).catch(() =>
-      Alert.alert('Call', phone)
+      Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Could not open dialer.', 'error'))
     );
   }, []);
 

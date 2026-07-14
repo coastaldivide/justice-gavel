@@ -120,14 +120,14 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
   const openUrl = useCallback((url: string) => {
     hapticSelect();
     Linking.openURL(url).catch(() =>
-      Alert.alert('Cannot Open', 'Please copy this URL manually:\n\n' + url)
+      showToast('Please copy this URL manually.', 'warning')
     );
   }, []);
 
   const callNumber = useCallback((phone: string) => {
     hapticCall();
     Linking.openURL(`tel:${phone.replace(/[^0-9+]/g, '')}`).catch(() =>
-      Alert.alert('Call', phone)
+      Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Could not open dialer.', 'error'))
     );
   }, []);
 

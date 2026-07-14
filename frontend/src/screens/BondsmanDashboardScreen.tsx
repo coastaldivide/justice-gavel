@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -30,6 +31,7 @@ declare var _fetchError: any;
 declare var confirmAccept: any; // hoisted from component scope
 // ── Lead fee display helper ───────────────────────────────────────────────────
 function leadFeeLabel(bailAmount: number): string {
+  const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   if (!bailAmount || bailAmount <= 0) return '$25';
@@ -413,18 +415,15 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
   });
 
   const handleBadgeCancel = () => {
-    Alert.alert('Cancel Badge?', 'Your "Verified by Justice Gavel" badge will be removed from all listings.', [
-      { text: 'Keep Badge', style: 'cancel' },
-      { text: 'Cancel Badge', style: 'destructive', onPress: async () => {
-        try {
+confirm('Cancel Badge?', 'Your Verified badge will be removed from all listings.',
+      { confirmLabel: 'Cancel Badge', destructive: true }).then(async ok => { if (!ok) return;
+      try {
           await api.post('/billing/bondsman/verified-badge/cancel');
           setBadgeStatus({ active: false, verified_badge: false });
           showToast('Badge subscription cancelled.');
         } catch (e: any) {
           showToast('Check your internet and pull down to refresh.');
-        }
-      }},
-    ]);
+    })
   };
 
   const confirmAccept = async () => {
@@ -433,11 +432,7 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
     try {
       const res = await api.post(`/billing/leads/${selectedLead.id}/accept`, {});
       setSelectedLead(null);
-      Alert.alert(
-        '✅ Lead Accepted',
-        `Charged ${res.data?.fee_charged}. Contact info revealed below.`,
-        [{ text: 'OK' }]
-      );
+showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.`, 'success');
       loadLeads(true);
       setAcceptedMsg(`Lead accepted. ${res.data?.fee_charged || ''} charged.`);
     } catch (e: any) {

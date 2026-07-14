@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
@@ -47,6 +48,7 @@ interface StructuredNote {
 
 // ── Animated pulse ring ───────────────────────────────────────────────────────
 function PulseRing({ active }: { active: boolean }) {
+  const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const scale  = useRef(new Animated.Value(1)).current;
@@ -170,14 +172,8 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
     try {
       const perm = await Audio.requestPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(
-          'Microphone needed',
-          'Allow microphone access to record voice notes, or type your note instead.',
-          [
-            { text: 'Type instead', onPress: () => setPhase('text_input') },
-            { text: 'OK' },
-          ]
-        );
+        confirm('Microphone needed', 'Allow microphone access to record voice notes, or type your note instead.',
+      { confirmLabel: 'Type instead', cancelLabel: 'OK' }).then(ok => { if (ok) setPhase('text_input'); });
         return;
       }
       await Audio.setAudioModeAsync({
@@ -230,10 +226,8 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       await FileSystem.deleteAsync(uri, { idempotent: true });
     } catch (e: any) {
       const msg = e.response?.data?.error || e.message || 'Could not process audio.';
-      Alert.alert('Processing error', msg + '\n\nWould you like to type your note instead?', [
-        { text: 'Type instead', onPress: () => setPhase('text_input') },
-        { text: 'Try again',    onPress: () => setPhase('idle') },
-      ]);
+      confirm('Processing error', msg + ' Would you like to type your note instead?',
+      { confirmLabel: 'Type instead', cancelLabel: 'Try again' }).then(ok => { if (ok) setPhase('text_input'); else setPhase('idle'); });
     }
   }, []);
 

@@ -572,7 +572,7 @@ function SettingsScreen({ route, navigation }: any) {
             await api.post('/push/test', { message: 'Justice Gavel push notifications are working ✓' });
             showToast('Check your device notifications.');
           } catch (e: any) {
-            Alert.alert('Push test failed', e.response?.data?.error || e.message);
+            showToast(e.response?.data?.error || e.message, 'error');
           }
         }}
         accessibilityLabel="Send a test push notification"
@@ -725,38 +725,16 @@ function SettingsScreen({ route, navigation }: any) {
               paddingVertical: 12, alignItems: 'center' }}
             accessibilityLabel="Delete account permanently"
             onPress={() => {
-              Alert.alert(
-                'Delete Account',
-                'This will permanently delete your account and all your data. This cannot be undone.\n\nEnter your password to confirm.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: () => {
-                      Alert.prompt(
+confirm('Delete Account?', 'This will permanently delete your account and all your data. This cannot be undone.',
+      { confirmLabel: 'Delete Account', destructive: true }).then(async ok => { if (!ok) return;
+      Alert.prompt(
                         'Confirm Password',
                         'Enter your password to permanently delete your account.',
                         async (password: string) => {
                           if (!password) return;
                           try {
-                            await api.delete('/auth/account', { data: { password } });
-                            hapticNotification('Warning'); Alert.alert('Account Deleted',
-                              'Your account has been permanently deleted.',
-                              [{ text: 'OK', onPress: () => navigation.reset({
-                                index: 0, routes: [{ name: 'Login' }]
-                              }) }]);
-                          } catch (e: unknown) {
-                            const msg = e instanceof Error ? e.message : 'Could not delete account.';
-                            showToast(msg, 'info');
-                          }
-                        },
-                        'secure-text'
-                      );
-                    }
-                  }
-                ]
-              );
+                            await api.delete('/auth/account', { data: { password
+    })
             }}>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontFamily: 'Inter_700Bold', color: colors.bg }}>
               Delete My Account

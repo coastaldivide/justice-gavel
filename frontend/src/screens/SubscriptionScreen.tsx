@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -90,6 +91,7 @@ const INTEL_TIER = {
 };
 
 function TierCard({ tier, active, onSubscribe, loading }: any) {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
@@ -193,12 +195,8 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
     // Apple requires digital subscriptions on iOS to use StoreKit (IAP).
     // Until expo-iap is integrated, we block iOS purchases and show instructions.
     if (Platform.OS === 'ios') {
-      Alert.alert(
-        'Subscribe on Web',
-        'iOS subscriptions are managed at justicegavel.app/subscribe. You will be redirected.',
-        [{ text: 'Open Website', onPress: () => Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}) },
-         { text: 'Cancel', style: 'cancel' }]
-      );
+      confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe.',
+      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); });
       setSubscribing(null);
       return;
     }
@@ -207,11 +205,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
     try {
       const res = await api.post('/billing/subscribe', { tier, provider_type: providerType });
       setSubscription(res.data?.subscription);
-      Alert.alert(
-        '🎉 Free Trial Started!',
-        res.data?.message || '30-day free trial activated. No credit card charged yet.',
-        [{ text: 'Got it' }]
-      );
+showToast(res.data?.message || '30-day free trial activated. No credit card charged yet.', 'success');
       loadSubscription();
     } catch (e: any) {
       const msg = e.response?.data?.error || e.message;
@@ -226,25 +220,15 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
   };
 
   const handleCancel = () => {
-    Alert.alert(
-      'Cancel Your Plan',
-      "Are you sure? You'll lose access to leads and alerts at the end of your billing period.",
-      [
-        { text: 'Keep subscription', style: 'cancel' },
-        {
-          text: 'Yes, cancel', style: 'destructive',
-          onPress: async () => {
-            try {
+confirm('Cancel Your Plan?',"You'll lose access to leads and alerts at the end of your billing period.",
+      { confirmLabel:'Yes, cancel', destructive:true }).then(async ok=>{ if(!ok) return;
+      try {
               await api.post('/billing/cancel');
               setSubscription(null);
               showToast('Your plan has been cancelled. Access continues until period end.', 'info');
             } catch (e: any) {
               setError('Payment failed. Check your card details and try again.');
-            }
-          }
-        }
-      ]
-    );
+    })
   };
 
   if (loading) {

@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -60,6 +61,7 @@ type Phase = 'upload' | 'analyzing' | 'result' | 'history';
 
 // ── Animated progress bar ─────────────────────────────────────────────────────
 function ProgressBar({ active }: { active: boolean }) {
+  const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
@@ -318,14 +320,11 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
     requireAuth(async () => {
       // Confirm payment if not Pro subscriber
       if (!hasPro) {
-        Alert.alert(
-          'Analyze Document -- $19.99',
-          `Analyze "${file.name}" for $19.99?\n\nYou'll receive a full analysis: summary, key facts, inconsistencies flagged, and suggested cross-examination questions.\n\nDiscovery Pro ($149.99/mo) includes unlimited analyses.`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Analyze -- $19.99', onPress: runAnalysis },
-          ]
-        );
+confirm(`Analyze "${file.name}" for $19.99?`,
+          'Full analysis: summary, key facts, inconsistencies, and cross-examination questions.',
+          { confirmLabel: 'Analyze — $19.99' }).then(async ok => { if (!ok) return;
+          runAnalysis()
+        });
         // eslint-disable-next-line react-hooks/exhaustive-deps
         // eslint-disable-next-line react-hooks/exhaustive-deps
       } else {
@@ -380,10 +379,8 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       await FileSystem.deleteAsync(file.uri, { idempotent: true }).catch((e) => { __DEV__ && console.warn(e?.message); });
     } catch (e: any) {
       const msg = e.response?.data?.error || e.message || 'Analysis failed.';
-      Alert.alert('Analysis failed', msg + '\n\nTry a smaller PDF or check your connection.', [
-        { text: 'Try again', onPress: () => setPhase('upload') },
-        { text: 'Cancel',    onPress: () => setPhase('upload'), style: 'cancel' },
-      ]);
+      showToast(msg + ' Try a smaller PDF or check your connection.', 'error');
+        setPhase('upload');
       setPhase('upload');
     } finally {
       setAnalyzing(false);
@@ -407,18 +404,15 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       setAnalysis(res.data || null);
       setPhase('result');
     } catch {
-      Alert.alert(t('disc_load_error'));
-    }
+showToast(t('disc_load_error'), 'error');
   }, []);
 
   const deleteAnalysis = useCallback(async (id: number) => {
-    Alert.alert('Delete analysis?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        await api.delete(`/discovery/analysis/${id}`).catch((e) => { __DEV__ && console.warn(e?.message); });
+confirm('Delete analysis?','This cannot be undone.',
+      { confirmLabel:'Delete', destructive:true }).then(async ok=>{ if(!ok) return;
+      await api.delete(`/discovery/analysis/${id}`).catch((e) => { __DEV__ && console.warn(e?.message); });
         setHistory(h => h.filter(a => a.id !== id));
-      }},
-    ]);
+    })
   }, []);
 
   const shareAnalysis = useCallback(async () => {

@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
@@ -32,6 +33,7 @@ interface PendingAtty {
 }
 
 function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
 
@@ -77,48 +79,29 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
   useEffect(() => { load(); }, [load]);
 
   const approve = async (userId: number, name: string) => {
-    Alert.alert(
-      `Approve ${name}?`,
-      'Their bar number will be verified. They will appear with a ✓ Bar Verified badge in search results.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Approve',
-          onPress: async () => {
-            setActing(userId);
+confirm(`Approve ${name}?`, 'Their bar number will be verified. They will appear with a ✓ Bar Verified badge.',
+      { confirmLabel: 'Approve' }).then(async ok => { if (!ok) return;
+      setActing(userId);
             try {
               await api.post('/attorney/approve-verification', { user_id: userId, approved: true });
               setPending(p => p.filter(a => a.user_id !== userId));
 showToast(`${name} is now bar verified.`, 'success');
               showToast(e.response?.data?.error || 'Could not approve the application.', 'info');
-            } finally { setActing(null); }
-          },
-        },
-      ]
-    );
+            } finally { setActing(null);
+    })
   };
 
   const reject = async (userId: number, name: string) => {
-    Alert.alert(
-      `Reject ${name}?`,
-      'Their bar number submission will be cleared. They can resubmit.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: async () => {
-            setActing(userId);
+confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.',
+      { confirmLabel:'Reject', destructive:true }).then(async ok=>{ if(!ok) return;
+      setActing(userId);
             try {
               await api.post('/attorney/approve-verification', { user_id: userId, approved: false });
               setPending(p => p.filter(a => a.user_id !== userId));
             } catch (e: any) {
               showToast(e.response?.data?.error || 'Could not reject the application.', 'info');
-            } finally { setActing(null); }
-          },
-        },
-      ]
-    );
+            } finally { setActing(null);
+    })
   };
 
   if (!isAuthorized) return <></>;

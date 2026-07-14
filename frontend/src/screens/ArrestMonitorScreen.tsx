@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -34,6 +35,7 @@ interface Watch {
 }
 
 function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
@@ -104,8 +106,7 @@ function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   const addWatch = async () => {
     if (!name.trim()) { setError('Enter the full name to start monitoring.'); return; }
     if (watches.length >= MAX_WATCHES) {
-      Alert.alert('Limit reached', `Pro plan supports up to ${MAX_WATCHES} active monitors.`); return;
-    }
+showToast(`Pro plan supports up to ${MAX_WATCHES} active monitors.`, 'warning'); return;
     setAdding(true);
     try {
       await api.post('/arrests/monitors', {
@@ -122,13 +123,11 @@ function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   };
 
   const removeWatch = (id: number) => {
-    Alert.alert('Stop Monitoring', 'We\'ll stop sending alerts for this person. You can add them again any time.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: async () => {
-        await api.delete(`/arrests/monitors/${id}`).catch((e) => { __DEV__ && console.warn(e?.message); });
+confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add any time.",
+      { confirmLabel:'Remove', destructive:true }).then(async ok=>{ if(!ok) return;
+      await api.delete(`/arrests/monitors/${id}`).catch((e) => { __DEV__ && console.warn(e?.message); });
         setWatches(prev => prev.filter(w => w.id !== id));
-      }},
-    ]);
+    })
   };
 
   // ── Not Pro -- upsell wall ────────────────────────────────────────────────
@@ -164,14 +163,7 @@ function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               const newCount = wallTapCount + 1;
               setWallTapCount(newCount);
               if (newCount >= 2) {
-                Alert.alert(
-                  "🔔 You've checked this twice",
-                  'Arrest Monitor sends you an instant push notification the moment someone you care about is booked -- no checking required.\n\nPro plan: $14.99/mo.',
-                  [
-                    { text: 'Not now', style: 'cancel' },
-              { text: 'Start Free Trial', onPress: () => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' }) },
-                  ]
-                );
+                showToast('Arrest Monitor sends instant alerts — no checking required. Upgrade to Pro.', 'info');
               } else {
                 navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' });
               }

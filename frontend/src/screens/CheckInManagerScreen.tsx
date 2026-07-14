@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -39,7 +40,8 @@ type DefendantRow = {
   monthly_fee_cents: number;
 };
 
-function statusColor(row: DefendantRow): { color: string; bg: string; label: string } {
+function statusColor(row: DefendantRow): {
+  const { confirm } = useConfirm(); color: string; bg: string; label: string } {
   if (!row.active) return { color: COLORS.textMuted, bg: COLORS.bg, label: 'Inactive' };
   if (row.checkins_today > 0) return { color: COLORS.legal, bg: COLORS.legalBg, label: '✓ Checked in today' };
   const courtSoon = row.court_date &&
@@ -304,13 +306,11 @@ function CheckInManagerScreen({ route, navigation }: ScreenProps) {
   useEffect(() => { load(); }, [load]);
 
   const deactivate = (id: number, name: string) => {
-    Alert.alert(`Remove ${name}?`, 'They will no longer need to check in. $9.99/month removed from your bill.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: async () => {
-        await api.put(`/checkins/enrollments/${id}`, { active: false }).catch((e) => { __DEV__ && console.warn(e?.message); });
+confirm(`Remove ${name}?`, 'They will no longer need to check in.',
+      { confirmLabel: 'Remove', destructive: true }).then(async ok => { if (!ok) return;
+      await api.put(`/checkins/enrollments/${id}`, { active: false }).catch((e) => { __DEV__ && console.warn(e?.message); });
         load();
-      }},
-    ]);
+    })
   };
 
   const enrollments: DefendantRow[] = data?.enrollments || [];

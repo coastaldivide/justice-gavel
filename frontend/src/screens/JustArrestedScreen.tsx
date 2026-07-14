@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -59,6 +60,7 @@ import Analytics from '../services/analytics';
 import { PlaceholderIllustration } from '../components/PlaceholderIllustration';
 import { t } from '../i18n';
 function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -89,7 +91,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
   const call = (num: string) => {
     hapticImpact();
     Linking.openURL(`tel:${num.replace(/\D/g, "")}`).catch(() =>
-      Alert.alert('Cannot call', `Please dial ${num} manually.`)
+      showToast(`Please dial ${num} manually.`, 'warning')
     );
   };
 

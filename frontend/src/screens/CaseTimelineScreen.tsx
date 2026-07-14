@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -88,6 +89,7 @@ interface CaseEvent {
 }
 
 function formatEventDate(dateStr: string | null): string {
+  const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   if (!dateStr) return '';
@@ -225,27 +227,16 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   };
 
   const handleDelete = (eventId: number) => {
-    Alert.alert(
-      'Remove Event',
-      'This will permanently remove this event from your timeline.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
+confirm('Remove Event?', 'This will permanently remove this event from your timeline.',
+      { confirmLabel: 'Remove', destructive: true }).then(async ok => { if (!ok) return;
+      try {
               setEvents(prev => prev.filter(e => e.id !== eventId));
               await api.delete(`/cases/${caseId}/events/${eventId}`);
             } catch (e: any) {
               // Rollback: re-fetch events to restore the deleted item
               setEvents(prev => prev);
               showToast(e?.response?.data?.error || 'Try again.', 'error');
-            }
-          },
-        },
-      ]
-    );
+    })
   };
 
   const s = styles(colors as any);
@@ -273,15 +264,10 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
           style={[s.eventCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
           onLongPress={() => {
               if (item.id < 0) return; // auto-generated -- not deletable
-              Alert.alert(
-                item.title.slice(0, 40),
-                'What would you like to do?',
-                [
-                  { text: '🔔 Set Reminder', onPress: () => scheduleEventReminder(item) },
-                  { text: '🗑️ Remove Event', style: 'destructive', onPress: () => handleDelete(item.id) },
-                  { text: 'Cancel', style: 'cancel' },
-                ]
-              );
+confirm(item.title.slice(0,40),'Set a reminder or remove this event?',
+      { confirmLabel:'🗑️ Remove Event', cancelLabel:'🔔 Set Reminder', destructive:true }).then(ok=>{
+        if(ok) removeEvent(item.id); else scheduleEventReminder(item);
+      });
             }}
           accessibilityLabel={`${label}: ${item.title}. Long press to remove.`}
           accessibilityHint={item.id < 0 ? "Auto-recorded status change" : "Long press for options"}

@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -28,6 +29,7 @@ const RIGHTS_CARDS = [
 ];
 
 function EmergencyScreen({ route, navigation }: ScreenProps) {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -110,7 +112,7 @@ function EmergencyScreen({ route, navigation }: ScreenProps) {
   const call = (num: string) => {
     hapticImpact();
     Linking.openURL(`tel:${num.replace(/\D/g, "")}`).catch(() =>
-      Alert.alert('Cannot call', `Please dial ${num} manually.`)
+      showToast(`Please dial ${num} manually.`, 'warning')
     );
   };
 

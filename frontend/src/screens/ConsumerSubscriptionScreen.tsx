@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -155,6 +156,7 @@ const TIERS = [
 ];
 
 function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
+  const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
@@ -270,12 +272,8 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
     // Apple requires digital subscriptions on iOS to use StoreKit (IAP).
     // Until expo-iap is integrated, we block iOS purchases and show instructions.
     if (Platform.OS === 'ios') {
-      Alert.alert(
-        'Subscribe on Web',
-        'iOS subscriptions are managed at justicegavel.app/subscribe. You will be redirected.',
-        [{ text: 'Open Website', onPress: () => Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}) },
-         { text: 'Cancel', style: 'cancel' }]
-      );
+      confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe. Open website?',
+      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); });
       setSubscribing(null);
       return;
     }
@@ -297,18 +295,15 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
   };
 
   const handleCancel = () => {
-    Alert.alert('Cancel Plan', 'You\'ll keep access until the end of your billing period.', [
-      { text: 'Keep plan', style: 'cancel' },
-      { text: 'Cancel', style: 'destructive', onPress: async () => {
-        try {
+confirm('Cancel Plan?', 'You\'ll keep access until the end of your billing period.',
+      { confirmLabel: 'Cancel', destructive: true }).then(async ok => { if (!ok) return;
+      try {
           await api.post('/billing/cancel');
           setSubscription(null);
           showToast('Your plan has been cancelled.');
         } catch (e: any) {
           showToast('Please try again. If this keeps happening, check your internet connection.');
-        }
-      }},
-    ]);
+    })
   };
 
   if (loading) return (
@@ -422,7 +417,7 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
       </Text>
       <TouchableOpacity
           accessibilityRole="button"
-        onPress={() => Alert.alert('Restore Purchases', 'Checking your previous purchases...\n\nIf you had an active subscription it will be restored. This may take a moment.', [{ text: 'OK' }])}
+        onPress={() => showToast('Checking previous purchases...', 'info')}
         style={{ alignItems: 'center', paddingVertical: 16 }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 12, lineHeight: 20, textDecorationLine: 'underline' }}>Restore Purchases</Text>
       </TouchableOpacity>

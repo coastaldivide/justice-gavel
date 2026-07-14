@@ -405,11 +405,7 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
         ],
         notes: 'Calculated by Justice Gavel Deadline Calculator. Verify with local court rules.',
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
-      Alert.alert(
-        'Added to calendar',
-        title + ' added with reminders 1 week, 1 day, and 2 hours before.',
-        [{ text: 'OK' }]
-      );
+      showToast(title + ' added to calendar with reminders.', 'success');
     } catch {
       showToast('Could not add event. Please try again.');
     }

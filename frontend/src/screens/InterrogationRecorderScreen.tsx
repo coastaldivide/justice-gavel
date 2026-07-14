@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
@@ -34,6 +35,7 @@ const TWO_PARTY_STATES = new Set([
 ]);
 
 function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
@@ -112,15 +114,8 @@ function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Ele
   const startRecording = async () => {
     // Two-party consent warning
     if (TWO_PARTY_STATES.has(userState) && !recordingLaw?.acknowledged) {
-      Alert.alert(
-        '⚠️ Recording Law -- ' + userState,
-        (recordingLaw?.note || 'Your state may require all parties to consent to recording.') +
-        '\n\nRecording police in PUBLIC spaces is generally protected by the First Amendment.',
-        [
-          { text: 'I Understand -- Start Recording', style: 'default', onPress: () => doStartRecording() },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
+      confirm('⚠️ Recording Law', (recordingLaw?.note || 'Your state may require all parties to consent.') + '\n\nRecording police in PUBLIC spaces is generally protected by the First Amendment.',
+      { confirmLabel: 'I Understand — Start Recording' }).then(ok => { if (ok) startRecording; });
       return;
     }
     doStartRecording();

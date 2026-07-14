@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
@@ -48,6 +49,7 @@ interface SavedLawyer {
 }
 
 function callPhone(phone: string) {
+  const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
@@ -340,24 +342,14 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
   useEffect(() => { load(); }, [load]);
 
   const handleRemove = useCallback((id: number) => {
-    Alert.alert(
-      'Remove Attorney',
-      'Remove this attorney from your saved list?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove', style: 'destructive',
-          onPress: async () => {
-            try {
+confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
+      { confirmLabel: 'Remove', destructive: true }).then(async ok => { if (!ok) return;
+      try {
               await api.delete(`/saved/lawyers/${id}`);
               setLawyers(prev => prev.filter(l => l.id !== id));
             } catch {
               showToast('Check your connection and try again.');
-            }
-          },
-        },
-      ]
-    );
+    })
   }, []);
 
   const handleNoteChange = useCallback((id: number, note: string) => {

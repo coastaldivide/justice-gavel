@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
@@ -61,6 +62,7 @@ const US_STATES = [
 ];
 
 function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
@@ -134,14 +136,7 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const call = (phone: string, name: string) => {
     hapticImpact();
-    Alert.alert(
-      `Call ${name}`,
-      phone,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Call', onPress: () => Linking.openURL(`tel:${phone.replace(/\D/g, "")}`).catch(() => {}) },
-      ]
-    );
+    confirm(`Call ${name}?`, phone, { confirmLabel: 'Call' }).then(ok => { if (ok) Linking.openURL(`tel:${phone.replace(/\D/g, '')}`).catch(() => {}); });
   };
 
   const openWeb = (url: string) => {

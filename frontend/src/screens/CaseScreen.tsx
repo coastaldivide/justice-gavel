@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 // T4-05: wrap heavy useEffect bodies with InteractionManager.runAfterInteractions
@@ -54,6 +55,7 @@ interface Case {
 }
 
 const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCalendar, onShare, onInvite }: any) {
+  const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const color = STATUS_COLORS[item.status] || COLORS.textMuted;
@@ -460,15 +462,10 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
   const scanDocument = useCallback(async () => {
     try {
       // Ask: camera or library
-      Alert.alert(
-        'Scan Document',
-        'Choose a charging document, bail slip, police report, or any legal document to auto-fill this case.',
-        [
-          { text: 'Take Photo', onPress: () => pickScanSource('camera') },
-          { text: 'Choose from Library', onPress: () => pickScanSource('library') },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
+confirm('Scan Document','Take a photo or choose from your library to scan this document.',
+      { confirmLabel:'Take Photo', cancelLabel:'Choose Library' }).then(ok=>{
+        if(ok) pickScanSource('camera'); else pickScanSource('library');
+      });
     } catch (e: any) { __DEV__ && console.warn(e?.message); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -479,14 +476,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert(
-      'Camera Access Needed',
-      'To scan documents, go to Settings and turn on Camera for Justice Gavel.',
-      [
-        { text: 'Not Now', style: 'cancel' },
-        { text: 'Open Settings', onPress: () => Linking.openURL('app-settings:').catch(()=>{}) },
-      ]
-    );
+          confirm('Camera Access Needed', 'To scan documents, go to Settings and turn on Camera for Justice Gavel.',
+      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(()=>{}) });
           return;
         }
         result = await ImagePicker.launchCameraAsync({
@@ -496,14 +487,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert(
-      'Photo Access Needed',
-      'To attach photos, go to Settings and turn on Photos for Justice Gavel.',
-      [
-        { text: 'Not Now', style: 'cancel' },
-        { text: 'Open Settings', onPress: () => Linking.openURL('app-settings:').catch(()=>{}) },
-      ]
-    );
+          confirm('Photo Access Needed', 'To attach photos, go to Settings and turn on Photos for Justice Gavel.',
+      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(()=>{}) });
           return;
         }
         result = await ImagePicker.launchImageLibraryAsync({
@@ -559,25 +544,13 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
             parsed.notes,
           ].filter(Boolean).join('\\n').trim()
         }));
-        Alert.alert(
-          '✓ Document scanned',
-          'Fields have been pre-filled from the document. Review and edit before saving.',
-          [{ text: 'OK' }]
-        );
+showToast('Fields have been pre-filled from the document. Review and edit before saving.', 'success');
       } else {
-        Alert.alert(
-          'Scanned -- no fields detected',
-          'The document was read but specific case fields could not be extracted. Check the Notes field for the full text.',
-          [{ text: 'OK' }]
-        );
+showToast('Document read — specific fields could not be extracted. Check Notes for the full text.', 'warning');
       }
     } catch (e: any) {
       __DEV__ && console.warn(e?.message);
-      Alert.alert(
-        'Scan failed',
-        'Could not read the document. Make sure the text is visible and the image is clear.',
-        [{ text: 'OK' }]
-      );
+      showToast('Could not read the document. Make sure the image is clear.', 'error');
     } finally {
       setScanning(false);
     }
@@ -689,7 +662,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
         ],
         notes: cas.notes || '',
         location: ''});
-      Alert.alert('Added to Calendar ✓', `"${cas.title}" court date added with reminders 1 day and 2 hours before.`);
+      showToast(`"${cas.title}" court date added with reminders.`, 'success');
     } catch (e: any) {
       // eslint-disable-next-line react-hooks/exhaustive-deps
       __DEV__ && console.warn(e?.message);

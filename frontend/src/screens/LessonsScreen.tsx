@@ -77,7 +77,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       const stored = await AsyncStorage.getItem(`points_${userId}`);
       const newPts = (parseInt(stored || '0', 10) + pts);
       await AsyncStorage.setItem(`points_${userId}`, String(newPts));
-      Alert.alert('✓ Completed!', `+${pts} points added to your rewards balance.`);
+      showToast(`+${pts} points added to your rewards!`, 'success');
     } catch (e: any) {
       showToast(e.response?.data?.error || 'Could not mark complete.', 'info');
     }

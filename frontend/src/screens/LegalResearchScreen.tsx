@@ -568,7 +568,7 @@ showToast(msg, 'error');
       setPhase('thread');
       const _t1 = setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 200); return () => clearTimeout(_t1);
     } catch {
-      Alert.alert(t('res_load_error'));
+      showToast(t('res_load_error'), 'error');
     }
   }, []);
 

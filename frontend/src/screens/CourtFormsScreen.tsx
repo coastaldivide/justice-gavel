@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
@@ -76,6 +77,7 @@ const FORM_CATEGORIES = [
 type Phase = 'state_select' | 'category_select' | 'form_display' | 'ai_guide';
 
 function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const { colors } = useTheme();
   const s = styles(COLORS, FONTS);
@@ -135,11 +137,7 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
   // ── Open official form URL ─────────────────────────────────────────────────
   const openFormUrl = useCallback((url: string) => {
     Linking.openURL(url).catch(() => {
-      Alert.alert(
-        'Could Not Open Link',
-        'Please visit the URL directly in your browser:\n\n' + url,
-        [{ text: 'OK' }]
-      );
+      showToast('Please visit the URL directly in your browser.', 'warning');
     });
   }, [selectedState]);
 

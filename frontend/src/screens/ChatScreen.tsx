@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import { useConfirm } from '../hooks/useConfirm';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -82,6 +84,8 @@ interface Message {
 
 // ── Cryptographically secure session token ────────────────────────────────────
 function randomId(): string {
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const arr = new Uint32Array(2);
   crypto.getRandomValues(arr);
   return Array.from(arr, n => n.toString(36)).join('');
@@ -134,11 +138,7 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
 
   const handleLongPress = () => {
     const text = msg.text || '';
-    Alert.alert('Message Options', 'Select an action for this message', [
-      { text: 'Copy',   onPress: () => Clipboard.setStringAsync(text).catch(() => {}) },
-      { text: 'Share',  onPress: () => { try { Share.share({ message: text }); } catch (_: any) {} } },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+Clipboard.setStringAsync(text).then(() => showToast('Copied to clipboard','success')).catch(()=>{});
   };
 
   return (
@@ -456,22 +456,16 @@ function ChatScreen({ navigation, route }: ScreenProps) {
   }, [messages, caseTitle]);
 
   const clearChat = useCallback(() => {
-    Alert.alert(
-      'Clear Conversation',
-      'Delete all messages in this session? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Clear', style: 'destructive', onPress: async () => {
-    const isFirstMsg = messages.length === 0;
+confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
+      { confirmLabel: 'Clear', destructive: true }).then(async ok => { if (!ok) return;
+      const isFirstMsg = messages.length === 0;
   const sid = sessionId || await getSessionId();
     try { await api.delete(`/chat/history/${sid}`); } catch (e: any) { __DEV__ && console.warn((e as Error)?.message); }
     const newId = randomId();
     await AsyncStorage.setItem('chat_session_id', newId);
     setSessionId(newId);
     setMessages([]);
-    } },
-      ],
-    );
+    })
   }, [sessionId]);
 
   // ── Send ──────────────────────────────────────────────────────────────────────

@@ -637,7 +637,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             <TouchableOpacity
   accessibilityRole="button"
               style={[styles.transcriptBtn, { borderColor: colors.steel }]}
-              onPress={() => Alert.alert('CLE Transcript', `${cleTotal.toFixed(1)} CLE hours earned on Justice Gavel.`)}
+              onPress={() => showToast(`${cleTotal.toFixed(1)} CLE hours earned on Justice Gavel.`, 'info')}
               accessibilityLabel="View CLE transcript"
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.transcriptBtnText, { color: colors.steel }]}>View Full Transcript →</Text>

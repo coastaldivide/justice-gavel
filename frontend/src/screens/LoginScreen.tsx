@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { useForm, Controller } from 'react-hook-form';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -24,6 +25,7 @@ import { t } from '../i18n';
 declare var JusticeGavelLogo: any;
 declare var showPassword: any;
 function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -146,12 +148,10 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
 
               const email = identifier.trim();
               if (!email) { showToast('Type your email above then tap "Forgot password?"'); return; }
-              Alert.alert('Reset Password', `Send a reset link to ${email}?`, [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Send Link', onPress: () => {
-                    api.post('/auth/forgot-password', { email })
-                      .then(() => showToast('Check your email for a password reset link. It expires in 1 hour.'))
-                      .catch(() => showToast('Check the email address and try again.'));
+              confirm('Reset Password', `Send a reset link to ${email}?`,
+      { confirmLabel: 'Send Link' }).then(ok => { if (!ok) return;
+      api.post('/auth/forgot-password', { email
+    });
                   }
                 },
               ]);

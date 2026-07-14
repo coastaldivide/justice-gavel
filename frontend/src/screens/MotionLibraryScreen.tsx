@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -342,6 +343,7 @@ function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPE
 
 // ── History item ──────────────────────────────────────────────────────────────
 function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const m = MOTION_TYPES.find(t => t.key === item.motion_type);
@@ -764,13 +766,11 @@ const loadHistory = useCallback(async () => {
   }, [editDraft, selected, caseTitle]);
 
   const deleteHistory = useCallback(async (id: number) => {
-    Alert.alert('Delete motion?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        await api.delete(`/motions/history/${id}`).catch((e) => { __DEV__ && console.warn(e?.message); });
+confirm('Delete motion?', 'This cannot be undone.',
+      { confirmLabel: 'Delete', destructive: true }).then(async ok => { if (!ok) return;
+      await api.delete(`/motions/history/${id}`).catch((e) => { __DEV__ && console.warn(e?.message); });
         setHistory(h => h.filter(m => m.id !== id));
-      }},
-    ]);
+    })
   }, []);
 
   if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
@@ -924,14 +924,8 @@ const loadHistory = useCallback(async () => {
         <TouchableOpacity accessibilityRole="button"
           style={[styles.generateBtn, { backgroundColor: selected.color }]}
           onPress={() => {
-            Alert.alert(
-              `Generate ${selected.label}`,
-              `This will charge $9.99 to your account and generate a court-ready draft.\n\nReady to proceed?`,
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Generate -- $9.99', onPress: generate },
-              ]
-            );
+confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your account and generate a court-ready draft.',
+              { confirmLabel: 'Generate — $9.99' }).then(ok => { if (ok) generate(); });
           }}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.generateBtnText}>

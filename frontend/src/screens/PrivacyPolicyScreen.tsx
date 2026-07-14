@@ -1,3 +1,5 @@
+import { useConfirm } from '../hooks/useConfirm';
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
@@ -240,6 +242,8 @@ const SECTIONS: Section[] = [
 ];
 
 function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { confirm } = useConfirm();
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
@@ -248,20 +252,14 @@ function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
   const openEmail = (addr: string) => {
     hapticImpact();
     Linking.openURL(`mailto:${addr}`).catch(() =>
-      Alert.alert('Email', `Please contact us at ${addr}`)
+      showToast(`Contact us at ${addr}`, 'info')
     );
   };
 
   const requestDeletion = () => {
     hapticImpact();
-    Alert.alert(
-      'Request Data Deletion',
-      'This will send an email to our privacy team to initiate deletion of your account and all associated data.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Send Request', onPress: () => openEmail(CONTACT_EMAIL) },
-      ]
-    );
+    confirm('Request Data Deletion?', 'This will send an email to our privacy team to initiate deletion of your account and all associated data.',
+      { confirmLabel: 'Send Request' }).then(ok => { if (ok) openEmail(CONTACT_EMAIL); });
   };
 
   return (

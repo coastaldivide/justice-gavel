@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { EmptyState } from '../components/EmptyState';
 import { useForm, Controller } from 'react-hook-form';
@@ -113,6 +114,7 @@ const ISO_DATE_RE_FV = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const isValidDateFV  = (s: string) => ISO_DATE_RE_FV.test(s);
 
 function FirmVerticalScreen({ navigation }: any) {
+  const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   // react-hook-form: migrating from 5 individual useState form fields
   const { control, handleSubmit, setValue, formState: { errors: formErrors } } = useForm({
@@ -244,13 +246,11 @@ function FirmVerticalScreen({ navigation }: any) {
 
   // ── Load trackers ──────────────────────────────────────────────────────────
   const closeTracker = async (type: string, id: number, name: string) => {
-    Alert.alert('Mark as Resolved',
-      `Mark "${name}" as resolved? This will archive the tracker.`,
-      [{ text: 'Cancel', style: 'cancel' },
-       { text: 'Mark Resolved', style: 'destructive', onPress: async () => {
-         try { await api.patch(`/firm-verticals/${type}/${id}/resolve`, {}); loadTrackers(); }
-         catch (e: any) { showToast(e?.response?.data?.error || 'Could not resolve.', 'error'); }
-       }}]);
+confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the tracker.`,
+      { confirmLabel: 'Mark Resolved', destructive: true }).then(async ok => { if (!ok) return;
+      try { await api.patch(`/firm-verticals/${type}/${id}/resolve`, {}); loadTrackers(); }
+         catch (e: any) { showToast(e?.response?.data?.error || 'Could not resolve.', 'error');
+    })
   };
 
   const loadTrackers = useCallback(async () => {

@@ -160,7 +160,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
     if (!lawyer) return;
     try {
       await api.post('/saved/lawyers', { lawyer_id: lawyer.id });
-      Alert.alert('Saved', `${lawyer.name} has been saved to your attorneys.`);
+      showToast(`${lawyer.name} saved to your attorneys.`, 'success');
     } catch {
       showToast('Could not save attorney. Please try again.');
     }
