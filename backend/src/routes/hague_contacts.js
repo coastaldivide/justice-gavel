@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * hague_contacts.js — Hague Convention Central Authority + Reporting Links
  *

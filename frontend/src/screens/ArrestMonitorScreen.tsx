@@ -172,7 +172,7 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
             <Text maxFontSizeMultiplier={1.4} style={styles.upsellBtnText}>Upgrade to Legal Pro -- $14.99/mo</Text>
           </TouchableOpacity>
           <TouchableOpacity
-          accessibilityRole="button" style={styles.upsellSkip} accessibilityLabel="Maybe later" onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
+          accessibilityRole="button" style={styles.upsellSkip} accessibilityLabel="Maybe later" onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
             >
             <Text maxFontSizeMultiplier={1.4} style={styles.upsellSkipText}>Maybe later</Text>
           </TouchableOpacity>
@@ -255,7 +255,7 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                   autoFocus
                   returnKeyType="next"
           blurOnSubmit
-        />
+        / maxLength={200}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TextInput
                     style={[styles.formInput, { flex: 1 }]}

@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * webhooks/stripe.js — Stripe payment event handler
  *

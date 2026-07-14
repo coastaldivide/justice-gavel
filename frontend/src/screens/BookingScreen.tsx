@@ -183,7 +183,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           style={[styles.doneBtn, { backgroundColor: COLORS.legal, marginBottom: 10 }]}
           onPress={() => {
             Linking.openURL('calshow://').catch(() =>
-              Linking.openURL('content://com.android.calendar/time/').catch(() => {}));
+              Linking.openURL('content://com.android.calendar/time/').catch(() => showToast('Action failed. Please try again.', 'error')));
           }}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>📅 Add to Calendar</Text>
@@ -394,7 +394,8 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
           <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
             style={[styles.confirmBtn, { backgroundColor: COLORS.navy }, booking && { opacity: 0.6 }]}
-            testID="booking-confirm" onPress={confirmBooking} disabled={booking} accessibilityLabel="Confirm & Pay {duration.fee} \u2192">
+            testID="booking-confirm" onPress={confirmBooking} disabled={booking} accessibilityLabel="Confirm & Pay {duration.fee} \u2192"
+          accessibilityHint="Double-tap to activate">
             {booking
               ? <ActivityIndicator color={colors.bgCard} />
               : <Text maxFontSizeMultiplier={1.4} style={styles.confirmBtnText}>Confirm & Pay {duration.fee} →</Text>}

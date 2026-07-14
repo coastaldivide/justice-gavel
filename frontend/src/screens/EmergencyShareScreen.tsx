@@ -220,7 +220,7 @@ function EmergencyShareScreen({ route, navigation }: ScreenProps) {
 
         const canOpen = await Linking.canOpenURL(smsUrl).catch(() => false);
         if (canOpen) {
-          await Linking.openURL(smsUrl).catch(() => {});
+          await Linking.openURL(smsUrl).catch(() => showToast('Action failed. Please try again.', 'error'));
           setSharedTo(contacts.length);
           setPhase('done');
           hapticSuccess();
@@ -356,7 +356,7 @@ if (phase === 'ready') return (
 
         <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
-          onPress={() => Linking.openURL('tel:988').catch(() => {})}
+          onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.bgSubtle }]}>
             <AppIcon name="call-outline" size={20} color="#1B5E20" />
@@ -370,7 +370,7 @@ if (phase === 'ready') return (
 
         <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
-          onPress={() => Linking.openURL('sms:741741&body=HOME').catch(() => {})}
+          onPress={() => Linking.openURL('sms:741741&body=HOME').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.legalBg }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>💬</Text>
@@ -384,7 +384,7 @@ if (phase === 'ready') return (
 
         <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
-          onPress={() => Linking.openURL('tel:18009506264').catch(() => {})}
+          onPress={() => Linking.openURL('tel:18009506264').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.warnBg }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>🧠</Text>
@@ -398,7 +398,7 @@ if (phase === 'ready') return (
 
         <TouchableOpacity accessibilityRole="button"
           style={styles.crisisRow}
-          onPress={() => Linking.openURL('tel:18007994889').catch(() => {})}
+          onPress={() => Linking.openURL('tel:18007994889').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.bgSubtle }]}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisIconText}>🏥</Text>
@@ -413,7 +413,7 @@ if (phase === 'ready') return (
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.crisisRow, { borderBottomWidth: 0 }]}
-          onPress={() => Linking.openURL('https://www.thehotline.org/get-help/').catch(() => {})}
+          onPress={() => Linking.openURL('https://www.thehotline.org/get-help/').catch(() => showToast('Action failed. Please try again.', 'error'))}
           accessibilityLabel="National Domestic Violence Hotline"
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.emergencyBg }]}>

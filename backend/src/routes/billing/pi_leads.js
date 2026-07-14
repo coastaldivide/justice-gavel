@@ -115,7 +115,8 @@ router.post('/pi-lead/accept/:id', billingLimiter, authRequired, async (req, res
       }
       const Stripe = (await import('stripe')).default;
       const stripe = new Stripe(stripeKey);
-      await stripe.paymentIntents.create({
+      await stripe.paymentIntents.create(
+      {
         amount: lead.lead_fee_cents,
         currency: 'usd',
         customer: profile.stripe_cus_id,

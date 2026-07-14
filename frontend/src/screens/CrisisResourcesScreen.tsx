@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
 import { GradientHeader } from '../components/GradientHeader';
@@ -91,8 +92,9 @@ const GROUNDING = [
 ];
 
 function callLine(number: string) {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
-  Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`).catch(() => {}).finally(() => setIsLoading(false));
+  Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`).catch(() => showToast('Action failed. Please try again.', 'error')).finally(() => setIsLoading(false));
 }
 
 
@@ -125,7 +127,7 @@ function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.El
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    api.get('/resources?category=CRISIS_LINE&limit=20').then(r => { if (r.data) setDbLines(r.data); }).catch(() => {});//setDbLines(r.data || []); }).catch(()=>{}).catch(() => {})
+    api.get('/resources?category=CRISIS_LINE&limit=20').then(r => { if (r.data) setDbLines(r.data); }).catch(() => showToast('Action failed. Please try again.', 'error'));//setDbLines(r.data || []); }).catch(()=>{}).catch(() => {})
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 600);
   }, []);
 

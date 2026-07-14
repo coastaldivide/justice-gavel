@@ -38,19 +38,19 @@ const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 function callPhone(phone: string) {
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
-function sendSMS(phone: string)   { Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
+  const bottomSheetRef = React.useRef<BottomSheet>(null); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error')); }
+function sendSMS(phone: string)   { Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error')); }
 function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  Linking.openURL(url).catch(() => {});
+  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 function openWebsite(url: string) {
   const BLOCKED_SCHEMES = ['javascript:', 'data:', 'vbscript:', 'file:'];
         const safeUrl = url.startsWith('http') ? url : 'https://' + url;
         if (!BLOCKED_SCHEMES.some(s => url.toLowerCase().startsWith(s))) {
-          Linking.openURL(safeUrl).catch(() => {});
+          Linking.openURL(safeUrl).catch(() => showToast('Action failed. Please try again.', 'error'));
         }
 }
 
@@ -211,7 +211,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                     autoCapitalize="words"
           returnKeyType="next"
           blurOnSubmit
-        />
+        / maxLength={200}>
                   <TextInput
                     style={[styles.msgInput, { borderColor: COLORS.border, color: COLORS.textPrimary, backgroundColor: COLORS.bg }]}
                     placeholder="Best phone or email to reach you"
@@ -222,7 +222,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                     autoCapitalize="none"
           returnKeyType="next"
           blurOnSubmit
-        />
+        / maxLength={254}>
                   <TextInput
           accessibilityLabel="Briefly describe your situation (optional)"
                     style={[styles.msgInput, styles.msgInputTall, { borderColor: COLORS.border, color: COLORS.textPrimary, backgroundColor: COLORS.bg }]}

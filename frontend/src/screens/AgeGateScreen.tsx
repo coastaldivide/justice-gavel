@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -37,6 +38,7 @@ const MAX_YEAR     = CURRENT_YEAR - 18;    // must be born ≤ 18 years ago
 type Phase = 'entry' | 'underage';
 
 function AgeGateScreen({ route, navigation }: any) {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -199,14 +201,14 @@ function AgeGateScreen({ route, navigation }: any) {
           By continuing you agree to our{' '}
           <Text maxFontSizeMultiplier={1.4}
             style={styles.legalLink}
-            onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => {})}
+            onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast('Action failed. Please try again.', 'error'))}
           >
             Terms of Service
           </Text>
           {' '}and{' '}
           <Text maxFontSizeMultiplier={1.4}
             style={styles.legalLink}
-            onPress={() => Linking.openURL('https://justicegavel.app/privacy').catch(() => {})}
+            onPress={() => Linking.openURL('https://justicegavel.app/privacy').catch(() => showToast('Action failed. Please try again.', 'error'))}
           >
             Privacy Policy
           </Text>

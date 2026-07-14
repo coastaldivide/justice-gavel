@@ -76,7 +76,7 @@ function VoiceNoteScreen(): React.JSX.Element {
   return (
     <ScrollView style={{ flex:1, backgroundColor: colors.bg }}
       contentContainerStyle={{ padding:24, gap:20 }}>
-      <TouchableOpacity onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
+      <TouchableOpacity onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
         accessibilityRole="button"
         >
         <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>← Back</Text>

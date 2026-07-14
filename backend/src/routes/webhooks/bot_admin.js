@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * webhooks/bot_admin.js — Bot monitoring, manual triggers, revenue dashboard
  *

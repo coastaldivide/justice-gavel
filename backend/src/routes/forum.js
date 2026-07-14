@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/forum.js — Community Forum (basic CRUD)
  *

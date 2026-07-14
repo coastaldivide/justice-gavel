@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 import logger from '../../utils/logger.js';
 /**
  * billing/index.js — Billing module entry point

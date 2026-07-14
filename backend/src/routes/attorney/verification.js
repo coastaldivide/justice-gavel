@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * attorney/verification.js — Bar verification submit + admin approve
  */

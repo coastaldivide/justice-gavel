@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * contracts/draft.js — POST /api/contracts/draft
  *

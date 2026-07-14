@@ -1,6 +1,6 @@
 {
   "name": "justicegavel",
-  "version": "8.7.28",
+  "version": "8.7.29",
   "private": true,
   "main": "electron/main.js",
   "scripts": {

@@ -208,6 +208,7 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
           activeOpacity={0.85}
         >
           accessibilityRole="button" accessibilityLabel="Subscribe"
+          accessibilityHint="Double-tap to activate"
           {loading
             ? <ActivityIndicator color={COLORS.bgCard} size="small" />
             : <>
@@ -244,7 +245,7 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    api.get('/billing/consumer/subscription').then(r => { if (r.data) setSub(r.data || null); }).catch(()=>{})
+    api.get('/billing/consumer/subscription').then(r => { if (r.data) setSub(r.data || null); }).catch(() => showToast('Action failed. Please try again.', 'error'))
     setTimeout(() => setRefreshing(false), 600);
   }, []);
   const [subscribing, setSubscribing]   = useState<string | null>(null);
@@ -273,7 +274,7 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
     // Until expo-iap is integrated, we block iOS purchases and show instructions.
     if (Platform.OS === 'ios') {
       confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe. Open website?',
-      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); });
+      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => showToast('Action failed. Please try again.', 'error')); });
       setSubscribing(null);
       return;
     }
@@ -434,7 +435,7 @@ confirm('Cancel Plan?', 'You\'ll keep access until the end of your billing perio
           <TouchableOpacity
           accessibilityRole="button"
           style={{ alignItems: 'center', paddingVertical: 16 }}
-          onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
+          onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : null}
           accessibilityLabel="Continue with free features">
           <Text style={{ fontSize: 13, color: colors.steel, textDecorationLine: 'underline' }}>
             Continue with free features →

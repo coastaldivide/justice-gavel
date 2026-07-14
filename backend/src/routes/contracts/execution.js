@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * contracts/execution.js — Contract execution and lifecycle tracking
  *

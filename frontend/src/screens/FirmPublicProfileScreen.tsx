@@ -73,7 +73,7 @@ function FirmPublicProfileScreen() {
         {error || 'Firm not found'}
       </Text>
       <TouchableOpacity
-        onPress={() => navigation.goBack()}
+        onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.goBack()}
         accessibilityRole="button"
         accessibilityLabel="Go back to firm directory"
         style={[s.btn, { backgroundColor: colors.blue }]}

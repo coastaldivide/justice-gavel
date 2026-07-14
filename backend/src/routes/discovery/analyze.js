@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * discovery/analyze.js — POST /analyze
  */
@@ -76,7 +77,8 @@ router.post('/analyze', aiLimiter, authRequired, perUserAiLimit, upload.single('
       try {
         const Stripe = (await import('stripe')).default;
         const stripe = new Stripe(STRIPE_SECRET);
-        const pi = await stripe.paymentIntents.create({
+        const pi = await stripe.paymentIntents.create(
+      {
           amount:   1999,
           currency: 'usd',
           confirm:  true,

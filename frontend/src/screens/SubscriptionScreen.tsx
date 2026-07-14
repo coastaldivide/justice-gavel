@@ -133,6 +133,7 @@ function TierCard({ tier, active, onSubscribe, loading }: any) {
           disabled={loading}
         >
           accessibilityRole="button" accessibilityLabel="Subscribe"
+          accessibilityHint="Double-tap to activate"
           {loading
             ? <ActivityIndicator color={COLORS.bgCard} size="small" />
             : <>
@@ -162,7 +163,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    api.get('/billing/consumer/subscription').then(r => { if (r.data) setSub(r.data || null); }).catch(()=>{})
+    api.get('/billing/consumer/subscription').then(r => { if (r.data) setSub(r.data || null); }).catch(() => showToast('Action failed. Please try again.', 'error'))
     setTimeout(() => setRefreshing(false), 600);
   }, []);
   const [subscribing, setSubscribing]   = useState<string | null>(null);
@@ -196,7 +197,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
     // Until expo-iap is integrated, we block iOS purchases and show instructions.
     if (Platform.OS === 'ios') {
       confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe.',
-      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); });
+      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => showToast('Action failed. Please try again.', 'error')); });
       setSubscribing(null);
       return;
     }
@@ -349,6 +350,7 @@ confirm('Cancel Your Plan?',"You'll lose access to leads and alerts at the end o
           disabled={subscribing === 'intel'}
         >
           accessibilityRole="button" accessibilityLabel="Subscribe"
+          accessibilityHint="Double-tap to activate"
           {subscribing === 'intel'
             ? <ActivityIndicator color={colors.bgCard} size="small" />
             : <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>Add Intel Reports -- $49/mo</Text>

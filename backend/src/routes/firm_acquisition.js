@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/firm_acquisition.js — Self-serve firm onboarding funnel
  *

@@ -137,7 +137,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
               <Text maxFontSizeMultiplier={1.4} style={styles.revealedTitle}>✓ Contact Information Unlocked</Text>
               {lead.phone && (
                 <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel="\ud83d\udcde {lead.phone}" onPress={() => Linking.openURL('tel:' + lead.phone).catch(() => {})}
+          accessibilityRole="button" accessibilityLabel="\ud83d\udcde {lead.phone}" onPress={() => Linking.openURL('tel:' + lead.phone).catch(() => showToast('Action failed. Please try again.', 'error'))}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.revealedPhone}>📞 {lead.phone}</Text>
                 </TouchableOpacity>
@@ -245,6 +245,7 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
           </Text>
           <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
             accessibilityLabel="Save Profile"
+          accessibilityHint="Double-tap to activate"
             style={[styles.saveBtn, saving && { opacity: 0.6 }]}
             onPress={save}
             disabled={saving}

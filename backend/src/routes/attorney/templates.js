@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * attorney/templates.js — Motion templates — list, create, approve
  */

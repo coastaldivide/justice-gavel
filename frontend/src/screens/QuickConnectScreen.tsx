@@ -33,14 +33,14 @@ declare var setCredit: any;
 function callPhone(phone: string) {
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
-  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
+  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 
 function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  Linking.openURL(url).catch(() => {});
+  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 
 // ── Contact result card ────────────────────────────────────────────────────────

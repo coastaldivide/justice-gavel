@@ -161,3 +161,12 @@ export async function getOrCreateStripeCustomer(user) {
 }
 
 export { stripe, LIVE, TIERS, billingLimiter };
+
+/**
+ * generateIdempotencyKey — creates a unique key per charge attempt.
+ * Prevents duplicate charges if the client retries a request.
+ * Format: userId_timestamp_random
+ */
+export function generateIdempotencyKey(userId, suffix = '') {
+  return `${userId ?? 'anon'}_${Date.now()}_${Math.random().toString(36).slice(2)}${suffix ? '_' + suffix : ''}`;
+}

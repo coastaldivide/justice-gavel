@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * billing/consumer.js — Consumer (end-user) subscription plans — subscribe, view status, admin stats
  * Part of the billing module. Mounted at /api/billing by billing/index.js
@@ -60,7 +61,8 @@ router.post('/consumer/subscribe', billingLimiter, authRequired, async (req, res
       await stripe.paymentMethods.attach(payment_method_id, { customer: customerId });
       await stripe.customers.update(customerId, { invoice_settings: { default_payment_method: payment_method_id } });
     }
-    const stripeSub = await stripe.subscriptions.create({
+    const stripeSub = await stripe.subscriptions.create(
+      {
       customer: customerId,
       items: [{ price_data: { currency: 'usd', unit_amount: tierConfig.monthly_cents, product_data: { name: `Justice Gavel ${tierConfig.name}` }, recurring: { interval: 'month' } } }],
       trial_period_days: 7,

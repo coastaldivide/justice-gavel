@@ -1,3 +1,4 @@
+import { matterIntelLimiter } from '../utils/rateLimiters.js';
 /**
  * matter_intelligence.js — Outcome prediction, motion/diversion recommendations,
  *                           emergency escalation, and vertical-specific intelligence

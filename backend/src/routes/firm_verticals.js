@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 // Disclaimer appended to all signal outputs per legal policy
 const SIGNAL_DISCLAIMER = 'AI-generated signals are informational only and do not constitute legal advice.';
 

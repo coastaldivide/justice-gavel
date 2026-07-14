@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * JUSTICE GAVEL — ANALYTICS ROUTES v1.0.0
  * GET  /:matterId/estimate   — Full outcome estimate with factor analysis

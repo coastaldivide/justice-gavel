@@ -251,7 +251,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         <View style={styles.timelineContent}>
           <Text style={[styles.timelineTime, { color: colors.primary }]}>{step.time}</Text>
           <Text style={[styles.timelineTitle, { color: colors.text }]}>{step.title}</Text>
-          <Text style={[styles.timelineDesc, { color: (colors as any).subtext ?? '#6B7280' }]}>{step.desc}</Text>
+          <Text style={[styles.timelineDesc, { color: (colors as any).subtext ?? COLORS.textMuted }]}>{step.desc}</Text>
         </View>
       </View>
     ))}
@@ -315,7 +315,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   scriptBox: {
     borderRadius: 16, padding: 20,
     borderLeftWidth: 6,
-    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
+    shadowColor: COLORS.text, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
   },
   scriptLabel: { fontSize: 13, fontWeight: '800', letterSpacing: 1, marginBottom: 12 },
   scriptText:  { fontWeight: '800' },

@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * /api/providers — GPS-first lawyer and bail agent search
  *

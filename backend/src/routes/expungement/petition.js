@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * expungement/petition.js — POST /petition — AI expungement petition
  */

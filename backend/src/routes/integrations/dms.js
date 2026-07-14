@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/integrations/dms.js — Document Management System Integration
  *

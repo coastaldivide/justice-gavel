@@ -100,7 +100,7 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
               placeholder="email or phone number"
               placeholderTextColor={COLORS.textSecond}
               value={identifier}
-              onChangeText={v => { setIdentifier(v); setError(''); }}
+              onChangeText={v = keyboardType="phone-pad" maxLength={254}> { setIdentifier(v); setError(''); }}
               autoCapitalize="none"
               keyboardType="email-address"
               textContentType="username"

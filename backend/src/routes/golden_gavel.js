@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 // Replacement for golden_gavel.js — full three-tier system
 // Bronze (level 1) → Silver (level 2) → Golden (level 3)
 

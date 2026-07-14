@@ -79,7 +79,7 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
 
   const openVerify = (citation: string) => {
     const q = encodeURIComponent(citation.trim());
-    Linking.openURL('https://www.courtlistener.com/?q=' + q + '&type=o&order_by=score+desc').catch(() => {});
+    Linking.openURL('https://www.courtlistener.com/?q=' + q + '&type=o&order_by=score+desc').catch(() => showToast('Action failed. Please try again.', 'error'));
   };
 
   const renderInline = (line: string, baseKey: string) => {
@@ -154,7 +154,7 @@ function HighlightedText({ text, style }: { text: string; style?: object }) {
   const openVerify = (citation: string) => {
     // CourtListener full-text search -- free, comprehensive federal cases
     const q = encodeURIComponent(citation.trim());
-    Linking.openURL(`https://www.courtlistener.com/?q=${q}&type=o&order_by=score+desc`).catch(() => {});
+    Linking.openURL(`https://www.courtlistener.com/?q=${q}&type=o&order_by=score+desc`).catch(() => showToast('Action failed. Please try again.', 'error'));
   };
 
   return (

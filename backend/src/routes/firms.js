@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/firms.js — Firm management and member RBAC
  *

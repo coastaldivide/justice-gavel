@@ -157,7 +157,8 @@ router.post('/book', validate(schemas.consultations.book),, authRequired, consul
 
     if (LIVE) {
       // Charge the platform fee
-      const pi = await stripe.paymentIntents.create({
+      const pi = await stripe.paymentIntents.create(
+      {
         amount: feeCents,
         currency: 'usd',
         metadata: {

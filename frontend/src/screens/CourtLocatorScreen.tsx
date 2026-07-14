@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -37,6 +38,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
 );
 
 function CourtLocatorScreen(): React.JSX.Element {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -107,11 +109,11 @@ function CourtLocatorScreen(): React.JSX.Element {
     const url = Platform.OS === 'ios'
       ? `maps://maps.apple.com/?address=${encoded}`
       : `https://maps.google.com/?q=${encoded}`;
-    Linking.openURL(url).catch(() => {});
+    Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
   };
 
   const openPhone = (phone: string) =>
-    Linking.openURL(`tel:${phone.replace(/[^\d+]/g, '')}`).catch(() => {});
+    Linking.openURL(`tel:${phone.replace(/[^\d+]/g, '')}`).catch(() => showToast('Action failed. Please try again.', 'error'));
 
   return (
     <KeyboardAvoidingView
@@ -272,7 +274,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                     <TouchableOpacity
                       accessibilityRole="button"
                       accessibilityLabel="Court Website"
-                      onPress={() => Linking.openURL(item.url!).catch(() => {})}
+                      onPress={() => Linking.openURL(item.url!).catch(() => showToast('Action failed. Please try again.', 'error'))}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>🌐</Text>
                       <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontSize: 12 }} numberOfLines={1}>

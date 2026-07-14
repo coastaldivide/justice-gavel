@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/integrations/recap.js — CourtListener RECAP Federal Docket Import
  * ─────────────────────────────────────────────────────────────────────────────

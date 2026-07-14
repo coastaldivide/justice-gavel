@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
@@ -70,6 +71,7 @@ type Props = {
 };
 
 function TermsAcceptanceModal({ visible, onAccepted }: Props) {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -166,7 +168,7 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
           <TouchableOpacity
             accessibilityRole="link"
             style={s.fullTosLink}
-            onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => {})}
+            onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast('Action failed. Please try again.', 'error'))}
             accessibilityLabel="Read the full Terms of Service"
           >
             <Text maxFontSizeMultiplier={1.4} style={s.fullTosLinkText}>📄 Read the full Terms of Service →</Text>
@@ -200,7 +202,7 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
             <Text maxFontSizeMultiplier={1.4} style={s.checkLabel}>
               I have read and agree to the{' '}
               <Text maxFontSizeMultiplier={1.4} style={s.link}
-                onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => {})}>
+                onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast('Action failed. Please try again.', 'error'))}>
                 Terms of Service
               </Text>
             </Text>

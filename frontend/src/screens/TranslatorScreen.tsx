@@ -619,6 +619,7 @@ showToast(e.response?.data?.error || 'Check your connection.', 'error');
                 onPress={() => sendMessage('a')}
                 disabled={!inputA.trim() || sendingA}
                 accessibilityLabel="Send and translate"
+          accessibilityHint="Double-tap to activate"
               >
                 {sendingA
                   ? <ActivityIndicator color={colors.bgCard} size="small" />
@@ -662,6 +663,7 @@ showToast(e.response?.data?.error || 'Check your connection.', 'error');
               onPress={() => sendMessage('b')}
               disabled={!inputB.trim() || sendingB}
               accessibilityLabel="Send and translate"
+          accessibilityHint="Double-tap to activate"
             >
               {sendingB
                 ? <ActivityIndicator color={colors.bgCard} size="small" />

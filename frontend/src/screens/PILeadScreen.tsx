@@ -269,6 +269,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
               onPress={submit}
               disabled={loading || description.trim().length < 20}
               accessibilityLabel="Submit your case to attorneys"
+          accessibilityHint="Double-tap to activate"
             >
               {loading
                 ? <ActivityIndicator color={colors.bgCard} />

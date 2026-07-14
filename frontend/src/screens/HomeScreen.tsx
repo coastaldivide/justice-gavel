@@ -136,7 +136,7 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       if (!t) return;
       api.get('/messages/unread/count')
         .then(r => setUnreadMessages(r.data?.count || 0))
-        .catch(() => {});
+        .catch(() => showToast('Action failed. Please try again.', 'error'));
     }).catch(() => {});
 
     // Resolve loading state once primary data arrives

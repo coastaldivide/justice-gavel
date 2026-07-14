@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -26,6 +27,7 @@ const COURT_TYPES = [
 ];
 
 function SpecialtyCourtsScreen(): React.JSX.Element {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -66,7 +68,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
 
   const openMaps = (addr: string, lat?: number, lng?: number) => {
     const q = lat && lng ? `${lat},${lng}` : encodeURIComponent(addr);
-    Linking.openURL(`https://maps.apple.com/?q=${q}`).catch(() => {});
+    Linking.openURL(`https://maps.apple.com/?q=${q}`).catch(() => showToast('Action failed. Please try again.', 'error'));
   };
 
   return (
@@ -222,7 +224,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
                       <TouchableOpacity
                         accessibilityRole="button"
                         accessibilityLabel="HOW TO GET IN"
-                        onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => {})}
+                        onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => showToast('Action failed. Please try again.', 'error'))}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <AppIcon name="call-outline" size={20} color="#1B5E20" />
                         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontSize: 13,

@@ -138,7 +138,7 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
 
   const handleLongPress = () => {
     const text = msg.text || '';
-Clipboard.setStringAsync(text).then(() => showToast('Copied to clipboard','success')).catch(()=>{});
+Clipboard.setStringAsync(text).then(() => showToast('Copied to clipboard','success')).catch(() => showToast('Action failed. Please try again.', 'error'));
   };
 
   return (
@@ -853,7 +853,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.iconBtn}
-          onPress={() => navigation.navigate('MoreTab', { screen: 'VoiceNote' })}
+          onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.navigate('MoreTab', { screen: 'VoiceNote' })}
           accessibilityHint="Opens voice recorder to transcribe and send a message"
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>🎙</Text>
@@ -875,7 +875,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.iconBtn}
-          onPress={() => navigation.navigate('MoreTab', { screen: 'Translator' })}
+          onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.navigate('MoreTab', { screen: 'Translator' })}
           accessibilityLabel="Open interpreter"
           accessibilityHint="Opens real-time translation for non-English speakers"
         >

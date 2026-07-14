@@ -61,17 +61,17 @@ const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 function callPhone(phone: string) {
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}); }
-function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => {}); }
+  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')); }
+function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')); }
 function openDirections(lat: number, lng: number, name: string) {
   const encoded = encodeURIComponent(name);
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encoded}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  Linking.openURL(url).catch(() => {});
+  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 function openWebsite(url: string) {
-  Linking.openURL(url.startsWith('http') ? url : 'https://' + url).catch(() => {});
+  Linking.openURL(url.startsWith('http') ? url : 'https://' + url).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 
 // ── Badges ────────────────────────────────────────────────────────────────────

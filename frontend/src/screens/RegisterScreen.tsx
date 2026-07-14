@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { useForm, Controller } from 'react-hook-form';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -18,6 +19,7 @@ import { t } from '../i18n';
 
 declare var showPassword: any;
 function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -79,7 +81,7 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
               placeholder="email or phone number"
               placeholderTextColor={COLORS.textSecond}
               value={identifier}
-              onChangeText={v => { setIdentifier(v); setError(''); }}
+              onChangeText={v = keyboardType="phone-pad" maxLength={254}> { setIdentifier(v); setError(''); }}
               autoCapitalize="none"
           testID="register-email-input" accessibilityLabel="Email address or phone number" autoComplete="email"
           importantForAutofill="yes" keyboardType={identifier.includes("@") || (!identifier.match(/^[0-9]/) && identifier.length > 0) ? "email-address" : "phone-pad"}
@@ -144,7 +146,7 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
           </TouchableOpacity>
 
           <TouchableOpacity accessibilityRole="button" style={styles.loginLink}
-            onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
+            onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.loginText}>
               Already have an account?{'  '}
@@ -163,7 +165,7 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
           By creating an account you agree to our{' '}
             <Text maxFontSizeMultiplier={1.4}
               style={{ color: COLORS.navy, textDecorationLine: 'underline' }}
-              onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => {})}
+              onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast('Action failed. Please try again.', 'error'))}
             >Terms of Service</Text>.{'\n'}We never sell your data.
         </Text>
       </ScrollView>

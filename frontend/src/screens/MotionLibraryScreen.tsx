@@ -690,7 +690,7 @@ const loadHistory = useCallback(async () => {
 
   const copyToClipboard = useCallback(async () => {
     await Clipboard.setString(editDraft);
-    hapticImpact().catch(()=>{}); setCopied(true);
+    hapticImpact().catch(() => showToast('Action failed. Please try again.', 'error')); setCopied(true);
     copyTimer.current = setTimeout(() => setCopied(false), 2500);
   }, [editDraft]);
 
@@ -980,7 +980,7 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
               <TouchableOpacity
                 accessibilityRole="button"
                 style={egStyles.reviewBtn}
-                accessibilityLabel="Find Free Legal Help \u2192" onPress={() => Linking.openURL('https://www.lawhelp.org/').catch(() => {})}
+                accessibilityLabel="Find Free Legal Help \u2192" onPress={() => Linking.openURL('https://www.lawhelp.org/').catch(() => showToast('Action failed. Please try again.', 'error'))}
               >
                 <Text maxFontSizeMultiplier={1.4} style={egStyles.reviewBtnText}>Find Free Legal Help →</Text>
               </TouchableOpacity>

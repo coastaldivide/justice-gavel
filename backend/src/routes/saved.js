@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * saved.js — Saved lawyers (personal attorney contact list)
  * GET  /api/saved/lawyers          — list user's saved lawyers

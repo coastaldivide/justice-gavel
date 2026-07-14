@@ -1,3 +1,4 @@
+import { OfflineBanner } from '../components/OfflineBanner';
 declare var window: any;
 declare var MediaRecorder: any;
 declare var navigator: any;

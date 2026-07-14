@@ -7,7 +7,7 @@ import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import { t, initLang } from '../i18n';
 import { haptic, hapticCall } from '../services/haptics';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback , useMemo} from 'react';
 import { ActivityIndicator, Animated, FlatList, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
 import { getLocation, formatDistance } from '../services/location';
 import { api }             from '../services/api';
@@ -23,12 +23,12 @@ declare var setCityQuery: any;
 declare var setLocationDenied: any;
 function callPhone(phone: string) {
   const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast(); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
+  const { showToast } = useToast(); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error')); }
 function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  Linking.openURL(url).catch(() => {});
+  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 
 

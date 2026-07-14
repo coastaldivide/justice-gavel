@@ -29,7 +29,7 @@ function callPhone(phone: string) {
     const t = InteractionManager.runAfterInteractions(() => {});
     return () => t.cancel();
   }, []);
-  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
+  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 
 // ── Step indicator ────────────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    api.get('/family/contacts').then(r => { if (r.data) setContacts(r.data || []); }).catch(()=>{})
+    api.get('/family/contacts').then(r => { if (r.data) setContacts(r.data || []); }).catch(() => showToast('Action failed. Please try again.', 'error'))
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 600);
   }, []);
 
@@ -262,7 +262,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               placeholderTextColor={colors.textMuted}
               onSubmitEditing={searchArrests}
               returnKeyType="search"
-            />
+            / maxLength={200}>
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
               accessibilityLabel="Search"
               style={[styles.searchBtn, searching && { opacity: 0.6 }]}

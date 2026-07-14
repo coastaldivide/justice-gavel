@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * billing/subscriptions.js — Attorney & general subscriptions — subscribe, view, cancel, refund
  * Part of the billing module. Mounted at /api/billing by billing/index.js
@@ -66,7 +67,8 @@ router.post('/subscribe', billingLimiter, authRequired, async (req, res) => {
 
     // Create subscription — annual tiers use yearly interval
     const isAnnual = tierConfig.billing === 'annual';
-    const stripeSub = await stripe.subscriptions.create({
+    const stripeSub = await stripe.subscriptions.create(
+      {
       customer: customerId,
       items: [{ price_data: { currency: 'usd', unit_amount: tierConfig.monthly_cents,
         product_data: { name: `Justice Gavel — ${tierConfig.name}` },

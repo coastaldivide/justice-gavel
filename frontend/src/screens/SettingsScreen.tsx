@@ -265,7 +265,7 @@ function SettingsScreen({ route, navigation }: any) {
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    api.get('/auth/me').then(r => { if (r.data?.user) setProfile(r.data?.user); }).catch(()=>{})
+    api.get('/auth/me').then(r => { if (r.data?.user) setProfile(r.data?.user); }).catch(() => showToast('Action failed. Please try again.', 'error'))
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 600);
   }, []);
 
@@ -576,6 +576,7 @@ function SettingsScreen({ route, navigation }: any) {
           }
         }}
         accessibilityLabel="Send a test push notification"
+          accessibilityHint="Double-tap to activate"
       >
         <Text maxFontSizeMultiplier={1.4} style={[styles.testPushText, { color: colors.textMuted }]}>Send test notification →</Text>
       </TouchableOpacity>

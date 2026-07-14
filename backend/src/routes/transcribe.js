@@ -1,3 +1,4 @@
+import { transcribeLimiter } from '../utils/rateLimiters.js';
 /**
  * routes/transcribe.js — Audio transcription via OpenAI Whisper
  * POST /api/transcribe/audio

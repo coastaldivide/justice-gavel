@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/integrations/practice-mgmt.js — Practice Management System Integration
  *

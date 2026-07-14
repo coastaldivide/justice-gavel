@@ -354,7 +354,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
       setIsGuest(false);
       const res = await api.get('/saved/lawyers');
       setSavedLawyers(res.data || []);
-      cacheCases(res.data).catch(() => {});  // write-through cache for offline use
+      cacheCases(res.data).catch(() => showToast('Action failed. Please try again.', 'error'));  // write-through cache for offline use
       cacheSavedLawyers(res.data); // save to offline cache
     } catch (e: any) {
       const status = e.response?.status;
@@ -477,7 +477,7 @@ confirm('Scan Document','Take a photo or choose from your library to scan this d
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
           confirm('Camera Access Needed', 'To scan documents, go to Settings and turn on Camera for Justice Gavel.',
-      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(()=>{}) });
+      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
           return;
         }
         result = await ImagePicker.launchCameraAsync({
@@ -488,7 +488,7 @@ confirm('Scan Document','Take a photo or choose from your library to scan this d
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
           confirm('Photo Access Needed', 'To attach photos, go to Settings and turn on Photos for Justice Gavel.',
-      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(()=>{}) });
+      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
           return;
         }
         result = await ImagePicker.launchImageLibraryAsync({
@@ -830,13 +830,14 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               autoFocus
           returnKeyType="next"
           blurOnSubmit
-        />
+        / maxLength={254}>
             {!!inviteError && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: 12, lineHeight: 20, marginBottom: 8 }}>⚠ {inviteError}</Text>}
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
               style={[styles.emptyBtn, { backgroundColor: colors.steel, opacity: inviting ? 0.6 : 1 }]}
               onPress={sendInvite}
               disabled={inviting || !inviteEmail.trim()}
               accessibilityLabel="Send invite"
+          accessibilityHint="Double-tap to activate"
             >
               {inviting
                 ? <ActivityIndicator color={colors.bg} size="small" />
@@ -857,7 +858,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>{editCase.id ? 'Edit case' : 'New case'}</Text>
             <TouchableOpacity
               accessibilityRole="button" activeOpacity={0.6} onPress={save} disabled={saving}
-             accessibilityLabel="Save">
+             accessibilityLabel="Save"
+          accessibilityHint="Double-tap to activate">
               {saving ? <ActivityIndicator color={colors.navy} /> : <Text maxFontSizeMultiplier={1.4} style={styles.modalSave}>Save</Text>}
             </TouchableOpacity>
           </View>

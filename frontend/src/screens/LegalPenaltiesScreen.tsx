@@ -61,7 +61,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: (colors as any).background ?? '#F9FAFB' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: (colors as any).background ?? COLORS.background }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -86,7 +86,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
       </View>
 
       {/* Tabs */}
-      <View style={[styles.tabBar, { borderBottomColor: (colors as any).border ?? '#E5E7EB' }]}>
+      <View style={[styles.tabBar, { borderBottomColor: (colors as any).border ?? COLORS.border }]}>
         {TABS.map(tab => (
           <TouchableOpacity
             key={tab.key}
@@ -97,7 +97,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
           >
             <Text style={[
               styles.tabText,
-              { color: activeTab === tab.key ? colors.primary : (colors as any).subtext ?? '#6B7280' }
+              { color: activeTab === tab.key ? colors.primary : (colors as any).subtext ?? COLORS.textMuted }
             ]}>
               {tab.label}
             </Text>
@@ -124,23 +124,23 @@ function LegalPenaltiesScreen({ navigation }: any) {
                 <Text style={[styles.scheduleLabel, { color: colors.primary }]}>
                   {s.schedule}
                 </Text>
-                <Text style={[styles.examples, { color: (colors as any).subtext ?? '#6B7280' }]}>
+                <Text style={[styles.examples, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
                   {s.examples}
                 </Text>
                 <View style={styles.penaltyRow}>
                   <View style={styles.penaltyItem}>
-                    <Text style={[styles.penaltyValue, { color: (colors as any).error ?? '#EF4444' }]}>
+                    <Text style={[styles.penaltyValue, { color: (colors as any).error ?? COLORS.emergency }]}>
                       {s.max_years} yrs
                     </Text>
-                    <Text style={[styles.penaltyLabel, { color: (colors as any).subtext ?? '#6B7280' }]}>
+                    <Text style={[styles.penaltyLabel, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
                       Max prison
                     </Text>
                   </View>
                   <View style={styles.penaltyItem}>
-                    <Text style={[styles.penaltyValue, { color: (colors as any).error ?? '#EF4444' }]}>
+                    <Text style={[styles.penaltyValue, { color: (colors as any).error ?? COLORS.emergency }]}>
                       ${s.max_fine.toLocaleString()}
                     </Text>
-                    <Text style={[styles.penaltyLabel, { color: (colors as any).subtext ?? '#6B7280' }]}>
+                    <Text style={[styles.penaltyLabel, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
                       Max fine
                     </Text>
                   </View>
@@ -186,13 +186,13 @@ function LegalPenaltiesScreen({ navigation }: any) {
                 <View style={styles.rowBetween}>
                   <Text style={[styles.chargeName, { color: colors.text }]}>{item.charge}</Text>
                   <Text style={[styles.chargeClass, {
-                    color: item.class === 'Felony' ? ((colors as any).error ?? '#EF4444') : ((colors as any).warning ?? '#F59E0B'),
+                    color: item.class === 'Felony' ? ((colors as any).error ?? COLORS.emergency) : ((colors as any).warning ?? COLORS.warning),
                     backgroundColor: item.class === 'Felony' ? '#FEE2E2' : '#FEF3C7',
                   }]}>
                     {item.class}
                   </Text>
                 </View>
-                <Text style={[styles.sentenceText, { color: (colors as any).subtext ?? '#6B7280' }]}>
+                <Text style={[styles.sentenceText, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
                   Prison: {item.prison}  ·  Fine: {item.fine}
                 </Text>
               </View>
@@ -218,7 +218,7 @@ function makeStyles(colors: any) {
     tabText:      { fontSize: 13, fontWeight: '600' },
     tabIndicator: { position: 'absolute', bottom: 0, left: 8, right: 8, height: 2, borderRadius: 1 },
     sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
-    card:         { borderRadius: 12, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOffset:{width:0,height:1}, shadowOpacity:0.06, shadowRadius:3, elevation:1 },
+    card:         { borderRadius: 12, padding: 14, marginBottom: 10, shadowColor: COLORS.text, shadowOffset:{width:0,height:1}, shadowOpacity:0.06, shadowRadius:3, elevation:1 },
     scheduleLabel:{ fontSize: 15, fontWeight: '700', marginBottom: 4 },
     examples:     { fontSize: 13, lineHeight: 18, marginBottom: 10 },
     penaltyRow:   { flexDirection: 'row', gap: 16 },

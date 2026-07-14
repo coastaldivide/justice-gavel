@@ -52,10 +52,10 @@ function callPhone(phone: string) {
   const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
-  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
+  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 function sendSMS(phone: string) {
-  Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
+  Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 
 // ── Saved lawyer card ─────────────────────────────────────────────────────────
@@ -237,6 +237,7 @@ function SavedCard({
             onPress={submitReview}
             disabled={submitting}
             accessibilityLabel="Submit review"
+          accessibilityHint="Double-tap to activate"
           >
             {submitting
               ? <ActivityIndicator color={COLORS.bgCard} size="small" />

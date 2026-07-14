@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/sso.js — SSO / SAML 2.0 Integration
  *

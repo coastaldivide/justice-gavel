@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * motions/history.js — GET /history, GET|DELETE /history/:id
  */

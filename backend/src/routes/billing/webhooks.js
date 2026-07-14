@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 import { notifyError } from '../../monitoring/errorNotifier.js';
 import { audit, AUDIT_ACTIONS } from '../../utils/audit.js';
 /**
@@ -78,14 +79,18 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!secret) {
-    logger.warn('[billing/webhook] STRIPE_WEBHOOK_SECRET not set — skipping verification');
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('[billing/webhook] STRIPE_WEBHOOK_SECRET not set — rejecting webhook in production');
+      return res.status(400).json({ error: 'Webhook configuration error.' });
+    }
+    logger.warn('[billing/webhook] STRIPE_WEBHOOK_SECRET not set — accepting without verification (dev only)');
     return res.json({ received: true, mock: true });
   }
 
   let event;
   try {
     const StripeLib = (await import('stripe')).default;
-    const stripeVerify = new StripeLib(process.env.STRIPE_SECRET || '');
+    const stripeVerify = new StripeLib(process.env.STRIPE_SECRET_KEY ?? '');
     event = stripeVerify.webhooks.constructEvent(req.body, sig, secret);
   } catch (err) {
     logger.error('[billing/webhook] Signature verification failed:', err.message);

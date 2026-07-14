@@ -278,7 +278,7 @@ showToast('Allow microphone access in Settings.', 'warning');
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.emergencyBtn, { backgroundColor: colors.blue }]}
-          accessibilityLabel="\ud83d\udc99 CRISIS 988" onPress={() => Linking.openURL('tel:988').catch(() => {})}
+          accessibilityLabel="\ud83d\udc99 CRISIS 988" onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
           <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>💙 CRISIS 988</Text>
         </TouchableOpacity>

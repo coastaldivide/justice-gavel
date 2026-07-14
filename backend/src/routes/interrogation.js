@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * interrogation.js — Police Encounter Recorder
  *

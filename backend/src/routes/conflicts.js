@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/conflicts.js — Conflict Screening & Ethics Wall System
  *

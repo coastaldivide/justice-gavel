@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { HapticButton } from '../components/HapticButton';
@@ -29,13 +30,14 @@ declare var refreshing: any;
 declare var sort: any;
 declare var load: any; // hoisted from component scope
 function callPhone(p: string) {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
-  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + p.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
+  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + p.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error')); }
 function openDir(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  Linking.openURL(url).catch(() => {});
+  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 
 function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'bail' | 'lawyer' }) {
@@ -62,7 +64,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
           accessibilityRole="button"
           style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10,
             paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:911').catch(() => {})}
+          onPress={() => Linking.openURL('tel:911').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
           <AppIcon name="flash" size={20} color={COLORS.emergency} />
           <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '900', fontSize: 14, color: COLORS.emergency }}>CALL 911</Text>
@@ -72,7 +74,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
           accessibilityLabel="CRISIS 988"
           style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10,
             paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:988').catch(() => {})}
+          onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>💙</Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '900', fontSize: 14, color: COLORS.navy }}>CRISIS 988</Text>

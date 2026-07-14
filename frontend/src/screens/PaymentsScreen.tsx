@@ -254,7 +254,7 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           }
         }
       } else if (res.data?.url) {
-        Linking.openURL(res.data?.url).catch(() => {});
+        Linking.openURL(res.data?.url).catch(() => showToast('Action failed. Please try again.', 'error'));
         setStatus('Payment page opened. Complete your payment in the browser.');
       } else if (res.data?.instructions) {
         setStatus(res.data?.instructions);

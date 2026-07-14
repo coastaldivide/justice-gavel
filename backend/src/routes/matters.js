@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/matters.js — Matter management (multi-user, RBAC, audit-logged)
  *

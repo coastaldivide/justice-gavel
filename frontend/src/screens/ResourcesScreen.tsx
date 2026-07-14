@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { GradientHeader } from '../components/GradientHeader';
@@ -62,6 +63,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
 );
 
 function ResourcesScreen(): React.JSX.Element {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const mountedRef = useRef(true);
@@ -257,7 +259,7 @@ function ResourcesScreen(): React.JSX.Element {
                     <View style={{ marginTop:12, gap:6 }}>
                       {item.phone ? (
                         <TouchableOpacity accessibilityRole="button"
-                          onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => {})}
+                          onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => showToast('Action failed. Please try again.', 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <AppIcon name="call-outline" size={20} color="#1B5E20" />
                           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary, fontWeight:'600', fontSize:14 }}>
@@ -267,7 +269,7 @@ function ResourcesScreen(): React.JSX.Element {
                       ) : null}
                       {item.url ? (
                         <TouchableOpacity accessibilityRole="button"
-                          onPress={() => Linking.openURL(item.url).catch(() => {})}
+                          onPress={() => Linking.openURL(item.url).catch(() => showToast('Action failed. Please try again.', 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>🌐</Text>
                           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary, fontWeight:'600', fontSize:14 }}
@@ -278,7 +280,7 @@ function ResourcesScreen(): React.JSX.Element {
                       ) : null}
                       {item.address ? (
                         <TouchableOpacity accessibilityRole="button"
-                          onPress={() => Linking.openURL(`https://maps.apple.com/?address=${encodeURIComponent(item.address)}`).catch(() => {})}
+                          onPress={() => Linking.openURL(`https://maps.apple.com/?address=${encodeURIComponent(item.address)}`).catch(() => showToast('Action failed. Please try again.', 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
                           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16 }}>📍</Text>
                           <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>{item.address}</Text>

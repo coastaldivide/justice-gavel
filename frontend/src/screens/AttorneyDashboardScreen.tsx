@@ -160,7 +160,7 @@ function AvailabilityGrid({ userId }: { userId: number }) {
         placeholder="Availability note (e.g. 'Best to reach me Tuesday mornings')"
         placeholderTextColor={COLORS.placeholder}
         value={note}
-        onChangeText={t => { setNote(t); setSaved(false); }}
+        onChangeText={t = maxLength={1000}> { setNote(t); setSaved(false); }}
         maxLength={200}
         returnKeyType="done"
         blurOnSubmit
@@ -729,7 +729,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               accessibilityLabel="State bar number"
           returnKeyType="next"
           blurOnSubmit
-        />
+        / keyboardType="numeric">
 
             <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>OFFICE ID (e.g. pd_davidson_tn)</Text>
             <TextInput
@@ -762,6 +762,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               onPress={saveProfile}
               disabled={savingProfile}
               accessibilityLabel="Save profile"
+          accessibilityHint="Double-tap to activate"
             >
               {savingProfile
                 ? <ActivityIndicator color={colors.bg} />
@@ -784,6 +785,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                 }
               }}
               accessibilityLabel="Submit bar number for verification"
+          accessibilityHint="Double-tap to activate"
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.outlineBtnText, { color: colors.legal }]}>✅  Submit Bar Number for Verification →</Text>
             </TouchableOpacity>

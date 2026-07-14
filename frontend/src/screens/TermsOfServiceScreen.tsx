@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
@@ -203,13 +204,14 @@ const SECTIONS: Section[] = [
 ];
 
 function TermsOfServiceScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
 
   const openEmail = () => {
     hapticImpact();
-    Linking.openURL(`mailto:${CONTACT_EMAIL}`).catch(() => {});
+    Linking.openURL(`mailto:${CONTACT_EMAIL}`).catch(() => showToast('Action failed. Please try again.', 'error'));
   };
 
   return (

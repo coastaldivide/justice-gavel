@@ -509,7 +509,8 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
             )}
 
             <TouchableOpacity style={s.saveBtn} onPress={saveConfig} disabled={saving}
-            accessibilityRole="button" accessibilityLabel="Save configuration">
+            accessibilityRole="button" accessibilityLabel="Save configuration"
+          accessibilityHint="Double-tap to activate">
               {saving
                 ? <ActivityIndicator color={colors.navy} />
                 : <Text maxFontSizeMultiplier={1.4} style={s.saveBtnText}>Save configuration</Text>
@@ -584,7 +585,8 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
               <View>
 
               <TouchableOpacity style={s.missionBtn} onPress={submitMission} disabled={submittingMV}
-            accessibilityRole="button" accessibilityLabel="Submit verification request">
+            accessibilityRole="button" accessibilityLabel="Submit verification request"
+          accessibilityHint="Double-tap to activate">
                 {submittingMV
                   ? <ActivityIndicator color="#fff" />
                   : <Text maxFontSizeMultiplier={1.4} style={s.missionBtnText}>Submit verification request</Text>
@@ -621,7 +623,16 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
 
                     <View style={s.formBox}>
                       <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>Add asylum clock</Text>
-                      <TextInput style={s.input} value={acName} onChangeText={setACName} placeholder="Client name" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
+                      <Controller
+          control={control}
+          name="acName"
+          render={({ field }) => (
+            <TextInput style={s.input} placeholder="Client name" placeholderTextColor={colors.textMuted}  returnKeyType="next" / maxLength={200}
+              value={field.value}
+              onChangeText={field.onChange}
+            >
+          )}
+        />
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Clock start date (when asylum application filed)</Text>
                       <TextInput style={s.input} value={acStart} onChangeText={setACStart} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Relief type</Text>
@@ -653,8 +664,17 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                           </TouchableOpacity>
                         ))}
                       </View>
-                      <TextInput style={[s.input,{minHeight:56}]} value={acNotes} onChangeText={setACNotes} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} multiline
-              maxLength={2000} />
+                      <Controller
+          control={control}
+          name="acNotes"
+          render={({ field }) => (
+            <TextInput style={[s.input,{minHeight:56}]} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} multiline
+              maxLength={2000} /
+              value={field.value}
+              onChangeText={field.onChange}
+            >
+          )}
+        />
                       <TouchableOpacity style={[s.addBtn, creatingAC && { opacity: 0.6 }]} onPress={createAC} disabled={creatingAC}
             accessibilityRole="button" accessibilityLabel="{creatingAC ? 'Adding\u2026' : 'Add clock'}"><Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{creatingAC ? 'Adding…' : 'Add clock'}</Text></TouchableOpacity>
                     </View>
@@ -696,7 +716,16 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
 
                     <View style={s.formBox}>
                       <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>Add DPA tracker</Text>
-                      <TextInput style={s.input} value={dpaName} onChangeText={setDPAName} placeholder="Client / entity name" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
+                      <Controller
+          control={control}
+          name="dpaName"
+          render={({ field }) => (
+            <TextInput style={s.input} placeholder="Client / entity name" placeholderTextColor={colors.textMuted}  returnKeyType="next" / maxLength={200}
+              value={field.value}
+              onChangeText={field.onChange}
+            >
+          )}
+        />
                       <TextInput style={s.input} value={dpaAgency} onChangeText={setDPAAgency} placeholder="Agency (DOJ / SEC / FinCEN...)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
                       <TextInput style={s.input} value={dpaFineM} onChangeText={setDPAFineM} placeholder="Base fine ($M, e.g. 12.5)" placeholderTextColor={colors.textMuted} keyboardType="numeric"  returnKeyType="next" />
                       <TextInput style={s.input} value={dpaWellsDue} onChangeText={setDPAWellsDue} placeholder="Wells notice due (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
@@ -743,7 +772,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                           <Text maxFontSizeMultiplier={1.4} style={s.coopLabel}>Cooperation: {d.cooperation_level.replace(/_/g, ' ')}</Text>
                           <TouchableOpacity
                             accessibilityRole="button"
-                            onPress={() => closeTracker('dpa', d.id, d.client_name)}
+                            onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> closeTracker('dpa', d.id, d.client_name)}
                             style={{ alignSelf: 'flex-end', paddingVertical: 4, paddingHorizontal: 10,
                               backgroundColor: COLORS.infoBg, borderRadius: 6, marginTop: 8 }}
                           >
@@ -784,7 +813,16 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
 
                     <View style={s.formBox}>
                       <Text maxFontSizeMultiplier={1.4} style={s.formTitle}>Add TRO tracker</Text>
-                      <TextInput style={s.input} value={troName} onChangeText={setTROName} placeholder="Client name" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
+                      <Controller
+          control={control}
+          name="troName"
+          render={({ field }) => (
+            <TextInput style={s.input} placeholder="Client name" placeholderTextColor={colors.textMuted}  returnKeyType="next" / maxLength={200}
+              value={field.value}
+              onChangeText={field.onChange}
+            >
+          )}
+        />
                       <View style={s.flagRow}>
                         <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>Domestic violence flag</Text>
                         <Switch accessibilityLabel="Add TRO tracker" value={troDV} onValueChange={setTRODV} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />

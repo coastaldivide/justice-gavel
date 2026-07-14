@@ -311,7 +311,7 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
               contact your state juvenile court clerk or visit{' '}
               <Text maxFontSizeMultiplier={1.4}
                 style={{ color: colors.blue, textDecorationLine: 'underline' }}
-                onPress={() => Linking.openURL('https://www.juvenilelaw.org/find-help').catch(() => {})}
+                onPress={() => Linking.openURL('https://www.juvenilelaw.org/find-help').catch(() => showToast('Action failed. Please try again.', 'error'))}
               >
                 juvenilelaw.org/find-help
               </Text>

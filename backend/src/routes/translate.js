@@ -1,3 +1,5 @@
+import { validate, schemas } from '../validation/schemas.js';
+import { translateLimiter } from '../utils/rateLimiters.js';
 // AI route — general guidance only, not legal advice
 /**
  * translate.js — Live attorney-client translation
@@ -162,7 +164,7 @@ router.post('/session', authRequired, async (req, res) => {
 });
 
 // ── GET /api/translate/session/:code — join existing session ──────────────────
-router.get('/session/:code', async (req, res) => {
+router.get('/session/:code', translateLimiter, async (req, res) => {
   // No auth required — client joins with just the code
   try {
     const db = await getDb();

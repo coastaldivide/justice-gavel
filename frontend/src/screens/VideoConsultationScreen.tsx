@@ -62,7 +62,7 @@ function VideoConsultationScreen({ route, navigation }: Props) {
 
   const endSession = useCallback(async () => {
     if (roomName) {
-      await api.delete(`/video/session/${roomName}`).catch(() => {});
+      await api.delete(`/video/session/${roomName}`).catch(() => showToast('Action failed. Please try again.', 'error'));
     }
     setInSession(false);
     setSessionUrl(null);
@@ -138,7 +138,7 @@ function VideoConsultationScreen({ route, navigation }: Props) {
         }
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelBtn}>
+      <TouchableOpacity onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.goBack()} style={styles.cancelBtn}>
         accessibilityRole="button" accessibilityLabel="End session"
         <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
       </TouchableOpacity>

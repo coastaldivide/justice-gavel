@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * billing/connections.js — Emergency family connection and QuickConnect — $20 instant matchmaking
  * Part of the billing module. Mounted at /api/billing by billing/index.js
@@ -81,7 +82,8 @@ router.post('/family/connect', billingLimiter, authRequired, async (req, res) =>
       });
     }
 
-    const pi = await stripe.paymentIntents.create({
+    const pi = await stripe.paymentIntents.create(
+      {
       amount: 2899,
       currency: 'usd',
       confirm: true,
@@ -219,7 +221,8 @@ router.post('/quickconnect', billingLimiter, authRequired, async (req, res) => {
         .catch(e => logger.warn('[billing/quickconnect] paymentMethod.attach:', e?.message));
     }
 
-    const pi = await stripe.paymentIntents.create({
+    const pi = await stripe.paymentIntents.create(
+      {
       amount:   finalAmountCents,
       currency: 'usd',
       customer: customerId,

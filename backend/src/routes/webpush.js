@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/webpush.js — VAPID Web Push for browser/PWA/desktop
  *

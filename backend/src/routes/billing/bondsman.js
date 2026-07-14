@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * billing/bondsman.js — Bondsman profiles, leads marketplace, and Verified Badge subscription
  * Part of the billing module. Mounted at /api/billing by billing/index.js
@@ -146,7 +147,8 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
     }
 
     const piIdempotencyKey = `pi_${req.user.id}_${req.params.id}_${Date.now()}`;
-    const pi = await stripe.paymentIntents.create({
+    const pi = await stripe.paymentIntents.create(
+      {
       amount: feeCents,
       currency: 'usd',
       customer: customerId,
@@ -213,7 +215,8 @@ router.post('/bondsman/verified-badge/subscribe', billingLimiter, authRequired, 
 
     // Live Stripe
     const customerId = await getOrCreateStripeCustomer(req.user);
-    const stripeSub = await stripe.subscriptions.create({
+    const stripeSub = await stripe.subscriptions.create(
+      {
       customer: customerId,
       items: [{ price_data: { currency: 'usd', unit_amount: feeCents,
         product_data: { name: 'Justice Gavel — Verified Bondsman Badge' },

@@ -1,3 +1,4 @@
+import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
@@ -55,6 +56,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
 );
 
 function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
 
   const userStateRef = React.useRef<string>('');
@@ -75,7 +77,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
         setResults(allResults);
         cacheSearch(cached.query, { cases, messages, lawyers, lessons }).catch(() => {});
         saveRecentSearch(cached.query).then(() =>
-          getRecentSearches().then(setRecentSearches).catch(() => {})
+          getRecentSearches().then(setRecentSearches).catch(() => showToast('Action failed. Please try again.', 'error'))
         ).catch(() => {});
         setSearched(true);
       }
@@ -121,8 +123,8 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
         setResults(allResults);
         cacheSearch(q, { cases, messages, lawyers, lessons }).catch(() => {});
         saveRecentSearch(q).then(() =>
-          getRecentSearches().then(setRecentSearches).catch(() => {})
-        ).catch(() => {});
+          getRecentSearches().then(setRecentSearches).catch(() => showToast('Action failed. Please try again.', 'error'))
+        ).catch(() => showToast('Action failed. Please try again.', 'error'));
       setSearched(true);
     } catch {
       if (mountedRef.current) { setResults([]); setSearched(true); setSearchError('Search failed. Check your connection.'); }
@@ -169,7 +171,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
           onChangeText={handleChange}
           autoFocus
           returnKeyType="search"
-          onSubmitEditing={() => doSearch(query)}
+          onSubmitEditing={() = keyboardType="numeric" maxLength={1000}> doSearch(query)}
           maxLength={120}
           clearButtonMode="while-editing"
           accessibilityLabel="Search"
