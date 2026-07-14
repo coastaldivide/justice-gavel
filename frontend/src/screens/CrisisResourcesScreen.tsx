@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
 import { GradientHeader } from '../components/GradientHeader';
 /**
@@ -90,6 +91,7 @@ const GROUNDING = [
 ];
 
 function callLine(number: string) {
+  const { impact, success, error: hapticError } = useHaptics();
   Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`).catch(() => {}).finally(() => setIsLoading(false));
 }
 

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
@@ -33,6 +34,7 @@ const TWO_PARTY_STATES = new Set([
 ]);
 
 function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -129,8 +131,7 @@ function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Ele
       hapticImpact();
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Microphone access needed', 'Go to Settings → Justice Gavel → Microphone and enable access.', [{ text: 'Open Settings', onPress: () => Linking.openSettings() }, { text: 'Cancel', style: 'cancel' }]);
-        return;
+showToast('Allow microphone access in Settings.', 'warning');
       }
 
       await Audio.setAudioModeAsync({
@@ -153,7 +154,7 @@ function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Ele
       }, 1000);
 
     } catch (e: any) {
-      Alert.alert('Could not start recording', e.message || 'Check microphone permissions.');
+      showToast(e.message || 'Check microphone permissions.', 'error');
     } finally {
       setLoading(false);
     }

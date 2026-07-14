@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
  * ConflictCheckScreen.tsx — Attorney conflict of interest check
@@ -23,6 +24,7 @@ interface ConflictResult {
 interface Props { navigation: any; }
 
 function ConflictCheckScreen({ navigation }: Props) {
+  const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { cacheBailAgents, getCachedBailAgents } from '../services/offlineCache';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
@@ -21,6 +22,7 @@ declare var setCity: any;
 declare var setCityQuery: any;
 declare var setLocationDenied: any;
 function callPhone(phone: string) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast(); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
 function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'

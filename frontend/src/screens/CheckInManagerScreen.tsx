@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
@@ -76,11 +77,11 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
         court_date: courtDate.trim() || undefined,
         check_in_freq: freq,
       });
-      Alert.alert('✓ Enrolled', res.data?.message);
+      showToast(res.data?.message, 'success');
       reset();
       onEnrolled();
     } catch (e: any) {
-      Alert.alert('Couldn\'t save', 'Check your internet and try again. Your information is not lost.');
+      showToast('Check your internet and try again. Your information is not lost.', 'info');
     } finally {
       setSaving(false);
     }

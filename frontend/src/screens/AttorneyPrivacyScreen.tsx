@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -74,6 +75,7 @@ This disclaimer is non-removable and appears on all AI output delivered to clien
 ];
 
 function AttorneyPrivacyScreen({ navigation }: any) {
+  const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);

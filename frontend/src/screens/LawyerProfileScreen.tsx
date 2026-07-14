@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -20,6 +21,7 @@ import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const [fetchError, setFetchError] = React.useState<string|null>(null);

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
  * DocumentScannerScreen -- In-app document camera and attachment
@@ -33,6 +34,7 @@ import { t } from '../i18n';
 
 declare var CameraType: any;
 function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { caseId, onCapture } = (route?.params ?? {}) as {
     caseId?: number;
@@ -111,12 +113,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
 
       }
       await hapticNotification();
-      Alert.alert('Document attached ✓',
-        caseId
-          ? 'Your document has been attached to this case.'
-          : 'Your document has been uploaded.',
-        [{ text: 'OK', onPress: () => navigation.canGoBack() ? navigation.goBack() : null }]
-      );
+showToast('Document attached to your case.', 'success');
     } catch {
       showToast('Could not upload the document. Check your connection and try again.');
     } finally {

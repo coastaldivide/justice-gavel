@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
 /**
  * JustArrestedScreen -- Step-by-step arrest guide
@@ -58,6 +59,7 @@ import Analytics from '../services/analytics';
 import { PlaceholderIllustration } from '../components/PlaceholderIllustration';
 import { t } from '../i18n';
 function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [step, setStep] = useState(0);

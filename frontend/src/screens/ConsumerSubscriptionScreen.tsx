@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -154,6 +155,7 @@ const TIERS = [
 ];
 
 function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   return (
@@ -282,15 +284,14 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
     try {
       const res = await api.post('/billing/consumer/subscribe', { tier });
       setSubscription(res.data?.subscription);
-      Alert.alert('🎉 Free Trial Started!', res.data?.message || '7-day free trial activated.');
-      setTimeout(() => navigation.navigate('HomeTab'), 2000);
+showToast(res.data?.message || 'Free trial activated!', 'success');
       loadSub();
     } catch (e: any) {
       const msg = e.response?.data?.error || e.message;
       if (msg?.includes('Already subscribed')) {
         setError('You already have an active plan. Manage it in Settings.');
       } else {
-        Alert.alert('Payment could not be processed. Please check your payment details and try again, or contact support.', msg || 'Please try again.');
+        showToast(msg || 'Please try again.', 'info');
       }
     } finally { setSubscribing(null); }
   };
@@ -304,7 +305,7 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
           setSubscription(null);
           showToast('Your plan has been cancelled.');
         } catch (e: any) {
-          Alert.alert('Payment could not be processed. Please check your payment details and try again, or contact support.', 'Please try again. If this keeps happening, check your internet connection.');
+          showToast('Please try again. If this keeps happening, check your internet connection.');
         }
       }},
     ]);

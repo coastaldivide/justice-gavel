@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
@@ -69,6 +70,7 @@ type Props = {
 };
 
 function TermsAcceptanceModal({ visible, onAccepted }: Props) {
+  const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);

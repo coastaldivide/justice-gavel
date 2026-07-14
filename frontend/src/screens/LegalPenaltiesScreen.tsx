@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 /**
  * LegalPenaltiesScreen.tsx — Legal penalties reference (merged)
  *
@@ -45,6 +46,7 @@ const DUI_FACTS = [
 ];
 
 function LegalPenaltiesScreen({ navigation }: any) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>('drug');
   const styles = makeStyles(colors);

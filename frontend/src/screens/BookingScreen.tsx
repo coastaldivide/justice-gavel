@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import { useHaptics } from '../hooks/useHaptics';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
@@ -29,7 +31,8 @@ const TIMES = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
 
 type Step = 'duration' | 'datetime' | 'confirm' | 'confirmed' | 'callback_sent';
 
-function buildDays(): { date: string; label: string; times: { time: string; available: boolean }[] }[] {
+function buildDays(): {
+  const { showToast } = useToast(); date: string; label: string; times: { time: string; available: boolean }[] }[] {
   const days: { date: string; label: string; times: { time: string; available: boolean }[] }[] = [];
   const d = new Date();
   for (let i = 1; i <= 14; i++) {
@@ -122,7 +125,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     track('consultation_booked', { lawyerId: lawyerId ?? null, slot: selTime, type: step }).catch(()=>{})
     } catch (e: any) {
       const msg = e.response?.data?.error || 'Could not complete booking. Please try again.';
-      Alert.alert('Booking issue', msg);
+      showToast(msg, 'info');
     } finally {
       setBooking(false);
     }

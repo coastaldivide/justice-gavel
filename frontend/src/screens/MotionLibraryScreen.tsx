@@ -679,7 +679,7 @@ const loadHistory = useCallback(async () => {
       setPhase('result');
     } catch (e: any) {
       const msg = e.response?.data?.error || 'Could not generate motion. Check your connection.';
-      Alert.alert('Generation failed', msg);
+      showToast(msg, 'info');
       setPhase('form');
     } finally {
       setGenerating(false);

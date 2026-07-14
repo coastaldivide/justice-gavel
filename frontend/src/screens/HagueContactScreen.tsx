@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
@@ -57,6 +58,7 @@ interface HagueContactScreenProps {
 }
 
 function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const { caseId, caseName } = route?.params || {};

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
@@ -62,6 +63,7 @@ type Phase = 'paywall' | 'home' | 'searching' | 'thread' | 'history';
 
 // ── Markdown + Citation renderer ─────────────────────────────────────────────
 function MarkdownText({ text, style }: { text: string; style?: object }) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const { colors, isDark } = useTheme();
@@ -540,8 +542,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
         showToast('Your Legal Research trial is active. Start searching.');
       } catch (e: any) {
         const msg = e.response?.data?.error || 'Could not start subscription.';
-        Alert.alert('Subscription error', msg);
-      } finally {
+showToast(msg, 'error');
         setSubLoading(false);
       }
     });

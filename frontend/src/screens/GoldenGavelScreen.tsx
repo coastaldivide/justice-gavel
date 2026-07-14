@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { AppIcon } from '../components/AppIcon';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -82,6 +83,7 @@ interface HallEntry {
 
 // ── Criterion row ─────────────────────────────────────────────────────────────
 function CritRow({ label, met }: { label: string; met: boolean }) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);

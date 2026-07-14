@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { GradientHeader } from '../components/GradientHeader';
@@ -59,6 +60,7 @@ type Phase = 'upload' | 'analyzing' | 'result' | 'history';
 
 // ── Animated progress bar ─────────────────────────────────────────────────────
 function ProgressBar({ active }: { active: boolean }) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const progress = useRef(new Animated.Value(0)).current;
@@ -307,7 +309,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       }
       setFile({ name: asset.name, uri: asset.uri, size: asset.size || 0 });
     } catch (e: any) {
-      Alert.alert('Could not open file', e.message);
+      showToast(e.message, 'error');
     }
   }, []);
 

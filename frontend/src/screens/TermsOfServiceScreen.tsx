@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -202,6 +203,7 @@ const SECTIONS: Section[] = [
 ];
 
 function TermsOfServiceScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
 

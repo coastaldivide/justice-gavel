@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -61,6 +62,7 @@ const MORE_METHODS = [
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function PurposeCard({ p, selected, onSelect }: any) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   return (

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon, ICONS } from '../components/AppIcon';
@@ -63,6 +64,7 @@ const TILES = [
 const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
 function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -166,7 +168,7 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           await api.post('/alerts', { userName: user.displayName || user.name || 'User', contacts: active, lat, lng });
           showToast('Your emergency contacts have been notified.');
         } catch (e: any) {
-          Alert.alert('Could not send', e.message || 'Check your connection and try again.');
+          showToast(e.message || 'Check your connection and try again.', 'error');
         } finally { setSosSending(false); }
       }}
     ]);

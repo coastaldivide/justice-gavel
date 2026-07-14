@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 declare var window: any;
 declare var MediaRecorder: any;
 declare var navigator: any;
@@ -21,6 +22,7 @@ import { t } from '../i18n';
 type Step = 'idle' | 'recording' | 'uploading' | 'done' | 'error';
 
 function InterrogationRecorderScreen(): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [step,       setStep]       = useState<Step>('idle');

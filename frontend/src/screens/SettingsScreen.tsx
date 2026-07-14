@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -238,6 +239,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
 function SettingsScreen({ route, navigation }: any) {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
 
   // Prevent screenshots on this sensitive screen (Android FLAG_SECURE + iOS)
@@ -340,19 +342,16 @@ function SettingsScreen({ route, navigation }: any) {
   };
 
   const logout = () => {
-    Alert.alert('Sign out', 'You can sign back in any time. Your data is saved.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out', style: 'destructive', onPress: async () => {
-          await clearAuth();
+    const ok = await confirm('Sign out?', 'You can sign back in any time. Your data is saved.',
+      { confirmLabel: 'Sign out', destructive: true });
+    if (!ok) return;
+    await clearAuth();
           setAppAuth('guest');
           await clearAllCaches().catch(() => {});
           import('../services/analytics').then(m => m.reset?.()).catch(() => {});
           await AsyncStorage.multiRemove(['user', 'chat_session_id']);
           navigation.getParent()?.getParent()?.reset({ index: 0, routes: [{ name: 'Login' }] }, [])
             ?? navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-        } },
-    ]);
   };
 
   const shareReferral = () => {
@@ -749,7 +748,7 @@ function SettingsScreen({ route, navigation }: any) {
                               }) }]);
                           } catch (e: unknown) {
                             const msg = e instanceof Error ? e.message : 'Could not delete account.';
-                            Alert.alert('Settings Error', msg);
+                            showToast(msg, 'info');
                           }
                         },
                         'secure-text'

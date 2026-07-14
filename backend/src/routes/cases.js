@@ -102,7 +102,7 @@ router.get('/', authRequired, async (req, res) => {
 });
 
 // ── POST / — create case ──────────────────────────────────────────────────────
-router.post('/', authRequired, validate(createCaseSchema), casesLimiter, async (req, res) => {
+router.post('/', validate(schemas.cases.create),, authRequired, validate(createCaseSchema), casesLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const {
@@ -174,7 +174,7 @@ INSERT INTO cases (user_id, title, status, next_court_date, notes, state,
 });
 
 // ── PUT /:id — update case ────────────────────────────────────────────────────
-router.put('/:id', authRequired, casesLimiter, async (req, res) => {
+router.put('/:id', authMiddleware, validate(schemas.cases.update),, authRequired, casesLimiter, async (req, res) => {
   const db = await getDb();
   try {
     const caseId   = safeInt(req.params.id);

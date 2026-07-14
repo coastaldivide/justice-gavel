@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { HapticButton } from '../components/HapticButton';
@@ -87,6 +88,7 @@ interface CaseEvent {
 }
 
 function formatEventDate(dateStr: string | null): string {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -129,7 +131,7 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
         scheduled_for: remind.toISOString(),
         notification_type: 'court_reminder',
       });
-      Alert.alert('Reminder set ✓', "You'll get a notification the day before.");
+      showToast("You'll get a notification the day before.", 'info');
     } catch {
       showToast('Make sure notifications are enabled.');
     }
@@ -238,7 +240,7 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
             } catch (e: any) {
               // Rollback: re-fetch events to restore the deleted item
               setEvents(prev => prev);
-              Alert.alert('Could not remove event', e?.response?.data?.error || 'Try again.');
+              showToast(e?.response?.data?.error || 'Try again.', 'error');
             }
           },
         },

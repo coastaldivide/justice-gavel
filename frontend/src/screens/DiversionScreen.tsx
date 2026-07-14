@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 /**
  * DiversionScreen.tsx — Diversion program eligibility (merged)
  *
@@ -54,6 +55,7 @@ const VETERAN_CRITERIA = [
 ];
 
 function DiversionScreen({ navigation }: any) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>('drug');
   const [answers, setAnswers] = useState<Record<string, boolean>>({});

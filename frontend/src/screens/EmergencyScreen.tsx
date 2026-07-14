@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
 /**
  * EmergencyScreen -- SOS alert + quick actions + rights cards
@@ -27,6 +28,7 @@ const RIGHTS_CARDS = [
 ];
 
 function EmergencyScreen({ route, navigation }: ScreenProps) {
+  const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

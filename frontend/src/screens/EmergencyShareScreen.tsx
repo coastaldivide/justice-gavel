@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
@@ -42,6 +43,7 @@ type Phase = 'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' |
 // Message template lines are built inside buildMessage()
 
 function EmergencyShareScreen({ route, navigation }: ScreenProps) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {

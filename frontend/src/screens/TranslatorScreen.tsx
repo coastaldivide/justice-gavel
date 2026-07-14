@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import { useHaptics } from '../hooks/useHaptics';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -65,6 +67,8 @@ interface TurnMessage {
 type Phase = 'setup' | 'session' | 'join';
 
 function getLang(code: string) {
+  const { showToast } = useToast();
+  const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     const t = InteractionManager.runAfterInteractions(() => {});
     return () => t.cancel();
@@ -270,8 +274,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
         setMessages([]);
         setPhase('session');
       } catch (e: any) {
-        Alert.alert('Could not start session', e.response?.data?.error || e.message);
-      } finally {
+showToast(e.response?.data?.error || 'Translation session failed.', 'error');
         setCreating(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
       }
@@ -355,8 +358,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
       if (side === 'a') setInputA(text);
       else              setInputB(text);
-      Alert.alert('Translation failed', e.response?.data?.error || 'Check your connection.');
-    } finally {
+showToast(e.response?.data?.error || 'Check your connection.', 'error');
       if (side === 'a') setSendingA(false);
       else              setSendingB(false);
     }

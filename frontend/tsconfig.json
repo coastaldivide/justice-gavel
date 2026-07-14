@@ -20,7 +20,8 @@
     },
     "types": [
       "react",
-      "react-native"
+      "react-native",
+      "jest"
     ],
     "lib": [
       "ESNext"
@@ -31,6 +32,7 @@
     "e2e",
     "metro.config.js",
     "babel.config.js",
-    "babel.test.config.js"
+    "babel.test.config.js",
+    "**/__tests__/**"
   ]
 }

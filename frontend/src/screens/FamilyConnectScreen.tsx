@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -13,7 +14,7 @@ import { AppIcon } from '../components/AppIcon';
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Alert, Linking, KeyboardAvoidingView, Platform, RefreshControl, InteractionManager} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Linking, KeyboardAvoidingView, Platform, RefreshControl, InteractionManager} from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
@@ -22,6 +23,7 @@ import { t } from '../i18n';
 
 declare var setContacts: any;
 function callPhone(phone: string) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   React.useEffect(() => {
     const t = InteractionManager.runAfterInteractions(() => {});
@@ -175,7 +177,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       });
       setSearchResults(res.data?.records || []);
       if ((res.data?.records || []).length === 0) {
-        Alert.alert('No records found', 'We don\'t have a record matching that name yet. You can still connect with attorneys and bail agents by continuing without an arrest record.');
+        showToast('We don\'t have a record matching that name yet. You can still connect with attorneys and bail agents by continuing without an arrest record.');
       }
     } catch (e: any) {
       showToast('Could not search right now. Check your connection and try again.');

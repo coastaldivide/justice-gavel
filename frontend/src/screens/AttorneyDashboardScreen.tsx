@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HapticButton } from '../components/HapticButton';
@@ -68,6 +69,7 @@ const DAY_LABELS: Record<string, string>  = { mon:'Mon',tue:'Tue',wed:'Wed',thu:
 const SLOT_LABELS: Record<string, string> = { morning:'AM',afternoon:'PM',evening:'Eve' };
 
 function AvailabilityGrid({ userId }: { userId: number }) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -102,7 +104,7 @@ function AvailabilityGrid({ userId }: { userId: number }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e: any) {
-      Alert.alert('Save Failed', e?.response?.data?.error || 'Could not save availability. Try again.');
+      showToast(e?.response?.data?.error || 'Could not save availability. Try again.', 'error');
     }
     finally { setSaving(false); }
   };
@@ -276,9 +278,9 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       const msg = res.data?.already_completed
         ? 'Already completed -- credit on your transcript.'
         : `✓ ${res.data?.message}`;
-      Alert.alert('CLE Credit', msg);
+      showToast(msg, 'info');
       loadAll();
-    } catch (e: any) { Alert.alert('Dashboard Error', e.response?.data?.error || 'Could not complete course'); }
+    } catch (e: any) { showToast(e.response?.data?.error || 'Could not complete course', 'info'); }
     setCompleting(null);
   };
 
@@ -295,7 +297,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       }
       showToast('Profile updated.');
       loadAll();
-    } catch (e: any) { Alert.alert('Dashboard Error', e.response?.data?.error || 'Could not save'); }
+    } catch (e: any) { showToast(e.response?.data?.error || 'Could not save', 'info'); }
     setSavingProfile(false);
   };
 
@@ -776,9 +778,9 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                 }
                 try {
                   await api.post('/attorney/verify-bar', { bar_number: barInput, state: officeInput.slice(0,2) || 'TN' });
-                  Alert.alert('Verification submitted ✓', 'Your bar number has been submitted for verification. You will be notified when approved. Verified attorneys appear first in search results.');
+                  showToast('Your bar number has been submitted for verification. You will be notified when approved. Verified attorneys appear first in search results.');
                 } catch (e: any) {
-                  Alert.alert('Could not submit', e.response?.data?.error || 'Try again.');
+                  showToast(e.response?.data?.error || 'Try again.', 'info');
                 }
               }}
               accessibilityLabel="Submit bar number for verification"

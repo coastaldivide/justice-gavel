@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 /**
  * MatterScreen.tsx — Law firm matter detail view
  * Shows matter details, assigned attorney, court dates, linked cases, billing.
@@ -13,6 +14,7 @@ interface Props {
 }
 
 function MatterScreen({ route, navigation }: Props) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { matterId } = route.params;
   const [matter, setMatter]   = useState<any>(null);
   const [loading, setLoading] = useState(true);

@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
 /**
  * AdminVerificationScreen -- Bar Verification Approval Queue
@@ -30,6 +32,8 @@ interface PendingAtty {
 }
 
 function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
+  const { impact, success, error: hapticError } = useHaptics();
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -85,9 +89,8 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
             try {
               await api.post('/attorney/approve-verification', { user_id: userId, approved: true });
               setPending(p => p.filter(a => a.user_id !== userId));
-              Alert.alert('Approved ✓', `${name} is now bar verified.`);
-            } catch (e: any) {
-              Alert.alert('Verification Failed', e.response?.data?.error || 'Could not approve the application.');
+showToast(`${name} is now bar verified.`, 'success');
+              showToast(e.response?.data?.error || 'Could not approve the application.', 'info');
             } finally { setActing(null); }
           },
         },
@@ -110,7 +113,7 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
               await api.post('/attorney/approve-verification', { user_id: userId, approved: false });
               setPending(p => p.filter(a => a.user_id !== userId));
             } catch (e: any) {
-              Alert.alert('Verification Failed', e.response?.data?.error || 'Could not reject the application.');
+              showToast(e.response?.data?.error || 'Could not reject the application.', 'info');
             } finally { setActing(null); }
           },
         },

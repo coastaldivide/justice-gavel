@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -50,6 +52,8 @@ const _HEX_RIGHTSCARD = {
 } as const;
 
 function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
+  const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [cardError, setCardError] = React.useState<string|null>(null);
@@ -158,7 +162,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
       );
     } catch (e: any) {
       if (e.message !== 'User did not share') {
-        Alert.alert('Could not share', e.message);
+        showToast(e.message, 'error');
       }
     } finally {
       setSharing(false);

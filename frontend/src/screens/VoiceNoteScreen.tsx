@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -46,6 +47,7 @@ interface StructuredNote {
 
 // ── Animated pulse ring ───────────────────────────────────────────────────────
 function PulseRing({ active }: { active: boolean }) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const scale  = useRef(new Animated.Value(1)).current;
   const opac   = useRef(new Animated.Value(0)).current;
@@ -188,7 +190,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       recordingRef.current = recording;
       setPhase('recording');
     } catch (e: any) {
-      Alert.alert('Could not start recording', e.message || 'Try typing your note instead.');
+      showToast(e.message || 'Try typing your note instead.', 'error');
       setPhase('text_input');
     }
   }, [avReady]);

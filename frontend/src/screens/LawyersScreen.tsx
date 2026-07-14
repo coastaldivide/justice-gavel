@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import type { NavigationProp } from '@react-navigation/native';
@@ -58,6 +59,7 @@ const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', '
 const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 
 function callPhone(phone: string) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}); }
 function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => {}); }

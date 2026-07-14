@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useForm, Controller } from 'react-hook-form';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
@@ -17,6 +18,7 @@ import { t } from '../i18n';
 
 declare var showPassword: any;
 function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [showTerms, setShowTerms] = React.useState(false);

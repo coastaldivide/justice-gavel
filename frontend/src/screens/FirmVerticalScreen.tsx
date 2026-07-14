@@ -1,3 +1,5 @@
+import { useHaptics } from '../hooks/useHaptics';
+import { EmptyState } from '../components/EmptyState';
 import { useForm, Controller } from 'react-hook-form';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
@@ -111,6 +113,7 @@ const ISO_DATE_RE_FV = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const isValidDateFV  = (s: string) => ISO_DATE_RE_FV.test(s);
 
 function FirmVerticalScreen({ navigation }: any) {
+  const { impact, success, error: hapticError } = useHaptics();
   // react-hook-form: migrating from 5 individual useState form fields
   const { control, handleSubmit, setValue, formState: { errors: formErrors } } = useForm({
     defaultValues: {
@@ -246,7 +249,7 @@ function FirmVerticalScreen({ navigation }: any) {
       [{ text: 'Cancel', style: 'cancel' },
        { text: 'Mark Resolved', style: 'destructive', onPress: async () => {
          try { await api.patch(`/firm-verticals/${type}/${id}/resolve`, {}); loadTrackers(); }
-         catch (e: any) { Alert.alert('Action Failed', e?.response?.data?.error || 'Could not resolve.'); }
+         catch (e: any) { showToast(e?.response?.data?.error || 'Could not resolve.', 'error'); }
        }}]);
   };
 
@@ -315,7 +318,7 @@ function FirmVerticalScreen({ navigation }: any) {
       showToast('Mission pricing request received. Review takes 1–3 business days.');
       setMissionEIN(''); setMissionWeb('');
     } catch (e: any) {
-      Alert.alert('Submission Failed', e?.response?.data?.error || 'Could not submit request.');
+      showToast(e?.response?.data?.error || 'Could not submit request.', 'error');
     } finally { setSubMV(false); }
   };
 
@@ -335,7 +338,7 @@ function FirmVerticalScreen({ navigation }: any) {
       setACName(''); setACStart(new Date().toISOString().slice(0, 10));
       setACDet(false); setACCountry(''); setACNotes('');
       loadTrackers();
-    } catch (e: any) { Alert.alert('Action Failed', e?.response?.data?.error || 'Could not create clock.'); }
+    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create clock.', 'error'); }
     finally { setCreatingAC(false); }
   };
 
@@ -362,7 +365,7 @@ function FirmVerticalScreen({ navigation }: any) {
       setDPAName(''); setDPAAgency(''); setDPACoop('unknown'); setDPAFineM('');
       setDPASignDue(''); setDPAWellsDue(''); setDPASubDue('');
       loadTrackers();
-    } catch (e: any) { Alert.alert('Action Failed', e?.response?.data?.error || 'Could not create tracker.'); }
+    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create tracker.', 'error'); }
     finally { setCreatingDPA(false); }
   };
 
@@ -377,7 +380,7 @@ function FirmVerticalScreen({ navigation }: any) {
       });
       setTROName(''); setTRODV(false); setTROAsset('under_100k');
       loadTrackers();
-    } catch (e: any) { Alert.alert('Action Failed', e?.response?.data?.error || 'Could not create TRO tracker.'); }
+    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create TRO tracker.', 'error'); }
     finally { setCreatingTRO(false); }
   };
 
@@ -682,7 +685,7 @@ function FirmVerticalScreen({ navigation }: any) {
                         </View>
                       );
                     })}
-                    {asylumClocks.length === 0 && <Text maxFontSizeMultiplier={1.4} style={s.empty}>No asylum clocks yet. Add one above.</Text>}
+                    {<EmptyState icon="📋" title="Nothing here yet" />}
                   </>
                 )}
 
@@ -770,7 +773,7 @@ function FirmVerticalScreen({ navigation }: any) {
                         </View>
                       );
                     })}
-                    {dpaList.length === 0 && <Text maxFontSizeMultiplier={1.4} style={s.empty}>No DPA trackers yet.</Text>}
+                    {<EmptyState icon="📋" title="Nothing here yet" />}
                   </>
                 )}
 
@@ -840,7 +843,7 @@ function FirmVerticalScreen({ navigation }: any) {
                         <Text maxFontSizeMultiplier={1.4} style={s.troAsset}>Asset tier: {t.asset_tier.replace(/_/g, ' ')}</Text>
                       </View>
                     ))}
-                    {troList.length === 0 && <Text maxFontSizeMultiplier={1.4} style={s.empty}>No TRO trackers yet.</Text>}
+                    {<EmptyState icon="📋" title="Nothing here yet" />}
                   </>
                 )}
               </>

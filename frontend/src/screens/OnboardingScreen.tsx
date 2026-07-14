@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -62,6 +63,7 @@ const SLIDES = [
 ];
 
 function OnboardingScreen({ route, navigation }: ScreenProps) {
+  const { impact, success, error: hapticError } = useHaptics();
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     detectAndSaveUserState().catch(() => {});

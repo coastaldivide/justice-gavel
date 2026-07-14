@@ -1,3 +1,4 @@
+import { validate, validateQuery, schemas } from '../../validation/schemas.js';
 /**
  * attorney/cases.js — Case assignment and office management
  *

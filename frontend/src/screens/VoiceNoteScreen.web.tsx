@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 declare var window: any;
 declare var MediaRecorder: any;
 declare var navigator: any;
@@ -16,6 +17,7 @@ import { api } from '../services/api';
 import { t } from '../i18n';
 
 function VoiceNoteScreen(): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [recording, setRecording] = useState(false);

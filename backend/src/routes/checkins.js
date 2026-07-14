@@ -200,7 +200,7 @@ router.get('/history/:enrollmentId', authRequired, async (req, res) => {
 });
 
 // ── Defendant: submit a check-in ──────────────────────────────────────────────
-router.post('/submit', authRequired, checkinsLimiter, async (req, res) => {
+router.post('/submit', validate(schemas.checkins.submit),, authRequired, checkinsLimiter, async (req, res) => {
   // No auth required — defendants may not have accounts
   // They identify by enrollment_id + name match
   const {

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 /**
  * DocumentScannerScreen.web.tsx -- Web platform replacement
  *
@@ -15,6 +16,7 @@ import { api } from '../services/api';
 import { t } from '../i18n';
 
 function DocumentScannerScreen(): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [scanning,  setScanning]  = useState(false);

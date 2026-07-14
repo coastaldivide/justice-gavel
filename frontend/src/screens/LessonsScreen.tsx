@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import { useHaptics } from '../hooks/useHaptics';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -21,6 +23,8 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 function LessonsScreen({ navigation, route }: ScreenProps) {
+  const { showToast } = useToast();
+  const { impact, success, error: hapticError } = useHaptics();
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -75,7 +79,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       await AsyncStorage.setItem(`points_${userId}`, String(newPts));
       Alert.alert('✓ Completed!', `+${pts} points added to your rewards balance.`);
     } catch (e: any) {
-      Alert.alert('Could Not Load Lessons', e.response?.data?.error || 'Could not mark complete.');
+      showToast(e.response?.data?.error || 'Could not mark complete.', 'info');
     }
   };
 

@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import { useHaptics } from '../hooks/useHaptics';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -32,6 +34,8 @@ interface Watch {
 }
 
 function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
+  const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -112,7 +116,7 @@ function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       await load();
     } catch (e: any) {
       setLoading(false);
-      Alert.alert('Could Not Load Alerts', e.response?.data?.error || 'Could not add monitor.');
+      showToast(e.response?.data?.error || 'Could not add monitor.', 'info');
     }
     setAdding(false);
   };

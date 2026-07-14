@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
 /**
  * JuvenileJusticeScreen -- Juvenile Justice Rights & Navigation
@@ -187,6 +188,7 @@ const SEALING_DATA: SealingEntry[] = [
 // ── Component ─────────────────────────────────────────────────────────────────
 // Loading state
 function JuvenileJusticeScreen(): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

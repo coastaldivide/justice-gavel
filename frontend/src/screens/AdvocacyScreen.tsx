@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import React, { useEffect, useState, useCallback} from 'react';
@@ -18,6 +19,7 @@ interface Stats {
 }
 
 function StatCard({ icon, value, label, color }: { icon: string; value: string | number; label: string; color: string }) {
+  const { impact, success, error: hapticError } = useHaptics();
   return (
     <View style={[styles.statCard, { borderTopColor: color, borderTopWidth: 3 }]}>
       <Text maxFontSizeMultiplier={1.4} style={styles.statIcon}>{icon}</Text>

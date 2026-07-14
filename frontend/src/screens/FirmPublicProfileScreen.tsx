@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
  * FirmPublicProfileScreen.tsx — Public-facing firm profile for clients
@@ -24,6 +25,7 @@ interface FirmProfile {
 }
 
 function FirmPublicProfileScreen() {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const navigation = useNavigation<any>();
   const route      = useRoute<RouteProp<Record<string, RouteParams>, string>>();

@@ -185,7 +185,7 @@ router.get('/monitors', authMiddleware, async (req, res) => {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
 
-router.post('/monitors', authMiddleware, async (req, res) => {
+router.post('/monitors', validate(schemas.arrests.create_monitor),, authMiddleware, async (req, res) => {
   let { watch_name, county = 'All', state = 'TN' } = req.body;
 
   if (watch_name) watch_name = truncateStr(watch_name, 200);  if (!watch_name) return err400(res, 'watch_name required');

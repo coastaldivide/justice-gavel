@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
  * VideoConsultationScreen.tsx
@@ -22,6 +23,7 @@ interface Props {
 }
 
 function VideoConsultationScreen({ route, navigation }: Props) {
+  const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);

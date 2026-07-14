@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 /**
@@ -36,6 +37,7 @@ const MAX_YEAR     = CURRENT_YEAR - 18;    // must be born ≤ 18 years ago
 type Phase = 'entry' | 'underage';
 
 function AgeGateScreen({ route, navigation }: any) {
+  const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);

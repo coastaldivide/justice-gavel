@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { AppIcon } from '../components/AppIcon';
@@ -25,6 +26,7 @@ const COURT_TYPES = [
 ];
 
 function SpecialtyCourtsScreen(): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

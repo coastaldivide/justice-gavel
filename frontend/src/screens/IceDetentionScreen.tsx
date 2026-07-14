@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 import { GradientHeader } from '../components/GradientHeader';
@@ -303,6 +304,7 @@ const _HEX_ICEDETENTION = {
 } as const;
 
 function IceDetentionScreen(): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const [lang, setLang] = useState<Lang>('en');
   const L = CONTENT[lang];

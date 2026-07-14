@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
  * FirmDiscoveryScreen.tsx — Public firm directory for defendants and clients
@@ -29,6 +30,7 @@ interface Firm {
 }
 
 function FirmDiscoveryScreen() {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();

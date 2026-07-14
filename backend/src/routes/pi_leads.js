@@ -53,7 +53,7 @@ function feeLabel(cents) {
 }
 
 // ── POST /submit — consumer submits a lead ────────────────────────────────────
-router.post('/submit', piLeadLimiter, authRequired, async (req, res) => {
+router.post('/submit', validate(schemas.pi_leads.submit),, piLeadLimiter, authRequired, async (req, res) => {
   try {
     const {
       lead_type, city, state, county = '',

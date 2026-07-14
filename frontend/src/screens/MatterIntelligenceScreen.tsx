@@ -1,3 +1,5 @@
+import { useHaptics } from '../hooks/useHaptics';
+import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { AppIcon } from '../components/AppIcon';
@@ -43,6 +45,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 function MatterIntelligenceScreen({ route, navigation }: any) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { matterId, matterTitle } = route.params || {};
   const { colors } = useTheme();
@@ -398,9 +401,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
                     {a.circuit_split_warning && (
                       <Text maxFontSizeMultiplier={1.4} style={s.circuitSplitWarn}>⚠ {a.circuit_split_warning}</Text>
                     )}
-                    {(a.factors_applied || []).length === 0 && (
-                      <Text maxFontSizeMultiplier={1.4} style={s.analysisSource}>Base rate estimate — no specific factors matched.</Text>
-                    )}
+                    {<EmptyState icon="📋" title="Nothing here yet" />}
                     {(a.factors_applied || []).map((f: string, fi: number) => (
                       <Text maxFontSizeMultiplier={1.4} key={fi} style={s.factorItem}>• {f}</Text>
                     ))}
@@ -409,10 +410,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
                     ) : null}
                   </View>
                 ))}
-                {(analytics.analyses || []).length === 0 && (
-                  <Text maxFontSizeMultiplier={1.4} style={s.empty}>No analyses available for this vertical.
-Update the matter's vertical, jurisdiction, and evidence score to generate analysis.</Text>
-                )}
+                {<EmptyState icon="📋" title="Nothing here yet" />}
               </>
             )}
           </>

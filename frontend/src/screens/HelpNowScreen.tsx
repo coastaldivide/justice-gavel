@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -28,6 +29,7 @@ declare var refreshing: any;
 declare var sort: any;
 declare var load: any; // hoisted from component scope
 function callPhone(p: string) {
+  const { impact, success, error: hapticError } = useHaptics();
   const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + p.replace(/\D/g, '')).catch(() => {}).catch(() => {}); }
 function openDir(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'

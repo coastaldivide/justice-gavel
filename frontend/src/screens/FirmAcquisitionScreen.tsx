@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
@@ -55,6 +56,7 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 function FirmAcquisitionScreen({ navigation }: any) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const s = styles(colors);
@@ -140,10 +142,9 @@ function FirmAcquisitionScreen({ navigation }: any) {
     setUpgrading(true);
     try {
       const res = await api.post('/firm-acquisition/upgrade', { target_tier: tier });
-      Alert.alert('Request submitted', res.data?.message);
-      await loadStatus();
+showToast(res.data?.message, 'success');
     } catch (e: any) {
-      Alert.alert('Action Failed', e?.response?.data?.error || 'Could not submit upgrade request.');
+      showToast(e?.response?.data?.error || 'Could not submit upgrade request.', 'error');
     } finally { setUpgrading(false); }
   };
 
@@ -164,12 +165,12 @@ function FirmAcquisitionScreen({ navigation }: any) {
       const res = await api.post('/firm-acquisition/trial', {
         firm_name: firmName.trim(), vertical: selectedV,
       });
-      Alert.alert('Trial activated!', res.data?.message);
+      showToast(res.data?.message, 'info');
       setFirmName('');
       setFlow('status');  // navigate first — loadStatus failure must not trap user on trial form
       loadStatus().catch(() => null);  // refresh status in background
     } catch (e: any) {
-      Alert.alert('Action Failed', e?.response?.data?.error || 'Could not activate trial.');
+      showToast(e?.response?.data?.error || 'Could not activate trial.', 'error');
     } finally { setActiv(false); }
   };
 

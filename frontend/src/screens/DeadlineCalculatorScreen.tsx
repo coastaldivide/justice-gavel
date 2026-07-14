@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -322,6 +323,7 @@ const STATE_PCR_YEARS: Record<string, number> = {
 
 
 function getStateName(code: string): string {
+  const { impact, success, error: hapticError } = useHaptics();
   const NAMES: Record<string,string> = {
     AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',
     CO:'Colorado',CT:'Connecticut',DE:'Delaware',DC:'Washington D.C.',FL:'Florida',
@@ -529,11 +531,9 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
           { month: 'short', day: 'numeric', year: 'numeric' }),
         scheduled_for: remind3Days.toISOString(),
         notification_type: 'court_reminder' });
-      Alert.alert('Reminder set ✓',
-        "You'll get a push notification 3 days before this deadline.");
+showToast('Reminder set for 3 days before.', 'success');
     } catch {
-      Alert.alert('Could not set reminder',
-        "Make sure you're signed in and notifications are enabled.");
+      showToast("Make sure you're signed in and notifications are enabled.", 'info');
     }
   }, []);
 

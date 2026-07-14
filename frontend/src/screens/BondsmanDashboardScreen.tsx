@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -29,6 +30,7 @@ declare var _fetchError: any;
 declare var confirmAccept: any; // hoisted from component scope
 // ── Lead fee display helper ───────────────────────────────────────────────────
 function leadFeeLabel(bailAmount: number): string {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   if (!bailAmount || bailAmount <= 0) return '$25';
   if (bailAmount < 5000)   return '$25';
@@ -404,7 +406,7 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
     try {
       const res = await api.post('/billing/bondsman/verified-badge/subscribe');
       setBadgeStatus({ active: true, verified_badge: true });
-      Alert.alert('✅ Badge Activated!', res.data?.message);
+      showToast(res.data?.message, 'success');
     } catch (e: any) {
       showToast('Check your internet and pull down to refresh.');
     } finally { setBadgeLoading(false); }

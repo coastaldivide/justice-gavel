@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -29,6 +31,8 @@ declare var credit: any;
 declare var data: any;
 declare var setCredit: any;
 function callPhone(phone: string) {
+  const { showToast } = useToast();
+  const { impact, success, error: hapticError } = useHaptics();
   Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
 }
 
@@ -210,8 +214,7 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
 
       setError(userMsg);
       hapticWarn();
-      if (status !== 503) Alert.alert('Payment issue', userMsg);
-    } finally {
+showToast(userMsg, 'error');
       setPaying(false);
     }
   };

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -54,6 +55,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
 );
 
 function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
 
   const userStateRef = React.useRef<string>('');
   React.useEffect(() => {

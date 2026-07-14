@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -112,6 +113,7 @@ const STATE_CARDS: Record<string, {
 function ExpungementCountdown({ waitYears, caseDate, navigation }: {
   waitYears: number; caseDate: string; navigation: Record<string, any>;
 }) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const { colors, isDark } = useTheme();
@@ -149,11 +151,7 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
         scheduled_for: remind.toISOString(),
         notification_type: 'expungement_eligible',
       });
-      Alert.alert('Reminder set ✓',
-        isEligible
-          ? "You'll get a reminder in 3 days to check your eligibility."
-          : `You'll get a reminder 30 days before your eligibility date.`
-      );
+showToast('Reminder set for when you become eligible.', 'success');
     } catch {
       showToast('Make sure notifications are enabled in Settings.');
     }
@@ -312,7 +310,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       }
       setStep('result');
     } catch (e: any) {
-      Alert.alert('Could Not Load Expungement Data', e.response?.data?.error || 'Could not check eligibility. Try again.');
+      showToast(e.response?.data?.error || 'Could not check eligibility. Try again.', 'info');
     } finally {
       setLoading(false);
     }

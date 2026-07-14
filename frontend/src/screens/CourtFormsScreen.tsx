@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -75,6 +76,7 @@ const FORM_CATEGORIES = [
 type Phase = 'state_select' | 'category_select' | 'form_display' | 'ai_guide';
 
 function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null {
+  const { impact, success, error: hapticError } = useHaptics();
   const { colors } = useTheme();
   const s = styles(COLORS, FONTS);
 

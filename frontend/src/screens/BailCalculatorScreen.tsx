@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
@@ -29,6 +30,7 @@ type Schedule = {
 };
 
 function BailCalculatorScreen({ route, navigation }: ScreenProps) {
+  const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -47,6 +48,7 @@ interface SavedLawyer {
 }
 
 function callPhone(phone: string) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => {}).catch(() => {});
 }
@@ -104,19 +106,12 @@ function SavedCard({
       setRating(0);
       setReviewText('');
     } catch (e: any) {
-      Alert.alert('Could not submit', e.response?.data?.error || 'Try again.');
+      showToast(e.response?.data?.error || 'Try again.', 'info');
     } finally { setSubmitting(false); }
   };
 
   const confirmRemove = () => {
-    Alert.alert(
-      `Remove ${lawyer.name}?`,
-      'They will be removed from your saved list.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: t('saved_remove'), style: 'destructive', onPress: () => onRemove(lawyer.id) },
-      ]
-    );
+    confirm(`Remove ${lawyer.name}?`,'They will be removed from your saved attorneys.',{confirmLabel:'Remove',destructive:true}).then(ok=>{if(ok){() => onRemove(lawyer.id)}});
   };
 
   const savedDate = lawyer.saved_at

@@ -1,3 +1,5 @@
+import { useToast } from '../components/ToastProvider';
+import { useHaptics } from '../hooks/useHaptics';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { HapticButton } from '../components/HapticButton';
@@ -88,6 +90,8 @@ const INTEL_TIER = {
 };
 
 function TierCard({ tier, active, onSubscribe, loading }: any) {
+  const { showToast } = useToast();
+  const { impact, success, error: hapticError } = useHaptics();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   return (
     <View style={[styles.tierCard, tier.highlight && styles.tierCardHighlight]}>
@@ -233,7 +237,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
             try {
               await api.post('/billing/cancel');
               setSubscription(null);
-              Alert.alert('Plan Cancelled', 'Your plan has been cancelled. You\'ll still have access until the end of your billing period.');
+              showToast('Your plan has been cancelled. Access continues until period end.', 'info');
             } catch (e: any) {
               setError('Payment failed. Check your card details and try again.');
             }

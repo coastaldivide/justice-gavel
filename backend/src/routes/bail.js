@@ -117,7 +117,7 @@ router.get('/nearby', async (req, res) => {
 
 
 // POST /api/bail/calculate — compute bail recommendation from case factors
-router.post('/calculate', apiLimiter, validate(bailCalculateSchema), async (req, res) => {
+router.post('/calculate', validate(schemas.bail.calculate),, apiLimiter, validate(bailCalculateSchema), async (req, res) => {
   const {
     state,
     charge_type,      // 'felony' | 'misdemeanor' | 'dui' | 'domestic' | 'sexual' | 'dismissed'

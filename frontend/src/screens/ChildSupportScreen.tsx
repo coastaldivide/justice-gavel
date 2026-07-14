@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -21,6 +22,7 @@ function calculateSupport(
   monthsAlimony: number,
   alimonyAmount: number,
 ) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
@@ -12,6 +13,7 @@ import { t } from '../i18n';
 interface Contact { value: string; label: string; }
 
 function ContactsScreen(): React.JSX.Element {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const [submitting, setSubmitting] = React.useState(false);
   const { colors, isDark } = useTheme();

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 // T4-05: wrap heavy useEffect bodies with InteractionManager.runAfterInteractions
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
@@ -53,6 +54,7 @@ interface Case {
 }
 
 const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCalendar, onShare, onInvite }: any) {
+  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const color = STATUS_COLORS[item.status] || COLORS.textMuted;
   const hasDate = !!item.next_court_date;
@@ -87,7 +89,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                         scheduled_for: remind.toISOString(),
                         notification_type: 'court_reminder',
                       });
-                      Alert.alert('Reminder set ✓', 'We\'ll remind you the day before court.');
+                      showToast('We\'ll remind you the day before court.');
                     } catch { showToast('Could not set reminder'); }
                   }}
                   accessibilityLabel="Set court date reminder"
@@ -628,7 +630,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
         `\nView this case (read-only, expires in 7 days):\n${url}\n\nSent via Justice Gavel`;
       await Share.share({ message: msg, title: cas.title });
     } catch (e: any) {
-      Alert.alert('Could not share', e.response?.data?.error || 'Check your connection and try again.');
+      showToast(e.response?.data?.error || 'Check your connection and try again.', 'info');
     }
   }, []);
 
@@ -647,7 +649,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
     try {
       const res = await api.post(`/cases/${invitingCase.id}/invite`, { email: inviteEmail.trim().toLowerCase() });
       setInviteModal(false);
-      Alert.alert('Access granted ✓', res.data?.message || 'Family member can now see this case.');
+      showToast(res.data?.message || 'Family member can now see this case.', 'info');
     } catch (e: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
       setInviteError(e.response?.data?.error || 'Could not invite. Check the email address.');
