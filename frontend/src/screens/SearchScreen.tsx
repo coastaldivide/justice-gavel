@@ -175,6 +175,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
           maxLength={120}
           clearButtonMode="while-editing"
           accessibilityLabel="Search"
+          accessibilityHint="Double-tap to activate"
         />
         {loading && (
           <ActivityIndicator size="small" color={colors.navy} style={{ marginRight: 8 }} />

@@ -8,7 +8,8 @@ import { AppIcon } from '../components/AppIcon';
 import { t, initLang } from '../i18n';
 import { haptic, hapticCall } from '../services/haptics';
 import React, { useState, useEffect, useRef, useCallback , useMemo} from 'react';
-import { ActivityIndicator, Animated, FlatList, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
+import {ActivityIndicator, Animated, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { getLocation, formatDistance } from '../services/location';
 import { api }             from '../services/api';
 import { getUserState } from '../utils/userState';
@@ -50,7 +51,7 @@ function SkeletonCard({ colors }: { colors: ThemeColors }) {
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
   const bg = colors?.bgSubtle || COLORS.bgSubtle;
   return (
-    <Animated.View style={{ opacity, backgroundColor: colors?.bgCard || '#fff',
+    <Animated.View style={{ opacity, backgroundColor: colors?.bgCard || colors.bg,
       borderRadius: 14, padding: 16, marginBottom: 10,
       borderWidth: 1, borderColor: colors?.border || COLORS.border }}>
       {/* Avatar + name row */}
@@ -280,8 +281,9 @@ function BailSearchScreen(): React.JSX.Element {
               </Text>
             </View>
           )}
-      <FlatList testID="bail-agent-list"
-          keyExtractor={(item, index) => String(item?.id ?? item?.booking_number ?? index)}
+      <FlashList testID="bail-agent-list"
+          keyExtractor={(item, index) =
+        estimatedItemSize={80}> String(item?.id ?? item?.booking_number ?? index)}
           keyboardShouldPersistTaps="handled"
           onRefresh={() => { setRefreshing(true); search().finally(() => setRefreshing(false)); }}
           refreshing={refreshing}

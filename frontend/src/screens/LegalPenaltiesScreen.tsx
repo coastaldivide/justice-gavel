@@ -120,7 +120,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
               Federal Drug Schedules & Maximum Penalties
             </Text>
             {DRUG_SCHEDULES.map((s, i) => (
-              <View key={i} style={[styles.card, { backgroundColor: (colors as any).card ?? '#fff' }]}>
+              <View key={i} style={[styles.card, { backgroundColor: (colors as any).card ?? colors.bg }]}>
                 <Text style={[styles.scheduleLabel, { color: colors.primary }]}>
                   {s.schedule}
                 </Text>
@@ -156,7 +156,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
               DUI / DWI — Key Facts
             </Text>
             {DUI_FACTS.map((fact, i) => (
-              <View key={i} style={[styles.card, { backgroundColor: (colors as any).card ?? '#fff' }]}>
+              <View key={i} style={[styles.card, { backgroundColor: (colors as any).card ?? colors.bg }]}>
                 <Text style={[styles.factLabel, { color: colors.primary }]}>
                   {fact.label}
                 </Text>
@@ -182,7 +182,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
               { charge: 'Robbery', class: 'Felony', prison: '5–25 yrs', fine: 'Up to $50,000' },
               { charge: 'Identity Theft', class: 'Felony', prison: '2–10 yrs', fine: 'Up to $250,000' },
             ].map((item, i) => (
-              <View key={i} style={[styles.card, { backgroundColor: (colors as any).card ?? '#fff' }]}>
+              <View key={i} style={[styles.card, { backgroundColor: (colors as any).card ?? colors.bg }]}>
                 <View style={styles.rowBetween}>
                   <Text style={[styles.chargeName, { color: colors.text }]}>{item.charge}</Text>
                   <Text style={[styles.chargeClass, {

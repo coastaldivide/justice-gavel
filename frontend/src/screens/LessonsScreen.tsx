@@ -5,7 +5,8 @@ import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, FlatList, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, LayoutAnimation} from 'react-native';
+import {View, Text, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, LayoutAnimation} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, cachedGet } from '../services/api';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
@@ -177,8 +178,9 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
             ))}
           </View>
         )}
-        <FlatList
-          getItemLayout={(_, index) => ({ length: 110, offset: 110 * index, index })}
+        <FlashList
+          getItemLayout={(_, index) =
+        estimatedItemSize={80}> ({ length: 110, offset: 110 * index, index })}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}

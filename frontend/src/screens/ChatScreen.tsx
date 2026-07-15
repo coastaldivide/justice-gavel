@@ -41,9 +41,10 @@ import React, {
   useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import {
-  ActivityIndicator, Alert, FlatList, KeyboardAvoidingView,
+  ActivityIndicator, Alert, KeyboardAvoidingView,
   Platform, Pressable, Share, StyleSheet, Text, TextInput,
   TouchableOpacity, View, AccessibilityInfo, LayoutAnimation, InteractionManager} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useFocusEffect } from '@react-navigation/native';
 import { track } from '../services/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -802,7 +803,8 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
         </View>
       ) : (
         // T1-Q: renderItem and ListEmptyComponent are separate props, cleanly formatted
-        <FlatList<Message>
+        <FlashList<Message
+        estimatedItemSize={80}>
           ref={listRef}
           keyboardShouldPersistTaps="handled"
           initialNumToRender={10}
@@ -932,7 +934,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   bubbleText:       { fontSize: 14, color: colors.bgCard, lineHeight: 20 },
   bubbleTextUser:   { color: COLORS.bgCard },
   lawyerCta:        { marginTop: 10, backgroundColor: colors.legal, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: colors.legal },
-  lawyerCtaText:    { fontSize: 12, lineHeight: 20, color: '#fff', fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  lawyerCtaText:    { fontSize: 12, lineHeight: 20, color: colors.bg, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   upgradeCta:       { marginTop: 10, backgroundColor: COLORS.bgSubtle, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: COLORS.bgSubtle },
   upgradeCtaText:   { fontSize: 12, lineHeight: 20, color: COLORS.navy, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   typingRow:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingBottom: 8 },

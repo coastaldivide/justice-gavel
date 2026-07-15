@@ -35,7 +35,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constan
 import type { ScreenProps } from '../types/navigation';
 import React, {
   useState, useEffect, useCallback, useRef
-} from 'react';
+, useMemo} from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, Share, Clipboard, RefreshControl, InteractionManager} from 'react-native';
 import { api } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';

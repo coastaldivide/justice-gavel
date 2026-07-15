@@ -1,3 +1,6 @@
+// PUBLIC ROUTE: Stripe webhook — authenticated by signature, not by JWT
+// Do NOT add authRequired here.
+
 import { validate, schemas } from '../validation/schemas.js';
 /**
  * webhooks/stripe.js — Stripe payment event handler

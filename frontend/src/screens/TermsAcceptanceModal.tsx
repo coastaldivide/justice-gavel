@@ -280,7 +280,7 @@ const styles = (colors: any, TYPE: any, FONT: any) => StyleSheet.create({
   checkRow:           { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
   checkbox:           { width: 22, height: 22, borderRadius: 4, borderWidth: 2, borderColor: colors.subtext, alignItems: 'center', justifyContent: 'center', marginRight: 10, marginTop: 1, flexShrink: 0 },
   checkboxChecked:    { backgroundColor: colors.gold, borderColor: colors.gold },
-  checkmark:          { color: '#fff', fontSize: 13, fontFamily: FONT.bold },
+  checkmark:          { color: colors.bg, fontSize: 13, fontFamily: FONT.bold },
   checkLabel:         { flex: 1, fontSize: 13, color: colors.text, lineHeight: 19 },
   link:               { color: colors.gold, textDecorationLine: 'underline' },
   bold:               { fontFamily: FONT.bold },
@@ -288,7 +288,7 @@ const styles = (colors: any, TYPE: any, FONT: any) => StyleSheet.create({
   errorText:          { fontSize: 12, color: colors.emergency, textAlign: 'center', marginBottom: 8 },
   acceptBtn:          { backgroundColor: colors.gold, borderRadius: 10, paddingVertical: 15, alignItems: 'center', marginBottom: 10 },
   acceptBtnDisabled:  { opacity: 0.4 },
-  acceptBtnText:      { color: '#fff', fontSize: 15, fontFamily: FONT.bold },
+  acceptBtnText:      { color: colors.bg, fontSize: 15, fontFamily: FONT.bold },
   versionNote:        { fontSize: 10, color: colors.subtext, textAlign: 'center', opacity: 0.7 },
 });
 export default React.memo(TermsAcceptanceModal);

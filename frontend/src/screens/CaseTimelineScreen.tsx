@@ -16,7 +16,8 @@ import { CaseStatusBadge } from '../components/CaseStatusBadge';
  * Navigated to from CaseScreen with params: { caseId, caseTitle }
  */
 import React, { useState, useCallback, useRef } from 'react';
-import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, RefreshControl, Platform, ActivityIndicator, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
+import {Alert, View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, RefreshControl, Platform, ActivityIndicator, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { api } from '../services/api';
 import {  useTheme, RADIUS, SHADOW, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
@@ -333,14 +334,15 @@ confirm(item.title.slice(0,40),'Set a reminder or remove this event?',
               </Text>
             </View>
           )}
-      <FlatList
+      <FlashList
           keyboardShouldPersistTaps="handled"
         initialNumToRender={10}
         maxToRenderPerBatch={10}
         windowSize={5}
         removeClippedSubviews={true}
         data={events}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item) =
+        estimatedItemSize={80}> String(item.id)}
         renderItem={renderItem}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh}

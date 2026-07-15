@@ -15,7 +15,7 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
  *   4. Escalation — emergency level, SLA timer, escalation triggers
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo} from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   StyleSheet, RefreshControl, LayoutAnimation} from 'react-native';
@@ -453,7 +453,7 @@ const styles = (c: any) => StyleSheet.create({
   confLabel:        { fontSize: 10, color: c.textMuted },
   // Error banner
   errorBanner:      { backgroundColor: COLORS.warn, borderRadius: 8, padding: 12, margin: 8 },
-  errorBannerText:  { color: '#fff', fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  errorBannerText:  { color: colors.bg, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   // Analytics tab
   analyticsDisclaimer: { backgroundColor: c.surface, borderRadius: 10, padding: 14, margin: 8, borderLeftWidth: 3, borderLeftColor: c.gold },
   analyticsDTitle:  { fontSize: TYPE.lg, fontFamily: FONT.bold, color: c.gold, marginBottom: 6 },

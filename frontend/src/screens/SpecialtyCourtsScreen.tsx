@@ -151,7 +151,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
       {loading && <ActivityIndicator style={{ marginTop: 30 }} color={colors.primary} />}
       {error ? (
         <><Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign:"center", margin:16 }}>{error}</Text>
-        <TouchableOpacity accessibilityRole="button" onPress={load} style={{marginTop:8,padding:10,backgroundColor:(colors.navy || COLORS.navy),borderRadius:8,alignItems:'center'}} accessibilityLabel="Retry"><Text maxFontSizeMultiplier={1.4} style={{color:'#fff',fontWeight:'700'}}>Retry</Text></TouchableOpacity></> 
+        <TouchableOpacity accessibilityRole="button" onPress={load} style={{marginTop:8,padding:10,backgroundColor:(colors.navy || COLORS.navy),borderRadius:8,alignItems:'center'}} accessibilityLabel="Retry"><Text maxFontSizeMultiplier={1.4} style={{color:colors.bg,fontWeight:'700'}}>Retry</Text></TouchableOpacity></> 
       ) : null}
       {!loading && !error && <FlashList
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load().catch(() => {}); setRefreshing(false); }} />}

@@ -776,7 +776,8 @@ describe('11. deliverWebhook — HMAC & Delivery Model', () => {
   test('11-08: signPayload HMAC model — digest is correct', async () => {
     // Model: HMAC-SHA256(secret, `${timestamp}.${payload}`)
     const cryptoR = await import('crypto'); const createHmac = cryptoR.createHmac;
-    const secret  = 'test_secret';
+    // SAFE: test-only secret — never used in production
+const secret  = 'test_secret';
     const ts      = '1234567890';
     const payload = '{"event":"test"}';
     const data    = `${ts}.${payload}`;

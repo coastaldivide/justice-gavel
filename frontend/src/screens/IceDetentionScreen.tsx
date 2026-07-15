@@ -450,11 +450,11 @@ const makeStyles = (colors: any, isDark: boolean) => StyleSheet.create({
 
   langRow:    { flexDirection: 'row', justifyContent: 'flex-end', padding: 12, paddingBottom: 0 },
   langBtn:    { backgroundColor: COLORS.navy, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
-  langBtnTxt: { color: '#fff', fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  langBtnTxt: { color: colors.bg, fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   header:      { backgroundColor: STATUS.errorDark, padding: 24, paddingTop: 12, alignItems: 'center', gap: 6 },
   headerEmoji: { fontSize: 44 },
-  headerTitle: { fontSize: 24, fontFamily: 'Inter_900Black', fontWeight: '900', color: '#fff', textAlign: 'center' },
+  headerTitle: { fontSize: 24, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.bg, textAlign: 'center' },
   headerSub:   { fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 19 },
 
   sectionLabel: { fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 1.5,
@@ -471,27 +471,27 @@ const makeStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginBottom: 8, borderRadius: RADIUS.md, borderWidth: 1, padding: 12 },
   stepBubble:    { width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.navy,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  stepBubbleTxt: { color: '#fff', fontSize: 13, fontFamily: 'Inter_900Black', fontWeight: '900' },
+  stepBubbleTxt: { color: colors.bg, fontSize: 13, fontFamily: 'Inter_900Black', fontWeight: '900' },
   stepTxt:       { flex: 1, fontSize: 13, lineHeight: 20 },
 
   locatorCard: { marginHorizontal: 16, marginBottom: 10, borderRadius: RADIUS.lg, borderWidth: 2, padding: 16 },
   locatorDesc: { fontSize: 13, lineHeight: 19, marginBottom: 14 },
   locatorBtn:  { backgroundColor: COLORS.legal, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
-  locatorBtnTxt: { color: '#fff', fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  locatorBtnTxt: { color: colors.bg, fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   resourceCard:  { marginHorizontal: 16, marginBottom: 10, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14 },
   resourceName:  { fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700', lineHeight: 20, marginBottom: 3 },
   resourceDesc:  { fontSize: 12, lineHeight: 17, marginBottom: 10 },
   resourceBtns:  { flexDirection: 'row', gap: 8 },
   callBtn:       { flex: 1, borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center' },
-  callBtnTxt:    { color: '#fff', fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  callBtnTxt:    { color: colors.bg, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   webBtn:        { borderRadius: RADIUS.md, paddingVertical: 10, paddingHorizontal: 14,
     alignItems: 'center', borderWidth: 1 },
   webBtnTxt:     { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 
   shareBtn:    { marginHorizontal: 16, marginVertical: 16, backgroundColor: COLORS.navy,
     borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center' },
-  shareBtnTxt: { color: '#fff', fontSize: 15, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  shareBtnTxt: { color: colors.bg, fontSize: 15, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   disclaimer:    { marginHorizontal: 16, borderRadius: RADIUS.md, borderWidth: 1, padding: 14 },
   disclaimerTxt: { fontSize: 11, lineHeight: 17 },

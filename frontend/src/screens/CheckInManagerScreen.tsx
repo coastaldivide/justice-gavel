@@ -19,9 +19,10 @@ import { AppIcon } from '../components/AppIcon';
  *
  * $9.99/month per active defendant. Shown as monthly total.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo} from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, FlatList, TextInput, Modal, ActivityIndicator, Alert, RefreshControl, KeyboardAvoidingView, InteractionManager} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, Modal, ActivityIndicator, Alert, RefreshControl, KeyboardAvoidingView, InteractionManager} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
@@ -233,9 +234,10 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
           : records.length === 0
             ? <View style={styles.emptyCenter}><Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>No check-ins yet.</Text></View>
             : (
-              <FlatList
+              <FlashList
           accessibilityLabel="Check-in schedule list"
-                getItemLayout={(_, index) => ({ length: 80, offset: 80 * index, index })}
+                getItemLayout={(_, index) =
+        estimatedItemSize={80}> ({ length: 80, offset: 80 * index, index })}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}
@@ -362,9 +364,10 @@ confirm(`Remove ${name}?`, 'They will no longer need to check in.',
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.navy} size="large" />
       ) : (
-        <FlatList
+        <FlashList
           data={[...active, ...inactive]}
-          keyExtractor={r => String(r.id)}
+          keyExtractor={r =
+        estimatedItemSize={80}> String(r.id)}
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
           renderItem={({ item }) => {

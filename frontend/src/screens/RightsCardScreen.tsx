@@ -329,21 +329,21 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           style={{ flex: 1, backgroundColor: (_HEX_RIGHTSCARD._c1), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>📞 988 Crisis</Text>
+          <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 988 Crisis</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={{ flex: 1, backgroundColor: (colors.navy || COLORS.navy), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:+12125492660').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>📞 ACLU</Text>
+          <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 ACLU</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={{ flex: 1, backgroundColor: _HEX_RIGHTSCARD._c0, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:+18009800010').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>📞 Bail</Text>
+          <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 Bail</Text>
         </TouchableOpacity>
       </View>
 

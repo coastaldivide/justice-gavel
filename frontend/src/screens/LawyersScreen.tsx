@@ -22,7 +22,8 @@ import { haptic, hapticCall } from '../services/haptics';
  */
 
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
-import { Animated, FlatList, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
+import {Animated, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Picker } from '@react-native-picker/picker';
 import { api } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -466,7 +467,7 @@ function SkeletonCard({ colors }: { colors: Record<string, any> }) {
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
   const bg = colors?.bgSubtle || COLORS.bgSubtle;
   return (
-    <Animated.View style={{ opacity, backgroundColor: colors?.bgCard || '#fff',
+    <Animated.View style={{ opacity, backgroundColor: colors?.bgCard || colors.bg,
       borderRadius: 14, padding: 16, marginBottom: 10,
       borderWidth: 1, borderColor: colors?.border || COLORS.border }}>
       {/* Avatar + name row */}
@@ -738,8 +739,9 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               </Text>
             </TouchableOpacity>
           )}
-                <FlatList testID="lawyer-list"
-          getItemLayout={(_, index) => ({ length: 200, offset: 200 * index, index })}
+                <FlashList testID="lawyer-list"
+          getItemLayout={(_, index) =
+        estimatedItemSize={80}> ({ length: 200, offset: 200 * index, index })}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}

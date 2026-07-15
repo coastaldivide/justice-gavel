@@ -283,7 +283,7 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2}
-              style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>
+              style={{ color: colors.bg, fontSize: 15, fontWeight: '800' }}>
               ⚖️ Find Attorneys Near You
             </Text>
             <Text maxFontSizeMultiplier={1.3}

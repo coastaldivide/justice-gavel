@@ -233,7 +233,8 @@ function ChildSupportScreen({ navigation }: any) {
           accessibilityRole="button"
           style={[s.calcBtn, { backgroundColor: COLORS.navy }]}
           onPress={calculate}
-         accessibilityLabel="Calculate Estimate">
+         accessibilityLabel="Calculate Estimate"
+          accessibilityHint="Double-tap to activate">
           <Text style={s.calcBtnText} maxFontSizeMultiplier={1.4}>Calculate Estimate</Text>
         </TouchableOpacity>
       </View>

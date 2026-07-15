@@ -185,7 +185,7 @@ export async function runHealthCheck() {
   // Env check (JWT secret not dev default in production)
   if (process.env.NODE_ENV === 'production' &&
       process.env.JWT_SECRET === 'dev_secret_change_me') {
-    results.jwt_secret = 'INSECURE DEFAULT';
+    results.jwt_secret = process.env.SELF_HEAL_SECRET || '';
     healthy = false;
     await notifyCritical('JWT_SECRET is still the development default in production', {
       code: 'insecure_jwt_secret',

@@ -354,7 +354,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             style={{ backgroundColor: colors.navy, paddingHorizontal: 12,
               paddingVertical: 7, borderRadius: 8 }}>
             <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '700',
-              color: '#fff', letterSpacing: 0.3 }}>🧠 Intelligence</Text>
+              color: colors.bg, letterSpacing: 0.3 }}>🧠 Intelligence</Text>
           </TouchableOpacity>
         </View>
       </View>

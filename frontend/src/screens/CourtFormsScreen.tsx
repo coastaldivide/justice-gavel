@@ -25,7 +25,8 @@ import { AppIcon } from '../components/AppIcon';
  */
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, FlatList, Linking, StyleSheet, TextInput, Platform, ActivityIndicator, Alert, KeyboardAvoidingView, RefreshControl, LayoutAnimation} from 'react-native';
+import {View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet, TextInput, Platform, ActivityIndicator, Alert, KeyboardAvoidingView, RefreshControl, LayoutAnimation} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
 import {  useTheme, COLORS } from '../constants/theme';
 import {
@@ -222,17 +223,19 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
             returnKeyType="search"
             clearButtonMode="while-editing"
             accessibilityLabel="Search states"
+          accessibilityHint="Double-tap to activate"
           blurOnSubmit
         />
         </View>
-        <FlatList
+        <FlashList
           initialNumToRender={12}
           maxToRenderPerBatch={10}
           windowSize={5}
           removeClippedSubviews={true}
           data={filteredStates}
           ListEmptyComponent={
-            <View style={{ padding:40, alignItems:'center' }}>
+            <View style={{ padding:40, alignItems:'center' }}
+        estimatedItemSize={80}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, color:COLORS.textMuted, textAlign:'center' }}>
                 📄 No states match your search. Try a different name or abbreviation.
               </Text>

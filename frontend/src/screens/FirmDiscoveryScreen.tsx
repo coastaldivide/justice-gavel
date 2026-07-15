@@ -190,7 +190,7 @@ const s = StyleSheet.create({
   codeBar:     { flexDirection: 'row', margin: 16, marginBottom: 8, borderRadius: 10, borderWidth: 1, overflow: 'hidden' },
   codeInput:   { flex: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
   codeBtn:     { backgroundColor: '#042C53', paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 },
-  codeBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  codeBtnText: { color: colors.bg, fontWeight: '700', fontSize: 13 },
   filters:     { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 4 },
   filterInput: { flex: 1, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, minHeight: 44 },
   card:        { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 12 },

@@ -15,7 +15,7 @@ import { AppIcon } from '../components/AppIcon';
  * Works offline: shows cached pending list from last load.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo} from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, ActivityIndicator, LayoutAnimation} from 'react-native';
 import { api }      from '../services/api';

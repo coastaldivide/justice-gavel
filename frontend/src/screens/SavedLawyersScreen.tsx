@@ -25,7 +25,8 @@ import type {} from '../types/navigation';
  *   3. LawyersScreen header → bookmark icon
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator, Linking, RefreshControl, Platform, KeyboardAvoidingView, LayoutAnimation} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, Linking, RefreshControl, Platform, KeyboardAvoidingView, LayoutAnimation} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { api } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
@@ -389,9 +390,10 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList testID="saved-lawyers-list"
+        <FlashList testID="saved-lawyers-list"
           keyboardShouldPersistTaps="handled"
-          getItemLayout={(_, index) => ({ length: 190, offset: 190 * index, index })}
+          getItemLayout={(_, index) =
+        estimatedItemSize={80}> ({ length: 190, offset: 190 * index, index })}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}

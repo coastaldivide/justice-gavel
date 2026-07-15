@@ -479,7 +479,7 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
             </View>
           )}
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Find more courthouses on map" style={[styles.noResultsBtn,{backgroundColor:colors.navy,marginTop:8,marginBottom:4}]} onPress={()=>navigation.navigate('CourtLocator')}>
-            <Text style={[styles.noResultsBtnText, { color: '#fff' }]}>Find Courthouses Near You →</Text>
+            <Text style={[styles.noResultsBtnText, { color: colors.bg }]}>Find Courthouses Near You →</Text>
           </TouchableOpacity>
       <TouchableOpacity
         accessibilityRole="button"

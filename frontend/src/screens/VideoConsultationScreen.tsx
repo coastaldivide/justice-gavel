@@ -158,11 +158,11 @@ const styles = StyleSheet.create({
   infoItem:    { fontSize: 14, marginBottom: 6 },
   errorBox:    { padding: 12, borderRadius: 8, marginBottom: 16 },
   startBtn:    { borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 12 },
-  startBtnText:{ color: '#fff', fontSize: 16, fontWeight: '700' },
+  startBtnText:{ color: colors.bg, fontSize: 16, fontWeight: '700' },
   cancelBtn:   { alignItems: 'center', padding: 12 },
   cancelText:  { fontSize: 14 },
   endBtn:      { position: 'absolute', bottom: 32, alignSelf: 'center',
                  paddingHorizontal: 32, paddingVertical: 14, borderRadius: 30 },
-  endBtnText:  { color: '#fff', fontSize: 16, fontWeight: '700' },
+  endBtnText:  { color: colors.bg, fontSize: 16, fontWeight: '700' },
 });
 export default React.memo(VideoConsultationScreen);

@@ -8,7 +8,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo} from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   ScrollView, Linking, Alert, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';

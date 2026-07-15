@@ -11,7 +11,8 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, FlatList, Animated, LayoutAnimation} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutAnimation} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
 import { t, initLang } from '../i18n';
@@ -114,14 +115,14 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
           accessibilityHint="Opens emergency screen without requiring sign up"
         >
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.3} style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.bg, fontWeight: '700', fontSize: 16 }}>
               🚨 Just arrested or detained?
             </Text>
             <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 2 }}>
               Get immediate help — no sign-up required
             </Text>
           </View>
-          <Text style={{ color: '#fff', fontSize: 22 }}>→</Text>
+          <Text style={{ color: colors.bg, fontSize: 22 }}>→</Text>
         </TouchableOpacity>
 <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, lineHeight:24,
             color:colors.textMuted, textAlign:'center', marginBottom:32 }}>

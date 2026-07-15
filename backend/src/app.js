@@ -1,3 +1,22 @@
+// ── Sentry backend error tracking ─────────────────────────────────────────
+import * as Sentry from '@sentry/node';
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn:              process.env.SENTRY_DSN,
+    environment:      process.env.NODE_ENV ?? 'production',
+    tracesSampleRate: 0.05,
+    beforeSend(event) {
+      // Strip PII from Sentry reports
+      if (event.request?.data) {
+        delete event.request.data.password;
+        delete event.request.data.token;
+        delete event.request.data.ssn;
+      }
+      return event;
+    },
+  });
+}
+
 import { initSentry, Sentry } from './monitoring/sentry.js';
 import hagueContactsRouter  from './routes/hague_contacts.js';
 import logger from './utils/logger.js';

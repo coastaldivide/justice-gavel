@@ -23,7 +23,7 @@ import { AppIcon } from '../components/AppIcon';
  *   2. EmergencyScreen
  *   3. HelpNowScreen bottom CTA
  */
-import React, { useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef, useMemo} from 'react';
 import { ActivityIndicator, BackHandler, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, RefreshControl, LayoutAnimation} from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 

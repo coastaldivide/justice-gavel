@@ -234,7 +234,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
       
 
   {/* What Happens Next — absorbed from WhatHappensNextScreen */}
-  <View style={[styles.sectionCard, { backgroundColor: colors.card ?? '#fff', marginTop: 16 }]}>
+  <View style={[styles.sectionCard, { backgroundColor: colors.card ?? colors.bg, marginTop: 16 }]}>
     <Text style={[styles.sectionTitle, { color: colors.text }]}>
       📅 What Happens Next
     </Text>

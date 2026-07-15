@@ -14,7 +14,7 @@ import { AppIcon } from '../components/AppIcon';
  *  3. Display ranked results with AI-written match reports + one-tap contact actions
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo} from 'react';
 import { View, Text, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, TextInput, Linking, ActivityIndicator, Platform, KeyboardAvoidingView, Modal, LayoutAnimation} from 'react-native';
 import PracticeAreaSelector, {} from '../components/PracticeAreaSelector';
 import { api } from '../services/api';

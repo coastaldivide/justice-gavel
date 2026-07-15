@@ -28,7 +28,7 @@ import { AppIcon } from '../components/AppIcon';
  *   3. Direct navigation
  */
 import type { ScreenProps } from '../types/navigation';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo} from 'react';
 import { ActivityIndicator, Alert, Animated, Clipboard, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
 import { FileSystem, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { api } from '../services/api';

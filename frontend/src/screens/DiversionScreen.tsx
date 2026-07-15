@@ -118,7 +118,7 @@ function DiversionScreen({ navigation }: any) {
 
         {/* Eligibility checklist */}
         {criteria.map((c, i) => (
-          <View key={c.key} style={[styles.card, { backgroundColor: (colors as any).card ?? '#fff' }]}>
+          <View key={c.key} style={[styles.card, { backgroundColor: (colors as any).card ?? colors.bg }]}>
             <View style={styles.rowBetween}>
               <Text style={[styles.question, { color: colors.text, flex: 1, marginRight: 12 }]}>
                 {i + 1}. {c.question}
@@ -200,7 +200,7 @@ function makeStyles(colors: any) {
     ctaTitle:   { fontSize: 15, fontWeight: '700', marginBottom: 6 },
     ctaText:    { fontSize: 13, lineHeight: 18, marginBottom: 12 },
     ctaBtn:     { borderRadius: 24, paddingVertical: 12, paddingHorizontal: 24, alignItems: 'center' },
-    ctaBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+    ctaBtnText: { color: colors.bg, fontSize: 15, fontWeight: '600' },
   });
 }
 

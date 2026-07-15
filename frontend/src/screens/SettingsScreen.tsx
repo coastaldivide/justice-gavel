@@ -233,7 +233,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   navRowLabel:  { flex: 1, fontSize: 15, color: colors.textPrimary },
   navRowArrow:  { fontSize: 16, color: colors.textFaint },
   testPushBtn:  { backgroundColor: colors.navy, borderRadius: 8, padding: 12, margin: 16, alignItems: 'center' },
-  testPushText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
+  testPushText: { color: colors.bg, fontSize: 14, fontWeight: '700' },
   menuHint: { fontSize: 11, marginTop: 1, color: COLORS.textMuted } });
 
 // Module-level fallback for helper components

@@ -20,7 +20,8 @@ import ScreenHeader from '../components/ScreenHeader';
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import {View, Text, FlatList, TouchableOpacity, StyleSheet, Linking, Alert, ActivityIndicator, Switch, ScrollView, LayoutAnimation} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, Linking, Alert, ActivityIndicator, Switch, ScrollView, LayoutAnimation} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as Location from 'expo-location';
 import { api } from '../services/api';
@@ -282,7 +283,7 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
                 }}
               >
                 <Text maxFontSizeMultiplier={1.2} style={[styles.statePillText,
-                  { color: selectedState === st ? '#fff' : colors.textSecond }]}>
+                  { color: selectedState === st ? colors.bg : colors.textSecond }]}>
                   {st}
                 </Text>
               </TouchableOpacity>
@@ -313,8 +314,9 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
           activeOpacity={0.85}
         >
           accessibilityRole="search" accessibilityLabel="Search"
+          accessibilityHint="Double-tap to activate"
           <Text maxFontSizeMultiplier={1.2} style={[styles.searchBtnText,
-            { color: selectedState ? '#fff' : colors.textMuted }]}>
+            { color: selectedState ? colors.bg : colors.textMuted }]}>
             {loading ? 'Searching…' : '🔍  Search Recovery Agents'}
           </Text>
         </TouchableOpacity>
@@ -391,7 +393,7 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
           </Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           onRefresh={onRefresh}
           refreshing={refreshing}
           initialNumToRender={8}
@@ -399,7 +401,8 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
           windowSize={5}
           removeClippedSubviews={true}
           data={agents}
-          keyExtractor={item => String(item.id)}
+          keyExtractor={item =
+        estimatedItemSize={80}> String(item.id)}
           renderItem={renderAgent}
           contentContainerStyle={{ padding: 12, paddingBottom: 40, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
           keyboardShouldPersistTaps="handled"
@@ -443,7 +446,7 @@ const styles = StyleSheet.create({
   loadingText:   { marginTop: 12, fontSize: 14 },
   errorText:     { fontSize: 14, textAlign: 'center', marginBottom: 16 },
   retryBtn:      { borderRadius: 10, paddingVertical: 12, paddingHorizontal: 24 },
-  retryText:     { color: '#fff', fontWeight: '700', fontSize: 14 },
+  retryText:     { color: colors.bg, fontWeight: '700', fontSize: 14 },
   emptyIcon:     { fontSize: 48, marginBottom: 12 },
   emptyText:     { fontSize: 14, textAlign: 'center', lineHeight: 21 },
   resultCount:   { fontSize: 12, marginBottom: 8 },
@@ -465,7 +468,7 @@ const styles = StyleSheet.create({
 
   actionRow:     { flexDirection: 'row', gap: 8 },
   callBtn:       { flex: 2, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  callBtnText:   { color: '#fff', fontWeight: '800', fontSize: 14 },
+  callBtnText:   { color: colors.bg, fontWeight: '800', fontSize: 14 },
   webBtn:        { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: 'center',
                    borderWidth: 1 },
   webBtnText:    { fontWeight: '700', fontSize: 13 },

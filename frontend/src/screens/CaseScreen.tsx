@@ -9,10 +9,11 @@ import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import { EmptyState } from '../components/EmptyState';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo} from 'react';
 import { FileSystem, ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type {} from '../types/navigation';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, FlatList, Modal, ScrollView, Linking, ActivityIndicator, RefreshControl, Share, KeyboardAvoidingView, Platform, AccessibilityInfo, LayoutAnimation} from 'react-native';
+import {View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Modal, ScrollView, Linking, ActivityIndicator, RefreshControl, Share, KeyboardAvoidingView, Platform, AccessibilityInfo, LayoutAnimation} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { api } from '../services/api';
 import { cacheAgeLabel, cacheCases, cacheSavedLawyers, getCachedLawyers } from '../services/offlineCache';
 import { t }   from '../i18n';
@@ -753,13 +754,14 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             </View>
           )
           : (
-            <FlatList
+            <FlashList
           testID="case-list"
           initialNumToRender={8}
           maxToRenderPerBatch={5}
           windowSize={10}
           removeClippedSubviews={true}
-          getItemLayout={(_, index) => ({ length: 130, offset: 130 * index, index })}
+          getItemLayout={(_, index) =
+        estimatedItemSize={80}> ({ length: 130, offset: 130 * index, index })}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadSavedLawyers().finally(() => setRefreshing(false)); }} tintColor={colors.textSecond} />}
               data={cases}
               keyExtractor={i => String(i.id)}

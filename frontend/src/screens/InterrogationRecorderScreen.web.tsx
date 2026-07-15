@@ -225,7 +225,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
             style={{ backgroundColor: colors.navy, borderRadius: 10, padding: 14, alignItems: 'center' }}
             accessibilityRole="button"
           >
-            <Text maxFontSizeMultiplier={1.3} style={{ color: '#fff', fontWeight: '600' }}>Record another</Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.bg, fontWeight: '600' }}>Record another</Text>
           </TouchableOpacity>
         </View>
       ) : null}

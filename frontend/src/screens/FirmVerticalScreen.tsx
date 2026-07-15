@@ -985,7 +985,7 @@ const styles = (c: any) => StyleSheet.create({
   segLabel:         { fontSize: TYPE.xs, color: c.textMuted, fontFamily: FONT.medium },
   segLabelActive:   { color: c.navy },
   missionBtn:       { backgroundColor: COLORS.legal, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', marginTop: 14 },
-  missionBtnText:   { fontSize: TYPE.base, fontFamily: FONT.bold, color: '#fff' },
+  missionBtnText:   { fontSize: TYPE.base, fontFamily: FONT.bold, color: colors.bg },
   // Sub tabs
   subTabRow:        { flexDirection: 'row', backgroundColor: c.bgElevated, borderRadius: RADIUS.md, padding: 4, marginBottom: 16 },
   subTab:           { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: RADIUS.md },

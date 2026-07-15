@@ -8,7 +8,8 @@ import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
+import {ActivityIndicator, Alert, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 /**
  * BondsmanDashboardScreen -- Real-time lead feed for bail bondsmen
  *
@@ -17,7 +18,7 @@ import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, RefreshCo
  * Lead fee is tiered by bail amount ($25-$300).
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo} from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { api } from '../services/api';
@@ -587,9 +588,10 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
               </Text>
             </View>
           )}
-        <FlatList
+        <FlashList
           testID="lead-list"
-          getItemLayout={(_, index) => ({ length: 150, offset: 150 * index, index })}
+          getItemLayout={(_, index) =
+        estimatedItemSize={80}> ({ length: 150, offset: 150 * index, index })}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}

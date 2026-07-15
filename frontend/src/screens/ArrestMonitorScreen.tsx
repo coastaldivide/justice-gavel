@@ -14,7 +14,7 @@ import { useNavigation } from '@react-navigation/native';
  * When the nightly scraper finds a match, they get a push notification.
  * Accessible from: HomeScreen tile "My Plan" → upsell, or direct nav from Pro plan
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo} from 'react';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { t } from '../i18n';

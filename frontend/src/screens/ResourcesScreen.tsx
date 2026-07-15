@@ -5,7 +5,7 @@ import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import ScreenHeader from '../components/ScreenHeader';
 import SkeletonLoader from '../components/SkeletonLoader';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo} from 'react';
 import {View, Text, RefreshControl, TouchableOpacity, TextInput, Linking, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import { api, cachedGet }           from '../services/api';
@@ -131,6 +131,7 @@ function ResourcesScreen(): React.JSX.Element {
       <View style={{ paddingHorizontal:16, paddingTop:12, paddingBottom:8 }}>
         <TextInput
           accessibilityLabel="Search resources…"
+          accessibilityHint="Double-tap to activate"
           value={q}
           onChangeText={setQ}
           placeholder="Search resources…"

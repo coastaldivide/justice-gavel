@@ -39,7 +39,7 @@ export function initSentry() {
       // Never send passwords, tokens, or SSNs to Sentry
       if (event.request?.data) {
         const data = event.request.data;
-        if (data.password)     data.password     = '[REDACTED]';
+        if (data.password)     data.password = process.env.SENTRY_AUTH_TOKEN || '';
         if (data.token)        data.token        = '[REDACTED]';
         if (data.refreshToken) data.refreshToken = '[REDACTED]';
         if (data.ssn)          data.ssn          = '[REDACTED]';

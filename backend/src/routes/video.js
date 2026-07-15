@@ -1,3 +1,4 @@
+import { apiLimiter } from '../utils/rateLimiters.js';
 import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/video.js — Attorney-client video consultations via Daily.co

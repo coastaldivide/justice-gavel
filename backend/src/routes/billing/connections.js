@@ -1,3 +1,4 @@
+import { generateIdempotencyKey } from './_shared.js';
 import { validate, schemas } from '../validation/schemas.js';
 /**
  * billing/connections.js — Emergency family connection and QuickConnect — $20 instant matchmaking

@@ -213,6 +213,6 @@ const s = StyleSheet.create({
   actions:     { flexDirection: 'row', gap: 10, marginTop: 8 },
   btn:         { paddingVertical: 14, paddingHorizontal: 12, borderRadius: 10,
                  alignItems: 'center', justifyContent: 'center', minHeight: 48 },
-  btnText:     { color: '#fff', fontWeight: '700', fontSize: 14 },
+  btnText:     { color: colors.bg, fontWeight: '700', fontSize: 14 },
 });
 export default React.memo(FirmPublicProfileScreen);
