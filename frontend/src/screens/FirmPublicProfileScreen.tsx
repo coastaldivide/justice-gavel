@@ -75,6 +75,7 @@ function FirmPublicProfileScreen() {
       <TouchableOpacity
         onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.goBack()}
         accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         accessibilityLabel="Go back to firm directory"
         style={[s.btn, { backgroundColor: colors.blue }]}
       >
@@ -167,6 +168,7 @@ function FirmPublicProfileScreen() {
             style={[s.btn, { backgroundColor: '#0d7a3e', flex: 1 }]}
             onPress={callFirm}
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             accessibilityLabel={`Call ${firm.name}`}
           >
             <Text style={s.btnText}>📞 Call</Text>
@@ -177,6 +179,7 @@ function FirmPublicProfileScreen() {
             style={[s.btn, { backgroundColor: colors.blue, flex: 1 }]}
             onPress={openWebsite}
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             accessibilityLabel={`Visit ${firm.name} website`}
           >
             <Text style={s.btnText}>🌐 Website</Text>
@@ -186,6 +189,7 @@ function FirmPublicProfileScreen() {
           style={[s.btn, { backgroundColor: '#042C53', flex: 1 }]}
           onPress={contactFirm}
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           accessibilityLabel={`Find attorneys at ${firm.name}`}
         >
           <Text style={s.btnText}>Find Attorneys</Text>

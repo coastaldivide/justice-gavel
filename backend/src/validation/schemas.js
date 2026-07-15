@@ -194,3 +194,13 @@ export function validateQuery(schema) {
     next();
   };
 }
+
+export const ratingSchema = z.object({ rating: z.number().min(1).max(5), comment: z.string().max(500).optional() });
+
+export const matterUpdateSchema = z.object({ status: z.enum(["active","pending","closed"]).optional(), note: z.string().max(1000).optional() });
+
+export const messageSchema = z.object({ message_type: z.enum(["text","system","media"]).default("text") });
+
+export const docketEntrySchema = z.object({ due_date: z.string().datetime().optional() });
+
+export const alertSchema = z.object({ category: z.enum(["arrest","warrant","court","general"]) });

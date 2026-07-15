@@ -8,7 +8,7 @@ import { AppIcon } from '../components/AppIcon';
 /**
  * LoginScreen -- Redesigned with JTB logo, dark brand aesthetic
  */
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
@@ -78,7 +78,8 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
         </View>
 
         {/* Browse without account -- TOP of form, first thing seen */}
-        <TouchableOpacity accessibilityRole="button" style={styles.topBrowseBtn} onPress={browseAsGuest} activeOpacity={0.85}
+        <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.topBrowseBtn} onPress={browseAsGuest} activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.topBrowseBtnText}>🔍  Search Without an Account</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.topBrowseBtnSub}>Find lawyers & bail agents instantly -- no sign-up</Text>
@@ -129,7 +130,8 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
               selectionColor={COLORS.steel}
             />
             <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel="{showPass ? 'Hide' : 'Show'}" onPress={() => setShowPass(s => !s)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="{showPass ? 'Hide' : 'Show'}" onPress={() => setShowPass(s => !s)}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.showBtnText}>{showPass ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
@@ -142,6 +144,7 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
           )}
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={{ alignItems: 'center', marginBottom: 10 }}
             onPress={() => {
               // forgot password
@@ -162,7 +165,9 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
 
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             accessibilityLabel="Sign In"
+          accessibilityHint="Signs you in to your account"
             style={[styles.primaryBtn, loading && styles.btnDisabled]}
             testID="login-submit-button" onPress={onLogin} disabled={loading} activeOpacity={0.85}
           >
@@ -173,7 +178,8 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
           </TouchableOpacity>
 
           <TouchableOpacity
-          accessibilityRole="button" style={styles.registerLink} onPress={() => navigation.navigate('Register')} testID="login-register-link"
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.registerLink} onPress={() => navigation.navigate('Register')} testID="login-register-link"
             accessibilityLabel="Create one"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.registerText}>

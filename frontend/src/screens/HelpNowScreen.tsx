@@ -64,7 +64,8 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
           accessibilityRole="button"
           style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10,
             paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:911').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> Linking.openURL('tel:911').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
           <AppIcon name="flash" size={20} color={COLORS.emergency} />
           <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '900', fontSize: 14, color: COLORS.emergency }}>CALL 911</Text>
@@ -74,7 +75,8 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
           accessibilityLabel="CRISIS 988"
           style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10,
             paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>💙</Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '900', fontSize: 14, color: COLORS.navy }}>CRISIS 988</Text>

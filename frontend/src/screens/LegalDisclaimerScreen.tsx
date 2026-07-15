@@ -2,7 +2,7 @@ import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import React, { useState } from 'react';
+import React, { useState, useCallback} from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, ActivityIndicator, LayoutAnimation} from 'react-native';
@@ -146,6 +146,7 @@ function LegalDisclaimerScreen({ onAccepted }: Props) {
 
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[s.acceptBtn, (!agreed || accepting) && s.acceptBtnDisabled]}
             onPress={handleAccept}
             disabled={!agreed || accepting}

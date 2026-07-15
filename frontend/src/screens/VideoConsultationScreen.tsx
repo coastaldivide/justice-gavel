@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
@@ -83,6 +84,7 @@ function VideoConsultationScreen({ route, navigation }: Props) {
           style={[styles.startBtn, { backgroundColor: colors.navy || '#042C53', marginBottom: 16 }]}
           onPress={() => openBrowserAsync(sessionUrl)}
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         >
           <Text style={styles.startBtnText}>Open Video Call</Text>
         </TouchableOpacity>
@@ -131,6 +133,7 @@ function VideoConsultationScreen({ route, navigation }: Props) {
         onPress={startSession}
         disabled={loading}
         accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
       >
         {loading
           ? <ActivityIndicator color="#fff" />
@@ -139,7 +142,8 @@ function VideoConsultationScreen({ route, navigation }: Props) {
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.goBack()} style={styles.cancelBtn}>
-        accessibilityRole="button" accessibilityLabel="End session"
+        accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="End session"
         <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
       </TouchableOpacity>
     </View>

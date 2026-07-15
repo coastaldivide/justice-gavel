@@ -108,3 +108,17 @@ export function safeFloat(val, fallback = 0) {
 export function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
+
+/**
+ * Standardised success response — always { data, meta? }
+ * Use instead of res.json({...}) to ensure consistent envelope
+ */
+export function sendData(res, data, meta = {}) {
+  return res.json({ data, ...( Object.keys(meta).length ? { meta } : {} ) });
+}
+export function sendList(res, items, total) {
+  return res.json({ data: items, meta: { total, count: items.length } });
+}
+export function sendCreated(res, data) {
+  return res.status(201).json({ data });
+}

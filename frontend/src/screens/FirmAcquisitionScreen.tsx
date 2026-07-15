@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
@@ -56,6 +57,8 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 function FirmAcquisitionScreen({ navigation }: any) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors } = useTheme();
@@ -190,7 +193,8 @@ showToast(res.data?.message, 'success');
         <View style={s.flowBar}>
           {(['browse','activate'] as Flow[]).map(f => (
             <TouchableOpacity
-          accessibilityRole="button" key={f} style={[s.flowBtn, flow===f && s.flowBtnActive]} onPress={() => setFlow(f)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" key={f} style={[s.flowBtn, flow===f && s.flowBtnActive]} onPress={() => setFlow(f)}
               accessibilityLabel='Select firm vertical'
             >
               <Text maxFontSizeMultiplier={1.4} style={[s.flowLabel, flow===f && s.flowLabelActive]}>
@@ -275,6 +279,7 @@ showToast(res.data?.message, 'success');
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                   <TouchableOpacity
                     accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                     style={[s.upgradeBtn, { backgroundColor: colors.legal }]}
                     onPress={() => requestUpgrade('enterprise')}
                     disabled={upgrading}
@@ -283,6 +288,7 @@ showToast(res.data?.message, 'success');
                   </TouchableOpacity>
                   <TouchableOpacity
                     accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                     style={[s.upgradeBtn, { backgroundColor: colors.gold }]}
                     onPress={() => requestUpgrade('mission')}
                     disabled={upgrading}
@@ -297,27 +303,34 @@ showToast(res.data?.message, 'success');
             <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { marginTop: 20 }]}>Quick actions</Text>
             <View style={s.actionGrid}>
               <TouchableOpacity
-          accessibilityRole="button" style={s.actionBtn} accessibilityLabel="\u2699\ufe0f" onPress={() => navigation.navigate('FirmVertical')}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={s.actionBtn} accessibilityLabel="\u2699\ufe0f" onPress={() => navigation.navigate('FirmVertical')}
                       >
                 <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Configure vertical</Text>
               </TouchableOpacity>
-              <TouchableOpacity accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('DeadlineCalculator')}
+              <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={s.actionBtn} onPress={() => navigation.navigate('DeadlineCalculator')}
                       >
-                accessibilityRole="button" accessibilityLabel="Navigate"
+                accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="Navigate"
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📅</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Deadline calculator</Text>
               </TouchableOpacity>
               <TouchableOpacity
-          accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('MatterIntelligence')}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={s.actionBtn} onPress={() => navigation.navigate('MatterIntelligence')}
                       >
-                accessibilityRole="button" accessibilityLabel="Navigate"
+                accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="Navigate"
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📁</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Create matter</Text>
               </TouchableOpacity>
-              <TouchableOpacity accessibilityRole="button" style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical', { tab: 'pricing' })}
+              <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical', { tab: 'pricing' })}
                       >
-                accessibilityRole="button" accessibilityLabel="Navigate"
+                accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="Navigate"
                 <AppIcon name="card-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Upgrade plan</Text>
               </TouchableOpacity>
@@ -336,6 +349,7 @@ showToast(res.data?.message, 'success');
               {VERTICALS.map(v => (
                 <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                   key={v.key}
                   style={[s.vertTile, selectedV === v.key && { borderColor: v.color, borderWidth: 1.5 }]}
                   accessibilityLabel="{v.emoji}" onPress={() => setSelectedV(v.key)}
@@ -392,7 +406,8 @@ showToast(res.data?.message, 'success');
             )}
 
             <TouchableOpacity
-          accessibilityRole="button" style={s.ctaBtn} accessibilityLabel="Start {TRIAL_DAYS}-day free trial \u2192" onPress={() => setFlow('activate')}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={s.ctaBtn} accessibilityLabel="Start {TRIAL_DAYS}-day free trial \u2192" onPress={() => setFlow('activate')}
                     >
               <Text maxFontSizeMultiplier={1.4} style={s.ctaBtnText}>Start {TRIAL_DAYS}-day free trial →</Text>
             </TouchableOpacity>
@@ -413,7 +428,8 @@ showToast(res.data?.message, 'success');
                 <Text maxFontSizeMultiplier={1.4} style={s.vertRecapHint}>Tap Explore to change vertical</Text>
               </View>
               <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel="Change" onPress={() => setFlow('browse')}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="Change" onPress={() => setFlow('browse')}
                       >
                 <Text maxFontSizeMultiplier={1.4} style={{ color: colors.steel, fontSize: TYPE.sm }}>Change</Text>
               </TouchableOpacity>
@@ -447,7 +463,8 @@ showToast(res.data?.message, 'success');
             </View>
 
             <TouchableOpacity style={s.activateBtn} onPress={activateTrial} disabled={activating}
-            accessibilityRole="button" accessibilityLabel="Activate free trial">
+            accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="Activate free trial">
               {activating
                 ? <ActivityIndicator color={colors.navy} />
                 : <Text maxFontSizeMultiplier={1.4} style={s.activateBtnText}>Activate free trial</Text>

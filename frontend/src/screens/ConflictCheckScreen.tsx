@@ -24,6 +24,8 @@ interface ConflictResult {
 interface Props { navigation: any; }
 
 function ConflictCheckScreen({ navigation }: Props) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -81,6 +83,7 @@ function ConflictCheckScreen({ navigation }: Props) {
         onPress={runCheck}
         disabled={loading}
         accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         accessibilityLabel="Run conflict check"
       >
         {loading

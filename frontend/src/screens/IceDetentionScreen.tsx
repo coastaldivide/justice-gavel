@@ -346,7 +346,8 @@ function IceDetentionScreen(): React.JSX.Element {
       {/* Language toggle */}
       <View style={s.langRow}>
         <TouchableOpacity
-          accessibilityRole="button" style={s.langBtn} onPress={toggleLang} testID="ice-lang-toggle" accessibilityLabel="{L.langBtn}">
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={s.langBtn} onPress={toggleLang} testID="ice-lang-toggle" accessibilityLabel="{L.langBtn}">
           <Text style={s.langBtnTxt} maxFontSizeMultiplier={1.4}>{L.langBtn}</Text>
         </TouchableOpacity>
       </View>
@@ -389,6 +390,7 @@ function IceDetentionScreen(): React.JSX.Element {
         <Text style={[s.locatorDesc, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>{L.locateDesc}</Text>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={s.locatorBtn}
           accessibilityLabel="{L.locateBtn}" onPress={() => openLink(L.locateUrl)}
           testID="ice-locator-btn"
@@ -411,6 +413,7 @@ function IceDetentionScreen(): React.JSX.Element {
           <View style={s.resourceBtns}>
             <TouchableOpacity
               accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               style={[s.callBtn, { backgroundColor: r.highlight ? COLORS.legal : COLORS.navy }]}
               accessibilityLabel="\ud83d\udcde {r.phone}" onPress={() => callNumber(r.phone)}
               testID={`ice-call-${i}`}
@@ -419,6 +422,7 @@ function IceDetentionScreen(): React.JSX.Element {
             </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               style={[s.webBtn, { borderColor: colors.border }]}
               accessibilityLabel="Web \u2192" onPress={() => openLink(r.url)}
               testID={`ice-web-${i}`}
@@ -431,7 +435,8 @@ function IceDetentionScreen(): React.JSX.Element {
 
       {/* Share */}
       <TouchableOpacity
-          accessibilityRole="button" style={s.shareBtn} onPress={shareInfo} testID="ice-share-btn" accessibilityLabel="{L.shareBtn}">
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={s.shareBtn} onPress={shareInfo} testID="ice-share-btn" accessibilityLabel="{L.shareBtn}">
         <Text style={s.shareBtnTxt} maxFontSizeMultiplier={1.4}>{L.shareBtn}</Text>
       </TouchableOpacity>
 

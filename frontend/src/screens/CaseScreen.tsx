@@ -56,6 +56,8 @@ interface Case {
 }
 
 const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCalendar, onShare, onInvite }: any) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
@@ -77,7 +79,8 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                   accessibilityRole="button"
                   style={{ flexDirection:'row', alignItems:'center', gap:4, paddingVertical:6,
                     marginTop:2 }}
-                  onPress={async () => {
+                  onPress={async () =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
                     const d = new Date(item.next_court_date!);
                     const remind = new Date(d);
                     remind.setDate(d.getDate()-1);
@@ -266,13 +269,13 @@ function CaseScreen({ route, navigation }: any) {
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>
-  body { font-family: Georgia, serif; padding: 40px; max-width: 680px; margin:0 auto; color: #1a1a2e; }
-  h1 { color: #042C53; font-size: 24px; border-bottom: 2px solid #042C53; padding-bottom: 12px; }
-  h2 { color: #042C53; font-size: 16px; margin-top: 28px; margin-bottom: 8px; }
+  body { font-family: Georgia, serif; padding: 40px; max-width: 680px; margin:0 auto; color: #1C1C1E; }
+  h1 { color: #1B2A6B; font-size: 24px; border-bottom: 2px solid #1B2A6B; padding-bottom: 12px; }
+  h2 { color: #1B2A6B; font-size: 16px; margin-top: 28px; margin-bottom: 8px; }
   .meta { color: #6B7280; font-size: 13px; margin-bottom: 24px; }
   .field { margin-bottom: 10px; font-size: 14px; }
   .label { font-weight: 700; color: #374151; }
-  .notes { background: #F9FAFB; border-left: 3px solid #042C53; padding: 12px; margin-top: 8px;
+  .notes { background: #F9FAFB; border-left: 3px solid #1B2A6B; padding: 12px; margin-top: 8px;
     font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
   .footer { margin-top: 48px; font-size: 11px; color: #9CA3AF; border-top: 1px solid #E5E7EB; padding-top: 12px; }
 </style></head><body>
@@ -678,13 +681,15 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'cases' && styles.tabBtnActive]}
-        >
+        
+        accessibilityState={{ selected: false }}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'cases' && styles.tabBtnTextActive]}>{t('case_tab_cases')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'messages' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('messages')}
+          onPress={() =
+        accessibilityState={{ selected: false }}> setActiveTab('messages')}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'messages' && styles.tabBtnTextActive]}>
@@ -700,7 +705,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'tools' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('tools')}
+          onPress={() =
+        accessibilityState={{ selected: false }}> setActiveTab('tools')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'tools' && styles.tabBtnTextActive]}>
             {t('case_tab_tools')}
@@ -709,7 +715,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'lawyers' && styles.tabBtnActive]}
-          testID="case-save-button" onPress={() => { setActiveTab('lawyers'); loadSavedLawyers(); }}
+          testID="case-save-button" onPress={() =
+        accessibilityState={{ selected: false }}> { setActiveTab('lawyers'); loadSavedLawyers(); }}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'lawyers' && styles.tabBtnTextActive]}>
             Lawyers {savedLawyers.length > 0 ? `(${savedLawyers.length})` : ''}

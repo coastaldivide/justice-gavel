@@ -16,7 +16,7 @@ import { AppIcon } from '../components/AppIcon';
  *  • Apple App Store requirements
  *  • Google Play requirements
  */
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback} from 'react';
 import type { ScreenProps } from '../types/navigation';
 import {
   View, Text, ScrollView, TouchableOpacity,
@@ -314,9 +314,11 @@ function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
       {/* ── Data table ───────────────────────────────────────────── */}
       <TouchableOpacity
         accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         style={[styles.tableToggle, { backgroundColor: colors.bgCard,
           borderColor: colors.border }]}
-        onPress={() => {
+        onPress={() =
+        accessibilityState={{ selected: false }}> {
           hapticImpact();
           setTableExpanded(v => !v);
         }}
@@ -333,7 +335,18 @@ function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
 
       {tableExpanded && (
         <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
-          {DATA_TABLE.map((row, i) => (
+          {DATA_TABLE?.length === 0 ? (
+
+        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
+            Nothing here yet
+          </Text>
+          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
+            Results will appear here when available
+          </Text>
+        </View>
+        ) : .map((row, i) => (
             <View key={`DATA_TAB-${i}`} style={[styles.tableRow,
               { backgroundColor: i % 2 === 0 ? colors.bgCard : colors.bgSubtle,
                 borderBottomColor: colors.border }]}>
@@ -387,6 +400,7 @@ function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
         </Text>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={[styles.rightsBtn, { backgroundColor: colors.legalDark }]}
           onPress={() => openEmail(CONTACT_EMAIL)}
           activeOpacity={0.85}
@@ -397,6 +411,7 @@ function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={[styles.rightsBtn, { backgroundColor: colors.emergencyDark }]}
           onPress={requestDeletion}
           activeOpacity={0.85}

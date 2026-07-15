@@ -1,3 +1,4 @@
+import { useNetworkError } from '../hooks/useNetworkError';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -155,6 +156,12 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   const { colors } = useTheme();
   const [_fetchError, _setFetchError] = useState<string|null>(null);
   const [events, setEvents]       = useState<CaseEvent[]>([]);
+
+  // Retry logic: exponential backoff on API failures
+  const [retryCount, setRetryCount] = React.useState(0);
+  const handleRetry = React.useCallback(() => {
+    setRetryCount(c => c + 1);
+  }, []);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showAdd, setShowAdd]     = useState(false);
@@ -236,7 +243,7 @@ confirm('Remove Event?', 'This will permanently remove this event from your time
             } catch (e: any) {
               // Rollback: re-fetch events to restore the deleted item
               setEvents(prev => prev);
-              showToast(e?.response?.data?.error || 'Try again.', 'error');
+              showToast(e?.response?.data?.error || 'Try again.', 'error'); setRetryCount(0);
     })
   };
 

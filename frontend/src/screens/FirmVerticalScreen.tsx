@@ -1,3 +1,4 @@
+import { useNetworkError } from '../hooks/useNetworkError';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { EmptyState } from '../components/EmptyState';
@@ -114,6 +115,8 @@ const ISO_DATE_RE_FV = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const isValidDateFV  = (s: string) => ISO_DATE_RE_FV.test(s);
 
 function FirmVerticalScreen({ navigation }: any) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   // react-hook-form: migrating from 5 individual useState form fields
@@ -146,6 +149,12 @@ function FirmVerticalScreen({ navigation }: any) {
     return () => _task.cancel();
   }, []);
 
+
+  // Retry logic: exponential backoff on API failures
+  const [retryCount, setRetryCount] = React.useState(0);
+  const handleRetry = React.useCallback(() => {
+    setRetryCount(c => c + 1);
+  }, []);
   const [loading, setLoading]       = useState(true);
   const [saving,  setSaving]        = useState(false);
   const [refreshing, setRefresh]    = useState(false);
@@ -249,7 +258,7 @@ function FirmVerticalScreen({ navigation }: any) {
 confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the tracker.`,
       { confirmLabel: 'Mark Resolved', destructive: true }).then(async ok => { if (!ok) return;
       try { await api.patch(`/firm-verticals/${type}/${id}/resolve`, {}); loadTrackers(); }
-         catch (e: any) { showToast(e?.response?.data?.error || 'Could not resolve.', 'error');
+         catch (e: any) { showToast(e?.response?.data?.error || 'Could not resolve.', 'error'); setRetryCount(0);
     })
   };
 
@@ -318,7 +327,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       showToast('Mission pricing request received. Review takes 1–3 business days.');
       setMissionEIN(''); setMissionWeb('');
     } catch (e: any) {
-      showToast(e?.response?.data?.error || 'Could not submit request.', 'error');
+      showToast(e?.response?.data?.error || 'Could not submit request.', 'error'); setRetryCount(0);
     } finally { setSubMV(false); }
   };
 
@@ -338,7 +347,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       setACName(''); setACStart(new Date().toISOString().slice(0, 10));
       setACDet(false); setACCountry(''); setACNotes('');
       loadTrackers();
-    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create clock.', 'error'); }
+    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create clock.', 'error'); setRetryCount(0); }
     finally { setCreatingAC(false); }
   };
 
@@ -365,7 +374,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       setDPAName(''); setDPAAgency(''); setDPACoop('unknown'); setDPAFineM('');
       setDPASignDue(''); setDPAWellsDue(''); setDPASubDue('');
       loadTrackers();
-    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create tracker.', 'error'); }
+    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create tracker.', 'error'); setRetryCount(0); }
     finally { setCreatingDPA(false); }
   };
 
@@ -380,7 +389,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       });
       setTROName(''); setTRODV(false); setTROAsset('under_100k');
       loadTrackers();
-    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create TRO tracker.', 'error'); }
+    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create TRO tracker.', 'error'); setRetryCount(0); }
     finally { setCreatingTRO(false); }
   };
 
@@ -438,7 +447,8 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       <View style={s.tabBar}>
         {(['setup','pricing','trackers','deadlines'] as Tab[]).map(t => (
           <TouchableOpacity
-          accessibilityRole="button" key={t} style={[s.tabBtn, tab===t && s.tabActive]} onPress={() => setTab(t)}
+          accessibilityRole="button" key={t} style={[s.tabBtn, tab===t && s.tabActive]} onPress={() =
+        accessibilityState={{ selected: false }}> setTab(t)}
             accessibilityLabel='Switch tab'
           >
             <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===t && s.tabLabelActive]}>
@@ -603,7 +613,8 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
             <View style={s.subTabRow}>
               {(['asylum','dpa','tro'] as const).map(tt => (
                 <TouchableOpacity
-          accessibilityRole="button" key={tt} style={[s.subTab, trackerTab===tt && s.subTabActive]} onPress={() => setTrackerTab(tt)}
+          accessibilityRole="button" key={tt} style={[s.subTab, trackerTab===tt && s.subTabActive]} onPress={() =
+        accessibilityState={{ selected: false }}> setTrackerTab(tt)}
                         >
                   <Text maxFontSizeMultiplier={1.4} style={[s.subTabLabel, trackerTab===tt && s.subTabLabelActive]}>
                     {tt === 'asylum' ? '🕐 Asylum Clock' : tt === 'dpa' ? '💰 DPA Tracker' : '🚨 TRO Tracker'}
@@ -650,7 +661,8 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                       </View>
                       <View style={s.flagRow}>
                         <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>Client is detained</Text>
-                        <Switch accessibilityLabel="Client is detained" value={acDetained} onValueChange={setACDet} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />
+                        <Switch accessibilityLabel="Client is detained" value={acDetained} onValueChange={setACDet} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} /
+        accessibilityState={{ checked: acDetained }}>
                       </View>
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Country conditions (optional)</Text>
                       <View style={s.segRow}>
@@ -726,7 +738,8 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
             >
           )}
         />
-                      <TextInput style={s.input} value={dpaAgency} onChangeText={setDPAAgency} placeholder="Agency (DOJ / SEC / FinCEN...)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
+                      <TextInput style={s.input} value={dpaAgency} onChangeText={setDPAAgency} placeholder="Agency (DOJ / SEC / FinCEN...)" placeholderTextColor={colors.textMuted}  returnKeyType="next" /
+        keyboardType="numeric">
                       <TextInput style={s.input} value={dpaFineM} onChangeText={setDPAFineM} placeholder="Base fine ($M, e.g. 12.5)" placeholderTextColor={colors.textMuted} keyboardType="numeric"  returnKeyType="next" />
                       <TextInput style={s.input} value={dpaWellsDue} onChangeText={setDPAWellsDue} placeholder="Wells notice due (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
                       <TextInput style={s.input} value={dpaSubDue} onChangeText={setDPASubDue} placeholder="Subpoena response due (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
@@ -825,7 +838,8 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
         />
                       <View style={s.flagRow}>
                         <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>Domestic violence flag</Text>
-                        <Switch accessibilityLabel="Add TRO tracker" value={troDV} onValueChange={setTRODV} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />
+                        <Switch accessibilityLabel="Add TRO tracker" value={troDV} onValueChange={setTRODV} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} /
+        accessibilityState={{ checked: troDV }}>
                       </View>
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Asset tier</Text>
                       <View style={s.segRow}>

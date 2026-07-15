@@ -1,3 +1,4 @@
+import { useNetworkError } from '../hooks/useNetworkError';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -136,7 +137,7 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       if (!t) return;
       api.get('/messages/unread/count')
         .then(r => setUnreadMessages(r.data?.count || 0))
-        .catch(() => showToast('Action failed. Please try again.', 'error'));
+        .catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
     }).catch(() => {});
 
     // Resolve loading state once primary data arrives
@@ -163,7 +164,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           await api.post('/alerts', { userName: user.displayName || user.name || 'User', contacts: active, lat, lng });
           showToast('Your emergency contacts have been notified.');
         } catch (e: any) {
-          showToast(e.message || 'Check your connection and try again.', 'error');
+          showToast(e.message || 'Check your connection and try again.', 'error'); setRetryCount(0);
         } finally { setSosSending(false);
     })
   };
@@ -207,6 +208,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         <View style={styles.headerActions}>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={styles.helpNowBtn}
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'HelpNow' })}
             accessibilityLabel="Get help now"
@@ -216,6 +218,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             accessibilityLabel="\u2699\ufe0f" onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             style={styles.settingsBtn}
           >
@@ -242,6 +245,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           {!isPro && (
             <TouchableOpacity
               accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               onPress={() => (navigation as any).navigate('MoreTab', { screen: 'ConsumerSubscription' })}
               style={{
                 backgroundColor: colors.navy + '08',
@@ -283,6 +287,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         {/* Emergency banner -- prominent, always first */}
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.emergencyBanner}
           onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Emergency' })}
           activeOpacity={0.85}
@@ -300,6 +305,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         {/* Quick Connect -- prominent package banner */}
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.quickConnectBanner}
           onPress={() => (navigation as any).navigate('MoreTab', { screen: 'QuickConnect' })}
           activeOpacity={0.85}
@@ -319,6 +325,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         {upcomingCase && (
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[
               styles.courtCountdown,
               upcomingCase.daysLeft <= 3
@@ -355,6 +362,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         {!!legalTip && (
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={styles.tipCard}
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Education', params: { category: tipCategory, query: tipQuery } })}
             activeOpacity={0.85}
@@ -375,6 +383,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           {TILES.map((t: any) => (
             <TouchableOpacity
               accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               accessibilityLabel={t.label.replace(/\n/g, ' ')}
               key={t.key}
               testID={`tile-${t.key}`}
@@ -414,6 +423,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         {!displayName && (
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={styles.nudgeCard}
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             activeOpacity={0.85}
@@ -445,9 +455,11 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
       {isOffline && (
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={{ backgroundColor: '#FFA726', borderBottomWidth: 1, borderBottomColor: '#FFA726',
             flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
-          onPress={() => (navigation as any).navigate('OfflineStatus')}
+          onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> (navigation as any).navigate('OfflineStatus')}
           accessibilityLabel="No internet connection -- tap to see what works offline"
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14 }}>📡</Text>

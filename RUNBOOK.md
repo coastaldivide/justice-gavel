@@ -295,3 +295,30 @@ Generated from codebase scan. All variables with no default will cause startup f
 | `VAPID_PRIVATE_KEY` | NO | See config.js — vapid_private_key setting |
 | `VAPID_PUBLIC_KEY` | NO | See config.js — vapid_public_key setting |
 | `YELP_API_KEY` | NO | See config.js — yelp_api_key setting |
+
+---
+## API Response Schema
+
+All endpoints return a consistent envelope:
+
+### Success
+```json
+{ "data": <result> }
+{ "data": [...], "meta": { "total": 100, "count": 20 } }
+```
+
+### Error
+```json
+{ "error": "Human-readable message" }
+```
+
+### HTTP Status Codes
+- `200` Success
+- `201` Created
+- `400` Bad request / validation error
+- `401` Unauthenticated
+- `403` Forbidden (wrong tier or ownership)
+- `404` Not found
+- `429` Rate limited (`Retry-After` header set)
+- `500` Internal server error (logged to Sentry)
+

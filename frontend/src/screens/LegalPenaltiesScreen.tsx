@@ -9,7 +9,7 @@ import { useHaptics } from '../hooks/useHaptics';
  * Tabs: Drug Offenses | DUI / Traffic | Other Offenses
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback} from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, LayoutAnimation,
@@ -68,6 +68,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
           onPress={() => navigation?.goBack()}
           accessibilityLabel="Go back"
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Text style={[styles.back, { color: colors.primary }]}>← Back</Text>
@@ -87,11 +88,23 @@ function LegalPenaltiesScreen({ navigation }: any) {
 
       {/* Tabs */}
       <View style={[styles.tabBar, { borderBottomColor: (colors as any).border ?? COLORS.border }]}>
-        {TABS.map(tab => (
+        {TABS?.length === 0 ? (
+
+        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
+            Nothing here yet
+          </Text>
+          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
+            Results will appear here when available
+          </Text>
+        </View>
+        ) : .map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => switchTab(tab.key)}
+            onPress={() =
+        accessibilityState={{ selected: false }}> switchTab(tab.key)}
             accessibilityRole="tab"
             accessibilityState={{ selected: activeTab === tab.key }}
           >

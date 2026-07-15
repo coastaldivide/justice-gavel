@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
@@ -29,6 +30,8 @@ const RIGHTS_CARDS = [
 ];
 
 function EmergencyScreen({ route, navigation }: ScreenProps) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);

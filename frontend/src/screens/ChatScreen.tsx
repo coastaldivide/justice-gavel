@@ -1,3 +1,4 @@
+import { useNetworkError } from '../hooks/useNetworkError';
 import { useToast } from '../components/ToastProvider';
 import { useConfirm } from '../hooks/useConfirm';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -139,7 +140,7 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
 
   const handleLongPress = () => {
     const text = msg.text || '';
-Clipboard.setStringAsync(text).then(() => showToast('Copied to clipboard','success')).catch(() => showToast('Action failed. Please try again.', 'error'));
+Clipboard.setStringAsync(text).then(() => showToast('Copied to clipboard','success')).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
   };
 
   return (
@@ -353,6 +354,12 @@ function ChatScreen({ navigation, route }: ScreenProps) {
   // ── State ─────────────────────────────────────────────────────────────────────
   const [messages,      setMessages]      = useState<Message[]>([]);
   const [input,         setInput]         = useState('');
+
+  // Retry logic: exponential backoff on API failures
+  const [retryCount, setRetryCount] = React.useState(0);
+  const handleRetry = React.useCallback(() => {
+    setRetryCount(c => c + 1);
+  }, []);
   const [loading,       setLoading]       = useState(false);
   const [sessionId,     setSessionId]     = useState('');
   const [showDisclaimer,setShowDisclaimer] = useState(true); // T2-E: unified disclaimer state

@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
@@ -362,7 +363,8 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
             keyboardType="phone-pad"
           returnKeyType="next"
           blurOnSubmit
-        />
+        /
+        maxLength={20}>
 
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Email (optional)</Text>
           <TextInput
@@ -376,7 +378,8 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
             autoCapitalize="none"
           returnKeyType="next"
           blurOnSubmit
-        />
+        /
+        maxLength={254}>
 
           <View style={styles.feeBlock}>
             <Text maxFontSizeMultiplier={1.4} style={styles.feeBlockTitle}>What you get for $28.99</Text>

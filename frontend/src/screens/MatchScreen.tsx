@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -72,6 +73,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
   return (
     <TouchableOpacity
       accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
       accessibilityLabel={`View profile for ${String(item?.name || 'attorney')}`}
       onPress={() => navigation.navigate('LawyerProfile', { id: item?.id, lawyerId: item?.id })}
       style={styles.card}
@@ -137,26 +139,31 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         <View style={styles.actionRow}>
           {item?.phone && (
             <TouchableOpacity
-          accessibilityRole="button" style={[styles.actionBtn, styles.callBtn]} accessibilityLabel="\ud83d\udcde Call" onPress={() => callPhone(item?.phone)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.callBtn]} accessibilityLabel="\ud83d\udcde Call"
+          accessibilityHint="Dials this phone number" onPress={() => callPhone(item?.phone)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📞 Call</Text>
             </TouchableOpacity>
           )}
           {item?.phone && (
-            <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.smsBtn]} accessibilityLabel="\ud83d\udcac Text" onPress={() => sendSMS(item?.phone)}
+            <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.smsBtn]} accessibilityLabel="\ud83d\udcac Text" onPress={() => sendSMS(item?.phone)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>💬 Text</Text>
             </TouchableOpacity>
           )}
           {item.lat && item.lng && (
             <TouchableOpacity
-          accessibilityRole="button" style={[styles.actionBtn, styles.dirBtn]} accessibilityLabel="\ud83d\uddfa Dir" onPress={() => openDirections(item.lat, item.lng, item?.name)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.dirBtn]} accessibilityLabel="\ud83d\uddfa Dir" onPress={() => openDirections(item.lat, item.lng, item?.name)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>🗺 Dir</Text>
             </TouchableOpacity>
           )}
           {item.website && (
-            <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.webBtn]} accessibilityLabel="\ud83c\udf10 Web" onPress={() => openWebsite(item.website)}
+            <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.webBtn]} accessibilityLabel="\ud83c\udf10 Web" onPress={() => openWebsite(item.website)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>🌐 Web</Text>
             </TouchableOpacity>
@@ -166,6 +173,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         {/* Leave a Message -- always-visible async contact option */}
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.leaveMessageBtn}
           onPress={() => { setMsgSent(false); setMsgModal(true); }}
           activeOpacity={0.85}
@@ -177,7 +185,8 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         <Modal accessibilityViewIsModal={true} visible={msgModal} transparent animationType="slide" onRequestClose={() => setMsgModal(false)}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
             <TouchableOpacity
-          accessibilityRole="button" style={styles.modalOverlay} activeOpacity={1} onPress={() => setMsgModal(false)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.modalOverlay} activeOpacity={1} onPress={() => setMsgModal(false)}
               accessibilityLabel="Message sent"
             >
             <View style={[styles.msgSheet, { backgroundColor: COLORS.bgCard }]}>
@@ -189,7 +198,9 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                     {item?.name} will contact you shortly.
                   </Text>
                   <TouchableOpacity
-          accessibilityRole="button" style={[styles.msgSendBtn, { marginTop: 20, width: '100%' }]} accessibilityLabel="Done" onPress={() => setMsgModal(false)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={[styles.msgSendBtn, { marginTop: 20, width: '100%' }]} accessibilityLabel="Done"
+          accessibilityHint="Confirms and closes this view" onPress={() => setMsgModal(false)}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.msgSendBtnText}>Done</Text>
                   </TouchableOpacity>
@@ -237,6 +248,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                   />
                   <TouchableOpacity
                     accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                     style={[styles.msgSendBtn, (!msgName.trim() || !msgPhone.trim()) && { opacity: 0.45 }]}
                     disabled={!msgName.trim() || !msgPhone.trim() || msgSending || (!msgPhone.trim().includes('@') && msgPhone.trim().replace(/\D/g,'').length < 7)}
                     activeOpacity={0.85}
@@ -260,8 +272,11 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                     <Text maxFontSizeMultiplier={1.4} style={styles.msgSendBtnText}>{msgSending ? 'Sending…' : 'Send Message'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-          accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 12 }} onPress={() => setMsgModal(false)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={{ alignItems: 'center', paddingVertical: 12 }} onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setMsgModal(false)}
                     accessibilityLabel="Cancel"
+          accessibilityHint="Cancels and returns to previous screen"
                   >
                     <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 12 }}>Cancel</Text>
                   </TouchableOpacity>
@@ -275,6 +290,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
         {/* Encrypted in-app message -- requires account */}
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           accessibilityLabel="open Secure Message"
           style={[styles.leaveMessageBtn, styles.secureMsgBtn]}
           onPress={openSecureMessage}
@@ -427,14 +443,16 @@ function MatchScreen(): React.JSX.Element {
         </View>
 
         <TouchableOpacity
-          accessibilityRole="button" style={styles.toggleRow} onPress={() => setProBonoOnly(v => !v)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.toggleRow} onPress={() => setProBonoOnly(v => !v)}
         >
           <View style={[styles.toggle, proBonoOnly && styles.toggleOn]} />
           <Text maxFontSizeMultiplier={1.4} style={styles.toggleLabel}>Pro bono / free representation only</Text>
         </TouchableOpacity>
 
         {/* Search button */}
-        <TouchableOpacity accessibilityRole="button" activeOpacity={0.6} style={[styles.searchBtn, loading && styles.searchBtnDisabled]} onPress={findMatches} disabled={loading}
+        <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" activeOpacity={0.6} style={[styles.searchBtn, loading && styles.searchBtnDisabled]} onPress={findMatches} disabled={loading}
           accessibilityLabel="📍 Find My Best Matches"
         >
           {loading

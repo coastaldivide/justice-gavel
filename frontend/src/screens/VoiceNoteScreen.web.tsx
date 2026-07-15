@@ -9,7 +9,7 @@ declare var navigator: any;
  * Records audio in the browser, uploads for transcription,
  * and saves as a case note -- same flow as native.
  */
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback} from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, LayoutAnimation} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
@@ -78,6 +78,7 @@ function VoiceNoteScreen(): React.JSX.Element {
       contentContainerStyle={{ padding:24, gap:20 }}>
       <TouchableOpacity onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
         accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         >
         <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>← Back</Text>
       </TouchableOpacity>
@@ -94,6 +95,7 @@ function VoiceNoteScreen(): React.JSX.Element {
         )}
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           onPress={recording ? stopAndTranscribe : startRecording}
           style={{
             width:80, height:80, borderRadius:40,

@@ -45,6 +45,8 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 function MatterIntelligenceScreen({ route, navigation }: any) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { matterId, matterTitle } = route.params || {};
@@ -145,6 +147,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
         {partialLoad && (
           <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             onPress={() => { setErrorMsg(null); load(); }}
             style={[s.metaPill, { backgroundColor: colors.errorBg }]}
           >
@@ -173,7 +176,8 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
             accessibilityRole="tab"
             key={t}
             style={[s.tabBtn, tab===t && s.tabActive]}
-            onPress={() => setTab(t as Tab)}
+            onPress={() =
+        accessibilityState={{ selected: false }}> setTab(t as Tab)}
             accessibilityState={{ selected: tab === t }}
             accessibilityLabel={`${t.charAt(0).toUpperCase() + t.slice(1)} tab`}>
             <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===t && s.tabLabelActive]}>

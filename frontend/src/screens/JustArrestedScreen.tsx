@@ -6,7 +6,7 @@ import { AppIcon } from '../components/AppIcon';
  * For panicked, possibly impaired users.
  * One step at a time. Giant text. Big buttons. No confusion.
  */
-import React, { useState } from 'react';
+import React, { useState, useCallback} from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { Share, View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet, Alert, LayoutAnimation} from 'react-native';
 import {  useTheme, COLORS } from '../constants/theme';
@@ -153,6 +153,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         {current.action ? (
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[styles.actionBtn, { backgroundColor: current.color }]}
             onPress={handleAction}
             activeOpacity={0.85}
@@ -168,20 +169,24 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         <View style={styles.emergencyRow}>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[styles.emergencyBtn, { backgroundColor: colors.emergencyDark }]}
             onPress={() => call('911')}
             activeOpacity={0.85}
             accessibilityLabel="Call 911 emergency services"
+          accessibilityHint="Dials this phone number"
           >
             <AppIcon name="flash" size={20} color={COLORS.emergency} />
             <Text maxFontSizeMultiplier={1.2} style={styles.emergencyLabel}>CALL 911</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[styles.emergencyBtn, { backgroundColor: colors.blue }]}
             onPress={() => call('988')}
             activeOpacity={0.85}
             accessibilityLabel="Call 988 crisis line"
+          accessibilityHint="Dials this phone number"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.emergencyIcon}>💙</Text>
             <Text maxFontSizeMultiplier={1.2} style={styles.emergencyLabel}>CRISIS 988</Text>
@@ -205,9 +210,11 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
       {step === 4 && (
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={{ flexDirection:'row', alignItems:'center', justifyContent:'center',
             gap:8, paddingVertical:10, paddingHorizontal:16, marginTop:8 }}
-          onPress={() => { try {
+          onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> { try {
           Share.share({
             message: 'If you or someone you know ever gets arrested, use Justice Gavel -- it tells you exactly what to do and connects you with lawyers and bail bondsmen immediately. Get it free: https://justicegavel.app',
             title: 'Justice Gavel -- Free legal help if you get arrested',
@@ -264,6 +271,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         {step > 0 ? (
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             onPress={prev}
             style={[styles.navBtn, { backgroundColor: isDark ? colors.bgElevated : colors.bgCard, flex: 1 }]}
             activeOpacity={0.85}
@@ -275,6 +283,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         {step < STEPS.length - 1 ? (
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             onPress={next}
             style={[styles.navBtn, { backgroundColor: current.color, flex: step > 0 ? 2 : 1 }]}
             activeOpacity={0.85}

@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
@@ -191,6 +192,7 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
           {/* Checkbox 1: ToS agreement */}
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
 
             style={s.checkRow}
             onPress={() => setCheckToS(v => !v)}
@@ -211,6 +213,7 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
           {/* Checkbox 2: The critical disclaimer — standalone affirmative act */}
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
 
             style={s.checkRow}
             onPress={() => setCheckNoAdvice(v => !v)}
@@ -240,6 +243,7 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
 
           {/* Accept button */}
           <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[s.acceptBtn, (!canAccept || submitting) && s.acceptBtnDisabled]}
             onPress={handleAccept}
             disabled={!canAccept || submitting}

@@ -302,7 +302,8 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
             onValueChange={setArmedOnly}
             trackColor={{ false: colors.border, true: colors.emergencyDark }}
             thumbColor="#fff"
-          />
+          /
+        accessibilityState={{ checked: armedOnly }}>
         </View>
 
         {/* Search button */}

@@ -43,6 +43,8 @@ type Phase = 'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' |
 // Message template lines are built inside buildMessage()
 
 function EmergencyShareScreen({ route, navigation }: ScreenProps) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
@@ -276,6 +278,7 @@ if (phase === 'ready') return (
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={styles.quickExitBar}>
         <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           onPress={handleQuickExitTap}
           style={styles.quickExitBtn}
           accessibilityLabel="Quick exit -- tap 3 times to leave this screen immediately"
@@ -300,6 +303,7 @@ if (phase === 'ready') return (
           </Text>
           <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={styles.addContactsBtn}
             accessibilityLabel="Add Emergency Contacts \u2192" onPress={() => navigation.navigate('Contacts')}
           >
@@ -330,6 +334,7 @@ if (phase === 'ready') return (
       </View>
 
       <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         style={[styles.goBtn, contacts.length === 0 && styles.goBtnDisabled]}
         onPress={gatherInfo}
         disabled={contacts.length === 0}
@@ -340,6 +345,7 @@ if (phase === 'ready') return (
 
       <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
        accessibilityLabel="Edit emergency contacts \u2192">
         <Text maxFontSizeMultiplier={1.4} style={styles.editContactsText}>Edit emergency contacts →</Text>
       </TouchableOpacity>
@@ -355,6 +361,7 @@ if (phase === 'ready') return (
         </Text>
 
         <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
@@ -369,6 +376,7 @@ if (phase === 'ready') return (
         </TouchableOpacity>
 
         <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('sms:741741&body=HOME').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
@@ -383,6 +391,7 @@ if (phase === 'ready') return (
         </TouchableOpacity>
 
         <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('tel:18009506264').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
@@ -397,6 +406,7 @@ if (phase === 'ready') return (
         </TouchableOpacity>
 
         <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.crisisRow}
           onPress={() => Linking.openURL('tel:18007994889').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
@@ -412,6 +422,7 @@ if (phase === 'ready') return (
 
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={[styles.crisisRow, { borderBottomWidth: 0 }]}
           onPress={() => Linking.openURL('https://www.thehotline.org/get-help/').catch(() => showToast('Action failed. Please try again.', 'error'))}
           accessibilityLabel="National Domestic Violence Hotline"
@@ -450,7 +461,8 @@ if (phase === 'ready') return (
       <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Could not send</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity
-  accessibilityRole="button">
+  accessibilityRole="button"
+          accessibilityHint="Double-tap to activate">
         <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
       </TouchableOpacity>
     </View>
@@ -464,7 +476,9 @@ if (phase === 'ready') return (
       <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>Your emergency contacts have been notified.</Text>
       <TouchableOpacity
   accessibilityRole="button"
-         accessibilityLabel="Done Sharing">
+          accessibilityHint="Double-tap to activate"
+         accessibilityLabel="Done Sharing"
+          accessibilityHint="Confirms and closes this view">
         <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done Sharing</Text>
       </TouchableOpacity>
     </View>
@@ -510,6 +524,7 @@ if (phase === 'ready') return (
           {bondsman.phone && (
             <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                accessibilityLabel="{bondsman.phone}">
               <Text maxFontSizeMultiplier={1.4} style={styles.providerPhone}>{bondsman.phone}</Text>
             </TouchableOpacity>
@@ -523,6 +538,7 @@ if (phase === 'ready') return (
           {lawyer.phone && (
             <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                accessibilityLabel="{lawyer.phone}">
               <Text maxFontSizeMultiplier={1.4} style={[styles.providerPhone, { color: COLORS.legal }]}>{lawyer.phone}</Text>
             </TouchableOpacity>
@@ -531,6 +547,7 @@ if (phase === 'ready') return (
       )}
       <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
        accessibilityLabel="\ud83d\udea8  Send Now">
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>🚨  Send Now</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnSub}>Opens your Messages app</Text>
@@ -538,7 +555,9 @@ if (phase === 'ready') return (
 
       <TouchableOpacity
   accessibilityRole="button"
-         accessibilityLabel="Cancel">
+          accessibilityHint="Double-tap to activate"
+         accessibilityLabel="Cancel"
+          accessibilityHint="Cancels and returns to previous screen">
         <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Cancel</Text>
       </TouchableOpacity>
       <View style={{ height: 40 }} />

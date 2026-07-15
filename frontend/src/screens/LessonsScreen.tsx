@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
@@ -24,6 +25,8 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 function LessonsScreen({ navigation, route }: ScreenProps) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
 
@@ -101,6 +104,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
             return (
               <TouchableOpacity
                 accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                 style={[styles.card, done && styles.cardDone]}
                 onPress={() => setExpanded(open ? null : item.id)}
                 activeOpacity={0.85}
@@ -125,7 +129,8 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
                   <View style={styles.contentArea}>
                     <Text maxFontSizeMultiplier={1.4} style={styles.contentText}>{item.content}</Text>
                     {!done && (
-                      <TouchableOpacity accessibilityRole="button" style={styles.completeBtn}
+                      <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.completeBtn}
                         onPress={() => markComplete(item.id, item.points || 0)}
                         >
                         <Text maxFontSizeMultiplier={1.4} style={styles.completeBtnText}>✓  Mark as complete  (+{item.points} pts)</Text>
@@ -167,10 +172,12 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
             {['Criminal','General','Civil','Constitutional'].map(cat => (
               <TouchableOpacity
                 accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                 key={cat}
                 style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20,
                   backgroundColor: filterCat === cat ? (CAT_COLORS[cat] || colors.navy) : colors.bg }}
-                onPress={() => setFilterCat(filterCat === cat ? null : cat)}
+                onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setFilterCat(filterCat === cat ? null : cat)}
               >
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700',
                   color: filterCat === cat ? colors.bgCard : colors.textMuted }}>{cat}</Text>
@@ -194,12 +201,15 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
               <Text maxFontSizeMultiplier={1.4} style={styles.lifeSub}>Justice Gavel covers DUI, divorce, immigration, employment, and 18 other areas of law. Find a specialist for your next legal moment.</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                 <TouchableOpacity
-          accessibilityRole="button" style={styles.lifeBtn} accessibilityLabel="Find a Lawyer" onPress={() => navigation.navigate("LawyersTab")}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.lifeBtn} accessibilityLabel="Find a Lawyer"
+          accessibilityHint="Searches for attorneys in your area" onPress={() => navigation.navigate("LawyersTab")}
           >
                   <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>Find a Lawyer</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                   style={[styles.lifeBtn, { backgroundColor: colors.emergencyDark }]}
                   accessibilityLabel="\ud83d\udccb Get Rights Card" onPress={() => navigation.navigate('MoreTab', { screen: 'RightsCard' })}
                 >

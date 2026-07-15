@@ -158,6 +158,7 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
           </View>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={styles.upsellBtn}
             onPress={() => (() => {
               const newCount = wallTapCount + 1;
@@ -172,7 +173,8 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
             <Text maxFontSizeMultiplier={1.4} style={styles.upsellBtnText}>Upgrade to Legal Pro -- $14.99/mo</Text>
           </TouchableOpacity>
           <TouchableOpacity
-          accessibilityRole="button" style={styles.upsellSkip} accessibilityLabel="Maybe later" onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.upsellSkip} accessibilityLabel="Maybe later" onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
             >
             <Text maxFontSizeMultiplier={1.4} style={styles.upsellSkipText}>Maybe later</Text>
           </TouchableOpacity>
@@ -233,7 +235,8 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                   )}
                 </View>
                 <TouchableOpacity
-          accessibilityRole="button" style={styles.removeBtn} onPress={() => removeWatch(w.id)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.removeBtn} onPress={() => removeWatch(w.id)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.removeBtnText}>✕</Text>
                 </TouchableOpacity>
@@ -265,7 +268,8 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                     onChangeText={setCounty}
           returnKeyType="next"
           blurOnSubmit
-        />
+        /
+        keyboardType="numeric">
                   <TextInput
           accessibilityLabel="State"
                     style={[styles.formInput, { width: 70 }]}
@@ -279,7 +283,8 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TouchableOpacity
-                    accessibilityRole="button" activeOpacity={0.6}
+                    accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
                     style={[styles.addBtn, { flex: 1 }]}
                     onPress={addWatch}
                     disabled={adding}
@@ -291,15 +296,18 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                   </TouchableOpacity>
                   <TouchableOpacity
                     accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                     style={styles.cancelFormBtn}
-                    accessibilityLabel="Cancel" onPress={() => { setShowForm(false); setName(''); setCounty(''); }}
+                    accessibilityLabel="Cancel"
+          accessibilityHint="Cancels and returns to previous screen" onPress={() => { setShowForm(false); setName(''); setCounty(''); }}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.cancelFormText}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             ) : (
-              <TouchableOpacity accessibilityRole="button" style={styles.addTrigger} accessibilityLabel="+ Add a Name to Monitor" onPress={() => setShowForm(true)}
+              <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.addTrigger} accessibilityLabel="+ Add a Name to Monitor" onPress={() => setShowForm(true)}
               >
                 <Text maxFontSizeMultiplier={1.4} style={styles.addTriggerText}>+ Add a Name to Monitor</Text>
               </TouchableOpacity>

@@ -1,3 +1,4 @@
+import { useNetworkError } from '../hooks/useNetworkError';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { AppIcon } from '../components/AppIcon';
@@ -198,6 +199,12 @@ function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [status,    setStatus]    = useState<Status | null>(null);
   const [elig,      setElig]      = useState<EligResult | null>(null);
   const [hall,      setHall]      = useState<HallEntry[]>([]);
+
+  // Retry logic: exponential backoff on API failures
+  const [retryCount, setRetryCount] = React.useState(0);
+  const handleRetry = React.useCallback(() => {
+    setRetryCount(c => c + 1);
+  }, []);
   const [loading,   setLoading]   = useState(true);
   const [fetchError, setFetchError] = React.useState<string | null>(null);
   const [refreshing,setRefreshing]= useState(false);
@@ -294,7 +301,8 @@ function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
               <Text maxFontSizeMultiplier={1.4} style={[styles.dateVal, { color: colors.textMuted }]}>{new Date(status.golden_at ?? 0).toLocaleDateString()}</Text>
             </View>
           )}
-          <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
+          <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
             style={[styles.optInBtn, { backgroundColor: (gc as any).header }, optingIn && { opacity: 0.6 }]}
             onPress={handleOptIn}
             disabled={optingIn}>

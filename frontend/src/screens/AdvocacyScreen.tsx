@@ -83,7 +83,8 @@ function AdvocacyScreen(): React.JSX.Element {
         <View style={styles.errorCard}>
           <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{error}</Text>
           <TouchableOpacity
-          accessibilityRole="button" style={styles.retryBtn} accessibilityLabel="Retry" onPress={() => load()}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.retryBtn} accessibilityLabel="Retry" onPress={() => load()}
             >
             <Text maxFontSizeMultiplier={1.4} style={styles.retryText}>Retry</Text>
           </TouchableOpacity>

@@ -162,6 +162,7 @@ confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.'
           <View style={styles.actions}>
             <TouchableOpacity
               accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           activeOpacity={0.6}
               style={[styles.approveBtn, { opacity: acting === atty.user_id ? 0.6 : 1 }]}
               onPress={() => approve(atty.user_id, atty.name)}
@@ -176,6 +177,7 @@ confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.'
 
             <TouchableOpacity
               accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               style={[styles.rejectBtn, { borderColor: colors.emergency, opacity: acting === atty.user_id ? 0.6 : 1 }]}
               onPress={() => reject(atty.user_id, atty.name)}
               disabled={acting === atty.user_id}

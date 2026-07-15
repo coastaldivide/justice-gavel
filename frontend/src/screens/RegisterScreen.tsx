@@ -6,7 +6,7 @@ import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import TermsAcceptanceModal from './TermsAcceptanceModal';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback} from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
@@ -106,7 +106,8 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
               selectionColor={COLORS.steel}
             />
             <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel="{showPass ? 'Hide' : 'Show'}" onPress={() => setShowPass(s => !s)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="{showPass ? 'Hide' : 'Show'}" onPress={() => setShowPass(s => !s)}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.showBtnText}>{showPass ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
@@ -125,7 +126,8 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
               textContentType="name" returnKeyType="done"
               onSubmitEditing={onRegister}
               selectionColor={COLORS.steel}
-            />
+            /
+        maxLength={200}>
           </View>
 
           {!!error && (
@@ -135,7 +137,9 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
           )}
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             accessibilityLabel="Create Account"
+          accessibilityHint="Creates a new Justice Gavel account"
             style={[styles.primaryBtn, loading && styles.btnDisabled]}
             testID="register-submit-button" onPress={onRegister} disabled={loading} activeOpacity={0.85}
           >
@@ -145,7 +149,8 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
             }
           </TouchableOpacity>
 
-          <TouchableOpacity accessibilityRole="button" style={styles.loginLink}
+          <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.loginLink}
             onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.loginText}>

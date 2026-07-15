@@ -38,6 +38,8 @@ const MAX_YEAR     = CURRENT_YEAR - 18;    // must be born ≤ 18 years ago
 type Phase = 'entry' | 'underage';
 
 function AgeGateScreen({ route, navigation }: any) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {

@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -171,7 +172,8 @@ function AvailabilityGrid({ userId }: { userId: number }) {
         style={{ marginTop: 10, backgroundColor: saving ? COLORS.bgSubtle : COLORS.navy,
           borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
         onPress={save} disabled={saving}
-      >
+      
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color: saving ? COLORS.textMuted : COLORS.bgCard,
           fontWeight: '700', fontSize: 13, lineHeight: 19 }}>
           {saved ? '✓ Saved' : saving ? 'Saving…' : 'Save Availability'}
@@ -374,7 +376,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             accessibilityRole="tab"
             key={t.key}
             style={[styles.tabBtn, tab===t.key && { borderBottomColor: colors.steel, borderBottomWidth: 2 }]}
-            onPress={() => setTab(t.key)}
+            onPress={() =
+        accessibilityState={{ selected: false }}> setTab(t.key)}
             accessibilityLabel={t.label}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.tabLabel, { color: tab===t.key ? colors.textPrimary : colors.textMuted }]}>
@@ -421,7 +424,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
   accessibilityRole="button"
                     style={{ paddingHorizontal:12, paddingVertical:5, borderRadius:16,
                       borderWidth:1, borderColor:sortBy===opt?colors.navy:colors.border,
-                      backgroundColor:sortBy===opt?colors.navy:colors.bgCard }}>
+                      backgroundColor:sortBy===opt?colors.navy:colors.bgCard }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, fontWeight:'600',
                       color:sortBy===opt?colors.bgCard:colors.textMuted }}>
                       {opt==='date'?'📅 Soonest':opt==='name'?'🔤 Name':'⚡ Status'}
@@ -754,7 +758,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               accessibilityLabel="Office name"
           returnKeyType="next"
           blurOnSubmit
-        />
+        /
+        keyboardType="numeric">
 
             <TouchableOpacity
   accessibilityRole="button"

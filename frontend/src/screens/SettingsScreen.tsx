@@ -115,7 +115,8 @@ function TierGatedRow({
       {/* Official Court Forms -- all 50 states */}
       <TouchableOpacity accessibilityRole="button"
         onPress={goToCourtForms}
-        style={{ flexDirection:'row', alignItems:'center', paddingVertical:14, paddingHorizontal:4, borderBottomWidth:StyleSheet.hairlineWidth, borderBottomColor:COLORS.border }}>
+        style={{ flexDirection:'row', alignItems:'center', paddingVertical:14, paddingHorizontal:4, borderBottomWidth:StyleSheet.hairlineWidth, borderBottomColor:COLORS.border }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
         <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
         <View style={{ flex:1 }}>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, ...FONTS.semiBold, color:COLORS.textPrimary }}>Official Court Forms</Text>
@@ -239,6 +240,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
 function SettingsScreen({ route, navigation }: any) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { confirm } = useConfirm();
   const { showToast } = useToast();
 
@@ -451,7 +454,8 @@ function SettingsScreen({ route, navigation }: any) {
             ios_backgroundColor={colors.surface}
             accessibilityLabel="Toggle dark or light mode"
             accessibilityRole="switch"
-          />
+          /
+        accessibilityState={{ checked: isDark }}>
         </View>
 
       </View>
@@ -495,7 +499,8 @@ function SettingsScreen({ route, navigation }: any) {
               value={biometricEnabled}
               onChange={toggleBiometric}
               trackOn={colors.legal}
-            />
+            /
+        accessibilityState={{ checked: biometricEnabled }}>
           </View>
         </>
       )}
@@ -510,7 +515,8 @@ function SettingsScreen({ route, navigation }: any) {
           hint="Turn off all notifications at once"
           value={notifMaster}
           onChange={toggleMaster}
-        />
+        /
+        accessibilityState={{ checked: notifMaster }}>
 
         {/* Per-category -- only visible when master is on */}
         {notifMaster && (
@@ -725,7 +731,8 @@ function SettingsScreen({ route, navigation }: any) {
             style={{ backgroundColor: '#EF5350', borderRadius: 8,
               paddingVertical: 12, alignItems: 'center' }}
             accessibilityLabel="Delete account permanently"
-            onPress={() => {
+            onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
 confirm('Delete Account?', 'This will permanently delete your account and all your data. This cannot be undone.',
       { confirmLabel: 'Delete Account', destructive: true }).then(async ok => { if (!ok) return;
       Alert.prompt(
@@ -744,7 +751,8 @@ confirm('Delete Account?', 'This will permanently delete your account and all yo
           <TouchableOpacity accessibilityRole="button"
             style={{ marginTop: 12, alignItems: 'center', padding: 8 }}
             accessibilityLabel="Export my data"
-            onPress={async () => {
+            onPress={async () =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
               try {
                 const res = await api.get('/auth/export');
                 const data = JSON.stringify(res.data, null, 2);
@@ -769,7 +777,8 @@ confirm('Delete Account?', 'This will permanently delete your account and all yo
             style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between',
               backgroundColor:colors.bgCard, borderRadius:10, padding:14,
               marginBottom:8, borderWidth:1, borderColor:colors.border }}
-            onPress={async () => {
+            onPress={async () =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
               let isAvailable = false;
         try { isAvailable = await StoreReview.isAvailableAsync(); } catch (_) {}
               if (isAvailable) {

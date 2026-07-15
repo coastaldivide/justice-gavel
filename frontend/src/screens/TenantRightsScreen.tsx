@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -21,7 +22,7 @@ import { AppIcon } from '../components/AppIcon';
  *   3. HomeScreen (future tile)
  */
 import { api } from '../services/api';
-import React, { useState } from 'react';
+import React, { useState, useCallback} from 'react';
 
 import { View, Text, StyleSheet, ScrollView, Linking , ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
@@ -140,7 +141,18 @@ function TenantRightsScreen(): React.JSX.Element {
       </View>
 
       {/* Section cards */}
-      {allSections.map((sec: any, idx: number) => (
+      {allSections?.length === 0 ? (
+
+        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
+            Nothing here yet
+          </Text>
+          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
+            Results will appear here when available
+          </Text>
+        </View>
+        ) : .map((sec: any, idx: number) => (
         <View key={`allSecti-${idx}`} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           {sec.title ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardTitle, { color: colors.textPrimary }]}>{sec.title}</Text> : null}
           {sec.body  ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardBody,  { color: colors.textMuted  }]}>{sec.body}</Text>  : null}

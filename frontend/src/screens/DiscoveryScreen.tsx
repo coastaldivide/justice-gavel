@@ -141,6 +141,7 @@ function Section({
   return (
     <Animated.View style={[styles.section, { backgroundColor: bg, borderColor, opacity: fadeAnim }]}>
       <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         style={styles.sectionHeader}
         onPress={() => setExpanded(e => !e)}
       >
@@ -158,6 +159,7 @@ function Section({
         <View style={styles.sectionBody}>
           {(items || []).map((item, i) => (
             <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               key={`row-${i}`}
               style={styles.itemRow}
               onPress={() => Clipboard.setString(item)}
@@ -186,6 +188,7 @@ function HistoryRow({ item, onOpen, onDelete }: any) {
   return (
     <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
       style={[styles.histRow, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
       onPress={() => onOpen(item)}
     >
@@ -208,9 +211,11 @@ function HistoryRow({ item, onOpen, onDelete }: any) {
       </View>
       <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         onPress={() => onDelete(item.id)}
         style={styles.histDelete}
         accessibilityLabel="Delete analysis"
+          accessibilityHint="Permanently removes this item"
       >
         <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 16 }}>✕</Text>
       </TouchableOpacity>
@@ -262,13 +267,15 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       headerRight: () => (
         <View style={{ flexDirection: 'row', gap: 12, marginRight: 14 }}>
           {phase !== 'history' && (
-            <TouchableOpacity accessibilityRole="button" onPress={loadHistory} accessibilityLabel="History">
+            <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" onPress={loadHistory} accessibilityLabel="History">
               <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
             </TouchableOpacity>
           )}
           {phase === 'result' && (
             <TouchableOpacity
               accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               onPress={() => {
               setPhase('upload'); setFile(null); setAnalysis(null); setDocType('');
             }}>
@@ -457,6 +464,7 @@ confirm('Delete analysis?','This cannot be undone.',
       {/* Drop zone */}
       <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         style={[styles.dropZone, {
           borderColor: file ? COLORS.legal : colors.border,
           backgroundColor: file
@@ -502,6 +510,7 @@ confirm('Delete analysis?','This cannot be undone.',
         {DOC_TYPES.map(t => (
           <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             key={t}
             style={[styles.typeChip, {
               backgroundColor: docType === t
@@ -554,6 +563,7 @@ confirm('Delete analysis?','This cannot be undone.',
               <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}>$19.99 per document</Text>
             </Text>
             <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               accessibilityLabel="Upgrade to Discovery Pro"
               onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Subscription' })}
             >
@@ -566,7 +576,8 @@ confirm('Delete analysis?','This cannot be undone.',
       </View>
 
       {/* Analyze button */}
-      <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
+      <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
         style={[styles.analyzeBtn, {
           backgroundColor: file ? COLORS.navy : colors.border }, analyzing && { opacity: 0.6 }]}
         onPress={analyze}
@@ -621,6 +632,7 @@ confirm('Delete analysis?','This cannot be undone.',
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No analyses yet</Text>
             <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               style={[styles.analyzeBtn, { backgroundColor: COLORS.navy, width: '100%', marginTop: 16 }]}
               accessibilityLabel="\u2190 Upload a Document" onPress={() => setPhase('upload')}
           >
@@ -673,9 +685,11 @@ confirm('Delete analysis?','This cannot be undone.',
           </View>
         </View>
         <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           onPress={shareAnalysis}
           style={styles.shareBtn}
           accessibilityLabel="Share analysis"
+          accessibilityHint="Shares this information"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: COLORS.navy }]}>↑ Share</Text>
         </TouchableOpacity>

@@ -135,3 +135,39 @@ export const HIT_SLOP = {
   md: { top: 16, bottom: 16, left: 16, right: 16 },
   lg: { top: 20, bottom: 20, left: 20, right: 20 },
 } as const;
+
+
+// ── Typography Scale ─────────────────────────────────────────────────────────
+export const FONT = {
+  display: 40,   // hero numbers, bail amounts
+  h1:      24,   // screen titles
+  h2:      20,   // section headers
+  h3:      18,   // card titles
+  body:    15,   // standard body text
+  small:   13,   // supporting text
+  caption: 12,   // labels, metadata
+  micro:   11,   // badges, timestamps
+} as const;
+
+
+// ── Spacing Scale (8px grid) ─────────────────────────────────────────────────
+export const SPACE = {
+  xs:   4,
+  sm:   8,
+  md:   12,
+  base: 16,
+  lg:   24,
+  xl:   32,
+  xxl:  48,
+  huge: 64,
+} as const;
+
+
+// ── Border Radius Scale ──────────────────────────────────────────────────────
+export const RADIUS = {
+  sm:   4,   // tags, badges
+  md:   8,   // inputs, buttons
+  lg:   12,  // cards
+  xl:   16,  // sheets, modals
+  full: 999, // pills, avatars
+} as const;

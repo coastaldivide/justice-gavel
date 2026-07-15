@@ -197,9 +197,11 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
       </View>
       <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         testID="checkin-enroll-button" accessibilityLabel="Find a Bail Bondsman"
         style={{ backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 32, ...SHADOW.md }}
-        onPress={() => navigation.navigate('BailTab')}
+        onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> navigation.navigate('BailTab')}
       >
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, ...FONTS.heavy, fontSize: 14 }}>{t('checkin_find_bondsman')}</Text>
       </TouchableOpacity>
@@ -220,7 +222,8 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
       <AppIcon name="warning-outline" size={20} color="#E65100" />
       <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Check-in unavailable</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
-      <TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={loadStatus}
+      <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.retryBtn} onPress={loadStatus}
        accessibilityLabel="Try Again">
         <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
       </TouchableOpacity>
@@ -303,7 +306,9 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         <Text maxFontSizeMultiplier={1.4} style={styles.helpBlockSub}>Find a lawyer or bail bondsman instantly.</Text>
         <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           accessibilityLabel="Find a Lawyer →"
+          accessibilityHint="Searches for attorneys in your area"
           style={styles.helpBlockBtn}
           onPress={() => navigation.navigate('LawyersTab')}
         >
@@ -402,9 +407,11 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
       {/* GPS opt-in toggle */}
       <TouchableOpacity
         accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         style={{ flexDirection:'row', alignItems:'center', paddingVertical:12,
           borderTopWidth:1, borderTopColor:colors.border, marginBottom:16, gap:12 }}
-        onPress={() => setGpsVerify(v => !v)}
+        onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setGpsVerify(v => !v)}
         accessibilityState={{ checked: gpsVerify }}
         accessibilityLabel="Include GPS location in this check-in"
         activeOpacity={0.8}
@@ -435,6 +442,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
 
       <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         accessibilityLabel="Check In Now"
         style={styles.checkInBtn}
         testID="checkin-submit-button" disabled={(phase as string) === 'submitting' || (phase as string) === 'gps'} onPress={doCheckIn}

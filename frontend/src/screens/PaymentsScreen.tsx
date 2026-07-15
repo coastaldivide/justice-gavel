@@ -68,6 +68,7 @@ function PurposeCard({ p, selected, onSelect }: any) {
   return (
     <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
       style={[styles.purposeCard, selected && styles.purposeCardSelected]}
       accessibilityLabel="{p.icon}" onPress={() => onSelect(p)}
       activeOpacity={0.8}
@@ -88,6 +89,7 @@ function MethodRow({ m, selected, onSelect }: any) {
   return (
     <TouchableOpacity
       accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
       style={[styles.methodRow, selected && styles.methodRowSelected]}
       accessibilityLabel="{m.icon}" onPress={() => onSelect(m.key)}
       activeOpacity={0.8}
@@ -132,16 +134,16 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>
-  body { font-family: Georgia, serif; padding: 40px; max-width: 600px; margin: 0 auto; color: #1a1a2e; }
-  .header { text-align: center; border-bottom: 2px solid #042C53; padding-bottom: 20px; margin-bottom: 30px; }
-  .logo { font-size: 28px; font-weight: 900; color: #042C53; }
+  body { font-family: Georgia, serif; padding: 40px; max-width: 600px; margin: 0 auto; color: #1C1C1E; }
+  .header { text-align: center; border-bottom: 2px solid #1B2A6B; padding-bottom: 20px; margin-bottom: 30px; }
+  .logo { font-size: 28px; font-weight: 900; color: #1B2A6B; }
   .tagline { font-size: 13px; color: #6B7280; margin-top: 4px; }
-  h2 { font-size: 22px; color: #042C53; margin: 0 0 4px; }
+  h2 { font-size: 22px; color: #1B2A6B; margin: 0 0 4px; }
   .receipt-no { font-size: 12px; color: #6B7280; }
   table { width: 100%; border-collapse: collapse; margin: 20px 0; }
   td { padding: 10px 0; font-size: 14px; border-bottom: 1px solid #E5E7EB; }
   td:last-child { text-align: right; font-weight: 600; }
-  .total td { font-size: 16px; font-weight: 700; border-bottom: 2px solid #042C53; color: #042C53; }
+  .total td { font-size: 16px; font-weight: 700; border-bottom: 2px solid #1B2A6B; color: #1B2A6B; }
   .footer { margin-top: 40px; font-size: 11px; color: #9CA3AF; text-align: center; }
 </style></head><body>
 <div class="header">
@@ -327,7 +329,8 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
         {lastMethod && lastMethod !== method && (
           <TouchableOpacity
-          accessibilityRole="button" style={styles.lastUsedBanner} onPress={() => setMethod(lastMethod)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.lastUsedBanner} onPress={() => setMethod(lastMethod)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.lastUsedText}>
               ↩ Use last method: {[...PRIMARY_METHODS, ...MORE_METHODS].find(m => m.key === lastMethod)?.label || lastMethod}
@@ -336,9 +339,11 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
               {/* Receipt download */}
               <TouchableOpacity
                 accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                 style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:8,
                   paddingVertical:6 }}
-                onPress={() => generateReceipt(payment)}
+                onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> generateReceipt(payment)}
                 disabled={generatingReceipt}
                 accessibilityLabel="Download payment receipt"
               >
@@ -354,7 +359,8 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           <MethodRow key={m.key} m={m} selected={method === m.key} onSelect={setMethod} />
         ))}
         <TouchableOpacity
-          accessibilityRole="button" style={styles.moreToggle} onPress={() => setShowMore(m => !m)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.moreToggle} onPress={() => setShowMore(m => !m)}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.moreToggleText}>
             {showMore ? '▲ Fewer options' : '▼ More payment options (Venmo, ACH, Zelle, Crypto…)'}
@@ -373,11 +379,13 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           <Text maxFontSizeMultiplier={1.4} style={styles.summaryMeta}>🔒 Encrypted</Text>
         </View>
 
-        <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
+        <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
           style={[styles.payBtn, loading && styles.payBtnDisabled]}
           onPress={onPay}
           disabled={loading}>
-          accessibilityRole="button" accessibilityLabel="Continue to payment"
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="Continue to payment"
           {loading
             ? <ActivityIndicator color={colors.bgCard} />
             : <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>Pay ${(parseFloat(amount || '0') || 0).toFixed(2)} with {selectedMethod.label}</Text>

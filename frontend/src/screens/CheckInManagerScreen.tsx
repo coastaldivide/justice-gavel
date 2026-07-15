@@ -111,7 +111,8 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
         <View style={styles.modalHeader}>
           <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>Enroll Defendant</Text>
           <TouchableOpacity
-          accessibilityRole="button" onPress={() => { reset(); onClose(); }}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" onPress={() => { reset(); onClose(); }}
             >
             <Text maxFontSizeMultiplier={1.4} style={styles.modalClose}>✕</Text>
           </TouchableOpacity>
@@ -153,6 +154,7 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
             {(['daily', 'weekly'] as const).map(f => (
               <TouchableOpacity
                 accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                 key={f}
                 style={[styles.freqBtn, freq === f && styles.freqBtnActive]}
                 onPress={() => setFreq(f)}
@@ -164,7 +166,8 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
             ))}
           </View>
 
-          <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
+          <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
             style={[styles.saveBtn, saving && { opacity: 0.6 }]}
             onPress={save}
             disabled={saving}
@@ -206,7 +209,8 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
         testID="check-in-manager-screen">
         <View style={[styles.modalHeader, { backgroundColor: COLORS.navy }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.modalTitle, { color: COLORS.bgCard }]}>{enrollment.defendant_name}</Text>
-          <TouchableOpacity accessibilityRole="button" onPress={onClose}
+          <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" onPress={onClose}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.modalClose, { color: COLORS.bgCard }]}>✕</Text>
           </TouchableOpacity>
@@ -333,6 +337,7 @@ confirm(`Remove ${name}?`, 'They will no longer need to check in.',
         </View>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.enrollBtn}
           accessibilityLabel="+ Enroll" onPress={() => requireAuth(() => setShowEnroll(true))}
         >
@@ -353,6 +358,7 @@ confirm(`Remove ${name}?`, 'They will no longer need to check in.',
           ].map(s => <Text maxFontSizeMultiplier={1.4} key={s} style={styles.howItem}>{s}</Text>)}
           <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={styles.howBtn}
             accessibilityLabel="Enroll First Defendant \u2192" onPress={() => requireAuth(() => setShowEnroll(true))}
           >
@@ -414,6 +420,7 @@ confirm(`Remove ${name}?`, 'They will no longer need to check in.',
                 <View style={styles.cardActions}>
                   <TouchableOpacity
                     accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                     style={styles.actionBtn}
                     accessibilityLabel="\ud83d\udccb View History" onPress={() => setSelectedEnroll(item)}
                   >
@@ -422,6 +429,7 @@ confirm(`Remove ${name}?`, 'They will no longer need to check in.',
                   {item.active && (
                     <TouchableOpacity
                       accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                       style={[styles.actionBtn, styles.actionBtnRed]}
                       accessibilityLabel="Remove" onPress={() => deactivate(item.id, item.defendant_name)}
                     >

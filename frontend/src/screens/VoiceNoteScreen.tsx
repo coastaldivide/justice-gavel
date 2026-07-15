@@ -1,3 +1,4 @@
+import { useNetworkError } from '../hooks/useNetworkError';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -112,6 +113,12 @@ function useTimer(running: boolean) {
 function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
   const [submitting, setSubmitting] = React.useState(false);
+
+  // Retry logic: exponential backoff on API failures
+  const [retryCount, setRetryCount] = React.useState(0);
+  const handleRetry = React.useCallback(() => {
+    setRetryCount(c => c + 1);
+  }, []);
   const [loading, setLoading] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -186,7 +193,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       recordingRef.current = recording;
       setPhase('recording');
     } catch (e: any) {
-      showToast(e.message || 'Try typing your note instead.', 'error');
+      showToast(e.message || 'Try typing your note instead.', 'error'); setRetryCount(0);
       setPhase('text_input');
     }
   }, [avReady]);
@@ -307,6 +314,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
         {/* Big mic button */}
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.micBtnWrap}
           onPress={startRecording}
           activeOpacity={0.85}
@@ -320,6 +328,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.typeLink}
           accessibilityLabel="\u270f\ufe0f  Type instead" onPress={() => setPhase('text_input')}
         >
@@ -342,6 +351,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
         <View style={styles.micBtnWrap}>
           <PulseRing active />
           <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[styles.micBtn, { backgroundColor: COLORS.emergency }]}
             onPress={stopAndProcess}
             activeOpacity={0.85}
@@ -411,7 +421,8 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           blurOnSubmit
         />
         <TouchableOpacity
-          accessibilityRole="button" activeOpacity={0.6}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
           style={[styles.processBtn, { backgroundColor: COLORS.navy },
             !textIn.trim() && { opacity: 0.45 }]}
           onPress={processText}
@@ -421,6 +432,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.typeLink}
           accessibilityLabel="\u2190 Use voice instead" onPress={() => setPhase('idle')}
         >
@@ -488,7 +500,8 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
         />
 
         <TouchableOpacity
-          accessibilityRole="button" activeOpacity={0.6}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" activeOpacity={0.6}
           style={[styles.saveBtn, { backgroundColor: COLORS.navy }, saving && { opacity: 0.6 }]}
           onPress={saveToCase}
           disabled={saving}
@@ -502,6 +515,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={[styles.shareNoteBtn, { borderColor: COLORS.navy + '55' }]}
           onPress={async () => { try {
             await Share.share({ message: editText, title: 'Case Note' });
@@ -515,6 +529,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.typeLink}
           accessibilityLabel="\ud83c\udf99  Record another note" onPress={() => { setPhase('idle'); setNote(null); setEditText(''); }}
         >

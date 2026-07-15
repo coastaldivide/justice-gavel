@@ -77,6 +77,7 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
       {PLANS.map(p => (
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           key={p.key}
           style={[styles.planCard, { backgroundColor: colors.bgCard, borderColor: colors.border }, plan === p.key && { borderColor: p.color, borderWidth: 2, backgroundColor: p.color + '0A' }]}
           onPress={() => { setPlan(p.key); setQuote(null); }}
@@ -117,7 +118,8 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
 
       {/* Get quote */}
       <TouchableOpacity
-        accessibilityRole="button" activeOpacity={0.6} style={[styles.quoteBtn, { backgroundColor: selected.color }]} onPress={getQuote} disabled={getting}
+        accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" activeOpacity={0.6} style={[styles.quoteBtn, { backgroundColor: selected.color }]} onPress={getQuote} disabled={getting}
       >
         {getting ? <ActivityIndicator color={colors.bgCard} /> : <Text maxFontSizeMultiplier={1.4} style={styles.quoteBtnText}>Get my quote for {selected.label}</Text>}
       </TouchableOpacity>
@@ -126,7 +128,8 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
         <View style={{ backgroundColor: colors.emergencyBg, borderRadius: 8, padding: 12, margin: 16, borderWidth: 1, borderColor: colors.emergencyBg }}>
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, fontSize: 12 }}>⚠️  {error}</Text>
           <TouchableOpacity
-          accessibilityRole="button" onPress={() => { setError(''); setQuote(null); }}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" onPress={() => { setError(''); setQuote(null); }}
             accessibilityLabel="Retry →"
           >
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 }}>Retry →</Text>
@@ -140,7 +143,8 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
           <Text maxFontSizeMultiplier={1.4} style={styles.quoteProvider}>via {quote.provider}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.quoteLegal}>{quote.legalese}</Text>
           <TouchableOpacity
-          accessibilityRole="button" style={[styles.enrollBtn, { backgroundColor: selected.color }]} onPress={() => navigation.navigate('Payments', { productId: 'insurance' })}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={[styles.enrollBtn, { backgroundColor: selected.color }]} onPress={() => navigation.navigate('Payments', { productId: 'insurance' })}
             accessibilityLabel="Enroll now →"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.enrollBtnText}>Enroll now →</Text>

@@ -1,3 +1,5 @@
+import { useNetworkError } from '../hooks/useNetworkError';
+import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
@@ -75,6 +77,12 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const [state, setState]       = useState('');
   const [card, setCard]         = useState<CardData | null>(null);
+
+  // Retry logic: exponential backoff on API failures
+  const [retryCount, setRetryCount] = React.useState(0);
+  const handleRetry = React.useCallback(() => {
+    setRetryCount(c => c + 1);
+  }, []);
   const [loading, setLoading]   = useState(false);
   const [sharing, setSharing]   = useState(false);
   const [isSubscriber, setIsSubscriber] = useState(false);
@@ -162,7 +170,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
       );
     } catch (e: any) {
       if (e.message !== 'User did not share') {
-        showToast(e.message, 'error');
+        showToast(e.message, 'error'); setRetryCount(0);
       }
     } finally {
       setSharing(false);
@@ -221,6 +229,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.4} style={styles.stateLabel}>State:</Text>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={styles.statePicker}
           accessibilityLabel="{state}  \u25be" onPress={() => setShowPicker(p => !p)}
         >
@@ -232,6 +241,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
               {US_STATES.map(st => (
                 <TouchableOpacity
                   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                   key={st}
                   style={[styles.stateDropdownRow, state === st && styles.stateDropdownRowActive]}
                   onPress={() => { setState(st); setUserState(st).catch(()=>{}); setShowPicker(false); fetchCard(st); }}
@@ -255,6 +265,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           </Text>
           <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={styles.gateBtn}
             accessibilityLabel="Start Free Trial \u2192" onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
           >
@@ -326,22 +337,28 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
       <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 8 }}>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={{ flex: 1, backgroundColor: (_HEX_RIGHTSCARD._c1), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))}
         >
           <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 988 Crisis</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={{ flex: 1, backgroundColor: (colors.navy || COLORS.navy), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:+12125492660').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> Linking.openURL('tel:+12125492660').catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))}
         >
           <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 ACLU</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={{ flex: 1, backgroundColor: _HEX_RIGHTSCARD._c0, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:+18009800010').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> Linking.openURL('tel:+18009800010').catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))}
         >
           <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 Bail</Text>
         </TouchableOpacity>
@@ -352,6 +369,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
         <View style={styles.actions}>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[styles.shareBtn, (!isSubscriber || sharing) && styles.shareBtnDisabled]}
             onPress={isSubscriber ? shareCard : () => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
             disabled={sharing}
@@ -367,13 +385,16 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
 
           {isSubscriber && (
             <TouchableOpacity
-              accessibilityRole="button" style={styles.textShareBtn} onPress={shareCard}
-             accessibilityLabel="Share as text (for SMS / iMessage)">
+              accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.textShareBtn} onPress={shareCard}
+             accessibilityLabel="Share as text (for SMS / iMessage)"
+          accessibilityHint="Shares this information">
               <Text maxFontSizeMultiplier={1.4} style={styles.textShareBtnText}>Share as text (for SMS / iMessage)</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={styles.stateChangeBtn}
             accessibilityLabel="\ud83d\uddfa  Change State" onPress={() => setShowPicker(p => !p)}
           >

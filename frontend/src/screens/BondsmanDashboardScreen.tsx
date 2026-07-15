@@ -220,7 +220,9 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
             placeholderTextColor={COLORS.textMuted}
           returnKeyType="next"
           blurOnSubmit
-        />
+        /
+        maxLength={15}
+        keyboardType="numeric">
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>License Number</Text>
           <TextInput
             style={styles.input}

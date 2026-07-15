@@ -108,6 +108,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       <TouchableOpacity
         onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
         accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
       >
         <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>← Back</Text>
       </TouchableOpacity>
@@ -160,6 +161,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
         {(step === 'idle' || step === 'recording') && (
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             onPress={step === 'idle' ? startRecording : stopAndProcess}
             style={{
               width: 88, height: 88, borderRadius: 44,
@@ -193,7 +195,8 @@ function InterrogationRecorderScreen(): React.JSX.Element {
         <View style={{ backgroundColor: '#FFEBEE', borderRadius: 12, padding: 16, gap: 8 }}>
           <Text maxFontSizeMultiplier={1.3} style={{ color: '#C62828', fontSize: 14, fontWeight: '600' }}>Error</Text>
           <Text maxFontSizeMultiplier={1.3} style={{ color: '#B71C1C', fontSize: 13 }}>{error}</Text>
-          <TouchableOpacity onPress={reset} accessibilityRole="button" accessibilityLabel="Try again">
+          <TouchableOpacity onPress={reset} accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="Try again">
             <Text maxFontSizeMultiplier={1.3} style={{ color: colors.navy, fontSize: 13, fontWeight: '600' }}>Try again →</Text>
           </TouchableOpacity>
         </View>
@@ -224,6 +227,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
             onPress={reset}
             style={{ backgroundColor: colors.navy, borderRadius: 10, padding: 14, alignItems: 'center' }}
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           >
             <Text maxFontSizeMultiplier={1.3} style={{ color: colors.bg, fontWeight: '600' }}>Record another</Text>
           </TouchableOpacity>

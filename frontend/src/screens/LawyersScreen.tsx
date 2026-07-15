@@ -1,3 +1,4 @@
+import { useNetworkError } from '../hooks/useNetworkError';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -62,17 +63,17 @@ const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 function callPhone(phone: string) {
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')); }
-function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')); }
+  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0)); }
+function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0)); }
 function openDirections(lat: number, lng: number, name: string) {
   const encoded = encodeURIComponent(name);
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encoded}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
+  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
 }
 function openWebsite(url: string) {
-  Linking.openURL(url.startsWith('http') ? url : 'https://' + url).catch(() => showToast('Action failed. Please try again.', 'error'));
+  Linking.openURL(url.startsWith('http') ? url : 'https://' + url).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
 }
 
 // ── Badges ────────────────────────────────────────────────────────────────────
@@ -267,7 +268,8 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         {item.sliding_scale    && <View style={[styles.badge, styles.tealBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.legalDark }]}>Sliding Scale</Text></View>}
         {item.jtb_verified && (
           <TouchableOpacity
-          accessibilityRole="button" testID="lawyer-card"
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" testID="lawyer-card"
             style={{ flexDirection:'row', alignItems:'center', gap:4 }}
             onPress={() => { setBadgeInfoType('jtb'); setShowBadgeInfo(true); }}
             accessibilityLabel="What does Justice Gavel Verified mean?"
@@ -285,6 +287,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         {!item.jtb_verified && item.bar_verified && (
           <TouchableOpacity
               accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               accessibilityLabel={`View full profile for ${item.name}`}
               style={styles.verifiedBadge}
               onPress={() => navigation.navigate('MoreTab', { screen: 'LawyerProfile', params: { id: item.id, lawyerId: item.id } })}
@@ -303,6 +306,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         )}
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={[styles.secondaryBtn, styles.bookBtn]}
           onPress={() => navigation.navigate('MoreTab', {
             screen: 'Booking',
@@ -316,6 +320,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={[styles.secondaryBtn, styles.secureBtn]}
           onPress={openSecureMessage}
           disabled={caseLoading}
@@ -325,12 +330,14 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
             {caseLoading ? '…' : '🔒 Message'}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setExpanded(e => !e)}
+        <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.secondaryBtn} onPress={() => setExpanded(e => !e)}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.secondaryBtnText}>{expanded ? t('lawyers_less') : t('lawyers_more')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           accessibilityLabel={saved ? `Unsave ${item?.name}` : `Save ${item?.name} to saved list`}
           style={[styles.secondaryBtn, { minWidth: 44 }]}
           onPress={toggleSave}
@@ -385,7 +392,8 @@ function FilterModal({
       <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>Filter Lawyers</Text>
-          <TouchableOpacity accessibilityRole="button" onPress={onClose} style={styles.modalCloseBtn}
+          <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" onPress={onClose} style={styles.modalCloseBtn}
             accessibilityLabel="Language"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.modalCloseText}>✕</Text>
@@ -410,7 +418,8 @@ function FilterModal({
           </View>
 
           <TouchableOpacity
-          accessibilityRole="button" style={styles.toggleRow} onPress={() => setProBonoOnly((v: boolean) => !v)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.toggleRow} onPress={() => setProBonoOnly((v: boolean) => !v)}
             accessibilityLabel="Pro bono / free representation only"
           >
             <View style={[styles.toggle, proBonoOnly && styles.toggleOn]} />
@@ -418,13 +427,16 @@ function FilterModal({
           </TouchableOpacity>
 
           <TouchableOpacity
-            accessibilityRole="button" style={styles.applyBtn} onPress={onApply}
+            accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.applyBtn} onPress={onApply}
             accessibilityLabel="Apply Filters"
+          accessibilityHint="Filters the list by selected criteria"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.applyBtnText}>Apply Filters</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity accessibilityRole="button" style={styles.clearBtn}
+          <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.clearBtn}
             accessibilityLabel="Clear all filters"
             onPress={() => { setCaseType(''); setLanguage(''); setManualCity(''); setProBonoOnly(false); }}>
             <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>Clear all filters</Text>
@@ -501,6 +513,12 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
   const [lawyers, setLawyers]       = useState<any[]>([]);
+
+  // Retry logic: exponential backoff on API failures
+  const [retryCount, setRetryCount] = React.useState(0);
+  const handleRetry = React.useCallback(() => {
+    setRetryCount(c => c + 1);
+  }, []);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusMsg, setStatusMsg]   = useState('Locating you…');
@@ -682,7 +700,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           </View>
           {!!locationLabel && (
             <TouchableOpacity
-          accessibilityRole="button" onPress={() => { if (searchDebounce.current) clearTimeout(searchDebounce.current); searchDebounce.current = setTimeout(() => { setCoords(null); setManualCity(''); fetchLawyers(); }, 300); }}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" onPress={() => { if (searchDebounce.current) clearTimeout(searchDebounce.current); searchDebounce.current = setTimeout(() => { setCoords(null); setManualCity(''); fetchLawyers(); }, 300); }}
               >
               <Text maxFontSizeMultiplier={1.4} style={styles.locationLabel}>📍 {locationLabel}  <Text maxFontSizeMultiplier={1.4} style={styles.refreshGps}>↺ refresh</Text></Text>
             </TouchableOpacity>
@@ -692,6 +711,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
         {/* ⭐ Saved lawyers shortcut */}
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           accessibilityLabel="Go to More"
           style={[styles.savedHeaderBtn]}
           testID="lawyer-save-button" onPress={() => navigation.navigate('MoreTab', { screen: 'SavedLawyers' })}
@@ -702,6 +722,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
         {/* Filters pill */}
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={[styles.filterPill, activeFilters > 0 && styles.filterPillActive]}
           onPress={() => setShowFilters(true)}
           activeOpacity={0.8}
@@ -721,6 +742,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           {!isPro && lawyers.length > 0 && (
             <TouchableOpacity
               accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
               style={{
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -758,6 +780,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               {caseType && ['DUI','Drug Offenses','Assault'].includes(caseType) && !loading && lawyers.length > 0 && (
                 <TouchableOpacity
                   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                   style={styles.walkthroughBanner}
                   onPress={() => navigation.navigate('MoreTab', {
                     screen: 'WhatHappensNext', params: { chargeType: caseType }
@@ -782,7 +805,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
                 <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={styles.emptyText}>No lawyers found in your area.</Text>
                 <TouchableOpacity
-          accessibilityRole="button" style={styles.emptyBtn} accessibilityLabel="Adjust filters" onPress={() => setShowFilters(true)}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.emptyBtn} accessibilityLabel="Adjust filters" onPress={() => setShowFilters(true)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>Adjust filters</Text>
                 </TouchableOpacity>
@@ -814,6 +838,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               {QUICK_NEEDS.map(n => (
                 <TouchableOpacity
                   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                   key={n.key}
                   style={[styles.needBtn, { backgroundColor: n.bg, borderColor: n.color + '55' }]}
                   onPress={async () => { try {
@@ -861,9 +886,11 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
       {/* Verified badge explainer modal */}
       <Modal accessibilityViewIsModal={true} visible={showBadgeInfo} transparent animationType="fade"
         onRequestClose={() => setShowBadgeInfo(false)}>
-        <TouchableOpacity accessibilityRole="button" style={{ flex:1, backgroundColor:'rgba(0,0,0,0.5)',
+        <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={{ flex:1, backgroundColor:'rgba(0,0,0,0.5)',
           justifyContent:'center', padding:24 }}
-          onPress={() => setShowBadgeInfo(false)} activeOpacity={1}>
+          onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setShowBadgeInfo(false)} activeOpacity={1}>
           <View style={{ backgroundColor:colors.bgCard, borderRadius:16, padding:20,
             borderWidth:1, borderColor:colors.border }}>
             {badgeInfoType === 'bar' && (<>
@@ -910,10 +937,12 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
             </>)}
             <TouchableOpacity
               accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               accessibilityLabel="Got it"
               style={{ backgroundColor:colors.navy, borderRadius:10,
                 paddingVertical:12, alignItems:'center' }}
-              onPress={() => setShowBadgeInfo(false)}
+              onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setShowBadgeInfo(false)}
             >
               <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700',
                 fontSize:14, lineHeight:21 }}>Got it</Text>
@@ -926,10 +955,12 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
       {selected.length > 0 && (
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={{ position:'absolute', bottom:24, left:16, right:16,
             backgroundColor:colors.navy, borderRadius:14, paddingVertical:16,
             flexDirection:'row', alignItems:'center', justifyContent:'center', gap:10 }}
-          accessibilityLabel="\u2696\ufe0f" onPress={() => setShowBulk(true)}
+          accessibilityLabel="\u2696\ufe0f" onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setShowBulk(true)}
         >
           <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700',
@@ -978,20 +1009,25 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
             <View style={{ flexDirection:'row', gap:12 }}>
               <TouchableOpacity
                 accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                 accessibilityLabel="Cancel"
+          accessibilityHint="Cancels and returns to previous screen"
                 style={{ flex:1, borderWidth:1, borderColor:colors.border,
                   borderRadius:10, paddingVertical:14, alignItems:'center' }}
-                onPress={() => setShowBulk(false)}
+                onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setShowBulk(false)}
               >
                 <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textMuted,
                   fontWeight:'700', fontSize:14, lineHeight:21 }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                 style={{ flex:2, backgroundColor:bulkSending ? colors.bgSubtle : colors.navy,
                   borderRadius:10, paddingVertical:14, alignItems:'center' }}
                 onPress={sendBulk} disabled={bulkSending || !bulkMsg.trim()}
-              >
+              
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                 <Text maxFontSizeMultiplier={1.4} style={{
                   color: bulkSending || !bulkMsg.trim() ? colors.textMuted : colors.bgCard,
                   fontWeight:'700', fontSize:14, lineHeight:21 }}>

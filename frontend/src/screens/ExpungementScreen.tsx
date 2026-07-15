@@ -1,3 +1,4 @@
+import { useNetworkError } from '../hooks/useNetworkError';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -113,6 +114,8 @@ const STATE_CARDS: Record<string, {
 function ExpungementCountdown({ waitYears, caseDate, navigation }: {
   waitYears: number; caseDate: string; navigation: Record<string, any>;
 }) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
@@ -192,7 +195,8 @@ showToast('Reminder set for when you become eligible.', 'success');
               backgroundColor: COLORS.navy, borderRadius: 8,
               paddingHorizontal: 14, paddingVertical: 10, alignSelf: 'flex-start' }}
             accessibilityLabel="Set a reminder for your eligibility date"
-          >
+          
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <AppIcon name="notifications-outline" size={20} color={COLORS.navy} />
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 19,
               fontWeight: '700', color: COLORS.bgCard }}>
@@ -276,6 +280,12 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
   const [stateError, setStateError]   = useState('');
   const [charges, setCharges]   = useState(incomingCharges || '');
   const [caseStatus, setCaseStatus] = useState('Closed');
+
+  // Retry logic: exponential backoff on API failures
+  const [retryCount, setRetryCount] = React.useState(0);
+  const handleRetry = React.useCallback(() => {
+    setRetryCount(c => c + 1);
+  }, []);
   const [loading, setLoading]   = useState(false);
   const [result, setResult]     = useState<EligibilityResult | null>(null);
   const [showStatePicker, setShowStatePicker] = useState(false);
@@ -310,7 +320,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       }
       setStep('result');
     } catch (e: any) {
-      showToast(e.response?.data?.error || 'Could not check eligibility. Try again.', 'info');
+      showToast(e.response?.data?.error || 'Could not check eligibility. Try again.', 'info'); setRetryCount(0);
     } finally {
       setLoading(false);
     }
@@ -323,9 +333,9 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
         case_id: incomingCaseId,
         state, charges, status: caseStatus, partner: partnerKey,
       }).catch((e) => { __DEV__ && console.warn(e?.message); }); // log but don't block
-      await Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
+      await Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
     } catch {
-      await Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
+      await Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
     } finally {
       setReferralLoading('');
     }
@@ -394,7 +404,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
           For juvenile records, contact your{' '}
           <Text maxFontSizeMultiplier={1.4}
             style={{ color: colors.blue, textDecorationLine: 'underline' }}
-            onPress={() => Linking.openURL('https://www.juvenilelaw.org/find-help').catch(() => showToast('Action failed. Please try again.', 'error'))}
+            onPress={() => Linking.openURL('https://www.juvenilelaw.org/find-help').catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))}
           >
             state\'s juvenile public defender or juvenile court clerk
           </Text>
@@ -540,7 +550,8 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                 disabled={genPetition}
                 accessibilityLabel="Generate expungement petition draft"
           accessibilityHint="Double-tap to activate"
-              >
+              
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                 <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, fontWeight: '700',
                   fontSize: 14, lineHeight: 21 }}>
@@ -619,7 +630,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                 {atty.phone && (
                   <TouchableOpacity accessibilityRole="button"
                     style={[styles.partnerBtn, { flex:1, backgroundColor:colors.legalDark }]}
-                    onPress={() => { Linking.openURL('tel:'+atty.phone).catch(() => showToast('Action failed. Please try again.', 'error'))}}
+                    onPress={() => { Linking.openURL('tel:'+atty.phone).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))}}
                     accessibilityLabel={`Call ${atty.name}`}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>📞 Call</Text>

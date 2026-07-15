@@ -6,7 +6,7 @@ import { useHaptics } from '../hooks/useHaptics';
  * (drag-and-drop or "Browse"). The user selects a photo of
  * the document from their file system.
  */
-import React, { useState } from 'react';
+import React, { useState, useCallback} from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
   ActivityIndicator, Platform, LayoutAnimation} from 'react-native';
@@ -52,6 +52,7 @@ function DocumentScannerScreen(): React.JSX.Element {
         onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
         style={{ marginBottom: 8 }}
         accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
       >
         <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textMuted, fontSize: 14 }}>← Back</Text>
       </TouchableOpacity>

@@ -427,6 +427,7 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
 
                 <TouchableOpacity
                   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                   onPress={() => scheduleReminder(rule.label, deadline)}
                   style={{ marginTop: 6, marginRight: 8, flexDirection: 'row', alignItems: 'center',
                     paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
@@ -440,6 +441,7 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
                 </TouchableOpacity>
 <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             onPress={() => addToCalendar(dl.label, dl.date)}
             style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center',
               paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
@@ -473,6 +475,7 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
   return (
     <TouchableOpacity
       accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
       style={[styles.row, { backgroundColor: col.bg, borderColor: col.border }]}
       onPress={() => setExpanded(p => !p)}
       activeOpacity={0.85}
@@ -674,9 +677,11 @@ showToast('Reminder set for 3 days before.', 'success');
 
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={{ backgroundColor:colors.navy, borderRadius:10, padding:14,
             alignItems:'center', marginHorizontal:16, marginBottom:12 }}
-          onPress={async () => {
+          onPress={async () =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
             try {
               await Share.share({
                 message: 'Justice Gavel -- Deadline Calculator Results\n\n'
@@ -685,6 +690,7 @@ showToast('Reminder set for 3 days before.', 'success');
             } catch {}
           }}
           accessibilityLabel="Share deadline results"
+          accessibilityHint="Shares this information"
         >
           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
             📤 Share Results

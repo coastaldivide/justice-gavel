@@ -89,6 +89,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
       <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
         <TextInput
           accessibilityLabel="Filter by state (e.g. TN, CA, TX)…"
+          accessibilityHint="Filters the list by selected criteria"
           value={state}
           onChangeText={v => setState(v.toUpperCase().slice(0, 2))}
           placeholder="Filter by state (e.g. TN, CA, TX)…"
@@ -112,7 +113,8 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
         style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 8, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
         {COURT_TYPES.map(t => (
           <TouchableOpacity
-          accessibilityRole="button" key={t.key}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" key={t.key}
             onPress={() => setType(t.key)}
             style={{
               backgroundColor: type === t.key ? t.color : card,
@@ -151,7 +153,9 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
       {loading && <ActivityIndicator style={{ marginTop: 30 }} color={colors.primary} />}
       {error ? (
         <><Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign:"center", margin:16 }}>{error}</Text>
-        <TouchableOpacity accessibilityRole="button" onPress={load} style={{marginTop:8,padding:10,backgroundColor:(colors.navy || COLORS.navy),borderRadius:8,alignItems:'center'}} accessibilityLabel="Retry"><Text maxFontSizeMultiplier={1.4} style={{color:colors.bg,fontWeight:'700'}}>Retry</Text></TouchableOpacity></> 
+        <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" onPress={load} style={{marginTop:8,padding:10,backgroundColor:(colors.navy || COLORS.navy),borderRadius:8,alignItems:'center'}} accessibilityLabel="Retry"
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}><Text maxFontSizeMultiplier={1.4} style={{color:colors.bg,fontWeight:'700'}}>Retry</Text></TouchableOpacity></> 
       ) : null}
       {!loading && !error && <FlashList
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load().catch(() => {}); setRefreshing(false); }} />}
@@ -165,6 +169,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
             return (
               <TouchableOpacity
                 accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                 onPress={() => setExpanded(open ? null : item.id)}
                 style={{
                   backgroundColor: card, borderRadius: 12, marginBottom: 10,
@@ -212,6 +217,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
                     {item.address ? (
                       <TouchableOpacity
                         accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                         onPress={() => openMaps(item.address, item.lat, item.lng)}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>📍</Text>
@@ -223,6 +229,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
                     {item.phone ? (
                       <TouchableOpacity
                         accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                         accessibilityLabel="HOW TO GET IN"
                         onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => showToast('Action failed. Please try again.', 'error'))}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

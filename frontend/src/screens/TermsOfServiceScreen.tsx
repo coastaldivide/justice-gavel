@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import { HapticButton } from '../components/HapticButton';
@@ -16,7 +17,7 @@ import { AppIcon } from '../components/AppIcon';
  *  • Subscription and refund terms
  *  • Encounter Recorder recording law notice
  */
-import React, { useRef } from 'react';
+import React, { useRef, useCallback} from 'react';
 import type { ScreenProps } from '../types/navigation';
 import {
   View, Text, ScrollView, TouchableOpacity,
@@ -251,7 +252,18 @@ function TermsOfServiceScreen({ navigation }: ScreenProps): React.JSX.Element {
       </View>
 
       {/* ── Sections ────────────────────────────────────────────── */}
-      {SECTIONS.map((section, idx) => (
+      {SECTIONS?.length === 0 ? (
+
+        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
+            Nothing here yet
+          </Text>
+          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
+            Results will appear here when available
+          </Text>
+        </View>
+        ) : .map((section, idx) => (
         <View key={`SECTIONS-${idx}`} style={[styles.section, { backgroundColor: colors.bgCard,
           borderLeftColor: idx === 0 ? colors.emergency :
                           idx === 4 ? colors.warnDark :

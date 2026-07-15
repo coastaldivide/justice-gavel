@@ -64,6 +64,8 @@ const SLIDES = [
 ];
 
 function OnboardingScreen({ route, navigation }: ScreenProps) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { impact, success, error: hapticError } = useHaptics();
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -109,7 +111,8 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
-          onPress={() => navigation.navigate('Emergency')}
+          onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> navigation.navigate('Emergency')}
           accessibilityRole="button"
           accessibilityLabel="Just arrested - get immediate help now"
           accessibilityHint="Opens emergency screen without requiring sign up"
@@ -135,7 +138,8 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
               style={{ backgroundColor:colors.bgCard, borderRadius:14, padding:18,
                 marginBottom:12, flexDirection:'row', alignItems:'center', gap:14,
                 borderWidth:1, borderColor:colors.border }}
-              onPress={() => {
+              onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
                 setSituation(sit.key);
                 setShowSituationPicker(false);
               }}

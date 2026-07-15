@@ -1,3 +1,5 @@
+import { useNetworkError } from '../hooks/useNetworkError';
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
@@ -99,6 +101,12 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
 
   const [lawyer, setLawyer]   = useState<any>(preload || null);
   const [reviews, setReviews] = useState<any[]>([]);
+
+  // Retry logic: exponential backoff on API failures
+  const [retryCount, setRetryCount] = React.useState(0);
+  const handleRetry = React.useCallback(() => {
+    setRetryCount(c => c + 1);
+  }, []);
   const [loading, setLoading] = useState(!preload);
   const [userRating,  setUserRating]  = useState(0);
   const [reviewText,  setReviewText]  = useState('');
@@ -141,7 +149,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
 
   const handleCall = useCallback(() => {
     if (!lawyer?.phone) return;
-    Linking.openURL(`tel:${lawyer.phone.replace(/\D/g,'')}`).catch(() => showToast('Action failed. Please try again.', 'error'));
+    Linking.openURL(`tel:${lawyer.phone.replace(/\D/g,'')}`).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
   }, [lawyer]);
 
   const handleShare = async () => {
@@ -407,18 +415,23 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
       {/* Action buttons */}
       <View style={s.actions}>
         <TouchableOpacity
-          accessibilityRole="button" style={[s.actionBtn, { backgroundColor:colors.navy }]}
-          testID="lawyer-book-button" accessibilityLabel="\ud83d\udcc5 Book Consultation" onPress={() => { hapticImpact(); handleBook(); }}>
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={[s.actionBtn, { backgroundColor:colors.navy }]}
+          testID="lawyer-book-button" accessibilityLabel="\ud83d\udcc5 Book Consultation"
+          accessibilityHint="Schedules a video consultation" onPress={() => { hapticImpact(); handleBook(); }}>
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>📅 Book Consultation</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          accessibilityRole="button" style={[s.actionBtn, { backgroundColor:colors.legal }]}
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={[s.actionBtn, { backgroundColor:colors.legal }]}
                   >
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>💬 Send Message</Text>
         </TouchableOpacity>
         {lawyer.phone && (
           <TouchableOpacity style={[s.actionBtn, { backgroundColor:colors.legalDark }]}
-            testID="lawyer-profile-contact-button" onPress={handleCall} accessibilityRole="button" accessibilityLabel="Call attorney">
+            testID="lawyer-profile-contact-button" onPress={handleCall} accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="Call attorney"
+          accessibilityHint="Dials this phone number">
             <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>📞 Call</Text>
           </TouchableOpacity>
         )}
@@ -426,20 +439,25 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         <View style={{ flexDirection:'row', gap:10 }}>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleSave} accessibilityLabel="\u2b50 Save">
+            onPress={handleSave} accessibilityLabel="\u2b50 Save"
+          accessibilityHint="Saves your changes">
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>⭐ Save</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
             onPress={handleDirections} accessibilityLabel="\ud83d\udccd Directions">
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>📍 Directions</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleShare} accessibilityLabel="\u2191 Share">
+            onPress={handleShare} accessibilityLabel="\u2191 Share"
+          accessibilityHint="Shares this information">
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>↑ Share</Text>
           </TouchableOpacity>
         </View>

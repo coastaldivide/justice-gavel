@@ -14,6 +14,8 @@ interface Props {
 }
 
 function MatterScreen({ route, navigation }: Props) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { impact, success, error: hapticError } = useHaptics();
   const { matterId } = route.params;
   const [matter, setMatter]   = useState<any>(null);
@@ -69,6 +71,7 @@ function MatterScreen({ route, navigation }: Props) {
       )}
 
       <TouchableOpacity style={styles.btn} accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         onPress={() => navigation.navigate('VideoConsultation', { matterId })}>
         <Text style={styles.btnText}>Schedule Video Consultation</Text>
       </TouchableOpacity>

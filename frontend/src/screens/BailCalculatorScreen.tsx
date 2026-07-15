@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -30,6 +31,8 @@ type Schedule = {
 };
 
 function BailCalculatorScreen({ route, navigation }: ScreenProps) {
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+
   const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -141,7 +144,8 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
   if (fetchError && !schedules.length) return (
     <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
       <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel="Tap to retry" onPress={() => { setFetchError(false); setRefreshTick(t => t+1); }}>
+          accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" accessibilityLabel="Tap to retry" onPress={() => { setFetchError(false); setRefreshTick(t => t+1); }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary }}>Tap to retry</Text>
       </TouchableOpacity>
     </View>
@@ -149,6 +153,7 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
           return (
             <TouchableOpacity
               accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               key={s.id}
               onPress={() => setSelected(isSel ? null : s)}
               style={{
@@ -259,6 +264,7 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
         }}>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             onPress={() => navigation.navigate('BailTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
@@ -277,9 +283,11 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
         <View style={{ marginHorizontal: 16, marginBottom: 20 }}>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={{ backgroundColor: colors.navy, borderRadius: 14,
               paddingVertical: 16, alignItems: 'center' }}
-            onPress={() => navigation.navigate('LawyersTab')}
+            onPress={() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> navigation.navigate('LawyersTab')}
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2}

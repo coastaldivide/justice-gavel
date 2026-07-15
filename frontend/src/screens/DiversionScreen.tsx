@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useHaptics } from '../hooks/useHaptics';
 /**
  * DiversionScreen.tsx — Diversion program eligibility (merged)
@@ -9,7 +10,7 @@ import { useHaptics } from '../hooks/useHaptics';
  * Tabs: Drug/Alcohol | Mental Health | Veterans Court
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback} from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Switch,
   StyleSheet, LayoutAnimation,
@@ -81,7 +82,8 @@ function DiversionScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: (colors as any).background ?? COLORS.background }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation?.goBack()} accessibilityRole="button">
+        <TouchableOpacity onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation?.goBack()} accessibilityRole="button"
+          accessibilityHint="Double-tap to activate">
           <Text style={[styles.back, { color: colors.primary }]}>← Back</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Diversion Programs</Text>
@@ -90,11 +92,23 @@ function DiversionScreen({ navigation }: any) {
 
       {/* Tabs */}
       <View style={[styles.tabBar, { borderBottomColor: (colors as any).border ?? COLORS.border }]}>
-        {TABS.map(tab => (
+        {TABS?.length === 0 ? (
+
+        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
+            Nothing here yet
+          </Text>
+          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
+            Results will appear here when available
+          </Text>
+        </View>
+        ) : .map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => switchTab(tab.key)}
+            onPress={() =
+        accessibilityState={{ selected: false }}> switchTab(tab.key)}
             accessibilityRole="tab"
           >
             <Text style={{ fontSize: 16, marginBottom: 2 }}>{tab.emoji}</Text>
@@ -168,6 +182,7 @@ function DiversionScreen({ navigation }: any) {
             style={[styles.ctaBtn, { backgroundColor: colors.primary }]}
             onPress={() => navigation?.navigate('Lawyers')}
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           >
             <Text style={styles.ctaBtnText}>Find a lawyer →</Text>
           </TouchableOpacity>

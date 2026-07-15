@@ -270,11 +270,13 @@ function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPE
               {/* AI Review button */}
               <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                 style={{ flexDirection:'row', alignItems:'center', gap:8, paddingVertical:12,
                   paddingHorizontal:16, borderRadius:10, borderWidth:1,
                   borderColor:COLORS.border, backgroundColor:COLORS.bgSubtle,
                   marginBottom:8 }}
-                onPress={onReview || (() => {})}
+                onPress={onReview || (() =
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {})}
                 disabled={reviewing}
                 accessibilityLabel="Run AI review of this motion draft"
               >
@@ -325,6 +327,7 @@ function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPE
               )}
 
 <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         style={[styles.motionCard, { backgroundColor: m.bg, borderColor: m.color + '44' }]}
         onPress={handlePress}
         activeOpacity={1}
@@ -374,6 +377,7 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
       {/* Open motion */}
       <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
         accessibilityLabel="{m?.icon || '\ud83d\udcc4'}" onPress={() => onOpen(item)}
       >
@@ -393,6 +397,7 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
 
       {/* Status badge -- tappable */}
       <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         style={[styles.statusBadgeBtn, { backgroundColor: cfg.bg, borderColor: cfg.color + '60' }]}
         onPress={() => setShowPicker(p => !p)}
         disabled={updating}
@@ -404,9 +409,11 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
 
       {/* Delete */}
       <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
         onPress={() => onDelete(item.id)}
         style={styles.historyDelete}
         accessibilityLabel="Delete motion"
+          accessibilityHint="Permanently removes this item"
       >
         <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 16 }}>✕</Text>
       </TouchableOpacity>
@@ -422,6 +429,7 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
           elevation: 6 }]}>
           {(Object.entries(FILING_STATUS) as [FilingStatus, typeof FILING_STATUS[FilingStatus]][]).map(([key, cfg]) => (
             <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               key={key}
               style={[styles.statusPickerRow,
                 key === status && { backgroundColor: cfg.bg }]}
@@ -610,6 +618,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       headerRight: () => phase === 'library' ? (
         <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={{ marginRight: 14 }} accessibilityLabel="History">
           <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
         </TouchableOpacity>
@@ -922,6 +931,7 @@ confirm('Delete motion?', 'This cannot be undone.',
 
         {/* Generate button */}
         <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={[styles.generateBtn, { backgroundColor: selected.color }]}
           onPress={() => {
 confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your account and generate a court-ready draft.',
@@ -933,7 +943,8 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity accessibilityRole="button" style={styles.backLink} accessibilityLabel="\u2190 Back to library" onPress={() => setPhase('library')}
+        <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" style={styles.backLink} accessibilityLabel="\u2190 Back to library" onPress={() => setPhase('library')}
           >
           <Text maxFontSizeMultiplier={1.4} style={[styles.backLinkText, { color: colors.textMuted }]}>← Back to library</Text>
         </TouchableOpacity>
@@ -979,6 +990,7 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
               </Text>
               <TouchableOpacity
                 accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                 style={egStyles.reviewBtn}
                 accessibilityLabel="Find Free Legal Help \u2192" onPress={() => Linking.openURL('https://www.lawhelp.org/').catch(() => showToast('Action failed. Please try again.', 'error'))}
               >
@@ -987,6 +999,7 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
               <View style={egStyles.checkRow}>
                 <TouchableOpacity
                   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                   onPress={() => setAttorneyReviewed(v => !v)}
                   style={egStyles.checkBox}
                   accessibilityState={{ checked: attorneyReviewed }}
@@ -1003,12 +1016,14 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
               </View>
               <View style={egStyles.btnRow}>
                 <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                   style={egStyles.cancelBtn}
                   accessibilityLabel="Go Back" onPress={() => setShowExportGate(false)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={egStyles.cancelBtnText}>Go Back</Text>
                 </TouchableOpacity>
                 <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
                   style={[egStyles.exportBtn, !attorneyReviewed && egStyles.exportBtnDisabled]}
                   onPress={() => {
                     setShowExportGate(false);
@@ -1050,20 +1065,25 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
       {/* Action bar */}
         <View style={styles.resultActionBar}>
           <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[styles.resultAction, { backgroundColor: copied ? COLORS.legal : COLORS.navy }]}
             onPress={copyToClipboard}
             accessibilityLabel="Copy motion to clipboard"
+          accessibilityHint="Copies to clipboard"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>{copied ? '✓ Copied' : '📋 Copy'}</Text>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[styles.resultAction, { backgroundColor: COLORS.steel }]}
             onPress={shareMotion}
             accessibilityLabel="Share motion"
+          accessibilityHint="Shares this information"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>↑ Share</Text>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[styles.resultAction, { backgroundColor: colors.navy, borderWidth: 1, borderColor: colors.steel }]}
             onPress={printMotion}
             accessibilityLabel="Export motion as PDF"
@@ -1071,12 +1091,14 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
             <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>PDF</Text>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[styles.resultAction, { backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.border }]}
             accessibilityLabel="+ New" onPress={() => { setPhase('library'); setSelected(null); setDraft(''); }}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.resultActionText, { color: colors.textSecond }]}>+ New</Text>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[styles.resultAction, { backgroundColor: COLORS.legal }]}
             onPress={() => navigation.navigate('LegalResearch', {
               initialQuery: selected
@@ -1148,6 +1170,7 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
           const active = histFilter === key;
           return (
             <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               key={key}
               style={[styles.histFilterChip, active && {
                 backgroundColor: cfg ? cfg.bg : COLORS.navy + '14',
@@ -1174,6 +1197,7 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
             </Text>
             <TouchableOpacity
   accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
               style={[styles.generateBtn, { backgroundColor: COLORS.navy, marginTop: 20, width: '100%' }]}
               accessibilityLabel="\u2190 Back to Library" onPress={() => setPhase('library')}
             >

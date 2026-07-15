@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
@@ -144,6 +145,7 @@ showToast('Document attached to your case.', 'success');
           Allow camera access to scan and attach documents.
         </Text>
         <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
           style={[s.btn, { backgroundColor: colors.navy }]}
           onPress={requestPermission}>
           <Text maxFontSizeMultiplier={1.4} style={s.btnText}>Allow Camera</Text>
@@ -161,6 +163,7 @@ showToast('Document attached to your case.', 'success');
         <View style={s.previewActions}>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[s.previewBtn, { backgroundColor: 'rgba(255,255,255,0.15)' }]}
             accessibilityLabel="\u21a9 Retake" onPress={() => setCaptured(null)}
           >
@@ -169,6 +172,7 @@ showToast('Document attached to your case.', 'success');
 
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={[s.previewBtn, { backgroundColor: colors.navy }]}
             onPress={usePhoto}
             disabled={uploading}
@@ -211,6 +215,7 @@ showToast('Document attached to your case.', 'success');
         {/* Shutter button */}
         <View style={s.shutterRow}>
           <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             style={s.shutter}
             onPress={capture}
             accessibilityLabel="Take photo"

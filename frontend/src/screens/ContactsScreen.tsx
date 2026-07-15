@@ -1,3 +1,4 @@
+import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
@@ -125,6 +126,7 @@ function ContactsScreen(): React.JSX.Element {
           </View>
           <TouchableOpacity
             accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
             accessibilityLabel={`Remove contact ${i + 1}`}
             onPress={() => removeContact(i)}
             style={{ padding: 8 }}
@@ -134,7 +136,8 @@ function ContactsScreen(): React.JSX.Element {
           {!!typeHint(c.value) && <Text maxFontSizeMultiplier={1.4} style={styles.typeHint}>{typeHint(c.value)}</Text>}
         </View>
       ))}
-      <TouchableOpacity accessibilityRole="button" activeOpacity={0.6} style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={save} disabled={saving}
+      <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" activeOpacity={0.6} style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={save} disabled={saving}
        accessibilityLabel="{saved ? '\u2713 Saved' : 'Save contacts'}">
         {saving ? <ActivityIndicator color={colors.bgCard} /> : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>{saved ? '✓ Saved' : 'Save contacts'}</Text>}
       </TouchableOpacity>
