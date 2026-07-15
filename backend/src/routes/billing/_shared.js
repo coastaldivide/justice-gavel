@@ -132,8 +132,8 @@ export function calcLeadFee(bailAmount) {
   // A $100k bail earns the bondsman $10k premium; we earn a referral fee.
   // Fee tiers revised to be proportional to case value.
   const amt = Math.max(0, parseFloat(bailAmount) || 0);
-  if (amt <= 0)        return 0;        // own-recognizance: no bondsman needed
-  if (amt < 1000)      return 1500;     // $15   — minor bail (< $1k)
+  if (amt < 100)       return 0;        // below $100 = no viable lead (real bail minimum)
+  if (amt < 1000)      return 1500;     // minor bail ($100–$999)
   if (amt < 5000)      return 3500;     // $35   — misdemeanor range
   if (amt < 25000)     return 7500;     // $75   — low felony range
   if (amt < 100000)    return 15000;    // $150  — mid felony range

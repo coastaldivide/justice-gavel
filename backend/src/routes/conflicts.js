@@ -46,7 +46,7 @@ const wallLimiter     = makeUserLimiter({ windowMs: 3_600_000, max: 30, message:
 function normalizeName(raw) {
   return String(raw || '')
     .toLowerCase()
-    .replace(/[.,\-'"\/#!$%\^&\*;:{}=\`~()]/g, ' ')
+    .replace(/[.,\-'"\/#!$%\^&\*;:{}=\`~()<>[\]]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }

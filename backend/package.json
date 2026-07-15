@@ -1,6 +1,6 @@
 {
   "name": "justicegavel-backend",
-  "version": "8.7.29",
+  "version": "8.7.30",
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",

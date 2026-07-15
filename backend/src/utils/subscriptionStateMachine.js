@@ -162,6 +162,9 @@ export function canAccessFeature(sub, feature) {
   const level = getAccessLevel(sub);
   const tier  = getTier(sub);
 
+  // Null, undefined, or empty tier → no access (never grant to unverified tier)
+  if (!tier) return false;
+
   // Degraded/free users only get always-free features
   if (level === 'degraded' || level === 'free') {
     return _FREE_FEATURES_CACHE.has(f);
