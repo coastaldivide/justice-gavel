@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { EmptyState } from '../components/EmptyState';
@@ -313,6 +314,8 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
         </Text>
       </View>
       </ScrollView>
+      <AIDisclaimer variant="banner" />
+
       </KeyboardAvoidingView>
   );
 }

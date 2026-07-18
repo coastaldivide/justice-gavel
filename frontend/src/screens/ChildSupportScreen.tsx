@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { GradientHeader } from '../components/GradientHeader';
@@ -286,6 +287,8 @@ function ChildSupportScreen({ navigation }: any) {
       )}
 
       <View style={{ height: 40 }} />
+      <AIDisclaimer variant="banner" />
+
     </ScrollView>
   );
 }

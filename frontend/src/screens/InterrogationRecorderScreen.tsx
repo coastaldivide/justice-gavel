@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -471,6 +472,8 @@ showToast('Allow microphone access in Settings.', 'warning');
           advice specific to your situation.
         </Text>
       </View>
+      <AIDisclaimer variant="banner" />
+
       </ScrollView>
   );
 }

@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
@@ -1234,6 +1235,8 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
           />
         ))
       }
+      <AIDisclaimer variant="banner" />
+
     </ScrollView>
   );
 }

@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useNetworkError } from '../hooks/useNetworkError';
 import { useToast } from '../components/ToastProvider';
 import { useConfirm } from '../hooks/useConfirm';
@@ -905,6 +906,8 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
       <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>
         Not legal advice. For emergencies call 911.
       </Text>
+      <AIDisclaimer variant="banner" />
+
     </KeyboardAvoidingView>
   );
 }

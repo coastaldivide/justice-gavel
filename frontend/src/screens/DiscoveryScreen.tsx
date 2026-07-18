@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -765,6 +766,8 @@ confirm('Delete analysis?','This cannot be undone.',
           misinterpret jurisdiction-specific rules. Have an attorney review all documents.
         </Text>
       </View>
+      <AIDisclaimer variant="banner" />
+
       </ScrollView>
   );
 }

@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useNetworkError } from '../hooks/useNetworkError';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
@@ -547,6 +548,8 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
         </View>
       )}
       </ScrollView>
+      <AIDisclaimer variant="banner" />
+
     </KeyboardAvoidingView>
   );
 }

@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
@@ -719,6 +720,8 @@ showToast('Reminder set for 3 days before.', 'success');
         </View>
       )}
       </ScrollView>
+      <AIDisclaimer variant="banner" />
+
       </KeyboardAvoidingView>
   );
 }

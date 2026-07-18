@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -163,6 +164,8 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
           Laws vary by state. Consult a licensed attorney for advice about your situation.
         </Text>
       </View>
+      <AIDisclaimer variant="banner" />
+
     </ScrollView>
   );
 }

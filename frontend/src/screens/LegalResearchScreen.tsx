@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -367,6 +368,8 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
           Cancel anytime. Verify all citations independently before filing.
         </Text>
       </View>
+      <AIDisclaimer variant="banner" />
+
     </ScrollView>
   );
 }

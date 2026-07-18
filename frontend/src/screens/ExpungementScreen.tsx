@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useNetworkError } from '../hooks/useNetworkError';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -706,6 +707,8 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       </TouchableOpacity>
 
       <View style={{ height: 40 }} />
+      <AIDisclaimer variant="banner" />
+
     </ScrollView>
   );
 }

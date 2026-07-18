@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useHaptics } from '../hooks/useHaptics';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';

@@ -1,3 +1,12 @@
+
+// UPL compliance: all AI responses include disclaimer metadata
+const UPL_DISCLAIMER = {
+  upl_disclaimer: true,
+  disclaimer_text: "This is legal information only, not legal advice. " +
+    "Laws vary by state and individual circumstances differ. " +
+    "Consult a licensed attorney for advice specific to your situation.",
+  disclaimer_version: "v1.0",
+};
 import { requireDisclaimer } from '../../middleware/disclaimer.js';
 const MAX_MOTION_LENGTH = 50000; // ~12,500 words — covers any motion
 

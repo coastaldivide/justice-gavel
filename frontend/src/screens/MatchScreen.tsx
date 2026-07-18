@@ -1,3 +1,4 @@
+import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -480,6 +481,8 @@ function MatchScreen(): React.JSX.Element {
         )}
         <View style={{ height: 40 }} />
       </ScrollView>
+      <AIDisclaimer variant="banner" />
+
     </KeyboardAvoidingView>
   );
 }

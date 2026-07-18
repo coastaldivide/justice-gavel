@@ -1,3 +1,4 @@
+import { getAvailableSlots, createSchedulingLink } from '../services/calendly.js';
 /**
  * consultations.js — Lawyer video consultation booking
  *

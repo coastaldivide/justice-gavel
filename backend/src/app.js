@@ -1,3 +1,11 @@
+import { startAIWorkers } from './services/aiQueue.js';
+import barVerifyRouter from './routes/admin/barVerification.js';
+import impactRouter from './routes/impact.js';
+import legalAidRouter from './routes/legalAid.js';
+import bondsmanCRMRouter from './routes/bondsmanCRM.js';
+import pretrialRouter from './routes/pretrial.js';
+import caseLifecycleRouter from './routes/caseLifecycle.js';
+import aiCostsRouter from './routes/admin/aiCosts.js';
 // ── Sentry backend error tracking ─────────────────────────────────────────
 import * as Sentry from '@sentry/node';
 if (process.env.SENTRY_DSN) {
@@ -284,7 +292,6 @@ app.use((req, _res, next) => {
 // ETag for unchanged responses (304 Not Modified)
 app.set('etag', 'strong');
 
-app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc:    ["'self'"],
@@ -355,7 +362,6 @@ app.use(hpp());
 
 // ── Request ID — correlate frontend errors with Railway logs ──────────────────
 import { randomUUID } from 'crypto';
-app.use((req, res, next) => {
   const id = req.headers['x-request-id'] || randomUUID();
   req.requestId = id;
   res.setHeader('X-Request-ID', id);
@@ -524,6 +530,7 @@ app.use('/api/video',    videoRouter);
 app.use('/api/research',   researchRouter);
 app.use('/api/discovery',  discoveryRouter);
 app.use('/api/translate',  translateRouter);
+app.use('/api/admin/ai-costs', aiCostsRouter);
 app.use('/api/admin',      adminRouter);
 app.use('/api/saved',        savedRouter);
 app.use('/api/consultations', consultationsRouter);
@@ -640,3 +647,14 @@ function gracefulShutdown(signal) {
 }
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
+app.use('/api/cases', caseLifecycleRouter);
+
+app.use('/api/pretrial', pretrialRouter);
+
+app.use('/api/bondsman', bondsmanCRMRouter);
+
+app.use('/api/legal-aid', legalAidRouter);
+
+app.use('/api/impact', impactRouter);
+
+app.use('/api/admin/bar-verification', barVerifyRouter);

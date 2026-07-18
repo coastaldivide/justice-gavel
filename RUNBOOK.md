@@ -322,3 +322,37 @@ All endpoints return a consistent envelope:
 - `429` Rate limited (`Retry-After` header set)
 - `500` Internal server error (logged to Sentry)
 
+
+## Calendly Integration
+
+```env
+# Calendly API (real attorney availability)
+CALENDLY_PERSONAL_TOKEN=   # Get from: https://calendly.com/integrations/api_webhooks
+CALENDLY_WEBHOOK_SIGNING_KEY=  # For webhook verification
+```
+
+### Setup per attorney:
+1. Attorney goes to Settings → Connect Calendar
+2. OAuth redirects to Calendly: `GET /api/calendly/connect?attorney_id=X`
+3. We store their `calendly_uri` in `lawyer_profiles.calendly_uri`
+4. Slot queries automatically use Calendly when `calendly_uri` is set
+5. Register webhook at https://calendly.com/integrations/webhooks pointing to `/api/webhooks/calendly`
+
+## Attorney Bar Verification
+
+```env
+ADMIN_ALERT_EMAIL=admin@justicegavel.app  # Gets notified on status changes
+```
+
+### Nightly Job (Railway Cron):
+```
+0 2 * * * node -e "import('./src/services/barVerification.js').then(m=>m.runNightlyVerification())"
+```
+
+### Manual sweep:
+```
+POST /api/admin/bar-verification/sweep  (admin role required)
+```
+
+### Supported state bars: CA, NY, TX, FL (API/scrape)
+### Fallback: mark as needs_manual_review for other states
