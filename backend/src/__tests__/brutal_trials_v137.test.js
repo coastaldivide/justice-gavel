@@ -161,8 +161,6 @@ describe('NAV. AppNavigator.tsx — Navigation Architecture (21,826 chars)', () 
 
     const fs = await import('fs');
     expect(src.length).toBeGreaterThan(4000);
-  });
-});
 
 // ── FV3. firm_verticals.js — Route Hardening (32 routes to ≥10) ──────────
 describe('FV3. firm_verticals.js — Deep Route Hardening', () => {
@@ -259,7 +257,4 @@ describe('Regression — All v1–v136 Confirmed', () => {
     for (let i=0;i<500000;i++) if(decrypt(encrypt(`v137_${i}`))!==`v137_${i}`) e2++;
     expect(e2).toBe(0);
   });
-});
-
-});
 });

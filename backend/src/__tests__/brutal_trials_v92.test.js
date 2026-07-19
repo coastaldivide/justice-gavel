@@ -393,7 +393,3 @@ describe('Mass Influx Final — 100,000 Scenarios', () => {
     expect(e).toBe(0);
   });
 });
-
-});
-});
-});

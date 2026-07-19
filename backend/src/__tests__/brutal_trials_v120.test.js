@@ -280,6 +280,3 @@ describe('Mass Influx — 100,000 Scenarios', () => {
     expect(e).toBe(0);
   });
 });
-
-});
-});

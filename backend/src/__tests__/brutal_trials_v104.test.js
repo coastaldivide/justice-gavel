@@ -81,6 +81,7 @@ describe('DISC36. S0 Threshold Fixes — 9 items', () => {
     expect(src).toContain("router.get('/:id/signers'");
     expect(src).toContain('signers');
   });
+  test('test-orphan-84', async () => {
     const fs = await import('fs');
     expect(src).toContain('STOP');
   });

@@ -209,5 +209,3 @@ describe('FINAL_160. Full Quality Gate', () => {
     expect(e2).toBe(0);
   });
 });
-
-});

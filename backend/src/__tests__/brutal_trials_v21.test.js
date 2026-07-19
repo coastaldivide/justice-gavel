@@ -246,6 +246,7 @@ describe('6. firms.js accept-invite + auth GDPR export', () => {
     expect(src).toContain('!LIVE');
   });
     const fs = await import('fs');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/discovery/_helpers.js', 'utf8');
     expect(src).toContain('+15550000');
     expect(src).toContain();
 

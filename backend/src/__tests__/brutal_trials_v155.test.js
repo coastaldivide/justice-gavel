@@ -186,8 +186,8 @@ describe('M21b. Service Exports → ≥20 Hits (32 exports)', () => {
       expect(s).toContain(e);
     // TCPA: processOptOut handles STOP/UNSUBSCRIBE; expireOldPaymentLinks: 72hr cleanup
   });
+  test('TCPA: processOptOut handles STOP/UNSUBSCRIBE; expireOldPayme', async () => {
     const fs=await import('fs');
-                     'normalizePhone',])
       expect(s).toContain(e);
   });
   test('M21b-05: contentRefresh + healthScan + pushDelivery', async () => {

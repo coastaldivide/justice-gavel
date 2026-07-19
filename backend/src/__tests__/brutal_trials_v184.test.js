@@ -163,7 +163,6 @@ describe('EMAIL. SendGrid Email Service', () => {
     expect(src).toContain('normalizePhone');
     expect(src).toMatch(/\+1|\+?1?\s*\(?[0-9]/);
   });
-});
 
 // ── SCHEDULER ─────────────────────────────────────────────────────────────
 describe('SCHED. Background Scheduler', () => {

@@ -430,7 +430,3 @@ describe('FINAL. Zero-Defect Production Gates', () => {
     expect(e2).toBe(0);
   });
 });
-
-});
-});
-});

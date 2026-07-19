@@ -171,6 +171,7 @@ describe('SCHEMA. Complete DB Schema Coverage', () => {
 
 // ── Legal compliance still intact ────────────────────────────────────────
 describe('COMPLIANCE. Legal Compliance Checks', () => {
+  test('── Legal compliance still intact ───────────────────────────', async () => {
     const fs=await import('fs');
     expect(src).toContain('STOP');
     // TCPA 47 CFR 64.1200 — STOP must be honored immediately
@@ -220,6 +221,7 @@ describe('SECURITY. Critical Security Checks', () => {
     const app=fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8');
     expect(app).not.toContain("origin: '*'");
   });
+  test('test-orphan-224', async () => {
     const fs=await import('fs');
     const stripe=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js','utf8');
     const bot=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js','utf8');

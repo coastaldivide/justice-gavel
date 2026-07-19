@@ -113,7 +113,6 @@ describe('WHS. webhooks/stripe.js — Stripe Payment Event Handler', () => {
     expect(src).toContain('demo mode');
     // Real mode: HMAC verification prevents spoofed SMS replies
   });
-});
 
 describe('WHT — Twilio SMS Intent', () => {
   test('WHT-03: YES | NO | STOP intent parsing — TCPA opt-out compliance', async () => {
@@ -320,6 +319,5 @@ describe('Mass Influx — 200,000 Final Scenarios', () => {
     }
     expect(e).toBe(0);
   });
-});
 });
 });

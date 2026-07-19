@@ -239,6 +239,3 @@ describe('MASS1. 2M Influx', () => {
     expect(e2).toBe(0);
   });
 });
-
-});
-});

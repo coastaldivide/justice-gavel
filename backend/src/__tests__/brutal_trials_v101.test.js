@@ -35,6 +35,7 @@ const mkMatter = (v, o={}) => ({
 
 // ── DISC33. 6 S0 Threshold Fixes ──────────────────────────────────────────
 describe('DISC33. S0 Threshold Fixes — 6 items to ≥5', () => {
+  test('── DISC33. 6 S0 Threshold Fixes ────────────────────────────', async () => {
     const fs = await import('fs');
     expect(src).toContain('STOP');
     // STOP = TCPA opt-out; immediate response prevents retry loop

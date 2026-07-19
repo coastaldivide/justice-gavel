@@ -450,6 +450,7 @@ describe('M20. Service Exports → ≥10 Hits (10 exports)', () => {
     // sendEmail: main dispatch; buildReceiptEmail: payment confirmation;
     // buildWelcomeEmail: onboarding email template
   });
+  test('sendEmail: main dispatch; buildReceiptEmail: payment confirm', async () => {
     const fs=await import('fs');
     expect(s).toContain('sendSms');
     expect(s).toContain('normalizePhone');

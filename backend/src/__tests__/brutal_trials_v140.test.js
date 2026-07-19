@@ -285,6 +285,3 @@ describe('Regression — All v1–v139 Confirmed', () => {
     expect(e2).toBe(0);
   });
 });
-
-});
-});

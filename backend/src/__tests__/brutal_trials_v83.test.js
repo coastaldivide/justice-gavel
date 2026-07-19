@@ -677,7 +677,3 @@ describe('Regression — All v1–v82 Confirmed', () => {
     expect(CONFIG.courtlistener.token).toBeNull();
   });
 });
-
-});
-});
-});

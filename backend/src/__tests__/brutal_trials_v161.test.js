@@ -162,6 +162,7 @@ describe('A. Backend — All Issues Fixed', () => {
     expect(app).not.toContain("origin: '*'");
   });
 
+  test('test-orphan-165', async () => {
     const fs=await import('fs');
     const stripe=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js','utf8');
     const bot=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js','utf8');
@@ -326,6 +327,7 @@ describe('C. Data — All TODO Items Resolved', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('D. Legal Compliance — Zero Risk Items', () => {
+  test('SECTION D — LEGAL COMPLIANCE', async () => {
     const fs=await import('fs');
     expect(src).toContain('STOP');
   });
@@ -453,8 +455,4 @@ describe('F. Route Coverage + Mass Influx', () => {
     for(let i=0;i<5000;i++) if(decrypt(encrypt(`v161_${i}`))!==`v161_${i}`) e2++;
     expect(e2).toBe(0);
   });
-});
-
-});
-});
 });

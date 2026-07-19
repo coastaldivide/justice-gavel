@@ -67,6 +67,7 @@ describe('SEC. Security Configuration Internals', () => {
     if(critical.length) console.log('Critical TODOs:', critical);
     expect(critical.length).toBe(0);
   });
+  test('test-orphan-70', async () => {
     const fs   = await import('fs');
     const path = await import('path');
     const CRED_PATTERNS = [/sk_(test|live)_[A-Za-z0-9]{20,}/,/SG\.[A-Za-z0-9_-]{22,}/,/AC[a-f0-9]{32}/,/whsec_[A-Za-z0-9]+/];
@@ -264,8 +265,4 @@ describe('MASS. 2M Influx', () => {
     for(let i=0;i<5000;i++) if(decrypt(encrypt('v188_'+i))!==('v188_'+i)) e2++;
     expect(e2).toBe(0);
   });
-});
-
-});
-});
 });

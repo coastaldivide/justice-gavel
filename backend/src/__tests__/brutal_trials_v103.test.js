@@ -55,6 +55,7 @@ describe('DISC35. S0 Threshold Fixes — 5 items', () => {
     expect(src).toContain("router.get('/my/:enrollmentId'");
     expect(src).toContain('authRequired');
   });
+  test('test-orphan-58', async () => {
     const fs = await import('fs');
     expect(src).toContain('STOP');
   });

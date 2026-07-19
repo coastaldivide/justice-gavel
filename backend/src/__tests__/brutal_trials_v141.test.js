@@ -159,7 +159,6 @@ describe('SGR. sendgrid.js — SendGrid Email Service (6,912 chars)', () => {
     // parseIntent: classifies inbound SMS (STOP, HELP, YES, arrest alert reply)
     // normalizePhone: +1 formatting, strips non-digits
   });
-});
 
 // ── PREG. precedentRegistry — 2 New Exports ──────────────────────────────
 describe('PREG. precedentRegistry.js — 2 Previously Undocumented Exports', () => {

@@ -611,16 +611,6 @@ describe('6. sendgrid.js — Service Constants', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════════
 
-
-    const DEMO_NUMBER = '+15550000';
-      // Demo mode: uses the placeholder number
-    }
-  });
-
-    const live  = !!(sid && token);
-  });
-});
-
 // ═══════════════════════════════════════════════════════════════════════════
 // 8. offlineCache.ts — 7 remaining functions
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1039,6 +1029,7 @@ describe('13. Regression — All Prior Fixes Confirmed', () => {
     await expect(generateContract('bad_type_xyz', {})).rejects.toThrow();
   });
 
+  test('13-06: SENDGRID_LIVE is false in test env', () => {
     expect(SENDGRID_LIVE).toBe(false);
   });
 
@@ -1075,7 +1066,6 @@ describe('13. Regression — All Prior Fixes Confirmed', () => {
       expect(decrypt(encrypt(p))).toBe(p);
     }
   });
-});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 14. Mass Influx — 100,000 new scenarios
@@ -1169,5 +1159,4 @@ describe('14. Mass Influx — 100,000 New Scenarios', () => {
     }
     expect(errors).toBe(0);
   });
-});
 });

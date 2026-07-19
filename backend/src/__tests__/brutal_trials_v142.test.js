@@ -98,6 +98,7 @@ describe('MNT. 6 Low Mount Points — Routes Confirmed Active', () => {
     expect(src).toContain("router.post('/subscriptions'");
     // Outbound webhooks: firms subscribe to event notifications — avg 30 hits
   });
+  test('Outbound webhooks: firms subscribe to event notifications — ', async () => {
     const fs = await import('fs');
     const app = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js','utf8');
     expect(src.length).toBeGreaterThan(4000);

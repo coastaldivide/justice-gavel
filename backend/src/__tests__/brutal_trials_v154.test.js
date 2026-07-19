@@ -231,6 +231,7 @@ describe('M21. Service Exports → ≥20 Hits (35 exports)', () => {
     expect(s).toContain('expireOldPaymentLinks');
     expect(s.length).toBeGreaterThan(20000);
   });
+  test('test-orphan-234', async () => {
     const fs=await import('fs');
     expect(s).toContain('sendSms');
     expect(s).toContain('parseIntent');

@@ -67,6 +67,7 @@ const mkMatter = (v, o = {}) => ({
 });
 
     const fs = await import('fs');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js', 'utf8');
     expect(src).toContain('validateRequest');
     expect(src).toContain('BOT_WEBHOOK_BASE_URL');
     expect(src).toContain('req.originalUrl');

@@ -35,6 +35,7 @@ const mkMatter = (v, o={}) => ({
 
 // ── DISC34. 6 S0 Threshold Fixes ──────────────────────────────────────────
 describe('DISC34. S0 Threshold Fixes — 6 items', () => {
+  test('── DISC34. 6 S0 Threshold Fixes ────────────────────────────', async () => {
     const fs = await import('fs');
     expect(src).toContain('STOP');
   });
