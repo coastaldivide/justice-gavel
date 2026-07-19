@@ -155,7 +155,7 @@ The output will be rendered to PDF exactly as written. No markdown. No asterisks
 const INJECTION_PATTERNS = [
   /ignore\s+(?:all\s+)?(?:previous|prior|above)\s+instructions/i,
   /you\s+are\s+(?:now|actually|really)\s+(?:DAN|[A-Z]{2,})/i,
-  /DAN|jailbreak|do\s+anything\s+now/i,
+  /DAN|jailbreak|do\s+anything\s+now/i,
   /system\s*:\s*you\s+are/i,
   /\[SYSTEM\]|\[INST\]|<<SYS>>/i,
   /forget\s+(?:your|all)\s+(?:previous\s+)?(?:instructions|training)/i,

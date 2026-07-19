@@ -159,12 +159,10 @@ export async function getDb() {
 
 export async function initDb() { return getDb(); }
 
-// Pool error handler (prevents uncaught pool errors from crashing process)
-pool.on('error', (err) => console.error('[db] Pool error:', err.message));
-
 export async function dbHealthCheck() {
   try {
-    await pool.query('SELECT 1');
+    const db = await getDb();
+    await db.get('SELECT 1');
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err.message };

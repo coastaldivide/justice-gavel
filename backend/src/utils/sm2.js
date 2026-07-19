@@ -34,7 +34,9 @@ const MAX_INTERVAL = 365;   // cap review interval at 1 year
  */
 export function sm2Next(state, isCorrect) {
   const quality  = isCorrect ? 4 : 1;
-  let { easiness = INITIAL_EF, interval_days = 1, repetitions = 0 } = state;
+  // Guard: null / undefined state means brand-new card — use defaults
+  const s = state ?? {};
+  let { easiness = INITIAL_EF, interval_days = 1, repetitions = 0 } = s;
 
   // Update easiness factor
   const newEF = Math.max(
@@ -65,8 +67,8 @@ export function sm2Next(state, isCorrect) {
     repetitions:    newRepetitions,
     last_quality:   quality,
     next_review_at: nextReviewAt.toISOString(),
-    times_seen:     (state.times_seen ?? 0) + 1,
-    times_correct:  (state.times_correct ?? 0) + (isCorrect ? 1 : 0),
+    times_seen:     (s.times_seen ?? 0) + 1,
+    times_correct:  (s.times_correct ?? 0) + (isCorrect ? 1 : 0),
     last_seen_at:   new Date().toISOString(),
   };
 }

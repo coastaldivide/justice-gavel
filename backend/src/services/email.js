@@ -10,10 +10,11 @@
 import { Resend } from 'resend';
 import logger     from '../utils/logger.js';
 
+// Resend constructor throws if key is undefined/empty — use placeholder in non-live mode
 if (!process.env.RESEND_API_KEY) {
-  console.warn('[email] RESEND_API_KEY missing — email disabled');
+  console.warn('[email] RESEND_API_KEY missing — email disabled (demo mode)');
 }
-process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder_not_live');
 const FROM      = process.env.SENDGRID_FROM_EMAIL || 'noreply@justicegavel.app';
 const FROM_NAME = 'Justice Gavel';
 const LIVE      = process.env.LIVE_EMAIL === 'true';
@@ -124,4 +125,14 @@ export async function sendCriticalAlert(subject, body) {
 }
 
 // Backward-compat alias (old code imported from sendgrid.js)
-export default { sendPasswordReset, sendWelcome, sendSubscriptionConfirm, sendPaymentFailed, sendCriticalAlert };
+
+/**
+ * sendEmail — generic low-level email dispatcher.
+ * Used by outbound_bot, healthScan, retention, dunning, etc.
+ * Accepts { to, subject, html?, text? }
+ */
+export async function sendEmail({ to, subject, html, text }) {
+  return send({ to, subject, html: html || text || '', text });
+}
+
+export default { sendPasswordReset, sendWelcome, sendSubscriptionConfirm, sendPaymentFailed, sendCriticalAlert, sendEmail };

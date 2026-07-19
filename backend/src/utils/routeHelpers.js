@@ -122,3 +122,94 @@ export function sendList(res, items, total) {
 export function sendCreated(res, data) {
   return res.status(201).json({ data });
 }
+
+// ── Additional helpers expected by route files ─────────────────────────────────
+
+export function err401(res, msg = 'Authentication required.')     { return res.status(401).json({ error: msg }); }
+export function err409(res, msg = 'Conflict.')                    { return res.status(409).json({ error: msg }); }
+export function err422(res, msg = 'Unprocessable entity.')        { return res.status(422).json({ error: msg }); }
+export function err502(res, msg = 'Upstream service error.')      { return res.status(502).json({ error: msg }); }
+
+export function sanitizeStr(s, maxLen = 2000) {
+  if (s == null) return null;
+  return String(s).trim().slice(0, maxLen);
+}
+
+export function truncateStr(s, maxLen = 500) {
+  if (s == null) return null;
+  const str = String(s).trim();
+  return str.length > maxLen ? str.slice(0, maxLen - 3) + '...' : str;
+}
+
+export function normalizeEmail(email) {
+  if (!email) return null;
+  return String(email).toLowerCase().trim();
+}
+
+export function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ''));
+}
+
+export function escapeLike(s) {
+  return String(s || '').replace(/[%_\\]/g, '\\$&');
+}
+
+export function parsePagination(query, defaults = { limit: 20, offset: 0 }) {
+  const limit  = Math.min(Math.max(parseInt(query?.limit  || defaults.limit,  10) || defaults.limit,  1), 200);
+  const offset = Math.max(parseInt(query?.offset || defaults.offset, 10) || defaults.offset, 0);
+  return { limit, offset };
+}
+
+export function buildWhere(conditions) {
+  const clauses = Object.entries(conditions)
+    .filter(([, v]) => v !== undefined && v !== null)
+    .map(([k]) => `${k} = ?`);
+  const values = Object.entries(conditions)
+    .filter(([, v]) => v !== undefined && v !== null)
+    .map(([, v]) => v);
+  return clauses.length
+    ? { where: `WHERE ${clauses.join(' AND ')}`, values }
+    : { where: '', values: [] };
+}
+
+export async function ownsResource(db, table, id, userId, idCol = 'id', ownerCol = 'user_id') {
+  const row = await db.get(`SELECT ${idCol} FROM ${table} WHERE ${idCol} = ? AND ${ownerCol} = ?`, [id, userId]);
+  return !!row;
+}
+
+export async function withTransaction(db, fn) {
+  try {
+    await db.run('BEGIN');
+    const result = await fn();
+    await db.run('COMMIT');
+    return result;
+  } catch (err) {
+    await db.run('ROLLBACK').catch(() => {});
+    throw err;
+  }
+}
+
+// ── Business constants used across billing/route files ────────────────────────
+export const BUSINESS_CONSTANTS = {
+  BONDSMAN_BADGE_CENTS:   4900,   // $49/month
+  ADVISOR_PRICE_CENTS:    2900,   // $29/month
+  LEGAL_PRO_PRICE_CENTS:  4900,   // $49/month
+  LEGAL_RADAR_CENTS:      9900,   // $99/month
+  MAX_FREE_AI_MSGS:       5,
+  FREE_CASE_LIMIT:        3,
+  TRIAL_DAYS:             7,
+};
+
+export const LIMITS = {
+  AI_MESSAGES_FREE:  5,
+  AI_MESSAGES_BASIC: 20,
+  CASES_FREE:        3,
+  CASES_PAID:        Infinity,
+  EXPORT_MAX_ROWS:   5000,
+};
+
+export const API_URLS = {
+  JUDYRECORDS:  'https://api.judyrecords.com/v1',
+  GOOGLE_PLACES:'https://maps.googleapis.com/maps/api/place',
+  CALENDLY:     'https://api.calendly.com/v2',
+};

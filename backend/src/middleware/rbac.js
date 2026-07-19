@@ -73,6 +73,11 @@ export const ROLE_ALIASES = {
   mitigation_specialist:     'paralegal',
   interpreter:               'paralegal',
   expert_witness:            'paralegal',
+  // ── Additional simulation roles expected by firm_verticals.test.js ───
+  lead_attorney:             'partner',
+  senior_esquire:            'partner',
+  associate_attorney:        'associate',
+  junior_attorney:           'associate',
 };
 
 /** Resolve an aliased role to its canonical ROLE_HIERARCHY tier. */
