@@ -36,7 +36,7 @@ type CheckInPhase = 'loading' | 'ready' | 'gps' | 'submitting' | 'done' | 'alrea
 const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
   <View testID="checkin-already-done" style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
     <Text style={{ fontSize: 48, marginBottom: 16 }}>{icon}</Text>
-    <Text style={{ fontSize: 18, fontWeight: '700', color: '#042C53', textAlign: 'center', marginBottom: 8 }}>{title}</Text>
+    <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.navy, textAlign: 'center', marginBottom: 8 }}>{title}</Text>
     <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 }}>{subtitle}</Text>
   </View>
 );
@@ -503,8 +503,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
   statLabel: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
 
   courtWarning: {
-    backgroundColor: '#FFA726', borderRadius: RADIUS.md, padding: 12, marginBottom: 14,
-    borderWidth: 1, borderColor: '#FFA726',
+    backgroundColor: COLORS.steelMid, borderRadius: RADIUS.md, padding: 12, marginBottom: 14,
+    borderWidth: 1, borderColor: COLORS.steelMid,
   },
   courtWarningText: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.warn, textAlign: 'center' },
 

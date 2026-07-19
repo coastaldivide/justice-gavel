@@ -14,7 +14,7 @@ import {
 import { Linking } from 'react-native'; // open Daily.co session in system browser
 const openBrowserAsync = (url: string) => Linking.openURL(url);
 // TODO: import useThemeColors after adding to userState.ts
-const useThemeColors = () => ({ bg: '#f9fafb', textPrimary: '#111', textSecondary: '#666', navy: '#042C53' });
+const useThemeColors = () => ({ bg: '#f9fafb', textPrimary: '#111', textSecondary: '#666', navy: COLORS.navy });
 import { api } from '../services/api';
 import { t } from '../i18n';
 
@@ -81,7 +81,7 @@ function VideoConsultationScreen({ route, navigation }: Props) {
           Session Ready
         </Text>
         <TouchableOpacity
-          style={[styles.startBtn, { backgroundColor: colors.navy || '#042C53', marginBottom: 16 }]}
+          style={[styles.startBtn, { backgroundColor: colors.navy || COLORS.navy, marginBottom: 16 }]}
           onPress={() => openBrowserAsync(sessionUrl)}
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
@@ -124,12 +124,12 @@ function VideoConsultationScreen({ route, navigation }: Props) {
 
       {error && (
         <View style={[styles.errorBox, { backgroundColor: '#fef2f2' }]}>
-          <Text style={{ color: '#c0392b' }}>{error}</Text>
+          <Text style={{ color: COLORS.bail }}>{error}</Text>
         </View>
       )}
 
       <TouchableOpacity
-        style={[styles.startBtn, { backgroundColor: colors.navy || '#042C53' }]}
+        style={[styles.startBtn, { backgroundColor: colors.navy || COLORS.navy }]}
         onPress={startSession}
         disabled={loading}
         accessibilityRole="button"

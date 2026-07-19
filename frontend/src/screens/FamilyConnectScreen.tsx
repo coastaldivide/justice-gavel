@@ -534,7 +534,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   stepLineDone: { backgroundColor: colors.legal },
 
   section: { padding: 16 },
-  sectionTitle: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: '#042C53', marginBottom: 4 },
+  sectionTitle: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy, marginBottom: 4 },
   sectionSub: { fontSize: 12, color: colors.steel, marginBottom: 16, lineHeight: 18 },
 
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
@@ -546,17 +546,17 @@ const makeStyles = (colors: any) => StyleSheet.create({
   resultsList: { marginTop: 4 },
   resultsHeader: { fontSize: 12, fontWeight: '700', color: colors.steel, marginBottom: 8 },
   arrestResult: { backgroundColor: COLORS.bgCard, borderRadius: 12, padding: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center', elevation: 1, borderWidth: 1.5, borderColor: COLORS.bgSubtle },
-  arrestResultName: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#042C53', marginBottom: 2 },
+  arrestResultName: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 2 },
   arrestResultDetail: { fontSize: 12, color: colors.steel, marginBottom: 2 },
   arrestResultCharges: { fontSize: 12, color: colors.steel, marginBottom: 2 },
   arrestResultBail: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: '#EF5350' },
-  selectArrow: { fontSize: 22, color: '#042C53', fontWeight: '300', marginLeft: 8 },
+  selectArrow: { fontSize: 22, color: COLORS.navy, fontWeight: '300', marginLeft: 8 },
 
   skipBtn: { paddingVertical: 12, alignItems: 'center', marginTop: 8 },
   skipBtnText: { fontSize: 12, lineHeight: 20, color: colors.blue, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 
-  arrestSummary: { backgroundColor: COLORS.bgSubtle, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#85B7EB' },
-  arrestSummaryTitle: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#042C53', marginBottom: 4 },
+  arrestSummary: { backgroundColor: COLORS.bgSubtle, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.steel },
+  arrestSummaryTitle: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 4 },
   arrestSummaryDetail: { fontSize: 12, lineHeight: 20, color: colors.blue, marginBottom: 4 },
   arrestSummaryCharges: { fontSize: 12, color: colors.blue, lineHeight: 16 },
 
@@ -564,7 +564,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   input: { backgroundColor: COLORS.bgCard, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, color: colors.bgCard },
 
   feeBlock: { backgroundColor: COLORS.bgCard, borderRadius: 14, padding: 16, marginTop: 20, marginBottom: 8, borderWidth: 1.5, borderColor: COLORS.bgSubtle },
-  feeBlockTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#042C53', marginBottom: 10 },
+  feeBlockTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 10 },
   feeItem: { marginBottom: 6 },
   feeItemText: { fontSize: 12, color: colors.steel, lineHeight: 18 },
 
@@ -576,7 +576,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   backBtnText: { fontSize: 12, lineHeight: 20, color: colors.blue, fontWeight: '600' },
 
   payingBlock: { alignItems: 'center', paddingVertical: 40 },
-  payingText: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_700Bold', fontWeight: '700', color: '#042C53', marginTop: 16 },
+  payingText: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.navy, marginTop: 16 },
   payingHint: { fontSize: 12, color: colors.steel, marginTop: 6 },
 
   successBanner: { backgroundColor: colors.legal, borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 16 },
@@ -584,9 +584,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
   successTitle: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.bgCard, marginBottom: 4 },
   successSub: { fontSize: 12, color: colors.legal, textAlign: 'center', lineHeight: 18 },
 
-  caseCard: { backgroundColor: COLORS.bgSubtle, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#85B7EB' },
+  caseCard: { backgroundColor: COLORS.bgSubtle, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.steel },
   caseTitle: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.blue, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
-  caseName: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#042C53', marginBottom: 4 },
+  caseName: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 4 },
   caseCharges: { fontSize: 12, color: colors.blue, marginBottom: 4, lineHeight: 17 },
   caseBail: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#EF5350', marginBottom: 2 },
   caseLocation: { fontSize: 12, color: colors.blue },
@@ -601,19 +601,19 @@ const makeStyles = (colors: any) => StyleSheet.create({
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   tag: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 4 },
   tagText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
-  contactRating: { fontSize: 12, color: '#FFA726', fontWeight: '700', marginBottom: 8 },
+  contactRating: { fontSize: 12, color: COLORS.steelMid, fontWeight: '700', marginBottom: 8 },
   callBtn: { borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
   callBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21, },
 
-  noContacts: { backgroundColor: '#FFA726', borderRadius: 12, padding: 16, marginVertical: 8 },
+  noContacts: { backgroundColor: COLORS.steelMid, borderRadius: 12, padding: 16, marginVertical: 8 },
   noContactsText: { fontSize: 14, color: colors.steel, lineHeight: 20 },
 
   receiptBlock: { backgroundColor: COLORS.bg, borderRadius: 12, padding: 16, marginTop: 16 },
   receiptTitle: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.steel, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 },
   receiptRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   receiptLabel: { fontSize: 12, lineHeight: 20, color: colors.steel },
-  receiptAmount: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#042C53' },
+  receiptAmount: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy },
   receiptValue: { fontSize: 12, lineHeight: 20, color: colors.steel },
   receiptMock: { fontSize: 11, color: colors.steel, marginTop: 6, textAlign: 'center' },
 

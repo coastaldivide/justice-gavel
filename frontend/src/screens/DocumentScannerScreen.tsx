@@ -110,7 +110,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
 
       } catch (_err) {
 
-        console.error(_err);
+        if (__DEV__) console.error(_err);
 
       }
       await hapticNotification();

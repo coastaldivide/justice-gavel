@@ -164,7 +164,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       {loading && (
         <View style={{ flex:1, alignItems:'center', justifyContent:'center' }}>
-          <ActivityIndicator size="large" color="#042C53" />
+          <ActivityIndicator size="large" color=COLORS.navy />
         </View>
       )}
       <View style={styles.confirmedWrap}>

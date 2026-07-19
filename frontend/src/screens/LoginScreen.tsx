@@ -275,7 +275,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderRadius: 14, paddingVertical: 16, paddingHorizontal: 20,
     alignItems: 'center', backgroundColor: 'rgba(133,183,235,0.07)',
   },
-  browseBtnText: { color: '#85B7EB', fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  browseBtnText: { color: COLORS.steel, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   browseBtnSub:  { color: colors.blue, fontSize: 11, marginTop: 3, fontWeight: '500' },
   topBrowseBtn: {
     backgroundColor: colors.legal,

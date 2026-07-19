@@ -424,7 +424,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   hallName:          { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   hallMeta:          { fontSize: 12, marginTop: 2 },
   helpedBadge:       { alignItems: 'center', minWidth: 48 },
-  helpedNum:         { fontSize: 18, fontFamily: 'Inter_900Black', fontWeight: '900', color: '#F9A825' },
+  helpedNum:         { fontSize: 18, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.steelMid },
   helpedLabel:       { fontSize: 11, color: colors.steel, fontWeight: '600' },
 });
 

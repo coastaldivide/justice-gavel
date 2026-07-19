@@ -59,9 +59,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 function getAccuracyColor(pct: number): string {
-  if (pct >= 75) return '#22c55e';
-  if (pct >= 55) return '#f59e0b';
-  return '#ef4444';
+  if (pct >= 75) return COLORS.legal;
+  if (pct >= 55) return COLORS.steelMid;
+  return COLORS.bail;
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────

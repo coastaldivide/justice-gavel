@@ -103,7 +103,7 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
         {/* ── Emergency fast-track — top of onboarding, no account required ── */}
         <TouchableOpacity
           style={{
-            backgroundColor: '#c0392b',
+            backgroundColor: COLORS.bail,
             borderRadius: 12,
             padding: 16,
             marginBottom: 20,
@@ -225,7 +225,7 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
           <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, textAlign: 'center', marginBottom: 4 }}>
             Need free legal help right now?
           </Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: '#85B7EB', fontSize: 13, textAlign: 'center', fontWeight: '600' }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: COLORS.steel, fontSize: 13, textAlign: 'center', fontWeight: '600' }}>
             Public Defender Project: 1-800-341-0059 · ACLU: 1-212-549-2500
           </Text>
         </View>

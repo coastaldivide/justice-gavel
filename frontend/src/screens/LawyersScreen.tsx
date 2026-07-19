@@ -1047,12 +1047,12 @@ const makeStyles = (colors: any) => StyleSheet.create({
   // Badge styles -- static, extracted from inline for perf
   badgeGreen:   { backgroundColor:colors.legal, borderRadius:10,
                   paddingHorizontal:7, paddingVertical:3 },
-  badgeAmber:   { backgroundColor:'#FFA726', borderRadius:10,
+  badgeAmber:   { backgroundColor:COLORS.steelMid, borderRadius:10,
                   paddingHorizontal:7, paddingVertical:3 },
   badgeFastReply:{ backgroundColor:colors.legal, borderRadius:10,
                    paddingHorizontal:7, paddingVertical:3, marginRight:6 },
   badgeTextGreen: { fontSize:11, lineHeight:16, color:colors.legal, fontWeight:'700' },
-  badgeTextAmber: { fontSize:11, lineHeight:16, color:'#FFA726', fontWeight:'700' },
+  badgeTextAmber: { fontSize:11, lineHeight:16, color:COLORS.steelMid, fontWeight:'700' },
 
   screen: { flex: 1 },
 
@@ -1107,10 +1107,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
   badge:        { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, borderWidth: 1 },
   badgeText:    { fontSize: 11, ...FONTS.semi },
   greenBadge:   { backgroundColor: COLORS.legalBg, borderColor: colors.legal },
-  purpleBadge:  { backgroundColor: COLORS.bgSubtle, borderColor: '#85B7EB' },
+  purpleBadge:  { backgroundColor: COLORS.bgSubtle, borderColor: COLORS.steel },
   tealBadge:    { backgroundColor: colors.legal, borderColor: colors.legal },
-  verifiedBadge:{ backgroundColor: COLORS.bgSubtle, borderColor: '#85B7EB' },
-  goldenGavelBadge: { backgroundColor: '#FFA726', borderColor: '#F9A825' },
+  verifiedBadge:{ backgroundColor: COLORS.bgSubtle, borderColor: COLORS.steel },
+  goldenGavelBadge: { backgroundColor: COLORS.steelMid, borderColor: COLORS.steelMid },
   tagRow:       { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6, gap: 4 },
   tag:          { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
   tagText:      { fontSize: 11, ...FONTS.medium },
@@ -1182,7 +1182,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   needSheet: {
     backgroundColor: COLORS.bgCard, borderRadius: 24,
     padding: 24, width: '100%', maxWidth: 400 },
-  needTitle: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: '#042C53', textAlign: 'center', marginBottom: 4 },
+  needTitle: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy, textAlign: 'center', marginBottom: 4 },
   needSub:   { fontSize: 14, lineHeight: 21, color: colors.steel, textAlign: 'center', marginBottom: 20 },
   needGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   needBtn: {

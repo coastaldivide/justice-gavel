@@ -369,8 +369,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
   watchName:    { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.textPrimary, marginBottom: 2 },
   watchLocation:{ fontSize: 12, color: COLORS.textMuted },
   watchStatus:  { fontSize: 11, color: COLORS.steel, marginTop: 2 },
-  matchBadge:   { backgroundColor: '#FFA726', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 10, marginTop: 6, borderWidth: 1, borderColor: '#F9A825' },
-  matchText:    { fontSize: 12, color: '#FFA726', ...FONTS.bold },
+  matchBadge:   { backgroundColor: COLORS.steelMid, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 10, marginTop: 6, borderWidth: 1, borderColor: COLORS.steelMid },
+  matchText:    { fontSize: 12, color: COLORS.steelMid, ...FONTS.bold },
   removeBtn:    { width: 30, height: 30, borderRadius: 16, backgroundColor: COLORS.bg, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   removeBtnText:{ fontSize: 12, lineHeight: 20, color: COLORS.textMuted, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 

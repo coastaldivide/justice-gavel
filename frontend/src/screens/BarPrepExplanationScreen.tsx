@@ -34,7 +34,7 @@ interface ExplanationData {
 }
 
 const DIFFICULTY_COLOR: Record<string, string> = {
-  easy: '#22c55e', medium: '#f59e0b', hard: '#ef4444',
+  easy: COLORS.legal, medium: COLORS.steelMid, hard: COLORS.bail,
 };
 
 export default function BarPrepExplanationScreen({
@@ -160,7 +160,7 @@ export default function BarPrepExplanationScreen({
         <SectionCard
           title="💡 Why This Answer"
           colors={colors}
-          accent="#22c55e"
+          accent=COLORS.legal
         >
           <Text style={styles.explanationText}>{data.explanation}</Text>
         </SectionCard>
@@ -254,7 +254,7 @@ function makeStyles(colors: any) {
     },
     correctAnswerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
     correctBadge:     {
-      backgroundColor: '#22c55e', paddingHorizontal: 10, paddingVertical: 4,
+      backgroundColor: COLORS.legal, paddingHorizontal: 10, paddingVertical: 4,
       borderRadius: 8, flexShrink: 0,
     },
     correctBadgeText: { fontSize: 13, fontFamily: FONTS.bold, color: '#fff' },

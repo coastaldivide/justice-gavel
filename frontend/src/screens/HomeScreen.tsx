@@ -83,6 +83,7 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
   // Subscription tier for analytics preview
   const [isPro, setIsPro] = useState(false);
+  const [barPrepStreak, setBarPrepStreak] = useState(0);
   useEffect(() => {
     AsyncStorage.getItem('user_subscription')
       .then(tier => setIsPro(!!tier && tier !== 'free'))
@@ -130,6 +131,13 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     primaryFetches.push(
       api.get('/cases').then(res => {
         if (Array.isArray(res.data)) setRecentCases((res.data || []).slice(0, 2));
+      }).catch(() => {})
+    );
+
+    // Load bar prep streak for home screen motivational banner
+    primaryFetches.push(
+      api.get('/bar-prep/progress').then(res => {
+        if (res.data?.streak_days) setBarPrepStreak(res.data.streak_days);
       }).catch(() => {})
     );
     AsyncStorage.getItem('user').then(u => {
@@ -459,7 +467,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-          style={{ backgroundColor: '#FFA726', borderBottomWidth: 1, borderBottomColor: '#FFA726',
+          style={{ backgroundColor: COLORS.steelMid, borderBottomWidth: 1, borderBottomColor: COLORS.steelMid,
             flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
           onPress={() =
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> (navigation as any).navigate('OfflineStatus')}
@@ -467,14 +475,14 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14 }}>📡</Text>
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700', color: '#FFA726' }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.steelMid }}>
               No internet connection
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color: colors.textMuted, lineHeight: 16 }}>
               Rights card, deadline calculator, and guides still work offline
             </Text>
           </View>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: '#FFA726', fontSize: 12 }}>See what works →</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.steelMid, fontSize: 12 }}>See what works →</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -578,13 +586,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.bg,
     borderRadius: 14, padding: 16, marginBottom: 12,
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderWidth: 1.5, borderColor: '#042C53' + '22',
-    shadowColor: '#042C53', shadowOpacity: 0.06,
+    borderWidth: 1.5, borderColor: COLORS.navy + '22',
+    shadowColor: COLORS.navy, shadowOpacity: 0.06,
     shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   nudgeIcon:  { fontSize: 22 },
-  nudgeTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#042C53', marginBottom: 2 },
+  nudgeTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 2 },
   nudgeSub:   { fontSize: 11, color: colors.steel },
-  nudgeArrow: { fontSize: 22, color: '#042C53', fontWeight: '300' },
+  nudgeArrow: { fontSize: 22, color: COLORS.navy, fontWeight: '300' },
   footerTitle: { fontSize: 12, lineHeight: 20, ...FONTS.bold, color: colors.bg },
   footerSub:   { fontSize: 11, color: COLORS.steel, marginTop: 2 },
   courtCountdown: {

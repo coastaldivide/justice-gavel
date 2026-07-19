@@ -72,7 +72,7 @@ function LegalDisclaimerScreen({ onAccepted }: Props) {
           try {
             await api.post('/auth/disclaimer/accept', { version: VERSION });
           } catch (_err) {
-            console.error(_err);
+            if (__DEV__) console.error(_err);
           }
       onAccepted();
     } catch {
@@ -181,7 +181,7 @@ const s = StyleSheet.create({
   sectionIcon:      { fontSize: 20, marginRight: 10 },
   sectionTitle:     { fontSize: 15, fontWeight: '700', color: '#1a1a2e' },
   sectionBody:      { fontSize: 14, color: '#374151', lineHeight: 21 },
-  formalBlock:      { backgroundColor: '#fffbeb', borderRadius: 12, padding: 16, borderWidth: 1.5, borderColor: '#f59e0b' },
+  formalBlock:      { backgroundColor: '#fffbeb', borderRadius: 12, padding: 16, borderWidth: 1.5, borderColor: COLORS.steelMid },
   formalText:       { fontSize: 13, color: '#78350f', lineHeight: 20 },
   formalVersion:    { fontSize: 11, color: '#92400e', marginTop: 8 },
   link:             { color: '#1d4ed8', textDecorationLine: 'underline' },

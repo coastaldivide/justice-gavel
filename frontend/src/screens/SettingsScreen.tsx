@@ -450,7 +450,7 @@ function SettingsScreen({ route, navigation }: any) {
             value={isDark}
             onValueChange={toggleDark}
             trackColor={{ false: colors.surface, true: colors.blue }}
-            thumbColor={isDark ? '#85B7EB' : colors.bg}
+            thumbColor={isDark ? COLORS.steel : colors.bg}
             ios_backgroundColor={colors.surface}
             accessibilityLabel="Toggle dark or light mode"
             accessibilityRole="switch"

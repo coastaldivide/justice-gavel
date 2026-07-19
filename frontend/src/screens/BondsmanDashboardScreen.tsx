@@ -471,7 +471,7 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
-            style={[styles.checkInMgrBtn, { backgroundColor: '#042C53' }]}
+            style={[styles.checkInMgrBtn, { backgroundColor: COLORS.navy }]}
             onPress={() => {
               hapticImpact();
               navigation.navigate('RecoveryAgents');
@@ -659,7 +659,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   statsStrip: { backgroundColor: COLORS.bgCard, flexDirection: 'row', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.bg, elevation: 1 },
   statBlock: { flex: 1, alignItems: 'center' },
-  statNum: { fontSize: 28, fontFamily: 'Inter_900Black', fontWeight: '900', color: '#042C53' },
+  statNum: { fontSize: 28, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy },
   statLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600', marginTop: 2 },
   statDivider: { width: 1, backgroundColor: COLORS.bgSubtle, marginVertical: 4 },
 
@@ -680,7 +680,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   card: { backgroundColor: COLORS.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
   cardPurchased: { borderWidth: 1.5, borderColor: colors.legal },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-  leadName: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#042C53' },
+  leadName: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy },
   leadLocation: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   bailBlock: { alignItems: 'flex-end', marginLeft: 8 },
   bailAmount: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.emergency },
@@ -703,21 +703,21 @@ const makeStyles = (colors: any) => StyleSheet.create({
   expandHint: { fontSize: 12, color: colors.textMuted, textAlign: 'right', marginTop: 8 },
 
   badgeBannerActive: {
-    backgroundColor: '#042C53', flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#042C53'},
-  badgeBannerTitle:  { color: '#85B7EB', fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
+    backgroundColor: COLORS.navy, flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.navy},
+  badgeBannerTitle:  { color: COLORS.steel, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
   badgeBannerSub:    { color: colors.blue, fontSize: 11, marginTop: 1 },
   badgeBannerCancel: { color: '#EF5350', fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   badgeBannerPromo: {
-    backgroundColor: '#FFA726', flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.steelMid, flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#F9A825'},
-  badgeBannerPromoTitle:  { color: '#FFA726', fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
+    borderBottomWidth: 1, borderBottomColor: COLORS.steelMid},
+  badgeBannerPromoTitle:  { color: COLORS.steelMid, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
   badgeBannerPromoSub:    { color: colors.textMuted, fontSize: 11, marginTop: 1 },
-  badgeBannerPromoArrow:  { fontSize: 18, color: '#FFA726', fontFamily: 'Inter_900Black', fontWeight: '900' },
+  badgeBannerPromoArrow:  { fontSize: 18, color: COLORS.steelMid, fontFamily: 'Inter_900Black', fontWeight: '900' },
 
-  howLeadsWork: { backgroundColor: '#FFA726', borderRadius: 12, padding: 16, margin: 16, borderWidth: 1, borderColor: '#F9A825', alignSelf: 'stretch' },
-  howLeadsTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#FFA726', marginBottom: 8, textAlign: 'center' },
+  howLeadsWork: { backgroundColor: COLORS.steelMid, borderRadius: 12, padding: 16, margin: 16, borderWidth: 1, borderColor: COLORS.steelMid, alignSelf: 'stretch' },
+  howLeadsTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.steelMid, marginBottom: 8, textAlign: 'center' },
   howLeadsItem:  { fontSize: 12, color: colors.steel, lineHeight: 20 },
   // Profile modal
   modalContainer: { flex: 1, backgroundColor: COLORS.bg },
@@ -735,7 +735,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   // Accept confirm modal
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 20 },
   confirmCard: { backgroundColor: COLORS.bgCard, borderRadius: 20, padding: 24, width: '100%', maxWidth: 400 },
-  confirmTitle: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: '#042C53', marginBottom: 16, textAlign: 'center' },
+  confirmTitle: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy, marginBottom: 16, textAlign: 'center' },
   confirmDetail: { backgroundColor: COLORS.bg, borderRadius: 12, padding: 16, marginBottom: 14 },
   confirmName: { fontSize: 16, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.bgCard, marginBottom: 4 },
   confirmCharges: { fontSize: 12, color: colors.textMuted, marginBottom: 10, lineHeight: 16 },
@@ -761,9 +761,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
   licenseVerifiedPill:{ marginLeft: 'auto', backgroundColor: colors.legal, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   licenseVerifiedText:{ fontSize: 11, color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   licenseWarning: {
-    backgroundColor: '#FFA726', borderRadius: 8, padding: 10,
-    marginTop: 8, borderWidth: 1, borderColor: '#F9A825'},
-  licenseWarningText: { fontSize: 12, color: '#FFA726', fontFamily: 'Inter_600SemiBold', fontWeight: '600' }});
+    backgroundColor: COLORS.steelMid, borderRadius: 8, padding: 10,
+    marginTop: 8, borderWidth: 1, borderColor: COLORS.steelMid},
+  licenseWarningText: { fontSize: 12, color: COLORS.steelMid, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }});
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);

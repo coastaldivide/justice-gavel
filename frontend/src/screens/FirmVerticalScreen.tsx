@@ -413,7 +413,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}
         testID="firm-vertical-screen">
         <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 18, fontWeight: '700', color: colors?.primary ?? '#042C53', marginBottom: 8, textAlign: 'center' }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 18, fontWeight: '700', color: colors?.primary ?? COLORS.navy, marginBottom: 8, textAlign: 'center' }}>
           Set Up Your Legal Vertical
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: colors?.textMuted ?? '#666', textAlign: 'center', marginBottom: 24 }}>

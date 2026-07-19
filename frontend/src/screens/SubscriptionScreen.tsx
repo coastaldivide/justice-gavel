@@ -404,7 +404,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   scroll: { paddingBottom: 40 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: { backgroundColor: '#042C53', padding: 20, paddingTop: 30, paddingBottom: 24 },
+  header: { backgroundColor: COLORS.navy, padding: 20, paddingTop: 30, paddingBottom: 24 },
   heading: { fontSize: 28, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.bgCard },
   subheading: { color: COLORS.bgSubtle, fontSize: 12, marginTop: 3, lineHeight: 18 },
 
@@ -418,9 +418,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
   toggleTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.steel, marginBottom: 8 },
   toggleRow: { flexDirection: 'row', gap: 10 },
   toggleChip: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', backgroundColor: COLORS.bgCard },
-  toggleChipActive: { borderColor: '#042C53', backgroundColor: COLORS.bgSubtle },
+  toggleChipActive: { borderColor: COLORS.navy, backgroundColor: COLORS.bgSubtle },
   toggleChipText: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.steel },
-  toggleChipTextActive: { color: '#042C53' },
+  toggleChipTextActive: { color: COLORS.navy },
 
   tierCard: { margin: 12, marginBottom: 0, backgroundColor: COLORS.bgCard, borderRadius: 16, padding: 16, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6, borderWidth: 1.5, borderColor: 'transparent' },
   tierCardHighlight: { borderColor: colors.blue, elevation: 4 },
@@ -429,7 +429,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   tierHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   tierIcon: { fontSize: 28, marginRight: 12 },
   tierLabel: { fontSize: 16, fontWeight: '800' },
-  tierPrice: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: '#042C53', marginTop: 1 },
+  tierPrice: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy, marginTop: 1 },
   activeBadge: { backgroundColor: colors.legal, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 20 },
   activeBadgeText: { color: colors.legal, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   featureList: { marginBottom: 16 },
@@ -451,10 +451,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
   intelPrice: { fontSize: 12, lineHeight: 20, color: colors.steel, marginTop: 1 },
   intelDesc: { fontSize: 12, color: colors.steel, lineHeight: 18, marginBottom: 12 },
 
-  bondsCTA: { margin: 12, backgroundColor: '#FFA726', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#FFA726' },
+  bondsCTA: { margin: 12, backgroundColor: COLORS.steelMid, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.steelMid },
   bondsCTATitle: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.emergency, marginBottom: 6 },
   bondsCTAText: { fontSize: 12, color: colors.steel, lineHeight: 18, marginBottom: 12 },
-  bondsCTABtn: { backgroundColor: '#FFA726', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  bondsCTABtn: { backgroundColor: COLORS.steelMid, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
   bondsCTABtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21, },
 

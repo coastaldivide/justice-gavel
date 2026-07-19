@@ -94,7 +94,7 @@ function AgeGateScreen({ route, navigation }: any) {
         onPress={() => navigation.navigate('Emergency')}
         accessibilityRole="button"
         accessibilityLabel="Emergency help — get immediate legal assistance without age verification"
-        style={{ backgroundColor: '#c0392b', borderRadius: 10, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
+        style={{ backgroundColor: COLORS.bail, borderRadius: 10, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
       >
         <View style={{ flex: 1 }}>
           <Text maxFontSizeMultiplier={1.3} style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>🚨 Need help right now?</Text>

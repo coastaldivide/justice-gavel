@@ -329,7 +329,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   scriptLabel: { fontSize: 13, fontWeight: '800', letterSpacing: 1, marginBottom: 12 },
   scriptText:  { fontWeight: '800' },
 
-  warningBox:  { borderRadius: 12, padding: 16, borderWidth: 1.5, borderColor: '#F9A825' },
+  warningBox:  { borderRadius: 12, padding: 16, borderWidth: 1.5, borderColor: COLORS.steelMid },
   warningText: { fontSize: 15, lineHeight: 22 },
 
   actionBtn:     { borderRadius: 14, paddingVertical: 20, alignItems: 'center' },

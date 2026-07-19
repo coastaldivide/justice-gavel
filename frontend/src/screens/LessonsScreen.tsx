@@ -235,7 +235,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
 
 const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
-  progressCard: { backgroundColor: '#042C53', padding: 20, margin: 12, borderRadius: 16 },
+  progressCard: { backgroundColor: COLORS.navy, padding: 20, margin: 12, borderRadius: 16 },
   progressTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   progressTitle: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900' },
   progressPts: { color: COLORS.bgSubtle, fontSize: 12, lineHeight: 20, fontWeight: '700' },
@@ -251,7 +251,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   doneCircle: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.textMuted, alignItems: 'center', justifyContent: 'center' },
   doneCircleDone: { backgroundColor: colors.legal, borderColor: colors.legal },
   doneCheck: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_900Black', fontWeight: '900' },
-  cardTitle: { fontSize: 15, lineHeight: 22, fontWeight: '800', color: '#042C53', marginBottom: 4 },
+  cardTitle: { fontSize: 15, lineHeight: 22, fontWeight: '800', color: COLORS.navy, marginBottom: 4 },
   cardTitleDone: { color: colors.steel },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   catBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, borderWidth: 1 },
@@ -267,15 +267,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
     backgroundColor: COLORS.bgSubtle, borderRadius: 14, padding: 16,
     margin: 12, borderWidth: 1, borderColor: COLORS.bgSubtle,
   },
-  lifeTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#042C53', marginBottom: 4 },
+  lifeTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 4 },
   lifeSub:   { fontSize: 12, color: colors.steel, lineHeight: 17 },
-  lifeBtn:   { backgroundColor: '#042C53', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 16 },
+  lifeBtn:   { backgroundColor: COLORS.navy, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 16 },
   lifeBtnText: { color: COLORS.bgCard, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   streakBanner: { flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#FFA726', borderRadius: RADIUS.lg, borderWidth: 1,
-    borderColor: '#FFA726', margin: 12, padding: 12 },
+    backgroundColor: COLORS.steelMid, borderRadius: RADIUS.lg, borderWidth: 1,
+    borderColor: COLORS.steelMid, margin: 12, padding: 12 },
   streakFlame: { fontSize: 28 },
-  streakCount: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#FFA726' },
+  streakCount: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.steelMid },
   streakSub:   { fontSize: 11, color: colors.emergency },
 });
 

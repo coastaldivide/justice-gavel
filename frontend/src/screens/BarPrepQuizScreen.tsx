@@ -43,9 +43,9 @@ const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const;
 type OptionLetter = typeof OPTION_LETTERS[number];
 
 const DIFFICULTY_COLOR: Record<string, string> = {
-  easy:   '#22c55e',
-  medium: '#f59e0b',
-  hard:   '#ef4444',
+  easy:   COLORS.legal,
+  medium: COLORS.steelMid,
+  hard:   COLORS.bail,
 };
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -373,7 +373,7 @@ function makeStyles(colors: any) {
     headerCenter:       { alignItems: 'center' },
     counter:            { fontSize: 15, fontFamily: FONTS.semibold, color: colors.text },
     timer:              { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-    timerLow:           { color: '#ef4444', fontFamily: FONTS.bold },
+    timerLow:           { color: COLORS.bail, fontFamily: FONTS.bold },
     diffBadge:          { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
     diffText:           { fontSize: 11, fontFamily: FONTS.bold },
     progressTrack:      { height: 3, backgroundColor: colors.border },
@@ -392,22 +392,22 @@ function makeStyles(colors: any) {
       backgroundColor: colors.card, ...SHADOW.xs,
     },
     optionSelected:     { borderColor: colors.primary, backgroundColor: colors.primary + '10' },
-    optionCorrect:      { borderColor: '#22c55e', backgroundColor: '#22c55e18' },
-    optionWrong:        { borderColor: '#ef4444', backgroundColor: '#ef444418' },
+    optionCorrect:      { borderColor: COLORS.legal, backgroundColor: '#22c55e18' },
+    optionWrong:        { borderColor: COLORS.bail, backgroundColor: '#ef444418' },
     optionLetter:       {
       width: 28, height: 28, borderRadius: 14, borderWidth: 2,
       borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
       marginRight: 12, flexShrink: 0,
     },
-    optionLetterCorrect: { backgroundColor: '#22c55e', borderColor: '#22c55e' },
-    optionLetterWrong:   { backgroundColor: '#ef4444', borderColor: '#ef4444' },
+    optionLetterCorrect: { backgroundColor: COLORS.legal, borderColor: COLORS.legal },
+    optionLetterWrong:   { backgroundColor: COLORS.bail, borderColor: COLORS.bail },
     optionLetterText:   { fontSize: 13, fontFamily: FONTS.bold, color: colors.text },
     optionText:         { flex: 1, fontSize: 15, color: colors.text, lineHeight: 22 },
-    optionTextCorrect:  { color: '#22c55e', fontFamily: FONTS.semibold },
-    optionTextWrong:    { color: '#ef4444' },
+    optionTextCorrect:  { color: COLORS.legal, fontFamily: FONTS.semibold },
+    optionTextWrong:    { color: COLORS.bail },
     explanationCard:    { marginTop: 20, padding: 16, borderRadius: RADIUS.lg, borderLeftWidth: 4 },
-    correctCard:        { backgroundColor: '#22c55e12', borderLeftColor: '#22c55e' },
-    wrongCard:          { backgroundColor: '#ef444412', borderLeftColor: '#ef4444' },
+    correctCard:        { backgroundColor: '#22c55e12', borderLeftColor: COLORS.legal },
+    wrongCard:          { backgroundColor: '#ef444412', borderLeftColor: COLORS.bail },
     explanationIcon:    { fontSize: 14, fontFamily: FONTS.bold, color: colors.text, marginBottom: 8 },
     explanationText:    { fontSize: 14, color: colors.text, lineHeight: 21 },
     fullExplanationLink: { marginTop: 12 },
@@ -423,7 +423,7 @@ function makeStyles(colors: any) {
       backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border,
     },
     nextBtn:            { backgroundColor: colors.primary, paddingVertical: 15, borderRadius: RADIUS.lg, alignItems: 'center', ...SHADOW.sm },
-    submitBtn:          { backgroundColor: '#22c55e', paddingVertical: 15, borderRadius: RADIUS.lg, alignItems: 'center', ...SHADOW.sm },
+    submitBtn:          { backgroundColor: COLORS.legal, paddingVertical: 15, borderRadius: RADIUS.lg, alignItems: 'center', ...SHADOW.sm },
     nextBtnDisabled:    { opacity: 0.4 },
     nextBtnText:        { fontSize: 16, fontFamily: FONTS.bold, color: '#fff' },
   });

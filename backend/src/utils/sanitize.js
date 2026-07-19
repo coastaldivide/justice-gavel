@@ -53,10 +53,16 @@ export function validateEmail(input) {
  * Normalise a phone number to digits only (or null if invalid).
  */
 export function normalizePhone(input) {
-  if (!input || typeof input !== 'string') return null;
-  const digits = input.replace(/\D/g, '');
-  if (digits.length < 10 || digits.length > 15) return null;
-  return digits;
+  if (!input && input !== 0) return null;
+  const str    = String(input);
+  const digits = str.replace(/\D/g, '');
+  if (digits.length === 0) return null;
+  // E.164: 10-digit US number → +1XXXXXXXXXX, 11-digit with leading 1 → +1XXXXXXXXXX
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits[0] === '1') return `+${digits}`;
+  // International: 7–15 digits
+  if (digits.length >= 7 && digits.length <= 15) return `+${digits}`;
+  return null;
 }
 
 /**
@@ -65,4 +71,25 @@ export function normalizePhone(input) {
 export function sanitizeHtml(input) {
   if (!input || typeof input !== 'string') return '';
   return input.replace(/<[^>]*>/g, '').trim();
+}
+
+/**
+ * parseIntent — lightweight keyword-to-intent classifier for outbound bot
+ * and recovery agent scripts. Returns the most likely user intent string.
+ */
+export function parseIntent(text) {
+  if (!text) return 'unknown';
+  const t = String(text).toLowerCase().trim();
+  // TCPA compliance: stop words MUST return 'stop' (never mis-classify)
+  if (/^(stop|stopall|stopalerts|cancel|unsubscribe|quit|end|optout|opt-out|opt out|remove|delete|revoke)$/.test(t)) return 'stop';
+  if (/^(help|info|information)$/.test(t)) return 'help';
+  if (/^(start|yes|subscribe|optin|opt-in)$/.test(t)) return 'start';
+  // Content intents
+  if (/bail|bond|release|jailed|arrested|locked/.test(t)) return 'bail';
+  if (/lawyer|attorney|legal|defense|represent/.test(t)) return 'legal_help';
+  if (/expunge|record|clean|seal/.test(t)) return 'expungement';
+  if (/right|miranda|silent|refuse/.test(t)) return 'rights';
+  if (/court|date|hearing|appearance/.test(t)) return 'court';
+  if (/family|contact|notify|call/.test(t)) return 'family';
+  return 'general';
 }

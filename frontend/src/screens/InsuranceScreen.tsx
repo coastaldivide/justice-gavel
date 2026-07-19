@@ -178,7 +178,7 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
 const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 16 },
-  header: { backgroundColor: '#042C53', borderRadius: 16, padding: 16, marginBottom: 16 },
+  header: { backgroundColor: COLORS.navy, borderRadius: 16, padding: 16, marginBottom: 16 },
   heading: { color: COLORS.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900' },
   sub: { color: COLORS.bgSubtle, fontSize: 12, lineHeight: 20, marginTop: 4 },
   sectionTitle: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: 4 },

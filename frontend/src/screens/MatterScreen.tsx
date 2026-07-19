@@ -83,14 +83,14 @@ const styles = StyleSheet.create({
   screen:   { flex: 1, backgroundColor: '#f9fafb' },
   content:  { padding: 20 },
   center:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  title:    { fontSize: 22, fontWeight: '700', color: '#042C53', marginBottom: 4 },
+  title:    { fontSize: 22, fontWeight: '700', color: COLORS.navy, marginBottom: 4 },
   subtitle: { fontSize: 15, color: '#666', marginBottom: 20 },
   row:      { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   label:    { fontSize: 14, color: '#666', fontWeight: '500' },
   value:    { fontSize: 14, color: '#111', fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
   notes:    { marginTop: 16 },
   noteText: { fontSize: 14, color: '#374151', lineHeight: 22, marginTop: 4 },
-  btn:      { backgroundColor: '#042C53', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 24 },
+  btn:      { backgroundColor: COLORS.navy, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 24 },
   btnText:  { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
 export default React.memo(MatterScreen);

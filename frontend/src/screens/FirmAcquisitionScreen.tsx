@@ -46,7 +46,7 @@ const VERTICALS = [
   { key: 'appellate',        label: 'Appellate / PCR',     emoji: '📜',  color: COLORS.blue },
   { key: 'military',         label: 'Military / UCMJ',     emoji: '🎖️',  color: COLORS.legal },
   { key: 'juvenile',         label: 'Juvenile & Dependency',emoji: '👦', color: COLORS.warn },
-  { key: 'general',          label: 'General Practice',    emoji: '📁',  color: '#85B7EB' },
+  { key: 'general',          label: 'General Practice',    emoji: '📁',  color: COLORS.steel },
 ];
 
 const TIER_COLORS: Record<string, string> = {

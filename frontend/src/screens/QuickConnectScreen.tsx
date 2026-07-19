@@ -551,13 +551,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
   errorText: { color: COLORS.emergency, fontSize: 12, lineHeight: 20, ...FONTS.medium },
 
   demoHelpCard: {
-    backgroundColor: '#FFA726', borderRadius: 14, padding: 16,
-    marginTop: 8, marginBottom: 4, borderWidth: 1, borderColor: '#F9A825' },
-  demoHelpTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: '#FFA726', marginBottom: 8 },
+    backgroundColor: COLORS.steelMid, borderRadius: 14, padding: 16,
+    marginTop: 8, marginBottom: 4, borderWidth: 1, borderColor: COLORS.steelMid },
+  demoHelpTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.steelMid, marginBottom: 8 },
   demoHelpBody:  { fontSize: 12, color: colors.steel, lineHeight: 20, marginBottom: 10 },
   demoHelpCode:  { fontFamily: 'monospace', backgroundColor: COLORS.bg, color: colors.bgCard },
   demoHelpOr:    { textAlign: 'center', color: colors.steel, marginBottom: 8 },
-  demoHelpBtn:   { backgroundColor: '#042C53', borderRadius: 8, paddingVertical: 11, alignItems: 'center' },
+  demoHelpBtn:   { backgroundColor: COLORS.navy, borderRadius: 8, paddingVertical: 11, alignItems: 'center' },
   demoHelpBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
   // Pay Now button
   payNowBtn: {

@@ -68,7 +68,7 @@ const CHAT_COLORS = {
   bg:          COLORS.bg,
   bgCard:      COLORS.surface,
   bgSubtle:    COLORS.border,
-  navy:        '#042C53',
+  navy:        COLORS.navy,
   gold:        COLORS.gold,
   textSecond:  COLORS.steel,
   textFaint:   COLORS.textMuted,

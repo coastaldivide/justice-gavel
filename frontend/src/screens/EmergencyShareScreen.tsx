@@ -264,7 +264,7 @@ function EmergencyShareScreen({ route, navigation }: ScreenProps) {
         testID="emergency-share-screen">
       {loading && (
         <View style={{ flex:1, alignItems:'center', justifyContent:'center' }}>
-          <ActivityIndicator size="large" color="#042C53" />
+          <ActivityIndicator size="large" color=COLORS.navy />
         </View>
       )}
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize:24 }}>🌤️</Text>
@@ -578,7 +578,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   noContactsCard: {
     backgroundColor: COLORS.warnBg, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
-    borderWidth: 1, borderColor: '#F9A825' },
+    borderWidth: 1, borderColor: COLORS.steelMid },
   noContactsTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.warn, marginBottom: 6 },
   noContactsBody:  { fontSize: 12, lineHeight: 20, color: COLORS.textSecond, marginBottom: 12 },
   addContactsBtn:  { backgroundColor: COLORS.warn, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center' },

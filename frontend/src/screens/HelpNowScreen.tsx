@@ -166,7 +166,7 @@ const TOP_CITIES = [
 const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
   <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
     <Text style={{ fontSize: 48, marginBottom: 16 }}>{icon}</Text>
-    <Text style={{ fontSize: 18, fontWeight: '700', color: '#042C53', textAlign: 'center', marginBottom: 8 }}>{title}</Text>
+    <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.navy, textAlign: 'center', marginBottom: 8 }}>{title}</Text>
     <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 }}>{subtitle}</Text>
   </View>
 );
@@ -677,11 +677,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   cityOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   citySheet:   { backgroundColor: COLORS.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 40 },
-  cityTitle:   { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: '#042C53', marginBottom: 4 },
+  cityTitle:   { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy, marginBottom: 4 },
   citySub:     { fontSize: 12, lineHeight: 20, color: colors.steel, marginBottom: 14 },
-  cityInput:   { borderWidth: 1.5, borderColor: '#042C53', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, marginBottom: 10 },
+  cityInput:   { borderWidth: 1.5, borderColor: COLORS.navy, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, marginBottom: 10 },
   cityRow:     { paddingVertical: 16, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: COLORS.bg },
-  cityRowText: { fontSize: 15, lineHeight: 22, color: '#042C53', fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  cityRowText: { fontSize: 15, lineHeight: 22, color: COLORS.navy, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   noResultsBtn: { backgroundColor: colors.emergency, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 20, marginTop: 10, alignItems: 'center' },
   noResultsBtnText: { color: colors.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
   refreshBtn:     { alignItems: 'center', paddingVertical: 16 },

@@ -90,7 +90,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
         description: description.trim(),
       });
       } catch (_err) {
-        console.error(_err);
+        if (__DEV__) console.error(_err);
       }
       if (mountedRef.current) setStep('submitted');
     } catch {

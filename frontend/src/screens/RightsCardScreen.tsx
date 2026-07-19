@@ -455,8 +455,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
   stateDropdownTextActive:{ ...FONTS.heavy, color: COLORS.navy },
 
   gateBanner: {
-    backgroundColor: '#FFA726', borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
-    borderWidth: 1, borderColor: '#F9A825' },
+    backgroundColor: COLORS.steelMid, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
+    borderWidth: 1, borderColor: COLORS.steelMid },
   gateBannerTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },
   gateBannerBody:  { fontSize: 12, color: COLORS.textSecond, lineHeight: 18, marginBottom: 12 },
   gateBtn: {

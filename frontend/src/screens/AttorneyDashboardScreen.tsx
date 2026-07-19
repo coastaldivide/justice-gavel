@@ -396,8 +396,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       >
 
       {/* Attorney-client privilege notice */}
-      <View style={{ backgroundColor: '#E3F2FD', borderRadius: 8, padding: 10, margin: 12, marginBottom: 0 }}>
-        <Text style={{ fontSize: 11, color: '#0D47A1', lineHeight: 15 }}>
+      <View style={{ backgroundColor: COLORS.navyLight, borderRadius: 8, padding: 10, margin: 12, marginBottom: 0 }}>
+        <Text style={{ fontSize: 11, color: COLORS.blue, lineHeight: 15 }}>
           🔏 All matter data is handled consistent with attorney-client privilege. Justice Gavel does not access, share, or use client data for any purpose other than delivering platform services to your firm.
         </Text>
       </View>
@@ -888,7 +888,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   barStatusCard:       { flexDirection:'row', alignItems:'center', borderRadius:12, borderWidth:1, padding:14, marginBottom:12, gap:10 },
   barStatusTitle:      { fontSize:13, fontWeight:'700', marginBottom:3 },
   barStatusSub:        { fontSize:12, color:colors.steel, lineHeight:17 },
-  barStatusAction:     { backgroundColor:'#042C53', borderRadius:8, paddingHorizontal:12, paddingVertical:8 },
+  barStatusAction:     { backgroundColor:COLORS.navy, borderRadius:8, paddingHorizontal:12, paddingVertical:8 },
   barStatusActionText: { fontSize:12, fontWeight:'700', color:COLORS.bgCard },
   // Profile completion bar
   completionCard:  { borderRadius:12, borderWidth:1, padding:14, marginBottom:12 },
@@ -903,12 +903,12 @@ const styles = makeStyles(COLORS);
 
             {/* Bar Verification Status */}
             <View style={[styles.barStatusCard, {
-              backgroundColor: profile.bar_verified ? COLORS.legal : '#FFA726',
+              backgroundColor: profile.bar_verified ? COLORS.legal : COLORS.steelMid,
               borderColor: profile.bar_verified ? COLORS.legal : COLORS.warn,
             }]}>
               <View style={{ flex: 1 }}>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.barStatusTitle, {
-                  color: profile.bar_verified ? COLORS.legal : '#FFA726'
+                  color: profile.bar_verified ? COLORS.legal : COLORS.steelMid
                 }]}>
                   {profile.bar_verified ? '✓ Bar Verified -- JTB Badge Active' : '⏳ Bar Verification Pending'}
                 </Text>

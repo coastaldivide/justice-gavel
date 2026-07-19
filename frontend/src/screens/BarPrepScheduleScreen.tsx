@@ -50,9 +50,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 function daysUntilColor(days: number): string {
-  if (days <= 7)  return '#ef4444';
-  if (days <= 30) return '#f59e0b';
-  return '#22c55e';
+  if (days <= 7)  return COLORS.bail;
+  if (days <= 30) return COLORS.steelMid;
+  return COLORS.legal;
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -177,7 +177,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
               styles.goalFill,
               {
                 width: `${todayProgress * 100}%` as any,
-                backgroundColor: todayProgress >= 1 ? '#22c55e' : colors.primary,
+                backgroundColor: todayProgress >= 1 ? COLORS.legal : colors.primary,
               },
             ]} />
           </View>
@@ -229,7 +229,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
             {(schedule?.calendar || []).map(day => {
               const date  = new Date(day.date);
               const label = date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
-              const bg    = day.goal_met  ? '#22c55e'
+              const bg    = day.goal_met  ? COLORS.legal
                           : day.is_today  ? colors.primary
                           : day.due_count > 0 ? colors.primary + '44'
                           : colors.border;
@@ -251,7 +251,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
             })}
           </View>
           <View style={styles.calendarLegendRow}>
-            <LegendDot color="#22c55e" label="Goal met" />
+            <LegendDot color=COLORS.legal label="Goal met" />
             <LegendDot color={colors.primary} label="Today" />
             <LegendDot color={colors.primary + '44'} label="Due" />
           </View>
@@ -302,7 +302,7 @@ function makeStyles(colors: any) {
     goalFill:        { height: '100%', borderRadius: 4 },
     goalMeta:        { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
     goalMetaText:    { fontSize: 12, color: colors.textMuted },
-    overdueText:     { fontSize: 12, color: '#ef4444', fontFamily: FONTS.semibold },
+    overdueText:     { fontSize: 12, color: COLORS.bail, fontFamily: FONTS.semibold },
     startBtn:        { paddingVertical: 13, borderRadius: RADIUS.lg, alignItems: 'center' },
     startBtnText:    { fontSize: 15, fontFamily: FONTS.bold, color: '#fff' },
     sectionTitle:    {

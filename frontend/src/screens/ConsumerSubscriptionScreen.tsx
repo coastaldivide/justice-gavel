@@ -514,7 +514,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   savingsBadge: {
     backgroundColor: COLORS.legal, borderRadius: 20, paddingHorizontal: 7, paddingVertical: 2,
   },
-  annualNote: { backgroundColor: COLORS.bgSubtle, marginHorizontal: 12, marginBottom: 4, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#85B7EB' },
+  annualNote: { backgroundColor: COLORS.bgSubtle, marginHorizontal: 12, marginBottom: 4, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: COLORS.steel },
   annualNoteText: { fontSize: 11, color: colors.blue, lineHeight: 16 },
   savingsBadgeText: { fontSize: 11, color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   tierPriceSub: { fontSize: 12, color: COLORS.legal, fontWeight: '700', marginTop: 1 },

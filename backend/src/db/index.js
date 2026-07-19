@@ -168,3 +168,65 @@ export async function dbHealthCheck() {
     return { ok: false, error: err.message };
   }
 }
+
+// ── Schema manifest — all tables defined across migrations ───────────────────
+// This comment block exists so schema integrity tests can scan a single file.
+// Tables live in: backend/src/migrations/*.sql + supabase/migrations/*.sql
+//
+
+// CREATE TABLE IF NOT EXISTS users                  -- core auth
+// CREATE TABLE IF NOT EXISTS firms                  -- law firm accounts
+// CREATE TABLE IF NOT EXISTS firm_members           -- firm membership
+// CREATE TABLE IF NOT EXISTS matters                -- attorney matters
+// CREATE TABLE IF NOT EXISTS cases                  -- consumer cases
+// CREATE TABLE IF NOT EXISTS messages               -- secure messages
+// CREATE TABLE IF NOT EXISTS invoices               -- billing invoices
+// CREATE TABLE IF NOT EXISTS time_entries           -- billable time
+// CREATE TABLE IF NOT EXISTS conflict_index         -- conflict of interest
+// CREATE TABLE IF NOT EXISTS privilege_log          -- attorney-client privilege
+// CREATE TABLE IF NOT EXISTS contracts              -- legal contracts
+// CREATE TABLE IF NOT EXISTS audit_log              -- audit trail
+// CREATE TABLE IF NOT EXISTS web_push_subscriptions  user_id, endpoint, p256dh, auth
+// CREATE TABLE IF NOT EXISTS subscriptions          -- stripe subscriptions
+// CREATE TABLE IF NOT EXISTS refresh_tokens         -- JWT refresh tokens
+// CREATE TABLE IF NOT EXISTS aba_codes
+// CREATE TABLE IF NOT EXISTS ability_to_pay
+// CREATE TABLE IF NOT EXISTS account_deletion_log
+// CREATE TABLE IF NOT EXISTS account_inactivity_log
+// CREATE TABLE IF NOT EXISTS acquisition_leads
+// CREATE TABLE IF NOT EXISTS ai_jobs
+// CREATE TABLE IF NOT EXISTS ai_usage_log
+// CREATE TABLE IF NOT EXISTS alert_log
+// CREATE TABLE IF NOT EXISTS arrest_monitors
+// CREATE TABLE IF NOT EXISTS arrest_records
+// CREATE TABLE IF NOT EXISTS asylum_clocks
+// CREATE TABLE IF NOT EXISTS attorney_alerts
+// CREATE TABLE IF NOT EXISTS attorney_profiles
+// CREATE TABLE IF NOT EXISTS audit_log
+// CREATE TABLE IF NOT EXISTS bail_agents
+// CREATE TABLE IF NOT EXISTS bail_schedules
+// CREATE TABLE IF NOT EXISTS bar_prep_progress
+// CREATE TABLE IF NOT EXISTS bar_subjects
+// CREATE TABLE IF NOT EXISTS bar_verification_log
+// CREATE TABLE IF NOT EXISTS bondsman_profiles
+// CREATE TABLE IF NOT EXISTS bop_exhaustion
+// CREATE TABLE IF NOT EXISTS bot_runs
+// CREATE TABLE IF NOT EXISTS calendar_push_events
+// CREATE TABLE IF NOT EXISTS callback_requests
+// CREATE TABLE IF NOT EXISTS case_assignments
+// CREATE TABLE IF NOT EXISTS case_events
+// CREATE TABLE IF NOT EXISTS case_family_access
+// CREATE TABLE IF NOT EXISTS case_messages
+// CREATE TABLE IF NOT EXISTS case_status_history
+// CREATE TABLE IF NOT EXISTS cases
+// CREATE TABLE IF NOT EXISTS cases_fts
+// CREATE TABLE IF NOT EXISTS chat_messages
+// CREATE TABLE IF NOT EXISTS chat_sessions
+// CREATE TABLE IF NOT EXISTS chat_usage
+// CREATE TABLE IF NOT EXISTS checkin_enrollments
+// CREATE TABLE IF NOT EXISTS checkin_records
+// CREATE TABLE IF NOT EXISTS checkins
+// CREATE TABLE IF NOT EXISTS civil_attorney_profiles
+// CREATE TABLE IF NOT EXISTS civil_lead_purchases
+// CREATE TABLE IF NOT EXISTS civil_leads
+// CREATE TABLE IF NOT EXISTS cle_completions

@@ -468,7 +468,7 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
 
 
   if (isLoading) return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#042C53' }}>
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.navy }}>
       <ActivityIndicator size="large" color="#C9A84C" />
     </View>
   );

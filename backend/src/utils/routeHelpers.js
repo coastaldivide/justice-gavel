@@ -131,8 +131,8 @@ export function err422(res, msg = 'Unprocessable entity.')        { return res.s
 export function err502(res, msg = 'Upstream service error.')      { return res.status(502).json({ error: msg }); }
 
 export function sanitizeStr(s, maxLen = 2000) {
-  if (s == null) return null;
-  return String(s).trim().slice(0, maxLen);
+  if (s == null || s === undefined) return '';
+  return String(s).replace(/\x00/g,'').trim().slice(0, maxLen);
 }
 
 export function truncateStr(s, maxLen = 500) {
