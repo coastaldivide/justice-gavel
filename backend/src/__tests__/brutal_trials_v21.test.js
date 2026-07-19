@@ -248,8 +248,6 @@ describe('6. firms.js accept-invite + auth GDPR export', () => {
     const fs = await import('fs');
     expect(src).toContain('+15550000000');
     expect(src).toContain();
-  });
-});
 
 // ── 8. discovery/_helpers — analyzeDocument + isText + safeJsonParse ─────
 describe('8. discovery/_helpers — Document Analysis', () => {
@@ -287,7 +285,6 @@ describe('8. discovery/_helpers — Document Analysis', () => {
     expect(safeJsonParse('', 'default')).toBe('default');
     expect(safeJsonParse(null, [])).toEqual([]);
   });
-});
 
 // ── 9. checkAccountInactivity — retention.js ─────────────────────────────
 describe('9. checkAccountInactivity — 90/180/365-Day Thresholds', () => {
@@ -529,4 +526,5 @@ describe('13. Mass Influx — 100,000 New Scenarios', () => {
     for (let i = 0; i < 20000; i++) { if (decrypt(encrypt(`p_${i}`)) !== `p_${i}`) errors++; }
     expect(errors).toBe(0);
   });
+});
 });

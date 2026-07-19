@@ -396,6 +396,7 @@ describe('S10. Config — Final Low-Hit Keys', () => {
     const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     expect(src).toContain('EXPO_ACCESS_TOKEN');
   });
+  test('config.js has all required env vars', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync('/tmp/JG_fresh/backend/src/config.js', 'utf8');
     expect(src).toContain();

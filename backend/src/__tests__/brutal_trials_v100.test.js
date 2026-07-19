@@ -106,19 +106,22 @@ describe('WHS. webhooks/stripe.js — Stripe Payment Event Handler', () => {
   });
 });
 
+
+  test('WHT-02: outbound_bot.js demo mode flag', async () => {
     const fs = await import('fs');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
     expect(src).toContain('demo mode');
     // Real mode: HMAC verification prevents spoofed SMS replies
   });
+});
+
+describe('WHT — Twilio SMS Intent', () => {
   test('WHT-03: YES | NO | STOP intent parsing — TCPA opt-out compliance', async () => {
     const fs = await import('fs');
     expect(src).toContain('YES');
     expect(src).toContain('STOP');
     // YES = confirm, NO = decline, STOP = opt-out (TCPA required)
   });
-    const fs = await import('fs');
-  });
-});
 
 // ── ASY. Async Safety — 5 Handlers Without Try/Catch ─────────────────────
 describe('ASY. Async Safety — Handlers Reviewed for Error Handling', () => {

@@ -207,3 +207,5 @@ export const ALL_ENV_VARS = {
 };
 
 
+
+export const GAVEL_EMOJI = '⚖️';

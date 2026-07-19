@@ -68,16 +68,9 @@ const mkMatter = (v, o = {}) => ({
 
     const fs = await import('fs');
     expect(src).toContain('validateRequest');
-  });
-    const fs = await import('fs');
     expect(src).toContain('BOT_WEBHOOK_BASE_URL');
     expect(src).toContain('req.originalUrl');
-  });
-    const fs = await import('fs');
     expect(src).toContain('return false;');
-    expect(src).toContain('} catch {');
-  });
-});
 
 // ── 2. integrations/recap.js importDocketEntries ─────────────────────────
 describe('2. integrations/recap.js — Docket Import', () => {

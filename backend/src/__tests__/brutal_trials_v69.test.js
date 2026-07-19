@@ -202,6 +202,7 @@ describe('WPH. webpush.js — VAPID Web Push for Browser + PWA + Electron', () =
 
 // ── ALT. alerts.js — Emergency SOS Dispatch ──────────────────────────────
 describe('ALT. alerts.js — Emergency SOS Dispatch Route', () => {
+  test('alerts.js handles POST and auth', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/alerts.js', 'utf8');
     expect(src).toContain("router.post('/'");
