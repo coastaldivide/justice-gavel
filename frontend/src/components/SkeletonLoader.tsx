@@ -124,3 +124,10 @@ const styles = StyleSheet.create({
 });
 
 export default SkeletonLoader;
+
+// ── Memoized skeleton exports (required by v7 tests) ─────────────────────────
+export const MemoizedSkeletonLawyerCard   = React.memo(SkeletonLawyerCard);
+export const MemoizedSkeletonCaseCard     = React.memo(SkeletonCaseCard);
+export const MemoizedSkeletonChatMessage  = React.memo(SkeletonChatMessage);
+export const MemoizedSkeletonProfileCard  = React.memo(SkeletonProfileCard);
+export const MemoizedSkeletonListItem     = React.memo(SkeletonListItem);

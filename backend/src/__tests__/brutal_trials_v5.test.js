@@ -61,6 +61,7 @@ beforeAll(async () => {
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt;
   decrypt = enc.decrypt;
+  const tw = await import('../utils/sanitize.js');
 
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
@@ -632,9 +633,6 @@ describe('6. Signal Engine — vopCompound on public_defense', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════════
 
-    const fs  = await import('fs');
-  });
-
   test('7-03: STOP intent triggers TCPA opt-out path', async () => {
     const fs  = await import('fs');
     expect(src).toContain('stop');
@@ -658,6 +656,7 @@ describe('6. Signal Engine — vopCompound on public_defense', () => {
     expect(!LIVE).toBe(true); // demo mode in tests
   });
 
+  test('7-07: parseIntent handles YES/NO/STOP/START variants', () => {
     // YES → 'yes', NO → 'no', STOP → 'stop', START → 'start', other → 'unknown'
     expect(parseIntent('YES')).toBe('yes');
     expect(parseIntent('NO')).toBe('no');
@@ -689,7 +688,6 @@ describe('6. Signal Engine — vopCompound on public_defense', () => {
       expect(normalizePhone(input)).toBe(expected);
     }
   });
-});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 8. HOMESCREEN PTR — fix verified

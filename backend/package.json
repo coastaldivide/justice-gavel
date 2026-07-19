@@ -53,11 +53,13 @@
     "seed:rag": "node --experimental-vm-modules backend/scripts/seed-rag.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.3",
     "@sentry/node": "7.120.4",
     "@sentry/profiling-node": "10.55.0",
     "@supabase/supabase-js": "2.106.1",
     "bcryptjs": "2.4.3",
     "body-parser": "^2.3.0",
+    "bullmq": "^5.80.9",
     "compression": "^1.8.1",
     "cors": "2.8.5",
     "dotenv": "16.4.5",
@@ -67,6 +69,7 @@
     "form-data": "^4.0.6",
     "helmet": "7.2.0",
     "hpp": "0.2.3",
+    "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.11.0",
     "multer": "1.4.5-lts.1",
@@ -86,11 +89,9 @@
     "stripe": "14.25.0",
     "unzipper": "0.12.3",
     "yargs": "17.7.2",
-    "zod": "^4.4.3",
-    "ioredis": "^5.3.2",
-    "bullmq": "^5.4.2"
+    "zod": "^4.4.3"
   },
-  "description": "Justice Gavel \u2014 Backend API",
+  "description": "Justice Gavel — Backend API",
   "devDependencies": {
     "better-sqlite3": "^12.11.1",
     "jest": "^29.7.0",

@@ -100,6 +100,7 @@ beforeAll(async () => {
   encrypt = enc.encrypt;
   decrypt = enc.decrypt;
 
+  const tw = await import('../utils/sanitize.js');
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
   const sg = await import('../services/sendgrid.js');
@@ -610,9 +611,6 @@ describe('6. sendgrid.js — Service Constants', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════════
 
-  });
-
-  });
 
     const DEMO_NUMBER = '+15550000000';
       // Demo mode: uses the placeholder number

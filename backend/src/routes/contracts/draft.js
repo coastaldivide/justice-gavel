@@ -158,8 +158,7 @@ router.get('/', authRequired, async (req, res) => {
     params.push(Math.min(safeInt(limit, 20), 50), safeInt(offset, 0));
 
     const rows  = await db.all(sql, params);
-    const total = await db.get(
-    if (!total) return res.status(404).json({error: 'Not found'});
+    const total = await db.get(;
       'SELECT COUNT(*) as n FROM contracts WHERE user_id=?', [req.user.id]
     );
 

@@ -56,6 +56,7 @@ beforeAll(async () => {
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
 
+  const tw = await import('../utils/sanitize.js');
   normalizePhone = tw.normalizePhone; parseIntent = tw.parseIntent;
 
   const geo = await import('../services/geolink.js');

@@ -91,6 +91,7 @@ beforeAll(async () => {
   encrypt = enc.encrypt;
   decrypt = enc.decrypt;
 
+  const tw = await import('../utils/sanitize.js');
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
 

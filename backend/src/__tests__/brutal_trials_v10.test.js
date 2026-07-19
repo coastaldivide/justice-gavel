@@ -61,6 +61,7 @@ beforeAll(async () => {
   encrypt = enc.encrypt;
   decrypt = enc.decrypt;
 
+  const tw = await import('../utils/sanitize.js');
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
 
@@ -122,14 +123,14 @@ describe('1. DB Indexes — 131-Index Coverage', () => {
 
   test('1-01: exactly 131 indexes exist in the schema', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const indexes = src.match(/CREATE INDEX IF NOT EXISTS \w+/g) || [];
     expect(indexes.length).toBeGreaterThanOrEqual(50);
   });
 
   test('1-02: core user-data indexes present', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const CORE = ['idx_cases_user', 'idx_messages_case', 'idx_saved_lawyers_user',
                   'idx_push_tokens_user', 'idx_chat_user_date'];
     for (const idx of CORE) {
@@ -139,7 +140,7 @@ describe('1. DB Indexes — 131-Index Coverage', () => {
 
   test('1-03: audit log indexes cover firm+time, user+time, target', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('idx_audit_log_firm_ts');
     expect(src).toContain('idx_audit_log_user_ts');
     expect(src).toContain('idx_audit_log_target');
@@ -147,7 +148,7 @@ describe('1. DB Indexes — 131-Index Coverage', () => {
 
   test('1-04: firm platform indexes cover members, matters, docket', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('idx_firm_members_firm');
     expect(src).toContain('idx_matters_firm_status');
     expect(src).toContain('idx_docket_firm_date');
@@ -156,14 +157,14 @@ describe('1. DB Indexes — 131-Index Coverage', () => {
 
   test('1-05: privilege log indexes cover matter+docnum, reviewer', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('idx_privilege_matter_num');
     expect(src).toContain('idx_privilege_reviewed');
   });
 
   test('1-06: contract indexes cover type+user, expiry, status', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('idx_contracts_type');
     expect(src).toContain('idx_contracts_expiry');
     expect(src).toContain('idx_contracts_status');
@@ -171,7 +172,7 @@ describe('1. DB Indexes — 131-Index Coverage', () => {
 
   test('1-07: webhook indexes cover firm+active, delivery+time', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('idx_wh_subs_firm_active');
     expect(src).toContain('idx_wh_deliveries_sub_ts');
     expect(src).toContain('idx_wh_deliveries_success');
@@ -179,14 +180,14 @@ describe('1. DB Indexes — 131-Index Coverage', () => {
 
   test('1-08: calendar push indexes cover docket+sync, connection+sync', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('idx_cal_push_docket');
     expect(src).toContain('idx_cal_push_conn_status');
   });
 
   test('1-09: matter intelligence cache indexes cover matter_id, escalation, expiry', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('idx_mic_matter');
     expect(src).toContain('idx_mic_escal');
     expect(src).toContain('idx_mic_expires');
@@ -194,14 +195,14 @@ describe('1. DB Indexes — 131-Index Coverage', () => {
 
   test('1-10: password reset indexes cover user and expiry (security-critical)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('idx_pw_resets_user');
     expect(src).toContain('idx_pw_resets_expires');
   });
 
   test('1-11: acquisition lead indexes cover email, vertical, status', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     expect(src).toContain('idx_al_email');
     expect(src).toContain('idx_al_vertical');
     expect(src).toContain('idx_al_status');
@@ -209,7 +210,7 @@ describe('1. DB Indexes — 131-Index Coverage', () => {
 
   test('1-12: index naming convention is idx_table_purpose', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/db/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/db/index.js', 'utf8');
     const indexes = src.match(/CREATE INDEX IF NOT EXISTS (\w+)/g) || [];
     // All indexes follow idx_ prefix convention
     for (const idx of indexes) {
@@ -226,53 +227,53 @@ describe('2. CORS Resolver — Origin Whitelist Model', () => {
 
   test('2-01: app.js has corsOriginResolver function', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain('corsOriginResolver');
   });
 
   test('2-02: no origin (mobile app / curl) is always allowed', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain('!origin');
     expect(src).toContain('callback(null, true)');
   });
 
   test('2-03: file:// and app:// origins (Electron) always allowed', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain("startsWith('file://')");
     expect(src).toContain("startsWith('app://')");
   });
 
   test('2-04: null origin is allowed (packaged Electron)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain("origin === 'null'");
   });
 
   test('2-05: in non-production, localhost on any port is allowed', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain("NODE_ENV !== 'production'");
     expect(src).toContain('localhost');
   });
 
   test('2-06: CORS_ORIGIN env var is split by comma for multiple origins', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain("split(',')");
     expect(src).toContain("_allowedOrigins");
   });
 
   test('2-07: CORS allowed methods include all REST verbs + OPTIONS', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain("'GET','POST','PUT','PATCH','DELETE','OPTIONS'");
   });
 
   test('2-08: CORS allowed headers include Authorization and admin-key', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain('Authorization');
     expect(src).toContain('admin-key');
     expect(src).toContain('x-admin-key');
@@ -306,7 +307,7 @@ describe('3. OfflineBanner — Animation & Accessibility', () => {
 
   test('3-01: OfflineBanner uses Animated.timing with 300ms duration', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/OfflineBanner.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/OfflineBanner.tsx', 'utf8');
     expect(src).toContain('Animated.timing');
     expect(src).toContain('duration:        300');
     expect(src).toContain('useNativeDriver: true');
@@ -314,25 +315,25 @@ describe('3. OfflineBanner — Animation & Accessibility', () => {
 
   test('3-02: OfflineBanner uses opacity 0→1 when offline', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/OfflineBanner.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/OfflineBanner.tsx', 'utf8');
     expect(src).toContain('toValue:         isOnline ? 0 : 1');
   });
 
   test('3-03: OfflineBanner has accessibilityRole="alert"', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/OfflineBanner.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/OfflineBanner.tsx', 'utf8');
     expect(src).toContain('accessibilityRole="alert"');
   });
 
   test('3-04: OfflineBanner has accessibilityLabel describing offline state', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/OfflineBanner.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/OfflineBanner.tsx', 'utf8');
     expect(src).toContain('accessibilityLabel="You are offline');
   });
 
   test('3-05: OfflineBanner shows 📵 emoji and descriptive text', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/OfflineBanner.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/OfflineBanner.tsx', 'utf8');
     expect(src).toContain('📵');
     expect(src).toContain('No connection');
     expect(src).toContain('cached data');
@@ -340,7 +341,7 @@ describe('3. OfflineBanner — Animation & Accessibility', () => {
 
   test('3-06: netinfo import is wrapped in try/catch (graceful fail)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/OfflineBanner.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/OfflineBanner.tsx', 'utf8');
     expect(src).toContain('try {');
     expect(src).toContain('useNetInfo');
     expect(src).toContain('} catch {}');
@@ -348,20 +349,20 @@ describe('3. OfflineBanner — Animation & Accessibility', () => {
 
   test('3-07: when netinfo unavailable, defaults to online=true (fail open)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/OfflineBanner.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/OfflineBanner.tsx', 'utf8');
     expect(src).toContain("useNetInfo ? useNetInfo() : null");
     expect(src).toContain("netInfo ? netInfo.isConnected !== false : true");
   });
 
   test('3-08: OfflineBanner is memoized with React.memo', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/OfflineBanner.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/OfflineBanner.tsx', 'utf8');
     expect(src).toContain('React.memo');
   });
 
   test('3-09: OfflineBanner background is dark orange (#2C1800) with orange border', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/OfflineBanner.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/OfflineBanner.tsx', 'utf8');
     expect(src).toContain('#2C1800');
     expect(src).toContain('#E65100');
   });
@@ -381,7 +382,7 @@ describe('4. FloatingSOSButton — Pulse/Ring Animation Model', () => {
 
   test('4-01: FloatingSOSButton has inner pulse animation', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
     expect(src).toContain('pulse');
     expect(src).toContain('Animated.timing');
     expect(src).toContain('Animated.loop');
@@ -390,14 +391,14 @@ describe('4. FloatingSOSButton — Pulse/Ring Animation Model', () => {
 
   test('4-02: pulse animation breathes 1.0 → 1.08 → 1.0', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
     expect(src).toContain('toValue: 1.08');
     expect(src).toContain('duration: 800');
   });
 
   test('4-03: ring animation expands and fades (1.0 → 1.5)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
     expect(src).toContain('ring');
     expect(src).toContain('toValue: 1.5');
     expect(src).toContain('duration: 1200');
@@ -405,21 +406,21 @@ describe('4. FloatingSOSButton — Pulse/Ring Animation Model', () => {
 
   test('4-04: FloatingSOSButton uses useNativeDriver: true (GPU animation)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
     const nativeDriverCount = (src.match(/useNativeDriver: true/g) || []).length;
     expect(nativeDriverCount).toBeGreaterThanOrEqual(2); // pulse + ring
   });
 
   test('4-05: sending state shows ActivityIndicator instead of SOS text', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
     expect(src).toContain('sending');
     expect(src).toContain('ActivityIndicator');
   });
 
   test('4-06: FloatingSOSButton fires haptic on press', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
     // FloatingSOSButton imports expo-haptics directly
     expect(src).toContain("import * as Haptics from 'expo-haptics'");
     // FloatingSOSButton imports Haptics module — the object is available for use
@@ -428,7 +429,7 @@ describe('4. FloatingSOSButton — Pulse/Ring Animation Model', () => {
 
   test('4-07: FloatingSOSButton uses Heavy impact for emergency action', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
     // FloatingSOSButton uses COLORS.emergency for its visual style
     // Haptic feedback is the responsibility of the onPress handler (caller decides weight)
     expect(src).toContain('COLORS.emergency');
@@ -437,7 +438,7 @@ describe('4. FloatingSOSButton — Pulse/Ring Animation Model', () => {
 
   test('4-08: animation cleanup on unmount (useEffect return)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
     // The effect returns a cleanup function that stops the animation
     expect(src).toContain('pAnim.stop');
     expect(src).toContain('rAnim.stop');
@@ -445,7 +446,7 @@ describe('4. FloatingSOSButton — Pulse/Ring Animation Model', () => {
 
   test('4-09: SOS button is a TouchableOpacity with accessibilityLabel', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
     expect(src).toContain('TouchableOpacity');
     expect(src).toContain('accessibilityLabel');
   });
@@ -458,7 +459,7 @@ describe('5. AppNavigator — Screen Registry & Structure', () => {
 
   test('5-01: AppNavigator imports 65 screens', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     const imports = src.match(/import \w+ from '\.\.\/screens\//g) || [];
     expect(imports.length).toBeGreaterThanOrEqual(60);
     expect(imports.length).toBeLessThanOrEqual(75);
@@ -466,38 +467,38 @@ describe('5. AppNavigator — Screen Registry & Structure', () => {
 
   test('5-02: AppNavigator wraps screens in ErrorBoundary', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(src).toContain('ErrorBoundary');
   });
 
   test('5-03: AppNavigator uses createNativeStackNavigator', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(src).toContain('createNativeStackNavigator');
   });
 
   test('5-04: AppNavigator has bottom tab navigator', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(src).toContain('createBottomTabNavigator');
   });
 
   test('5-05: HomeScreen is the root of the main stack', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(src).toContain('HomeScreen');
   });
 
   test('5-06: Emergency-related screens are registered', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(src).toContain('JustArrestedScreen');
     expect(src).toContain('CrisisResourcesScreen');
   });
 
   test('5-07: chat, booking, and case screens all registered', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(src).toContain('ChatScreen');
     expect(src).toContain('BookingScreen');
     expect(src).toContain('CaseScreen');
@@ -505,21 +506,21 @@ describe('5. AppNavigator — Screen Registry & Structure', () => {
 
   test('5-08: attorney and bondsman dashboards registered', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(src).toContain('AttorneyDashboardScreen');
     expect(src).toContain('BondsmanDashboardScreen');
   });
 
   test('5-09: all motion, discovery, and contract screens registered', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(src).toContain('MotionLibraryScreen');
     expect(src).toContain('DiscoveryScreen');
   });
 
   test('5-10: AppNavigator uses COLORS from theme (not raw hex)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(src).toContain('COLORS');
     // Nav uses COLORS constant for most things; raw hex for headerStyle is acceptable
     // (React Navigation header style requires inline colors)
@@ -528,7 +529,7 @@ describe('5. AppNavigator — Screen Registry & Structure', () => {
 
   test('5-11: JTBLogo is used in the tab bar', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/navigation/AppNavigator.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/navigation/AppNavigator.tsx', 'utf8');
     expect(src).toContain('JTBLogo');
   });
 });
@@ -540,13 +541,13 @@ describe('6. Integration PROVIDERS — OAuth Catalog', () => {
 
   test('6-01: PROVIDERS catalog is exported from integrations/index.js', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/index.js', 'utf8');
     expect(src).toContain('export const PROVIDERS');
   });
 
   test('6-02: PROVIDERS has iManage with oauth2 auth_type', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/index.js', 'utf8');
     expect(src).toContain('imanage');
     expect(src).toContain("auth_type: 'oauth2'");
     expect(src).toContain('iManage');
@@ -554,14 +555,14 @@ describe('6. Integration PROVIDERS — OAuth Catalog', () => {
 
   test('6-03: PROVIDERS DMS category includes iManage and NetDocuments', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/index.js', 'utf8');
     expect(src).toContain("category:  'dms'");
     expect(src).toContain('netdocuments');
   });
 
   test('6-04: PROVIDERS has practice management integrations', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/index.js', 'utf8');
     expect(src).toContain('clio');
     expect(src).toContain('practicepanther');
     expect(src).toContain("category:  'practice_mgmt'");
@@ -569,7 +570,7 @@ describe('6. Integration PROVIDERS — OAuth Catalog', () => {
 
   test('6-05: PROVIDERS has calendar integration', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/index.js', 'utf8');
     // caldav is registered in integration catalogue
     expect(src).toContain('caldav');
     const hasCalendar = src.includes("'calendar'") || src.includes('caldav') || src.includes('CalDAV');
@@ -578,7 +579,7 @@ describe('6. Integration PROVIDERS — OAuth Catalog', () => {
 
   test('6-06: integration connection lifecycle has 5 operations', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/index.js', 'utf8');
     expect(src).toContain('/connect');
     expect(src).toContain('/:provider');
     expect(src).toContain('/sync');
@@ -587,7 +588,7 @@ describe('6. Integration PROVIDERS — OAuth Catalog', () => {
 
   test('6-07: OAuth callback verifies PKCE state parameter', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/index.js', 'utf8');
     // PKCE state check prevents CSRF in OAuth flow
     const hasPKCE = src.includes('state') || src.includes('pkce') || src.includes('oauth_state');
     expect(hasPKCE).toBe(true);
@@ -595,7 +596,7 @@ describe('6. Integration PROVIDERS — OAuth Catalog', () => {
 
   test('6-08: integration rate limiter is 60 connections per hour', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/routes/integrations/index.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/index.js', 'utf8');
     expect(src).toContain('3_600_000');
     expect(src).toContain('max: 60');
   });
@@ -623,14 +624,14 @@ describe('7. BookingScreen — Seed Availability & Form Model', () => {
 
   test('7-01: BookingScreen uses seed-based slot availability (deterministic)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BookingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BookingScreen.tsx', 'utf8');
     expect(src).toContain('seed');
     expect(src).toContain("seed % 10");
   });
 
   test('7-02: seed formula — avoids slots changing on every render', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BookingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BookingScreen.tsx', 'utf8');
     expect(src).toContain('d.getDate() + d.getMonth() * 31 + ti * 7');
   });
 
@@ -645,7 +646,7 @@ describe('7. BookingScreen — Seed Availability & Form Model', () => {
 
   test('7-04: BookingScreen is a POST-heavy form (PTR not needed)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BookingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BookingScreen.tsx', 'utf8');
     const posts = (src.match(/api\.post/g) || []).length;
     const gets  = (src.match(/api\.get/g) || []).length;
     expect(posts).toBeGreaterThan(0);
@@ -656,7 +657,7 @@ describe('7. BookingScreen — Seed Availability & Form Model', () => {
 
   test('7-05: BookingScreen has 3-step flow (duration → datetime → confirm)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BookingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BookingScreen.tsx', 'utf8');
     const DURATIONS = src.includes('DURATIONS');
     expect(DURATIONS).toBe(true);
     // Step model
@@ -665,13 +666,13 @@ describe('7. BookingScreen — Seed Availability & Form Model', () => {
 
   test('7-06: BookingScreen uses KeyboardAvoidingView (form safety)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BookingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BookingScreen.tsx', 'utf8');
     expect(src).toContain('KeyboardAvoidingView');
   });
 
   test('7-07: duration options include 15, 30, 60 minute slots', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/BookingScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/BookingScreen.tsx', 'utf8');
     expect(src).toContain('min: 15');
     expect(src).toContain('min: 30');
     expect(src).toContain('min: 60');
@@ -685,38 +686,38 @@ describe('8. app.js — CSP All 9 Directives', () => {
 
   test('8-01: defaultSrc is self-only', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain("defaultSrc:    [\"'self'\"]");
   });
 
   test('8-02: scriptSrc is self-only (no inline scripts)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain("scriptSrc:     [\"'self'\"]");
   });
 
   test('8-03: styleSrc allows unsafe-inline (needed for React Native Web)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain("styleSrc:      [\"'self'\", \"'unsafe-inline'\"]");
   });
 
   test('8-04: imgSrc allows self, data: and https: (court seals etc)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain("imgSrc:        [\"'self'\", \"data:\", \"https:\"]");
   });
 
   test('8-05: connectSrc includes Anthropic API endpoint', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain('api.anthropic.com');
     expect(src).toContain('connectSrc');
   });
 
   test('8-06: frameSrc is none (prevents clickjacking in browser)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain('frameSrc');
     const hasNone = src.includes("frameSrc") && (src.includes("'none'") || src.includes("none"));
     expect(hasNone).toBe(true);
@@ -724,13 +725,13 @@ describe('8. app.js — CSP All 9 Directives', () => {
 
   test('8-07: objectSrc is none', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     expect(src).toContain('objectSrc');
   });
 
   test('8-08: all 9 CSP directives are present', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/backend/src/app.js', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/app.js', 'utf8');
     const DIRECTIVES = ['defaultSrc', 'scriptSrc', 'styleSrc', 'imgSrc',
                         'connectSrc', 'fontSrc', 'objectSrc', 'mediaSrc', 'frameSrc'];
     for (const d of DIRECTIVES) {
@@ -979,7 +980,7 @@ describe('12. Regression — All Prior Fixes Confirmed', () => {
 
   test('12-01: HomeScreen has RefreshControl + loadAll + setRefreshing(false)', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync('/tmp/JG/frontend/src/screens/HomeScreen.tsx', 'utf8');
+    const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(src).toContain('RefreshControl');
     expect(src).toContain('loadAll');
     expect(src).toContain('setRefreshing(false)');
@@ -987,7 +988,7 @@ describe('12. Regression — All Prior Fixes Confirmed', () => {
 
   test('12-02: messages.js N+1 batch fix (lawyerUserMap) intact', async () => {
     const fs  = await import('fs');
-    expect(fs.readFileSync('/tmp/JG/backend/src/routes/messages.js', 'utf8')).toContain('lawyerUserMap');
+    expect(fs.readFileSync('/tmp/JG_fresh/backend/src/routes/messages.js', 'utf8')).toContain('lawyerUserMap');
   });
 
   test('12-03: MOTION_TYPES has 12 types with valid fields', () => {

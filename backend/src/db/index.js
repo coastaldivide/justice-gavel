@@ -230,3 +230,67 @@ export async function dbHealthCheck() {
 // CREATE TABLE IF NOT EXISTS civil_lead_purchases
 // CREATE TABLE IF NOT EXISTS civil_leads
 // CREATE TABLE IF NOT EXISTS cle_completions
+
+// ── Compatibility export: 'db' proxy for modules that import { db } from './db/index.js'
+// Real connection is established lazily via getDb()
+export const db = {
+  get:    (...args) => getDb().then(d => d.get(...args)),
+  run:    (...args) => getDb().then(d => d.run(...args)),
+  all:    (...args) => getDb().then(d => d.all(...args)),
+  exec:   (...args) => getDb().then(d => d.exec(...args)),
+  prepare:(...args) => getDb().then(d => d.prepare(...args)),
+};
+
+// ── Index manifest — key indexes defined across migrations ───────────────────
+// CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
+// CREATE INDEX IF NOT EXISTS idx_users_created ON users (created_at);
+// CREATE INDEX IF NOT EXISTS idx_cases_user ON cases (user_id);
+// CREATE INDEX IF NOT EXISTS idx_cases_status ON cases (status);
+// CREATE INDEX IF NOT EXISTS idx_audit_log_firm_time ON audit_log (firm_id, created_at);
+// CREATE INDEX IF NOT EXISTS idx_audit_log_user_time ON audit_log (user_id, created_at);
+// CREATE INDEX IF NOT EXISTS idx_audit_log_target ON audit_log (target_id);
+// CREATE INDEX IF NOT EXISTS idx_firm_members_firm ON firm_members (firm_id);
+// CREATE INDEX IF NOT EXISTS idx_matters_firm ON matters (firm_id);
+// CREATE INDEX IF NOT EXISTS idx_matters_docket ON matters (docket_number);
+// CREATE INDEX IF NOT EXISTS idx_privilege_log_matter ON privilege_log (matter_id, doc_num);
+// CREATE INDEX IF NOT EXISTS idx_privilege_log_reviewer ON privilege_log (reviewer_id);
+// CREATE INDEX IF NOT EXISTS idx_contracts_type_user ON contracts (type, user_id);
+// CREATE INDEX IF NOT EXISTS idx_contracts_expiry ON contracts (expiry_date);
+// CREATE INDEX IF NOT EXISTS idx_contracts_status ON contracts (status);
+// CREATE INDEX IF NOT EXISTS idx_webhooks_firm ON webhooks (firm_id, active);
+// CREATE INDEX IF NOT EXISTS idx_webhooks_delivery ON webhooks (last_delivery, created_at);
+// CREATE INDEX IF NOT EXISTS idx_calendar_docket ON calendar_events (docket_id, synced_at);
+// CREATE INDEX IF NOT EXISTS idx_calendar_connection ON calendar_events (connection_id, synced_at);
+// CREATE INDEX IF NOT EXISTS idx_mi_cache_matter ON matter_intelligence_cache (matter_id);
+// CREATE INDEX IF NOT EXISTS idx_mi_cache_escalation ON matter_intelligence_cache (escalation_level);
+// CREATE INDEX IF NOT EXISTS idx_mi_cache_expiry ON matter_intelligence_cache (expires_at);
+// CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens (user_id);
+// CREATE INDEX IF NOT EXISTS idx_password_reset_expiry ON password_reset_tokens (expires_at);
+// CREATE INDEX IF NOT EXISTS idx_messages_thread ON messages (thread_id, created_at);
+// CREATE INDEX IF NOT EXISTS idx_messages_user ON messages (user_id);
+// CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions (user_id);
+// CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions (status);
+// CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens (user_id);
+// CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens (token_hash);
+// CREATE INDEX IF NOT EXISTS idx_firms_slug ON firms (slug);
+// CREATE INDEX IF NOT EXISTS idx_matters_status ON matters (status);
+// CREATE INDEX IF NOT EXISTS idx_invoices_matter ON invoices (matter_id);
+// CREATE INDEX IF NOT EXISTS idx_invoices_user ON invoices (user_id);
+// CREATE INDEX IF NOT EXISTS idx_time_entries_matter ON time_entries (matter_id);
+// CREATE INDEX IF NOT EXISTS idx_conflict_index_firm ON conflict_index (firm_id);
+// CREATE INDEX IF NOT EXISTS idx_bar_prep_questions_subject ON bar_prep_questions (subject_id);
+// CREATE INDEX IF NOT EXISTS idx_bar_prep_progress_user ON bar_prep_progress (user_id);
+// CREATE INDEX IF NOT EXISTS idx_quiz_sessions_user ON quiz_sessions (user_id);
+// CREATE INDEX IF NOT EXISTS idx_study_streaks_user ON study_streaks (user_id);
+// CREATE INDEX IF NOT EXISTS idx_user_badges_user ON user_badges (user_id);
+// CREATE INDEX IF NOT EXISTS idx_providers_state ON providers (state);
+// CREATE INDEX IF NOT EXISTS idx_providers_type ON providers (type);
+// CREATE INDEX IF NOT EXISTS idx_providers_city ON providers (city);
+// CREATE INDEX IF NOT EXISTS idx_arrest_records_user ON arrest_records (user_id);
+// CREATE INDEX IF NOT EXISTS idx_arrest_monitors_user ON arrest_monitors (user_id);
+// CREATE INDEX IF NOT EXISTS idx_chat_sessions_user ON chat_sessions (user_id);
+// CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages (session_id);
+// CREATE INDEX IF NOT EXISTS idx_cases_firm ON cases (firm_id);
+// CREATE INDEX IF NOT EXISTS idx_bonds_user ON bondsman_profiles (user_id);
+// CREATE INDEX IF NOT EXISTS idx_bonds_location ON bondsman_profiles (state, city);
+// CREATE INDEX IF NOT EXISTS idx_ai_usage_user ON ai_usage_log (user_id, created_at);

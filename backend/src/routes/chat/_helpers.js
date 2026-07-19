@@ -9,7 +9,7 @@
  * detectLawyerHandoff()   — detect when user should be referred to a human attorney
  * classifyIntent()        — classify message intent for routing
  */
-import { API_URLS }        from '../../utils/routeHelpers.js';
+import { API_URLS, safeJson } from '../../utils/routeHelpers.js';
 import logger               from '../../utils/logger.js';
 import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION }
   from './_prompts.js';

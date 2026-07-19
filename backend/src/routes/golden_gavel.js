@@ -149,7 +149,6 @@ export async function evaluateGavelLevel(userId) {
 
     const lessons = await db.get(`SELECT COUNT(*) as total FROM lessons`, []).catch(() => ({ total: 0 }));
     const completed = await db.get(
-    if (!completed) return res.status(404).json({error: 'Not found'});
       `SELECT COUNT(DISTINCT lesson_id) as done FROM lesson_progress
        WHERE user_id = ? AND completed = 1`, [userId]
     ).catch(() => ({ done: 0 }));
