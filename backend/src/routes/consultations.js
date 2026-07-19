@@ -127,7 +127,7 @@ router.get('/', authRequired, async (req, res) => {
 });
 
 // POST /api/consultations/book
-router.post('/book', validate(schemas.consultations.book),, authRequired, consultationsLimiter, async (req, res) => {
+router.post('/book', validate(schemas.consultations.book), authRequired, consultationsLimiter, async (req, res) => {
   const {
     lawyer_id, lawyer_name, lawyer_phone = '',
     date_slot = null, time_slot = null,

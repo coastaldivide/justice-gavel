@@ -188,7 +188,7 @@ async function sign(user) {
     id: user.id,
     email: user.email || null,
     phone: user.phone || null,
-    displayName: user.display_name || user.name || defaultDisplayName(user.login_identifier || '', ''),
+    displayName: user.display_name || user.name || user.email?.split('@')[0] || 'User',
     premium: !!user.is_premium
   };
   const db_for_token = await getDb();
@@ -197,7 +197,7 @@ async function sign(user) {
 
 // ── POST /register ────────────────────────────────────────────────────────────
 
-router.post('/register', validate(schemas.auth.register),, authRateLimit, registerLimiter, async (req, res) => {
+router.post('/register', validate(schemas.auth.register), authRateLimit, registerLimiter, async (req, res) => {
   let db;
   try {
     db = await getDb();
@@ -257,7 +257,7 @@ router.post('/register', validate(schemas.auth.register),, authRateLimit, regist
 
 // ── POST /login ───────────────────────────────────────────────────────────────
 
-router.post('/login', validate(schemas.auth.login),, authRateLimit, authLimiter, async (req, res) => {
+router.post('/login', validate(schemas.auth.login), authRateLimit, authLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const { identifier, password } = req.body || {};
@@ -410,7 +410,7 @@ router.post('/forgot-password', resetLimiter, async (req, res) => {
 });
 
 // ── POST /api/auth/refresh — exchange valid token for a fresh one ─────────────
-router.post('/refresh', validate(schemas.auth.refresh),, async (req, res) => {
+router.post('/refresh', validate(schemas.auth.refresh), async (req, res) => {
   const { refreshToken } = req.body;
   if (!refreshToken) return err400(res, 'refreshToken required');
 

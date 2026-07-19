@@ -85,6 +85,7 @@ async function isOptedOut(db, phone, email) {
 }
 
 // Log a sent message — idempotency key prevents duplicates
+async function logMessage(db, { recipientType, recipientId, recipientPhone, recipientEmail, channel, arrestId, messageType, body, status, sendgridId, idempotencyKey, errorMsg } = {}) {
   try {
     await db.run(
       `INSERT INTO outbound_messages

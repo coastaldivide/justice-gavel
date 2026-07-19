@@ -579,3 +579,4 @@ describe('10. Regression + Mass Influx', () => {
     expect(violations).toHaveLength(0);
   });
 });
+});

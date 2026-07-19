@@ -11,7 +11,7 @@ import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.
 const router = Router();
 
 // ── Build share-ready summary for bail result ─────────────────────────────
-function buildShareSummary({ state, charge_type, bail_amount, premium, plan, mandatory_minimum }) {
+function buildShareSummary({ state, charge_type, bail_amount, premium, notes, plan, mandatory_minimum } = {}) {
   if (!bail_amount) return null;
   let txt = `Justice Gavel Bail Summary\n`;
   txt += `State: ${state} | Charge: ${charge_type}\n`;
@@ -117,7 +117,7 @@ router.get('/nearby', async (req, res) => {
 
 
 // POST /api/bail/calculate — compute bail recommendation from case factors
-router.post('/calculate', validate(schemas.bail.calculate),, apiLimiter, validate(bailCalculateSchema), async (req, res) => {
+router.post('/calculate', validate(schemas.bail.calculate), apiLimiter, validate(bailCalculateSchema), async (req, res) => {
   const {
     state,
     charge_type,      // 'felony' | 'misdemeanor' | 'dui' | 'domestic' | 'sexual' | 'dismissed'
@@ -261,6 +261,6 @@ router.get('/estimate-total', apiLimiter, asyncRoute(async (req, res) => {
     },
     note: 'Estimates only. Court fees, monitoring, and attorney costs vary by county.',
   });
-});
+}));
 
 export default router;
