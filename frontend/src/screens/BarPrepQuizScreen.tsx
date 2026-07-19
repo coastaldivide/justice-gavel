@@ -193,8 +193,21 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
         results = res.data;
       }
 
-      // FIX #13: BarPrepResults was never created — navigate to BarPrepProgress
-      navigation.replace('BarPrepProgress');
+      // Navigate to results screen with full session context
+      const batchAnswers = mode !== 'timed' ? Object.values(answers) : [];
+      const totalAns  = Object.keys(answers).length;
+      const correctAns = Object.values(answers).filter((a: any) => a.is_correct).length;
+      navigation.replace('BarPrepResults', {
+        session_id,
+        score_pct:        totalAns > 0 ? Math.round((correctAns / totalAns) * 100) : 0,
+        correct:          correctAns,
+        total:            totalAns || total,
+        mode,
+        subject_id,
+        answers:          answers,    // { [question_id]: { answer, is_correct, time_spent_ms } }
+        questions,
+        timed_out:        isTimeout,
+      });
     } catch (e) {
       setSubmitting(false);
       Alert.alert('Error', 'Failed to submit answers. Try again.');

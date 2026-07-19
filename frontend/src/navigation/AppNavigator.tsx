@@ -22,6 +22,7 @@ import BarPrepQuizScreen        from '../screens/BarPrepQuizScreen';
 import BarPrepExplanationScreen from '../screens/BarPrepExplanationScreen';
 import BarPrepProgressScreen    from '../screens/BarPrepProgressScreen';
 import BarPrepScheduleScreen    from '../screens/BarPrepScheduleScreen';
+import BarPrepResultsScreen     from '../screens/BarPrepResultsScreen';
 
 import AdminVerificationScreen from '../screens/AdminVerificationScreen';
 import AdvocacyScreen from '../screens/AdvocacyScreen';
@@ -196,6 +197,7 @@ function MoreNavigator() {
           <MoreStack.Screen name="BarPrepExplanation" component={BarPrepExplanationScreen} options={{ title: '📖 Explanation' }} />
           <MoreStack.Screen name="BarPrepProgress"    component={BarPrepProgressScreen}    options={{ title: '📈 MBE Progress' }} />
           <MoreStack.Screen name="BarPrepSchedule"    component={BarPrepScheduleScreen}    options={{ title: '📅 Study Schedule' }} />
+          <MoreStack.Screen name="BarPrepResults"     component={BarPrepResultsScreen}     options={{ title: '📊 Quiz Results', headerShown: false }} />
       <MoreStack.Screen name="AdminVerification"     component={AdminVerificationScreen}     options={{ title: '⚖️ Bar Verification' }} />
       <MoreStack.Screen name="Advocacy"              component={AdvocacyScreen}              options={{ title: '📊 Advocacy Stats' }} />
       <MoreStack.Screen

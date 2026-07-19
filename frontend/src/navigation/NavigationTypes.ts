@@ -146,6 +146,17 @@ export type RootStackParamList = {
   BarPrepExplanation: { question_id: number };
   BarPrepProgress:    undefined;
   BarPrepSchedule:    undefined;
+  BarPrepResults:     {
+    session_id:  number;
+    score_pct:   number;
+    correct:     number;
+    total:       number;
+    mode:        'practice' | 'timed';
+    subject_id?: string;
+    answers:     Record<number, { answer: string; is_correct: boolean; time_spent_ms?: number }>;
+    questions:   Array<Record<string, unknown>>;
+    timed_out?:  boolean;
+  };
 };
 
 /** Helper: extract route params type for a specific screen */

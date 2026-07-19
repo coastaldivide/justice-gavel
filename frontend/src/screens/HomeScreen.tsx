@@ -61,6 +61,9 @@ const TILES = [
   { key: 'MentalHealth',  icon: '🧠', label: 'Mental Health\nDiversion', nav: 'More:MentalHealthDiversion', bg: COLORS.bgCard, color: COLORS.navy,  primary: false },
   { key: 'Resources',     icon: '📚', label: 'Legal\nResources',        nav: 'More:Resources',             bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
   { key: 'Search',        icon: '🔍', label: 'Search\nEverything',      nav: 'More:Search',                bg: COLORS.bgCard, color: COLORS.navy,   primary: false },
+
+  // ── Bar Exam Prep ─────────────────────────────────────────────────────────
+  { key: 'BarPrep',       icon: '📖', label: 'Bar Exam\nPrep',           nav: 'More:BarPrepHome',           bg: COLORS.legalBg, color: COLORS.legal, primary: false },
 ];
 
 const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
