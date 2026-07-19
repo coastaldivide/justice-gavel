@@ -172,8 +172,24 @@ export function buildWhere(conditions) {
     : { where: '', values: [] };
 }
 
-export async function ownsResource(db, table, id, userId, idCol = 'id', ownerCol = 'user_id') {
-  const row = await db.get(`SELECT ${idCol} FROM ${table} WHERE ${idCol} = ? AND ${ownerCol} = ?`, [id, userId]);
+export async function ownsResource(dbOrRow, tableOrUserId, id, userId, idCol = 'id', ownerCol = 'user_id') {
+  // Dual-mode: ownsResource(row, userId) checks an already-fetched row
+  //            ownsResource(db, table, id, userId) queries the DB
+  if (tableOrUserId !== null && typeof tableOrUserId !== 'string') {
+    // 2-arg mode: (row, userId) — row already fetched
+    const row = dbOrRow;
+    const uid = tableOrUserId;
+    if (!row) return false;
+    const rowOwner = row[ownerCol] ?? row.user_id;
+    return String(rowOwner) === String(uid);
+  }
+  // 5-arg mode: (db, table, id, userId, ...)
+  const db = dbOrRow;
+  const table = tableOrUserId;
+  const row = await db.get(
+    `SELECT ${idCol} FROM ${table} WHERE ${idCol} = ? AND ${ownerCol} = ?`,
+    [id, userId]
+  );
   return !!row;
 }
 

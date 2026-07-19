@@ -71,6 +71,8 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
   const { colors }                      = useTheme();
   const { impact }                      = useHaptics();
   const { requireAuth, AuthGateModal }  = useAuthGate(navigation);
+  // Bar prep disclaimer — shown once in the UI, not on every question
+  const BAR_PREP_DISCLAIMER = 'MBE supplement for study only. Not a substitute for full bar prep courses (Barbri, Themis, etc.).';
   const [subjects, setSubjects]         = useState<Subject[]>([]);
   const [dashboard, setDashboard]       = useState<Dashboard | null>(null);
   const [loading, setLoading]           = useState(true);

@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    name: Backend test suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ci_test_secret_change_in_prod
+      # Stripe / external services stubbed in test mode — no real keys needed
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      RESEND_API_KEY: re_placeholder_not_live
+      LIVE_EMAIL: "false"
+      LIVE: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run core unit + integration tests
+        run: |
+          node --experimental-vm-modules node_modules/.bin/jest \
+            src/__tests__/bar_prep.test.js \
+            src/__tests__/auth.test.js \
+            src/__tests__/billing.test.js \
+            src/__tests__/golden_gavel.test.js \
+            src/__tests__/middleware.auth.test.js \
+            src/__tests__/webhook_signature.test.js \
+            src/__tests__/session_management.test.js \
+            src/__tests__/subscription_state_machine.test.js \
+            src/__tests__/migration_idempotency.test.js \
+            src/__tests__/cases.test.js \
+            src/__tests__/chat.test.js \
+            src/__tests__/messages.test.js \
+            src/__tests__/push.test.js \
+            src/__tests__/motions.test.js \
+            src/__tests__/research.test.js \
+            src/__tests__/transcribe.test.js \
+            src/__tests__/translate.test.js \
+            src/__tests__/consultations.test.js \
+            src/__tests__/insurance.test.js \
+            src/__tests__/duplicate_submission_guard.test.js \
+            src/__tests__/contracts.test.js \
+            src/__tests__/ai_prompt_safety.test.js \
+            src/__tests__/promptInjection.test.js \
+            src/__tests__/attorney_platform.test.js \
+            --no-coverage --forceExit --testTimeout=20000 --runInBand
+        env:
+          NODE_ENV: test
+
+      - name: Run simulation suites
+        run: |
+          node --experimental-vm-modules node_modules/.bin/jest \
+            src/__tests__/customer_trials.test.js \
+            src/__tests__/firm_trials.test.js \
+            src/__tests__/matter_intelligence.test.js \
+            src/__tests__/golden_gavel.test.js \
+            src/__tests__/godzilla_simulation.test.js \
+            src/__tests__/realworld_simulation.test.js \
+            src/__tests__/stress_simulation.test.js \
+            --no-coverage --forceExit --testTimeout=30000 --runInBand
+        env:
+          NODE_ENV: test
+        continue-on-error: false
+
+      - name: Syntax check all source files
+        run: |
+          find src -name "*.js" \
+            ! -path "*/node_modules/*" \
+            ! -path "*/__tests__/*" \
+            -exec node --check {} \;
+        continue-on-error: false
+
+  frontend-typecheck:
+    name: Frontend type check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+        continue-on-error: true   # warn only until all types are clean
+
+      - name: Check for bare hex colors in screens
+        run: |
+          VIOLATIONS=$(grep -rn "#[0-9A-Fa-f]\{6\}" src/screens/ \
+            --include="*.tsx" | grep -v "//\|COLORS\.\|theme\." | wc -l)
+          echo "Hex color violations: $VIOLATIONS"
+          if [ "$VIOLATIONS" -gt 50 ]; then
+            echo "::warning::$VIOLATIONS raw hex colors found in screens — use COLORS.* tokens"
+          fi

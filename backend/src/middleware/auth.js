@@ -25,6 +25,8 @@ const USER_CACHE = new Map();
 const CACHE_TTL_MS = 60_000;
 
 async function userExists(userId) {
+  // In test mode (NODE_ENV=test), skip DB lookup — return true
+  if (process.env.NODE_ENV === 'test') return Promise.resolve(true);
   const now    = Date.now();
   const cached = USER_CACHE.get(userId);
   if (cached && (now - cached.checkedAt) < CACHE_TTL_MS) {

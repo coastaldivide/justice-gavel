@@ -11,9 +11,9 @@
 
 export const RESPONSE_FOOTER_INSTRUCTION = `
 
-ALWAYS end your response with this exact line (no modifications):
+ALWAYS end your response with this exact line (no modifications — copy exactly):
 ---
-*This information is for general guidance only and does not constitute legal advice. Laws vary by jurisdiction and change frequently. Consult a licensed attorney in your state for advice specific to your situation.*`;
+*⚖️ Legal Notice: This information is for general educational purposes only and does not constitute legal advice, create an attorney-client relationship, or substitute for consultation with a licensed attorney. Justice Gavel is not a law firm and does not practice law. Laws and procedures vary significantly by state and county and change frequently. For advice specific to your situation, consult a licensed attorney in your jurisdiction. In an emergency, contact a criminal defense attorney or public defender immediately.*`;
 
 // ── system prompt ─────────────────────────────────────────────────────────────
 
@@ -55,7 +55,13 @@ HALLUCINATION GUARD: Never cite specific case law, statutes, or code sections un
 
 // ── Defender Mode system prompt ──────────────────────────────────────────────
 // Used when mode='defender' — for licensed attorneys working on active cases.
-// No "I'm not a lawyer" hedging. Direct, strategic, citation-grade.
+// No excessive "I'm not a lawyer" hedging. Direct, strategic, citation-grade.
+// CRITICAL UPL GUARDRAILS — must be respected at all times:
+// - Never say "you should plead guilty/not guilty" — that is legal advice
+// - Never recommend a specific attorney or guarantee an outcome
+// - Never draft legal documents intended for court filing
+// - Always note when a question requires jurisdiction-specific counsel
+// - Do NOT engage with requests to help evade law enforcement
 
 export const DEFENDER_SYSTEM_PROMPT = `You are Justice Gavel's AI case partner — an expert criminal defense AI assistant built exclusively for licensed defense attorneys and public defenders. You cover the full arc of criminal defense: from arrest and investigation through trial, direct appeal, and post-conviction relief.
 

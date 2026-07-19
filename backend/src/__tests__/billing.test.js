@@ -32,8 +32,8 @@ async function buildApp(db) {
     next();
   }
 
-  const CONSUMER_TIERS = ['starter','pro','legal_radar'];
-  const TIER_PRICES = { starter:9.99, pro:14.99, legal_radar:19.99 };
+  const CONSUMER_TIERS = ['legal_radar','advisor','legal_pro','esquire'];
+  const TIER_PRICES = { legal_radar:19.99, advisor:24.99, legal_pro:34.99, esquire:49.00 };
 
   // POST /consumer/subscribe — validate tier, create subscription record
   router.post('/consumer/subscribe', auth, async (req, res) => {
@@ -150,8 +150,8 @@ describe('POST /api/billing/consumer/subscribe', () => {
       .send({ tier:'legal_pro', payment_method_id:'pm_test_123' });
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
-    expect(res.body.tier).toBe('pro');
-    expect(res.body.price).toBe(14.99);
+    expect(res.body.tier).toBe('legal_pro');
+    expect(res.body.price).toBe(34.99);
   });
 
   it('rejects invalid tier', async () => {
@@ -167,7 +167,7 @@ describe('POST /api/billing/consumer/subscribe', () => {
     const res = await request(app)
       .post('/api/billing/consumer/subscribe')
       .set('Authorization', `Bearer ${TOKEN}`)
-      .send({ tier:'starter' });
+      .send({ tier:'legal_radar' });
     expect(res.status).toBe(400);
   });
 
@@ -179,7 +179,7 @@ describe('POST /api/billing/consumer/subscribe', () => {
   });
 
   it('all valid tiers are accepted', async () => {
-    for (const tier of ['starter','pro','legal_radar']) {
+    for (const tier of ['legal_radar','advisor','legal_pro']) {
       const res = await request(app)
         .post('/api/billing/consumer/subscribe')
         .set('Authorization', `Bearer ${tok(USER_ID+10+['starter','pro','legal_radar'].indexOf(tier))}`)
@@ -197,7 +197,7 @@ describe('GET /api/billing/consumer/subscription', () => {
       .set('Authorization', `Bearer ${TOKEN}`);
     expect(res.status).toBe(200);
     expect(res.body.subscription).not.toBeNull();
-    expect(res.body.subscription.plan).toBe('pro');
+    expect(res.body.subscription.plan).toBe('legal_pro');
   });
 
   it('returns null for user with no subscription', async () => {

@@ -460,3 +460,5 @@ router.get('/leaderboard', quizLimiter, async (req, res) => {
 });
 
 export default router;
+
+// Bar prep API disclaimer: all content is for educational/exam prep purposes only.
