@@ -21,7 +21,7 @@ import PDFDocument         from 'pdfkit';
 import { getDb }           from '../../db/index.js';
 import { authRequired }    from '../../middleware/auth.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
-import { enqueue }         from '../../services/aiQueue.js';
+import { enqueueAIJob as enqueue }         from '../../services/aiQueue.js';
 import { MOTION_PDF_SYSTEM_PROMPT } from '../chat/_prompts.js';
 import { err400, err403, err404, safeInt,
          sanitizeStr, truncateStr }         from '../../utils/routeHelpers.js';

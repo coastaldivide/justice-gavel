@@ -129,7 +129,6 @@ RUNBOOK: https://github.com/coastaldivide/justice-gavel/blob/main/RUNBOOK.md
       ],
     }),
     // SMS removed — using Slack webhook instead
-    } — check email for details`),
     pingWebhook({ text: `🚨 *SEV-1 CRITICAL* — ${message}`, color: '#C62828', fields: extras }),
   ]);
 }

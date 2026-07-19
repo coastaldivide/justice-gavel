@@ -229,3 +229,21 @@ export const API_URLS = {
   GOOGLE_PLACES:'https://maps.googleapis.com/maps/api/place',
   CALENDLY:     'https://api.calendly.com/v2',
 };
+
+// ── Admin table/column allow-lists ─────────────────────────────────────────
+const ADMIN_TABLES = new Set([
+  'users','cases','matters','resources','lessons','bail_rates',
+  'providers','bondsman_profiles','bar_questions','checkins',
+  'video_sessions','ai_jobs','audit_log','rewards',
+]);
+const ADMIN_COL_PATTERN = /^[a-z_][a-z0-9_]*$/;
+
+export function safeTable(name) {
+  if (!ADMIN_TABLES.has(name)) throw Object.assign(new Error('Unknown table'), { status: 400 });
+  return name;
+}
+export function safeAdminCols(cols) {
+  if (!Array.isArray(cols) || cols.length === 0) return '*';
+  const valid = cols.filter(c => ADMIN_COL_PATTERN.test(c));
+  return valid.length ? valid.join(', ') : '*';
+}

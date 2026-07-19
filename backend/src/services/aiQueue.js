@@ -144,3 +144,36 @@ export function startAIWorkers() {
 
   logger.info('[ai_queue] BullMQ AI workers started (4 queues, 12 concurrency)');
 }
+
+// ── Queue inspection helpers (used by routes/jobs.js) ──────────────────────
+export async function getJob(jobId) {
+  const allQueues = [aiChatQueue, aiResearchQueue, aiDocumentQueue, aiMotionQueue];
+  for (const q of allQueues) {
+    if (!q) continue;
+    try {
+      const job = await q.getJob(jobId);
+      if (job) return job;
+    } catch {}
+  }
+  return null;
+}
+
+export async function queueStats() {
+  const queues = { chat: aiChatQueue, research: aiResearchQueue,
+                   document: aiDocumentQueue, motion: aiMotionQueue };
+  const stats = {};
+  for (const [name, q] of Object.entries(queues)) {
+    if (!q) { stats[name] = { waiting: 0, active: 0, completed: 0, failed: 0 }; continue; }
+    try {
+      stats[name] = {
+        waiting:   await q.getWaitingCount(),
+        active:    await q.getActiveCount(),
+        completed: await q.getCompletedCount(),
+        failed:    await q.getFailedCount(),
+      };
+    } catch { stats[name] = { error: true }; }
+  }
+  return stats;
+}
+
+export const getQueueStats = queueStats;

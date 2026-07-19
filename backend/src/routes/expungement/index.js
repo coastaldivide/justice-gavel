@@ -111,8 +111,8 @@ router.get('/petition-checklist', authRequired, asyncRoute(async (req, res) => {
     note: 'Requirements vary by county. Consult with a local attorney for accuracy.',
     find_attorney: `/api/providers/lawyers?state=${state}&practice_area=expungement`,
   });
-});
 
+}));
 export default router;
 
 // Re-export helpers so test files and other modules can import from the index

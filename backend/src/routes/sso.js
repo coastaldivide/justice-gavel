@@ -554,6 +554,6 @@ router.get('/test/:firmId', authRequired, requireFirmRole('firm_admin'), asyncRo
     logger.error('[sso/test]', e.message);
     res.status(500).json({ error: 'Could not test SSO configuration.' });
   }
-});
 
+}));
 export default router;

@@ -12,7 +12,7 @@
 import { Router }     from 'express';
 import { asyncRoute } from '../utils/routeHelpers.js';
 import { authRequired } from '../middleware/auth.js';
-import { sendTransactionalEmail } from '../services/email.js';
+import { sendEmail } from '../services/email.js';
 
 const router = Router();
 
@@ -43,7 +43,7 @@ router.post('/:id/close', authRequired, asyncRoute(async (req, res) => {
   const retention = await buildRetentionPayload(userId, caseRow, outcome);
 
   // Email: "Your case is closed — here's what comes next"
-  await sendTransactionalEmail({
+  await sendEmail({
     to:       req.user.email,
     template: 'case_closed_retention',
     data:     {

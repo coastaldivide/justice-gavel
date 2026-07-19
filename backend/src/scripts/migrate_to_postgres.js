@@ -58,22 +58,22 @@ function sqliteToPostgres(createSql) {
 // ── Migrate a single SQLite database file ─────────────────────────────────────
 async function migrateDb(sqlitePath, label) {
   console.log('\n' + '─'.repeat(60));
-  console.log(\`Migrating ${label}: ${sqlitePath}\`);
+  console.log(`Migrating ${label}: ${sqlitePath}`);
 
   const sqlite = new Database(sqlitePath, { readonly: true });
   const tables = sqlite.prepare(
     "SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
   ).all();
 
-  console.log(\`  Found ${tables.length} tables\`);
+  console.log(`  Found ${tables.length} tables`);
 
   for (const { name: tableName, sql: createSql } of tables) {
     if (!createSql) continue;
 
     // Count rows in SQLite
-    const srcCount = sqlite.prepare(\`SELECT COUNT(*) as n FROM "${tableName}"\`).get().n;
+    const srcCount = sqlite.prepare(`SELECT COUNT(*) as n FROM "${tableName}"`).get().n;
     if (srcCount === 0) {
-      console.log(\`  ⏭  ${tableName}: 0 rows — skipping\`);
+      console.log(`  ⏭  ${tableName}: 0 rows — skipping`);
       continue;
     }
 
@@ -84,23 +84,23 @@ async function migrateDb(sqlitePath, label) {
     } catch (e) {
       // Table may already exist with different schema — that's fine
       if (!e.message.includes('already exists')) {
-        console.log(\`  ⚠️  ${tableName}: schema error — \${e.message.substring(0, 80)}\`);
+        console.log(`  ⚠️  ${tableName}: schema error — \${e.message.substring(0, 80)}`);
       }
     }
 
     // Get column names
-    const cols = sqlite.pragma(\`table_info("${tableName}")\`).map(r => r.name);
-    const placeholders = cols.map((_, i) => \`$${i + 1}\`).join(', ');
-    const colList = cols.map(c => \`"${c}"\`).join(', ');
+    const cols = sqlite.pragma(`table_info("${tableName}")`).map(r => r.name);
+    const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+    const colList = cols.map(c => `"${c}"`).join(', ');
 
-    const insertSql = \`
+    const insertSql = `
       INSERT INTO "${tableName}" (${colList})
       VALUES (${placeholders})
       ON CONFLICT DO NOTHING
-    \`;
+    `;
 
     // Stream rows in batches of 500
-    const rows = sqlite.prepare(\`SELECT * FROM "${tableName}"\`).all();
+    const rows = sqlite.prepare(`SELECT * FROM "${tableName}"`).all();
     let inserted = 0;
     const client = await pool.connect();
     try {
@@ -125,14 +125,14 @@ async function migrateDb(sqlitePath, label) {
       await client.query('COMMIT');
     } catch (e) {
       await client.query('ROLLBACK');
-      console.log(\`  ❌ ${tableName}: transaction failed — \${e.message}\`);
+      console.log(`  ❌ ${tableName}: transaction failed — \${e.message}`);
     } finally {
       client.release();
     }
 
-    const pgCount = (await pool.query(\`SELECT COUNT(*) as n FROM "${tableName}"\`)).rows[0].n;
+    const pgCount = (await pool.query(`SELECT COUNT(*) as n FROM "${tableName}"`)).rows[0].n;
     const status  = parseInt(pgCount) >= srcCount ? '✅' : '⚠️ ';
-    console.log(\`  ${status} ${tableName}: SQLite ${srcCount} → Postgres ${pgCount}\`);
+    console.log(`  ${status} ${tableName}: SQLite ${srcCount} → Postgres ${pgCount}`);
   }
 
   sqlite.close();

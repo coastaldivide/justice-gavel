@@ -31,7 +31,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 15_000) {
  */
 
 import logger from '../utils/logger.js';
-import { withBreaker } from '../utils/circuitBreaker.js';
+import { getBreaker as withBreaker } from '../utils/circuitBreaker.js';
 
 const SUPABASE_URL     = process.env.SUPABASE_URL;
 const SUPABASE_KEY     = process.env.SUPABASE_SERVICE_KEY;

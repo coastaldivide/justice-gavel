@@ -153,7 +153,8 @@ async function runBarReVerification() {
 const BAR_REVERIFY_INTERVAL_MS = 90 * 24 * 60 * 60 * 1000;
 setTimeout(() => {
   runBarReVerification();
-  setInterval(runBarReVerification, BAR_REVERIFY_INTERVAL_MS);
+  const _timer155 = setInterval(runBarReVerification, BAR_REVERIFY_INTERVAL_MS);
+  _timer155.unref();
 }, 2 * 60 * 1000);
 
 const pushInterval = setInterval(async () => {

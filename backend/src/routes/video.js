@@ -103,14 +103,14 @@ router.post('/session', authRequired, async (req, res) => {
     // Log session in DB
     // Non-critical: log session in DB. If DB insert fails, still return the room URL.
     await db.run(
-      `    // user_id comes from verified JWT — no orphan risk
+      `INSERT INTO video_sessions
     INSERT INTO video_sessions
          (user_id, matter_id, attorney_id, daily_room_name, daily_room_url,
           topic, scheduled_for, expires_at, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, datetime(?, 'unixepoch'), datetime('now'))`,
       [req.user.id, matter_id || null, attorney_id || null,
        room.name, room.url, safeTopic,
-       scheduled_for || null, expiresAt].catch(e => logger?.warn("[video] session log:", e?.message));
+       scheduled_for || null, expiresAt]
     ).catch(e => logger.warn('[video] session log failed:', e?.message));
 
     await auditLog({ userId: req.user.id, action: 'VIDEO_SESSION_CREATED',
@@ -124,7 +124,7 @@ router.post('/session', authRequired, async (req, res) => {
     { item: 'Charge your device (at least 50%)', done: false },
     { item: 'Write down your key questions in advance', done: false },
     { item: 'Have your case documents accessible', done: false },
-    { item: 'Note your attorney's contact number in case of disconnection', done: false },
+    { item: 'Note your attorney\'s contact number in case of disconnection', done: false },
   ];
 
     return res.json({
@@ -146,6 +146,7 @@ router.post('/session', authRequired, async (req, res) => {
       fallback: 'phone',
     });
   }
+  } catch (e) { logger.warn('[video/session POST]', e?.message); }
 });
 
 // ── GET /video/session/:name — session status ─────────────────────────────

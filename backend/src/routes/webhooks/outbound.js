@@ -468,7 +468,6 @@ router.post('/deliveries/:id/retry', authRequired, requireFirmRole('firm_admin')
   } catch (e) {
     res.status(500).json({ error: 'Retry failed.', detail: e.message });
   }
-});
 
 // GET /events — list all supported event types
 router.get('/events', authRequired, (req, res) => {
@@ -480,4 +479,5 @@ router.get('/events', authRequired, (req, res) => {
   });
 });
 
+}));
 export default router;

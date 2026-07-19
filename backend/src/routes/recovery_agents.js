@@ -182,6 +182,6 @@ router.get('/laws', authRequired, apiLimiter, asyncRoute(async (req, res) => {
     },
     disclaimer: 'For informational purposes only. Verify with your state DOI.',
   });
-});
 
+}));
 export default router;

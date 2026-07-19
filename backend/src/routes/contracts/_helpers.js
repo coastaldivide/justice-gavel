@@ -11,7 +11,7 @@ import { safeJson } from '../utils/routeHelpers.js';
  */
 
 import { getDb }   from '../../db/index.js';
-import { enqueue } from '../../services/aiQueue.js';
+import { enqueueAIJob as enqueue } from '../../services/aiQueue.js';
 import logger      from '../../utils/logger.js';
 import { CONTRACT_TYPES } from './_contract_types.js';
 

@@ -67,7 +67,7 @@ function updateDUI(state) {
   console.log(' NHTSA: https://www.nhtsa.gov/risky-driving/drunk-driving');
   console.log(' State DMV: search "' + state + ' DUI DMV laws"');
   console.log('\nTo update a field:');
-  console.log(' db.prepare("UPDATE dui_laws SET field=?, updated_at=?, source_url=? WHERE state=?").run(value, new Date().toISOString().split('T')[0], sourceUrl, "' + state + '")');
+  console.log('  db.prepare("UPDATE dui_laws SET field=?, updated_at=datetime(\"now\"), source_url=? WHERE state=? AND year=?").run(newValue, sourceUrl, state, year)');
 }
 
 // ── Guided update for victim compensation ──────────────────────────────────

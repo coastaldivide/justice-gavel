@@ -30,7 +30,7 @@ import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt
 import express from 'express';
 import { getDb } from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
-import { enqueue } from '../services/aiQueue.js';
+import { enqueueAIJob as enqueue } from '../services/aiQueue.js';
 import logger from '../utils/logger.js';
 
 const router = express.Router();

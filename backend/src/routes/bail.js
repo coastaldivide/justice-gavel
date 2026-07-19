@@ -1,6 +1,6 @@
 import { cacheFor } from '../utils/cache.js';
 import { asyncRoute } from '../utils/routeHelpers.js';
-import { validate, bailCalculateSchema } from '../middleware/validate.js';
+import { validate, bailCalcSchema } from '../middleware/validate.js';
 import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
 import logger from '../utils/logger.js';
 import { Router } from 'express';
@@ -117,7 +117,7 @@ router.get('/nearby', async (req, res) => {
 
 
 // POST /api/bail/calculate — compute bail recommendation from case factors
-router.post('/calculate', validate(schemas.bail.calculate), apiLimiter, validate(bailCalculateSchema), async (req, res) => {
+router.post('/calculate', validate(schemas.bail.calculate), apiLimiter, validate(bailCalcSchema), async (req, res) => {
   const {
     state,
     charge_type,      // 'felony' | 'misdemeanor' | 'dui' | 'domestic' | 'sexual' | 'dismissed'

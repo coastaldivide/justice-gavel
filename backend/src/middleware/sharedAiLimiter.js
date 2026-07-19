@@ -18,7 +18,8 @@ const MAX_CALLS  = 60;              // 60 AI calls per user per hour
 
 // Purge stale entries every 10 minutes to prevent memory growth
 // .unref() so this timer doesn't prevent Node.js from exiting in tests
-setInterval(() => {
+const _timer20 = setInterval(() => {
+_timer20.unref();
   const cutoff = Date.now() - WINDOW_MS;
   for (const [uid, times] of userCalls) {
     const fresh = times.filter(t => t > cutoff);

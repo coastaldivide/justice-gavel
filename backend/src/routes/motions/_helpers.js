@@ -18,7 +18,7 @@ const MAX_MOTION_LENGTH = 50000; // ~12,500 words — covers any motion
  * Isolated here so it can be tested and updated independently of route logic.
  */
 import { getDb }        from '../../db/index.js';
-import { enqueue }      from '../../services/aiQueue.js';
+import { enqueueAIJob as enqueue }      from '../../services/aiQueue.js';
 import logger             from '../../utils/logger.js';
 import { MOTION_TYPES } from './_motion_types.js';
 

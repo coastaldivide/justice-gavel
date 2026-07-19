@@ -19,7 +19,7 @@
 
 import { err400, safeInt, sanitizeStr, truncateStr, API_URLS, parsePagination} from '../utils/routeHelpers.js';
 import { Router }      from 'express';
-import { enqueue }     from '../services/aiQueue.js';
+import { enqueueAIJob as enqueue }     from '../services/aiQueue.js';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { fileURLToPath } from 'url';

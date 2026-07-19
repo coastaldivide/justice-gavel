@@ -6,7 +6,7 @@ import { safeJson } from '../utils/routeHelpers.js';
  * analyzeDocument() is the core AI function — supports PDF, image, DOCX, and text.
  */
 import { getDb }        from '../../db/index.js';
-import { enqueue }      from '../../services/aiQueue.js';
+import { enqueueAIJob as enqueue }      from '../../services/aiQueue.js';
 import logger             from '../../utils/logger.js';
 import { Router }         from 'express';
 import multer             from 'multer';

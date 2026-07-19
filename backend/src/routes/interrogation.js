@@ -460,6 +460,6 @@ router.post('/transcribe', authRequired, (req, res, next) => {
 router.get('/recording-law', asyncRoute(async (req, res) => {
   const { state } = req.query;
   res.json(getRecordingLaw(state));
-});
 
+}));
 export default router;

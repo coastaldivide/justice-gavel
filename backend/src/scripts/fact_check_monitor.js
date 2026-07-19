@@ -286,16 +286,16 @@ async function main() {
         continue;
       }
       try {
-        const row = db.prepare(\`SELECT MAX(created_at) as latest FROM \${t.name}\`).get();
+        const row = db.prepare(`SELECT MAX(created_at) as latest FROM \${t.name}`).get();
         if (row?.latest) {
           const lastUpdate = new Date(row.latest);
           const ageDays    = Math.floor((now - lastUpdate) / 86400000);
           const stale      = ageDays > t.max_age_days;
           process.stdout.write('  ' + t.name.padEnd(40) + ' ');
-          console.log(\`\${stale ? (t.critical ? '❌' : '⚠️ ') : '✅'} Last updated: \${lastUpdate.toISOString().split('T')[0]} (\${ageDays} days ago)\`);
+          console.log(`\${stale ? (t.critical ? '❌' : '⚠️ ') : '✅'} Last updated: \${lastUpdate.toISOString().split('T')[0]} (\${ageDays} days ago)`);
           if (stale) {
             flaggedItems.push({ category: 'database', name: t.name,
-              flagged: true, error: \`Stale data: \${ageDays} days old (max \${t.max_age_days})\` });
+              flagged: true, error: `Stale data: \${ageDays} days old (max \${t.max_age_days})` });
           }
         }
       } catch {}
@@ -307,16 +307,16 @@ async function main() {
 
   // ── Summary ────────────────────────────────────────────────────────────────
   console.log('\n' + '='.repeat(65));
-  console.log(\`  RESULT: \${totalChecks} checks | \${totalFlagged} flagged | \${totalChecks - totalFlagged} clean\`);
+  console.log(`  RESULT: \${totalChecks} checks | \${totalFlagged} flagged | \${totalChecks - totalFlagged} clean`);
 
   if (flaggedItems.length > 0) {
     console.log('\n  ⚠️  ACTION REQUIRED:');
     flaggedItems.forEach(item => {
-      console.log(\`\n  [\${item.category.toUpperCase()}] \${item.name}\`);
-      console.log(\`  URL: \${item.url || 'N/A'}\`);
-      if (item.error)            console.log(\`  Issue: \${item.error}\`);
-      if (item.redirected)       console.log(\`  Redirect → \${item.final_url}\`);
-      if (item.missing_keywords) console.log(\`  Missing: \${item.missing_keywords.join(', ')}\`);
+      console.log(`\n  [\${item.category.toUpperCase()}] \${item.name}`);
+      console.log(`  URL: \${item.url || 'N/A'}`);
+      if (item.error)            console.log(`  Issue: \${item.error}`);
+      if (item.redirected)       console.log(`  Redirect → \${item.final_url}`);
+      if (item.missing_keywords) console.log(`  Missing: \${item.missing_keywords.join(', ')}`);
     });
   } else {
     console.log('\n  ✅ ALL SOURCES VERIFIED — Database is current');
@@ -325,11 +325,11 @@ async function main() {
   // ── Write JSON report ──────────────────────────────────────────────────────
   REPORT.summary = { total: totalChecks, flagged: totalFlagged, clean: totalChecks - totalFlagged };
   REPORT.issues  = flaggedItems;
-  const reportPath = \`\${process.env.REPORT_DIR || './reports'}/fact_check_report_\${today}.json\`;
+  const reportPath = `\${process.env.REPORT_DIR || './reports'}/fact_check_report_\${today}.json`;
   try {
     fs.mkdirSync(path.dirname(reportPath), { recursive: true });
     fs.writeFileSync(reportPath, JSON.stringify(REPORT, null, 2));
-    console.log(\`\n  Report saved: \${reportPath}\`);
+    console.log(`\n  Report saved: \${reportPath}`);
   } catch {}
 
   console.log('='.repeat(65) + '\n');

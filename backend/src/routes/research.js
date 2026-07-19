@@ -27,7 +27,7 @@ import { asyncRoute } from '../utils/routeHelpers.js';
 import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
 import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, API_URLS } from '../utils/routeHelpers.js';
 import express         from 'express';
-import { enqueue }     from '../services/aiQueue.js';
+import { enqueueAIJob as enqueue }     from '../services/aiQueue.js';
 import { getDb } from '../db/index.js';
 import { ragSearch } from '../services/rag.js';
 import { authRequired } from '../middleware/auth.js';
@@ -333,7 +333,6 @@ router.post('/index', authRequired, asyncRoute(async (req, res) => {
   } catch (e) {
     return res.status(500).json({ error: e?.message });
   }
-});
 
 
 // ── GET /research/topics — discovery entry point ──────────────────────────
@@ -353,4 +352,5 @@ router.get('/topics', (req, res) => {
   });
 });
 
+}));
 export default router;

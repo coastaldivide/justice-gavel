@@ -523,7 +523,6 @@ router.get('/health-scan/history', authRequired, async (req, res) => {
 });
 
 
-export default router;
 
 // GET /api/attorney/pending-verification — admin: attorneys awaiting bar verification
 router.get('/attorney/pending-verification', authRequired, asyncRoute(async (req, res) => {
@@ -539,4 +538,6 @@ router.get('/attorney/pending-verification', authRequired, asyncRoute(async (req
     ).catch(() => []);
     res.json({ pending });
   } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
-});
+
+}));
+export default router;

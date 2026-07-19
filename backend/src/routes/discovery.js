@@ -105,15 +105,15 @@ router.post('/analyze', authRequired, perUserAiLimit, async (req, res) => {
           .run(job.lastInsertRowid);
 
         // Notification sent via Expo Push (pushDelivery.js) not SMS
-        const msg = null
-2. Key issues or concerns (bullet list)
-3. Risk level (low/medium/high/critical)
-4. Suggested actions for the defendant's attorney
+        const msg = await client.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1024,
+          messages: [{
+            role: 'user',
+            content: `Analyze this legal document and respond as JSON with keys:
+  summary, key_issues (array), risk_level (low/medium/high/critical), suggestions (array).
 
-Document:
-${text.slice(0, 8000)}
-
-Respond as JSON: { "summary": "...", "key_issues": [...], "risk_level": "...", "suggestions": [...] }`,
+Document: ${text.slice(0, 8000)}`
           }],
         });
 

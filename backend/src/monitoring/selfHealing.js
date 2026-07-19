@@ -79,7 +79,8 @@ const MEMORY_CRIT_MB  = 512;   // 512MB — attempt heal
 let memoryWarned      = false;
 
 export function startMemoryWatchdog() {
-  setInterval(async () => {
+  const _timer81 = setInterval(async () => {
+  _timer81.unref();
     const { heapUsed, heapTotal, rss } = process.memoryUsage();
     const heapMB = Math.round(heapUsed / 1024 / 1024);
     const rssMB  = Math.round(rss / 1024 / 1024);

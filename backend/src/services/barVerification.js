@@ -24,7 +24,7 @@
 import axios    from 'axios';
 import logger   from '../utils/logger.js';
 import { db }   from '../db/index.js';
-import { sendTransactionalEmail } from './email.js';
+import { sendEmail } from './email.js';
 
 const TIMEOUT_MS = 10_000;
 
@@ -202,7 +202,7 @@ export async function runNightlyVerification() {
         });
 
         // Alert admin
-        await sendTransactionalEmail({
+        await sendEmail({
           to:      process.env.ADMIN_ALERT_EMAIL || 'admin@justicegavel.app',
           subject: `⚠️ Attorney license change: ${attorney.full_name}`,
           body:    `Attorney ${attorney.full_name} (Bar #${attorney.bar_number}, ${attorney.bar_state})

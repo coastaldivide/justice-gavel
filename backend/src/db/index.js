@@ -128,7 +128,8 @@ async function initSqlite() {
       try { fs.writeFileSync(DB_PATH, Buffer.from(sqlDb.export())); } catch {}
     },
   };
-  setInterval(() => adapter.persist(), 30_000);
+  const _timer130 = setInterval(() => adapter.persist(), 30_000);
+  _timer130.unref();
   logger.info({ path: DB_PATH }, 'SQLite (sql.js) ready');
   return adapter;
 }

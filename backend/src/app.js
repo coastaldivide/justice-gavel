@@ -10,24 +10,7 @@ import caseLifecycleRouter from './routes/caseLifecycle.js';
 import aiCostsRouter from './routes/admin/aiCosts.js';
 // ── Sentry backend error tracking ─────────────────────────────────────────
 import * as Sentry from '@sentry/node';
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn:              process.env.SENTRY_DSN,
-    environment:      process.env.NODE_ENV ?? 'production',
-    tracesSampleRate: 0.05,
-    beforeSend(event) {
-      // Strip PII from Sentry reports
-      if (event.request?.data) {
-        delete event.request.data.password;
-        delete event.request.data.token;
-        delete event.request.data.ssn;
-      }
-      return event;
-    },
-  });
-}
-
-import { initSentry, Sentry } from './monitoring/sentry.js';
+import { initSentry } from './monitoring/sentry.js';
 import hagueContactsRouter  from './routes/hague_contacts.js';
 import logger from './utils/logger.js';
 import express from 'express';
@@ -39,8 +22,6 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { initDb } from './db/index.js';
 import { CONFIG } from './config.js';
-
-// ── App routes ────────────────────────────────────────────────────────────────
 import authRouter       from './routes/auth.js';
 import alertsRouter     from './routes/alerts.js';
 import arrestsRouter    from './routes/arrests.js';
@@ -75,16 +56,12 @@ import expungementRouter   from './routes/expungement/index.js';
 import immigrationRouter   from './routes/immigration.js';
 import piLeadsRouter    from './routes/pi_leads.js';
 import billingRouter    from './routes/billing/index.js';
-
-// ── Webhook routes ────────────────────────────────────────────────────────────
 import stripeWebhookRouter from './routes/webhooks/stripe.js';
 import botAdminRouter      from './routes/webhooks/bot_admin.js';
 import goldenGavelRouter     from './routes/golden_gavel.js';
 import recoveryAgentsRouter  from './routes/recovery_agents.js';
 import attorneyPlatformRouter from './routes/attorney/index.js';
 import jobsRouter             from './routes/jobs.js';
-
-// ── Services ──────────────────────────────────────────────────────────────────
 import { startScheduler } from './services/scheduler.js';
 import hpp from 'hpp';
 import interrogationRouter from './routes/interrogation.js';
@@ -110,6 +87,32 @@ import outboundWHRouter   from './routes/webhooks/outbound.js';
 import analyticsRouter     from './routes/analytics.js';
 import searchRouter                 from './routes/search.js';
 import res                          from './routes/resources.js';
+import { randomUUID } from 'crypto';
+import express_import from 'express';
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn:              process.env.SENTRY_DSN,
+    environment:      process.env.NODE_ENV ?? 'production',
+    tracesSampleRate: 0.05,
+    beforeSend(event) {
+      // Strip PII from Sentry reports
+      if (event.request?.data) {
+        delete event.request.data.password;
+        delete event.request.data.token;
+        delete event.request.data.ssn;
+      }
+      return event;
+    },
+  });
+}
+
+
+// ── App routes ────────────────────────────────────────────────────────────────
+
+// ── Webhook routes ────────────────────────────────────────────────────────────
+
+// ── Services ──────────────────────────────────────────────────────────────────
 
 // ── Startup configuration check ───────────────────────────────────────────────
 // Warns about missing keys on boot — does NOT crash. App runs in demo mode.
@@ -136,9 +139,7 @@ if (_missing.length > 0) {
 
 process.on('uncaughtException', (err, origin) => {
   console.error('[process] uncaughtException:', err.message, '| origin:', origin);
-  console.error(err.stack?.split('
-').slice(0,5).join('
-'));
+  console.error(err.stack?.split('\n').slice(0,5).join('\n'));
   // Don't exit — keep serving other users
 });
 
@@ -290,40 +291,6 @@ app.use((req, _res, next) => {
   next();
 });
 
-
-// ETag for unchanged responses (304 Not Modified)
-app.set('etag', 'strong');
-
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc:    ["'self'"],
-      scriptSrc:     ["'self'"],
-      styleSrc:      ["'self'", "'unsafe-inline'"],  // React Native Web requires inline styles
-      imgSrc:        ["'self'", "data:", "https:"],
-      connectSrc:    [
-        "'self'",
-        "https://api.anthropic.com",
-        "https://api.stripe.com",
-        "https://www.courtlistener.com",
-        "https://exp.host",
-        "wss://exp.host",
-      ],
-      fontSrc:       ["'self'", "https:", "data:"],
-      objectSrc:     ["'none'"],
-      mediaSrc:      ["'self'"],
-      frameSrc:      ["'none'"],
-      formAction:    ["'self'"],
-      upgradeInsecureRequests: [],
-    },
-  },
-  crossOriginEmbedderPolicy: false,  // allow Stripe iframe
-  crossOriginResourcePolicy: { policy: 'same-site' },
-  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-  noSniff: true,
-  xssFilter: true,
-  hidePoweredBy: true,
-}));
-
 // ── Additional security headers not covered by helmet default ─────────────────
 app.use((req, res, next) => {
   // API version header
@@ -363,12 +330,10 @@ app.use(cors({ origin: CORS_ORIGIN,  // dynamic resolver above
 app.use(hpp());
 
 // ── Request ID — correlate frontend errors with Railway logs ──────────────────
-import { randomUUID } from 'crypto';
   const id = req.headers['x-request-id'] || randomUUID();
   req.requestId = id;
   res.setHeader('X-Request-ID', id);
   next();
-});
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -494,7 +459,6 @@ startScheduler();
 // ── API v1 versioning — all routes accessible at /api/v1/* ────────────────────
 // Legacy /api/* paths still work for backward compatibility.
 // New clients should use /api/v1/*.
-import express_import from 'express';
 const v1Router = express_import.Router();
 // Mount v1 as an alias — same handlers
 app.use('/api/v1', (req, res, next) => {
@@ -582,7 +546,6 @@ if (Sentry?.Handlers?.errorHandler) {
 
 // ── Generic 500 handler (after Sentry) ───────────────────────────────────────
 
-});
 
 
 // ── 404 — route not found ────────────────────────────────────────────────────

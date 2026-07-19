@@ -31,7 +31,6 @@ router.post('/', authRequired, alertsLimiter, async (req,res)=>{
     const msg = templates[category] || templates.emergency;
 
     // Log alert to database (non-fatal if fails)
-    const db = await getDb();
     db.run(
       `INSERT INTO alert_log (user_id, category, message, lat, lng, contact_count, sent_at)
        VALUES (?,?,?,?,?,?,NOW())`,

@@ -10,7 +10,7 @@ import { Router }         from 'express';
 import { authRequired }   from '../../middleware/auth.js';
 import { getDb }          from '../../db/index.js';
 import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
-import { enqueue }        from '../../services/aiQueue.js';
+import { enqueueAIJob as enqueue }        from '../../services/aiQueue.js';
 import logger             from '../../utils/logger.js';
 import rateLimit          from 'express-rate-limit';
 import {

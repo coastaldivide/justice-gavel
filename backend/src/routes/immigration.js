@@ -72,7 +72,6 @@ router.post('/asylum-clock', authRequired, asyncRoute(async (req, res) => {
     note: 'The asylum clock may be paused by delays caused by the applicant. Verify status with your attorney.',
     disclaimer: 'Not legal advice. Consult an immigration attorney.',
   });
-});
 
 // ── POST /immigration/voluntary-departure — deadline calculator ───────────
 router.post('/voluntary-departure', authRequired, (req, res) => {
@@ -115,4 +114,5 @@ router.get('/relief-options', cacheFor(60), apiLimiter, (req, res) => {
   });
 });
 
+}));
 export default router;
