@@ -15,7 +15,14 @@ import { COLORS } from '../constants/theme';
 import ErrorBoundary from '../components/ErrorBoundary';
 import JTBLogo from '../components/JTBLogo';
 
-// ── Screen imports — all 65 screens ──────────────────────────────────────────
+// ── Screen imports — all 70 screens (65 + 5 BarPrep) ──────────────────────────
+// ── Bar Exam Prep screens ────────────────────────────────────────────────────
+import BarPrepHomeScreen        from '../screens/BarPrepHomeScreen';
+import BarPrepQuizScreen        from '../screens/BarPrepQuizScreen';
+import BarPrepExplanationScreen from '../screens/BarPrepExplanationScreen';
+import BarPrepProgressScreen    from '../screens/BarPrepProgressScreen';
+import BarPrepScheduleScreen    from '../screens/BarPrepScheduleScreen';
+
 import AdminVerificationScreen from '../screens/AdminVerificationScreen';
 import AdvocacyScreen from '../screens/AdvocacyScreen';
 import ArrestMonitorScreen from '../screens/ArrestMonitorScreen';
@@ -184,6 +191,11 @@ function MoreNavigator() {
       <MoreStack.Screen name="Match"                 component={MatchScreen}                 options={{ title: '🎯 AI Lawyer Match' }} />
       <MoreStack.Screen name="Insurance"             component={InsuranceScreen}             options={{ title: '🛡️ Legal Insurance' }} />
       <MoreStack.Screen name="GoldenGavel"           component={GoldenGavelScreen}           options={{ title: '🏆 Golden Gavel' }} />
+          <MoreStack.Screen name="BarPrepHome"        component={BarPrepHomeScreen}        options={{ title: '⚖️ Bar Exam Prep', headerShown: false }} />
+          <MoreStack.Screen name="BarPrepQuiz"        component={BarPrepQuizScreen}        options={{ headerShown: false }} />
+          <MoreStack.Screen name="BarPrepExplanation" component={BarPrepExplanationScreen} options={{ title: '📖 Explanation' }} />
+          <MoreStack.Screen name="BarPrepProgress"    component={BarPrepProgressScreen}    options={{ title: '📈 MBE Progress' }} />
+          <MoreStack.Screen name="BarPrepSchedule"    component={BarPrepScheduleScreen}    options={{ title: '📅 Study Schedule' }} />
       <MoreStack.Screen name="AdminVerification"     component={AdminVerificationScreen}     options={{ title: '⚖️ Bar Verification' }} />
       <MoreStack.Screen name="Advocacy"              component={AdvocacyScreen}              options={{ title: '📊 Advocacy Stats' }} />
       <MoreStack.Screen

@@ -131,6 +131,21 @@ export type RootStackParamList = {
   // ── Family ───────────────────────────────────────────────────────────────
   FamilyConnect:            undefined;
   EmergencyContacts:        undefined;
+
+  // ── Bar Exam Prep ─────────────────────────────────────────────────────────
+  BarPrepHome:        undefined;
+  BarPrepQuiz:        {
+    session_id:         number;
+    questions:          Array<{
+      id: number; category: string; difficulty: string; stem: string;
+      option_a: string; option_b: string; option_c: string; option_d: string;
+    }>;
+    mode:               'practice' | 'timed';
+    time_limit_seconds: number | null;
+  };
+  BarPrepExplanation: { question_id: number };
+  BarPrepProgress:    undefined;
+  BarPrepSchedule:    undefined;
 };
 
 /** Helper: extract route params type for a specific screen */

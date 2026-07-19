@@ -24,7 +24,7 @@ interface ExplanationData {
   question_id:   number;
   stem:          string;
   correct_answer: string;
-  correct_text:  string;
+  correct_text:  string;   // derived: option_{correct_answer.toLowerCase()}
   explanation:   string;
   rule_tested:   string;
   case_citation?: string;
@@ -50,7 +50,13 @@ export default function BarPrepExplanationScreen({
   const load = useCallback(async () => {
     try {
       const res = await api.get(`/bar-prep/explain/${question_id}`);
-      setData(res.data.explanation);
+      const expl = res.data.explanation;
+      // correct_text is not a DB column — derive it from the option letter
+      if (expl && expl.correct_answer) {
+        const key = `option_${expl.correct_answer.toLowerCase()}` as keyof typeof expl;
+        expl.correct_text = (expl[key] as string) ?? expl.correct_answer;
+      }
+      setData(expl);
     } catch {
       Alert.alert('Error', 'Could not load explanation.');
     } finally {

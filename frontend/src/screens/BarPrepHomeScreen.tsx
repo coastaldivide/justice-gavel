@@ -70,6 +70,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHome'>) {
   const { colors }                      = useTheme();
   const { impact }                      = useHaptics();
+  const { requireAuth, AuthGateModal }  = useAuthGate(navigation);
   const [subjects, setSubjects]         = useState<Subject[]>([]);
   const [dashboard, setDashboard]       = useState<Dashboard | null>(null);
   const [loading, setLoading]           = useState(true);
@@ -142,8 +143,8 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
   const categories = selectedSubject ? (CATEGORY_MAP[selectedSubject] || []) : [];
 
   return (
-    <AuthGate feature="bar_prep" upgradeTitle="Upgrade for MBE Prep">
-      <View style={styles.container}>
+    <View style={styles.container}>
+      <AuthGateModal />
         <GradientHeader
           title="Bar Exam Prep"
           subtitle="MBE Supplement — Criminal Law + Con Law"
@@ -302,8 +303,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </View>
-    </AuthGate>
+    </View>
   );
 }
 

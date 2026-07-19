@@ -67,8 +67,8 @@ async function checkSampleLimit(req, res, next) {
   try {
     const db  = await getDb();
     const row = await db.get(
-      `SELECT COALESCE(questions_answered_total, 0) AS total
-       FROM bar_prep_progress WHERE user_id = ?`,
+      `SELECT COALESCE(total_questions, 0) AS total
+       FROM study_streaks WHERE user_id = ?`,
       [req.user.id]
     );
     if ((row?.total ?? 0) >= BAR_SAMPLE_LIMIT) {
@@ -122,9 +122,12 @@ router.post('/sessions', sessionLimiter, checkSampleLimit, async (req, res) => {
     const db    = await getDb();
 
     const { lastID } = await db.run(
-      `INSERT INTO quiz_sessions (user_id, subject_id, category, mode, question_count, started_at)
-       VALUES (?, ?, ?, ?, ?, datetime('now'))`,
-      [req.user.id, subject_id, category || null, mode, count]
+      `INSERT INTO quiz_sessions
+         (user_id, subject_id, category, mode, question_count, started_at,
+          session_type, total_questions, time_limit_secs, status)
+       VALUES (?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, 'active')`,
+      [req.user.id, subject_id, category || null, mode, count,
+       mode, count, mode === 'timed' ? count * 90 : null]
     );
 
     const questions = await fetchQuestionsForSession({
@@ -245,11 +248,20 @@ router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
       [correct, total, pct, sessionId]
     );
 
-    const progressResult = await updateDailyProgress(req.user.id, correct, total);
+    // Estimate time spent: sum of per-answer time_spent_ms from submitted answers
+    const totalTimeMs = answers.reduce((acc, a) => acc + (a.time_spent_ms || 0), 0);
+    const subjectSet  = [...new Set(answers.map(a => qMap[a.question_id]?.subject_id).filter(Boolean))];
+    const progressResult = await updateDailyProgress(
+      req.user.id, total, correct,
+      Math.round(totalTimeMs / 1000),   // timeSpentSecs
+      subjectSet                         // subjects array
+    );
     await invalidateUserCache(req.user.id);
 
     const progressRow = await db.get(
-      `SELECT questions_answered_total, streak_days FROM bar_prep_progress WHERE user_id = ?`,
+      `SELECT total_questions AS questions_answered_total,
+              current_streak  AS streak_days
+       FROM study_streaks WHERE user_id = ?`,
       [req.user.id]
     );
     const gavelResult = await awardBarPrepPoints({
@@ -299,8 +311,7 @@ router.put('/progress', quizLimiter, async (req, res) => {
     if (exam_date !== undefined) {
       if (exam_date && !/^\d{4}-\d{2}-\d{2}$/.test(exam_date))
         return err400(res, 'exam_date must be YYYY-MM-DD');
-      updates.push('exam_date = ?');
-      args.push(exam_date || null);
+      // exam_date stored in study_streaks (see below), not bar_prep_progress
     }
 
     if (enable_notifications !== undefined) {

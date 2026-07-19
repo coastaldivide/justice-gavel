@@ -147,7 +147,7 @@ export async function updateDailyProgress(userId, questionsAnswered, questionsCo
       golden_gavel_pts  = bar_prep_progress.golden_gavel_pts  + EXCLUDED.golden_gavel_pts
   `, [userId, questionsAnswered, questionsCorrect, timeSpentSecs, subjects, pts]);
 
-  // Update streak
+  // Update streak + lifetime totals
   await db.run(`
     INSERT INTO study_streaks (user_id, current_streak, longest_streak, last_study_date, total_questions, total_correct)
     VALUES (?, 1, 1, CURRENT_DATE, ?, ?)
@@ -166,4 +166,28 @@ export async function updateDailyProgress(userId, questionsAnswered, questionsCo
       total_correct   = study_streaks.total_correct   + EXCLUDED.total_correct,
       updated_at      = NOW()
   `, [userId, questionsAnswered, questionsCorrect]);
+
+  // Determine whether daily goal was just met for the first time today
+  const daily_goal_row = await db.get(
+    `SELECT daily_goal, daily_goal_met FROM study_streaks ss
+     LEFT JOIN bar_prep_progress bp ON bp.user_id = ss.user_id
+       AND bp.study_date = CURRENT_DATE
+     WHERE ss.user_id = ?`,
+    [userId]
+  ).catch(() => null);
+
+  const dailyGoal      = daily_goal_row?.daily_goal ?? 20;
+  const wasAlreadyMet  = !!daily_goal_row?.daily_goal_met;
+  const totalToday     = (daily_goal_row?.questions_done ?? 0) + questionsAnswered;
+  const dailyGoalJustMet = !wasAlreadyMet && totalToday >= dailyGoal;
+
+  if (dailyGoalJustMet) {
+    await db.run(
+      `UPDATE bar_prep_progress SET daily_goal_met = true
+       WHERE user_id = ? AND study_date = CURRENT_DATE`,
+      [userId]
+    ).catch(() => {});
+  }
+
+  return { dailyGoalJustMet };
 }
