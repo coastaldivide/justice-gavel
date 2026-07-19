@@ -9,65 +9,83 @@
  * POST   /api/bar-prep/sessions                 — create a new quiz session
  * POST   /api/bar-prep/sessions/:id/answers     — submit batch answers
  * GET    /api/bar-prep/progress                 — user dashboard + analytics
+ * PUT    /api/bar-prep/progress                 — update exam_date / notifications
  * GET    /api/bar-prep/schedule                 — personalized study schedule
  * POST   /api/bar-prep/questions/:id/flag       — flag a question for review
  * GET    /api/bar-prep/explain/:questionId      — AI explanation (cached)
  * GET    /api/bar-prep/leaderboard              — anonymous peer percentile
  */
 
-import { Router }                         from 'express';
-import { getDb }                          from '../db/index.js';
-import { authRequired }                   from '../middleware/auth.js';
-import { requireTier }                    from '../middleware/requireTier.js';
+
+// FIX #3: sm2 is now a static import instead of per-answer dynamic import
+import { Router }                   from 'express';
+import { getDb }                    from '../db/index.js';
+import { authRequired }             from '../middleware/auth.js';
 import { quizLimiter, explainLimiter,
-         sessionLimiter }                 from '../utils/rateLimiters.js';
+         sessionLimiter }           from '../utils/rateLimiters.js';
+import { sm2Next }                  from '../utils/sm2.js';
 import { fetchQuestionsForSession,
          getSubjectsWithProgress,
-         invalidateUserCache }            from '../services/questionBank.js';
-import { getExplanation }                 from '../services/questionExplainer.js';
+         invalidateUserCache }      from '../services/questionBank.js';
+import { getExplanation }           from '../services/questionExplainer.js';
 import { getUserDashboard,
-         updateDailyProgress }            from '../services/barPrepAnalytics.js';
-import { err400, err403, err404,
-         safeInt, sanitizeStr }          from '../utils/routeHelpers.js';
-import { awardBarPrepPoints }             from '../services/barPrepGavel.js';
-import logger                             from '../utils/logger.js';
+         updateDailyProgress,
+         getStudySchedule }         from '../services/barPrepAnalytics.js';
+import { awardBarPrepPoints }       from '../services/barPrepGavel.js';
+import { err400, err404,
+         safeInt, sanitizeStr }     from '../utils/routeHelpers.js';
+import logger                       from '../utils/logger.js';
 
 const router = Router();
 router.use(authRequired);
 
-// ── FREE-TIER SAMPLE GATE ─────────────────────────────────────────────────────
-// free users get exactly BAR_SAMPLE_LIMIT questions then hit the paywall.
+// ── FIX #2: module-scope constants (one allocation, not one per request) ──────
 const BAR_SAMPLE_LIMIT = 10;
+const PAID_TIERS       = new Set(['legal_radar', 'advisor', 'legal_pro', 'esquire']);
+const VALID_REASONS    = new Set(['incorrect', 'confusing', 'outdated', 'typo', 'other']);
 
+// ── Safe question projection — never leak correct_answer before submit ────────
+function toSafeQuestion(q) {
+  return {
+    id:         q.id,
+    subject_id: q.subject_id,
+    category:   q.category,
+    difficulty: q.difficulty,
+    stem:       q.stem,
+    option_a:   q.option_a,
+    option_b:   q.option_b,
+    option_c:   q.option_c,
+    option_d:   q.option_d,
+  };
+}
+
+// ── FREE-TIER SAMPLE GATE ─────────────────────────────────────────────────────
 async function checkSampleLimit(req, res, next) {
-  // legal_radar+ subscribers skip this check
   const tier = req.user?.subscription_tier || 'free';
-  const paidTiers = new Set(['legal_radar','advisor','legal_pro','esquire']);
-  if (paidTiers.has(tier)) return next();
+  if (PAID_TIERS.has(tier)) return next();
 
   try {
-    const db   = await getDb();
-    const row  = await db.get(
+    const db  = await getDb();
+    const row = await db.get(
       `SELECT COALESCE(questions_answered_total, 0) AS total
        FROM bar_prep_progress WHERE user_id = ?`,
       [req.user.id]
     );
-    const total = row?.total || 0;
-    if (total >= BAR_SAMPLE_LIMIT) {
+    if ((row?.total ?? 0) >= BAR_SAMPLE_LIMIT) {
       return res.status(402).json({
-        error:  'paywall',
-        message: `Free plan includes ${BAR_SAMPLE_LIMIT} sample questions. Upgrade to Legal Radar+ for full access.`,
+        error:       'paywall',
+        message:     `Free plan includes ${BAR_SAMPLE_LIMIT} sample questions. Upgrade to Legal Radar+ for full access.`,
         upgrade_url: '/settings/upgrade',
       });
     }
     next();
   } catch (e) {
     logger.error('checkSampleLimit error', e);
-    next();           // fail open — don't block on gate error
+    next(); // fail open — don't block on gate error
   }
 }
 
-// ── 1. GET /subjects ─────────────────────────────────────────────────────────
+// ── 1. GET /subjects ──────────────────────────────────────────────────────────
 router.get('/subjects', quizLimiter, async (req, res) => {
   try {
     const subjects = await getSubjectsWithProgress(req.user.id);
@@ -78,43 +96,23 @@ router.get('/subjects', quizLimiter, async (req, res) => {
   }
 });
 
-// ── 2. GET /questions ────────────────────────────────────────────────────────
+// ── 2. GET /questions ─────────────────────────────────────────────────────────
 router.get('/questions', quizLimiter, checkSampleLimit, async (req, res) => {
   try {
-    const subjectId  = sanitizeStr(req.query.subject_id || '', 60) || null;
-    const category   = sanitizeStr(req.query.category   || '', 60) || null;
-    const limit      = Math.min(100, Math.max(1, safeInt(req.query.limit || '10')));
-    const mode       = req.query.mode === 'timed' ? 'timed' : 'practice';
+    const subjectId = sanitizeStr(req.query.subject_id || '', 60) || null;
+    const category  = sanitizeStr(req.query.category   || '', 60) || null;
+    const limit     = Math.min(100, Math.max(1, safeInt(req.query.limit || '10')));
+    const mode      = req.query.mode === 'timed' ? 'timed' : 'practice';
 
-    const questions = await fetchQuestionsForSession({
-      userId:    req.user.id,
-      subjectId,
-      category,
-      limit,
-      mode,
-    });
-
-    // Strip correct_answer and explanation from response (revealed after submit)
-    const safe = questions.map(q => ({
-      id:          q.id,
-      subject_id:  q.subject_id,
-      category:    q.category,
-      difficulty:  q.difficulty,
-      stem:        q.stem,
-      option_a:    q.option_a,
-      option_b:    q.option_b,
-      option_c:    q.option_c,
-      option_d:    q.option_d,
-    }));
-
-    res.json({ questions: safe, mode, count: safe.length });
+    const questions = await fetchQuestionsForSession({ userId: req.user.id, subjectId, category, limit, mode });
+    res.json({ questions: questions.map(toSafeQuestion), mode, count: questions.length });
   } catch (e) {
     logger.error('GET /bar-prep/questions error', e);
     res.status(500).json({ error: 'Failed to fetch questions' });
   }
 });
 
-// ── 3. POST /sessions ────────────────────────────────────────────────────────
+// ── 3. POST /sessions ─────────────────────────────────────────────────────────
 router.post('/sessions', sessionLimiter, checkSampleLimit, async (req, res) => {
   try {
     const { subject_id, category, mode = 'practice', question_count = 10 } = req.body;
@@ -124,36 +122,26 @@ router.post('/sessions', sessionLimiter, checkSampleLimit, async (req, res) => {
     const db    = await getDb();
 
     const { lastID } = await db.run(
-      `INSERT INTO quiz_sessions
-         (user_id, subject_id, category, mode, question_count, started_at)
+      `INSERT INTO quiz_sessions (user_id, subject_id, category, mode, question_count, started_at)
        VALUES (?, ?, ?, ?, ?, datetime('now'))`,
       [req.user.id, subject_id, category || null, mode, count]
     );
 
     const questions = await fetchQuestionsForSession({
-      userId: req.user.id, subjectId: subject_id, category: category || null,
-      limit: count, mode,
+      userId: req.user.id, subjectId: subject_id,
+      category: category || null, limit: count, mode,
     });
 
-    // Store question order in session
-    const qIds = questions.map(q => q.id);
     await db.run(
       `UPDATE quiz_sessions SET question_ids = ? WHERE id = ?`,
-      [JSON.stringify(qIds), lastID]
+      [JSON.stringify(questions.map(q => q.id)), lastID]
     );
 
-    const safe = questions.map(q => ({
-      id: q.id, subject_id: q.subject_id, category: q.category,
-      difficulty: q.difficulty, stem: q.stem,
-      option_a: q.option_a, option_b: q.option_b,
-      option_c: q.option_c, option_d: q.option_d,
-    }));
-
     res.status(201).json({
-      session_id: lastID,
+      session_id:         lastID,
       mode,
-      questions:  safe,
-      time_limit_seconds: mode === 'timed' ? count * 90 : null, // 1.5 min/Q
+      questions:          questions.map(toSafeQuestion),
+      time_limit_seconds: mode === 'timed' ? count * 90 : null, // 1.5 min / Q
     });
   } catch (e) {
     logger.error('POST /bar-prep/sessions error', e);
@@ -161,7 +149,7 @@ router.post('/sessions', sessionLimiter, checkSampleLimit, async (req, res) => {
   }
 });
 
-// ── 4. POST /sessions/:id/answers ────────────────────────────────────────────
+// ── 4. POST /sessions/:id/answers ─────────────────────────────────────────────
 router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
   try {
     const sessionId = safeInt(req.params.id);
@@ -172,66 +160,67 @@ router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
 
     const db  = await getDb();
     const ses = await db.get(
-      `SELECT * FROM quiz_sessions WHERE id = ? AND user_id = ?`,
+      `SELECT id, completed_at FROM quiz_sessions WHERE id = ? AND user_id = ?`,
       [sessionId, req.user.id]
     );
-    if (!ses) return err404(res, 'Session not found');
-    if (ses.completed_at)
-      return err400(res, 'Session already submitted');
+    if (!ses)           return err404(res, 'Session not found');
+    if (ses.completed_at) return err400(res, 'Session already submitted');
 
-    // Fetch correct answers for the submitted question IDs
-    const qIds     = answers.map(a => a.question_id);
-    const placeholders = qIds.map(() => '?').join(',');
-    const questions = await db.all(
+    // Fetch authoritative correct answers for all submitted question IDs
+    const qIds = answers.map(a => a.question_id);
+    const dbQs = await db.all(
       `SELECT id, correct_answer, explanation, rule_tested, case_citation
-       FROM quiz_questions WHERE id IN (${placeholders})`,
+       FROM quiz_questions WHERE id IN (${qIds.map(() => '?').join(',')})`,
       qIds
     );
-    const qMap = Object.fromEntries(questions.map(q => [q.id, q]));
+    const qMap = Object.fromEntries(dbQs.map(q => [q.id, q]));
 
     let correct = 0;
     const results = [];
 
     for (const ans of answers) {
-      const q       = qMap[ans.question_id];
+      const q = qMap[ans.question_id];
       if (!q) continue;
+
       const isRight = (ans.selected_answer || '').toUpperCase() === q.correct_answer;
       if (isRight) correct++;
 
-      // Persist answer
       await db.run(
         `INSERT OR IGNORE INTO quiz_answers
-           (session_id, question_id, user_id, selected_answer,
-            is_correct, time_spent_ms, answered_at)
+           (session_id, question_id, user_id, selected_answer, is_correct, time_spent_ms, answered_at)
          VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
         [sessionId, ans.question_id, req.user.id,
          ans.selected_answer, isRight ? 1 : 0, ans.time_spent_ms || null]
       );
 
-      // Update spaced repetition state
+      // FIX #3: sm2Next is now a static import (no longer dynamic inside the loop)
       const srRow = await db.get(
-        `SELECT * FROM spaced_repetition_state
-         WHERE user_id = ? AND question_id = ?`,
+        `SELECT easiness, interval_days, repetitions, times_seen, times_correct
+         FROM spaced_repetition_state WHERE user_id = ? AND question_id = ?`,
         [req.user.id, ans.question_id]
       );
+      const next = sm2Next(srRow ?? {}, isRight);
 
-      const { sm2Next } = await import('../utils/sm2.js');
-      const next = sm2Next(srRow, isRight);
-
+      // FIX #4: use correct sm2Next field names throughout
       await db.run(
         `INSERT INTO spaced_repetition_state
-           (user_id, question_id, ease_factor, interval_days, repetitions,
-            next_review_date, last_quality, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+           (user_id, question_id, easiness, interval_days, repetitions,
+            last_quality, next_review_at, times_seen, times_correct, last_seen_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
          ON CONFLICT(user_id, question_id) DO UPDATE SET
-           ease_factor      = excluded.ease_factor,
-           interval_days    = excluded.interval_days,
-           repetitions      = excluded.repetitions,
-           next_review_date = excluded.next_review_date,
-           last_quality     = excluded.last_quality,
-           updated_at       = datetime('now')`,
-        [req.user.id, ans.question_id, next.easeFactor, next.interval,
-         next.repetitions, next.nextDate, next.quality]
+           easiness       = excluded.easiness,
+           interval_days  = excluded.interval_days,
+           repetitions    = excluded.repetitions,
+           last_quality   = excluded.last_quality,
+           next_review_at = excluded.next_review_at,
+           times_seen     = excluded.times_seen,
+           times_correct  = excluded.times_correct,
+           last_seen_at   = excluded.last_seen_at,
+           updated_at     = datetime('now')`,
+        [req.user.id, ans.question_id,
+         next.easiness, next.interval_days, next.repetitions,
+         next.last_quality, next.next_review_at,
+         next.times_seen, next.times_correct]
       );
 
       results.push({
@@ -242,51 +231,45 @@ router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
         explanation:    q.explanation,
         rule_tested:    q.rule_tested,
         case_citation:  q.case_citation,
-        next_review:    next.nextDate,
+        next_review:    next.next_review_at, 
       });
     }
 
-    const total    = results.length;
-    const pct      = total > 0 ? Math.round((correct / total) * 100) : 0;
+    const total = results.length;
+    const pct   = total > 0 ? Math.round((correct / total) * 100) : 0;
 
-    // Close the session
     await db.run(
       `UPDATE quiz_sessions
-       SET completed_at       = datetime('now'),
-           correct_count      = ?,
-           total_answered     = ?,
-           score_pct          = ?
+       SET completed_at = datetime('now'), correct_count = ?, total_answered = ?, score_pct = ?
        WHERE id = ?`,
       [correct, total, pct, sessionId]
     );
 
-    // Update daily progress + invalidate caches
     const progressResult = await updateDailyProgress(req.user.id, correct, total);
     await invalidateUserCache(req.user.id);
 
-    // ── GoldenGavel integration ───────────────────────────────────────────────
     const progressRow = await db.get(
       `SELECT questions_answered_total, streak_days FROM bar_prep_progress WHERE user_id = ?`,
       [req.user.id]
     );
     const gavelResult = await awardBarPrepPoints({
-      userId:             req.user.id,
-      questionsAnswered:  total,
-      correctCount:       correct,
-      totalEverAnswered:  progressRow?.questions_answered_total || total,
-      streakDays:         progressRow?.streak_days || 0,
-      dailyGoalJustMet:   progressResult?.dailyGoalJustMet || false,
-    }).catch(() => ({ points_awarded: 0, new_badges: [] }));
+      userId:            req.user.id,
+      questionsAnswered: total,
+      correctCount:      correct,
+      totalEverAnswered: progressRow?.questions_answered_total ?? total,
+      streakDays:        progressRow?.streak_days ?? 0,
+      dailyGoalJustMet:  progressResult?.dailyGoalJustMet ?? false,
+    });
 
     res.json({
-      session_id:        sessionId,
+      session_id:   sessionId,
       correct,
       total,
-      score_pct:         pct,
-      passed:            pct >= 66,
+      score_pct:    pct,
+      passed:       pct >= 66,
       results,
-      gavel_points:      gavelResult.points_awarded,
-      new_badges:        gavelResult.new_badges,
+      gavel_points: gavelResult.points_awarded,
+      new_badges:   gavelResult.new_badges,
     });
   } catch (e) {
     logger.error('POST /bar-prep/sessions/:id/answers error', e);
@@ -294,7 +277,7 @@ router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
   }
 });
 
-// ── 5. GET /progress ─────────────────────────────────────────────────────────
+// ── 5. GET /progress ──────────────────────────────────────────────────────────
 router.get('/progress', quizLimiter, async (req, res) => {
   try {
     const dashboard = await getUserDashboard(req.user.id);
@@ -305,21 +288,17 @@ router.get('/progress', quizLimiter, async (req, res) => {
   }
 });
 
-// ── 5b. PUT /progress — update user settings (exam_date, notifications) ──────
-// B-10: subscription wiring + B-11: notification exam_date wiring
+// ── 5b. PUT /progress — exam_date + notification preferences ──────────────────
 router.put('/progress', quizLimiter, async (req, res) => {
   try {
     const { exam_date, enable_notifications } = req.body;
-    const db = await getDb();
 
     const updates = [];
     const args    = [];
 
     if (exam_date !== undefined) {
-      // Validate ISO date
-      if (exam_date && !/^\d{4}-\d{2}-\d{2}$/.test(exam_date)) {
+      if (exam_date && !/^\d{4}-\d{2}-\d{2}$/.test(exam_date))
         return err400(res, 'exam_date must be YYYY-MM-DD');
-      }
       updates.push('exam_date = ?');
       args.push(exam_date || null);
     }
@@ -329,29 +308,25 @@ router.put('/progress', quizLimiter, async (req, res) => {
       args.push(enable_notifications ? 1 : 0);
     }
 
-    if (updates.length === 0) {
+    if (updates.length === 0)
       return res.json({ updated: false, message: 'No fields to update' });
-    }
 
+    const db = await getDb();
     args.push(req.user.id);
     await db.run(
       `UPDATE bar_prep_progress SET ${updates.join(', ')}, updated_at = datetime('now') WHERE user_id = ?`,
       args
     );
 
-    // Also update study_streaks exam_date (used by analytics + notifications)
     if (exam_date !== undefined) {
       await db.run(
-        `INSERT INTO study_streaks (user_id, exam_date, updated_at)
-         VALUES (?, ?, datetime('now'))
+        `INSERT INTO study_streaks (user_id, exam_date, updated_at) VALUES (?, ?, datetime('now'))
          ON CONFLICT(user_id) DO UPDATE SET exam_date = excluded.exam_date, updated_at = datetime('now')`,
         [req.user.id, exam_date || null]
       );
-
-      // B-11: Schedule or cancel exam countdown notifications
       try {
         const { schedulePrepNotifications } = await import('../services/barPrepNotifications.js');
-        await schedulePrepNotifications();  // Re-register with updated exam_date
+        await schedulePrepNotifications();
       } catch { /* non-fatal */ }
     }
 
@@ -362,12 +337,10 @@ router.put('/progress', quizLimiter, async (req, res) => {
   }
 });
 
-// ── 6. GET /schedule ─────────────────────────────────────────────────────────
+// ── 6. GET /schedule ──────────────────────────────────────────────────────────
 router.get('/schedule', quizLimiter, async (req, res) => {
   try {
-    const { getStudySchedule } = await import('../services/barPrepAnalytics.js');
-    const examDate = req.query.exam_date || null;
-    const schedule = await getStudySchedule(req.user.id, examDate);
+    const schedule = await getStudySchedule(req.user.id, req.query.exam_date || null);
     res.json(schedule);
   } catch (e) {
     logger.error('GET /bar-prep/schedule error', e);
@@ -375,14 +348,13 @@ router.get('/schedule', quizLimiter, async (req, res) => {
   }
 });
 
-// ── 7. POST /questions/:id/flag ──────────────────────────────────────────────
+// ── 7. POST /questions/:id/flag ───────────────────────────────────────────────
 router.post('/questions/:id/flag', quizLimiter, async (req, res) => {
   try {
     const questionId = safeInt(req.params.id);
     const reason     = sanitizeStr(req.body.reason || 'other', 60);
     const note       = sanitizeStr(req.body.note   || '',      500);
 
-    const VALID_REASONS = new Set(['incorrect','confusing','outdated','typo','other']);
     if (!VALID_REASONS.has(reason)) return err400(res, 'Invalid reason');
 
     const db = await getDb();
@@ -390,13 +362,10 @@ router.post('/questions/:id/flag', quizLimiter, async (req, res) => {
     if (!q) return err404(res, 'Question not found');
 
     await db.run(
-      `INSERT INTO quiz_question_flags
-         (question_id, user_id, reason, note, status, created_at)
+      `INSERT INTO quiz_question_flags (question_id, user_id, reason, note, status, created_at)
        VALUES (?, ?, ?, ?, 'open', datetime('now'))
        ON CONFLICT(question_id, user_id) DO UPDATE
-         SET reason = excluded.reason,
-             note   = excluded.note,
-             status = 'open'`,
+         SET reason = excluded.reason, note = excluded.note, status = 'open'`,
       [questionId, req.user.id, reason, note]
     );
 
@@ -407,12 +376,18 @@ router.post('/questions/:id/flag', quizLimiter, async (req, res) => {
   }
 });
 
-// ── 8. GET /explain/:questionId ──────────────────────────────────────────────
+// ── 8. GET /explain/:questionId ───────────────────────────────────────────────
 router.get('/explain/:questionId', explainLimiter, async (req, res) => {
   try {
     const questionId = safeInt(req.params.questionId);
-    const db         = await getDb();
-    const q          = await db.get(`SELECT * FROM quiz_questions WHERE id = ?`, [questionId]);
+    const db = await getDb();
+    const q  = await db.get(
+      `SELECT id, subject_id, category, difficulty, stem,
+              option_a, option_b, option_c, option_d,
+              correct_answer, explanation, rule_tested, case_citation, ai_explanation
+       FROM quiz_questions WHERE id = ?`,
+      [questionId]
+    );
     if (!q) return err404(res, 'Question not found');
 
     const explanation = await getExplanation(q);
@@ -423,38 +398,40 @@ router.get('/explain/:questionId', explainLimiter, async (req, res) => {
   }
 });
 
-// ── 9. GET /leaderboard ──────────────────────────────────────────────────────
+// ── 9. GET /leaderboard ───────────────────────────────────────────────────────
 router.get('/leaderboard', quizLimiter, async (req, res) => {
   try {
-    const db      = await getDb();
+    const db     = await getDb();
+    // FIX #5: subject_id parsed but was never wired into SQL — now it is
     const subject = sanitizeStr(req.query.subject_id || '', 60) || null;
     const period  = req.query.period === 'week' ? 'week' : 'all';
 
     let sql = `
       SELECT
-        CASE WHEN user_id = ? THEN 'You' ELSE 'Peer ' || ROW_NUMBER() OVER (ORDER BY accuracy_pct DESC) END AS label,
-        user_id = ? AS is_me,
+        user_id = ?            AS is_me,
         questions_answered_total,
         correct_total,
-        ROUND(correct_total * 100.0 / NULLIF(questions_answered_total,0), 1) AS accuracy_pct,
+        ROUND(correct_total * 100.0 / NULLIF(questions_answered_total, 0), 1) AS accuracy_pct,
         streak_days
       FROM bar_prep_progress
       WHERE questions_answered_total >= 5
     `;
-    const args = [req.user.id, req.user.id];
+    const args = [req.user.id];
 
+    if (subject) {
+      sql += ` AND subject_id = ?`;
+      args.push(subject);
+    }
     if (period === 'week') {
-      sql += ` AND date(updated_at) >= date('now','-7 days')`;
+      sql += ` AND date(updated_at) >= date('now', '-7 days')`;
     }
     sql += ` ORDER BY accuracy_pct DESC LIMIT 20`;
 
     const rows = await db.all(sql, args);
 
-    // Find caller's rank
     const myIdx  = rows.findIndex(r => r.is_me);
     const myRank = myIdx >= 0 ? myIdx + 1 : null;
 
-    // Anonymize labels for peers
     const board = rows.map((r, i) => ({
       rank:         i + 1,
       label:        r.is_me ? 'You 🎓' : `Peer ${i + 1}`,
