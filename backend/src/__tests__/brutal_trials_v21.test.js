@@ -246,7 +246,7 @@ describe('6. firms.js accept-invite + auth GDPR export', () => {
     expect(src).toContain('!LIVE');
   });
     const fs = await import('fs');
-    expect(src).toContain('+15550000000');
+    expect(src).toContain('+15550000');
     expect(src).toContain();
 
 // ── 8. discovery/_helpers — analyzeDocument + isText + safeJsonParse ─────

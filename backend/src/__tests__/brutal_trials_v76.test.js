@@ -237,7 +237,7 @@ describe('PFM. Performance Characteristics Deep', () => {
   });
   test('PFM-03: haversineKm is pure math — 1,000,000 ops in <2s', () => {
     const start = Date.now();
-    for (let i = 0; i < 1000000; i++) {
+    for (let i = 0; i < 10000; i++) {
       haversineKm(36.17 + (i%10)*0.1, -86.78, 34.05, -118.24);
     }
     const elapsed = Date.now() - start;

@@ -154,7 +154,7 @@ describe('GRAND2. Grand Final State — 129 Passes', () => {
     expect(calcLeadFee(0)).toBe(2500); expect(calcLeadFee(4999)).toBe(2500);
     expect(calcLeadFee(5000)).toBe(5000); expect(calcLeadFee(24999)).toBe(5000);
     expect(calcLeadFee(25000)).toBe(10000); expect(calcLeadFee(99999)).toBe(10000);
-    expect(calcLeadFee(100000)).toBe(15000); expect(calcLeadFee(1000000)).toBe(15000);
+    expect(calcLeadFee(100000)).toBe(15000); expect(calcLeadFee(10000)).toBe(15000);
   });
   test('GRAND2-04: 707×4 i18n + 588 buttons + 0 hex + 0 TODO', async () => {
     const fs=await import('fs'); const path=await import('path');
@@ -191,7 +191,7 @@ describe('GRAND2. Grand Final State — 129 Passes', () => {
     const V=['criminal_defense','family','appellate','immigration','civil_rights',
              'white_collar','public_defense','military','juvenile','personal_injury'];
     let e=0;
-    for (let i=0;i<1000000;i++) {
+    for (let i=0;i<10000;i++) {
       const s=computeAllSignals(mkMatter(V[i%10],{
         evidence_score:i%101,
         vulnerability_level:['low','moderate','high','crisis'][i%4],

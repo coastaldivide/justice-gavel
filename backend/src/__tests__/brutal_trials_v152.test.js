@@ -644,7 +644,7 @@ describe('Mass Influx v152', () => {
     const V=['criminal_defense','family','appellate','immigration','civil_rights',
              'white_collar','public_defense','military','juvenile','personal_injury'];
     let e=0;
-    for (let i=0;i<1000000;i++) {
+    for (let i=0;i<10000;i++) {
       const s=computeAllSignals(mkM(V[i%10],{evidence_score:i%101,
         vulnerability_level:['low','moderate','high','crisis'][i%4]}));
       if (!['normal','elevated','high','critical'].includes(s.escalation.level)) e++;

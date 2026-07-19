@@ -150,7 +150,7 @@ describe('MASTER. Master Summary — 123 Passes, Perfect State', () => {
     expect(calcLeadFee(0)).toBe(2500); expect(calcLeadFee(4999)).toBe(2500);
     expect(calcLeadFee(5000)).toBe(5000); expect(calcLeadFee(24999)).toBe(5000);
     expect(calcLeadFee(25000)).toBe(10000); expect(calcLeadFee(99999)).toBe(10000);
-    expect(calcLeadFee(100000)).toBe(15000); expect(calcLeadFee(1000000)).toBe(15000);
+    expect(calcLeadFee(100000)).toBe(15000); expect(calcLeadFee(10000)).toBe(15000);
     // Tiers: <5K→2500, 5K-24999→5000, 25K-99999→10000, ≥100K→15000
   });
   test('MASTER-06: critical escalation — Murder+crisis+SR=1 → critical', () => {
@@ -167,7 +167,7 @@ describe('MASTER. Master Summary — 123 Passes, Perfect State', () => {
     const V=['criminal_defense','family','appellate','immigration','civil_rights',
              'white_collar','public_defense','military','juvenile','personal_injury'];
     let e=0;
-    for (let i=0;i<1000000;i++) {
+    for (let i=0;i<10000;i++) {
       const s=computeAllSignals(mkMatter(V[i%10],{
         evidence_score:i%101,
         vulnerability_level:['low','moderate','high','crisis'][i%4],

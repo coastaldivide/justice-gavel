@@ -17,6 +17,7 @@ const WINDOW_MS  = 60 * 60 * 1000; // 1 hour
 const MAX_CALLS  = 60;              // 60 AI calls per user per hour
 
 // Purge stale entries every 10 minutes to prevent memory growth
+// .unref() so this timer doesn't prevent Node.js from exiting in tests
 setInterval(() => {
   const cutoff = Date.now() - WINDOW_MS;
   for (const [uid, times] of userCalls) {
@@ -24,7 +25,7 @@ setInterval(() => {
     if (fresh.length === 0) userCalls.delete(uid);
     else userCalls.set(uid, fresh);
   }
-}, 10 * 60 * 1000);
+}, 10 * 60 * 1000).unref();
 
 export function perUserAiLimit(req, res, next) {
   // Only applies to authenticated users — guests use IP-based limiting only
@@ -69,7 +70,7 @@ export function makeUserLimiter({ windowMs = 60_000, max = 10, message = 'Too ma
       if (!fresh.length) calls.delete(uid);
       else calls.set(uid, fresh);
     }
-  }, windowMs);
+  }, windowMs).unref();
 
   return function userRateLimiter(req, res, next) {
     // Unauthenticated requests bypass — they hit IP-level limits at the nginx/CDN layer

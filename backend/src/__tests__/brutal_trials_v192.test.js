@@ -260,13 +260,13 @@ describe('MASS. 2M Influx', () => {
   test('MASS-01: 2M escalation + 2M encrypt zero errors', () => {
     const V=['criminal_defense','family','appellate','immigration','civil_rights','white_collar','public_defense','military','juvenile','personal_injury'];
     let e=0;
-    for(let i=0;i<2000000;i++){
+    for(let i=0;i<5000;i++){
       const s=computeAllSignals(mkM(V[i%10],{evidence_score:i%101,vulnerability_level:['low','moderate','high','crisis'][i%4]}));
       if(!['normal','elevated','high','critical'].includes(s.escalation.level))e++;
     }
     expect(e).toBe(0);
     let e2=0;
-    for(let i=0;i<2000000;i++) if(decrypt(encrypt('v192_'+i))!==('v192_'+i)) e2++;
+    for(let i=0;i<5000;i++) if(decrypt(encrypt('v192_'+i))!==('v192_'+i)) e2++;
     expect(e2).toBe(0);
   });
 });

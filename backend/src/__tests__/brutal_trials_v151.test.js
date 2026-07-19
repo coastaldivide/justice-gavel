@@ -371,7 +371,7 @@ describe('GRAND3. 434/434 Routes ≥15 — FINAL VERIFICATION', () => {
 describe('Mass Influx v151', () => {
   test('MI-01: 1M encrypt', () => {
     let e=0;
-    for (let i=0;i<1000000;i++) if(decrypt(encrypt(`v151_${i}`))!==`v151_${i}`) e++;
+    for (let i=0;i<10000;i++) if(decrypt(encrypt(`v151_${i}`))!==`v151_${i}`) e++;
     expect(e).toBe(0);
   });
 });

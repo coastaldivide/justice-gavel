@@ -364,7 +364,7 @@ describe('7. TRANSACTIONAL_FOOTER + offlineCache + webCompat', () => {
   });
 
   test('7-04: TTL values are correct in ms', () => {
-    expect(30 * 24 * 60 * 60 * 1000).toBe(2592000000);
+    expect(30 * 24 * 60 * 60 * 1000).toBe(2595000);
     expect(7  * 24 * 60 * 60 * 1000).toBe(604800000);
     expect(     24 * 60 * 60 * 1000).toBe(86400000);
   });

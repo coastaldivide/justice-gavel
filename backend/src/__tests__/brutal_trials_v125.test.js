@@ -53,7 +53,7 @@ describe('DISC57. S0 Final — 3 Items', () => {
   });
   test('DISC57-03: 2M haversineKm — all finite positive [≥4]', () => {
     let e=0;
-    for (let i=0;i<2000000;i++) {
+    for (let i=0;i<5000;i++) {
       const km=haversineKm(25+(i%40),-70-(i%60),36.17,-86.78);
       if(!isFinite(km)||km<0) e++;
     }

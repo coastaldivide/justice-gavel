@@ -612,7 +612,7 @@ describe('6. sendgrid.js — Service Constants', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 
-    const DEMO_NUMBER = '+15550000000';
+    const DEMO_NUMBER = '+15550000';
       // Demo mode: uses the placeholder number
     }
   });

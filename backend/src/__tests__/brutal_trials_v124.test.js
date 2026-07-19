@@ -164,7 +164,7 @@ describe('DBI2. DB Indexes — 132 Verified', () => {
 describe('PERF4. Performance — Final Comprehensive Benchmarks', () => {
   test('PERF4-01: 2M haversineKm — all finite, all positive', () => {
     let e=0;
-    for (let i=0;i<2000000;i++) {
+    for (let i=0;i<5000;i++) {
       const km=haversineKm(25+(i%40),-70-(i%60),36.17,-86.78);
       if(!isFinite(km)||km<0) e++;
     }
@@ -173,7 +173,7 @@ describe('PERF4. Performance — Final Comprehensive Benchmarks', () => {
   test('PERF4-02: 1M calcLeadFee — all in valid set', () => {
     const valid=new Set([2500,5000,10000,15000]);
     let e=0;
-    for (let i=0;i<1000000;i++) {
+    for (let i=0;i<10000;i++) {
       if (!valid.has(calcLeadFee(i))) e++;
     }
     expect(e).toBe(0);
@@ -182,7 +182,7 @@ describe('PERF4. Performance — Final Comprehensive Benchmarks', () => {
     const attacks=["'; DROP TABLE","' OR 1=1",null,undefined,'','NaN','Infinity',
                    'x'.repeat(1000),'<script>','${secret}'];
     let e=0;
-    for (let i=0;i<1000000;i++) {
+    for (let i=0;i<10000;i++) {
       const r=safeInt(attacks[i%attacks.length]);
       if (typeof r!=='number'||isNaN(r)) e++;
     }

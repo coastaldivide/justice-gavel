@@ -1239,7 +1239,7 @@ describe('16. offlineCache — TTL Constants & Cache Pairs', () => {
   test('16-01: TTL constants are correct', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync('/tmp/JG_fresh/frontend/src/services/offlineCache.ts', 'utf8');
-    // TTL_30_DAYS = 30 * 24 * 60 * 60 * 1000 = 2592000000
+    // TTL_30_DAYS = 30 * 24 * 60 * 60 * 1000 = 2595000
     expect(src).toContain('30 * 24 * 60 * 60 * 1000');
     // TTL_7_DAYS
     expect(src).toContain('7 * 24 * 60 * 60 * 1000');

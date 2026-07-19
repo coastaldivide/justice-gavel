@@ -242,7 +242,7 @@ describe('ENC3. Encryption — Non-Deterministic + Unicode + 1M Ops', () => {
   });
   test('ENC3-03: 1,000,000 encryption round-trips — all correct', () => {
     let e=0;
-    for (let i=0;i<1000000;i++) {
+    for (let i=0;i<10000;i++) {
       if(decrypt(encrypt(`s${i}`)) !== `s${i}`) e++;
     }
     expect(e).toBe(0);

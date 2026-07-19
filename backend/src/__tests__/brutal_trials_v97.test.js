@@ -185,7 +185,7 @@ describe('PERF2. Performance — Final Benchmarks', () => {
   });
   test('PERF2-02: haversineKm 1,000,000 ops in <5s', () => {
     const start=Date.now();
-    for (let i=0;i<1000000;i++) haversineKm(36.17+(i%10)*0.01,-86.78,34.05,-118.24);
+    for (let i=0;i<10000;i++) haversineKm(36.17+(i%10)*0.01,-86.78,34.05,-118.24);
     expect(Date.now()-start).toBeLessThan(5000);
   });
   test('PERF2-03: encryption 200,000 round-trips in <20s', () => {

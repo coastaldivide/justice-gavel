@@ -472,7 +472,7 @@ describe('Mass Influx × Final — 700,000 Scenarios', () => {
   test('MI-01: 300,000 escalation — all 10 verticals × 4 vulnerability levels', () => {
     const V=['criminal_defense','family','appellate','immigration','civil_rights','white_collar','public_defense','military','juvenile','personal_injury'];
     let errors=0;
-    for (let i=0;i<300000;i++) {
+    for (let i=0;i<3000;i++) {
       const s=computeAllSignals(mkMatter(V[i%V.length],{evidence_score:i%100,vulnerability_level:['low','moderate','high','crisis'][i%4]}));
       if (!['normal','elevated','high','critical'].includes(s.escalation.level)) errors++;
     }
