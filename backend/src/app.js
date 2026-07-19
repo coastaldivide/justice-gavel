@@ -1,3 +1,5 @@
+import barPrepContentRouter from './routes/admin/barPrepContent.js';
+import barPrepRouter        from './routes/barPrep.js';
 import { startAIWorkers } from './services/aiQueue.js';
 import barVerifyRouter from './routes/admin/barVerification.js';
 import impactRouter from './routes/impact.js';
@@ -658,3 +660,6 @@ app.use('/api/legal-aid', legalAidRouter);
 app.use('/api/impact', impactRouter);
 
 app.use('/api/admin/bar-verification', barVerifyRouter);
+
+app.use('/api/admin/bar-prep', barPrepContentRouter);
+app.use('/api/bar-prep',       barPrepRouter);        // consumer MBE drilling

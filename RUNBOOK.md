@@ -356,3 +356,62 @@ POST /api/admin/bar-verification/sweep  (admin role required)
 
 ### Supported state bars: CA, NY, TX, FL (API/scrape)
 ### Fallback: mark as needs_manual_review for other states
+
+---
+## Bar Prep Feature
+
+### Environment Variables
+```env
+# No new env vars required — uses existing ANTHROPIC_API_KEY and REDIS_URL
+```
+
+### Database Migrations (apply in order)
+```sql
+-- 20260717000001_bar_prep_schema.sql
+-- Creates: quiz_questions, quiz_sessions, quiz_answers, spaced_repetition_state,
+--          study_streaks, bar_prep_progress, quiz_question_flags, bar_subjects
+-- Views:   user_bar_performance, subject_accuracy_breakdown
+-- Triggers: trg_question_count (denorm), trg_update_badge
+```
+
+### Cron Jobs (auto-scheduled via BullMQ at startup)
+```
+7am  daily: bar-daily-7am      — send daily question reminders
+3pm  daily: bar-streak-3pm     — streak warning if goal not met
+8am  daily: bar-countdown-8am  — exam date countdown notifications
+```
+
+### Content Import (add questions via CSV)
+```
+POST /api/admin/bar-prep/import
+{
+  "subject_code": "criminal_law",
+  "questions": [
+    {
+      "stem": "Question text...",
+      "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...",
+      "correct_answer": "A",
+      "explanation": "Why A is correct...",
+      "rule": "Miranda v. Arizona (1966)",
+      "case_citation": "384 U.S. 436",
+      "difficulty": "medium",
+      "category": "fifth_amendment"
+    }
+  ]
+}
+```
+
+### Admin Endpoints
+```
+GET  /api/admin/bar-prep/questions?subject=criminal_law&flagged=true
+PUT  /api/admin/bar-prep/questions/:id
+POST /api/admin/bar-prep/import
+GET  /api/admin/bar-prep/flags
+PATCH /api/admin/bar-prep/flags/:id/resolve
+```
+
+### Subscription Tiers for Bar Prep
+```
+free          → 10 sample questions only (hard-gated)
+legal_radar+  → full question bank, all features
+```

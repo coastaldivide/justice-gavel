@@ -155,3 +155,30 @@ export const apiLimiter = rateLimit({
   standardHeaders:  true,
   legacyHeaders:    false,
 });
+
+// ── [I-07] Bar prep rate limiters ────────────────────────────────────────────
+// quizLimiter: 200 questions/hour — prevents answer-farming
+export const quizLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max:      200,
+  message:  { error: 'Too many questions — slow down and actually learn this!' },
+  standardHeaders: true,
+  legacyHeaders:   false,
+  keyGenerator: (req) => req.user?.id ?? req.ip,
+});
+
+// explainLimiter: 50 AI explanations/hour (Claude cost guard)
+export const explainLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max:      50,
+  message:  { error: 'AI explanation limit reached. Try again in an hour.' },
+  keyGenerator: (req) => req.user?.id ?? req.ip,
+});
+
+// sessionLimiter: 10 full sessions/day (prevents gaming the leaderboard)
+export const sessionLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max:      10,
+  message:  { error: 'Maximum 10 study sessions per day reached.' },
+  keyGenerator: (req) => req.user?.id ?? req.ip,
+});
