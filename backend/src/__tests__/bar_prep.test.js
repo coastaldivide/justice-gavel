@@ -163,67 +163,82 @@ describe('Question Bank — Seed Integrity', () => {
 // 2. SM-2 SPACED REPETITION ENGINE
 // ─────────────────────────────────────────────────────────────────────────────
 describe('SM-2 Engine — sm2Next()', () => {
-  test('new card correct: interval = 1, ease ~2.6', () => {
+  // sm2Next() returns: easiness, interval_days, repetitions, last_quality,
+  //                    next_review_at, times_seen, times_correct, last_seen_at
+
+  test('new card correct: interval_days = 1, easiness ≥ 2.5', () => {
     const result = sm2Next(null, true);
-    expect(result.interval).toBe(1);
-    expect(result.easeFactor).toBeGreaterThanOrEqual(2.5);
+    expect(result.interval_days).toBe(1);
+    expect(result.easiness).toBeGreaterThanOrEqual(2.5);
     expect(result.repetitions).toBe(1);
   });
 
-  test('new card wrong: interval = 1, ease decreases', () => {
+  test('new card wrong: interval_days = 1, easiness decreases', () => {
     const result = sm2Next(null, false);
-    expect(result.interval).toBe(1);
+    expect(result.interval_days).toBe(1);
     expect(result.repetitions).toBe(0);
-    expect(result.easeFactor).toBeLessThan(2.5);
+    expect(result.easiness).toBeLessThan(2.5);
   });
 
-  test('second correct: interval increases to 6', () => {
+  test('second correct: interval_days increases to 6', () => {
     const after1 = sm2Next(null, true);
-    const after2 = sm2Next({ ...after1, interval: 1 }, true);
-    expect(after2.interval).toBeGreaterThanOrEqual(4);
+    const after2 = sm2Next(after1, true);
+    expect(after2.interval_days).toBeGreaterThanOrEqual(4);
   });
 
   test('wrong answer resets repetitions to 0', () => {
     const after1 = sm2Next(null, true);
-    const after2 = sm2Next({ ...after1 }, false);
+    const after2 = sm2Next(after1, false);
     expect(after2.repetitions).toBe(0);
-    expect(after2.interval).toBe(1);
+    expect(after2.interval_days).toBe(1);
   });
 
-  test('ease factor never goes below 1.3', () => {
+  test('easiness never goes below 1.3', () => {
     let state = null;
     for (let i = 0; i < 20; i++) {
       state = sm2Next(state, false);
     }
-    expect(state.easeFactor).toBeGreaterThanOrEqual(1.3);
+    expect(state.easiness).toBeGreaterThanOrEqual(1.3);
   });
 
-  test('1000 simulation sessions: no crashes, intervals grow', () => {
+  test('1000 simulation sessions: no crashes, interval_days grows', () => {
     const results = [];
     let state = null;
     for (let i = 0; i < 1000; i++) {
       const correct = Math.random() > 0.3;
       state = sm2Next(state, correct);
-      results.push(state.interval);
-      expect(state.interval).toBeGreaterThanOrEqual(1);
-      expect(state.easeFactor).toBeGreaterThanOrEqual(1.3);
+      results.push(state.interval_days);
+      expect(state.interval_days).toBeGreaterThanOrEqual(1);
+      expect(state.easiness).toBeGreaterThanOrEqual(1.3);
     }
-    // After 1000 sessions with 70% correct, max interval should be substantial
     expect(Math.max(...results)).toBeGreaterThan(10);
   });
 
-  test('nextDate is in the future (at least interval days out)', () => {
-    const result = sm2Next(null, true);
-    const nextDate = new Date(result.nextDate);
-    const today    = new Date();
-    expect(nextDate.getTime()).toBeGreaterThan(today.getTime() - 86400000); // within 1 day tolerance
+  test('next_review_at is a valid future ISO date string', () => {
+    const result  = sm2Next(null, true);
+    const nextDt  = new Date(result.next_review_at);
+    const today   = new Date();
+    expect(Number.isNaN(nextDt.getTime())).toBe(false);
+    expect(nextDt.getTime()).toBeGreaterThan(today.getTime() - 86400000);
   });
 
-  test('predictRetention returns 0–1 for any state', () => {
+  test('times_seen increments on each call', () => {
+    const r1 = sm2Next(null, true);
+    const r2 = sm2Next(r1, true);
+    expect(r1.times_seen).toBe(1);
+    expect(r2.times_seen).toBe(2);
+  });
+
+  test('times_correct only increments on correct answers', () => {
+    const r1 = sm2Next(null, true);
+    const r2 = sm2Next(r1, false);
+    expect(r2.times_correct).toBe(1);  // only the first was correct
+  });
+
+  test('predictRetention returns a string label', () => {
     const state = sm2Next(null, true);
-    const ret = predictRetention(state);
-    expect(ret).toBeGreaterThanOrEqual(0);
-    expect(ret).toBeLessThanOrEqual(1);
+    const ret   = predictRetention(state);
+    expect(typeof ret).toBe('string');
   });
 });
 
