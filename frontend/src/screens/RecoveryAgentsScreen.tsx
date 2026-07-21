@@ -137,12 +137,12 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const call = (phone: string, name: string) => {
     hapticImpact();
-    confirm(`Call ${name}?`, phone, { confirmLabel: 'Call' }).then(ok => { if (ok) Linking.openURL(`tel:${phone.replace(/\D/g, '')}`).catch(() => { showToast('Action failed. Please try again.', 'error')); }; });
+    confirm(`Call ${name}?`, phone, { confirmLabel: 'Call' }).then(ok => { if (ok) Linking.openURL(`tel:${phone.replace(/[^0-9]/g,'')}`).catch(() => {}); });
   };
 
   const openWeb = (url: string) => {
     hapticImpact();
-    Linking.openURL(url.startsWith('http') ? url : `https://${url}`).catch(() => showToast('Action failed. Please try again.', 'error'));
+    Linking.openURL(url.startsWith('http') ? url : `https://${url}`).catch(() => showToast('Action unavailable.', 'error'));
   };
 
   const renderAgent = useCallback(({ item }: { item: Agent }) => (

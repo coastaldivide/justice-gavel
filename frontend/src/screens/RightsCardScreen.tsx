@@ -198,7 +198,8 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
       testID="rights-card-screen"
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
     {cardError && (
       <View style={{margin:16,padding:14,backgroundColor:colors.surface,
         borderRadius:10,borderWidth:1,borderColor:colors.border}}>
@@ -338,9 +339,9 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-          style={{ flex: 1, backgroundColor: (_HEX_RIGHTSCARD._c1), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:988').catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))}
-          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
+          style={{ flex: 1, backgroundColor: (colors.blue), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
+          onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action unavailable.', 'error'))}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 988 Crisis</Text>
         </TouchableOpacity>
@@ -348,17 +349,17 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={{ flex: 1, backgroundColor: (colors.navy || COLORS.navy), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:+12125492660').catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))}
-          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
+          onPress={() => Linking.openURL('tel:+12125492660').catch(() => showToast('Action unavailable.', 'error'))}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 ACLU</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-          style={{ flex: 1, backgroundColor: _HEX_RIGHTSCARD._c0, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() => Linking.openURL('tel:+18009800010').catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))}
-          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
+          style={{ flex: 1, backgroundColor: colors.green, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
+          onPress={() => Linking.openURL('tel:+18009800010').catch(() => showToast('Action unavailable.', 'error'))}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 Bail</Text>
         </TouchableOpacity>

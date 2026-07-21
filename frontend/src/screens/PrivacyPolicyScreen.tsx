@@ -317,11 +317,11 @@ function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityHint="Double-tap to activate"
         style={[styles.tableToggle, { backgroundColor: colors.bgCard,
           borderColor: colors.border }]}
-        onPress={() =
-        accessibilityState={{ selected: false }}> {
+        onPress={() => {
           hapticImpact();
           setTableExpanded(v => !v);
         }}
+          accessibilityState={{ selected: false }}
         accessibilityLabel="Toggle data collection table"
       >
         <Text maxFontSizeMultiplier={1.3} style={[styles.tableToggleText,

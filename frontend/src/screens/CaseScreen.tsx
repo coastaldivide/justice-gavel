@@ -70,7 +70,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
   return (
     <TouchableOpacity
       accessibilityRole="button" testID="case-card" style={styles.card} onPress={onPress} activeOpacity={0.85}
-     accessibilityLabel="{item.title}">
+     accessibilityLabel={item.title}>
       <View style={styles.cardTop}>
         <Text maxFontSizeMultiplier={1.4} style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
 
@@ -79,8 +79,9 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                   accessibilityRole="button"
                   style={{ flexDirection:'row', alignItems:'center', gap:4, paddingVertical:6,
                     marginTop:2 }}
-                  onPress={async () =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  onPress={async () => {
+
                     const d = new Date(item.next_court_date!);
                     const remind = new Date(d);
                     remind.setDate(d.getDate()-1);
@@ -681,7 +682,6 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'cases' && styles.tabBtnActive]}
-        
         accessibilityState={{ selected: false }}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'cases' && styles.tabBtnTextActive]}>{t('case_tab_cases')}</Text>
         </TouchableOpacity>
@@ -715,8 +715,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'lawyers' && styles.tabBtnActive]}
-          testID="case-save-button" onPress={() => { setActiveTab('lawyers'); loadSavedLawyers();}
-          accessibilityState={{  selected: false  }}}
+          testID="case-save-button" onPress={() => { setActiveTab('lawyers'); loadSavedLawyers(); }}
+          accessibilityState={{ selected: false }}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'lawyers' && styles.tabBtnTextActive]}>
             Lawyers {savedLawyers.length > 0 ? `(${savedLawyers.length})` : ''}

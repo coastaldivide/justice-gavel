@@ -141,7 +141,7 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
 
   const handleLongPress = () => {
     const text = msg.text || '';
-Clipboard.setStringAsync(text).then(() => showToast('Copied to clipboard','success')).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }));
+    Clipboard.setStringAsync(text).then(() => showToast('Copied to clipboard', 'success')).catch(() => {});
   };
 
   return (

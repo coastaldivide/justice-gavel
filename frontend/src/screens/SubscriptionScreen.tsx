@@ -197,7 +197,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
     // Until expo-iap is integrated, we block iOS purchases and show instructions.
     if (Platform.OS === 'ios') {
       confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe.',
-      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => { showToast('Action failed. Please try again.', 'error')); }; });
+      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); })
       setSubscribing(null);
       return;
     }

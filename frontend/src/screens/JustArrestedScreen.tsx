@@ -213,8 +213,8 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityHint="Double-tap to activate"
           style={{ flexDirection:'row', alignItems:'center', justifyContent:'center',
             gap:8, paddingVertical:10, paddingHorizontal:16, marginTop:8 }}
-          onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> { try {
+          onPress={() => {
+          try {
           Share.share({
             message: 'If you or someone you know ever gets arrested, use Justice Gavel -- it tells you exactly what to do and connects you with lawyers and bail bondsmen immediately. Get it free: https://justicegavel.app',
             title: 'Justice Gavel -- Free legal help if you get arrested',

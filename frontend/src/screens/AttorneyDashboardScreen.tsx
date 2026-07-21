@@ -161,7 +161,8 @@ function AvailabilityGrid({ userId }: { userId: number }) {
         placeholder="Availability note (e.g. 'Best to reach me Tuesday mornings')"
         placeholderTextColor={COLORS.placeholder}
         value={note}
-        onChangeText={t = maxLength={1000}> { setNote(t); setSaved(false); }}
+        onChangeText={(t) => { setNote(t); setSaved(false); }}
+          maxLength={1000}
         maxLength={200}
         returnKeyType="done"
         blurOnSubmit
@@ -376,8 +377,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             accessibilityRole="tab"
             key={t.key}
             style={[styles.tabBtn, tab===t.key && { borderBottomColor: colors.steel, borderBottomWidth: 2 }]}
-            onPress={() =
-        accessibilityState={{ selected: false }}> setTab(t.key)}
+            onPress={() => setTab(t.key)}
+            accessibilityState={{ selected: false }}
             accessibilityLabel={t.label}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.tabLabel, { color: tab===t.key ? colors.textPrimary : colors.textMuted }]}>
@@ -733,7 +734,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               accessibilityLabel="State bar number"
           returnKeyType="next"
           blurOnSubmit
-        / keyboardType="numeric">
+        keyboardType="numeric"
+        />
 
             <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>OFFICE ID (e.g. pd_davidson_tn)</Text>
             <TextInput
@@ -758,8 +760,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               accessibilityLabel="Office name"
           returnKeyType="next"
           blurOnSubmit
-        /
-        keyboardType="numeric">
+        keyboardType="numeric"
+        />
 
             <TouchableOpacity
   accessibilityRole="button"

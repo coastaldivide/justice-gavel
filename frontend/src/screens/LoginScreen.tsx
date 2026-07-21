@@ -152,14 +152,14 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
               // forgot password
 
               const email = identifier.trim();
-              if (!email) { showToast('Type your email above then tap "Forgot password?"'); return; }
+              if (!email) { showToast('Enter your email first, then tap Forgot Password.', 'info'); return; }
               confirm('Reset Password', `Send a reset link to ${email}?`,
-      { confirmLabel: 'Send Link' }).then(ok => { if (!ok) return;
-      api.post('/auth/forgot-password', { email
-    });
-                  }
-                },
-              ]);
+                { confirmLabel: 'Send Link' }).then(ok => {
+                if (!ok) return;
+                api.post('/auth/forgot-password', { email })
+                  .then(() => showToast('Reset link sent! Check your inbox.', 'success'))
+                  .catch(() => showToast('Could not send reset link. Try again.', 'error'));
+              });
             }}
           >
             <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>Forgot password?</Text>

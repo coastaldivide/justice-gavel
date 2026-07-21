@@ -77,9 +77,9 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
         const allResults = [...cases, ...messages, ...lawyers, ...lessons];
         setResults(allResults);
         cacheSearch(cached.query, { cases, messages, lawyers, lessons }).catch(() => {});
-        saveRecentSearch(cached.query).then(() =>
-          getRecentSearches().then(setRecentSearches).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))
-        ).catch(() => {});
+        saveRecentSearch(cached.query).then(() => {
+          getRecentSearches().then(setRecentSearches).catch(() => {});
+        }).catch(() => {});
         setSearched(true);
       }
     }).catch(() => {});
@@ -129,9 +129,9 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
       const allResults = [...cases, ...messages, ...lawyers, ...lessons];
         setResults(allResults);
         cacheSearch(q, { cases, messages, lawyers, lessons }).catch(() => {});
-        saveRecentSearch(q).then(() =>
-          getRecentSearches().then(setRecentSearches).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))
-        ).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }));
+        saveRecentSearch(q).then(() => {
+          getRecentSearches().then(setRecentSearches).catch(() => {});
+        }).catch(() => {});
       setSearched(true);
     } catch {
       if (mountedRef.current) { setResults([]); setSearched(true); setSearchError('Search failed. Check your connection.'); }
@@ -178,7 +178,8 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
           onChangeText={handleChange}
           autoFocus
           returnKeyType="search"
-          onSubmitEditing={() = keyboardType="numeric" maxLength={1000}> doSearch(query)}
+          onSubmitEditing={() => doSearch(query)}
+          keyboardType="default"
           maxLength={120}
           clearButtonMode="while-editing"
           accessibilityLabel="Search"
@@ -266,8 +267,8 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
                       style={{ backgroundColor: colors.bgCard, borderRadius: 20,
                         paddingHorizontal:14, paddingVertical:8,
                         borderWidth:1, borderColor: colors.border }}
-                      accessibilityLabel="{q}" onPress={() => { setQuery(q); doSearch(q);}
-          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}}
+                      accessibilityLabel={q} onPress={() => { setQuery(q); doSearch(q);}}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                     >
                       <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color: colors.textSecond }}>{q}</Text>
                     </TouchableOpacity>
@@ -320,7 +321,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
       />
     </View>
     </KeyboardAvoidingView>
-  )}
+  );
 
 
 const styles = (C: Record<string, string>) => StyleSheet.create({
@@ -342,4 +343,5 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
   emptyIcon:    { fontSize:48, marginBottom:16 },
   emptyTitle:   { fontSize:TYPE.lg, lineHeight:27, ...FONTS.semiBold, marginBottom:8, textAlign:'center' },
   emptySub:     { fontSize:TYPE.base, lineHeight:21, textAlign:'center' } });
+}
 export default React.memo(SearchScreen);

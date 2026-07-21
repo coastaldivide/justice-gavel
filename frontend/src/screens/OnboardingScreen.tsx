@@ -138,8 +138,7 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
               style={{ backgroundColor:colors.bgCard, borderRadius:14, padding:18,
                 marginBottom:12, flexDirection:'row', alignItems:'center', gap:14,
                 borderWidth:1, borderColor:colors.border }}
-              onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
+              onPress={() => {
                 setSituation(sit.key);
                 setShowSituationPicker(false);
               }}

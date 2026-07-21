@@ -63,17 +63,19 @@ const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 function callPhone(phone: string) {
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; })); }
-function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; })); }
+  hapticCall();
+  Linking.openURL('tel:' + phone.replace(/[^0-9]/g, '')).catch(() => showToast('Action unavailable.', 'error'));
+}
+function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/[^0-9]/g, '')).catch(() => showToast('Action unavailable.', 'error')); }
 function openDirections(lat: number, lng: number, name: string) {
   const encoded = encodeURIComponent(name);
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encoded}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  Linking.openURL(url).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }));
+  Linking.openURL(url).catch(() => showToast('Action unavailable.', 'error'));
 }
 function openWebsite(url: string) {
-  Linking.openURL(url.startsWith('http') ? url : 'https://' + url).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }));
+  Linking.openURL(url.startsWith('http') ? url : 'https://' + url).catch(() => showToast('Action unavailable.', 'error'));
 }
 
 // ── Badges ────────────────────────────────────────────────────────────────────
@@ -889,8 +891,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
         <TouchableOpacity accessibilityRole="button"
           accessibilityHint="Double-tap to activate" style={{ flex:1, backgroundColor:'rgba(0,0,0,0.5)',
           justifyContent:'center', padding:24 }}
-          onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setShowBadgeInfo(false)} activeOpacity={1}>
+          onPress={() => setShowBadgeInfo(false)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} activeOpacity={1}>
           <View style={{ backgroundColor:colors.bgCard, borderRadius:16, padding:20,
             borderWidth:1, borderColor:colors.border }}>
             {badgeInfoType === 'bar' && (<>
@@ -941,8 +943,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               accessibilityLabel="Got it"
               style={{ backgroundColor:colors.navy, borderRadius:10,
                 paddingVertical:12, alignItems:'center' }}
-              onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setShowBadgeInfo(false)}
+              onPress={() => setShowBadgeInfo(false)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700',
                 fontSize:14, lineHeight:21 }}>Got it</Text>
@@ -959,8 +961,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           style={{ position:'absolute', bottom:24, left:16, right:16,
             backgroundColor:colors.navy, borderRadius:14, paddingVertical:16,
             flexDirection:'row', alignItems:'center', justifyContent:'center', gap:10 }}
-          accessibilityLabel="\u2696\ufe0f" onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setShowBulk(true)}
+          accessibilityLabel="\u2696\ufe0f" onPress={() => setShowBulk(true)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700',
@@ -1014,8 +1016,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           accessibilityHint="Cancels and returns to previous screen"
                 style={{ flex:1, borderWidth:1, borderColor:colors.border,
                   borderRadius:10, paddingVertical:14, alignItems:'center' }}
-                onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setShowBulk(false)}
+                onPress={() => setShowBulk(false)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
                 <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textMuted,
                   fontWeight:'700', fontSize:14, lineHeight:21 }}>Cancel</Text>

@@ -681,9 +681,8 @@ showToast('Reminder set for 3 days before.', 'success');
           accessibilityHint="Double-tap to activate"
           style={{ backgroundColor:colors.navy, borderRadius:10, padding:14,
             alignItems:'center', marginHorizontal:16, marginBottom:12 }}
-          onPress={async () =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
-            try {
+          onPress={async () => {
+          try {
               await Share.share({
                 message: 'Justice Gavel -- Deadline Calculator Results\n\n'
                   + 'Use the Justice Gavel app to calculate your legal deadlines.',

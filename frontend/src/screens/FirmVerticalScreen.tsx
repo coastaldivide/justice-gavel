@@ -258,7 +258,7 @@ function FirmVerticalScreen({ navigation }: any) {
 confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the tracker.`,
       { confirmLabel: 'Mark Resolved', destructive: true }).then(async ok => { if (!ok) return;
       try { await api.patch(`/firm-verticals/${type}/${id}/resolve`, {}); loadTrackers(); }
-         catch (e: any) { showToast(e?.response?.data?.error || 'Could not resolve.', 'error'); setRetryCount(0);
+         catch (e: any) { showToast(e?.response?.data?.error || 'Could not resolve.', 'error'); setRetryCount(0); }
     })
   };
 
@@ -638,10 +638,11 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
           control={control}
           name="acName"
           render={({ field }) => (
-            <TextInput style={s.input} placeholder="Client name" placeholderTextColor={colors.textMuted}  returnKeyType="next" / maxLength={200}
+            <TextInput style={s.input} placeholder="Client name" placeholderTextColor={colors.textMuted}  returnKeyType="next"
+              maxLength={200}
               value={field.value}
               onChangeText={field.onChange}
-            >
+            />
           )}
         />
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Clock start date (when asylum application filed)</Text>
@@ -661,8 +662,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                       </View>
                       <View style={s.flagRow}>
                         <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>Client is detained</Text>
-                        <Switch accessibilityLabel="Client is detained" value={acDetained} onValueChange={setACDet} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} /
-        accessibilityState={{ checked: acDetained }}>
+                        <Switch accessibilityLabel="Client is detained" value={acDetained} onValueChange={setACDet} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} accessibilityState={{ checked: acDetained }} />
                       </View>
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Country conditions (optional)</Text>
                       <View style={s.segRow}>
@@ -681,10 +681,10 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
           name="acNotes"
           render={({ field }) => (
             <TextInput style={[s.input,{minHeight:56}]} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} multiline
-              maxLength={2000} /
+              maxLength={2000}
               value={field.value}
               onChangeText={field.onChange}
-            >
+            />
           )}
         />
                       <TouchableOpacity style={[s.addBtn, creatingAC && { opacity: 0.6 }]} onPress={createAC} disabled={creatingAC}
@@ -732,14 +732,13 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
           control={control}
           name="dpaName"
           render={({ field }) => (
-            <TextInput style={s.input} placeholder="Client / entity name" placeholderTextColor={colors.textMuted}  returnKeyType="next" / maxLength={200}
+            <TextInput style={s.input} placeholder="Client / entity name" placeholderTextColor={colors.textMuted} returnKeyType="next" maxLength={200}
               value={field.value}
               onChangeText={field.onChange}
-            >
+            />
           )}
         />
-                      <TextInput style={s.input} value={dpaAgency} onChangeText={setDPAAgency} placeholder="Agency (DOJ / SEC / FinCEN...)" placeholderTextColor={colors.textMuted}  returnKeyType="next" /
-        keyboardType="numeric">
+                      <TextInput style={s.input} value={dpaAgency} onChangeText={setDPAAgency} placeholder="Agency" keyboardType="numeric" />
                       <TextInput style={s.input} value={dpaFineM} onChangeText={setDPAFineM} placeholder="Base fine ($M, e.g. 12.5)" placeholderTextColor={colors.textMuted} keyboardType="numeric"  returnKeyType="next" />
                       <TextInput style={s.input} value={dpaWellsDue} onChangeText={setDPAWellsDue} placeholder="Wells notice due (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
                       <TextInput style={s.input} value={dpaSubDue} onChangeText={setDPASubDue} placeholder="Subpoena response due (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted}  returnKeyType="next" />
@@ -831,16 +830,15 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
           control={control}
           name="troName"
           render={({ field }) => (
-            <TextInput style={s.input} placeholder="Client name" placeholderTextColor={colors.textMuted}  returnKeyType="next" / maxLength={200}
+            <TextInput style={s.input} placeholder="Client name" placeholderTextColor={colors.textMuted} returnKeyType="next" maxLength={200}
               value={field.value}
               onChangeText={field.onChange}
-            >
+            />
           )}
         />
                       <View style={s.flagRow}>
                         <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>Domestic violence flag</Text>
-                        <Switch accessibilityLabel="Add TRO tracker" value={troDV} onValueChange={setTRODV} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} /
-        accessibilityState={{ checked: troDV }}>
+                        <Switch accessibilityLabel="Add TRO tracker" value={troDV} onValueChange={setTRODV} trackColor={{ false: colors.borderSubtle, true: colors.emergency }} thumbColor={colors.card} />
                       </View>
                       <Text maxFontSizeMultiplier={1.4} style={s.inputLabel}>Asset tier</Text>
                       <View style={s.segRow}>

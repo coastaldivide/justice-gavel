@@ -454,8 +454,7 @@ function SettingsScreen({ route, navigation }: any) {
             ios_backgroundColor={colors.surface}
             accessibilityLabel="Toggle dark or light mode"
             accessibilityRole="switch"
-          /
-        accessibilityState={{ checked: isDark }}>
+          accessibilityState={{ checked: isDark }}/>
         </View>
 
       </View>
@@ -499,8 +498,7 @@ function SettingsScreen({ route, navigation }: any) {
               value={biometricEnabled}
               onChange={toggleBiometric}
               trackOn={colors.legal}
-            /
-        accessibilityState={{ checked: biometricEnabled }}>
+            accessibilityState={{ checked: biometricEnabled }}/>
           </View>
         </>
       )}
@@ -515,8 +513,7 @@ function SettingsScreen({ route, navigation }: any) {
           hint="Turn off all notifications at once"
           value={notifMaster}
           onChange={toggleMaster}
-        /
-        accessibilityState={{ checked: notifMaster }}>
+        accessibilityState={{ checked: notifMaster }}/>
 
         {/* Per-category -- only visible when master is on */}
         {notifMaster && (
@@ -731,38 +728,40 @@ function SettingsScreen({ route, navigation }: any) {
             style={{ backgroundColor: '#EF5350', borderRadius: 8,
               paddingVertical: 12, alignItems: 'center' }}
             accessibilityLabel="Delete account permanently"
-            onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
-confirm('Delete Account?', 'This will permanently delete your account and all your data. This cannot be undone.',
-      { confirmLabel: 'Delete Account', destructive: true }).then(async ok => { if (!ok) return;
-      Alert.prompt(
-                        'Confirm Password',
-                        'Enter your password to permanently delete your account.',
-                        async (password: string) => {
-                          if (!password) return;
-                          try {
-                            await api.delete('/auth/account', { data: { password
-    })
-            }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontFamily: 'Inter_700Bold', color: colors.bg }}>
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            onPress={() => {
+              confirm('Delete Account?', 'This will permanently delete your account and all your data.',
+                { confirmLabel: 'Delete Account', destructive: true }).then(async ok => {
+                  if (!ok) return;
+                  try {
+                    await api.delete('/auth/account');
+                    showToast('Account deleted.', 'success');
+                  } catch {
+                    showToast('Could not delete account. Try again.', 'error');
+                  }
+                });
+            }}
+          >
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontWeight: "600", color: "#fff" }}>
               Delete My Account
             </Text>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
             style={{ marginTop: 12, alignItems: 'center', padding: 8 }}
             accessibilityLabel="Export my data"
-            onPress={async () =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            onPress={async () => {
               try {
                 const res = await api.get('/auth/export');
                 const data = JSON.stringify(res.data, null, 2);
-                const { default: Share } = await import('react-native').then(m => ({ default: m.Share }));
+                const { Share } = require('react-native');
                 await Share.share({ message: data, title: 'My Justice Gavel Data Export' });
               } catch {
                 showToast('Could not export your data. Please try again.');
               }
-            }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.textMuted,
+            }}
+          >
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.blue,
               textDecorationLine: 'underline' }}>
               Export My Data (GDPR)
             </Text>
@@ -773,20 +772,20 @@ confirm('Delete Account?', 'This will permanently delete your account and all yo
 
           {/* ── Rate the App ─────────────────────────────────────────── */}
           <TouchableOpacity
-  accessibilityRole="button"
+            accessibilityRole="button"
             style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between',
               backgroundColor:colors.bgCard, borderRadius:10, padding:14,
               marginBottom:8, borderWidth:1, borderColor:colors.border }}
-            onPress={async () =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            onPress={async () => {
               let isAvailable = false;
-        try { isAvailable = await StoreReview.isAvailableAsync(); } catch (_) {}
+              try { isAvailable = await StoreReview.isAvailableAsync(); } catch (_) {}
               if (isAvailable) {
                 await StoreReview.requestReview();
               }
             }}
           >
-            <Text maxFontSizeMultiplier={1.3} style={{ color:colors.textPrimary, fontSize:14 }}>
+            <Text maxFontSizeMultiplier={1.3} style={{ color:colors.textPrimary, fontSize: 14, fontWeight:"600" }}>
               ⭐ Rate Justice Gavel
             </Text>
             <Text style={{ color:colors.textMuted, fontSize:12 }}>Tell us what you think →</Text>

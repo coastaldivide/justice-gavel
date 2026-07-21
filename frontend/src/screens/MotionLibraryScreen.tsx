@@ -700,7 +700,7 @@ const loadHistory = useCallback(async () => {
 
   const copyToClipboard = useCallback(async () => {
     await Clipboard.setString(editDraft);
-    hapticImpact().catch(() => { showToast('Action failed. Please try again.', 'error')); setCopied(true; });
+    hapticImpact().catch(() => { showToast('Action failed. Please try again.', 'error'); }); setCopied(true);
     copyTimer.current = setTimeout(() => setCopied(false), 2500);
   }, [editDraft]);
 
