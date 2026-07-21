@@ -41,8 +41,8 @@ type DefendantRow = {
   monthly_fee_cents: number;
 };
 
-function statusColor(row: DefendantRow): {
-  const { confirm } = useConfirm(); color: string; bg: string; label: string } {
+function statusColor(row: DefendantRow): { color: string; bg: string; label: string } {
+  const { confirm } = useConfirm();
   if (!row.active) return { color: COLORS.textMuted, bg: COLORS.bg, label: 'Inactive' };
   if (row.checkins_today > 0) return { color: COLORS.legal, bg: COLORS.legalBg, label: '✓ Checked in today' };
   const courtSoon = row.court_date &&
@@ -240,8 +240,8 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
             : (
               <FlashList
           accessibilityLabel="Check-in schedule list"
-                getItemLayout={(_, index) =
-        estimatedItemSize={80}> ({ length: 80, offset: 80 * index, index })}
+                getItemLayout={(_, index) => ({ length: 80, offset: 80 * index, index })}
+          estimatedItemSize={80}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}
@@ -372,8 +372,8 @@ confirm(`Remove ${name}?`, 'They will no longer need to check in.',
       ) : (
         <FlashList
           data={[...active, ...inactive]}
-          keyExtractor={r =
-        estimatedItemSize={80}> String(r.id)}
+          keyExtractor={(r) => String(r.id)}
+          estimatedItemSize={80}
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
           renderItem={({ item }) => {

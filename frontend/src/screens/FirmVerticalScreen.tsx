@@ -447,8 +447,8 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       <View style={s.tabBar}>
         {(['setup','pricing','trackers','deadlines'] as Tab[]).map(t => (
           <TouchableOpacity
-          accessibilityRole="button" key={t} style={[s.tabBtn, tab===t && s.tabActive]} onPress={() =
-        accessibilityState={{ selected: false }}> setTab(t)}
+          accessibilityRole="button" key={t} style={[s.tabBtn, tab===t && s.tabActive]} onPress={() => setTab(t)}
+          accessibilityState={{  selected: false  }}
             accessibilityLabel='Switch tab'
           >
             <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===t && s.tabLabelActive]}>
@@ -613,8 +613,8 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
             <View style={s.subTabRow}>
               {(['asylum','dpa','tro'] as const).map(tt => (
                 <TouchableOpacity
-          accessibilityRole="button" key={tt} style={[s.subTab, trackerTab===tt && s.subTabActive]} onPress={() =
-        accessibilityState={{ selected: false }}> setTrackerTab(tt)}
+          accessibilityRole="button" key={tt} style={[s.subTab, trackerTab===tt && s.subTabActive]} onPress={() => setTrackerTab(tt)}
+          accessibilityState={{  selected: false  }}
                         >
                   <Text maxFontSizeMultiplier={1.4} style={[s.subTabLabel, trackerTab===tt && s.subTabLabelActive]}>
                     {tt === 'asylum' ? '🕐 Asylum Clock' : tt === 'dpa' ? '💰 DPA Tracker' : '🚨 TRO Tracker'}
@@ -785,7 +785,8 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                           <Text maxFontSizeMultiplier={1.4} style={s.coopLabel}>Cooperation: {d.cooperation_level.replace(/_/g, ' ')}</Text>
                           <TouchableOpacity
                             accessibilityRole="button"
-                            onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> closeTracker('dpa', d.id, d.client_name)}
+                            onPress={() => closeTracker('dpa', d.id, d.client_name)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                             style={{ alignSelf: 'flex-end', paddingVertical: 4, paddingHorizontal: 10,
                               backgroundColor: COLORS.infoBg, borderRadius: 6, marginTop: 8 }}
                           >

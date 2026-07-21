@@ -143,7 +143,7 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <Text style={styles.title}>
-          {timed_out ? '⏱ Time's Up' : '✓ Session Complete'}
+          {timed_out ? '⏱ Time\'s Up' : '✓ Session Complete'}
         </Text>
         <Text style={styles.subtitle}>
           {mode === 'timed' ? 'Timed Mode' : 'Practice Mode'} · {total} questions

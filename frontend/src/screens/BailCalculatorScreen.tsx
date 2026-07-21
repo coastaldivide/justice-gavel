@@ -287,8 +287,8 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
           accessibilityHint="Double-tap to activate"
             style={{ backgroundColor: colors.navy, borderRadius: 14,
               paddingVertical: 16, alignItems: 'center' }}
-            onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> navigation.navigate('LawyersTab')}
+            onPress={() => navigation.navigate('LawyersTab')}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2}

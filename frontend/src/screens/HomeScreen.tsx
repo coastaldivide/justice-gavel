@@ -148,7 +148,7 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       if (!t) return;
       api.get('/messages/unread/count')
         .then(r => setUnreadMessages(r.data?.count || 0))
-        .catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
+        .catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0); });
     }).catch(() => {});
 
     // Resolve loading state once primary data arrives
@@ -176,7 +176,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           showToast('Your emergency contacts have been notified.');
         } catch (e: any) {
           showToast(e.message || 'Check your connection and try again.', 'error'); setRetryCount(0);
-        } finally { setSosSending(false);
+        } finally { setSosSending(false); }
     })
   };
 
@@ -469,8 +469,8 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           accessibilityHint="Double-tap to activate"
           style={{ backgroundColor: COLORS.steelMid, borderBottomWidth: 1, borderBottomColor: COLORS.steelMid,
             flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
-          onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> (navigation as any).navigate('OfflineStatus')}
+          onPress={() => (navigation as any).navigate('OfflineStatus')}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
           accessibilityLabel="No internet connection -- tap to see what works offline"
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14 }}>📡</Text>

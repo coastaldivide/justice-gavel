@@ -251,7 +251,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
             })}
           </View>
           <View style={styles.calendarLegendRow}>
-            <LegendDot color=COLORS.legal label="Goal met" />
+            <LegendDot color={COLORS.legal} label="Goal met" />
             <LegendDot color={colors.primary} label="Today" />
             <LegendDot color={colors.primary + '44'} label="Due" />
           </View>

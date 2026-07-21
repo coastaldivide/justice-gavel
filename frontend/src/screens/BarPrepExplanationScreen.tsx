@@ -160,7 +160,7 @@ export default function BarPrepExplanationScreen({
         <SectionCard
           title="💡 Why This Answer"
           colors={colors}
-          accent=COLORS.legal
+          accent={COLORS.legal}
         >
           <Text style={styles.explanationText}>{data.explanation}</Text>
         </SectionCard>

@@ -274,7 +274,7 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
     // Until expo-iap is integrated, we block iOS purchases and show instructions.
     if (Platform.OS === 'ios') {
       confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe. Open website?',
-      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => showToast('Action failed. Please try again.', 'error')); });
+      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => { showToast('Action failed. Please try again.', 'error')); }; });
       setSubscribing(null);
       return;
     }
@@ -302,7 +302,7 @@ confirm('Cancel Plan?', 'You\'ll keep access until the end of your billing perio
           await api.post('/billing/cancel');
           setSubscription(null);
           showToast('Your plan has been cancelled.');
-        } catch (e: any) {
+        } catch (e: any) { }
           showToast('Please try again. If this keeps happening, check your internet connection.');
     })
   };
@@ -435,7 +435,8 @@ confirm('Cancel Plan?', 'You\'ll keep access until the end of your billing perio
           <TouchableOpacity
           accessibilityRole="button"
           style={{ alignItems: 'center', paddingVertical: 16 }}
-          onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : null}
+          onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityLabel="Continue with free features">
           <Text style={{ fontSize: 13, color: colors.steel, textDecorationLine: 'underline' }}>
             Continue with free features →

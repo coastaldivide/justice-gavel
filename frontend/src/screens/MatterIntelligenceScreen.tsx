@@ -177,8 +177,8 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
             accessibilityRole="tab"
             key={t}
             style={[s.tabBtn, tab===t && s.tabActive]}
-            onPress={() =
-        accessibilityState={{ selected: false }}> setTab(t as Tab)}
+            onPress={() => setTab(t as Tab)}
+          accessibilityState={{  selected: false  }}
             accessibilityState={{ selected: tab === t }}
             accessibilityLabel={`${t.charAt(0).toUpperCase() + t.slice(1)} tab`}>
             <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===t && s.tabLabelActive]}>

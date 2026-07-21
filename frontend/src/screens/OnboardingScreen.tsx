@@ -111,8 +111,8 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
-          onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> navigation.navigate('Emergency')}
+          onPress={() => navigation.navigate('Emergency')}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
           accessibilityRole="button"
           accessibilityLabel="Just arrested - get immediate help now"
           accessibilityHint="Opens emergency screen without requiring sign up"

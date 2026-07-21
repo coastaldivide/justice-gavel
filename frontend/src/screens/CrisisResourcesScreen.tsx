@@ -95,7 +95,7 @@ const GROUNDING = [
 function callLine(number: string) {
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
-  Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0)).finally(() => setIsLoading(false));
+  Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; })).finally(() => setIsLoading(false));
 }
 
 
@@ -128,7 +128,7 @@ function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.El
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    api.get('/resources?category=CRISIS_LINE&limit=20').then(r => { if (r.data) setDbLines(r.data); }).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));//setDbLines(r.data || []); }).catch(()=>{}).catch(() => {})
+    api.get('/resources?category=CRISIS_LINE&limit=20').then(r => { if (r.data) setDbLines(r.data); }).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }));//setDbLines(r.data || []); }).catch(()=>{}).catch(() => {})
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 600);
   }, []);
 

@@ -240,7 +240,7 @@ confirm('Remove Event?', 'This will permanently remove this event from your time
       try {
               setEvents(prev => prev.filter(e => e.id !== eventId));
               await api.delete(`/cases/${caseId}/events/${eventId}`);
-            } catch (e: any) {
+            } catch (e: any) { }
               // Rollback: re-fetch events to restore the deleted item
               setEvents(prev => prev);
               showToast(e?.response?.data?.error || 'Try again.', 'error'); setRetryCount(0);
@@ -348,8 +348,8 @@ confirm(item.title.slice(0,40),'Set a reminder or remove this event?',
         windowSize={5}
         removeClippedSubviews={true}
         data={events}
-        keyExtractor={(item) =
-        estimatedItemSize={80}> String(item.id)}
+        keyExtractor={(item) => String(item.id)}
+          estimatedItemSize={80}
         renderItem={renderItem}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh}

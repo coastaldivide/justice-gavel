@@ -125,7 +125,7 @@ function AttorneyPrivacyScreen({ navigation }: any) {
             Results will appear here when available
           </Text>
         </View>
-        ) : .map((sec, idx) => (
+        ) : sections.map((sec, idx) => (
         <View
           key={`SECTIONS-${idx}`}
           style={[s.section, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}

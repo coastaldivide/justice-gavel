@@ -339,8 +339,8 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={{ flex: 1, backgroundColor: (_HEX_RIGHTSCARD._c1), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))}
+          onPress={() => Linking.openURL('tel:988').catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
         >
           <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 988 Crisis</Text>
         </TouchableOpacity>
@@ -348,8 +348,8 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={{ flex: 1, backgroundColor: (colors.navy || COLORS.navy), borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> Linking.openURL('tel:+12125492660').catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))}
+          onPress={() => Linking.openURL('tel:+12125492660').catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
         >
           <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 ACLU</Text>
         </TouchableOpacity>
@@ -357,8 +357,8 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={{ flex: 1, backgroundColor: _HEX_RIGHTSCARD._c0, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
-          onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> Linking.openURL('tel:+18009800010').catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))}
+          onPress={() => Linking.openURL('tel:+18009800010').catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
         >
           <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 Bail</Text>
         </TouchableOpacity>

@@ -87,7 +87,7 @@ confirm(`Approve ${name}?`, 'Their bar number will be verified. They will appear
               setPending(p => p.filter(a => a.user_id !== userId));
 showToast(`${name} is now bar verified.`, 'success');
               showToast(e.response?.data?.error || 'Could not approve the application.', 'info');
-            } finally { setActing(null);
+            } finally { setActing(null); }
     })
   };
 
@@ -100,7 +100,7 @@ confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.'
               setPending(p => p.filter(a => a.user_id !== userId));
             } catch (e: any) {
               showToast(e.response?.data?.error || 'Could not reject the application.', 'info');
-            } finally { setActing(null);
+            } finally { setActing(null); }
     })
   };
 

@@ -63,17 +63,17 @@ const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 function callPhone(phone: string) {
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0)); }
-function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0)); }
+  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; })); }
+function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/\s/g, '')).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; })); }
 function openDirections(lat: number, lng: number, name: string) {
   const encoded = encodeURIComponent(name);
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encoded}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
+  Linking.openURL(url).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }));
 }
 function openWebsite(url: string) {
-  Linking.openURL(url.startsWith('http') ? url : 'https://' + url).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
+  Linking.openURL(url.startsWith('http') ? url : 'https://' + url).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }));
 }
 
 // ── Badges ────────────────────────────────────────────────────────────────────
@@ -762,8 +762,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
             </TouchableOpacity>
           )}
                 <FlashList testID="lawyer-list"
-          getItemLayout={(_, index) =
-        estimatedItemSize={80}> ({ length: 200, offset: 200 * index, index })}
+          getItemLayout={(_, index) => ({ length: 200, offset: 200 * index, index })}
+          estimatedItemSize={80}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}

@@ -212,7 +212,8 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
         <TouchableOpacity
           accessibilityRole="button"
           style={s.btnPrimary}
-          accessibilityLabel="Back to Case" onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : null}
+          accessibilityLabel="Back to Case" onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Back to Case</Text>
         </TouchableOpacity>

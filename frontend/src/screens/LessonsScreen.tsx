@@ -176,8 +176,8 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
                 key={cat}
                 style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20,
                   backgroundColor: filterCat === cat ? (CAT_COLORS[cat] || colors.navy) : colors.bg }}
-                onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setFilterCat(filterCat === cat ? null : cat)}
+                onPress={() => setFilterCat(filterCat === cat ? null : cat)}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
               >
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700',
                   color: filterCat === cat ? colors.bgCard : colors.textMuted }}>{cat}</Text>
@@ -186,8 +186,8 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
           </View>
         )}
         <FlashList
-          getItemLayout={(_, index) =
-        estimatedItemSize={80}> ({ length: 110, offset: 110 * index, index })}
+          getItemLayout={(_, index) => ({ length: 110, offset: 110 * index, index })}
+          estimatedItemSize={80}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}

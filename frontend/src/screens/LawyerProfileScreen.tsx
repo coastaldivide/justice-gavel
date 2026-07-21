@@ -149,7 +149,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
 
   const handleCall = useCallback(() => {
     if (!lawyer?.phone) return;
-    Linking.openURL(`tel:${lawyer.phone.replace(/\D/g,'')}`).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
+    Linking.openURL(`tel:${lawyer.phone.replace(/\D/g,'')}`).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0); });
   }, [lawyer]);
 
   const handleShare = async () => {

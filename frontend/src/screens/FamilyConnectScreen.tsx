@@ -263,7 +263,8 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               placeholderTextColor={colors.textMuted}
               onSubmitEditing={searchArrests}
               returnKeyType="search"
-            / maxLength={200}>
+            maxLength={200}
+            />
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
               accessibilityLabel="Search"
               style={[styles.searchBtn, searching && { opacity: 0.6 }]}
@@ -363,8 +364,8 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
             keyboardType="phone-pad"
           returnKeyType="next"
           blurOnSubmit
-        /
-        maxLength={20}>
+        maxLength={20}
+        />
 
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>Email (optional)</Text>
           <TextInput
@@ -378,8 +379,8 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
             autoCapitalize="none"
           returnKeyType="next"
           blurOnSubmit
-        /
-        maxLength={254}>
+        maxLength={254}
+        />
 
           <View style={styles.feeBlock}>
             <Text maxFontSizeMultiplier={1.4} style={styles.feeBlockTitle}>What you get for $28.99</Text>

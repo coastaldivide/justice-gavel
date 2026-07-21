@@ -152,7 +152,7 @@ function TenantRightsScreen(): React.JSX.Element {
             Results will appear here when available
           </Text>
         </View>
-        ) : .map((sec: any, idx: number) => (
+        ) : items.map((sec: any, idx: number) => (
         <View key={`allSecti-${idx}`} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           {sec.title ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardTitle, { color: colors.textPrimary }]}>{sec.title}</Text> : null}
           {sec.body  ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardBody,  { color: colors.textMuted  }]}>{sec.body}</Text>  : null}

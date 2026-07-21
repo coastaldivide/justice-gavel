@@ -99,12 +99,12 @@ function LegalPenaltiesScreen({ navigation }: any) {
             Results will appear here when available
           </Text>
         </View>
-        ) : .map(tab => (
+        ) : items.map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() =
-        accessibilityState={{ selected: false }}> switchTab(tab.key)}
+            onPress={() => switchTab(tab.key)}
+          accessibilityState={{  selected: false  }}
             accessibilityRole="tab"
             accessibilityState={{ selected: activeTab === tab.key }}
           >

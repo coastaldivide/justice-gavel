@@ -263,7 +263,7 @@ function TermsOfServiceScreen({ navigation }: ScreenProps): React.JSX.Element {
             Results will appear here when available
           </Text>
         </View>
-        ) : .map((section, idx) => (
+        ) : items.map((section, idx) => (
         <View key={`SECTIONS-${idx}`} style={[styles.section, { backgroundColor: colors.bgCard,
           borderLeftColor: idx === 0 ? colors.emergency :
                           idx === 4 ? colors.warnDark :

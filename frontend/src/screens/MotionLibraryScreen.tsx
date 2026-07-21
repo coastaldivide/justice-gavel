@@ -276,8 +276,8 @@ function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPE
                   paddingHorizontal:16, borderRadius:10, borderWidth:1,
                   borderColor:COLORS.border, backgroundColor:COLORS.bgSubtle,
                   marginBottom:8 }}
-                onPress={onReview || (() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> {})}
+                onPress={onReview || (() => {})}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
                 disabled={reviewing}
                 accessibilityLabel="Run AI review of this motion draft"
               >
@@ -700,7 +700,7 @@ const loadHistory = useCallback(async () => {
 
   const copyToClipboard = useCallback(async () => {
     await Clipboard.setString(editDraft);
-    hapticImpact().catch(() => showToast('Action failed. Please try again.', 'error')); setCopied(true);
+    hapticImpact().catch(() => { showToast('Action failed. Please try again.', 'error')); setCopied(true; });
     copyTimer.current = setTimeout(() => setCopied(false), 2500);
   }, [editDraft]);
 

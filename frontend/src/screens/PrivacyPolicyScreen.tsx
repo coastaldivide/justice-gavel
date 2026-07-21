@@ -346,7 +346,7 @@ function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
             Results will appear here when available
           </Text>
         </View>
-        ) : .map((row, i) => (
+        ) : items.map((row, i) => (
             <View key={`DATA_TAB-${i}`} style={[styles.tableRow,
               { backgroundColor: i % 2 === 0 ? colors.bgCard : colors.bgSubtle,
                 borderBottomColor: colors.border }]}>

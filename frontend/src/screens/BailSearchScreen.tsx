@@ -283,8 +283,8 @@ function BailSearchScreen(): React.JSX.Element {
             </View>
           )}
       <FlashList testID="bail-agent-list"
-          keyExtractor={(item, index) =
-        estimatedItemSize={80}> String(item?.id ?? item?.booking_number ?? index)}
+          keyExtractor={(item, index) => String(item?.id ?? item?.booking_number ?? index)}
+          estimatedItemSize={80}
           keyboardShouldPersistTaps="handled"
           onRefresh={() => { setRefreshing(true); search().finally(() => setRefreshing(false)); }}
           refreshing={refreshing}

@@ -147,7 +147,7 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
             Results will appear here when available
           </Text>
         </View>
-        ) : .map((sec: any, idx: number) => (
+        ) : items.map((sec: any, idx: number) => (
         <View key={`allSecti-${idx}`} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           {sec.title ? <Text style={[styles.cardTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{sec.title}</Text> : null}
           {sec.body  ? <Text style={[styles.cardBody,  { color: colors.textMuted  }]} maxFontSizeMultiplier={1.4}>{sec.body}</Text>  : null}

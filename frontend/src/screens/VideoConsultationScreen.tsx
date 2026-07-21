@@ -141,7 +141,8 @@ function VideoConsultationScreen({ route, navigation }: Props) {
         }
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.goBack()} style={styles.cancelBtn}>
+      <TouchableOpacity onPress={() => navigation.goBack()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.cancelBtn}>
         accessibilityRole="button"
           accessibilityHint="Double-tap to activate" accessibilityLabel="End session"
         <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>

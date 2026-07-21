@@ -223,7 +223,8 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                     autoCapitalize="words"
           returnKeyType="next"
           blurOnSubmit
-        / maxLength={200}>
+        maxLength={200}
+        />
                   <TextInput
                     style={[styles.msgInput, { borderColor: COLORS.border, color: COLORS.textPrimary, backgroundColor: COLORS.bg }]}
                     placeholder="Best phone or email to reach you"
@@ -234,7 +235,8 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                     autoCapitalize="none"
           returnKeyType="next"
           blurOnSubmit
-        / maxLength={254}>
+        maxLength={254}
+        />
                   <TextInput
           accessibilityLabel="Briefly describe your situation (optional)"
                     style={[styles.msgInput, styles.msgInputTall, { borderColor: COLORS.border, color: COLORS.textPrimary, backgroundColor: COLORS.bg }]}
@@ -274,8 +276,8 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                   </TouchableOpacity>
                   <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={{ alignItems: 'center', paddingVertical: 12 }} onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> setMsgModal(false)}
+          accessibilityHint="Double-tap to activate" style={{ alignItems: 'center', paddingVertical: 12 }} onPress={() => setMsgModal(false)}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
                     accessibilityLabel="Cancel"
           accessibilityHint="Cancels and returns to previous screen"
                   >

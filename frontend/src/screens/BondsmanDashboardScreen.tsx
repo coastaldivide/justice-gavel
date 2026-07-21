@@ -220,9 +220,9 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
             placeholderTextColor={COLORS.textMuted}
           returnKeyType="next"
           blurOnSubmit
-        /
         maxLength={15}
-        keyboardType="numeric">
+        keyboardType="numeric"
+        />
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>License Number</Text>
           <TextInput
             style={styles.input}
@@ -427,6 +427,7 @@ confirm('Cancel Badge?', 'Your Verified badge will be removed from all listings.
           showToast('Badge subscription cancelled.');
         } catch (e: any) {
           showToast('Check your internet and pull down to refresh.');
+            }
     })
   };
 
@@ -592,8 +593,8 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
           )}
         <FlashList
           testID="lead-list"
-          getItemLayout={(_, index) =
-        estimatedItemSize={80}> ({ length: 150, offset: 150 * index, index })}
+          getItemLayout={(_, index) => ({ length: 150, offset: 150 * index, index })}
+          estimatedItemSize={80}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}

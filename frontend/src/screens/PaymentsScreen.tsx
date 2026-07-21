@@ -342,8 +342,8 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           accessibilityHint="Double-tap to activate"
                 style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:8,
                   paddingVertical:6 }}
-                onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> generateReceipt(payment)}
+                onPress={() => generateReceipt(payment)}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
                 disabled={generatingReceipt}
                 accessibilityLabel="Download payment receipt"
               >

@@ -351,6 +351,7 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
               setLawyers(prev => prev.filter(l => l.id !== id));
             } catch {
               showToast('Check your connection and try again.');
+            }
     })
   }, []);
 
@@ -392,8 +393,8 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
       ) : (
         <FlashList testID="saved-lawyers-list"
           keyboardShouldPersistTaps="handled"
-          getItemLayout={(_, index) =
-        estimatedItemSize={80}> ({ length: 190, offset: 190 * index, index })}
+          getItemLayout={(_, index) => ({ length: 190, offset: 190 * index, index })}
+          estimatedItemSize={80}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}

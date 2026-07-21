@@ -137,7 +137,7 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const call = (phone: string, name: string) => {
     hapticImpact();
-    confirm(`Call ${name}?`, phone, { confirmLabel: 'Call' }).then(ok => { if (ok) Linking.openURL(`tel:${phone.replace(/\D/g, '')}`).catch(() => showToast('Action failed. Please try again.', 'error')); });
+    confirm(`Call ${name}?`, phone, { confirmLabel: 'Call' }).then(ok => { if (ok) Linking.openURL(`tel:${phone.replace(/\D/g, '')}`).catch(() => { showToast('Action failed. Please try again.', 'error')); }; });
   };
 
   const openWeb = (url: string) => {
@@ -302,8 +302,8 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
             onValueChange={setArmedOnly}
             trackColor={{ false: colors.border, true: colors.emergencyDark }}
             thumbColor="#fff"
-          /
-        accessibilityState={{ checked: armedOnly }}>
+          accessibilityState={{ checked: armedOnly }}
+          />
         </View>
 
         {/* Search button */}
@@ -402,8 +402,8 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
           windowSize={5}
           removeClippedSubviews={true}
           data={agents}
-          keyExtractor={item =
-        estimatedItemSize={80}> String(item.id)}
+          keyExtractor={(item) => String(item.id)}
+          estimatedItemSize={80}
           renderItem={renderAgent}
           contentContainerStyle={{ padding: 12, paddingBottom: 40, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
           keyboardShouldPersistTaps="handled"

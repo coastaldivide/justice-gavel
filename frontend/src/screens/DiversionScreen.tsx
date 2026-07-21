@@ -82,7 +82,8 @@ function DiversionScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: (colors as any).background ?? COLORS.background }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation?.goBack()} accessibilityRole="button"
+        <TouchableOpacity onPress={() => navigation.goBack()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityHint="Double-tap to activate">
           <Text style={[styles.back, { color: colors.primary }]}>← Back</Text>
         </TouchableOpacity>
@@ -103,12 +104,12 @@ function DiversionScreen({ navigation }: any) {
             Results will appear here when available
           </Text>
         </View>
-        ) : .map(tab => (
+        ) : items.map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() =
-        accessibilityState={{ selected: false }}> switchTab(tab.key)}
+            onPress={() => switchTab(tab.key)}
+          accessibilityState={{  selected: false  }}
             accessibilityRole="tab"
           >
             <Text style={{ fontSize: 16, marginBottom: 2 }}>{tab.emoji}</Text>

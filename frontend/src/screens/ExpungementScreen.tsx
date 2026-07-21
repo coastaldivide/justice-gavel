@@ -334,9 +334,9 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
         case_id: incomingCaseId,
         state, charges, status: caseStatus, partner: partnerKey,
       }).catch((e) => { __DEV__ && console.warn(e?.message); }); // log but don't block
-      await Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
+      await Linking.openURL(url).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }));
     } catch {
-      await Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
+      await Linking.openURL(url).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }));
     } finally {
       setReferralLoading('');
     }
@@ -405,7 +405,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
           For juvenile records, contact your{' '}
           <Text maxFontSizeMultiplier={1.4}
             style={{ color: colors.blue, textDecorationLine: 'underline' }}
-            onPress={() => Linking.openURL('https://www.juvenilelaw.org/find-help').catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))}
+            onPress={() => Linking.openURL('https://www.juvenilelaw.org/find-help').catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))}
           >
             state\'s juvenile public defender or juvenile court clerk
           </Text>
@@ -631,7 +631,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                 {atty.phone && (
                   <TouchableOpacity accessibilityRole="button"
                     style={[styles.partnerBtn, { flex:1, backgroundColor:colors.legalDark }]}
-                    onPress={() => { Linking.openURL('tel:'+atty.phone).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))}}
+                    onPress={() => { Linking.openURL('tel:'+atty.phone).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))}}
                     accessibilityLabel={`Call ${atty.name}`}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>📞 Call</Text>

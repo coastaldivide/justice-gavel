@@ -412,7 +412,8 @@ confirm(`Analyze "${file.name}" for $19.99?`,
       setAnalysis(res.data || null);
       setPhase('result');
     } catch {
-showToast(t('disc_load_error'), 'error');
+      showToast(t('disc_load_error'), 'error');
+    }
   }, []);
 
   const deleteAnalysis = useCallback(async (id: number) => {

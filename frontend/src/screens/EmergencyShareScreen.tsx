@@ -264,7 +264,7 @@ function EmergencyShareScreen({ route, navigation }: ScreenProps) {
         testID="emergency-share-screen">
       {loading && (
         <View style={{ flex:1, alignItems:'center', justifyContent:'center' }}>
-          <ActivityIndicator size="large" color=COLORS.navy />
+          <ActivityIndicator size="large" color={COLORS.navy} />
         </View>
       )}
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize:24 }}>🌤️</Text>

@@ -212,8 +212,8 @@ function ChildSupportScreen({ navigation }: any) {
             value={alimony}
             onValueChange={setAlimony}
             trackColor={{ true: COLORS.navy }}
-          /
-        accessibilityState={{ checked: alimony }}>
+            accessibilityState={{ checked: alimony }}
+          />
         </View>
         {alimony && (
           <>

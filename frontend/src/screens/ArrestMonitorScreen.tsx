@@ -174,7 +174,11 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
           </TouchableOpacity>
           <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.upsellSkip} accessibilityLabel="Maybe later" onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
+          accessibilityHint="Double-tap to activate"
+          style={styles.upsellSkip}
+          accessibilityLabel="Maybe later"
+          onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
             <Text maxFontSizeMultiplier={1.4} style={styles.upsellSkipText}>Maybe later</Text>
           </TouchableOpacity>
@@ -258,7 +262,8 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                   autoFocus
                   returnKeyType="next"
           blurOnSubmit
-        / maxLength={200}>
+        maxLength={200}
+        />
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TextInput
                     style={[styles.formInput, { flex: 1 }]}
@@ -268,8 +273,8 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                     onChangeText={setCounty}
           returnKeyType="next"
           blurOnSubmit
-        /
-        keyboardType="numeric">
+        keyboardType="numeric"
+        />
                   <TextInput
           accessibilityLabel="State"
                     style={[styles.formInput, { width: 70 }]}
@@ -390,4 +395,5 @@ const makeStyles = (colors: any) => StyleSheet.create({
   infoCard:  { backgroundColor: COLORS.bg, borderRadius: RADIUS.lg, padding: 16, borderWidth: 1, borderColor: COLORS.border },
   infoTitle: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },
   infoText:  { fontSize: 12, color: COLORS.textMuted, lineHeight: 17 }});
+}
 export default React.memo(ArrestMonitorScreen);

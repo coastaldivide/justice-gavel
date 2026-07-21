@@ -106,7 +106,8 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{ padding: 20, gap: 16 }}>
       <TouchableOpacity
-        onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
+        onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
       >
@@ -133,7 +134,8 @@ function InterrogationRecorderScreen(): React.JSX.Element {
               color: colors.textPrimary, fontSize: 14, borderWidth: 1, borderColor: colors.border }}
             accessibilityLabel="Officer name or badge number"
           returnKeyType="done" blurOnSubmit={true}
-          / keyboardType="numeric" maxLength={200}>
+          keyboardType="numeric" maxLength={200}
+          />
           <TextInput
             value={location}
             onChangeText={setLocation}

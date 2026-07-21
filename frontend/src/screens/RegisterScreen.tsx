@@ -81,7 +81,9 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
               placeholder="email or phone number"
               placeholderTextColor={COLORS.textSecond}
               value={identifier}
-              onChangeText={v = keyboardType="phone-pad" maxLength={254}> { setIdentifier(v); setError(''); }}
+              onChangeText={(v) => { setIdentifier(v); setError(''); }}
+          keyboardType="phone-pad"
+          maxLength={254}
               autoCapitalize="none"
           testID="register-email-input" accessibilityLabel="Email address or phone number" autoComplete="email"
           importantForAutofill="yes" keyboardType={identifier.includes("@") || (!identifier.match(/^[0-9]/) && identifier.length > 0) ? "email-address" : "phone-pad"}
@@ -126,8 +128,8 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
               textContentType="name" returnKeyType="done"
               onSubmitEditing={onRegister}
               selectionColor={COLORS.steel}
-            /
-        maxLength={200}>
+        maxLength={200}
+            />
           </View>
 
           {!!error && (
@@ -151,7 +153,8 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
 
           <TouchableOpacity accessibilityRole="button"
           accessibilityHint="Double-tap to activate" style={styles.loginLink}
-            onPress={() = hitSlop={ top: 12, bottom: 12, left: 12, right: 12 }> navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
+            onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('HomeTab')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.loginText}>
               Already have an account?{'  '}

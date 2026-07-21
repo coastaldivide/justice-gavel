@@ -31,8 +31,8 @@ const TIMES = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
 
 type Step = 'duration' | 'datetime' | 'confirm' | 'confirmed' | 'callback_sent';
 
-function buildDays(): {
-  const { showToast } = useToast(); date: string; label: string; times: { time: string; available: boolean }[] }[] {
+function buildDays(): { date: string; label: string; times: { time: string; available: boolean }[] }[] {
+  const { showToast } = useToast();
   const days: { date: string; label: string; times: { time: string; available: boolean }[] }[] = [];
   const d = new Date();
   for (let i = 1; i <= 14; i++) {
@@ -164,7 +164,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       {loading && (
         <View style={{ flex:1, alignItems:'center', justifyContent:'center' }}>
-          <ActivityIndicator size="large" color=COLORS.navy />
+          <ActivityIndicator size="large" color={COLORS.navy} />
         </View>
       )}
       <View style={styles.confirmedWrap}>

@@ -78,7 +78,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
         setResults(allResults);
         cacheSearch(cached.query, { cases, messages, lawyers, lessons }).catch(() => {});
         saveRecentSearch(cached.query).then(() =>
-          getRecentSearches().then(setRecentSearches).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))
+          getRecentSearches().then(setRecentSearches).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))
         ).catch(() => {});
         setSearched(true);
       }
@@ -130,8 +130,8 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
         setResults(allResults);
         cacheSearch(q, { cases, messages, lawyers, lessons }).catch(() => {});
         saveRecentSearch(q).then(() =>
-          getRecentSearches().then(setRecentSearches).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0))
-        ).catch(() => showToast('Action failed. Please try again.', 'error'); setRetryCount(0));
+          getRecentSearches().then(setRecentSearches).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }))
+        ).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0; }));
       setSearched(true);
     } catch {
       if (mountedRef.current) { setResults([]); setSearched(true); setSearchError('Search failed. Check your connection.'); }
@@ -266,8 +266,8 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
                       style={{ backgroundColor: colors.bgCard, borderRadius: 20,
                         paddingHorizontal:14, paddingVertical:8,
                         borderWidth:1, borderColor: colors.border }}
-                      accessibilityLabel="{q}" onPress={() =
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}> { setQuery(q); doSearch(q); }}
+                      accessibilityLabel="{q}" onPress={() => { setQuery(q); doSearch(q);}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}}
                     >
                       <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color: colors.textSecond }}>{q}</Text>
                     </TouchableOpacity>

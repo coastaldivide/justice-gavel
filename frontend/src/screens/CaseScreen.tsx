@@ -688,8 +688,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'messages' && styles.tabBtnActive]}
-          onPress={() =
-        accessibilityState={{ selected: false }}> setActiveTab('messages')}
+          onPress={() => setActiveTab('messages')}
+          accessibilityState={{  selected: false  }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'messages' && styles.tabBtnTextActive]}>
@@ -705,8 +705,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'tools' && styles.tabBtnActive]}
-          onPress={() =
-        accessibilityState={{ selected: false }}> setActiveTab('tools')}
+          onPress={() => setActiveTab('tools')}
+          accessibilityState={{  selected: false  }}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'tools' && styles.tabBtnTextActive]}>
             {t('case_tab_tools')}
@@ -715,8 +715,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'lawyers' && styles.tabBtnActive]}
-          testID="case-save-button" onPress={() =
-        accessibilityState={{ selected: false }}> { setActiveTab('lawyers'); loadSavedLawyers(); }}
+          testID="case-save-button" onPress={() => { setActiveTab('lawyers'); loadSavedLawyers();}
+          accessibilityState={{  selected: false  }}}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'lawyers' && styles.tabBtnTextActive]}>
             Lawyers {savedLawyers.length > 0 ? `(${savedLawyers.length})` : ''}
@@ -767,8 +767,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           maxToRenderPerBatch={5}
           windowSize={10}
           removeClippedSubviews={true}
-          getItemLayout={(_, index) =
-        estimatedItemSize={80}> ({ length: 130, offset: 130 * index, index })}
+          getItemLayout={(_, index) => ({ length: 130, offset: 130 * index, index })}
+          estimatedItemSize={80}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadSavedLawyers().finally(() => setRefreshing(false)); }} tintColor={colors.textSecond} />}
               data={cases}
               keyExtractor={i => String(i.id)}
@@ -839,7 +839,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               autoFocus
           returnKeyType="next"
           blurOnSubmit
-        / maxLength={254}>
+        maxLength={254}
+        />
             {!!inviteError && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: 12, lineHeight: 20, marginBottom: 8 }}>⚠ {inviteError}</Text>}
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
               style={[styles.emptyBtn, { backgroundColor: colors.steel, opacity: inviting ? 0.6 : 1 }]}
