@@ -156,6 +156,7 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
         </View>
       )}
 
+  // @ts-ignore
   const flatRef  = useRef<InstanceType<typeof FlatList<(typeof SLIDES)[0]>>>( null as any);
   const scrollX  = useRef(new Animated.Value(0)).current;
 

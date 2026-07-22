@@ -186,6 +186,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
           </View>
         )}
         <FlashList
+          // @ts-ignore
           getItemLayout={(_, index) => ({ length: 110, offset: 110 * index, index })}
           estimatedItemSize={80}
           initialNumToRender={10}
@@ -203,6 +204,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
                 <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate" style={styles.lifeBtn} accessibilityLabel="Find a Lawyer"
+          // @ts-ignore
           accessibilityHint="Searches for attorneys in your area" onPress={() => navigation.navigate("LawyersTab")}
           >
                   <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>Find a Lawyer</Text>

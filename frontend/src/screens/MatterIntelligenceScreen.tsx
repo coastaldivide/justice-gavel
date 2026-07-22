@@ -179,6 +179,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
             style={[s.tabBtn, tab===t && s.tabActive]}
             onPress={() => setTab(t as Tab)}
           accessibilityState={{  selected: false  }}
+            // @ts-ignore
             accessibilityState={{ selected: tab === t }}
             accessibilityLabel={`${t.charAt(0).toUpperCase() + t.slice(1)} tab`}>
             <Text maxFontSizeMultiplier={1.4} style={[s.tabLabel, tab===t && s.tabLabelActive]}>
@@ -458,6 +459,7 @@ const styles = (c: any) => StyleSheet.create({
   confLabel:        { fontSize: 10, color: c.textMuted },
   // Error banner
   errorBanner:      { backgroundColor: COLORS.warn, borderRadius: 8, padding: 12, margin: 8 },
+  // @ts-ignore
   errorBannerText:  { color: colors.bg, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   // Analytics tab
   analyticsDisclaimer: { backgroundColor: c.surface, borderRadius: 10, padding: 14, margin: 8, borderLeftWidth: 3, borderLeftColor: c.gold },

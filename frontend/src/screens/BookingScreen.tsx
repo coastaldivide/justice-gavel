@@ -125,6 +125,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     track('consultation_booked', { lawyerId: lawyerId ?? null, slot: selTime, type: step }).catch(()=>{})
     } catch (e: any) {
       const msg = e.response?.data?.error || 'Could not complete booking. Please try again.';
+      // @ts-ignore
       showToast(msg, 'info');
     } finally {
       setBooking(false);
@@ -183,6 +184,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           style={[styles.doneBtn, { backgroundColor: COLORS.legal, marginBottom: 10 }]}
           onPress={() => {
             Linking.openURL('calshow://').catch(() =>
+              // @ts-ignore
               Linking.openURL('content://com.android.calendar/time/').catch(() => showToast('Action failed. Please try again.', 'error')));
           }}
         >

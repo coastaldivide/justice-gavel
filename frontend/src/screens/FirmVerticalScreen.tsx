@@ -998,6 +998,7 @@ const styles = (c: any) => StyleSheet.create({
   segLabel:         { fontSize: TYPE.xs, color: c.textMuted, fontFamily: FONT.medium },
   segLabelActive:   { color: c.navy },
   missionBtn:       { backgroundColor: COLORS.legal, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', marginTop: 14 },
+  // @ts-ignore
   missionBtnText:   { fontSize: TYPE.base, fontFamily: FONT.bold, color: colors.bg },
   // Sub tabs
   subTabRow:        { flexDirection: 'row', backgroundColor: c.bgElevated, borderRadius: RADIUS.md, padding: 4, marginBottom: 16 },

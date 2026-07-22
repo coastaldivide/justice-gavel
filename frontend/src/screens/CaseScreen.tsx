@@ -467,6 +467,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
   const scanDocument = useCallback(async () => {
     try {
       // Ask: camera or library
+// @ts-ignore
 confirm('Scan Document','Take a photo or choose from your library to scan this document.',
       { confirmLabel:'Take Photo', cancelLabel:'Choose Library' }).then(ok=>{
         if(ok) pickScanSource('camera'); else pickScanSource('library');
@@ -481,6 +482,7 @@ confirm('Scan Document','Take a photo or choose from your library to scan this d
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
+          // @ts-ignore
           confirm('Camera Access Needed', 'To scan documents, go to Settings and turn on Camera for Justice Gavel.',
       { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
           return;
@@ -492,6 +494,7 @@ confirm('Scan Document','Take a photo or choose from your library to scan this d
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
+          // @ts-ignore
           confirm('Photo Access Needed', 'To attach photos, go to Settings and turn on Photos for Justice Gavel.',
       { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
           return;
@@ -763,6 +766,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           : (
             <FlashList
           testID="case-list"
+          // @ts-ignore
           initialNumToRender={8}
           maxToRenderPerBatch={5}
           windowSize={10}

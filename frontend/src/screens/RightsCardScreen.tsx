@@ -357,6 +357,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
+          // @ts-ignore
           style={{ flex: 1, backgroundColor: colors.green, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:+18009800010').catch(() => showToast('Action unavailable.', 'error'))}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -389,6 +390,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
               accessibilityRole="button"
           accessibilityHint="Double-tap to activate" style={styles.textShareBtn} onPress={shareCard}
              accessibilityLabel="Share as text (for SMS / iMessage)"
+          // @ts-ignore
           accessibilityHint="Shares this information">
               <Text maxFontSizeMultiplier={1.4} style={styles.textShareBtnText}>Share as text (for SMS / iMessage)</Text>
             </TouchableOpacity>

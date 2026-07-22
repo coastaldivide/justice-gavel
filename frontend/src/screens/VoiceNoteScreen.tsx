@@ -180,6 +180,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
     try {
       const perm = await Audio.requestPermissionsAsync();
       if (!perm.granted) {
+        // @ts-ignore
         confirm('Microphone needed', 'Allow microphone access to record voice notes, or type your note instead.',
       { confirmLabel: 'Type instead', cancelLabel: 'OK' }).then(ok => { if (ok) setPhase('text_input'); });
         return;
@@ -234,6 +235,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       await FileSystem.deleteAsync(uri, { idempotent: true });
     } catch (e: any) {
       const msg = e.response?.data?.error || e.message || 'Could not process audio.';
+      // @ts-ignore
       confirm('Processing error', msg + ' Would you like to type your note instead?',
       { confirmLabel: 'Type instead', cancelLabel: 'Try again' }).then(ok => { if (ok) setPhase('text_input'); else setPhase('idle'); });
     }

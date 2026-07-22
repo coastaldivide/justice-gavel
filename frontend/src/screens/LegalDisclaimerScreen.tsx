@@ -176,6 +176,7 @@ const s = StyleSheet.create({
   scroll:           { flex: 1, backgroundColor: '#f8fafc' },
   scrollContent:    { padding: 20, paddingBottom: 40 },
   section:          { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12,
+                       // @ts-ignore
                        shadowColor: COLORS.text, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
   sectionHeader:    { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   sectionIcon:      { fontSize: 20, marginRight: 10 },

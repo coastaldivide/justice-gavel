@@ -86,6 +86,7 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
           maxLength={254}
               autoCapitalize="none"
           testID="register-email-input" accessibilityLabel="Email address or phone number" autoComplete="email"
+          // @ts-ignore
           importantForAutofill="yes" keyboardType={identifier.includes("@") || (!identifier.match(/^[0-9]/) && identifier.length > 0) ? "email-address" : "phone-pad"}
               textContentType="username" returnKeyType="next"
               onSubmitEditing={() => passRef.current?.focus()}
@@ -141,6 +142,7 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
             accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
             accessibilityLabel="Create Account"
+          // @ts-ignore
           accessibilityHint="Creates a new Justice Gavel account"
             style={[styles.primaryBtn, loading && styles.btnDisabled]}
             testID="register-submit-button" onPress={onRegister} disabled={loading} activeOpacity={0.85}

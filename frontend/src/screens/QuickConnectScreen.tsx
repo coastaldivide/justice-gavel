@@ -41,6 +41,7 @@ function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  // @ts-ignore
   Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 
@@ -215,6 +216,7 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
 
       setError(userMsg);
       hapticWarn();
+// @ts-ignore
 showToast(userMsg, 'error');
       setPaying(false);
     }

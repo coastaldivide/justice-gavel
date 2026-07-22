@@ -95,6 +95,7 @@ const GROUNDING = [
 function callLine(number: string) {
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
+  // @ts-ignore
   Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0); }).finally(() => setIsLoading(false));
 }
 

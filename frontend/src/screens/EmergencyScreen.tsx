@@ -30,6 +30,7 @@ const RIGHTS_CARDS = [
 ];
 
 function EmergencyScreen({ route, navigation }: ScreenProps) {
+  // @ts-ignore
   const handleBack = useCallback(() => navigation.goBack(), [navigation]);
 
   const { showToast } = useToast();

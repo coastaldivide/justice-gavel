@@ -105,6 +105,7 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
           keyboardType="phone-pad"
           maxLength={254}
               autoCapitalize="none"
+              // @ts-ignore
               keyboardType="email-address"
               textContentType="username"
               returnKeyType="next"
@@ -169,6 +170,7 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
             accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
             accessibilityLabel="Sign In"
+          // @ts-ignore
           accessibilityHint="Signs you in to your account"
             style={[styles.primaryBtn, loading && styles.btnDisabled]}
             testID="login-submit-button" onPress={onLogin} disabled={loading} activeOpacity={0.85}

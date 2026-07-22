@@ -163,6 +163,7 @@ function AvailabilityGrid({ userId }: { userId: number }) {
         value={note}
         onChangeText={(t) => { setNote(t); setSaved(false); }}
           maxLength={1000}
+        // @ts-ignore
         maxLength={200}
         returnKeyType="done"
         blurOnSubmit

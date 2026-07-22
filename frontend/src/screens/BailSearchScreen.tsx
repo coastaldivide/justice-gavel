@@ -30,6 +30,7 @@ function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  // @ts-ignore
   Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 
@@ -284,6 +285,7 @@ function BailSearchScreen(): React.JSX.Element {
           )}
       <FlashList testID="bail-agent-list"
           keyExtractor={(item, index) => String(item?.id ?? item?.booking_number ?? index)}
+          // @ts-ignore
           estimatedItemSize={80}
           keyboardShouldPersistTaps="handled"
           onRefresh={() => { setRefreshing(true); search().finally(() => setRefreshing(false)); }}

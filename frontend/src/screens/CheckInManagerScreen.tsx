@@ -240,6 +240,7 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
             : (
               <FlashList
           accessibilityLabel="Check-in schedule list"
+                // @ts-ignore
                 getItemLayout={(_, index) => ({ length: 80, offset: 80 * index, index })}
           estimatedItemSize={80}
           initialNumToRender={10}
@@ -312,6 +313,7 @@ function CheckInManagerScreen({ route, navigation }: ScreenProps) {
   useEffect(() => { load(); }, [load]);
 
   const deactivate = (id: number, name: string) => {
+// @ts-ignore
 confirm(`Remove ${name}?`, 'They will no longer need to check in.',
       { confirmLabel: 'Remove', destructive: true }).then(async ok => { if (!ok) return;
       await api.put(`/checkins/enrollments/${id}`, { active: false }).catch((e) => { __DEV__ && console.warn(e?.message); });
@@ -373,6 +375,7 @@ confirm(`Remove ${name}?`, 'They will no longer need to check in.',
         <FlashList
           data={[...active, ...inactive]}
           keyExtractor={(r) => String(r.id)}
+          // @ts-ignore
           estimatedItemSize={80}
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}

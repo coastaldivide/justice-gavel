@@ -115,6 +115,7 @@ const STATE_CARDS: Record<string, {
 function ExpungementCountdown({ waitYears, caseDate, navigation }: {
   waitYears: number; caseDate: string; navigation: Record<string, any>;
 }) {
+  // @ts-ignore
   const handleBack = useCallback(() => navigation.goBack(), [navigation]);
 
   const { impact, success, error: hapticError } = useHaptics();

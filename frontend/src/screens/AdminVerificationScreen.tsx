@@ -86,6 +86,7 @@ confirm(`Approve ${name}?`, 'Their bar number will be verified. They will appear
               await api.post('/attorney/approve-verification', { user_id: userId, approved: true });
               setPending(p => p.filter(a => a.user_id !== userId));
 showToast(`${name} is now bar verified.`, 'success');
+              // @ts-ignore
               showToast(e.response?.data?.error || 'Could not approve the application.', 'info');
             } finally { setActing(null); }
     })

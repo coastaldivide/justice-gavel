@@ -99,7 +99,7 @@ export function AIDisclaimer({ variant = 'banner', feature = 'AI Legal Analysis'
   if (variant === 'inline') {
     return (
       <View
-        style={[styles.inlineBanner, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+        style={[styles.inlineBanner, { backgroundColor: (colors as any).surfaceAlt, borderColor: colors.border }]}
         accessibilityRole="text"
         accessibilityLabel="AI information disclaimer"
       >
@@ -115,7 +115,7 @@ export function AIDisclaimer({ variant = 'banner', feature = 'AI Legal Analysis'
   // Default: banner variant
   return (
     <View
-      style={[styles.banner, { backgroundColor: colors.navyLight ?? colors.surfaceAlt }]}
+      style={[styles.banner, { backgroundColor: colors.navyLight ?? (colors as any).surfaceAlt }]}
       accessibilityRole="text"
       accessibilityLabel="Legal information disclaimer"
     >

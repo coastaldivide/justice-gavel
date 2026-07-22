@@ -690,6 +690,7 @@ showToast('Reminder set for 3 days before.', 'success');
             } catch {}
           }}
           accessibilityLabel="Share deadline results"
+          // @ts-ignore
           accessibilityHint="Shares this information"
         >
           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>

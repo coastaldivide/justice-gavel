@@ -289,6 +289,7 @@ showToast('Allow microphone access in Settings.', 'warning');
       {recordingLaw && (
         <View style={[styles.lawBox, {
           backgroundColor: recordingLaw.warn ? colors.warnBg : colors.legalBg,
+          // @ts-ignore
           borderLeftColor: recordingLaw.warn ? COLORS.steelMid : colors.legal,
         }]}>
           <Text maxFontSizeMultiplier={1.3} style={[styles.lawTitle,

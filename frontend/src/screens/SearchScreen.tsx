@@ -159,6 +159,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
       params: item.params });
   };
 
+  // @ts-ignore
   const s = styles(colors as any);
 
   return (

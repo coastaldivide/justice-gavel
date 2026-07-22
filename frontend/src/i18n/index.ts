@@ -40,7 +40,7 @@ export function detectLang(): string {
 }
 
 // Call at startup: setLang(detectLang())
-export async function initLang(): void {
+export async function initLang(): Promise<void> {
   const detected = detectLang();
   if (detected !== lang) setLang(detected as 'en'|'es'|'pt'|'vi');
 }

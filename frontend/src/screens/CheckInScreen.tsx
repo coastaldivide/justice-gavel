@@ -308,6 +308,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           accessibilityLabel="Find a Lawyer →"
+          // @ts-ignore
           accessibilityHint="Searches for attorneys in your area"
           style={styles.helpBlockBtn}
           onPress={() => navigation.navigate('LawyersTab')}

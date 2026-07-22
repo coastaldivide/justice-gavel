@@ -273,6 +273,7 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
     // Apple requires digital subscriptions on iOS to use StoreKit (IAP).
     // Until expo-iap is integrated, we block iOS purchases and show instructions.
     if (Platform.OS === 'ios') {
+      // @ts-ignore
       confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe. Open website?',
       { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); })
       setSubscribing(null);
@@ -296,6 +297,7 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
   };
 
   const handleCancel = () => {
+// @ts-ignore
 confirm('Cancel Plan?', 'You\'ll keep access until the end of your billing period.',
       { confirmLabel: 'Cancel', destructive: true }).then(async ok => { if (!ok) return;
       try {

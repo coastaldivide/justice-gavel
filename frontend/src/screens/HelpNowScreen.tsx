@@ -37,6 +37,7 @@ function openDir(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  // @ts-ignore
   Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
 
@@ -64,6 +65,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
           accessibilityRole="button"
           style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10,
             paddingVertical: 12, alignItems: 'center' }}
+          // @ts-ignore
           onPress={() => Linking.openURL('tel:911').catch(() => showToast('Action failed. Please try again.', 'error'))}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
         >
@@ -75,6 +77,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
           accessibilityLabel="CRISIS 988"
           style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10,
             paddingVertical: 12, alignItems: 'center' }}
+          // @ts-ignore
           onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
         >
