@@ -224,6 +224,15 @@ function SectionCard({
       // @ts-expect-error
       <Text style={[cardStyles.title, { color: (colors as any).text }] as any}>{title}</Text>
       {children}
+
+        {/* Bar prep disclaimer */}
+        <Text
+          maxFontSizeMultiplier={1.2}
+          style={{ fontSize: 10, color: '#888', textAlign: 'center',
+            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
+        >
+          For supplemental study only. Not endorsed by any state bar or the NCBE.
+        </Text>
     </View>
   );
 }

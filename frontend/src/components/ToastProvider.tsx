@@ -6,7 +6,7 @@
  * success / error / warning / info types with matching colours.
  *
  * Setup in App.tsx:
- *   import { ToastProvider } from './src/components/ToastProvider';
+ *   import { ToastProvider } from '../components/ToastProvider';
  *   // wrap root: <ToastProvider>...</ToastProvider>
  *
  * Usage in any screen:

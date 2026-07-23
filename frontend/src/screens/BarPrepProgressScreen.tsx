@@ -238,6 +238,15 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
         >
           <Text style={styles.ctaBtnText}>▶ Start New Session</Text>
         </TouchableOpacity>
+
+        {/* Bar prep disclaimer */}
+        <Text
+          maxFontSizeMultiplier={1.2}
+          style={{ fontSize: 10, color: '#888', textAlign: 'center',
+            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
+        >
+          For supplemental study only. Not endorsed by any state bar or the NCBE.
+        </Text>
       </ScrollView>
     </View>
   );

@@ -1032,7 +1032,7 @@ describe('ROLE_ALIASES — simulation roles resolve through ROLE_HIERARCHY', () 
   // Replicate the patched logic from rbac.js
   const ROLE_HIERARCHY = ['viewer','client','paralegal','associate','partner','firm_admin','super_admin'];
   const ROLE_ALIASES = {
-    managing_partner:'partner', senior_partner:'partner', lead_partner:'partner',
+    managing_partner:'partner', senior_partner:'partner', lead_partner:'partner', lead_attorney:'partner',
     lead_esquire:'partner', lead_trial_esquire:'partner', lead_appellate:'partner',
     supervising_pd:'partner', supervising_esquire:'partner',
     senior_family_esquire:'partner', senior_military_esquire:'partner',
@@ -1100,7 +1100,7 @@ describe('ROLE_ALIASES — simulation roles resolve through ROLE_HIERARCHY', () 
   // All 26 simulation roles have a non-(-1) level
   test('all 26 simulation roles resolve to a known tier (not -1)', () => {
     const allSimRoles = Object.keys(ROLE_ALIASES);
-    expect(allSimRoles).toHaveLength(26);
+    expect(allSimRoles).toHaveLength(27);
     allSimRoles.forEach(r => {
       expect(roleLevel(r)).toBeGreaterThanOrEqual(0);
     });

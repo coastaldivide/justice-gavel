@@ -196,7 +196,7 @@ function DiversionScreen({ navigation }: any) {
           </Text>
           <TouchableOpacity
             style={[styles.ctaBtn, { backgroundColor: colors.primary }]}
-            onPress={() => navigation?.navigate('Lawyers')}
+            onPress={() => navigation?.navigate('LawyersTab')}
             accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           >

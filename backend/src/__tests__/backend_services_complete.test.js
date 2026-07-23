@@ -21,6 +21,7 @@ describe('Services — inventory', () => {
 });
 
 describe('Services — email.js (Resend)', () => {
+  test('email uses Resend and not SendGrid', () => {
     const c = readFileSync(join(SVC_DIR, 'email.js'), 'utf-8');
     expect(c).toMatch(/resend|Resend/i);
     // Check they're not used as active imports
@@ -106,6 +107,4 @@ describe('Services — aiQueue.js', () => {
     const c = readFileSync(join(SVC_DIR,'aiQueue.js'),'utf-8');
     expect(c).toMatch(/error|retry|catch|fail/i);
   });
-});
-
 });

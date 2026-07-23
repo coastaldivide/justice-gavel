@@ -471,7 +471,11 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           accessibilityHint="Double-tap to activate"
           style={{ backgroundColor: COLORS.steelMid, borderBottomWidth: 1, borderBottomColor: COLORS.steelMid,
             flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
-          onPress={() => (navigation as any).navigate('OfflineStatus')}
+          onPress={() => Alert.alert(
+              'Offline Mode',
+              'No internet connection. Search, AI advice, and account features require connection. Emergency resources and saved rights cards work offline.',
+              [{ text: 'OK' }]
+            )}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
           accessibilityLabel="No internet connection -- tap to see what works offline"
         >

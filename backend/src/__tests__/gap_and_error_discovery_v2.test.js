@@ -273,7 +273,6 @@ describe('1. SendGrid Email Builders', () => {
       expect(result).not.toBe('unknown');
     }
   });
-});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 3. OUTBOUND BOT — TCPA & opt-out business logic (pure model)

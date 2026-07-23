@@ -323,6 +323,15 @@ function StatPill({ label, value, accent }: { label: string; value: string; acce
     <View style={[pillStyles.pill, accent && pillStyles.accent]}>
       <Text style={pillStyles.label}>{label}</Text>
       <Text style={[pillStyles.value, accent && pillStyles.accentText]}>{value}</Text>
+
+        {/* Bar prep disclaimer */}
+        <Text
+          maxFontSizeMultiplier={1.2}
+          style={{ fontSize: 10, color: '#888', textAlign: 'center',
+            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
+        >
+          For supplemental study only. Not endorsed by any state bar or the NCBE.
+        </Text>
     </View>
   );
 }

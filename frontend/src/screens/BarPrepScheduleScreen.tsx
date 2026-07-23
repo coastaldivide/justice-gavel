@@ -272,6 +272,15 @@ function LegendDot({ color, label }: { color: string; label: string }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
       <Text style={{ fontSize: 11, color: '#888' }}>{label}</Text>
+
+        {/* Bar prep disclaimer */}
+        <Text
+          maxFontSizeMultiplier={1.2}
+          style={{ fontSize: 10, color: '#888', textAlign: 'center',
+            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
+        >
+          For supplemental study only. Not endorsed by any state bar or the NCBE.
+        </Text>
     </View>
   );
 }

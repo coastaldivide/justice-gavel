@@ -92,7 +92,17 @@ function AnswerRow({
           >
             <Text style={styles.explainBtnText}>📖 Full Explanation</Text>
           </TouchableOpacity>
-        </View>
+        
+        {/* Supplemental study disclaimer */}
+        <Text
+          maxFontSizeMultiplier={1.2}
+          style={{ fontSize: 10, color: '#888', textAlign: 'center',
+            paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
+        >
+          For supplemental study only. Not endorsed by any state bar or the NCBE.
+          Consult official bar preparation materials for authoritative content.
+        </Text>
+      </View>
       )}
     </TouchableOpacity>
   );
