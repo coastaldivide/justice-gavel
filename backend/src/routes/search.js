@@ -162,7 +162,9 @@ router.get('/', authRequired, async (req, res) => {
 
   } catch (e) {
     logger.error({ msg: '[search] error', error: e?.message });
-    return res.status(500).json({ error: 'Search unavailable. Please try again.' });
+    const statusCode = e?.status || e?.statusCode || 500;
+        const clientMsg = statusCode < 500 ? (e?.message || 'Request failed') : 'An error occurred. Please try again.';
+        return res.status(statusCode).json({ error: clientMsg, code: e?.code || 'internal_error' });
   }
 });
 

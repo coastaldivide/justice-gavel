@@ -205,7 +205,8 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   };
 
   const handleConnect = async () => {
-    setPaying(true);
+if (submitting) return;
+        setPaying(true);
     setStep(3);
     try {
       const res = await api.post('/billing/family/connect', {

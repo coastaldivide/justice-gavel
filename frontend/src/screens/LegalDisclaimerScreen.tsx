@@ -62,7 +62,8 @@ function LegalDisclaimerScreen({ onAccepted }: Props) {
   };
 
   const handleAccept = async () => {
-    if (!agreed) {
+if (loading) return;
+        if (!agreed) {
       showToast('You must check the confirmation box to continue.');
       return;
     }

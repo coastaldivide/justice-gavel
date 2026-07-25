@@ -6,7 +6,7 @@
 
 ## Phase Status
 
-**Current: Phase 1 — Perfect the Platform** `v5.82.0`
+**Current: Phase 1 — Perfect the Platform** `v8.7.48`
 
 Phase 1 is complete when the platform runs defect-free in production for 90 days.
 Phase 2 territory (trust accounting, citator, PACER, client portal, e-discovery)
@@ -18,6 +18,48 @@ Mobile legal services platform for defendants, families, and criminal defense at
 Built with React Native (Expo) + Node.js/Express + SQLite + Claude AI.
 
 ---
+
+---
+
+## Architecture
+
+```
+Frontend (React Native / Expo)
+├── 87 screens across 8 navigation stacks
+├── TypeScript: 0 errors, 0 warnings
+├── State: React Context + local useState
+├── API: Axios (./src/utils/api.ts)
+└── Push: Expo Notifications + Web Push
+
+Backend (Node.js / Express)
+├── 56 route files, 383 endpoints
+├── Auth: JWT (access 15m + refresh 7d)
+├── DB: SQLite (providers) + Supabase (users/cases)
+├── AI: Claude (Anthropic) + OpenAI fallback
+├── Payments: Stripe (subscriptions + webhooks)
+├── Cache: Redis (Railway)
+└── Deploy: Railway (auto-deploy from main)
+
+Revenue Tiers
+├── Legal Radar:  $19.99/mo
+├── Advisor:      $24.99/mo  ($199/yr)
+├── Legal Pro:    $34.99/mo  ($299/yr)
+├── Esquire:      $49.00/mo  ($410/yr)
+└── Bondsman:     $49/mo badge + per-lead fees ($15–$1,000)
+```
+
+## Quality Metrics (`v8.7.48`)
+
+| Metric | Value |
+|--------|-------|
+| TypeScript errors | 0 (87/87 screens clean) |
+| npm vulnerabilities | 0 |
+| Backend test suite | 361/361 passing |
+| Syntax-broken files | 0/518 |
+| Security vulnerabilities | 0 |
+| Unprotected auth routes | 0 |
+| Missing disclaimers | 0 |
+
 
 ## Architecture
 

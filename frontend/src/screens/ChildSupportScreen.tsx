@@ -131,7 +131,7 @@ function ChildSupportScreen({ navigation }: any) {
   const labelStyle = [s.label, { color: COLORS.textSecond }];
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={s.container}>
+    <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={s.container}>
       <UPLDisclaimer compact />
       {/* Header */}
       <View style={[s.header, { backgroundColor: COLORS.navy }]}>

@@ -37,7 +37,8 @@ function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
   const passRef = useRef<TextInput>(null);
 
   const onLogin = async () => {
-    if (!identifier.trim()) { setError('Enter your email address or phone number to continue.'); return; }
+if (loading) return;
+        if (!identifier.trim()) { setError('Enter your email address or phone number to continue.'); return; }
     if (!password)           { setError('Enter your password to sign in.'); return; }
     setError(''); setLoading(true);
     try {

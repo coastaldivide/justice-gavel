@@ -175,7 +175,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           <Text style={styles.sectionLabel}>Subject</Text>
           <View style={styles.subjectRow}>
             {subjects.map(s => (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 key={s.id}
                 style={[
                   styles.subjectCard,
@@ -219,7 +219,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
             <>
               <Text style={styles.sectionLabel}>Category (optional)</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-                <TouchableOpacity
+                <TouchableOpacity accessibilityRole="button"
                   style={[styles.chip, !selectedCategory && styles.chipActive]}
                   // @ts-ignore
                   onPress={() => { impact('light'); setSelectedCategory(null); }}
@@ -229,7 +229,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
                   </Text>
                 </TouchableOpacity>
                 {categories.map(cat => (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={cat}
                     style={[styles.chip, selectedCategory === cat && styles.chipActive]}
                     // @ts-ignore
@@ -248,7 +248,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           <Text style={styles.sectionLabel}>Mode</Text>
           <View style={styles.modeRow}>
             {(['practice', 'timed'] as const).map(m => (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 key={m}
                 style={[styles.modeBtn, mode === m && styles.modeBtnActive]}
                 onPress={() => {
@@ -274,7 +274,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
               <Text style={styles.sectionLabel}>Questions per Session</Text>
               <View style={styles.countRow}>
                 {[10, 25, 50].map(n => (
-                  <TouchableOpacity
+                  <TouchableOpacity accessibilityRole="button"
                     key={n}
                     style={[styles.countBtn, questionCount === n && styles.countBtnActive]}
                     // @ts-ignore
@@ -293,7 +293,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           )}
 
           {/* ── Start Button ─────────────────────────────────────────── */}
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.startBtn, !selectedSubject && styles.startBtnDisabled]}
             onPress={startSession}
             disabled={!selectedSubject}
@@ -306,10 +306,10 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
 
           {/* ── Footer Links ─────────────────────────────────────────── */}
           <View style={styles.footerLinks}>
-            <TouchableOpacity onPress={() => navigation.navigate('BarPrepProgress')}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('BarPrepProgress')}>
               <Text style={styles.footerLink}>📈 Progress Dashboard</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('BarPrepSchedule')}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('BarPrepSchedule')}>
               <Text style={styles.footerLink}>📅 Study Schedule</Text>
             </TouchableOpacity>
           </View>

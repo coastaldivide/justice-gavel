@@ -146,7 +146,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
               placeholderTextColor={colors.textMuted}
               keyboardType="numeric"
             />
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               style={[styles.saveBtn, { backgroundColor: colors.primary }]}
               onPress={saveExamDate}
               disabled={savingDate}
@@ -194,7 +194,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
             )}
           </View>
 
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.startBtn, { backgroundColor: colors.primary }]}
             onPress={() => navigation.navigate('BarPrepHome')}
             activeOpacity={0.85}

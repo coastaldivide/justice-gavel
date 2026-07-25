@@ -111,6 +111,6 @@
     "make-fetch-happen": ">=11.0.0"
   },
   "optionalDependencies": {
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^6.0.1"
   }
 }

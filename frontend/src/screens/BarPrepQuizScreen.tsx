@@ -65,6 +65,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
   const [selected, setSelected]           = useState<OptionLetter | null>(null);
   const [revealed, setRevealed]           = useState(false);
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
+  const [quizLoading, setQuizLoading] = useState(false);
   const [explanation, setExplanation]     = useState<string | null>(null);
   const [submitting, setSubmitting]       = useState(false);
   const [timeLeft, setTimeLeft]           = useState(time_limit_seconds);
@@ -241,7 +242,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
       {/* ── Header ──────────────────────────────────────────────────── */}
       <View style={styles.header}>
         
-        <TouchableOpacity onPress={confirmExit}>
+        <TouchableOpacity accessibilityRole="button" onPress={confirmExit}>
           <Text style={styles.exitBtn}>✕</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -285,7 +286,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
             const isWrong    = revealed && isSelected && !isCorrect;
 
             return (
-              <TouchableOpacity
+              <TouchableOpacity accessibilityRole="button"
                 key={letter}
                 style={[
                   styles.option,
@@ -326,7 +327,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
               {selected === correctAnswer ? '✅ Correct' : '❌ Incorrect'}
             </Text>
             <Text style={styles.explanationText}>{explanation}</Text>
-            <TouchableOpacity
+            <TouchableOpacity accessibilityRole="button"
               style={styles.fullExplanationLink}
               onPress={() => navigation.navigate('BarPrepExplanation', { question_id: current.id })}
             >
@@ -345,7 +346,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
       {/* ── Bottom Navigation ──────────────────────────────────────── */}
       <View style={styles.bottomBar}>
         {currentIndex < total - 1 ? (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.nextBtn, !selected && !revealed && styles.nextBtnDisabled]}
             onPress={goNext}
             disabled={!selected && !revealed}
@@ -354,7 +355,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
             <Text style={styles.nextBtnText}>Next →</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.submitBtn, submitting && styles.nextBtnDisabled]}
             onPress={() => handleSubmit(false)}
             disabled={submitting}

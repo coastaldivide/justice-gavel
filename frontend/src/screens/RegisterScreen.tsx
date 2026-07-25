@@ -43,7 +43,8 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
   })();
 
   const onRegister = async () => {
-    if (!normalizedIdentifier) { setError('Enter your email or phone number to create your account.'); return; }
+if (loading) return;
+        if (!normalizedIdentifier) { setError('Enter your email or phone number to create your account.'); return; }
     if (!password || password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setError(''); setLoading(true);
     try {

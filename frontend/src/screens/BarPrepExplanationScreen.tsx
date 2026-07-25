@@ -103,7 +103,7 @@ export default function BarPrepExplanationScreen({
     return (
       <View style={[styles.container, styles.center]}>
         <Text style={styles.errorText}>Explanation unavailable</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity accessibilityRole="button" onPress={() => navigation.goBack()}>
           <Text style={styles.backLink}>← Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -194,7 +194,7 @@ export default function BarPrepExplanationScreen({
 
         {/* ── Flag & Action Row ────────────────────────────────────── */}
         <View style={styles.actionRow}>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.actionBtn, styles.flagBtn]}
             onPress={flagQuestion}
             disabled={flagging}
@@ -203,7 +203,7 @@ export default function BarPrepExplanationScreen({
               {flagging ? 'Flagging…' : '🚩 Flag Question'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button"
             style={[styles.actionBtn, styles.doneBtn]}
             onPress={() => navigation.goBack()}
           >

@@ -232,7 +232,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
         </View>
 
         {/* ── CTA ─────────────────────────────────────────────────── */}
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button"
           style={[styles.ctaBtn, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate('BarPrepHome')}
         >

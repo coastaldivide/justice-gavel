@@ -7,12 +7,15 @@
 
 import { Router } from 'express';
 import { asyncRoute } from '../utils/routeHelpers.js';
+import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
+
+const bondsmanLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Too many requests.' });
 import { authRequired } from '../middleware/auth.js';
 
 const router = Router();
 
 /** GET /api/bondsman/dashboard — main metrics view */
-router.get('/dashboard', authRequired, asyncRoute(async (req, res) => {
+router.get('/dashboard', authRequired, bondsmanLimiter, asyncRoute(async (req, res) => {
   const userId = req.user.id;
 
   const [pipeline, revenue, recent] = await Promise.all([

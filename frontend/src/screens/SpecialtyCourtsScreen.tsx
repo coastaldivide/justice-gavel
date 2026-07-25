@@ -108,7 +108,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
       <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}>
-        <ScrollView
+        <ScrollView keyboardShouldPersistTaps="handled"
           horizontal showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 8, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
         {COURT_TYPES.map(t => (

@@ -216,6 +216,7 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [bail, setBail]       = useState<any>(null);
   const [lawyer, setLawyer]   = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
   const [loadMsg, setLoadMsg]       = useState(t('help_now_loading_gps'));
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [cityQuery, setCityQuery]           = useState('');

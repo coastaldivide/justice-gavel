@@ -63,6 +63,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
 
   const [phase, setPhase]         = useState<CheckInPhase>('loading');
   const [enrollment, setEnrollment] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const [todayStatus, setTodayStatus] = useState<any>(null);
   const [notes, setNotes]         = useState('');
   const [locationLabel, setLocationLabel] = useState('');

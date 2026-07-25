@@ -53,6 +53,8 @@ const REVIEW_COLS = 'id, entity_type, entity_id, rating, comment, anonymous, ver
 router.get('/', async (req, res) => {
   try {
     const { entity_type, entity_id } = req.query;
+    const limit  = Math.min(parseInt(req.query.limit  || '20', 10), 100);
+    const offset = Math.max(parseInt(req.query.offset || '0',  10), 0);
     if (!entity_type || !entity_id) {
       return err400(res, 'entity_type and entity_id required.');
     }
@@ -65,11 +67,11 @@ router.get('/', async (req, res) => {
     if (!d) return res.json({ reviews: [], count: 0 });
 
     const rows = await d.all(
-      `SELECT ${REVIEW_COLS} FROM reviews WHERE entity_type=? AND entity_id=? ORDER BY id DESC LIMIT 50`,
-      [sanitizeStr(entity_type, 30), sanitizeStr(String(entity_id), 20)]
+      `SELECT ${REVIEW_COLS} FROM reviews WHERE entity_type=? AND entity_id=? ORDER BY id DESC LIMIT 50` + ` LIMIT ? OFFSET ?`,
+      [sanitizeStr(entity_type, 30), sanitizeStr(String(entity_id), 20), limit, offset]
     ).catch(() => []);
 
-    res.json(rows);
+    res.json({ reviews: rows, pagination: { limit, offset, count: rows.length } });
   } catch (e) {
     logger.error('[reviews/list]', e.message);
     res.status(500).json({ error: 'Could not load reviews.' });
@@ -129,6 +131,8 @@ router.post('/', authRequired, validate(createReviewSchema), reviewsLimiter, asy
 router.get('/summary', async (req, res) => {
   try {
     const { entity_type, entity_id } = req.query;
+    const limit  = Math.min(parseInt(req.query.limit  || '20', 10), 100);
+    const offset = Math.max(parseInt(req.query.offset || '0',  10), 0);
     if (!entity_type || !entity_id) {
       return err400(res, 'entity_type and entity_id required.');
     }

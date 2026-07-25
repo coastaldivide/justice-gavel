@@ -442,7 +442,9 @@ router.get('/progress/me', authRequired, async (req, res) => {
     return res.json({ completed: completed.length, streak, lesson_ids: completed.map(r => r.lesson_id) });
   } catch (e) {
     logger.error({ msg: '[lessons]', error: e?.message });
-    return res.status(500).json({ error: 'Could not load progress' });
+    const statusCode = e?.status || e?.statusCode || 500;
+        const clientMsg = statusCode < 500 ? (e?.message || 'Request failed') : 'An error occurred. Please try again.';
+        return res.status(statusCode).json({ error: clientMsg, code: e?.code || 'internal_error' });
   }
 });
 
