@@ -14,12 +14,12 @@ import logger               from '../../utils/logger.js';
 import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION }
   from './_prompts.js';
 
-export async function getHistory(db, sessionId, limit = 20) {
+export async function getHistory(db, sessionId, limit = 20, userId = null) {
   const rows = await db.all(
     `SELECT role, content, content AS text FROM chat_sessions
-     WHERE session_id = ?
+     WHERE session_id = ?${userId ? ' AND user_id = ?' : ''}
      ORDER BY created_at DESC LIMIT ?`,
-    [sessionId, limit]
+    userId ? [sessionId, userId, limit] : [sessionId, limit]
   );
   return rows.reverse(); // DB returns newest-first; reverse to chronological for AI context
 }

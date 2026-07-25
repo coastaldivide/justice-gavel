@@ -6,7 +6,7 @@
 
 ## Phase Status
 
-**Current: Phase 1 — Perfect the Platform** `v8.7.48`
+**Current: Phase 1 — Perfect the Platform** `v8.7.49`
 
 Phase 1 is complete when the platform runs defect-free in production for 90 days.
 Phase 2 territory (trust accounting, citator, PACER, client portal, e-discovery)
@@ -48,7 +48,7 @@ Revenue Tiers
 └── Bondsman:     $49/mo badge + per-lead fees ($15–$1,000)
 ```
 
-## Quality Metrics (`v8.7.48`)
+## Quality Metrics (`v8.7.49`)
 
 | Metric | Value |
 |--------|-------|

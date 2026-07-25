@@ -30,7 +30,7 @@ const router = Router();
 router.get('/history/:sessionId', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    const history = await getHistory(db, req.params.sessionId, 50);
+    const history = await getHistory(db, req.params.sessionId, 50, req.user.id);
     res.json(history);
   } catch (err) {
     logger.error('[chat/history]', err);
@@ -41,7 +41,7 @@ router.get('/history/:sessionId', authRequired, async (req, res) => {
 router.delete('/history/:sessionId', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    await db.run('DELETE FROM chat_sessions WHERE session_id = ?', [req.params.sessionId]);
+    await db.run('DELETE FROM chat_sessions WHERE session_id = ? AND user_id = ?', [req.params.sessionId, req.user.id]);
     res.json({ ok: true });
   } catch (err) {
     logger.error('[chat/clear]', err);

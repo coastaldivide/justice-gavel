@@ -207,13 +207,19 @@ export async function withTransaction(db, fn) {
 
 // ── Business constants used across billing/route files ────────────────────────
 export const BUSINESS_CONSTANTS = {
-  BONDSMAN_BADGE_CENTS:   4900,   // $49/month
-  ADVISOR_PRICE_CENTS:    2900,   // $29/month
-  LEGAL_PRO_PRICE_CENTS:  4900,   // $49/month
-  LEGAL_RADAR_CENTS:      9900,   // $99/month
-  MAX_FREE_AI_MSGS:       5,
-  FREE_CASE_LIMIT:        3,
-  TRIAL_DAYS:             7,
+  // Revenue model — matches TIERS in billing/_shared.js
+  LEGAL_RADAR_CENTS:        1999,   // $19.99/month
+  ADVISOR_PRICE_CENTS:      2499,   // $24.99/month
+  LEGAL_PRO_PRICE_CENTS:    3499,   // $34.99/month
+  ESQUIRE_PRICE_CENTS:      4900,   // $49.00/month
+  ADVISOR_ANNUAL_CENTS:    19900,   // $199/year
+  LEGAL_PRO_ANNUAL_CENTS:  29900,   // $299/year
+  ESQUIRE_ANNUAL_CENTS:    41000,   // $410/year
+  BONDSMAN_BADGE_CENTS:     4900,   // $49/month
+  // Feature limits
+  MAX_FREE_AI_MSGS:         5,
+  FREE_CASE_LIMIT:          3,
+  TRIAL_DAYS:               7,
 };
 
 export const LIMITS = {

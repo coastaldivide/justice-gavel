@@ -304,14 +304,16 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
   // Offline case sync -- show locally created cases + sync on reconnect
   const [offlineCases, setOfflineCases] = React.useState<any[]>([]);
   React.useEffect(() => {
+    let reloadTimer: ReturnType<typeof setTimeout> | null = null;
     getOfflineCases().then(setOfflineCases).catch(() => {});
     const unsub = startSyncListener((tempId, serverId) => {
       // Replace offline case with synced server case
       setOfflineCases(prev => prev.filter(c => c.id !== tempId));
-      // Trigger a reload of the server cases list
-      setTimeout(() => loadCases(), 500);
+      // Trigger a reload after brief delay (debounced to avoid rapid re-fires)
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => { reloadTimer = null; loadCases(); }, 500);
     });
-    return unsub;
+    return () => { unsub(); if (reloadTimer) clearTimeout(reloadTimer); };
   }, []);
 
   const { gated, unlocking, unlock } = useBiometricGate('case_screen');
