@@ -21,13 +21,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ── Event schema ───────────────────────────────────────────────────────────────
-type EventName =
-  | 'sign_up'
+type EventName =  'sign_up'
   | 'first_ai_message'
   | 'lawyer_view'
   | 'consultation_booked'
   | 'subscription_started'
-  | 'referral_shared'
   | 'case_created'
   | 'motion_generated'
   | 'document_analyzed'
@@ -122,8 +120,6 @@ export const Analytics = {
   subscriptionStarted: (tier: string, interval: 'monthly' | 'annual', amount: number) =>
     track('subscription_started', { tier, interval, amount_cents: amount }),
 
-  referralShared: (code: string, method: 'sms' | 'copy' | 'native_share') =>
-    track('referral_shared', { code, method }),
 
   caseCreated: (chargeType: string, state: string) =>
     track('case_created', { charge_type: chargeType, state }),

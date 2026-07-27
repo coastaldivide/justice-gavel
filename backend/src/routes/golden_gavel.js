@@ -53,19 +53,16 @@ const CRITERIA = {
   consumer: {
     bronze: {
       months_active:     6,
-      paid_referrals:    1,
       lessons_started:   true,   // at least 1 lesson started
       compliance_flags:  0,
     },
     silver: {
       months_active:     12,
-      paid_referrals:    2,
       lessons_completed: true,   // all lessons completed
       compliance_flags:  0,
     },
     golden: {
       months_active:     24,
-      paid_referrals:    3,
       lessons_completed: true,
       compliance_flags:  0,
     },
@@ -145,7 +142,6 @@ export async function evaluateGavelLevel(userId) {
     const refs = await db.get(
       `SELECT SUM(credits) as total FROM referrals WHERE owner_user_id = ?`, [userId]
     ).catch(() => ({ total: 0 }));
-    progress.paid_referrals = refs?.total ?? 0;
 
     const lessons = await db.get(`SELECT COUNT(*) as total FROM lessons`, []).catch(() => ({ total: 0 }));
     const completed = await db.get(
@@ -183,7 +179,6 @@ export async function evaluateGavelLevel(userId) {
     }
 
     if (!isAttorney && !isBondsman) {
-      if (progress.paid_referrals < c.paid_referrals) return false;
       if (levelKey === 'bronze' && !progress.lessons_started)   return false;
       if (levelKey !== 'bronze' && !progress.lessons_completed) return false;
     }
@@ -228,8 +223,6 @@ export async function evaluateGavelLevel(userId) {
     }
 
     if (!isAttorney && !isBondsman) {
-      if ((progress.paid_referrals || 0) < cn.paid_referrals)
-        missingNext.push(`${cn.paid_referrals - progress.paid_referrals} more paid referrals`);
       if (nextLevelKey === 'bronze' && !progress.lessons_started)
         missingNext.push('Start at least one lesson in the Legal Education track');
       if (nextLevelKey !== 'bronze' && !progress.lessons_completed)

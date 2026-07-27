@@ -311,9 +311,7 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
 
         {/* Comparison table */}
         {[
-          ['Westlaw',            '$100-500/mo', '❌'],
           ['Casetext',          '$65/mo',      '❌'],
-          ['Harvey AI',         '$500+/mo',    '❌'],
           ['Justice Gavel Research', '$49.99/mo', '✅'],
         ].map(([name, price, check]) => (
           <View key={name} style={[styles.compareRow, {

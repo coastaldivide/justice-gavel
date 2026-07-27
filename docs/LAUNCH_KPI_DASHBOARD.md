@@ -14,7 +14,6 @@ Target: 1,000 WAU by Day 90.
 | lawyer_view | 40% of active | 45% | 50% |
 | consultation_booked | 5% of lawyer views | 7% | 10% |
 | subscription_started | 3% of active | 5% | 8% |
-| referral_shared | 2% of active | 3% | 5% |
 
 ### Retention KPIs
 - **Day-1 Retention**: ≥40% (industry median for legal apps: 25%)

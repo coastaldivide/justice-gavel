@@ -24,23 +24,12 @@ import { STATE_RULES, classifyCharge, getEligibility } from './rules.js';
 const router      = Router();
 const checkLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Eligibility check limit reached.' });
 
-// ── Referral partners — update periodically ───────────────────────────────────
 const PARTNERS = [
-  {
-    key:           'general',
-    name:          'Expungement Attorney',
-    description:   'Connect with a local attorney who specializes in record sealing and expungement.',
-    estimatedCost: '$500–$1,500',
-    referralFee:   '$75 (paid by attorney after retention)',
-    cta:           'Get Free Consultation',
-    url:           'https://justicegavel.app/expunge',
-  },
   {
     key:           'recordseal',
     name:          'RecordSeal.com',
     description:   'Online expungement service. Flat fee, no hourly billing.',
     estimatedCost: '$179–$399',
-    referralFee:   'Revenue share on completed orders',
     cta:           'Check Eligibility Free',
     url:           'https://recordseal.com/?ref=justicegavel',
   },

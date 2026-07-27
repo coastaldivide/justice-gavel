@@ -504,8 +504,7 @@ router.get('/directory', directoryLimiter, async (req, res) => {
     const db = await getDb();
     const params = [];
     let sql = `SELECT f.id, f.name, f.city, f.state, f.practice_areas,
-                      f.accepting_clients, f.free_consultation, f.website,
-                      f.referral_code, COUNT(fm.id) as attorney_count
+                      f.accepting_clients, f.free_consultation, f.website COUNT(fm.id) as attorney_count
                FROM firms f
                LEFT JOIN firm_members fm ON fm.firm_id = f.id AND fm.active = true
                WHERE f.public_listing = true AND f.accepting_clients = true `;
@@ -540,7 +539,7 @@ router.get('/:id/public-profile', apiLimiter, async (req, res) => {
     const db = await getDb();
     const firm = await db.get(
       `SELECT id, name, city, state, practice_areas, accepting_clients,
-              free_consultation, website, phone, description, referral_code
+              free_consultation, website, phone, description
        FROM firms WHERE id = ? AND public_listing = true`,
       [id]
     ).catch(() => null);
@@ -571,7 +570,7 @@ router.post('/:id/invite', authRequired, inviteLimiter, async (req, res) => {
     if (!member || !['firm_admin','owner'].includes(member.firm_role)) {
       return res.status(403).json({ error: 'Only firm admins can send invitations' });
     }
-    const firm = await db.get('SELECT name, referral_code FROM firms WHERE id = ?', [fid]).catch(() => null);
+    const firm = await db.get('SELECT name, invite_code FROM firms WHERE id = ?', [fid]).catch(() => null);
     if (!firm) return res.status(404).json({ error: 'Firm not found' });
 
     // Store invitation
@@ -589,7 +588,7 @@ router.post('/:id/invite', authRequired, inviteLimiter, async (req, res) => {
         subject: `You've been invited to join ${firm.name} on Justice Gavel`,
         text:    `You have been invited to join the ${firm.name} team on Justice Gavel.
 
-Download the app and use code ${firm.referral_code} to join your firm.
+Download the app and use code ${firm.invite_code} to join your firm.
 
 Justice Gavel: https://justicegavel.com`,
       }).catch(() => {});
@@ -609,7 +608,7 @@ router.get('/referral/:code', apiLimiter, async (req, res) => {
     const db = await getDb();
     const firm = await db.get(
       `SELECT id, name, city, state, practice_areas, free_consultation
-       FROM firms WHERE UPPER(referral_code) = ? AND public_listing = true`,
+       FROM firms WHERE UPPER(invite_code) = ? AND public_listing = true`,
       [code]
     ).catch(() => null);
     if (!firm) return res.status(404).json({ error: 'Firm not found. Check your code and try again.' });

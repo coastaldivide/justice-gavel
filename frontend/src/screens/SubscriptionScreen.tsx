@@ -400,6 +400,18 @@ confirm('Cancel Your Plan?',"You'll lose access to leads and alerts at the end o
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection or try again.</Text>
         </View>
       )}
+      {/* ── Free plan exit ────────────────────────────────────────────── */}
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="Continue with free plan"
+        onPress={() => navigation.goBack()}
+        style={{ paddingVertical: 16, alignItems: 'center', marginBottom: 4 }}
+      >
+        <Text maxFontSizeMultiplier={1.3} style={{ color: '#6B7280', fontSize: 13, textDecorationLine: 'underline' }}>
+          Continue with free plan · 15 AI messages · 5 cases · no credit card
+        </Text>
+      </TouchableOpacity>
+      <View style={{ height: 32 }} />
       </ScrollView>
   );
 }

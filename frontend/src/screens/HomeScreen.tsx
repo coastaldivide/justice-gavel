@@ -428,7 +428,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
                 ? '👋  Glad you came back. Your legal rights are always here.'
                 : visitCount <= 5
                 ? '📌  Did you save a lawyer from your last search? Check My Cases.'
-                : "⭐  You're a regular. Refer a friend for $5 off your next Quick Connect."}
+                : '⭐  Your rights are always with you. Come back anytime.'}
             </Text>
           </View>
         )}

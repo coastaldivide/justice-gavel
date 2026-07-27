@@ -13,7 +13,7 @@ export const RESPONSE_FOOTER_INSTRUCTION = `
 
 ALWAYS end your response with this exact line (no modifications — copy exactly):
 ---
-*⚖️ Legal Notice: This information is for general educational purposes only and does not constitute legal advice, create an attorney-client relationship, or substitute for consultation with a licensed attorney. Justice Gavel is not a law firm and does not practice law. Laws and procedures vary significantly by state and county and change frequently. For advice specific to your situation, consult a licensed attorney in your jurisdiction. In an emergency, contact a criminal defense attorney or public defender immediately.*`;
+*⚖️ Legal Notice: This is general legal information, not legal advice, and does not create an attorney-client relationship. I am an AI assistant, not a licensed attorney. Laws vary by jurisdiction. Do not rely on this information to make legal decisions — consult a licensed attorney in your area. create an attorney-client relationship, or substitute for consultation with a licensed attorney. Justice Gavel is not a law firm and does not practice law. Laws and procedures vary significantly by state and county and change frequently. For advice specific to your situation, consult a licensed attorney in your jurisdiction. In an emergency, contact a criminal defense attorney or public defender immediately.*`;
 
 // ── system prompt ─────────────────────────────────────────────────────────────
 

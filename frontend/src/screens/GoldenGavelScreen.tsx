@@ -19,7 +19,6 @@ interface GavelCriteria {
   lessons_started?: boolean | number;
   min_reviews?: number;
   months_active?: number;
-  paid_referrals?: number;
 }
 
 
@@ -56,7 +55,6 @@ interface Progress {
   avg_rating?: number;
   review_count?: number;
   bar_verified?: boolean;
-  paid_referrals?: number;
   lessons_completed?: boolean;
   lessons_started?: boolean;
   leads_accepted?: number;
@@ -162,9 +160,6 @@ function CriteriaSection({ title, progress, criteria, earned }:
         <CritRow
           label={`Active ${progress.months_active} / ${((criteria as GavelCriteria).months_active ?? 0)} months`}
           met={progress.months_active >= ((criteria as GavelCriteria).months_active ?? 0)} />
-        <CritRow
-          label={`Paid referrals ${progress.paid_referrals ?? 0} / ${((criteria as GavelCriteria).paid_referrals ?? 0)}`}
-          met={(progress.paid_referrals ?? 0) >= ((criteria as GavelCriteria).paid_referrals ?? 0)} />
         {((criteria as GavelCriteria).lessons_started ?? 0) && !((criteria as GavelCriteria).lessons_completed ?? 0) &&
           <CritRow label="Started at least one lesson" met={!!progress.lessons_started} />}
         {((criteria as GavelCriteria).lessons_completed ?? 0) &&

@@ -36,6 +36,16 @@ import { err400, err404,
          safeInt, sanitizeStr }     from '../utils/routeHelpers.js';
 import logger                       from '../utils/logger.js';
 
+
+/** BAR_PREP_DISCLAIMER — included in all bar prep API responses
+ * This is a study supplement, NOT a bar exam course, NOT Barbri/Themis/Adaptibar.
+ * Questions are for practice only and may not reflect current law in all jurisdictions.
+ */
+const BAR_PREP_DISCLAIMER =
+  'MBE study supplement. Not a substitute for a comprehensive bar prep course ' +
+  '(Barbri, Themis, Kaplan, Adaptibar). Always verify with your jurisdiction. ' +
+  'Past MBE question formats may vary. 548 practice questions — not an exhaustive bank.';
+
 const router = Router();
 router.use(authRequired);
 

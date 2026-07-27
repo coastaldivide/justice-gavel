@@ -26,8 +26,6 @@ router.post('/quote', insuranceLimiter, authRequired, async (req, res) => {
       name: p.name,
       features: p.features,
       provider: 'Justice Gavel Insurance Partners',
-      referral: true,
-      referral_url: `https://quote.legalprotection.com/?ref=justicegavel&plan=${plan}&city=${encodeURIComponent(city)}`,
       legalese: 'Quotes are estimates from partner carriers. Actual coverage terms, pricing, and availability vary by state. Not a binding insurance offer.',
     });
   } catch (e) {

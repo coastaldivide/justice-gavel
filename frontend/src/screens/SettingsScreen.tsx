@@ -12,7 +12,6 @@ import { AppIcon } from '../components/AppIcon';
  *   3. Language -- English / Español
  *   4. Notifications -- per-category toggles (court reminders, legal tips,
  *                       arrest alerts, check-in reminders, marketing)
- *   5. Invite a Friend -- referral code + share
  *   6. About -- ToS, Privacy, Feedback, version
  *   7. testID="settings-logout-button" Sign out
  */
@@ -364,7 +363,7 @@ function SettingsScreen({ route, navigation }: any) {
 
   const shareReferral = () => {
     try {
-          Share.share({ title: 'Justice Gavel -- $5 off', url: 'https://justicegavel.com' });
+          /* referral share removed */
         } catch (shareErr: any) {
           // Share failed (unsupported browser) — silently ignore
         };
@@ -591,11 +590,8 @@ function SettingsScreen({ route, navigation }: any) {
         <Text maxFontSizeMultiplier={1.4} style={[styles.testPushText, { color: colors.textMuted }]}>Send test notification →</Text>
       </TouchableOpacity>
 
-      {/* ── Invite a Friend ──────────────────────────────────────────────── */}
-      <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>Invite a Friend</Text>
       <View style={card}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.cardHint, { color: colors.textMuted }]}>
-          Your friend gets $5 off Quick Connect. You earn 50 reward points.
         </Text>
         <View style={styles.referralRow}>
           <View style={[styles.codeBox, { backgroundColor: isDark ? COLORS.bgElevated : COLORS.bgSubtle }]}>
@@ -610,7 +606,6 @@ function SettingsScreen({ route, navigation }: any) {
         <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
           style={[styles.shareBtn, { backgroundColor: COLORS.navy }]}
           onPress={shareReferral}
-          accessibilityLabel="Share referral code"
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>Share My Code →</Text>
         </TouchableOpacity>

@@ -291,7 +291,6 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
   const [loading, setLoading]   = useState(false);
   const [result, setResult]     = useState<EligibilityResult | null>(null);
   const [showStatePicker, setShowStatePicker] = useState(false);
-  const [referralLoading, setReferralLoading] = useState('');
   const [attorneys,       setAttorneys]       = useState<any[]>([]);
   const [attLoading,      setAttLoading]      = useState(false);
   const [viewMode, setViewMode]         = useState<'checker'|'cards'>('checker');
@@ -325,21 +324,6 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       showToast(e.response?.data?.error || 'Could not check eligibility. Try again.', 'info'); setRetryCount(0);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleReferral = async (partnerKey: string, url: string) => {
-    setReferralLoading(partnerKey);
-    try {
-      await api.post('/expungement/referral', {
-        case_id: incomingCaseId,
-        state, charges, status: caseStatus, partner: partnerKey,
-      }).catch((e) => { __DEV__ && console.warn(e?.message); }); // log but don't block
-      await Linking.openURL(url).catch(() => showToast('Action unavailable.', 'error'))
-    } catch {
-      await Linking.openURL(url).catch(() => showToast('Action unavailable.', 'error'))
-    } finally {
-      setReferralLoading('');
     }
   };
 
@@ -662,12 +646,12 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                   </View>
                   <TouchableOpacity
   accessibilityRole="button"
-                    style={[styles.partnerBtn, referralLoading === partner.key && { opacity: 0.6 }]}
-                    onPress={() => handleReferral(partner.key, partner.url)}
-                    disabled={referralLoading === partner.key}
+                    style={[styles.partnerBtn, false && { opacity: 0.6 }]}
+                    onPress={() => Linking.openURL(partner.url)}
+                    disabled={false}
                     activeOpacity={0.85}
                   >
-                    {referralLoading === partner.key
+                    {false
                       ? <ActivityIndicator color={colors.bgCard} size="small" />
                       : <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>{partner.cta}  →</Text>
                     }

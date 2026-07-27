@@ -223,9 +223,9 @@ export const BUSINESS_CONSTANTS = {
 };
 
 export const LIMITS = {
-  AI_MESSAGES_FREE:  5,
-  AI_MESSAGES_BASIC: 20,
-  CASES_FREE:        3,
+  AI_MESSAGES_FREE:  15,   // raised from 5 — crisis users need real help before paywall
+  AI_MESSAGES_BASIC: 40,   // raised from 20 — Basic tier substantive value
+  CASES_FREE:         5,   // raised from 3 — allow full case tracking for active matter
   CASES_PAID:        Infinity,
   EXPORT_MAX_ROWS:   5000,
 };

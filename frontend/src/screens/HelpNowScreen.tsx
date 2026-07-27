@@ -580,29 +580,6 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           </TouchableOpacity>
         </View>
 
-        {/* ── Referral prompt -- peak emotional moment, right after success ── */}
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Know someone who might need this?"
-          style={styles.referralPrompt}
-          onPress={() => {
-                        try {
-                          Share.share({
-              message: 'I found legal help fast with Justice Gavel -- bail agents and lawyers in seconds. Download it free: https://justicegavel.com',
-              title: 'Justice Gavel' });
-                        } catch (shareErr: any) {
-                          // Share API unavailable on this browser/device — fail silently
-                        }
-          }}
-          activeOpacity={0.85}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={styles.referralPromptIcon}>🤝</Text>
-          <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.referralPromptTitle}>Know someone who might need this?</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.referralPromptSub}>Share Justice Gavel -- it's free to download</Text>
-          </View>
-          <Text maxFontSizeMultiplier={1.4} style={styles.referralPromptArrow}>↑</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           accessibilityRole="button" style={styles.refreshBtn} onPress={fetchBoth}
@@ -692,13 +669,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   refreshBtnText: { fontSize: 14, lineHeight: 21, color: COLORS.steel, ...FONTS.semi },
   licensePill: { backgroundColor: colors.legal, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8, alignSelf: 'flex-start' },
   licensePillText: { fontSize: 11, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  referralPrompt:      { flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.legal, borderRadius: RADIUS.lg, borderWidth: 1,
-    borderColor: colors.legal, padding: 16, marginBottom: 12 },
-  referralPromptIcon:  { fontSize: 22 },
-  referralPromptTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.legal, marginBottom: 2 },
-  referralPromptSub:   { fontSize: 11, color: colors.legal },
-  referralPromptArrow: { fontSize: 18, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   missingCard:     { borderRadius: 12, borderWidth: 1.5, padding: 12, marginBottom: 12 },
   missingCardText: { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   noResultsWrap: { alignItems: 'center', padding: 8, paddingBottom: 16 } });

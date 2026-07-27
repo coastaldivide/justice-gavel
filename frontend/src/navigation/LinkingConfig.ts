@@ -11,7 +11,6 @@
  *   justicegavel://lessons/:id         → LessonsScreen (specific lesson)
  *   justicegavel://checkin             → CheckInManagerScreen
  *   justicegavel://firms               → FirmDiscoveryScreen
- *   justicegavel://firms/:code         → FirmDiscoveryScreen (pre-filled referral code)
  *   justicegavel://chat                → ChatScreen
  *
  * Universal links (web):

@@ -24,21 +24,6 @@ router.use('/', attorneysRouter);
 router.use('/', checkRouter);
 router.use('/', petitionRouter);
 
-// POST /referral — track partner referral clicks
-router.post('/referral', authRequired, async (req, res) => {
-  try {
-    const { case_id, state, charges, status, partner } = req.body || {};
-    if (!partner) return res.status(400).json({ error: 'partner required' });
-    const db = await getDb();
-    await db.run(
-      `INSERT OR IGNORE INTO expungement_referrals
-         (user_id, case_id, state, partner, created_at)
-       VALUES (?, ?, ?, ?, datetime('now'))`,
-      [req.user.id, case_id || null, state || null, partner]
-    ).catch(() => {});
-    return res.json({ logged: true });
-  } catch { res.json({ logged: false }); }
-});
 
 
 // ── POST /expungement/eligibility — full eligibility check with date ──────

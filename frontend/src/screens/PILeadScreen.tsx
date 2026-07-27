@@ -9,7 +9,7 @@ import { AppIcon } from '../components/AppIcon';
  *
  * Lets a user describe their injury or rights violation.
  * Submitted lead goes to the PI attorney lead marketplace.
- * PI attorneys pay $50-$500 to accept the lead; user gets free connection.
+ * Attorneys pay a connection fee based on case value. You pay nothing..
  *
  * Entry points:
  *   1. LawyersScreen Need modal → "I Was Injured" or "Rights Violated"
@@ -107,7 +107,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
         <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
         <Text maxFontSizeMultiplier={1.4} style={[styles.successTitle, { color: colors.textPrimary }]}>Your case is in review</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.successSub, { color: colors.textSecond }]}>
-          Attorneys in your area will review your case. When one accepts, you'll get their contact info -- at no cost to you. Attorneys pay a referral fee, not you.
+          Attorneys in your area will review your case. When one accepts, you'll get their contact info -- at no cost to you. Attorneys pay a connection fee to reach you. There is no cost to you.
         </Text>
         <TouchableOpacity
           accessibilityRole="button"

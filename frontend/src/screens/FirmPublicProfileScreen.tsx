@@ -22,7 +22,7 @@ interface FirmProfile {
   id: number; name: string; city: string; state: string;
   practice_areas: string; accepting_clients: boolean;
   free_consultation: boolean; website: string; phone: string;
-  description: string; referral_code: string; attorneys: Attorney[];
+  description: string; attorneys: Attorney[];
 }
 
 function FirmPublicProfileScreen() {
@@ -153,17 +153,6 @@ function FirmPublicProfileScreen() {
       )}
 
       {/* Referral code */}
-      {!!firm.referral_code && (
-        <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text maxFontSizeMultiplier={1.3} style={[s.sectionTitle, { color: colors.textMuted }]}>Referral Code</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 24, fontWeight: '800', color: colors.textPrimary, letterSpacing: 2 }}>
-            {firm.referral_code}
-          </Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>
-            Share this code with clients so they can find your firm directly.
-          </Text>
-        </View>
-      )}
 
       {/* Contact actions */}
       <View style={s.actions}>

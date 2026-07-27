@@ -127,7 +127,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
   // @ts-ignore
   const { requireAuth, AuthGateModal }  = useAuthGate(navigation);
   // Bar prep disclaimer — shown once in the UI, not on every question
-  const BAR_PREP_DISCLAIMER = 'MBE supplement for study only. Covers all 7 tested subjects. Not a substitute for full bar prep courses (Barbri, Themis, etc.).';
+  const BAR_PREP_DISCLAIMER = 'MBE study supplement · 548 practice questions · Not a substitute for Barbri or Themis';
   const [subjects, setSubjects]         = useState<Subject[]>([]);
   const [dashboard, setDashboard]       = useState<Dashboard | null>(null);
   const [loading, setLoading]           = useState(true);

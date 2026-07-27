@@ -48,6 +48,32 @@ Revenue Tiers
 └── Bondsman:     $49/mo badge + per-lead fees ($15–$1,000)
 ```
 
+
+## Business Model
+
+Justice Gavel has two revenue layers:
+
+**Consumer (freemium acquisition)**
+Criminal defendants and their families can use the app free — 15 AI conversations, 
+5 case files, all rights cards, court locator, and emergency tools. Paid tiers ($19.99–$49/mo) 
+unlock unlimited AI, full case management, motion library, and expungement tracking.
+Consumer subscriptions fund operations; consumer users become attorney referral leads.
+
+**Attorney (primary revenue)**
+Solo criminal defense attorneys pay $34.99–$49/mo for the attorney dashboard: conflict 
+checking, motion library, client intake, case tracking, and Clio/MyCase sync. This is 
+the B2B product. The 1.3M licensed US attorneys — especially 350,000 solo practitioners 
+with poor tooling — are the fundable market. At $49/mo, 1,000 attorneys = $49,000 MRR.
+
+**Bondsman (high-margin supplemental)**
+Bail bondsmen pay $49/mo plus $15–$1,000 per qualified lead by bail amount. 
+Lead pipeline runs separately from consumer subscriptions.
+
+**What we do NOT do**
+- No referral program. Acquisition through content marketing and word of mouth.
+- No paid placement in lawyer search results. Results are merit-ordered.
+- No advertising. The product is the product.
+
 ## Quality Metrics (`v8.7.50`)
 
 | Metric | Value |

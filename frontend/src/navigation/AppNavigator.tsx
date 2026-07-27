@@ -107,7 +107,6 @@ declare var navigationRef: any; // hoisted from component scope
 // ── Deep link configuration ────────────────────────────────────────────────────
 // Handles universal links (https://justicegavel.app/...) and
 // custom scheme (justicegavel://...) from push notifications,
-// emails, and referral links.
 const linking = {
   prefixes: ['https://justicegavel.app', 'justicegavel://'],
   config: {
@@ -326,6 +325,8 @@ function GuestNavigator() {
       <GuestStack.Screen name="Register"   component={RegisterScreen} options={{ headerShown: true, title: 'Create Account', ...HDR }} />
       <GuestStack.Screen name="AttorneyPrivacy" component={AttorneyPrivacyScreen} />
           <GuestStack.Screen name="LegalDisclaimer" component={LegalDisclaimerScreen} />
+        <GuestStack.Screen name="JustArrested"     component={JustArrestedScreen}      options={{ headerTitle: "Your Rights" }} />
+        <GuestStack.Screen name="Emergency"        component={EmergencyShareScreen}    options={{ headerShown: false }} />
       </GuestStack.Navigator>
     </ErrorBoundary>
   );

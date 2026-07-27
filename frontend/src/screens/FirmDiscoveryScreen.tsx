@@ -2,7 +2,7 @@ import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
  * FirmDiscoveryScreen.tsx — Public firm directory for defendants and clients
- * Lets users browse firms by state/practice area, enter a referral code,
+ * Lets users browse firms by state/practice area
  * and tap through to a firm's public profile before contacting them.
  */
 import React, { useState, useEffect, useCallback } from 'react';
@@ -26,7 +26,6 @@ interface Firm {
   accepting_clients: boolean;
   free_consultation: boolean;
   attorney_count: number;
-  referral_code: string;
 }
 
 function FirmDiscoveryScreen() {
