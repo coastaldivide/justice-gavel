@@ -27,6 +27,7 @@ import BarPrepResultsScreen     from '../screens/BarPrepResultsScreen';
 import AdminVerificationScreen from '../screens/AdminVerificationScreen';
 import AdvocacyScreen from '../screens/AdvocacyScreen';
 import ArrestMonitorScreen from '../screens/ArrestMonitorScreen';
+import AttorneyInboxScreen   from '../screens/AttorneyInboxScreen';
 import AttorneyDashboardScreen from '../screens/AttorneyDashboardScreen';
 import JustArrestedScreen   from '../screens/JustArrestedScreen';
 import BailCalculatorScreen from '../screens/BailCalculatorScreen';
@@ -220,7 +221,8 @@ function MoreNavigator() {
       <MoreStack.Screen name="CheckIn"               component={CheckInScreen}               options={{ title: '✓ Daily Check-In', headerStyle: { backgroundColor: COLORS.navy }, headerTintColor: '#fff' }} />
       <MoreStack.Screen name="CheckInManager"        component={CheckInManagerScreen}        options={{ title: '📋 Check-In Manager' }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: '📋 Clear My Record' }} />
-      <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: '⚖️ What Happens Next' }} />
+      <MoreStack.Screen name="AttorneyInbox"         component={AttorneyInboxScreen}         options={{ headerTitle: "Attorney Inbox" }} />
+        <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: '⚖️ What Happens Next' }} />
       <MoreStack.Screen name="EmergencyShare"        component={EmergencyShareScreen}        options={{ title: '🚨 Emergency Share', headerStyle: { backgroundColor: '#B71C1C' }, headerTintColor: '#fff' }} />
       <MoreStack.Screen name="CrisisResources"       component={CrisisResourcesScreen}       options={{ title: '💙 Crisis Support', headerStyle: { backgroundColor: '#1565C0' }, headerTintColor: '#fff' }} />
       <MoreStack.Screen name="Diversion"             component={DiversionScreen}             options={{ title: '🤝 Diversion Eligibility' }} />

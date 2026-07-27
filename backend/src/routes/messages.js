@@ -113,8 +113,31 @@ router.post('/:caseId', authRequired, async (req, res) => {
       entityType: 'case', entityId: caseId,
       meta: { length: safeBody.length }, req });
 
-    // Supabase Realtime automatically broadcasts the INSERT to subscribers
-    // No additional push needed — clients subscribed to postgres_changes receive it
+    // Supabase Realtime broadcasts INSERT to app-open subscribers.
+    // For app-closed attorneys: send Expo push so they see the message immediately.
+    try {
+      const cas_with_atty = await db.get(
+        `SELECT c.id, c.title,
+                ca.defender_id AS attorney_id,
+                u.display_name AS client_name
+          FROM cases c
+          LEFT JOIN case_assignments ca ON ca.case_id = c.id AND ca.status = 'active'
+          LEFT JOIN users u ON u.id = c.user_id
+         WHERE c.id = ?`,
+        [caseId]
+      );
+      if (cas_with_atty?.attorney_id && cas_with_atty.attorney_id !== req.user.id) {
+        await sendPushToUser(cas_with_atty.attorney_id, {
+          title: `💬 ${cas_with_atty.client_name || 'Client'} sent a message`,
+          body: safeBody.length > 80 ? safeBody.slice(0, 80) + '…' : safeBody,
+          data: { screen: 'Messages', caseId, case_title: cas_with_atty.title },
+          channelId: 'attorney_messages',
+          badge: 1,
+        });
+      }
+    } catch (pushErr) {
+      logger.warn('[messages/push]', pushErr?.message); // Non-fatal
+    }
     return res.json({ message: msg, channel: `case:${caseId}` });
   } catch (e) {
     logger.warn('[messages/send]', e?.message);

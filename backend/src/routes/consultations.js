@@ -18,6 +18,7 @@ import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
 import Stripe from 'stripe';
 import logger from '../utils/logger.js';
+import { sendPushToUser } from '../services/pushDelivery.js';
 
 const consultationsLimiter = makeUserLimiter({ windowMs: 3600000, max: 5, message: 'Consultation booking limit reached. Try again later.' });
 // Lazy Expo push client — same singleton pattern as cases.js / messages.js
@@ -226,6 +227,38 @@ router.post('/:id/cancel', authRequired, consultationsLimiter, async (req, res) 
       [safeInt(req.params.id)]
     );
     res.json({ success: true, message: 'Booking cancelled.' });
+
+    // ── Notify attorney (if they have a JTB account) ────────────────────────
+    // If the lawyer is a registered Justice Gavel attorney, push them immediately.
+    // This is the core two-sided marketplace notification.
+    if (lawyer_id) {
+      try {
+        const attyUser = await db.get(
+          `SELECT u.id, u.display_name FROM users u
+            JOIN attorney_profiles ap ON ap.user_id = u.id
+           WHERE ap.lawyer_id = ? LIMIT 1`,
+          [lawyer_id]
+        );
+        if (attyUser) {
+          await sendPushToUser(attyUser.id, {
+            title: '📋 New Consultation Booked',
+            body: `${req.user.display_name || 'A client'} booked a ${duration_min}-min consult on ${date_slot} at ${time_slot}`,
+            data: {
+              screen: 'AttorneyInbox',
+              booking_id: result.lastID,
+              client_name: req.user.display_name || '',
+              date_slot,
+              time_slot,
+            },
+            channelId: 'attorney_bookings',
+          });
+          logger.info({ msg: '[consultations] attorney notified', attyId: attyUser.id, bookingId: result.lastID });
+        }
+      } catch (pushErr) {
+        // Non-fatal — booking succeeded even if push fails
+        logger.warn('[consultations] attorney push failed', pushErr?.message);
+      }
+    }
   } catch (e) {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
