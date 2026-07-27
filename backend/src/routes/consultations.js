@@ -21,6 +21,8 @@ import logger from '../utils/logger.js';
 import { sendPushToUser } from '../services/pushDelivery.js';
 import { sendBookingConfirmation, sendAttorneyBookingAlert } from '../services/email.js';
 
+const slotsLimiter  = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Too many slot requests.' });
+const listLimiter   = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'Too many list requests.' });
 const consultationsLimiter = makeUserLimiter({ windowMs: 3600000, max: 5, message: 'Consultation booking limit reached. Try again later.' });
 // Lazy Expo push client — same singleton pattern as cases.js / messages.js
 let _expo = null;
@@ -135,7 +137,7 @@ router.get('/prefill', authRequired, async (req, res) => {
   }
 });
 
-router.get('/slots/:lawyerId', async (req, res) => {
+router.get('/slots/:lawyerId', slotsLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const lawyerId = req.params.lawyerId;
@@ -177,7 +179,7 @@ router.get('/slots/:lawyerId', async (req, res) => {
 });
 
 // GET /api/consultations — user's bookings
-router.get('/', authRequired, async (req, res) => {
+router.get('/', authRequired, listLimiter, async (req, res) => {
   const page   = Math.max(0, parseInt(String(req.query.page  || '0'),  10));
   const pgSize = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '50'), 10)));
   try {
@@ -222,15 +224,17 @@ router.post('/book', validate(schemas.consultations.book), authRequired, consult
     }
 
     let stripePaymentIntentId = 'pi_mock_consult';
+    let stripeClientSecret    = null;
 
     if (LIVE) {
       // Charge the platform fee
-      const pi = await stripe.paymentIntents.create(
-      {
-        amount: feeCents,
+      const pi = await stripe.paymentIntents.create({
+        amount:   feeCents,
         currency: 'usd',
+        // automatic_payment_methods lets Stripe's Payment Sheet handle card UI
+        automatic_payment_methods: { enabled: true },
         metadata: {
-          user_id: String(req.user.id),
+          user_id:     String(req.user.id),
           lawyer_name,
           date_slot,
           time_slot,
@@ -239,6 +243,7 @@ router.post('/book', validate(schemas.consultations.book), authRequired, consult
         description: `Justice Gavel — Consult booking: ${lawyer_name} on ${date_slot} at ${time_slot}`,
       });
       stripePaymentIntentId = pi.id;
+      stripeClientSecret    = pi.client_secret;
     }
 
     // Generate a cryptographically secure meeting token
@@ -265,6 +270,7 @@ router.post('/book', validate(schemas.consultations.book), authRequired, consult
     res.json({
       success: true,
       mock: !LIVE,
+      client_secret: stripeClientSecret,
       booking,
       fee_charged: `$${(feeCents / 100).toFixed(2)}`,
       message: LIVE

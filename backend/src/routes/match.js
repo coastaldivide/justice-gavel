@@ -378,4 +378,86 @@ function safeParseJson(val, fallback) {
   } catch { return fallback; }
 }
 
+
+// ── GET /api/match/profile/:lawyerId — JTB platform data for a specific attorney ──
+// Called by LawyerProfileScreen when viewing a JTB-registered attorney.
+// Returns platform rating, outcome record, available slots (next 3 days).
+router.get('/profile/:lawyerId', async (req, res) => {
+  try {
+    const db = await openProvidersDb();
+    const lawyerId = req.params.lawyerId;
+
+    // Check if this attorney is JTB-registered
+    const appDb = await (await import('../db/index.js')).getDb();
+    const profile = await appDb.get(
+      `SELECT ap.user_id, ap.platform_rating, ap.platform_review_count,
+              ap.outcome_score, ap.outcome_count, ap.availability_schedule,
+              ap.practice_areas, ap.bar_verification_status,
+              u.display_name, u.firm_name, u.bar_state,
+              u.avg_response_hrs
+         FROM attorney_profiles ap
+         JOIN users u ON u.id = ap.user_id
+        WHERE ap.lawyer_id = ?`,
+      [lawyerId]
+    ).catch(() => null);
+
+    if (!profile) {
+      return res.json({ is_jtb_registered: false });
+    }
+
+    // Get next 3 available slots
+    const { getDb: _getDb } = await import('../db/index.js');
+    const booked = await appDb.all(
+      `SELECT date_slot, time_slot FROM consultation_bookings
+        WHERE lawyer_id = ? AND status NOT IN ('cancelled')
+          AND date_slot >= date('now')`,
+      [lawyerId]
+    ).catch(() => []);
+
+    const bookedSet = new Set(booked.map(b => `${b.date_slot}|${b.time_slot}`));
+    let schedule = null;
+    try { if (profile.availability_schedule) schedule = JSON.parse(profile.availability_schedule); } catch {}
+
+    // Generate next few slots (first 3 available)
+    const { generateSlots } = await import('./match.js').catch(() => ({ generateSlots: null }));
+    const SLOT_TIMES = { morning:['9:00 AM','10:00 AM'], afternoon:['1:00 PM','2:00 PM','3:00 PM'], evening:['5:00 PM'] };
+    const DAY_MAP   = { 0:'sun',1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat' };
+    const defaultSched = { mon:['morning','afternoon'],tue:['morning','afternoon'],wed:['morning','afternoon'],thu:['morning','afternoon'],fri:['morning','afternoon'] };
+    const sched = schedule || defaultSched;
+    const nextSlots = [];
+    for (let d = 1; d <= 14 && nextSlots.length < 3; d++) {
+      const dt = new Date(); dt.setDate(dt.getDate() + d);
+      const dayKey = DAY_MAP[dt.getDay()];
+      const daySlots = sched[dayKey] || [];
+      const iso = dt.toISOString().slice(0,10);
+      for (const slotName of daySlots) {
+        for (const time of (SLOT_TIMES[slotName] || [])) {
+          if (!bookedSet.has(`${iso}|${time}`)) {
+            nextSlots.push({ date: iso, time,
+              label: dt.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) });
+            if (nextSlots.length >= 3) break;
+          }
+        }
+        if (nextSlots.length >= 3) break;
+      }
+    }
+
+    res.json({
+      is_jtb_registered:     true,
+      platform_rating:       profile.platform_rating,
+      platform_review_count: profile.platform_review_count,
+      outcome_score:         profile.outcome_score,
+      outcome_count:         profile.outcome_count,
+      outcome_label:         profile.outcome_count > 0
+        ? `${Math.round(((profile.outcome_score || 3) - 3) / 2 * 100)}% positive outcomes`
+        : null,
+      avg_response_hrs:      profile.avg_response_hrs,
+      bar_verified:          profile.bar_verification_status === 'approved',
+      next_slots:            nextSlots,
+    });
+  } catch (e) {
+    res.json({ is_jtb_registered: false });
+  }
+});
+
 export default router;

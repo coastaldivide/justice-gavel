@@ -268,6 +268,116 @@ async function runExpungementTriggerSweep(db) {
   }
 }
 
+
+// ── 24-hour consultation reminder ─────────────────────────────────────────────
+// Runs every hour. Finds confirmed consultations happening in 20-28 hours
+// and sends push reminders to BOTH the defendant and the attorney.
+// Window: 20-28 hours (catches the "tomorrow same time" window without
+// double-firing for consultations booked within the day).
+async function runConsultationReminderSweep(db) {
+  try {
+    const upcoming = await db.all(
+      `SELECT cb.id, cb.user_id, cb.lawyer_id, cb.lawyer_name,
+              cb.date_slot, cb.time_slot, cb.duration_min, cb.meeting_link,
+              cb.notes, cb.stripe_pi_id,
+              u.display_name AS client_name,
+              u.email AS client_email
+         FROM consultation_bookings cb
+         JOIN users u ON u.id = cb.user_id
+        WHERE cb.status = 'confirmed'
+          AND datetime(cb.date_slot || ' ' || cb.time_slot) BETWEEN
+              datetime('now', '+20 hours') AND datetime('now', '+28 hours')
+          AND cb.reminder_sent IS NULL
+        ORDER BY cb.date_slot ASC, cb.time_slot ASC
+        LIMIT 100`
+    ).catch(() => []);
+
+    if (!upcoming.length) return;
+
+    const expo = await getSchedExpo();
+    const { Expo } = await import('expo-server-sdk');
+    const { sendEmail } = await import('./email.js');
+    const { getDb } = await import('../db/index.js');
+    let sent = 0;
+
+    for (const row of upcoming) {
+      try {
+        const timeLabel = row.time_slot;
+        const dateLabel = new Date(row.date_slot + 'T12:00:00').toLocaleDateString('en-US', {
+          weekday: 'long', month: 'short', day: 'numeric' });
+
+        // ── Push to defendant ─────────────────────────────────────────────────
+        const defTokens = await db.all(
+          'SELECT token FROM push_tokens WHERE user_id = ? ORDER BY id DESC LIMIT 2',
+          [row.user_id]).catch(() => []);
+        const validDef = defTokens.map(t => t.token).filter(Expo.isExpoPushToken);
+        if (validDef.length) {
+          await expo.sendPushNotificationsAsync([{
+            to:       validDef[0],
+            title:    '📅 Consultation tomorrow',
+            body:     `Reminder: ${row.lawyer_name} at ${timeLabel} on ${dateLabel}. Tap to join.`,
+            data:     { screen: 'VideoConsultation', meetingLink: row.meeting_link, bookingId: row.id },
+            channelId: 'case_updates',
+            sound:    'default',
+          }]);
+        }
+
+        // ── Push to attorney ──────────────────────────────────────────────────
+        if (row.lawyer_id) {
+          const attyUser = await db.get(
+            `SELECT u.id FROM users u
+               JOIN attorney_profiles ap ON ap.user_id = u.id
+              WHERE ap.lawyer_id = ? LIMIT 1`,
+            [row.lawyer_id]).catch(() => null);
+          if (attyUser) {
+            const attyTokens = await db.all(
+              'SELECT token FROM push_tokens WHERE user_id = ? ORDER BY id DESC LIMIT 2',
+              [attyUser.id]).catch(() => []);
+            const validAtty = attyTokens.map(t => t.token).filter(Expo.isExpoPushToken);
+            if (validAtty.length) {
+              await expo.sendPushNotificationsAsync([{
+                to:       validAtty[0],
+                title:    '📅 Client consultation tomorrow',
+                body:     `${row.client_name || 'Client'} at ${timeLabel} on ${dateLabel}.`,
+                data:     { screen: 'AttorneyInbox', bookingId: row.id },
+                channelId: 'attorney_bookings',
+                sound:    'default',
+              }]);
+            }
+          }
+        }
+
+        // ── Email reminder to defendant ────────────────────────────────────────
+        if (row.client_email) {
+          await sendEmail({
+            to:      row.client_email,
+            subject: `Tomorrow: consultation with ${row.lawyer_name} at ${timeLabel}`,
+            html: `<p>Hi ${row.client_name || 'there'},</p>
+                   <p>This is a reminder that your <strong>${row.duration_min}-minute consultation</strong>
+                   with <strong>${row.lawyer_name}</strong> is tomorrow,
+                   <strong>${dateLabel} at ${timeLabel}</strong>.</p>
+                   <a href="${row.meeting_link}" style="background:#0A1628;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin:12px 0">Join Video Call</a>
+                   <p style="color:#6B7280;font-size:12px">⚖️ This consultation does not create an attorney-client relationship.</p>`,
+            text: `Reminder: ${row.lawyer_name} at ${timeLabel} ${dateLabel}. Meeting link: ${row.meeting_link}`,
+          }).catch(() => {});
+        }
+
+        // Mark reminder sent
+        await db.run(
+          `UPDATE consultation_bookings SET reminder_sent = datetime('now') WHERE id = ?`,
+          [row.id]
+        ).catch(() => {});
+        sent++;
+      } catch (e) {
+        logger.warn('[scheduler/reminder] row failed', row.id, e?.message);
+      }
+    }
+    if (sent) logger.info(`[scheduler/reminder] Sent ${sent} consultation reminders`);
+  } catch (e) {
+    logger.warn('[scheduler/reminder] sweep failed:', e?.message);
+  }
+}
+
 async function runNightlyJob() {
   const nowDate = new Date();
   const now     = nowDate.toISOString();
@@ -421,6 +531,15 @@ export function startScheduler() {
   logger.info(`[scheduler] Nightly pipeline: ${cronExpr} (${tz})`);
 
   // Payment link expiry — every 2 hours
+  // Hourly: 24-hour consultation reminders
+  setInterval(async () => {
+    try {
+      const { getDb: _getDb } = await import('../db/index.js');
+      const _db = await _getDb();
+      await runConsultationReminderSweep(_db);
+    } catch(e) { logger.warn('[reminder/hourly]', e?.message); }
+  }, 3_600_000);
+
   linkExpiryTask = cron.schedule('0 */2 * * *', async () => {
     try {
       const r = await expireOldPaymentLinks();

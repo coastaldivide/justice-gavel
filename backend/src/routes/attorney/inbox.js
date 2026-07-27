@@ -18,13 +18,18 @@ import { Router }           from 'express';
 import { authRequired }     from '../../middleware/auth.js';
 import { getDb }            from '../../db/index.js';
 import { err403, safeInt }  from '../../utils/routeHelpers.js';
+import { makeUserLimiter }   from '../../middleware/sharedAiLimiter.js';
 import logger               from '../../utils/logger.js';
 import { requireDefender }  from './_helpers.js';
 
 const router = Router();
+const inboxLimiter      = makeUserLimiter({ windowMs: 60_000,   max: 30,  message: 'Inbox rate limit — try again shortly.' });
+const markReadLimiter   = makeUserLimiter({ windowMs: 60_000,   max: 60,  message: 'Rate limit.' });
+const acceptLimiter     = makeUserLimiter({ windowMs: 3_600_000, max: 20, message: 'Rate limit.' });
+
 
 // ── GET /api/attorney/inbox ───────────────────────────────────────────────────
-router.get('/inbox', authRequired, async (req, res) => {
+router.get('/inbox', authRequired, inboxLimiter, async (req, res) => {
   const ctx = await requireDefender(req, res);
   if (!ctx) return;
   const { db } = ctx;
@@ -168,7 +173,7 @@ router.get('/inbox', authRequired, async (req, res) => {
 
 // ── POST /api/attorney/inbox/mark-read ──────────────────────────────────────
 // Mark all messages in a case as read by the attorney
-router.post('/inbox/mark-read/:caseId', authRequired, async (req, res) => {
+router.post('/inbox/mark-read/:caseId', authRequired, markReadLimiter, async (req, res) => {
   const ctx = await requireDefender(req, res);
   if (!ctx) return;
   const { db } = ctx;
@@ -202,7 +207,7 @@ router.post('/inbox/mark-read/:caseId', authRequired, async (req, res) => {
 
 // ── POST /api/attorney/inbox/accept/:assignmentId ────────────────────────────
 // Attorney accepts a pending case assignment
-router.post('/inbox/accept/:assignmentId', authRequired, async (req, res) => {
+router.post('/inbox/accept/:assignmentId', authRequired, acceptLimiter, async (req, res) => {
   const ctx = await requireDefender(req, res);
   if (!ctx) return;
   const { db } = ctx;

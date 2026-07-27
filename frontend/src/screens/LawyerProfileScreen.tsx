@@ -95,12 +95,20 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
   const mountedRef = React.useRef(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
+  React.useEffect(() => {
+    if (!lawyerId) return;
+    api.get(`/match/profile/${lawyerId}`)
+      .then(r => setJtbProfile(r.data))
+      .catch(() => {});
+  }, [lawyerId]);
+
+    useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (lawyer?.id) Analytics.lawyerView(lawyer.id, lawyer.city || '', lawyer.specialties || ''); return () => { mountedRef.current = false; }; }, []);
 
   const [lawyer, setLawyer]   = useState<any>(preload || null);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [jtbProfile, setJtbProfile] = React.useState<any>(null);
 
   // Retry logic: exponential backoff on API failures
   const [retryCount, setRetryCount] = React.useState(0);
@@ -466,7 +474,38 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
           </TouchableOpacity>
         </View>
       </View>
-    </ScrollView>
+    
+      {/* JTB Platform Section */}
+      {jtbProfile?.is_jtb_registered === true && (
+        <View style={{ margin: 12, padding: 12, backgroundColor: '#F0FDF4',
+                       borderRadius: 10, borderWidth: 1, borderColor: '#BBF7D0' }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#059669', letterSpacing: 0.5, marginBottom: 6 }}>
+            {'✓ RESPONDS VIA JUSTICE GAVEL'}
+          </Text>
+          {!!jtbProfile.platform_rating && (
+            <Text style={{ fontSize: 13, color: '#374151', marginBottom: 2 }}>
+              {'Platform rating: ' + jtbProfile.platform_rating.toFixed(1) + ' ★' +
+               (jtbProfile.platform_review_count ? ' (' + jtbProfile.platform_review_count + ' consultations)' : '')}
+            </Text>
+          )}
+          {!!jtbProfile.outcome_label && (
+            <Text style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>
+              {jtbProfile.outcome_label}
+            </Text>
+          )}
+          {(jtbProfile.next_slots?.length ?? 0) > 0 && (
+            <View>
+              <Text style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>{'Next available:'}</Text>
+              {(jtbProfile.next_slots as Array<{date:string;time:string;label:string}>).slice(0,3).map(sl => (
+                <Text key={sl.date + sl.time} style={{ fontSize: 12, color: '#059669', marginBottom: 2 }}>
+                  {sl.label + ' at ' + sl.time}
+                </Text>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+</ScrollView>
   );
 }
 

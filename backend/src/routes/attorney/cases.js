@@ -24,10 +24,11 @@ import logger                                 from '../../utils/logger.js';
 import { sanitiseField, requireDefender }     from './_helpers.js';
 
 const router        = Router();
+const casesListLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Too many requests.' });
 const assignLimiter = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'Too many assignment operations.' });
 
 // ── GET /api/attorney/cases ───────────────────────────────────────────────────
-router.get('/cases', authRequired, async (req, res) => {
+router.get('/cases', authRequired, casesListLimiter, async (req, res) => {
   try {
     const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
     if (!ctx) return;
@@ -144,7 +145,7 @@ router.post('/cases/:caseId/assign', authRequired, assignLimiter, async (req, re
 });
 
 // ── GET /api/attorney/office ──────────────────────────────────────────────────
-router.get('/office', authRequired, async (req, res) => {
+router.get('/office', authRequired, casesListLimiter, async (req, res) => {
   try {
     const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
     if (!ctx) return;

@@ -31,7 +31,12 @@ type EventName =  'sign_up'
   | 'document_analyzed'
   | 'emergency_alert_sent'
   | 'onboarding_completed'
-  | 'login' | 'screen_view';
+  | 'login' | 'screen_view'
+  | 'attorney_message_sent'
+  | 'booking_cancelled'
+  | 'outcome_recorded'
+  | 'expungement_triggered'
+  | 'review_submitted';
 
 type EventProps = Record<string, string | number | boolean | null>;
 
@@ -137,6 +142,12 @@ export const Analytics = {
     track('onboarding_completed', { skipped }),
   track,  // expose the raw track function
 
+
+  attorney_message_sent: (caseId: number) => track('attorney_message_sent', { case_id: caseId }),
+  booking_cancelled: (bookingId: number) => track('booking_cancelled', { booking_id: bookingId }),
+  outcome_recorded: (outcome: string, caseId: number) => track('outcome_recorded', { outcome, case_id: caseId }),
+  expungement_triggered: (caseId: number, state: string) => track('expungement_triggered', { case_id: caseId, state }),
+  review_submitted: (rating: number, entityType: string) => track('review_submitted', { rating, entity_type: entityType }),
 };
 
 export default Analytics;

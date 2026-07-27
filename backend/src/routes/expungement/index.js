@@ -98,6 +98,20 @@ router.get('/petition-checklist', authRequired, asyncRoute(async (req, res) => {
   });
 
 }));
+
+// POST /api/expungement/log-visit — track that user visited ExpungementScreen
+// Used by nightly scheduler to avoid re-sending expungement trigger push
+router.post('/log-visit', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    await db.run(
+      `INSERT INTO expungement_check_log (user_id, source) VALUES (?, 'screen_visit')`,
+      [req.user.id]
+    ).catch(() => {}); // Non-fatal — table may not exist in dev
+    res.json({ logged: true });
+  } catch { res.json({ logged: false }); }
+});
+
 export default router;
 
 // Re-export helpers so test files and other modules can import from the index

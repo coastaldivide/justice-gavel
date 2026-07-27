@@ -18,6 +18,8 @@ import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { track } from '../services/analytics';
 import { useAuthGate } from '../components/AuthGate';
+import { useStripe } from '@stripe/stripe-react-native';
+
 
 declare var setError: any;
 const DURATIONS = [
@@ -59,6 +61,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   // Load attorney's weekly availability so users know best times to expect responses
   const { lawyerName, lawyerId } = (route?.params as import('../types/api').RouteParams) ?? {};
   const [prefillLoaded, setPrefillLoaded] = React.useState(false);
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   React.useEffect(() => {
     // Pre-populate notes from the defendant's active case — reduces typing friction
@@ -123,18 +126,73 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const confirmBooking = () => requireAuth(async () => {
     if (!selTime) { setError('Select a time slot to continue.'); return; }
     setBooking(true);
+    setError('');
     try {
+      // Step 1 — Create booking + PaymentIntent server-side
       const res = await api.post('/consultations/book', {
         lawyer_id:    lawyerId ?? null,
         duration_min: duration.min,
         fee_cents:    duration.cents,
-        date_slot:    selDay.date,
+        date_slot:    selDay?.date,
         time_slot:    selTime,
         notes:        notes.trim(),
       });
-      setConfirmed(res.data || null);
+
+      const { client_secret, booking, mock } = res.data || {};
+
+      if (mock || !client_secret) {
+        // Demo mode — no real Stripe charge, go straight to confirmed
+        setConfirmed(res.data || null);
+        setStep('confirmed');
+        track('consultation_booked', { lawyerId: lawyerId ?? null, slot: selTime, mock: true }).catch(()=>{});
+        setBooking(false);
+        return;
+      }
+
+      // Step 2 — Initialize Stripe PaymentSheet with the client_secret
+      const { error: initError } = await initPaymentSheet({
+        paymentIntentClientSecret: client_secret,
+        merchantDisplayName: 'Justice Gavel',
+        allowsDelayedPaymentMethods: false,
+        defaultBillingDetails: {
+          name: undefined,
+        },
+        appearance: {
+          colors: {
+            primary: '#0A1628',
+            background: '#FFFFFF',
+            componentBackground: '#F9FAFB',
+            componentBorder: '#E5E7EB',
+            componentDivider: '#E5E7EB',
+            primaryText: '#111827',
+            secondaryText: '#6B7280',
+            componentText: '#111827',
+            placeholderText: '#9CA3AF',
+          },
+        },
+      });
+
+      if (initError) {
+        setError(initError.message || 'Payment setup failed. Please try again.');
+        setBooking(false);
+        return;
+      }
+
+      // Step 3 — Present the PaymentSheet (user enters card details)
+      const { error: presentError } = await presentPaymentSheet();
+
+      if (presentError) {
+        if (presentError.code !== 'Canceled') {
+          setError(presentError.message || 'Payment failed. Please try again.');
+        }
+        setBooking(false);
+        return;
+      }
+
+      // Step 4 — Payment confirmed by Stripe — show success
+      setConfirmed({ ...res.data, booking });
       setStep('confirmed');
-    track('consultation_booked', { lawyerId: lawyerId ?? null, slot: selTime, type: step }).catch(()=>{})
+      track('consultation_booked', { lawyerId: lawyerId ?? null, slot: selTime, mock: false }).catch(()=>{});
     } catch (e: any) {
       const msg = e.response?.data?.error || 'Could not complete booking. Please try again.';
       // @ts-ignore

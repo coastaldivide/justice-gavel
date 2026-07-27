@@ -14989,6 +14989,185 @@
           }
         }
       }
+    },
+    "/api/attorney/inbox": {
+      "get": {
+        "tags": [
+          "Attorney"
+        ],
+        "summary": "GET /api/attorney/inbox \u2014 Unified attorney command center",
+        "description": "Returns combined feed: upcoming consultations, unread messages, today's hearings, pending assignments, recent cases, and summary badge counts. Scoped to authenticated attorney.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inbox data with summary badges"
+          },
+          "403": {
+            "description": "Attorney access required"
+          }
+        }
+      }
+    },
+    "/api/attorney/inbox/mark-read/{caseId}": {
+      "post": {
+        "tags": [
+          "Attorney"
+        ],
+        "summary": "Mark all client messages in a case as read",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Messages marked read"
+          },
+          "403": {
+            "description": "Not assigned"
+          }
+        }
+      }
+    },
+    "/api/attorney/inbox/accept/{assignmentId}": {
+      "post": {
+        "tags": [
+          "Attorney"
+        ],
+        "summary": "Accept a pending case assignment",
+        "description": "Attorney accepts a pending case. Sets status=active, pushes client notification.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assignment accepted"
+          },
+          "403": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/attorney/cases/{caseId}/outcome": {
+      "post": {
+        "tags": [
+          "Attorney"
+        ],
+        "summary": "Record case outcome (feeds attorney match score)",
+        "description": "Attorney records final case result. Updates outcome_score in attorney_profiles, which feeds the match algorithm.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "outcome"
+                ],
+                "properties": {
+                  "outcome": {
+                    "type": "string",
+                    "enum": [
+                      "dismissed",
+                      "acquitted",
+                      "not_guilty",
+                      "plea_deal",
+                      "convicted",
+                      "plea_guilty",
+                      "deferred",
+                      "expunged",
+                      "other"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Outcome recorded"
+          }
+        }
+      }
+    },
+    "/api/consultations/prefill": {
+      "get": {
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "GET prefill data \u2014 defendant's active case for booking form",
+        "description": "Returns most recent active case data to pre-populate the booking notes field.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prefill data including suggested_notes"
+          }
+        }
+      }
+    },
+    "/api/match/profile/{lawyerId}": {
+      "get": {
+        "tags": [
+          "Match"
+        ],
+        "summary": "GET JTB platform profile for a specific attorney",
+        "description": "Returns platform_rating, outcome_count, outcome_label, bar_verified, and next 3 available consultation slots for a JTB-registered attorney.",
+        "parameters": [
+          {
+            "name": "lawyerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JTB platform profile or {is_jtb_registered: false}"
+          }
+        }
+      }
     }
   }
 }

@@ -214,7 +214,12 @@ showToast('Reminder set for when you become eligible.', 'success');
 function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
-  React.useEffect(() => {
+  React.  // Log expungement screen visit — prevents re-trigger from nightly scheduler
+  useEffect(() => {
+    api.post('/expungement/log-visit').catch(() => {}); // non-fatal
+  }, []);
+
+  useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
