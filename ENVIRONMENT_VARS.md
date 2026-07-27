@@ -186,3 +186,10 @@ configured in Railway (or your deployment environment) as needed.
 |----------|----------|-------------|
 | `EXTRA_ORIGINS` | Optional | Comma-separated additional CORS origins |
 | `JUDYRECORDS_API_KEY` | Optional | JudyRecords API key for arrest record lookup |
+
+
+## Additional Variables (Integrations & Admin)
+
+### `ADMIN_URL`
+URL for admin dashboard (internal use)
+

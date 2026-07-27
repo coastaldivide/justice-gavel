@@ -15,6 +15,9 @@ const upload = multer({
 });
 
 router.post('/audio', authRequired, upload.single('audio'), async (req, res) => {
+  // Require Advisor tier+ for AI transcription
+  const PAID_TIERS = new Set(['advisor','legal_pro','esquire','24_hour_advisor','attorney','pro','starter']);
+  if (!PAID_TIERS.has(req.user?.tier || 'free')) return res.status(403).json({ error: 'Transcription requires Advisor plan or higher.', code: 'upgrade_required', upgrade_url: '/subscription' });
   try {
     const OPENAI_KEY = process.env.OPENAI_API_KEY;
     if (!OPENAI_KEY) return res.status(503).json({ error: 'Transcription not configured' });

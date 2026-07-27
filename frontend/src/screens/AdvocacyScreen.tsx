@@ -138,7 +138,8 @@ function AdvocacyScreen(): React.JSX.Element {
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check back soon for updates.</Text>
         </View>
       )}
-      </ScrollView>
+        <Text style={{ fontSize: 11, color: '#888', textAlign: 'center', padding: 12, paddingBottom: 24 }}>⚖️ This content is for general educational purposes only and does not constitute legal advice. Laws vary by jurisdiction. Consult a licensed attorney for advice specific to your situation.</Text>
+        </ScrollView>
   );
 }
 
