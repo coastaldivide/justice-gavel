@@ -16,6 +16,7 @@ ALTER TABLE consultation_bookings
 -- Note: 'outcome' TEXT column already exists in 20260710000004.
 -- Adding the surrounding metadata columns.
 ALTER TABLE cases
+  ADD COLUMN IF NOT EXISTS outcome              TEXT,
   ADD COLUMN IF NOT EXISTS outcome_notes          TEXT,
   ADD COLUMN IF NOT EXISTS outcome_recorded_by    BIGINT REFERENCES users(id),
   ADD COLUMN IF NOT EXISTS outcome_recorded_at    TIMESTAMPTZ;

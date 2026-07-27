@@ -435,7 +435,7 @@ router.post('/callback-request', authRequired, consultationsLimiter, async (req,
           to:    lawyerUser.push_token,
           title: `📩 Message from ${callerName}`,
           body:  preview || 'A client left you a message on Justice Gavel.',
-          data:  { screen: 'ConsultationRequests' },
+          data:  { screen: 'Booking' },
         }]);
       }
     } catch { /* push is best-effort */ }

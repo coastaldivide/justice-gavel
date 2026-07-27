@@ -41,7 +41,7 @@ router.get('/cases', authRequired, casesListLimiter, async (req, res) => {
 
     let sql    = `SELECT c.id, c.title, c.status, c.next_court_date, c.state,
                          c.created_at, c.updated_at,
-                         c.charge_description, c.bail_amount,
+                         c.charge, c.bail_amount_cents AS bail_amount,
                          ca.assigned_at, ca.status as assignment_status,
                          ca.notes as assignment_notes,
                          u.display_name as client_name, u.email as client_email, u.phone as client_phone,
