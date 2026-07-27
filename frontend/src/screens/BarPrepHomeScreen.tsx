@@ -59,12 +59,64 @@ const CATEGORY_MAP: Record<string, string[]> = {
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-  homicide: 'Homicide', theft_property: 'Theft & Property',
-  defenses: 'Defenses', criminal_procedure: 'Crim Procedure',
-  fifth_sixth_amendment: '5th & 6th Amendment',
-  fourth_amendment: '4th Amendment', due_process: 'Due Process',
-  equal_protection: 'Equal Protection', first_amendment: '1st Amendment',
-  incorporation_14th: 'Incorporation / 14th',
+  // Criminal Law
+  homicide:             'Homicide',
+  theft_property:       'Theft & Property',
+  defenses:             'Defenses',
+  criminal_procedure:   'Crim Procedure',
+  // Constitutional Law
+  fourth_amendment:     '4th Amendment',
+  fifth_sixth_amendment:'5th & 6th Amendment',
+  due_process:          'Due Process',
+  equal_protection:     'Equal Protection',
+  first_amendment:      '1st Amendment',
+  incorporation_14th:   'Incorporation / 14th',
+  commerce_clause:      'Commerce Clause',
+  executive_power:      'Executive Power',
+  takings_clause:       'Takings Clause',
+  // Contracts
+  formation:            'Contract Formation',
+  consideration:        'Consideration',
+  performance_breach:   'Performance & Breach',
+  remedies:             'Remedies',
+  contract_defenses:    'Contract Defenses',
+  ucc_article_2:        'UCC Article 2',
+  // Civil Procedure
+  jurisdiction:         'Jurisdiction',
+  pleading:             'Pleading',
+  discovery_civ_pro:    'Discovery',
+  summary_judgment:     'Summary Judgment',
+  trial:                'Trial',
+  preclusion:           'Preclusion',
+  venue:                'Venue',
+  class_actions:        'Class Actions',
+  appeals:              'Appeals',
+  // Evidence
+  relevance:            'Relevance',
+  character_evidence:   'Character Evidence',
+  hearsay:              'Hearsay',
+  hearsay_exceptions:   'Hearsay Exceptions',
+  impeachment:          'Impeachment',
+  privileges:           'Privileges',
+  expert_witnesses:     'Expert Witnesses',
+  authentication:       'Authentication',
+  // Real Property
+  ownership:            'Ownership',
+  concurrent_ownership: 'Concurrent Ownership',
+  landlord_tenant:      'Landlord-Tenant',
+  recording_acts:       'Recording Acts',
+  adverse_possession:   'Adverse Possession',
+  easements:            'Easements',
+  covenants:            'Covenants',
+  mortgages:            'Mortgages',
+  // Torts
+  intentional_torts:    'Intentional Torts',
+  negligence:           'Negligence',
+  strict_liability:     'Strict Liability',
+  products_liability:   'Products Liability',
+  defamation:           'Defamation',
+  nuisance:             'Nuisance',
+  damages_torts:        'Damages',
 };
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -75,7 +127,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
   // @ts-ignore
   const { requireAuth, AuthGateModal }  = useAuthGate(navigation);
   // Bar prep disclaimer — shown once in the UI, not on every question
-  const BAR_PREP_DISCLAIMER = 'MBE supplement for study only. Not a substitute for full bar prep courses (Barbri, Themis, etc.).';
+  const BAR_PREP_DISCLAIMER = 'MBE supplement for study only. Covers all 7 tested subjects. Not a substitute for full bar prep courses (Barbri, Themis, etc.).';
   const [subjects, setSubjects]         = useState<Subject[]>([]);
   const [dashboard, setDashboard]       = useState<Dashboard | null>(null);
   const [loading, setLoading]           = useState(true);
@@ -153,7 +205,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
       <AuthGateModal />
         <GradientHeader
           title="Bar Exam Prep"
-          subtitle="MBE Supplement — Criminal Law + Con Law"
+          subtitle="MBE Supplement — All 7 Tested Subjects"
         />
 
         <ScrollView

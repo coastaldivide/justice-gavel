@@ -86,6 +86,16 @@ async function checkSampleLimit(req, res, next) {
 }
 
 // ── 1. GET /subjects ──────────────────────────────────────────────────────────
+const VALID_SUBJECTS = new Set([
+  'crim-law-001',
+  'con-law-001',
+  'contracts-001',
+  'civ-pro-001',
+  'evidence-001',
+  'real-prop-001',
+  'torts-001',
+]);
+
 router.get('/subjects', quizLimiter, async (req, res) => {
   try {
     const subjects = await getSubjectsWithProgress(req.user.id);
