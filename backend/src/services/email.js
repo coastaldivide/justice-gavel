@@ -136,3 +136,84 @@ export async function sendEmail({ to, subject, html, text }) {
 }
 
 export default { sendPasswordReset, sendWelcome, sendSubscriptionConfirm, sendPaymentFailed, sendCriticalAlert, sendEmail };
+
+// ── Booking confirmation — sent to defendant after successful booking ─────────
+export async function sendBookingConfirmation({ to, clientName, attorneyName,
+  dateSlot, timeSlot, durationMin, feeDollars, meetingLink, cancellationUrl }) {
+  const dateLabel = new Date(dateSlot + 'T12:00:00').toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+  });
+  return send({
+    to,
+    subject: `Consultation confirmed — ${attorneyName} on ${dateLabel}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+        <h2 style="color:#0A1628">Your consultation is confirmed ✅</h2>
+        <p>Hi ${clientName},</p>
+        <p>Your <strong>${durationMin}-minute consultation</strong> with
+           <strong>${attorneyName}</strong> is booked.</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          <tr><td style="padding:8px 0;color:#6B7280;width:120px">Date</td>
+              <td style="padding:8px 0;font-weight:600">${dateLabel}</td></tr>
+          <tr><td style="padding:8px 0;color:#6B7280">Time</td>
+              <td style="padding:8px 0;font-weight:600">${timeSlot}</td></tr>
+          <tr><td style="padding:8px 0;color:#6B7280">Duration</td>
+              <td style="padding:8px 0;font-weight:600">${durationMin} minutes</td></tr>
+          <tr><td style="padding:8px 0;color:#6B7280">Platform fee</td>
+              <td style="padding:8px 0;font-weight:600">$${feeDollars} (charged)</td></tr>
+        </table>
+        <a href="${meetingLink}"
+           style="display:inline-block;background:#0A1628;color:#fff;padding:12px 24px;
+                  border-radius:8px;text-decoration:none;font-weight:700;margin:8px 0">
+          Join Video Call
+        </a>
+        <p style="color:#6B7280;font-size:13px;margin-top:24px">
+          Need to cancel? <a href="${cancellationUrl || 'https://justicegavel.app'}">Cancel here</a>
+          (free cancellation until 2 hours before the appointment).<br>
+          <strong>⚖️ Legal Notice:</strong> This is a general consultation.
+          It does not create an attorney-client relationship.
+        </p>
+      </div>`,
+    text: `Consultation confirmed with ${attorneyName} on ${dateLabel} at ${timeSlot}. Meeting link: ${meetingLink}`,
+  });
+}
+
+// ── Attorney booking alert — sent to attorney when a client books ─────────────
+export async function sendAttorneyBookingAlert({ to, attorneyName, clientName,
+  dateSlot, timeSlot, durationMin, caseTitle, clientEmail, clientPhone, meetingLink }) {
+  const dateLabel = new Date(dateSlot + 'T12:00:00').toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+  });
+  return send({
+    to,
+    subject: `New consultation booked — ${clientName} on ${dateLabel}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+        <h2 style="color:#0A1628">📋 New consultation booked</h2>
+        <p>Hi ${attorneyName},</p>
+        <p><strong>${clientName}</strong> has booked a
+           <strong>${durationMin}-minute consultation</strong> with you.</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          <tr><td style="padding:8px 0;color:#6B7280;width:120px">Date</td>
+              <td style="padding:8px 0;font-weight:600">${dateLabel}</td></tr>
+          <tr><td style="padding:8px 0;color:#6B7280">Time</td>
+              <td style="padding:8px 0;font-weight:600">${timeSlot}</td></tr>
+          <tr><td style="padding:8px 0;color:#6B7280">Client email</td>
+              <td style="padding:8px 0">${clientEmail || 'Not provided'}</td></tr>
+          <tr><td style="padding:8px 0;color:#6B7280">Client phone</td>
+              <td style="padding:8px 0">${clientPhone || 'Not provided'}</td></tr>
+          ${caseTitle ? `<tr><td style="padding:8px 0;color:#6B7280">Case</td>
+              <td style="padding:8px 0">${caseTitle}</td></tr>` : ''}
+        </table>
+        <a href="${meetingLink}"
+           style="display:inline-block;background:#0A1628;color:#fff;padding:12px 24px;
+                  border-radius:8px;text-decoration:none;font-weight:700;margin:8px 0">
+          Join Video Call
+        </a>
+        <p style="color:#6B7280;font-size:12px;margin-top:16px">
+          Manage this consultation in your Justice Gavel Attorney Inbox.
+        </p>
+      </div>`,
+    text: `New consultation: ${clientName} on ${dateLabel} at ${timeSlot}. Meeting link: ${meetingLink}`,
+  });
+}

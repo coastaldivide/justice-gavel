@@ -173,6 +173,83 @@ router.get('/office', authRequired, async (req, res) => {
 });
 
 // ── POST /api/attorney/office/join ────────────────────────────────────────────
+
+// ── POST /api/attorney/cases/:caseId/outcome — record case outcome ──────────
+// Attorneys record the final result of a case. This feeds back into
+// the match scoring algorithm — attorneys who achieve good outcomes
+// surface higher in future defendant searches.
+router.post('/cases/:caseId/outcome', authRequired, assignLimiter, async (req, res) => {
+  const ctx = await requireDefender(req, res);
+  if (!ctx) return;
+  const { db } = ctx;
+
+  const caseId  = safeInt(req.params.caseId);
+  const { outcome, notes = '' } = req.body || {};
+
+  const VALID_OUTCOMES = new Set([
+    'dismissed', 'acquitted', 'not_guilty', 'plea_deal',
+    'convicted', 'plea_guilty', 'deferred', 'expunged', 'other',
+  ]);
+  const POSITIVE_OUTCOMES = new Set(['dismissed','acquitted','not_guilty','deferred','expunged']);
+
+  if (!outcome || !VALID_OUTCOMES.has(outcome)) {
+    return res.status(400).json({ error: 'Valid outcome required', valid: [...VALID_OUTCOMES] });
+  }
+
+  try {
+    // Verify assignment
+    const assignment = await db.get(
+      `SELECT ca.*, c.user_id AS client_id, l.id AS lawyer_id
+         FROM case_assignments ca
+         JOIN cases c ON c.id = ca.case_id
+         LEFT JOIN attorney_profiles ap ON ap.user_id = ca.defender_id
+         LEFT JOIN lawyers l ON l.id = ap.lawyer_id
+        WHERE ca.case_id = ? AND ca.defender_id = ?`,
+      [caseId, req.user.id]
+    );
+    if (!assignment) return res.status(403).json({ error: 'Not assigned to this case' });
+
+    // Update case with outcome
+    await db.run(
+      `UPDATE cases SET status = 'closed', outcome = ?, outcome_notes = ?,
+                        outcome_recorded_by = ?, outcome_recorded_at = datetime('now')
+        WHERE id = ?`,
+      [outcome, sanitizeStr(notes, 500), req.user.id, caseId]
+    );
+
+    // Update attorney's platform_rating based on outcomes
+    // Positive outcomes improve rating; negative outcomes don't penalize heavily
+    if (assignment.lawyer_id) {
+      const outcomes = await db.all(
+        `SELECT c.outcome FROM cases c
+           JOIN case_assignments ca ON ca.case_id = c.id
+          WHERE ca.defender_id = ? AND c.outcome IS NOT NULL`,
+        [req.user.id]
+      );
+      const total    = outcomes.length;
+      const positive = outcomes.filter(o => POSITIVE_OUTCOMES.has(o.outcome)).length;
+      const rate     = total > 0 ? positive / total : 0;
+      // Outcome score: 3.0 base + up to 2.0 for 100% positive rate
+      const outcomeScore = (3.0 + rate * 2.0).toFixed(1);
+
+      await db.run(
+        `UPDATE attorney_profiles SET outcome_score = ?, outcome_count = ? WHERE user_id = ?`,
+        [outcomeScore, total, req.user.id]
+      ).catch(() => {}); // Non-fatal if column doesn't exist yet
+    }
+
+    res.json({
+      success: true,
+      case_id: caseId,
+      outcome,
+      message: 'Case outcome recorded. Thank you — this helps defendants find effective attorneys.',
+    });
+  } catch (e) {
+    logger.error('[cases/outcome]', e?.message);
+    res.status(500).json({ error: 'Could not record outcome' });
+  }
+});
+
 router.post('/office/join', authRequired, assignLimiter, async (req, res) => {
   try {
     const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;

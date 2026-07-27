@@ -58,7 +58,19 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
   // Load attorney's weekly availability so users know best times to expect responses
   const { lawyerName, lawyerId } = (route?.params as import('../types/api').RouteParams) ?? {};
+  const [prefillLoaded, setPrefillLoaded] = React.useState(false);
+
   React.useEffect(() => {
+    // Pre-populate notes from the defendant's active case — reduces typing friction
+    if (!prefillLoaded) {
+      api.get('/consultations/prefill').then(r => {
+        if (r.data?.suggested_notes) setNotes(r.data.suggested_notes);
+        setPrefillLoaded(true);
+      }).catch(() => setPrefillLoaded(true));
+    }
+  }, [prefillLoaded]);
+
+  useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (!lawyerId) return;
     api.get('/attorney/profile/availability', { params: { lawyerId } })

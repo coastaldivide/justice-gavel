@@ -63,7 +63,13 @@ router.get('/', async (req, res) => {
     }
 
     const d = await getReviewsDb();
-  if (!d) return res.json({ reviews: [], count: 0 });
+  if (!d) return // Update match scoring after every review
+    if (entity_type === 'lawyer') {
+      db.get(`SELECT AVG(rating) AS a, COUNT(*) AS c FROM reviews_app WHERE entity_type='lawyer' AND entity_id=?`, [entity_id])
+        .then(agg => agg?.a && db.run(`UPDATE lawyers SET rating=ROUND(?,1), review_count=? WHERE id=?`, [agg.a, agg.c, entity_id]))
+        .catch(e => logger.warn('[reviews/update]', e?.message));
+    }
+    res.json({ reviews: [], count: 0 });
     if (!d) return res.json({ reviews: [], count: 0 });
 
     const rows = await d.all(

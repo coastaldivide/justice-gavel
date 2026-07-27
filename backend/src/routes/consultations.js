@@ -19,6 +19,7 @@ import { getDb } from '../db/index.js';
 import Stripe from 'stripe';
 import logger from '../utils/logger.js';
 import { sendPushToUser } from '../services/pushDelivery.js';
+import { sendBookingConfirmation, sendAttorneyBookingAlert } from '../services/email.js';
 
 const consultationsLimiter = makeUserLimiter({ windowMs: 3600000, max: 5, message: 'Consultation booking limit reached. Try again later.' });
 // Lazy Expo push client — same singleton pattern as cases.js / messages.js
@@ -31,6 +32,19 @@ async function getExpoConsult() {
 }
 
 
+
+// ── Parse "9:00 AM" → "09:00:00" for Date constructor ─────────────────────
+function _parseTime(slot) {
+  if (!slot) return '00:00:00';
+  const m = slot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return '00:00:00';
+  let h = parseInt(m[1], 10);
+  const mins = m[2];
+  if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12;
+  if (m[3].toUpperCase() === 'AM' && h === 12) h = 0;
+  return `${String(h).padStart(2,'0')}:${mins}:00`;
+}
+
 const router = Router();
 const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
 const stripe    = stripeKey ? new Stripe(stripeKey) : null;
@@ -39,46 +53,88 @@ const LIVE      = !!stripeKey;
 // Platform fee by duration
 const FEE_BY_DURATION = { 15: 1000, 30: 1500, 60: 2500 };
 
-// ── Generate available slots for next 14 days ─────────────────────────────────
-// generateSlots: deterministic placeholder until real CalDAV integration.
-// For production: call GET /api/caldav/lawyer/:id to fetch real availability.
-// The slot times returned here are cross-checked against consultation_bookings
-// to exclude already-booked slots in the route handler.
-function generateSlots(startDate = new Date()) {
-  const slots = [];
-  const TIMES = ['9:00 AM','10:00 AM','11:00 AM','1:00 PM','2:00 PM','3:00 PM','4:00 PM'];
+// ── Generate available slots using attorney's stored schedule ─────────────────
+// Reads attorney_profiles.availability_schedule (JSON) instead of generating
+// the same 7 slots for every attorney. Falls back to Mon-Fri 9AM-5PM if
+// no schedule is stored. Existing bookings are excluded by the GET handler.
+function generateSlots(startDate = new Date(), schedule = null) {
+  const slots   = [];
+  const DAY_MAP = { 0:'sun',1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat' };
+  const SLOT_TIMES = {
+    morning:   ['9:00 AM','10:00 AM','11:00 AM'],
+    afternoon: ['1:00 PM','2:00 PM','3:00 PM','4:00 PM'],
+    evening:   ['5:00 PM','6:00 PM'],
+  };
+  // Default schedule: Mon-Fri, morning + afternoon
+  const defaultSchedule = {
+    mon:['morning','afternoon'], tue:['morning','afternoon'],
+    wed:['morning','afternoon'], thu:['morning','afternoon'],
+    fri:['morning','afternoon'],
+  };
+  const sched = schedule || defaultSchedule;
 
   for (let d = 1; d <= 14; d++) {
     const date = new Date(startDate);
     date.setDate(date.getDate() + d);
-    const dow = date.getDay();
-    if (dow === 0) continue; // skip Sundays
+    const dow     = date.getDay();
+    const dayKey  = DAY_MAP[dow];
+    const daySlots = sched[dayKey] || [];
+    if (!daySlots.length) continue; // attorney not available this day
 
     const label = date.toLocaleDateString('en-US', {
-      weekday: 'short', month: 'short', day: 'numeric'
+      weekday: 'long', month: 'short', day: 'numeric',
     });
-    const iso = date.toISOString().split('T')[0];
+    const iso = date.toISOString().slice(0, 10);
 
-    // Fewer slots on Saturday
-    const times = dow === 6 ? TIMES.slice(0, 3) : TIMES;
-
-    // Deterministic availability: attorney-specific seed based on lawyer ID,
-    // date offset, and time index. Stable across requests — no random flicker.
-    // This is a placeholder until real calendar integration (CalDAV) is used.
-    slots.push({
-      date: iso,
-      label,
-      times: times.map((t, ti) => ({
-        time: t,
-        // Deterministic: mark busy if (day + ti) % 4 === 0 — ~25% unavailable, stable
-        available: (d + ti) % 4 !== 0,
-      })),
-    });
+    for (const slotName of daySlots) {
+      for (const time of (SLOT_TIMES[slotName] || [])) {
+        slots.push({ date: iso, time, label, dayKey });
+      }
+    }
   }
   return slots;
 }
 
+
+
 // GET /api/consultations/slots/:lawyerId
+
+// ── GET /consultations/prefill — return case data to pre-fill booking form ────
+// Saves the defendant from re-typing their situation at booking time.
+// Returns most recent active case: charge, state, preferred language.
+router.get('/prefill', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const cas = await db.get(
+      `SELECT c.id, c.title, c.status, c.state, c.charge_description,
+              c.bail_amount, c.next_court_date,
+              u.display_name AS client_name, u.phone AS client_phone
+         FROM cases c
+         JOIN users u ON u.id = c.user_id
+        WHERE c.user_id = ?
+          AND c.status NOT IN ('closed','archived')
+        ORDER BY c.created_at DESC
+        LIMIT 1`,
+      [req.user.id]
+    );
+    res.json({
+      case_id:         cas?.id           || null,
+      case_title:      cas?.title        || null,
+      charge:          cas?.charge_description || null,
+      state:           cas?.state        || null,
+      bail_amount:     cas?.bail_amount  || null,
+      next_court_date: cas?.next_court_date || null,
+      client_name:     req.user.display_name || null,
+      client_phone:    req.user.phone    || null,
+      suggested_notes: cas
+        ? `Case: ${cas.title}${cas.charge_description ? '. Charge: ' + cas.charge_description : ''}${cas.next_court_date ? '. Next court date: ' + cas.next_court_date : ''}.`
+        : null,
+    });
+  } catch (e) {
+    res.json({ case_id: null, suggested_notes: null });
+  }
+});
+
 router.get('/slots/:lawyerId', async (req, res) => {
   try {
     const db = await getDb();
@@ -94,8 +150,18 @@ router.get('/slots/:lawyerId', async (req, res) => {
 
     const bookedSet = new Set(booked.map(b => `${b.date_slot}|${b.time_slot}`));
 
-    // Generate slots and mark confirmed-booked ones as unavailable
-    const rawSlots = generateSlots();
+    // Load attorney's stored availability schedule (from attorney_profiles)
+    const attyProfile = await db.get(
+      `SELECT availability_schedule FROM attorney_profiles WHERE lawyer_id = ?`,
+      [lawyerId]
+    ).catch(() => null);
+    let attySchedule = null;
+    if (attyProfile?.availability_schedule) {
+      try { attySchedule = JSON.parse(attyProfile.availability_schedule); } catch {}
+    }
+
+    // Generate slots using attorney's actual schedule (not deterministic defaults)
+    const rawSlots = generateSlots(new Date(), attySchedule);
     const slots = rawSlots.map(day => ({
       ...day,
       times: day.times.map(t => ({
@@ -222,11 +288,63 @@ router.post('/:id/cancel', authRequired, consultationsLimiter, async (req, res) 
     if (!booking) return err404(res, 'Booking not found');
     if (booking.status === 'cancelled') return err400(res, 'Already cancelled');
 
+    // ── Stripe refund — full refund if cancelled ≥2 hrs before slot ──────────
+    let refundId   = null;
+    let refundNote = 'No charge to refund (demo or free booking).';
+
+    if (LIVE && booking.stripe_pi_id && booking.stripe_pi_id !== 'pi_mock_consult') {
+      try {
+        // Only refund if the appointment is still in the future (> 2 hrs)
+        const slotDt = new Date(`${booking.date_slot}T${_parseTime(booking.time_slot)}`);
+        const hoursUntil = (slotDt.getTime() - Date.now()) / 3_600_000;
+
+        if (hoursUntil > 2) {
+          const refund = await stripe.refunds.create({
+            payment_intent: booking.stripe_pi_id,
+            reason:         'requested_by_customer',
+            metadata:       { booking_id: String(booking.id), cancelled_by: String(req.user.id) },
+          });
+          refundId   = refund.id;
+          refundNote = `Full refund of $${(booking.platform_fee_cents / 100).toFixed(2)} issued.`;
+        } else {
+          refundNote = 'Cancellation within 2 hours of appointment — no refund per policy.';
+        }
+      } catch (refundErr) {
+        // Non-fatal — still cancel the booking; flag for manual review
+        logger.warn('[consultations/cancel] Stripe refund failed', refundErr?.message);
+        refundNote = 'Refund pending manual review.';
+      }
+    }
+
     await db.run(
-      "UPDATE consultation_bookings SET status='cancelled' WHERE id=?",
-      [safeInt(req.params.id)]
+      `UPDATE consultation_bookings
+          SET status      = 'cancelled',
+              cancelled_at = datetime('now'),
+              refund_id   = ?
+        WHERE id = ?`,
+      [refundId, safeInt(req.params.id)]
     );
-    res.json({ success: true, message: 'Booking cancelled.' });
+    res.json({
+      success: true,
+      message: 'Booking cancelled.',
+      refund:  refundNote,
+      refund_id: refundId,
+    });
+
+    // ── Send confirmation email to defendant ──────────────────────────────────
+    if (req.user.email) {
+      sendBookingConfirmation({
+        to:           req.user.email,
+        clientName:   req.user.display_name || req.user.name || 'Client',
+        attorneyName: lawyer_name,
+        dateSlot:     date_slot,
+        timeSlot:     time_slot,
+        durationMin:  duration_min,
+        feeDollars:   (feeCents / 100).toFixed(2),
+        meetingLink,
+        cancellationUrl: `https://justicegavel.app/consultations/${result.lastID}/cancel`,
+      }).catch(e => logger.warn('[email] booking confirmation failed:', e?.message));
+    }
 
     // ── Notify attorney (if they have a JTB account) ────────────────────────
     // If the lawyer is a registered Justice Gavel attorney, push them immediately.
@@ -253,6 +371,24 @@ router.post('/:id/cancel', authRequired, consultationsLimiter, async (req, res) 
             channelId: 'attorney_bookings',
           });
           logger.info({ msg: '[consultations] attorney notified', attyId: attyUser.id, bookingId: result.lastID });
+          // Also send attorney an email with full client details
+          if (attyUser.email) {
+            const caseRow = await db.get(
+              `SELECT title FROM cases c JOIN case_assignments ca ON ca.case_id=c.id WHERE ca.user_id=? ORDER BY ca.assigned_at DESC LIMIT 1`,
+              [req.user.id]).catch(()=>null);
+            sendAttorneyBookingAlert({
+              to:          attyUser.email,
+              attorneyName: attyUser.display_name || attyUser.name || 'Attorney',
+              clientName:  req.user.display_name || req.user.name || 'Client',
+              dateSlot:    date_slot,
+              timeSlot:    time_slot,
+              durationMin: duration_min,
+              caseTitle:   caseRow?.title || null,
+              clientEmail: req.user.email || null,
+              clientPhone: req.user.phone || null,
+              meetingLink,
+            }).catch(e => logger.warn('[email] attorney alert failed:', e?.message));
+          }
         }
       } catch (pushErr) {
         // Non-fatal — booking succeeded even if push fails

@@ -89,17 +89,42 @@ router.post('/:caseId', authRequired, async (req, res) => {
     const db = await getDb();
 
     // Verify access
-    const cas = await db.get(
-      `SELECT id FROM cases WHERE id = ? AND user_id = ?`,
-      [caseId, req.user.id]
-    );
-    if (!cas) return err404(res, 'Case not found');
+    const isAtty = req.user?.role === 'attorney' || req.user?.role === 'defender';
+    // Defendants: must own the case. Attorneys: verified in INSERT block below.
+    let cas = null;
+    if (!isAtty) {
+      cas = await db.get(
+        `SELECT id FROM cases WHERE id = ? AND user_id = ?`,
+        [caseId, req.user.id]
+      );
+      if (!cas) return err404(res, 'Case not found');
+    } else {
+      // For attorneys, load case without user_id filter
+      cas = await db.get(`SELECT id FROM cases WHERE id = ?`, [caseId]);
+      if (!cas) return err404(res, 'Case not found');
+    }
+
+    // Determine sender type — attorneys can send to their assigned clients
+    const isAttorney = req.user.role === 'attorney' || req.user.role === 'defender';
+    const senderType = isAttorney ? 'attorney' : 'user';
+
+    // Verify access: defendant owns the case, or attorney is actively assigned
+    if (!cas && !isAttorney) return err404(res, 'Case not found');
+    if (isAttorney) {
+      // Attorney access: must be actively assigned to this case
+      const assignment = await db.get(
+        `SELECT id FROM case_assignments
+          WHERE case_id = ? AND defender_id = ? AND status = 'active'`,
+        [caseId, req.user.id]
+      );
+      if (!assignment) return err403(res, 'Not assigned to this case');
+    }
 
     const result = await db.run(
       `INSERT INTO case_messages
          (case_id, sender_id, sender_type, body, message_type, sent_at)
-       VALUES (?, ?, 'user', ?, ?, datetime('now'))`,
-      [caseId, req.user.id, safeBody, msgType]
+       VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+      [caseId, req.user.id, senderType, safeBody, msgType]
     );
 
     const msg = await db.get(
@@ -126,7 +151,24 @@ router.post('/:caseId', authRequired, async (req, res) => {
          WHERE c.id = ?`,
         [caseId]
       );
-      if (cas_with_atty?.attorney_id && cas_with_atty.attorney_id !== req.user.id) {
+      if (isAttorney || isAtty) {
+        // Attorney sent — notify the DEFENDANT
+        const caseOwner = await db.get(
+          `SELECT c.user_id, u.display_name AS atty_name
+             FROM cases c
+             JOIN users u ON u.id = ? -- attorney
+            WHERE c.id = ?`, [req.user.id, caseId]);
+        if (caseOwner?.user_id) {
+          await sendPushToUser(caseOwner.user_id, {
+            title: `⚖️ Your attorney sent a message`,
+            body: safeBody.length > 80 ? safeBody.slice(0, 80) + '…' : safeBody,
+            data: { screen: 'Messages', caseId },
+            channelId: 'case_updates',
+            badge: 1,
+          });
+        }
+      } else if (cas_with_atty?.attorney_id && cas_with_atty.attorney_id !== req.user.id) {
+        // Defendant sent — notify attorney (existing logic)
         await sendPushToUser(cas_with_atty.attorney_id, {
           title: `💬 ${cas_with_atty.client_name || 'Client'} sent a message`,
           body: safeBody.length > 80 ? safeBody.slice(0, 80) + '…' : safeBody,

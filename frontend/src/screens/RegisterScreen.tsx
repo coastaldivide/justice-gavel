@@ -27,6 +27,10 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [identifier, setIdentifier]   = useState('');
   const [password, setPassword]       = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [isAttorney, setIsAttorney] = useState(false);
+  const [barNumber, setBarNumber]   = useState('');
+  const [barState, setBarState]     = useState('');
+  const [firmName, setFirmName]     = useState('');
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
   const [showPass, setShowPass]       = useState(false);
@@ -51,6 +55,10 @@ if (loading) return;
       const res = await api.post('/auth/register', {
         identifier: normalizedIdentifier, password,
         displayName: displayName.trim() || undefined,
+        isAttorney,
+        barNumber: isAttorney ? barNumber : undefined,
+        barState: isAttorney ? barState : undefined,
+        firmName: isAttorney ? firmName : undefined,
       });
       await secureStorage.setToken( res.data?.token);
       await secureStorage.setItem('user', JSON.stringify(res.data?.user));
@@ -121,7 +129,70 @@ if (loading) return;
             Display name <Text maxFontSizeMultiplier={1.4} style={styles.optional}>(optional)</Text>
           </Text>
           <View style={styles.inputWrap}>
-            <TextInput
+                  {/* ── Account type selector ────────────────────────────────── */}
+      <View style={{ flexDirection: 'row', marginBottom: 12, gap: 8 }}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Defendant or family member account"
+          onPress={() => setIsAttorney(false)}
+          style={{
+            flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center',
+            backgroundColor: !isAttorney ? '#0A1628' : 'transparent',
+            borderWidth: 1, borderColor: !isAttorney ? '#0A1628' : '#D1D5DB',
+          }}
+        >
+          <Text style={{ color: !isAttorney ? '#fff' : '#6B7280', fontWeight: '700', fontSize: 13 }}>
+            ⚖️  I need legal help
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Attorney account"
+          onPress={() => setIsAttorney(true)}
+          style={{
+            flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center',
+            backgroundColor: isAttorney ? '#0A1628' : 'transparent',
+            borderWidth: 1, borderColor: isAttorney ? '#0A1628' : '#D1D5DB',
+          }}
+        >
+          <Text style={{ color: isAttorney ? '#fff' : '#6B7280', fontWeight: '700', fontSize: 13 }}>
+            👔  I am an attorney
+          </Text>
+        </TouchableOpacity>
+      </View>
+      {/* ── Attorney-only fields ─────────────────────────────────── */}
+      {isAttorney && (
+        <View style={{ gap: 8, marginBottom: 8 }}>
+          <TextInput
+            accessibilityLabel="Bar number"
+            placeholder="Bar number (optional)"
+            value={barNumber}
+            onChangeText={setBarNumber}
+            autoCapitalize="characters"
+            style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8,
+                     padding: 12, fontSize: 15 }}
+          />
+          <TextInput
+            accessibilityLabel="State bar (e.g. TN)"
+            placeholder="State bar (e.g. TN)"
+            value={barState}
+            onChangeText={t => setBarState(t.toUpperCase().slice(0,2))}
+            maxLength={2}
+            autoCapitalize="characters"
+            style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8,
+                     padding: 12, fontSize: 15 }}
+          />
+          <TextInput
+            accessibilityLabel="Firm name"
+            placeholder="Firm name (optional)"
+            value={firmName}
+            onChangeText={setFirmName}
+            style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8,
+                     padding: 12, fontSize: 15 }}
+          />
+        </View>
+      )}
+<TextInput
               ref={nameRef}
               style={styles.input}
               placeholder="How should we address you?"

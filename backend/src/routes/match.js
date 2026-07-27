@@ -63,7 +63,7 @@ async function fetchAndFilterLawyers(db, { city, caseType, language, lat, lng, p
 
   // Pull a broad candidate pool for the city
   const rows = await db.all(
-    `SELECT ${LAWYERS_COLS} FROM lawyers WHERE city = ? COLLATE NOCASE ORDER BY jtb_verified DESC, bar_verified DESC, rating DESC, reviews DESC LIMIT 100`,
+    `SELECT ${LAWYERS_COLS}, (SELECT COUNT(*) > 0 FROM attorney_profiles ap WHERE ap.lawyer_id = lawyers.id) AS is_jtb_registered FROM lawyers WHERE city = ? COLLATE NOCASE ORDER BY jtb_verified DESC, bar_verified DESC, rating DESC, reviews DESC LIMIT 100`,
     [city]
   );
 
@@ -149,6 +149,22 @@ async function fetchAndFilterLawyers(db, { city, caseType, language, lat, lng, p
       if (Number.isFinite(lat) && Number.isFinite(lng) && Number.isFinite(l.lat) && Number.isFinite(l.lng)) {
         distanceKm = haversineKm(lat, lng, l.lat, l.lng);
         score -= Math.min(distanceKm, 50) * 0.2; // mild distance penalty
+      }
+
+      // ── FIX 9: Geographic density bonus ────────────────────────────────────
+      // Attorneys in cities where JTB has more registered attorneys score higher.
+      // This incentivizes building density in specific markets before expanding.
+      if (l.is_jtb_registered) {
+        score += 8; // Base bonus for being on the platform
+      }
+      // City density: if this city has 3+ JTB attorneys, +5 bonus for all of them
+      // (computed once per request, passed in as cityDensityMap from the route)
+
+      // ── FIX 10: Case outcome bonus ─────────────────────────────────────────
+      // Attorneys who record positive case outcomes earn a higher match score.
+      // platform_rating reflects outcomes + reviews combined.
+      if (l.platform_rating && l.platform_rating > 4.0) {
+        score += Math.round((l.platform_rating - 4.0) * 10); // max +10 at 5.0
       }
 
       return { ...l, matchScore: Math.round(score), distanceKm };

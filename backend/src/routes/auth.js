@@ -201,7 +201,15 @@ router.post('/register', validate(schemas.auth.register), authRateLimit, registe
   let db;
   try {
     db = await getDb();
-    const { identifier, password, displayName: rawDisplayName } = req.body || {};
+    const {
+      identifier, password, displayName: rawDisplayName,
+      // Attorney self-registration fields
+      isAttorney   = false,
+      barNumber    = null,
+      barState     = null,
+      practiceAreas = null,
+      firmName     = null,
+    } = req.body || {};
     const safeDisplayName = rawDisplayName ? truncateStr(sanitizeStr(String(rawDisplayName), 100), 100) : null;
     if (!identifier || !password) {
       return err400(res, 'identifier and password are required');
@@ -229,21 +237,39 @@ router.post('/register', validate(schemas.auth.register), authRateLimit, registe
     const name = safeDisplayName?.trim() || defaultDisplayName(value, type);
 
     await db.run('BEGIN');
+    const userRole = isAttorney ? 'attorney' : 'user';
+    const safeBarNumber = barNumber ? sanitizeStr(String(barNumber), 30) : null;
+    const safeBarState  = barState  ? sanitizeStr(String(barState),  3)  : null;
+    const safeFirmName  = firmName  ? truncateStr(sanitizeStr(String(firmName), 100), 100) : null;
+
     const r = await db.run(
-      `INSERT INTO users (email, phone, password_hash, name, display_name, login_identifier)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users
+         (email, phone, password_hash, name, display_name, login_identifier,
+          role, bar_number, bar_state, firm_name)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         type === 'email' ? value : null,
         type === 'phone' ? value : null,
-        hash,
-        name,
-        name,
-        value
+        hash, name, name, value,
+        userRole,
+        safeBarNumber,
+        safeBarState,
+        safeFirmName,
       ]
     );
 
     const user = await db.get('SELECT * FROM users WHERE id = ?', [r.lastID]);
     if (!user) return res.status(404).json({ error: 'User not found.' });
+    // If attorney registration — create attorney_profiles row immediately
+    if (isAttorney && r.lastID) {
+      await db.run(
+        `INSERT OR IGNORE INTO attorney_profiles
+           (user_id, bar_number, bar_state, firm_name, practice_areas, bar_verification_status)
+         VALUES (?, ?, ?, ?, ?, 'pending')`,
+        [r.lastID, safeBarNumber, safeBarState, safeFirmName,
+         practiceAreas ? JSON.stringify(practiceAreas) : null]
+      ).catch(() => {}); // Non-fatal — profile created on first dashboard load if missing
+    }
     await db.run('COMMIT');
     await clearFailedLogins(db, user.id).catch(() => {});
     res.json(sign(user));

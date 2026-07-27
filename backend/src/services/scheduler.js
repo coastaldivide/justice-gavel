@@ -201,6 +201,73 @@ async function runDocketReminderSweep() {
 }
 
 // ── Full nightly pipeline ─────────────────────────────────────────────────────
+
+// ── Post-case expungement trigger ─────────────────────────────────────────────
+// Runs nightly. Finds cases closed 30 days ago where the user hasn't visited
+// ExpungementScreen. Sends a targeted push: "Your case closed — see if you
+// qualify to expunge it." This converts one-time users into repeat engagement
+// and creates an expungement attorney referral opportunity.
+async function runExpungementTriggerSweep(db) {
+  try {
+    // Find cases closed 25-35 days ago (window around the 30-day mark)
+    const eligible = await db.all(
+      `SELECT DISTINCT c.user_id, c.id AS case_id, c.title, c.state,
+              u.display_name AS user_name
+         FROM cases c
+         JOIN users u ON u.id = c.user_id
+        WHERE c.status = 'closed'
+          AND c.outcome IN ('dismissed','acquitted','not_guilty','deferred','plea_deal')
+          AND c.outcome_recorded_at >= datetime('now', '-35 days')
+          AND c.outcome_recorded_at <= datetime('now', '-25 days')
+          AND c.user_id NOT IN (
+            -- Don't re-trigger if they've already opened the expungement screen
+            -- Tracked via analytics event or a simple flag on the case
+            SELECT DISTINCT user_id FROM expungement_check_log
+             WHERE checked_at >= datetime('now', '-60 days')
+          )
+        ORDER BY c.outcome_recorded_at DESC
+        LIMIT 200`
+    ).catch(() => []);
+
+    if (!eligible.length) {
+      logger.info('[scheduler/expunge] No eligible cases for trigger today');
+      return;
+    }
+
+    const expo = await getSchedExpo();
+    let sent = 0;
+    for (const row of eligible) {
+      try {
+        const tokens = await db.all(
+          'SELECT token FROM push_tokens WHERE user_id = ? ORDER BY id DESC LIMIT 2',
+          [row.user_id]
+        );
+        if (!tokens.length) continue;
+
+        const { Expo } = await import('expo-server-sdk');
+        const valid = tokens.map(t => t.token).filter(Expo.isExpoPushToken);
+        if (!valid.length) continue;
+
+        await expo.sendPushNotificationsAsync([{
+          to: valid[0],
+          title: '📋 Your case closed — next step?',
+          body: `Your ${row.title || 'case'} was ${row.state ? 'resolved in ' + row.state : 'resolved'}. You may qualify to have it expunged or sealed.`,
+          data: { screen: 'Expungement', caseId: row.case_id, state: row.state || '' },
+          channelId: 'case_updates',
+          sound: 'default',
+          badge: 1,
+        }]);
+        sent++;
+      } catch (e) {
+        logger.warn('[scheduler/expunge] push failed for user', row.user_id, e?.message);
+      }
+    }
+    logger.info(`[scheduler/expunge] Expungement trigger sent to ${sent}/${eligible.length} users`);
+  } catch (e) {
+    logger.warn('[scheduler/expunge] sweep failed:', e?.message);
+  }
+}
+
 async function runNightlyJob() {
   const nowDate = new Date();
   const now     = nowDate.toISOString();
@@ -302,6 +369,8 @@ async function runNightlyJob() {
   logger.info('[scheduler] Step 8/8 — Docket reminder sweep');
   try {
     const r8 = await runDocketReminderSweep();
+  // Post-case expungement trigger
+  try { await runExpungementTriggerSweep(db); } catch(e) {}
     logger.info(`[scheduler] Docket: ${r8.remindSent} reminders, ${r8.overdueDispatched} overdue events`);
   } catch (e) {
     logger.error('[scheduler] Docket sweep error:', e.message);
