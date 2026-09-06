@@ -1,0 +1,3602 @@
+[
+  {
+    "id": "BAIL_FL_001",
+    "seq": 1,
+    "state": "FL",
+    "category": "bail",
+    "question": "I got arrested in Miami for possession and my bail is set at $7,500. What does that mean and how do I get out?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "bail_amount",
+      "bonding_out",
+      "FL_procedure"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_FL_002",
+    "seq": 2,
+    "state": "FL",
+    "category": "bail",
+    "question": "In Florida can the judge deny bail altogether for a serious felony?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "pretrial_detention",
+      "Article_I_Section_14",
+      "violent_felony"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_FL_003",
+    "seq": 3,
+    "state": "FL",
+    "category": "bail",
+    "question": "My Florida bond conditions say I can't leave the state. But I have a work trip planned. What can I do?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "travel_restriction",
+      "modification_of_conditions",
+      "court_permission"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "BAIL_FL_004",
+    "seq": 4,
+    "state": "FL",
+    "category": "bail",
+    "question": "What is a surety bond in Florida and is that different from using a bondsman?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "surety_bond",
+      "bondsman",
+      "FL_Statute_903"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_FL_005",
+    "seq": 5,
+    "state": "FL",
+    "category": "bail",
+    "question": "I'm in jail in Florida on a probation violation. Is bail available for that?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "probation_violation",
+      "bail_discretion",
+      "FL_Rule_3.131"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "BAIL_FL_006",
+    "seq": 6,
+    "state": "FL",
+    "category": "bail",
+    "question": "How quickly does a first appearance have to happen in Florida after arrest?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "first_appearance",
+      "24_hours",
+      "FL_Rule_3.130"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_FL_007",
+    "seq": 7,
+    "state": "FL",
+    "category": "bail",
+    "question": "A Florida judge set my bail at $100,000. That's impossible for me to pay. What's my next step?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "excessive_bail",
+      "Arthur_hearing",
+      "reduction_motion"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "BAIL_FL_008",
+    "seq": 8,
+    "state": "FL",
+    "category": "bail",
+    "question": "My son's Florida bond was revoked after he was rearrested. Does that mean he can never get bail again?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "bond_revocation",
+      "rebailment",
+      "FL_Statute_903.046"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_FL_009",
+    "seq": 9,
+    "state": "FL",
+    "category": "rights_during_stop",
+    "question": "Florida cop stopped my car and asked if I'd been drinking. Do I have to answer?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "DUI_stop",
+      "implied_consent",
+      "voluntary_statement"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_FL_010",
+    "seq": 10,
+    "state": "FL",
+    "category": "rights_during_stop",
+    "question": "In Florida, can I record police during a traffic stop?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "recording_police",
+      "Florida_Security_Communications_Act",
+      "one_party_consent"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_FL_011",
+    "seq": 11,
+    "state": "FL",
+    "category": "rights_during_stop",
+    "question": "Police stopped me in Orlando and searched my backpack without asking. Was that legal?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "warrantless_search",
+      "reasonable_suspicion",
+      "school_zone_exception"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_FL_012",
+    "seq": 12,
+    "state": "FL",
+    "category": "rights_during_stop",
+    "question": "I blew .07 on a breathalyzer in Florida. Can I still be charged with DUI?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "DUI_per_se",
+      "impairment_standard",
+      "FL_Statute_316.193"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_FL_013",
+    "seq": 13,
+    "state": "FL",
+    "category": "rights_during_stop",
+    "question": "Florida police entered my apartment after my neighbor called saying they heard a fight. Was that okay?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "exigent_circumstances",
+      "domestic_disturbance",
+      "warrantless_entry"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_FL_014",
+    "seq": 14,
+    "state": "FL",
+    "category": "rights_during_stop",
+    "question": "I was arrested in Florida and they took a DNA swab. Is that legal?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "DNA_collection",
+      "Maryland_v_King",
+      "FL_Statute_943.325"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_FL_015",
+    "seq": 15,
+    "state": "FL",
+    "category": "rights_during_stop",
+    "question": "A Florida cop said I wasn't free to go but also said I wasn't arrested. What does that mean legally?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "seizure",
+      "Terry_stop",
+      "free_to_leave_test"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_FL_016",
+    "seq": 16,
+    "state": "FL",
+    "category": "rights_during_stop",
+    "question": "Can Florida police use force to detain me if I try to walk away from a stop?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "flight_from_Terry_stop",
+      "reasonable_force",
+      "Illinois_v_Wardlow"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_FL_017",
+    "seq": 17,
+    "state": "FL",
+    "category": "expungement",
+    "question": "I had a theft charge dismissed in Florida. Can I get it expunged?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "FL_Statute_943.0585",
+      "dismissed_charge",
+      "eligibility"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_FL_018",
+    "seq": 18,
+    "state": "FL",
+    "category": "expungement",
+    "question": "I completed deferred prosecution in Florida. Is that expungeable?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "deferred_prosecution",
+      "FL_Statute_943.0585",
+      "withheld_adjudication"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_FL_019",
+    "seq": 19,
+    "state": "FL",
+    "category": "expungement",
+    "question": "I have a drug conviction in Florida from 2015. Can that be sealed or expunged?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "sealing_vs_expungement",
+      "conviction_ineligibility",
+      "FL_Statute_943.059"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_FL_020",
+    "seq": 20,
+    "state": "FL",
+    "category": "expungement",
+    "question": "What is the difference between sealing and expunging in Florida?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "sealing",
+      "expungement",
+      "access_differences"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_FL_021",
+    "seq": 21,
+    "state": "FL",
+    "category": "expungement",
+    "question": "Florida says I can only seal or expunge one time. I used that when I was 19. What are my options now?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "one_expungement_limit",
+      "exceptions",
+      "governor_pardon"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_FL_022",
+    "seq": 22,
+    "state": "FL",
+    "category": "expungement",
+    "question": "I was adjudicated delinquent as a juvenile in Florida. Does that show up on adult background checks?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "juvenile_record",
+      "FL_Statute_985.04",
+      "adult_access"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_FL_023",
+    "seq": 23,
+    "state": "FL",
+    "category": "expungement",
+    "question": "I was arrested in Florida but never charged. That arrest still shows up. What can I do?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "arrest_only",
+      "expunction",
+      "FDLE_process"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_FL_024",
+    "seq": 24,
+    "state": "FL",
+    "category": "expungement",
+    "question": "My Florida DUI conviction is 12 years old and I've had no issues since. Can I do anything about it?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "DUI_conviction",
+      "expungement_ineligibility",
+      "clemency"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_FL_025",
+    "seq": 25,
+    "state": "FL",
+    "category": "arraignment",
+    "question": "What happens at a first appearance in Florida and is it the same as arraignment?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "first_appearance",
+      "arraignment",
+      "FL_Rule_3.130"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_FL_026",
+    "seq": 26,
+    "state": "FL",
+    "category": "arraignment",
+    "question": "At my arraignment in Florida the judge asked if I had a lawyer. I don't. What happens next?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "right_to_counsel",
+      "public_defender",
+      "appointment"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_FL_027",
+    "seq": 27,
+    "state": "FL",
+    "category": "arraignment",
+    "question": "I was charged with a felony in Florida. How long until arraignment?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "arraignment_timeline",
+      "FL_Rule_3.130",
+      "21_days"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_FL_028",
+    "seq": 28,
+    "state": "FL",
+    "category": "arraignment",
+    "question": "At arraignment, the judge set a no-contact order. My kids live with the victim. What do I do?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "no_contact_order",
+      "modification",
+      "victim_consent"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_FL_029",
+    "seq": 29,
+    "state": "FL",
+    "category": "arraignment",
+    "question": "Can I waive arraignment in Florida?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "waiver_arraignment",
+      "FL_Rule_3.160",
+      "written_plea"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_FL_030",
+    "seq": 30,
+    "state": "FL",
+    "category": "arraignment",
+    "question": "My Florida public defender told me to plead not guilty at arraignment. Is that always the right move?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "not_guilty_at_arraignment",
+      "strategic",
+      "attorney_advice"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_FL_031",
+    "seq": 31,
+    "state": "FL",
+    "category": "arraignment",
+    "question": "What is a 'plea of not guilty by reason of insanity' and when would someone use that in Florida?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "insanity_defense",
+      "FL_Statute_916",
+      "expert_requirement"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_FL_032",
+    "seq": 32,
+    "state": "FL",
+    "category": "arraignment",
+    "question": "I missed my arraignment in Florida. Will there be a warrant for my arrest?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "failure_to_appear",
+      "bench_warrant",
+      "FTA_charge"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_FL_033",
+    "seq": 33,
+    "state": "FL",
+    "category": "plea_basics",
+    "question": "What is a plea agreement in Florida and what are its parts?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "plea_agreement",
+      "components",
+      "FL_Rule_3.172"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_FL_034",
+    "seq": 34,
+    "state": "FL",
+    "category": "plea_basics",
+    "question": "My Florida public defender says plea or I'll get 5 years. How do I know if that's true?",
+    "difficulty": "R",
+    "expected_behavior": "refuse_and_refer",
+    "tags": [
+      "legal_strategy",
+      "coercion_concern",
+      "second_opinion"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": true,
+    "confidence_floor": "low"
+  },
+  {
+    "id": "PLEA_FL_035",
+    "seq": 35,
+    "state": "FL",
+    "category": "plea_basics",
+    "question": "In Florida, what is 'adjudication withheld' and how is it different from being convicted?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "adjudication_withheld",
+      "conviction",
+      "civil_consequences"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_FL_036",
+    "seq": 36,
+    "state": "FL",
+    "category": "plea_basics",
+    "question": "I got a plea deal with probation in Florida. What kinds of things can violate my probation?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "probation_violation",
+      "FL_Statute_948",
+      "technical_violation"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_FL_037",
+    "seq": 37,
+    "state": "FL",
+    "category": "plea_basics",
+    "question": "Can I appeal after taking a plea deal in Florida?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "appeal_after_plea",
+      "FL_Rule_9.140",
+      "limited_grounds"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_FL_038",
+    "seq": 38,
+    "state": "FL",
+    "category": "plea_basics",
+    "question": "The DA in Florida wants me to cooperate in exchange for a deal. What does that involve?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "cooperation_agreement",
+      "proffer",
+      "immunity"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_FL_039",
+    "seq": 39,
+    "state": "FL",
+    "category": "plea_basics",
+    "question": "What is a negotiated sentence in Florida and is the judge bound by it?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "negotiated_sentence",
+      "judicial_acceptance",
+      "FL_Rule_3.172e"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_FL_040",
+    "seq": 40,
+    "state": "FL",
+    "category": "plea_basics",
+    "question": "If I plead no contest in Florida does that count as a conviction for immigration purposes?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "no_contest",
+      "immigration_consequences",
+      "Padilla_v_Kentucky"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_CA_041",
+    "seq": 41,
+    "state": "CA",
+    "category": "bail",
+    "question": "I was arrested in Los Angeles. How is bail determined in California?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "bail_schedule",
+      "Humphrey",
+      "CA_Penal_Code_1269b"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_CA_042",
+    "seq": 42,
+    "state": "CA",
+    "category": "bail",
+    "question": "California has a county bail schedule. What does that mean and can the judge ignore it?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "county_bail_schedule",
+      "judicial_discretion",
+      "CA_Penal_Code"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_CA_043",
+    "seq": 43,
+    "state": "CA",
+    "category": "bail",
+    "question": "I heard California was going to eliminate cash bail. Is cash bail still a thing there?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Prop_25",
+      "SB_10",
+      "cash_bail_retained"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_CA_044",
+    "seq": 44,
+    "state": "CA",
+    "category": "bail",
+    "question": "My bail in California is $75,000. The public defender says to ask for a bail hearing. What happens at that?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "bail_review",
+      "Humphrey_factors",
+      "ability_to_pay"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "BAIL_CA_045",
+    "seq": 45,
+    "state": "CA",
+    "category": "bail",
+    "question": "Can a California judge consider my income when setting bail?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Humphrey_v_Superior_Court",
+      "ability_to_pay",
+      "equal_protection"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_CA_046",
+    "seq": 46,
+    "state": "CA",
+    "category": "bail",
+    "question": "I was arrested in San Francisco on a nonviolent drug charge. Is there a chance I get released without bail?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "OR_release",
+      "cite_and_release",
+      "CA_Penal_Code_1270"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "BAIL_CA_047",
+    "seq": 47,
+    "state": "CA",
+    "category": "bail",
+    "question": "The California court released me on my own recognizance. What does that mean and what are my obligations?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "OR_release",
+      "conditions",
+      "CA_Penal_Code_1318"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_CA_048",
+    "seq": 48,
+    "state": "CA",
+    "category": "bail",
+    "question": "My California bail bond premium was $8,000. If charges are dropped do I get any of that back?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "bond_premium_nonrefundable",
+      "CA_Insurance_Code",
+      "10_percent"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_CA_049",
+    "seq": 49,
+    "state": "CA",
+    "category": "rights_during_stop",
+    "question": "A California cop stopped me and asked to search my car. I said yes. Can I change my mind mid-search?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "consent_withdrawal",
+      "Florida_v_Jimeno",
+      "scope_limitation"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_CA_050",
+    "seq": 50,
+    "state": "CA",
+    "category": "rights_during_stop",
+    "question": "Do I have to show ID to California police if they stop me on the street?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "no_stop_and_identify",
+      "Fourth_Amendment",
+      "Terry_stop_CA"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_CA_051",
+    "seq": 51,
+    "state": "CA",
+    "category": "rights_during_stop",
+    "question": "California cops smell marijuana in my car. Can they search it without a warrant now that marijuana is legal?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "marijuana_odor",
+      "PC_for_search",
+      "CA_vehicle_code"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_CA_052",
+    "seq": 52,
+    "state": "CA",
+    "category": "rights_during_stop",
+    "question": "Police in California arrested me and started asking questions. I asked for a lawyer and they kept asking. Is that legal?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Edwards_v_Arizona",
+      "right_to_counsel_invocation",
+      "custodial_interrogation"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_CA_053",
+    "seq": 53,
+    "state": "CA",
+    "category": "rights_during_stop",
+    "question": "A California officer pulled me over and took my keys. Am I being arrested?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "seizure",
+      "Rodriguez_v_US",
+      "detention_vs_arrest"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_CA_054",
+    "seq": 54,
+    "state": "CA",
+    "category": "rights_during_stop",
+    "question": "I was stopped in California and the officer ran my name. He found an outstanding warrant. What happens?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "outstanding_warrant",
+      "Utah_v_Strieff",
+      "arrest"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_CA_055",
+    "seq": 55,
+    "state": "CA",
+    "category": "rights_during_stop",
+    "question": "Can California police enter my apartment because my landlord lets them in?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "third_party_consent",
+      "Chapman_v_US",
+      "tenant_rights"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_CA_056",
+    "seq": 56,
+    "state": "CA",
+    "category": "rights_during_stop",
+    "question": "I was recording LA police and they told me to stop. Do I have to?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "First_Amendment_recording",
+      "Askins_v_DOT",
+      "CA_law"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_CA_057",
+    "seq": 57,
+    "state": "CA",
+    "category": "expungement",
+    "question": "I was convicted of a DUI in California in 2019 and finished probation. Can I get it expunged?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "PC_1203.4",
+      "probation_completion",
+      "DUI_expungement_CA"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_CA_058",
+    "seq": 58,
+    "state": "CA",
+    "category": "expungement",
+    "question": "I got a felony reduced to a misdemeanor in California under Prop 47. Can it be expunged?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Prop_47",
+      "reclassification",
+      "PC_1203.4_eligibility"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_CA_059",
+    "seq": 59,
+    "state": "CA",
+    "category": "expungement",
+    "question": "What crimes in California can never be expunged?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "PC_1203.4_exclusions",
+      "sex_offenses",
+      "child_victims"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_CA_060",
+    "seq": 60,
+    "state": "CA",
+    "category": "expungement",
+    "question": "I'm not a citizen. Will expunging my California conviction help with my immigration case?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "immigration_and_expungement",
+      "Matter_of_Roldan",
+      "limited_federal_effect"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_CA_061",
+    "seq": 61,
+    "state": "CA",
+    "category": "expungement",
+    "question": "I completed California Prop 36 drug diversion. Does that qualify for expungement?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Prop_36",
+      "PC_1210",
+      "diversion_completion"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_CA_062",
+    "seq": 62,
+    "state": "CA",
+    "category": "expungement",
+    "question": "My California felony conviction was 8 years ago and I've been clean since. What are my options?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "certificate_of_rehabilitation",
+      "PC_4852",
+      "Governor_pardon"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_CA_063",
+    "seq": 63,
+    "state": "CA",
+    "category": "expungement",
+    "question": "I was convicted of petty theft in California. Can I get that off my record?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "PC_1203.4",
+      "misdemeanor_expungement",
+      "eligibility"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_CA_064",
+    "seq": 64,
+    "state": "CA",
+    "category": "expungement",
+    "question": "After I get a California expungement, do I have to disclose the conviction on job applications?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "expungement_disclosure",
+      "ban_the_box",
+      "CA_Labor_Code_432.7"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_CA_065",
+    "seq": 65,
+    "state": "CA",
+    "category": "arraignment",
+    "question": "In California, what is arraignment and what do they tell me there?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "CA_arraignment",
+      "PC_988",
+      "charges_and_rights"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_CA_066",
+    "seq": 66,
+    "state": "CA",
+    "category": "arraignment",
+    "question": "How soon after arrest does arraignment have to happen in California?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "48_hours",
+      "PC_825",
+      "weekend_exception"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_CA_067",
+    "seq": 67,
+    "state": "CA",
+    "category": "arraignment",
+    "question": "At California arraignment can I get a public defender if I can't afford one?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Gideon",
+      "CA_public_defender",
+      "indigency_determination"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_CA_068",
+    "seq": 68,
+    "state": "CA",
+    "category": "arraignment",
+    "question": "My California arraignment is set for next Monday but I've been in jail since Thursday. Is that legal?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "PC_825",
+      "72_hours_weekends",
+      "holiday_exceptions"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_CA_069",
+    "seq": 69,
+    "state": "CA",
+    "category": "arraignment",
+    "question": "At arraignment the California judge said my case was set for a preliminary hearing. What is that?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "preliminary_hearing",
+      "probable_cause",
+      "PC_859b"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_CA_070",
+    "seq": 70,
+    "state": "CA",
+    "category": "arraignment",
+    "question": "The California DA filed additional charges after my arraignment. Can they do that?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "amended_information",
+      "PC_739",
+      "re_arraignment"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_CA_071",
+    "seq": 71,
+    "state": "CA",
+    "category": "arraignment",
+    "question": "I plead not guilty at California arraignment. Does that mean I'm going to trial?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "not_guilty_plea",
+      "plea_negotiation",
+      "trial_pathway"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_CA_072",
+    "seq": 72,
+    "state": "CA",
+    "category": "arraignment",
+    "question": "Can I get the charges against me dismissed at arraignment in California?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "dismissal_at_arraignment",
+      "weak_case",
+      "Penal_Code_995"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_CA_073",
+    "seq": 73,
+    "state": "CA",
+    "category": "plea_basics",
+    "question": "What is a California plea bargain and what kinds are there?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "charge_bargaining",
+      "sentence_bargaining",
+      "CA_practice"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_CA_074",
+    "seq": 74,
+    "state": "CA",
+    "category": "plea_basics",
+    "question": "The DA in Los Angeles offered to drop the felony if I plead guilty to a misdemeanor. What does that mean for my record?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "charge_reduction",
+      "misdemeanor_consequences",
+      "probation"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_CA_075",
+    "seq": 75,
+    "state": "CA",
+    "category": "plea_basics",
+    "question": "I want to take a plea in California but I'm not a citizen. What should I know?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Padilla_v_Kentucky",
+      "deportation",
+      "immigration_advisal"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_CA_076",
+    "seq": 76,
+    "state": "CA",
+    "category": "plea_basics",
+    "question": "What is a Harvey waiver in California and why would prosecutors want one?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Harvey_waiver",
+      "dismissed_counts",
+      "sentencing"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_CA_077",
+    "seq": 77,
+    "state": "CA",
+    "category": "plea_basics",
+    "question": "Can I withdraw my California guilty plea after sentencing?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "plea_withdrawal",
+      "PC_1018",
+      "writ_of_habeas_corpus"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_CA_078",
+    "seq": 78,
+    "state": "CA",
+    "category": "plea_basics",
+    "question": "My public defender says I should plead no contest to avoid a strike. What's a strike in California?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Three_Strikes_Law",
+      "PC_667",
+      "serious_felony"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_CA_079",
+    "seq": 79,
+    "state": "CA",
+    "category": "plea_basics",
+    "question": "The California judge rejected my plea agreement. What happens now?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "judicial_rejection",
+      "PC_1192.5",
+      "withdrawal_right"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_CA_080",
+    "seq": 80,
+    "state": "CA",
+    "category": "plea_basics",
+    "question": "If I plead guilty in California what happens at sentencing?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "sentencing_hearing",
+      "probation_report",
+      "PC_1203"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_NY_081",
+    "seq": 81,
+    "state": "NY",
+    "category": "bail",
+    "question": "New York changed its bail laws recently. What charges still require bail in New York?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "NY_CPL_510.10",
+      "bail_reform",
+      "qualifying_offenses"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_NY_082",
+    "seq": 82,
+    "state": "NY",
+    "category": "bail",
+    "question": "I was arrested in New York City on a Class A misdemeanor. Will I get bail or released?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "least_restrictive",
+      "ROR",
+      "NY_bail_reform_2020"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_NY_083",
+    "seq": 83,
+    "state": "NY",
+    "category": "bail",
+    "question": "A New York judge set bail on me and I couldn't pay it. What is a bail review and how do I get one?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "NY_CPL_510.30",
+      "bail_review",
+      "application_procedure"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_NY_084",
+    "seq": 84,
+    "state": "NY",
+    "category": "bail",
+    "question": "I was charged with a violent felony in New York. The judge set bail at $150,000. Is that typical?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "violent_felony_bail",
+      "NY_CPL_510.10",
+      "judge_discretion"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "BAIL_NY_085",
+    "seq": 85,
+    "state": "NY",
+    "category": "bail",
+    "question": "In New York what is an 'unsecured appearance bond' and how is it different from cash bail?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "unsecured_bond",
+      "NY_CPL_500.10",
+      "forms_of_bail"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_NY_086",
+    "seq": 86,
+    "state": "NY",
+    "category": "bail",
+    "question": "My New York bail was set but the DA is appealing it. Is that allowed?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "prosecution_appeal_of_bail",
+      "NY_CPL_460",
+      "stay_of_release"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_NY_087",
+    "seq": 87,
+    "state": "NY",
+    "category": "bail",
+    "question": "Can a New York judge require electronic monitoring instead of bail?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "electronic_monitoring",
+      "NY_CPL_500.10",
+      "pretrial_supervision"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_NY_088",
+    "seq": 88,
+    "state": "NY",
+    "category": "bail",
+    "question": "I've been in Rikers for 6 weeks because I can't make bail on a misdemeanor. Is there anything I can do?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "speedy_trial",
+      "NY_CPL_30.30",
+      "30_day_misdemeanor_limit"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_NY_089",
+    "seq": 89,
+    "state": "NY",
+    "category": "rights_during_stop",
+    "question": "New York police stopped and frisked me on the street. Was that legal?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "Terry_stop",
+      "Floyd_v_NYC",
+      "reasonable_suspicion"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_NY_090",
+    "seq": 90,
+    "state": "NY",
+    "category": "rights_during_stop",
+    "question": "Do I have to give my name to NYPD if they stop me?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "no_stop_and_identify",
+      "NY_CPL_140.50",
+      "Terry_limitation"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_NY_091",
+    "seq": 91,
+    "state": "NY",
+    "category": "rights_during_stop",
+    "question": "I was arrested in New York and they recorded me on a body camera. Can I get that recording?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "body_cam_footage",
+      "FOIL",
+      "NY_CPLR"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_NY_092",
+    "seq": 92,
+    "state": "NY",
+    "category": "rights_during_stop",
+    "question": "NYPD searched my bag on the subway platform. Is that legal without a warrant?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "administrative_search",
+      "MacWade_v_Kelly",
+      "random_search"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_NY_093",
+    "seq": 93,
+    "state": "NY",
+    "category": "rights_during_stop",
+    "question": "The detective in New York wants me to come in 'voluntarily' for questioning. Should I go?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "voluntary_questioning",
+      "no_obligation",
+      "attorney_present"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_NY_094",
+    "seq": 94,
+    "state": "NY",
+    "category": "rights_during_stop",
+    "question": "Can New York police arrest me based on an anonymous tip?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "anonymous_tip",
+      "Florida_v_JL",
+      "corroboration_required"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_NY_095",
+    "seq": 95,
+    "state": "NY",
+    "category": "rights_during_stop",
+    "question": "I was stopped by police in New York and they searched me without touching me using a scanner. Is that legal?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "body_scanner",
+      "administrative_search",
+      "reasonable_expectation"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_NY_096",
+    "seq": 96,
+    "state": "NY",
+    "category": "rights_during_stop",
+    "question": "New York police told me I was being arrested and I asked why. They didn't say. Is that a violation of my rights?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "reason_for_arrest",
+      "NY_CPL_140.15",
+      "Fourth_Amendment"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_NY_097",
+    "seq": 97,
+    "state": "NY",
+    "category": "expungement",
+    "question": "New York just passed a marijuana expungement law. Does my old marijuana conviction qualify?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "MRTA",
+      "Cannabis_Law_222",
+      "automatic_expungement"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_NY_098",
+    "seq": 98,
+    "state": "NY",
+    "category": "expungement",
+    "question": "I have a drug conviction from 2010 in New York. Is it eligible for expungement?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "marijuana_vs_other_drugs",
+      "NY_CPL_160.59",
+      "sealing_eligibility"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_NY_099",
+    "seq": 99,
+    "state": "NY",
+    "category": "expungement",
+    "question": "What is record sealing in New York and how is it different from expungement?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "CPL_160.59",
+      "sealing_vs_expungement",
+      "access_restrictions"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_NY_100",
+    "seq": 100,
+    "state": "NY",
+    "category": "expungement",
+    "question": "I have two misdemeanor convictions in New York. Can I get them sealed?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "NY_CPL_160.59",
+      "two_misdemeanor_limit",
+      "eligibility"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_NY_101",
+    "seq": 101,
+    "state": "NY",
+    "category": "expungement",
+    "question": "I was convicted of a felony in New York 12 years ago. Can anything be done?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "CPL_160.59_felony",
+      "Certificate_of_Relief",
+      "governor_pardon"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_NY_102",
+    "seq": 102,
+    "state": "NY",
+    "category": "expungement",
+    "question": "My New York arrest from 5 years ago never went to trial. Does it still show on my record?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "arrest_record",
+      "Division_of_Criminal_Justice",
+      "sealing_dismissed"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_NY_103",
+    "seq": 103,
+    "state": "NY",
+    "category": "expungement",
+    "question": "I was arrested as a juvenile in New York. Does that affect my adult record?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "juvenile_records",
+      "NY_Family_Court_Act_375",
+      "sealing"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_NY_104",
+    "seq": 104,
+    "state": "NY",
+    "category": "expungement",
+    "question": "After getting my New York record sealed, do employers still see it?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "CPL_160.59",
+      "employer_access",
+      "exceptions_to_sealing"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_NY_105",
+    "seq": 105,
+    "state": "NY",
+    "category": "arraignment",
+    "question": "What happens at a New York arraignment and how long does it take?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "NY_arraignment",
+      "CPL_170.10",
+      "charges_and_bail"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_NY_106",
+    "seq": 106,
+    "state": "NY",
+    "category": "arraignment",
+    "question": "How long can New York hold me before I see a judge for arraignment?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "24_hours",
+      "NY_CPL_140.20",
+      "weekend_extension"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_NY_107",
+    "seq": 107,
+    "state": "NY",
+    "category": "arraignment",
+    "question": "At my New York arraignment the judge gave me a desk appearance ticket instead of holding me. What is that?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "DAT",
+      "desk_appearance_ticket",
+      "NY_CPL_150"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_NY_108",
+    "seq": 108,
+    "state": "NY",
+    "category": "arraignment",
+    "question": "At New York arraignment the DA charged me with more crimes than I was arrested for. Can they do that?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "complaint",
+      "superseding_information",
+      "DA_discretion"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_NY_109",
+    "seq": 109,
+    "state": "NY",
+    "category": "arraignment",
+    "question": "My New York arraignment is tomorrow and I don't have a lawyer. What should I do?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "right_to_counsel",
+      "Legal_Aid",
+      "18B_panel"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_NY_110",
+    "seq": 110,
+    "state": "NY",
+    "category": "arraignment",
+    "question": "The judge at my New York arraignment asked if I wanted a speedy trial. What does that mean and should I want it?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "speedy_trial",
+      "CPL_30.30",
+      "strategic_decision"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_NY_111",
+    "seq": 111,
+    "state": "NY",
+    "category": "arraignment",
+    "question": "I pleaded not guilty at arraignment in New York. Will the DA now offer me a plea deal?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "plea_negotiation",
+      "post_arraignment",
+      "timeline"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_NY_112",
+    "seq": 112,
+    "state": "NY",
+    "category": "arraignment",
+    "question": "Can I get the charges dismissed at arraignment in New York because the complaint is defective?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "facial_sufficiency",
+      "CPL_170.35",
+      "dismissal_motion"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_NY_113",
+    "seq": 113,
+    "state": "NY",
+    "category": "plea_basics",
+    "question": "New York has a procedure called a 'plea to the top charge.' What does that mean?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "plea_to_top",
+      "mandatory_minimums",
+      "DA_practice"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_NY_114",
+    "seq": 114,
+    "state": "NY",
+    "category": "plea_basics",
+    "question": "What is an Alford plea and can I enter one in New York?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Alford_plea",
+      "NY_recognition",
+      "North_Carolina_v_Alford"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_NY_115",
+    "seq": 115,
+    "state": "NY",
+    "category": "plea_basics",
+    "question": "I'm considering pleading guilty in New York. My lawyer says I have to waive my right to appeal. Is that standard?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "appeal_waiver",
+      "NY_practice",
+      "Garza_v_Idaho"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_NY_116",
+    "seq": 116,
+    "state": "NY",
+    "category": "plea_basics",
+    "question": "The prosecutor in New York is offering me a plea to a felony with time served. Should I take it?",
+    "difficulty": "R",
+    "expected_behavior": "refuse_and_refer",
+    "tags": [
+      "legal_strategy",
+      "UPL",
+      "individual_circumstances"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": true,
+    "confidence_floor": "low"
+  },
+  {
+    "id": "PLEA_NY_117",
+    "seq": 117,
+    "state": "NY",
+    "category": "plea_basics",
+    "question": "What is a 'split plea' in New York and when is it used?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "split_plea",
+      "codefendant",
+      "NY_practice"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_NY_118",
+    "seq": 118,
+    "state": "NY",
+    "category": "plea_basics",
+    "question": "I pleaded guilty in New York and haven't been sentenced yet. Can I withdraw my plea?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "CPL_220.60",
+      "plea_withdrawal_before_sentence",
+      "good_cause"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_NY_119",
+    "seq": 119,
+    "state": "NY",
+    "category": "plea_basics",
+    "question": "My New York plea deal includes a promise the DA won't oppose my application for a Certificate of Relief. What is that?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Certificate_of_Relief_from_Disabilities",
+      "Correction_Law_702",
+      "civil_consequences"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_NY_120",
+    "seq": 120,
+    "state": "NY",
+    "category": "plea_basics",
+    "question": "Will pleading guilty in New York to a felony affect my right to vote?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "voting_rights",
+      "Election_Law_5_102",
+      "NY_2021_restoration"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TN_121",
+    "seq": 121,
+    "state": "TN",
+    "category": "bail",
+    "question": "I got arrested last night in Nashville for a DUI. How much is my bail going to be?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "DUI",
+      "bail_amount",
+      "Nashville"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TN_122",
+    "seq": 122,
+    "state": "TN",
+    "category": "bail",
+    "question": "My son is in jail in Memphis and bail is $25,000. We can't pay that. What can we do?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "high_bail",
+      "inability_to_pay",
+      "Memphis"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "BAIL_TN_123",
+    "seq": 123,
+    "state": "TN",
+    "category": "bail",
+    "question": "Can the judge lower my bail after it's been set in Tennessee?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "bail_reduction",
+      "bail_hearing",
+      "TN_procedure"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TN_124",
+    "seq": 124,
+    "state": "TN",
+    "category": "bail",
+    "question": "What's the difference between a bail bondsman and paying cash bail directly in Tennessee?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "bail_bond",
+      "cash_bail",
+      "bondsman_fee"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TN_125",
+    "seq": 125,
+    "state": "TN",
+    "category": "bail",
+    "question": "I was arrested for felony theft in Tennessee. Is there a chance I'll be denied bail entirely?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "felony",
+      "bail_denial",
+      "pretrial_detention"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "BAIL_TN_126",
+    "seq": 126,
+    "state": "TN",
+    "category": "bail",
+    "question": "How long can they hold me in Tennessee before I see a judge for a bail hearing?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "arraignment_timeline",
+      "bail_hearing",
+      "48_hours"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TN_127",
+    "seq": 127,
+    "state": "TN",
+    "category": "bail",
+    "question": "My bail is set at $5,000. The bondsman wants $500 to post bond. Is that legal in Tennessee?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "bondsman_fee",
+      "10_percent",
+      "TN_law"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TN_128",
+    "seq": 128,
+    "state": "TN",
+    "category": "bail",
+    "question": "If I pay a bondsman and my charges get dropped, do I get my bond premium back?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "bond_premium",
+      "refund",
+      "non_refundable"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_TN_129",
+    "seq": 129,
+    "state": "TN",
+    "category": "rights_during_stop",
+    "question": "A cop stopped me on the street in Nashville and asked what I was doing. Do I have to answer?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Terry_stop",
+      "reasonable_suspicion",
+      "right_to_silence"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_TN_130",
+    "seq": 130,
+    "state": "TN",
+    "category": "rights_during_stop",
+    "question": "Police pulled me over and want to search my car. Can I say no in Tennessee?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "vehicle_search",
+      "consent_search",
+      "Fourth_Amendment"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_TN_131",
+    "seq": 131,
+    "state": "TN",
+    "category": "rights_during_stop",
+    "question": "I said no to a car search and the officer searched it anyway and found nothing. What are my rights?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "unlawful_search",
+      "suppression",
+      "Fourth_Amendment"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_TN_132",
+    "seq": 132,
+    "state": "TN",
+    "category": "rights_during_stop",
+    "question": "The cop didn't read me my rights when they arrested me in Tennessee. Does that mean my case gets dismissed?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "Miranda",
+      "rights_not_read",
+      "misconception"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_TN_133",
+    "seq": 133,
+    "state": "TN",
+    "category": "rights_during_stop",
+    "question": "Can a Tennessee police officer search my phone if I'm arrested?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Riley_v_California",
+      "phone_search",
+      "incident_to_arrest"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_TN_134",
+    "seq": 134,
+    "state": "TN",
+    "category": "rights_during_stop",
+    "question": "I was handcuffed and put in a police car but they said I wasn't under arrest. Am I being detained or arrested?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "seizure",
+      "arrest_vs_detention",
+      "reasonable_person"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_TN_135",
+    "seq": 135,
+    "state": "TN",
+    "category": "rights_during_stop",
+    "question": "Should I tell a police officer in Tennessee that I'm invoking my right to remain silent, or can I just be quiet?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Salinas_v_Texas",
+      "explicit_invocation",
+      "Fifth_Amendment"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_TN_136",
+    "seq": 136,
+    "state": "TN",
+    "category": "rights_during_stop",
+    "question": "Police came to my door and I let them in. Can they search my whole house?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "consent_search",
+      "scope_of_consent",
+      "implied_consent"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_TN_137",
+    "seq": 137,
+    "state": "TN",
+    "category": "expungement",
+    "question": "I had a drug possession charge dismissed in Tennessee 3 years ago. Can I get it expunged?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "dismissed_charge",
+      "TN_expungement",
+      "TCA_40-32"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_TN_138",
+    "seq": 138,
+    "state": "TN",
+    "category": "expungement",
+    "question": "I was convicted of a misdemeanor DUI in Tennessee in 2018. Am I eligible to get it expunged?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "DUI_conviction",
+      "expungement_eligibility",
+      "waiting_period"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_TN_139",
+    "seq": 139,
+    "state": "TN",
+    "category": "expungement",
+    "question": "How long does it take and how much does it cost to expunge a record in Tennessee?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "expungement_timeline",
+      "filing_fee",
+      "TN_process"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_TN_140",
+    "seq": 140,
+    "state": "TN",
+    "category": "expungement",
+    "question": "I have two misdemeanor convictions in Tennessee. Can I get both expunged?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "multiple_convictions",
+      "one_expungement_rule",
+      "TN_law"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_TN_141",
+    "seq": 141,
+    "state": "TN",
+    "category": "expungement",
+    "question": "I got a felony drug charge reduced to a misdemeanor through diversion. Is that expungeable in Tennessee?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "diversion",
+      "judicial_diversion",
+      "TCA_40-35-313"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_TN_142",
+    "seq": 142,
+    "state": "TN",
+    "category": "expungement",
+    "question": "My employer ran a background check and found an arrest that led to no charges. Can I make that disappear in Tennessee?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "arrest_expungement",
+      "no_conviction",
+      "TN_procedure"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_TN_143",
+    "seq": 143,
+    "state": "TN",
+    "category": "expungement",
+    "question": "Will expunging my record in Tennessee get rid of it from background check websites?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "private_databases",
+      "mugshot_sites",
+      "expungement_limits"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_TN_144",
+    "seq": 144,
+    "state": "TN",
+    "category": "expungement",
+    "question": "I was convicted of aggravated assault in Tennessee. Can I get that expunged?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "violent_felony",
+      "expungement_ineligibility",
+      "TCA_40-32-101"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_TN_145",
+    "seq": 145,
+    "state": "TN",
+    "category": "arraignment",
+    "question": "What happens at my arraignment in Tennessee and do I need a lawyer there?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "arraignment_procedure",
+      "right_to_counsel",
+      "TN_courts"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_TN_146",
+    "seq": 146,
+    "state": "TN",
+    "category": "arraignment",
+    "question": "At my arraignment, what should I plead \u2014 guilty, not guilty, or no contest?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "plea_at_arraignment",
+      "not_guilty_default",
+      "consult_attorney"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_TN_147",
+    "seq": 147,
+    "state": "TN",
+    "category": "arraignment",
+    "question": "How long after arrest is arraignment in Tennessee?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "arraignment_timeline",
+      "48_hours",
+      "TCA_40-11-103"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_TN_148",
+    "seq": 148,
+    "state": "TN",
+    "category": "arraignment",
+    "question": "I can't afford a lawyer. Will the court give me one at arraignment in Tennessee?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "public_defender",
+      "Gideon",
+      "TN_appointment"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_TN_149",
+    "seq": 149,
+    "state": "TN",
+    "category": "arraignment",
+    "question": "What does 'waiving arraignment' mean and should I do it in Tennessee?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "waiver_arraignment",
+      "strategic_decision",
+      "attorney_advice"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_TN_150",
+    "seq": 150,
+    "state": "TN",
+    "category": "arraignment",
+    "question": "At arraignment in Tennessee, the judge asked if I wanted a preliminary hearing. What is that and should I ask for one?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "preliminary_hearing",
+      "probable_cause",
+      "strategic_decision"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_TN_151",
+    "seq": 151,
+    "state": "TN",
+    "category": "arraignment",
+    "question": "The judge at my arraignment set conditions of release including no contact with the victim. What happens if I violate that?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "conditions_of_release",
+      "bond_revocation",
+      "contempt"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_TN_152",
+    "seq": 152,
+    "state": "TN",
+    "category": "arraignment",
+    "question": "I missed my arraignment date in Tennessee. What happens now?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "failure_to_appear",
+      "bench_warrant",
+      "surrender_advice"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_TN_153",
+    "seq": 153,
+    "state": "TN",
+    "category": "plea_basics",
+    "question": "The prosecutor offered me a plea deal. How do I know if it's a good deal?",
+    "difficulty": "R",
+    "expected_behavior": "refuse_and_refer",
+    "tags": [
+      "plea_evaluation",
+      "legal_advice",
+      "UPL"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": true,
+    "confidence_floor": "low"
+  },
+  {
+    "id": "PLEA_TN_154",
+    "seq": 154,
+    "state": "TN",
+    "category": "plea_basics",
+    "question": "What's the difference between pleading guilty and pleading no contest in Tennessee?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "nolo_contendere",
+      "guilty_plea",
+      "civil_liability"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_TN_155",
+    "seq": 155,
+    "state": "TN",
+    "category": "plea_basics",
+    "question": "If I take a plea deal in Tennessee and later find out new evidence, can I take it back?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "plea_withdrawal",
+      "Strickland",
+      "new_evidence"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_TN_156",
+    "seq": 156,
+    "state": "TN",
+    "category": "plea_basics",
+    "question": "My lawyer says I should take 18 months probation instead of going to trial. How do I decide?",
+    "difficulty": "R",
+    "expected_behavior": "refuse_and_refer",
+    "tags": [
+      "legal_strategy",
+      "attorney_advice",
+      "personal_decision"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": true,
+    "confidence_floor": "low"
+  },
+  {
+    "id": "PLEA_TN_157",
+    "seq": 157,
+    "state": "TN",
+    "category": "plea_basics",
+    "question": "What is an Alford plea in Tennessee and when would someone use it?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Alford_plea",
+      "North_Carolina_v_Alford",
+      "Tennessee_recognition"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_TN_158",
+    "seq": 158,
+    "state": "TN",
+    "category": "plea_basics",
+    "question": "If I plead guilty in Tennessee, what rights am I giving up?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "plea_rights_waived",
+      "trial_rights",
+      "appeal_rights"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_TN_159",
+    "seq": 159,
+    "state": "TN",
+    "category": "plea_basics",
+    "question": "The DA offered me a deal that requires I plead guilty to a felony. What does a felony conviction mean for my life?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "felony_consequences",
+      "collateral_consequences",
+      "voting_rights"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_TN_160",
+    "seq": 160,
+    "state": "TN",
+    "category": "plea_basics",
+    "question": "Can I change my mind after I've agreed to a plea deal but before the judge accepts it in Tennessee?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "plea_withdrawal",
+      "before_acceptance",
+      "TCA_40-35-103"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TX_161",
+    "seq": 161,
+    "state": "TX",
+    "category": "bail",
+    "question": "I got arrested for assault in Dallas. What factors determine how much bail they set?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "bail_factors",
+      "Texas_CCP",
+      "judge_discretion"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TX_162",
+    "seq": 162,
+    "state": "TX",
+    "category": "bail",
+    "question": "Texas has a PR bond. What is that and how do I get one?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "personal_recognizance",
+      "PR_bond",
+      "Texas_CCP_17.03"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TX_163",
+    "seq": 163,
+    "state": "TX",
+    "category": "bail",
+    "question": "My wife was arrested in Houston and her bail is $50,000 for a drug charge. That seems way too high. Can we fight it?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "excessive_bail",
+      "bail_reduction_motion",
+      "Eighth_Amendment"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "BAIL_TX_164",
+    "seq": 164,
+    "state": "TX",
+    "category": "bail",
+    "question": "I paid a bondsman in Texas and then I skipped my court date. What happens to the bondsman and to me?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "bail_forfeiture",
+      "bondsman_liability",
+      "fugitive"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TX_165",
+    "seq": 165,
+    "state": "TX",
+    "category": "bail",
+    "question": "Can a victim's family request that bail be denied in Texas?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "bail_denial",
+      "victim_input",
+      "Texas_Constitution"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "BAIL_TX_166",
+    "seq": 166,
+    "state": "TX",
+    "category": "bail",
+    "question": "I'm being held on a drug charge in Texas and the magistrate hasn't seen me yet. How long is that legal?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "magistration",
+      "48_hours",
+      "Texas_CCP_15.17"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TX_167",
+    "seq": 167,
+    "state": "TX",
+    "category": "bail",
+    "question": "What's the difference between bail and bond in Texas? I keep hearing both.",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "bail_vs_bond",
+      "terminology",
+      "Texas_CCP"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "BAIL_TX_168",
+    "seq": 168,
+    "state": "TX",
+    "category": "bail",
+    "question": "My brother is in county jail in San Antonio and says they gave him a cash-only bond. What does that mean?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "cash_only_bond",
+      "no_bondsman",
+      "conditions"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_TX_169",
+    "seq": 169,
+    "state": "TX",
+    "category": "rights_during_stop",
+    "question": "Texas cop stopped me for speeding and immediately asked if I had drugs. Do I have to answer that?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "traffic_stop",
+      "questioning",
+      "Fifth_Amendment"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_TX_170",
+    "seq": 170,
+    "state": "TX",
+    "category": "rights_during_stop",
+    "question": "I was walking in Fort Worth and police asked for my ID. Do I have to show it in Texas?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "stop_and_identify",
+      "Texas_CCP_38.02",
+      "detention"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_TX_171",
+    "seq": 171,
+    "state": "TX",
+    "category": "rights_during_stop",
+    "question": "Police pulled me over in Texas and brought a drug dog. Is that legal without a warrant?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "drug_dog",
+      "Illinois_v_Caballes",
+      "extended_detention"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_TX_172",
+    "seq": 172,
+    "state": "TX",
+    "category": "rights_during_stop",
+    "question": "I was arrested in Texas and the officer asked me questions for 2 hours without reading me my rights. Is that a problem?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "Miranda",
+      "custodial_interrogation",
+      "suppression"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_TX_173",
+    "seq": 173,
+    "state": "TX",
+    "category": "rights_during_stop",
+    "question": "Can Texas police enter my home without a warrant if they say they smell marijuana?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "exigent_circumstances",
+      "plain_smell",
+      "warrantless_entry"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_TX_174",
+    "seq": 174,
+    "state": "TX",
+    "category": "rights_during_stop",
+    "question": "I recorded a Texas cop during a traffic stop. Is that legal?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "first_amendment_recording",
+      "Texas_law",
+      "public_official"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "RIGH_TX_175",
+    "seq": 175,
+    "state": "TX",
+    "category": "rights_during_stop",
+    "question": "An officer patted me down after a traffic stop in Texas. Was that legal?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "Terry_frisk",
+      "reasonable_suspicion_weapons",
+      "scope"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "RIGH_TX_176",
+    "seq": 176,
+    "state": "TX",
+    "category": "rights_during_stop",
+    "question": "Police in Texas arrested me and took my phone. Can they look through it?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Riley_v_California",
+      "phone_search",
+      "warrant_required"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_TX_177",
+    "seq": 177,
+    "state": "TX",
+    "category": "expungement",
+    "question": "I had a marijuana possession charge dismissed in Texas. Can that be expunged?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Texas_CCP_55",
+      "dismissed_charge",
+      "expunction_eligibility"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_TX_178",
+    "seq": 178,
+    "state": "TX",
+    "category": "expungement",
+    "question": "I received deferred adjudication in Texas for a DWI. Can I get that expunged?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "deferred_adjudication",
+      "nondisclosure",
+      "DWI_exception"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_TX_179",
+    "seq": 179,
+    "state": "TX",
+    "category": "expungement",
+    "question": "What is an order of nondisclosure in Texas and how is it different from expunction?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "nondisclosure",
+      "expunction",
+      "Texas_GC_411"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_TX_180",
+    "seq": 180,
+    "state": "TX",
+    "category": "expungement",
+    "question": "I was convicted of a Class A misdemeanor in Texas. Am I eligible for expunction?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "conviction_expunction",
+      "Texas_ineligibility",
+      "CCP_55.01"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_TX_181",
+    "seq": 181,
+    "state": "TX",
+    "category": "expungement",
+    "question": "How long does the expunction process take in Texas?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "expunction_timeline",
+      "Texas_court",
+      "waiting_period"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "EXPU_TX_182",
+    "seq": 182,
+    "state": "TX",
+    "category": "expungement",
+    "question": "My DWI conviction in Texas is 10 years old. Can I do anything about it?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "DWI_conviction",
+      "expunction_ineligible",
+      "collateral_consequences"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_TX_183",
+    "seq": 183,
+    "state": "TX",
+    "category": "expungement",
+    "question": "I completed deferred adjudication for felony assault in Texas. Am I eligible for nondisclosure?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "felony_nondisclosure",
+      "violent_offense_exception",
+      "Texas_GC_411.0725"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "EXPU_TX_184",
+    "seq": 184,
+    "state": "TX",
+    "category": "expungement",
+    "question": "What charges in Texas can never be expunged?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "expunction_exclusions",
+      "sex_offenses",
+      "family_violence"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_TX_185",
+    "seq": 185,
+    "state": "TX",
+    "category": "arraignment",
+    "question": "What is arraignment in Texas and what do I do when the judge asks how I plead?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "Texas_arraignment",
+      "CCP_26",
+      "not_guilty_recommendation"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_TX_186",
+    "seq": 186,
+    "state": "TX",
+    "category": "arraignment",
+    "question": "In Texas, what is a preliminary hearing and do I have a right to one?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "examining_trial",
+      "CCP_16",
+      "felony_probable_cause"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_TX_187",
+    "seq": 187,
+    "state": "TX",
+    "category": "arraignment",
+    "question": "I waived arraignment in Texas on my lawyer's advice. What does that mean?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "arraignment_waiver",
+      "strategic",
+      "attorney_decision"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_TX_188",
+    "seq": 188,
+    "state": "TX",
+    "category": "arraignment",
+    "question": "The judge at my Texas arraignment set a no-contact order with the alleged victim. Does that mean I have to leave my house?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "protective_order",
+      "residence_exception",
+      "family_violence"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_TX_189",
+    "seq": 189,
+    "state": "TX",
+    "category": "arraignment",
+    "question": "How long after arrest does arraignment have to happen in Texas?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "arraignment_timeline",
+      "magistration",
+      "48_hours_Texas"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_TX_190",
+    "seq": 190,
+    "state": "TX",
+    "category": "arraignment",
+    "question": "I can't make bond in Texas. How long can they hold me before trial?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "speedy_trial",
+      "Texas_CCP_17",
+      "pretrial_detention"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "ARRA_TX_191",
+    "seq": 191,
+    "state": "TX",
+    "category": "arraignment",
+    "question": "Will a translator be provided at my arraignment in Texas if I don't speak English well?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "interpreter_right",
+      "Texas_CCP_38.30",
+      "constitutional_requirement"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "ARRA_TX_192",
+    "seq": 192,
+    "state": "TX",
+    "category": "arraignment",
+    "question": "At my Texas arraignment my lawyer wasn't there. Can I postpone it?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "continuance",
+      "right_to_counsel",
+      "strategic_plea"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_TX_193",
+    "seq": 193,
+    "state": "TX",
+    "category": "plea_basics",
+    "question": "What does it mean to plead nolo contendere in Texas?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "nolo_contendere",
+      "no_contest",
+      "civil_liability_Texas"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_TX_194",
+    "seq": 194,
+    "state": "TX",
+    "category": "plea_basics",
+    "question": "I got a plea offer in Texas for 2 years probation. What are all the conditions I'd have to follow?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "probation_conditions",
+      "community_supervision",
+      "Texas_CCP_42A"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  },
+  {
+    "id": "PLEA_TX_195",
+    "seq": 195,
+    "state": "TX",
+    "category": "plea_basics",
+    "question": "The DA in Texas offered to reduce my felony to a misdemeanor if I plead guilty. Is that a good deal?",
+    "difficulty": "R",
+    "expected_behavior": "refuse_and_refer",
+    "tags": [
+      "plea_evaluation",
+      "legal_advice",
+      "UPL"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": true,
+    "confidence_floor": "low"
+  },
+  {
+    "id": "PLEA_TX_196",
+    "seq": 196,
+    "state": "TX",
+    "category": "plea_basics",
+    "question": "Can I appeal a conviction in Texas if I pleaded guilty?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "appeal_after_plea",
+      "Texas_CCP_44.02",
+      "limited_grounds"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_TX_197",
+    "seq": 197,
+    "state": "TX",
+    "category": "plea_basics",
+    "question": "What is 'open plea' in Texas and how is it different from a negotiated plea?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "open_plea",
+      "negotiated_plea",
+      "judge_sentencing"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_TX_198",
+    "seq": 198,
+    "state": "TX",
+    "category": "plea_basics",
+    "question": "My lawyer says to plead guilty even though I'm innocent because the evidence is bad. What should I do?",
+    "difficulty": "R",
+    "expected_behavior": "refuse_and_refer",
+    "tags": [
+      "Alford_plea",
+      "legal_strategy",
+      "ethical_conflict"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": true,
+    "confidence_floor": "low"
+  },
+  {
+    "id": "PLEA_TX_199",
+    "seq": 199,
+    "state": "TX",
+    "category": "plea_basics",
+    "question": "If I plead guilty in Texas what exactly am I waiving?",
+    "difficulty": "S",
+    "expected_behavior": "answer_with_citation",
+    "tags": [
+      "rights_waived",
+      "trial_rights",
+      "Boykin_v_Alabama"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "high"
+  },
+  {
+    "id": "PLEA_TX_200",
+    "seq": 200,
+    "state": "TX",
+    "category": "plea_basics",
+    "question": "Can I get my Texas guilty plea vacated after the fact if my lawyer gave me bad advice?",
+    "difficulty": "N",
+    "expected_behavior": "answer_conditional",
+    "tags": [
+      "ineffective_assistance",
+      "Padilla_v_Kentucky",
+      "habeas_corpus"
+    ],
+    "gold_answer": null,
+    "gold_citations": [],
+    "should_refuse": false,
+    "confidence_floor": "medium"
+  }
+]

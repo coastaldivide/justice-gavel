@@ -1,11 +1,16 @@
-import { generateIdempotencyKey } from './_shared.js';
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * billing/bondsman.js — Bondsman profiles, leads marketplace, and Verified Badge subscription
  * Part of the billing module. Mounted at /api/billing by billing/index.js
  */
-import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer, calcLeadFee }
+import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer,
+         BONDSMAN_TIERS, bondsTierFromPriceId, generateIdempotencyKey }
   from './_shared.js';
+
+// Flat lead fee — $75 regardless of bail amount.
+// Per-lead fees scaled to bail amount implicate runner-capper statutes
+// (TX §38.12, FL §877.02). See billing/_shared.js for the removed calcLeadFee.
+const FLAT_LEAD_FEE_CENTS = 7500; // $75.00
 import { err400, BUSINESS_CONSTANTS, err401, err403, err404, err409,
          err422, err500, err502,
          safeInt, safeFloat, sanitizeStr, validateEmail } from '../../utils/routeHelpers.js';
@@ -87,8 +92,8 @@ router.get('/leads', authRequired, async (req, res) => {
     // Add computed lead fee and mask contact info for unpurchased
     const leads = records.map(r => ({
       ...r,
-      lead_fee_cents: calcLeadFee(r.bail_amount),
-      lead_fee_display: `$${(calcLeadFee(r.bail_amount) / 100).toFixed(0)}`,
+      lead_fee_cents: FLAT_LEAD_FEE_CENTS,
+      lead_fee_display: `$${(FLAT_LEAD_FEE_CENTS / 100).toFixed(0)}`,
       purchased: !!r.already_purchased,
       // Only reveal full name and contact if purchased
       name: r.already_purchased ? r.name : r.name.split(' ')[0] + ' ' + (r.name.split(' ')[1]?.[0] || '') + '.',
@@ -122,7 +127,7 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
     );
     if (existing) return res.status(409).json({ error: 'Already purchased this lead', arrest });
 
-    const feeCents = calcLeadFee(arrest.bail_amount);
+    const feeCents = FLAT_LEAD_FEE_CENTS;
 
     if (!LIVE) {
       // Demo mode — mock purchase
@@ -296,11 +301,248 @@ router.post('/bondsman/verified-badge/cancel', billingLimiter, authRequired, asy
 
 // ════════════════════════════════════════════════════════════════════════
 // PI / CIVIL RIGHTS ATTORNEY LEAD MARKETPLACE
-// Same model as bondsman leads — pay per qualified referral.
-// PI attorneys pay $50–$500 per lead based on case value estimate.
-// Civil rights attorneys pay flat $100/lead (contingency cases).
+// Flat $75 per lead — no severity or bail-amount tiering.
+// Per-lead fees scaled to case value implicate Rule 5.4(a) / 7.2(b).
+// See: backend/src/routes/pi_leads.js for the lead fee logic.
 // ════════════════════════════════════════════════════════════════════════
 
 // Lead fee tiers for PI/civil — based on reported severity
+
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BONDSMAN GEOGRAPHIC TIER SUBSCRIPTIONS
+// Starter $49/mo (1 county) | Pro $149/mo (3 counties) | Market $349/mo (DMA)
+// These replace the standalone Verified Badge subscription.
+// A bondsman subscribes to a tier and gets the badge as part of membership.
+// ══════════════════════════════════════════════════════════════════════════════
+
+// GET /api/billing/bondsman/tiers — list available tiers and pricing
+router.get('/bondsman/tiers', async (req, res) => {
+  const tiers = Object.entries(BONDSMAN_TIERS).map(([key, t]) => ({
+    key,
+    name:          t.name,
+    display:       t.display,
+    monthly_cents: t.monthly_cents,
+    counties:      t.counties,
+    label:         t.label,
+    has_stripe:    !!t.price_id,
+    // Annual option — 2 months free
+    annual_display: `$${(t.annual_cents / 100).toFixed(0)}/yr`,
+    annual_savings: `Save $${((t.monthly_cents * 12 - t.annual_cents) / 100).toFixed(0)}/yr`,
+  }));
+  res.json({ tiers, recommended: 'pro' });
+});
+
+// GET /api/billing/bondsman/subscription — current tier status
+router.get('/bondsman/subscription', authRequired, async (req, res) => {
+  try {
+    const db  = await getDb();
+    const sub = await db.get(
+      `SELECT id, tier, status, stripe_sub_id, amount_cents, renews_at, cancel_at_period_end
+         FROM bondsman_subscriptions
+        WHERE user_id = ? AND status IN ('active','past_due')
+        ORDER BY created_at DESC LIMIT 1`,
+      [req.user.id]
+    );
+    if (!sub) return res.json({ active: false, tier: null });
+    const tierDef = BONDSMAN_TIERS[sub.tier] || {};
+    res.json({
+      active:             sub.status === 'active',
+      tier:               sub.tier,
+      counties_covered:   tierDef.counties || 0,
+      display:            tierDef.display  || '',
+      renews_at:          sub.renews_at,
+      cancel_at_period_end: sub.cancel_at_period_end,
+      mock:               !LIVE,
+    });
+  } catch (e) {
+    logger.error('[billing] bondsman/subscription GET:', e?.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/billing/bondsman/subscribe — subscribe to a geographic tier
+router.post('/bondsman/subscribe', billingLimiter, authRequired, async (req, res) => {
+  const { tier = 'pro', billing = 'monthly' } = req.body;
+
+  if (!BONDSMAN_TIERS[tier]) {
+    return res.status(400).json({ error: `Unknown tier: ${tier}. Use starter, pro, or market.` });
+  }
+  const tierDef   = BONDSMAN_TIERS[tier];
+  const isAnnual  = billing === 'annual';
+  const priceId   = isAnnual ? tierDef.annual_price_id : tierDef.price_id;
+  const amtCents  = isAnnual ? tierDef.annual_cents    : tierDef.monthly_cents;
+
+  try {
+    const db = await getDb();
+
+    // Block duplicate active subscription
+    const existing = await db.get(
+      `SELECT id, tier FROM bondsman_subscriptions
+        WHERE user_id = ? AND status = 'active'`,
+      [req.user.id]
+    );
+    if (existing) {
+      return res.status(409).json({
+        error:        `Already subscribed to ${existing.tier} tier. Cancel first to change plans.`,
+        current_tier: existing.tier,
+        change_url:   '/bondsman/subscription/change',
+      });
+    }
+
+    const renewsAt = isAnnual
+      ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      : new Date(Date.now() +  30 * 24 * 60 * 60 * 1000).toISOString();
+
+    if (!LIVE || !priceId) {
+      // Demo mode — no real Stripe charge
+      await db.run(
+        `INSERT INTO bondsman_subscriptions
+           (user_id, tier, status, stripe_sub_id, stripe_cus_id, amount_cents, billing_period, renews_at)
+         VALUES (?,?,?,?,?,?,?,?)`,
+        [req.user.id, tier, 'active', `sub_mock_${tier}`, `cus_mock`, amtCents, billing, renewsAt]
+      );
+      await db.run(
+        `UPDATE bondsman_profiles SET verified_badge=1, badge_expires_at=?, tier=? WHERE user_id=?`,
+        [renewsAt, tier, req.user.id]
+      );
+      return res.json({
+        success: true, mock: !LIVE || !priceId,
+        message: `✅ ${tierDef.name} activated (${isAnnual ? 'annual' : 'monthly'}).`,
+        tier,
+        counties:   tierDef.counties,
+        display:    tierDef.display,
+        renews_at:  renewsAt,
+        note:       !priceId
+          ? `Set STRIPE_BONDSMAN_${tier.toUpperCase()}_ID in Railway to enable real payments.`
+          : undefined,
+      });
+    }
+
+    // Live Stripe subscription
+    const customerId = await getOrCreateStripeCustomer(req.user);
+    const idemKey    = generateIdempotencyKey(req.user.id, `bondsman_${tier}`);
+
+    const stripeSub = await stripe.subscriptions.create(
+      {
+        customer:         customerId,
+        items:            [{ price: priceId }],
+        metadata:         { user_id: String(req.user.id), tier, type: 'bondsman_tier' },
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+      },
+      { idempotencyKey: idemKey }
+    );
+
+    if (stripeSub.status !== 'active' && stripeSub.status !== 'trialing') {
+      return res.status(402).json({ error: 'Payment incomplete', status: stripeSub.status });
+    }
+
+    await db.run(
+      `INSERT INTO bondsman_subscriptions
+         (user_id, tier, status, stripe_sub_id, stripe_cus_id, amount_cents, billing_period, renews_at)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [req.user.id, tier, 'active', stripeSub.id, customerId, amtCents, billing,
+       new Date(stripeSub.current_period_end * 1000).toISOString()]
+    );
+    await db.run(
+      `UPDATE bondsman_profiles SET verified_badge=1, badge_expires_at=?, tier=? WHERE user_id=?`,
+      [new Date(stripeSub.current_period_end * 1000).toISOString(), tier, req.user.id]
+    );
+
+    res.json({
+      success:   true,
+      tier,
+      counties:  tierDef.counties,
+      display:   tierDef.display,
+      renews_at: new Date(stripeSub.current_period_end * 1000).toISOString(),
+    });
+  } catch (e) {
+    logger.error('[billing] bondsman/subscribe:', e?.message);
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
+
+// POST /api/billing/bondsman/subscription/cancel
+router.post('/bondsman/subscription/cancel', billingLimiter, authRequired, async (req, res) => {
+  try {
+    const db  = await getDb();
+    const sub = await db.get(
+      `SELECT id, stripe_sub_id, tier FROM bondsman_subscriptions
+        WHERE user_id = ? AND status = 'active'`,
+      [req.user.id]
+    );
+    if (!sub) return res.status(404).json({ error: 'No active bondsman subscription.' });
+
+    if (LIVE && sub.stripe_sub_id && !sub.stripe_sub_id.startsWith('sub_mock')) {
+      // Cancel at period end (bondsman keeps access until paid-through date)
+      await stripe.subscriptions.update(sub.stripe_sub_id, { cancel_at_period_end: true });
+      await db.run(
+        `UPDATE bondsman_subscriptions SET cancel_at_period_end=1 WHERE id=?`,
+        [sub.id]
+      );
+      return res.json({ success: true, message: 'Subscription will cancel at end of billing period.' });
+    }
+
+    // Demo mode — immediate cancel
+    await db.run(
+      `UPDATE bondsman_subscriptions SET status='cancelled', cancelled_at=datetime('now') WHERE id=?`,
+      [sub.id]
+    );
+    await db.run(`UPDATE bondsman_profiles SET verified_badge=0, tier=NULL WHERE user_id=?`, [req.user.id]);
+    res.json({ success: true, message: 'Subscription cancelled.' });
+  } catch (e) {
+    logger.error('[billing] bondsman/subscription/cancel:', e?.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/billing/bondsman/subscription/change — upgrade or downgrade tier
+router.post('/bondsman/subscription/change', billingLimiter, authRequired, async (req, res) => {
+  const { tier } = req.body;
+  if (!BONDSMAN_TIERS[tier]) {
+    return res.status(400).json({ error: `Unknown tier: ${tier}` });
+  }
+  const newTier = BONDSMAN_TIERS[tier];
+  if (!newTier.price_id) {
+    return res.status(400).json({ error: `Stripe not configured for ${tier} tier. Set STRIPE_BONDSMAN_${tier.toUpperCase()}_ID.` });
+  }
+  try {
+    const db  = await getDb();
+    const sub = await db.get(
+      `SELECT id, stripe_sub_id, tier FROM bondsman_subscriptions WHERE user_id=? AND status='active'`,
+      [req.user.id]
+    );
+    if (!sub) return res.status(404).json({ error: 'No active subscription to change.' });
+    if (sub.tier === tier) return res.json({ success: true, message: `Already on ${tier} tier.` });
+
+    if (LIVE && sub.stripe_sub_id && !sub.stripe_sub_id.startsWith('sub_mock')) {
+      // Stripe proration handles the billing adjustment automatically
+      const stripeSubObj = await stripe.subscriptions.retrieve(sub.stripe_sub_id);
+      await stripe.subscriptions.update(sub.stripe_sub_id, {
+        items:          [{ id: stripeSubObj.items.data[0].id, price: newTier.price_id }],
+        proration_behavior: 'always_invoice',
+      });
+    }
+
+    await db.run(
+      `UPDATE bondsman_subscriptions SET tier=?, amount_cents=? WHERE id=?`,
+      [tier, newTier.monthly_cents, sub.id]
+    );
+    await db.run(`UPDATE bondsman_profiles SET tier=? WHERE user_id=?`, [tier, req.user.id]);
+
+    res.json({
+      success:  true,
+      new_tier: tier,
+      counties: newTier.counties,
+      display:  newTier.display,
+      message:  `Switched to ${newTier.name}. Proration applied to next invoice.`,
+    });
+  } catch (e) {
+    logger.error('[billing] bondsman/subscription/change:', e?.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 export default router;

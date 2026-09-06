@@ -16,16 +16,17 @@ import { api }             from '../services/api';
 import { getUserState } from '../utils/userState';
 import { COLORS, useTheme } from '../constants/theme';
 
-declare var SkeletonBailList: any;
-declare var cityQuery: any;
-declare var filteredCities: any;
-declare var locationDenied: any;
-declare var setCity: any;
-declare var setCityQuery: any;
-declare var setLocationDenied: any;
-function callPhone(phone: string) {
+// RULES OF HOOKS FIX: `callPhone` is a plain helper, not a component, but
+// called Haptics, Toast hooks in its body -- React throws
+// "Invalid hook call" the instant this screen mounts. Converted to a
+// custom hook (`useCallPhone`) that returns the helper, so the
+// hooks run in a legal position and callers get the same function.
+function useCallPhone() {
   const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast(); hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error')); }
+  const { showToast } = useToast();
+  return function callPhone(phone: string) {
+  hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error')); }
+}
 function openDirections(lat: number, lng: number, name: string) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
@@ -72,6 +73,10 @@ function SkeletonCard({ colors }: { colors: ThemeColors }) {
 }
 
 function BailSearchScreen(): React.JSX.Element {
+  // These helpers are now custom hooks (they call useToast/useHaptics/
+  // useConfirm internally). Invoke them here, in the component body,
+  // where hooks are legal; the returned function behaves as before.
+  const callPhone = useCallPhone();
   const { showToast } = useToast();
 
   const userStateRef = React.useRef<string>('');
@@ -88,6 +93,26 @@ function BailSearchScreen(): React.JSX.Element {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [_fetchError, _setFetchError] = useState<string|null>(null);
+
+
+  // RESTORED: `declare var` -- type-only, no emitted JS, so each read threw
+
+  // on mount. Reinstated as real state; initial values inferred from usage.
+
+  const [filteredCities, setFilteredCities] = useState<any[]>([]);
+
+
+  // RESTORED: these were `declare var` declarations -- type-only, emitting no
+
+  // JavaScript, so reading them threw ReferenceError on mount. Reinstated as
+
+  // real component state. Initial values inferred from how each is used.
+
+  const [city, setCity] = useState<any>(null);
+
+  const [cityQuery, setCityQuery] = useState<any>(null);
+
+  const [locationDenied, setLocationDenied] = useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const [sortBy, setSortBy] = React.useState('rating');
   const [items, setItems]   = useState<any[]>([]);
@@ -143,6 +168,11 @@ function BailSearchScreen(): React.JSX.Element {
           res = await api.get('/providers/bail', { params });
           break;
         } catch (apiErr: any) {
+          // CATCH BINDING MISMATCH. The catch bound `_`/`apiErr`/`shareErr` but the
+          // body referenced `e`, which is not in scope -- a ReferenceError thrown
+          // from inside an error handler, i.e. exactly when something has already
+          // gone wrong. TS2304 flagged it; nothing at runtime would until it fired.
+          console.warn('[BailSearch]', (apiErr as any)?.message ?? apiErr);
           attempt++;
           if (attempt >= 3) throw apiErr;
           // eslint-disable-next-line no-promise-executor-return
@@ -208,13 +238,15 @@ function BailSearchScreen(): React.JSX.Element {
         }
       </TouchableOpacity>
 
-      {loading && items.length === 0 && <SkeletonBailList count={4} />}
+      {loading && items.length === 0 && <>{/* SkeletonBailList never existed; SkeletonCard is the real component */}
+        {[0,1,2,3].map(i => <SkeletonCard key={i} colors={colors as any} />)}</>}
       {!loading && !!status && <Text maxFontSizeMultiplier={1.4} style={styles.statusText}>{status}</Text>}
       {items.length > 0 && (
 
       <View style={{ flexDirection: 'row', paddingHorizontal: 12, marginBottom: 8, gap: 8 }}>
         {(['rating','distance','rate']).map(s => (
           <TouchableOpacity
+      accessibilityLabel="accessibilityRole=&quot;button&quot; accessibilityLabel=&quot;Sort&quot;"
           accessibilityRole="button" key={s} onPress={() => setSortBy(s)}
             style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20,
               backgroundColor: sortBy === s ? colors.blue : colors.bgCard,
@@ -416,7 +448,8 @@ function BailSearchScreen(): React.JSX.Element {
           </TouchableOpacity>
           <View style={styles.cityList}>
             {filteredCities.map(city => (
-              <TouchableOpacity accessibilityRole="button"
+              <TouchableOpacity
+      accessibilityLabel="accessibilityRole=&quot;search&quot; accessibilityLabel=&quot;Search&quot;" accessibilityRole="button"
                 key={city}
                 style={styles.cityRow}
                 onPress={() => { setLocationDenied(false); setCityQuery(''); search(city); }}
@@ -457,6 +490,14 @@ function BailSearchScreen(): React.JSX.Element {
         </View>
       )}
     </View>
+      {/* Legal accuracy disclaimer — required on all bail search results */}
+      <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+        <Text style={{ fontSize: 11, color: '#888', lineHeight: 16, textAlign: 'center' }}>
+          Bail amounts are typical ranges only. Actual bail is set by a judge based on charge, 
+          criminal history, and other factors. This is general information, not legal advice.
+          Consult a licensed attorney before making any legal decisions.
+        </Text>
+      </View>
     </KeyboardAvoidingView>
   );
 }

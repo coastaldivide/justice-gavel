@@ -36,6 +36,7 @@ const LAWYERS_COLS = 'id, name, phone, website, address, lat, lng, city, state, 
   + ' verified, bar_verified, jtb_verified, pro_bono, sliding_scale, free_consultation,'
   + ' years_experience, specialties, languages, bio, source_id, active';
 
+
 const router = Router();
 
 async function openProvidersDb() {
@@ -160,14 +161,58 @@ async function fetchAndFilterLawyers(db, { city, caseType, language, lat, lng, p
       // City density: if this city has 3+ JTB attorneys, +5 bonus for all of them
       // (computed once per request, passed in as cityDensityMap from the route)
 
-      // ── FIX 10: Case outcome bonus ─────────────────────────────────────────
-      // Attorneys who record positive case outcomes earn a higher match score.
-      // platform_rating reflects outcomes + reviews combined.
+      // ── Case outcome bonus ────────────────────────────────────────────────
       if (l.platform_rating && l.platform_rating > 4.0) {
         score += Math.round((l.platform_rating - 4.0) * 10); // max +10 at 5.0
       }
 
-      return { ...l, matchScore: Math.round(score), distanceKm };
+      // ── 2A: Inactive-attorney suppression ──────────────────────────────────
+      // An attorney who is "not taking clients" ranked first is a false positive.
+      // The -30 existing penalty is correct; surface it clearly.
+      // Additional: if verified=0 and no reviews, apply a floor penalty.
+      // Avoids showing unverified, unreviewed attorneys at the top.
+      const isUnverifiedNoReviews = !l.verified && !l.bar_verified && !(l.reviews > 0);
+      if (isUnverifiedNoReviews) {
+        score = Math.min(score, 40); // Cap score at 40 — shows, but never first
+      }
+
+      // ── 2B: Specialty precision ────────────────────────────────────────────
+      // Match on charge type vs attorney specialties if available.
+      // Reduces false positives where a family law attorney surfaces for a DUI.
+      if (caseType && l.specialties) {
+        let specJson;
+        try { specJson = JSON.parse(l.specialties); } catch { specJson = []; }
+        const specs = (Array.isArray(specJson) ? specJson : [l.specialties])
+          .map(s => s.toLowerCase());
+        const ct = caseType.toLowerCase();
+
+        const SPECIALTY_MAP = {
+          dui:        ['dui','dwi','traffic','criminal defense','criminal'],
+          drug:       ['drug','narcotics','criminal defense','criminal'],
+          assault:    ['assault','battery','criminal defense','criminal','violence'],
+          theft:      ['theft','robbery','burglary','criminal defense','criminal'],
+          homicide:   ['homicide','murder','criminal defense','criminal'],
+          domestic:   ['domestic','family','criminal defense','criminal'],
+          federal:    ['federal','criminal defense','criminal'],
+        };
+        const matchKeys = SPECIALTY_MAP[ct] || ['criminal defense', 'criminal'];
+        const hasSpec = specs.some(s => matchKeys.some(k => s.includes(k)));
+        const hasMismatch = specs.length > 0 && !hasSpec &&
+          specs.every(s => !s.includes('criminal'));
+
+        if (hasSpec)      score += 12; // Specialty match — significant boost
+        if (hasMismatch)  score -= 20; // Clear specialty mismatch — penalty
+      }
+
+      // ── 2C: Geographic precision tightening ───────────────────────────────
+      // Mild distance penalty already exists (distanceKm * 0.2).
+      // Add a hard floor: if distance > 100km AND no JTB registration,
+      // cap to avoid remote attorneys appearing above nearby ones.
+      if (distanceKm && distanceKm > 100 && !l.is_jtb_registered) {
+        score = Math.min(score, 55);
+      }
+
+      return { ...l, matchScore: Math.max(0, Math.round(score)), distanceKm };
     })
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, 6); // top 6 candidates go to stage 2
@@ -394,7 +439,8 @@ router.get('/profile/:lawyerId', async (req, res) => {
               ap.outcome_score, ap.outcome_count, ap.availability_schedule,
               ap.practice_areas, ap.bar_verification_status,
               u.display_name, u.firm_name, u.bar_state,
-              u.avg_response_hrs
+              u.avg_response_hrs,
+              u.whatsapp_number
          FROM attorney_profiles ap
          JOIN users u ON u.id = ap.user_id
         WHERE ap.lawyer_id = ?`,
@@ -452,6 +498,7 @@ router.get('/profile/:lawyerId', async (req, res) => {
         ? `${Math.round(((profile.outcome_score || 3) - 3) / 2 * 100)}% positive outcomes`
         : null,
       avg_response_hrs:      profile.avg_response_hrs,
+      whatsapp_number:       profile.whatsapp_number || null,
       bar_verified:          profile.bar_verification_status === 'approved',
       next_slots:            nextSlots,
     });

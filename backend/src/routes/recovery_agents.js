@@ -1,3 +1,20 @@
+/**
+ * FEATURE SUSPENDED — RECOVERY AGENT DIRECTORY
+ *
+ * Recovery agents (bounty hunters) are prohibited outright in IL, KY, OR, and WI.
+ * In all other states they require licensing, training, bonding, and firearms certs.
+ * The directory contains 531 records with license_number=NULL and armed_certified=0.
+ * Connecting a person with an unlicensed recovery agent who then uses force creates
+ * significant causation-chain liability.
+ *
+ * This feature is suspended pending:
+ *   1. License number import from state DOI files
+ *   2. Jurisdiction blocklist for banned states
+ *   3. Legal review of civil liability exposure
+ *
+ * All routes return 410 Gone until reinstated.
+ */
+
 import logger from '../utils/logger.js';
 import { asyncRoute } from '../utils/routeHelpers.js';
 /**
@@ -80,16 +97,18 @@ const RECOVERY_LAWS = {
 // ── DB access ────────────────────────────────────────────────────────────────
 let _db = null;
 async function getDb() {
+  // USES THE SHARED ADAPTER NOW. This opened ./data/providers.sqlite directly,
+  // so on PostgreSQL every route in this file hit a file that is empty or
+  // absent on the host rather than the real table.
   if (_db) return _db;
-  const { open } = await import('sqlite');
-  const sqlite3  = (await import('sqlite3')).default;
-  _db = await open({ filename: process.env.PROVIDERS_DB || './data/providers.sqlite', driver: sqlite3.Database });
-  await _db.run('PRAGMA journal_mode=WAL');
+  const { getDb: getSharedDb } = await import('../db/index.js');
+  _db = await getSharedDb();
   return _db;
 }
 
 // ── GET /api/recovery-agents — search recovery agents ────────────────────────
 router.get('/', authRequired, apiLimiter, async (req, res) => {
+    return res.status(410).json({ error: 'Recovery agent directory suspended pending legal review and license verification.', code: 'FEATURE_SUSPENDED' });
   try {
     const { state, city, armed, lat, lng, limit = 20, offset = 0 } = req.query;
 
@@ -157,6 +176,7 @@ router.get('/', authRequired, apiLimiter, async (req, res) => {
 
 // ── GET /api/recovery-agents/laws/:state ─────────────────────────────────────
 router.get('/laws/:state', authRequired, apiLimiter, async (req, res) => {
+    return res.status(410).json({ error: 'Recovery agent directory suspended pending legal review and license verification.', code: 'FEATURE_SUSPENDED' });
   try {
     const state = (req.params.state || '').toUpperCase().slice(0, 2);
     const law   = RECOVERY_LAWS[state];

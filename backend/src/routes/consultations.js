@@ -18,8 +18,12 @@ import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
 import Stripe from 'stripe';
 import logger from '../utils/logger.js';
+import { trackFunnel } from '../services/funnelTracking.js';
 import { sendPushToUser } from '../services/pushDelivery.js';
 import { sendBookingConfirmation, sendAttorneyBookingAlert } from '../services/email.js';
+// Added: these names were used at module scope but never imported --
+// an ESM ReferenceError at import time, which blocked the whole app.
+import { validate, schemas } from '../validation/schemas.js';
 
 const slotsLimiter  = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Too many slot requests.' });
 const listLimiter   = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'Too many list requests.' });
@@ -88,11 +92,22 @@ function generateSlots(startDate = new Date(), schedule = null) {
     });
     const iso = date.toISOString().slice(0, 10);
 
+    // SHAPE MISMATCH FIXED. This pushed one flat object per time slot, but the
+    // /slots/:lawyerId handler consumes the result as days -- it reads
+    // `day.times.map(...)` and `day.date`. Mapping over an undefined `times`
+    // threw a TypeError on every request, producing a bare 500 with no SQL
+    // error in the log (both queries above are .catch()-guarded), which is why
+    // it looked like a missing-table problem.
+    //
+    // Now grouped by day, which is the shape the handler and the booking UI
+    // both expect.
+    const times = [];
     for (const slotName of daySlots) {
       for (const time of (SLOT_TIMES[slotName] || [])) {
-        slots.push({ date: iso, time, label, dayKey });
+        times.push({ time, slot: slotName, available: true });
       }
     }
+    if (times.length) slots.push({ date: iso, label, dayKey, times });
   }
   return slots;
 }
@@ -250,6 +265,24 @@ router.post('/book', validate(schemas.consultations.book), authRequired, consult
     const { randomBytes: _rb } = await import('crypto');
     const meetingToken = _rb(8).toString('hex').toUpperCase();
     const meetingLink  = `https://meet.justicegavel.app/consult/${meetingToken}`;
+
+    // ── Race-condition guard ───────────────────────────────────────────────────
+    // Two users can pass the slot-availability check simultaneously then both
+    // attempt to INSERT, causing a double-booking. Check once more immediately
+    // before the INSERT. The UNIQUE constraint in the migration is definitive.
+    const conflictCheck = await db.get(
+      `SELECT id FROM consultation_bookings
+        WHERE lawyer_id = ? AND date_slot = ? AND time_slot = ?
+          AND status NOT IN ('cancelled')`,
+      [lawyerId, date_slot, time_slot]
+    ).catch(() => null);
+    if (conflictCheck) {
+      return res.status(409).json({
+        error: 'That time slot was just booked by another user. Please choose a different time.',
+        code:  'SLOT_CONFLICT',
+        slot:  `${date_slot} ${time_slot}`,
+      });
+    }
 
     const result = await db.run(
       `INSERT INTO consultation_bookings

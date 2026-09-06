@@ -1,4 +1,32 @@
 /**
+ * CONTENT REVIEW RECORD
+ * These rules must be reviewed by a licensed attorney every 180 days.
+ * Criminal justice reform has changed expungement law significantly in 2020-2026.
+ *
+ * Last attorney review: 2026-08-09 (needs attorney sign-off — see ATTORNEY_EVAL_BRIEF.md)
+ * Next review due:      2027-02-09
+ *
+ * States with recent major changes:
+ *   CA: Prop 47 (2014), AB 1076 automatic expungement (2024)
+ *   NY: MRTA marijuana expungement (2021), CPL 160.59 expansion
+ *   TX: HB 1927 permitless carry (2021) — indirectly affects sentencing
+ *   TN: New Board of Professional Bondsmen (2026) — affects bail amounts
+ *   FL: Amendment 4 voting rights restoration (2018) — affects plea consequences
+ */
+
+// Effective dates by state — update when attorney reviews this state's section
+const RULE_EFFECTIVE_DATES = {
+  TN: { last_reviewed: '2026-08-09', reviewed_by: 'Pending attorney review', next_due: '2027-02-09' },
+  TX: { last_reviewed: '2026-08-09', reviewed_by: 'Pending attorney review', next_due: '2027-02-09' },
+  FL: { last_reviewed: '2026-08-09', reviewed_by: 'Pending attorney review', next_due: '2027-02-09' },
+  CA: { last_reviewed: '2026-08-09', reviewed_by: 'Pending attorney review', next_due: '2027-02-09' },
+  NY: { last_reviewed: '2026-08-09', reviewed_by: 'Pending attorney review', next_due: '2027-02-09' },
+  DEFAULT: { last_reviewed: '2026-08-09', reviewed_by: 'Pending attorney review', next_due: '2027-02-09' },
+};
+
+export { RULE_EFFECTIVE_DATES };
+
+/**
  * expungement/rules.js — State expungement eligibility rules data
  *
  * Data-only module. No router. Imported by all expungement sub-routers.
@@ -477,6 +505,13 @@ const STATE_RULES = {
 
 // Default fallback for states not in our list
 const DEFAULT_RULES = {
+  // Unknown charge type — cannot determine eligibility without more information.
+  // Shown when charge text doesn't match any recognized pattern.
+  unknown: {
+    eligible: 'unknown',
+    waitYears: null,
+    note: "We could not determine eligibility for the charge description provided. Expungement eligibility depends on the specific charge, conviction type, and your state laws. Consult a local attorney or expungement service for an accurate assessment.",
+  },
   misdemeanor: { eligible: 'conditional', waitYears: 1, note: 'Most states allow expungement of first-time misdemeanors. Eligibility varies by charge and waiting period.' },
   felony:      { eligible: 'conditional', waitYears: 3, note: 'Felony expungement varies significantly by state. A local attorney can assess your specific situation.' },
   dui:         { eligible: 'conditional', waitYears: 5, note: 'DUI expungement depends on your state and whether it was a first offense. Consult a local attorney.' },
@@ -495,7 +530,10 @@ function classifyCharge(chargeText = '') {
     : typeof chargeText === 'string'
     ? chargeText
     : String(chargeText);          // handles numbers, booleans, objects, arrays
-  if (!safe.trim()) return 'misdemeanor';
+  // Empty or unrecognizable charge → 'unknown' not 'misdemeanor'
+  // Returning 'misdemeanor' risks telling someone with a felony they may qualify.
+  // 'unknown' triggers the attorney CTA path instead of a false eligibility result.
+  if (!safe.trim()) return 'unknown';
   const lower = safe.toLowerCase();
   // Dismissals first — override everything else
   if (/dismiss|not guilty|acquit|dropped|no charge/.test(lower)) return 'dismissed';
@@ -573,9 +611,15 @@ function getEligibility(state, chargeType, status) {
 
   // Dismissed always overrides charge type
   const lookupType = (status === 'Dismissed') ? 'dismissed' : chargeType;
-  const rules = STATE_RULES[state] || DEFAULT_RULES;
-  const rule  = rules[lookupType] || rules.misdemeanor || DEFAULT_RULES.misdemeanor;
-  return { chargeType: lookupType, ...rule };
+  const rules      = STATE_RULES[safeState] || DEFAULT_RULES;
+  const rule       = rules[lookupType] ?? rules[safeCharge] ?? DEFAULT_RULES[lookupType] ?? DEFAULT_RULES.unknown;
+  const isAmbiguous = lookupType === 'unknown' || !rules[lookupType];
+
+  return {
+    chargeType:  lookupType,
+    isAmbiguous, // true → front-end shows "consult an attorney" instead of eligibility
+    ...rule,
+  };
 }
 
 export { STATE_RULES, DEFAULT_RULES, classifyCharge, getEligibility };

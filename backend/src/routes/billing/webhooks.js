@@ -1,4 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 import { notifyError } from '../../monitoring/errorNotifier.js';
 import { audit, AUDIT_ACTIONS } from '../../utils/audit.js';
 /**
@@ -101,21 +101,56 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     const db = await getDb();
 
     // ── Idempotency: reject duplicate Stripe events ──────────────────────
-    // Stripe may retry webhooks — ensure each event_id is processed only once
+    // Stripe retries webhooks on any non-2xx and on network timeouts, so the
+    // same event WILL arrive more than once in normal operation. Without a
+    // working gate that means double-charging, double-provisioning, or two
+    // cancellation emails for one cancellation.
+    //
+    // THREE DEFECTS FIXED HERE, each of which disabled the gate entirely:
+    //
+    //   1. The table did not exist outside Postgres. It is created only by
+    //      20260710000003_high_capacity_indexes.sql, and both statements below
+    //      were .catch()-swallowed -- so on SQLite the SELECT returned null
+    //      (never a duplicate) and the INSERT silently failed. Every retry was
+    //      processed as if it were new.
+    //
+    //   2. NOW() is not a SQLite function. Even with the table present the
+    //      INSERT threw "no such function: NOW", and the .catch(() => {})
+    //      hid it. Using the portable CURRENT_TIMESTAMP.
+    //
+    //   3. SELECT-then-INSERT is not atomic. Stripe can deliver a retry while
+    //      the first delivery is still in flight; both see no row and both
+    //      proceed. The INSERT is now the gate: a UNIQUE violation means
+    //      another delivery won the race, and we return early instead of
+    //      double-processing.
     const eventId = event.id;
-    const existing = await db.get(
-      'SELECT id FROM stripe_event_log WHERE stripe_event_id = ?',
-      [eventId]
-    ).catch(() => null);
-    if (existing) {
-      logger.info('[webhook] duplicate event ignored:', eventId);
+
+    await db.run(
+      `CREATE TABLE IF NOT EXISTS stripe_event_log (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         stripe_event_id TEXT UNIQUE NOT NULL,
+         event_type TEXT,
+         processed_at TEXT DEFAULT CURRENT_TIMESTAMP)`
+    ).catch(() => {});   // Postgres already has it from the migration
+
+    // INSERT-first: claim the event, then check whether we actually claimed it.
+    const claim = await db.run(
+      `INSERT INTO stripe_event_log (stripe_event_id, event_type, processed_at)
+       VALUES (?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT (stripe_event_id) DO NOTHING`,
+      [eventId, event.type]
+    ).catch((e) => {
+      // A unique violation here is the expected outcome for a duplicate on
+      // engines without ON CONFLICT support -- not an error worth failing on.
+      logger.info(`[webhook] insert conflict for ${eventId}: ${e?.message}`);
+      return { changes: 0 };
+    });
+
+    if (!claim || claim.changes === 0) {
+      // Another delivery already claimed this event id.
+      logger.info(`[webhook] duplicate event ignored: ${eventId}`);
       return res.json({ received: true, duplicate: true });
     }
-    // Log event before processing (idempotency gate)
-    await db.run(
-      'INSERT INTO stripe_event_log (stripe_event_id, event_type, processed_at) VALUES (?,?,NOW()) ON CONFLICT (stripe_event_id) DO NOTHING',
-      [eventId, event.type]
-    ).catch(() => {}); // non-fatal if table doesn't exist yet
 
     switch (event.type) {
       case 'customer.subscription.deleted':
@@ -341,6 +376,27 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
           [custId]
         ).catch(() => {});
         logger.warn('[webhook] dispute filed for customer:', custId);
+      }
+      break;
+    }
+
+    // ── Bondsman tier subscription events ───────────────────────────────────────
+    case 'customer.subscription.updated': {
+      const sub     = event.data.object;
+      if (sub.metadata?.type !== 'bondsman_tier') break; // consumer subs handled separately
+      const priceId = sub.items?.data?.[0]?.price?.id;
+      const { bondsTierFromPriceId } = await import('./_shared.js');
+      const tier    = bondsTierFromPriceId(priceId);
+      if (tier) {
+        const db = await getDb();
+        await db.run(
+          `UPDATE bondsman_subscriptions
+             SET status=?, tier=?, cancel_at_period_end=?, renews_at=?, updated_at=datetime('now')
+           WHERE stripe_sub_id=?`,
+          [sub.cancel_at_period_end ? 'active' : sub.status,
+           tier, sub.cancel_at_period_end ? 1 : 0,
+           new Date(sub.current_period_end * 1000).toISOString(), sub.id]
+        ).catch(e => logger.warn('[webhook] bondsman_sub update:', e?.message));
       }
       break;
     }

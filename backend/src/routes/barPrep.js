@@ -1,3 +1,4 @@
+import { legalAccuracyMiddleware } from '../middleware/legalAccuracy.js';
 /**
  * routes/barPrep.js — Bar Exam Prep MBE Drilling
  *
@@ -191,9 +192,18 @@ router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
 
     // Fetch authoritative correct answers for all submitted question IDs
     const qIds = answers.map(a => a.question_id);
+    // Batch SELECT — one query for all IDs instead of N queries
+    const placeholders = qIds.map(() => '?').join(',');
     const dbQs = await db.all(
+      // TABLE NAME REVERTED. The efficiency pass pointed this one query at
+      // `bar_prep_questions` while lines 399 and 426 of this same file still
+      // read `quiz_questions`. Only one name can be right, and the other two
+      // call sites plus the migrations agree on `quiz_questions`. It also
+      // dropped rule_tested and case_citation, which the response builder
+      // below reads at lines 262-263 -- those would have been undefined.
+      // The batch-SELECT optimisation (one query, not N) is preserved.
       `SELECT id, correct_answer, explanation, rule_tested, case_citation
-       FROM quiz_questions WHERE id IN (${qIds.map(() => '?').join(',')})`,
+         FROM quiz_questions WHERE id IN (${placeholders})`,
       qIds
     );
     const qMap = Object.fromEntries(dbQs.map(q => [q.id, q]));
@@ -205,7 +215,11 @@ router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
       const q = qMap[ans.question_id];
       if (!q) continue;
 
-      const isRight = (ans.selected_answer || '').toUpperCase() === q.correct_answer;
+      // Normalize both sides: case-insensitive, whitespace-stripped
+      // DB stores 'A','B','C','D' but user input might be 'a','b',' B ' etc.
+      const normSelected = (ans.selected_answer || '').trim().toUpperCase();
+      const normCorrect  = (q.correct_answer   || '').trim().toUpperCase();
+      const isRight      = normSelected !== '' && normSelected === normCorrect;
       if (isRight) correct++;
 
       await db.run(

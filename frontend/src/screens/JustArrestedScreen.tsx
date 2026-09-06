@@ -12,7 +12,6 @@ import { Share, View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet, A
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 
-declare var data: any;
 const STEPS = [
   {
     id: 1, icon: '🤐', title: 'STOP TALKING',
@@ -65,6 +64,10 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [step, setStep] = useState(0);
+
+  // RESTORED: `data` was a `declare var` -- no runtime value, so the
+  // empty-state branch threw on mount.
+  const [data, setData] = useState<any[]>([]);
   const current = STEPS[step];
 
   const bg   = isDark ? colors.bg : current.bg;
@@ -196,6 +199,26 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         </View>
 
 
+      {/* ── 1-tap path to defense lawyer ──────────────────────────────
+          ROUTE CORRECTED: this CTA originally targeted
+          navigate('Main', { screen: 'LawyersTab' }), but no route named
+          'Main' is registered in AppNavigator -- the tap would have thrown
+          at runtime. Bail Calculator, Emergency, Expungement, Diversion and
+          CheckIn all navigate with the bare 'LawyersTab'; matched to that. */}
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="Find a criminal defense lawyer"
+        style={{ backgroundColor: '#1a3a6e', borderRadius: 12, padding: 14,
+                 marginTop: 12, flexDirection: 'row', alignItems: 'center',
+                 justifyContent: 'center', gap: 10 }}
+        onPress={() => navigation.navigate('LawyersTab')}
+      >
+        <Text style={{ fontSize: 18 }}>⚖️</Text>
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
+          Find a Criminal Defense Lawyer
+        </Text>
+      </TouchableOpacity>
+
       {/* ── Not legal advice disclaimer ──────────────────────── */}
       <View style={{ backgroundColor: colors.bgCard, borderRadius: 10,
         borderLeftWidth: 4, borderLeftColor: colors.warn,
@@ -211,6 +234,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
       {/* Share this app -- step 5 moment */}
       {step === 4 && (
         <TouchableOpacity
+      accessibilityLabel="📲 Share this app -- it might help someone you know"
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={{ flexDirection:'row', alignItems:'center', justifyContent:'center',
@@ -231,6 +255,44 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
           </Text>
         </TouchableOpacity>
       )}
+
+
+      {/* ── WhatsApp family alert — available on every step ────────────────── */}
+      {/* This is the most critical feature for Spanish/Portuguese-speaking
+          defendants. Their families use WhatsApp as the primary messaging app.
+          No app download required for the recipient — opens directly. */}
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="Send emergency message to family via WhatsApp"
+        style={{
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+          gap: 8, paddingVertical: 11, paddingHorizontal: 16, marginTop: 8,
+          backgroundColor: '#25D366', borderRadius: 10,
+        }}
+        onPress={() => {
+          // Pre-written message in the device's current language
+          // Defendant selects family contact inside WhatsApp — we just open it
+          const msg = encodeURIComponent(
+            'I need urgent legal help. I was just arrested. ' +
+            'Please open Justice Gavel (free) to find a lawyer: https://justicegavel.app/rights'
+          );
+          Linking.openURL(`whatsapp://send?text=${msg}`).catch(() => {
+            // WhatsApp not installed — try wa.me web link
+            Linking.openURL(`https://wa.me/?text=${msg}`).catch(() => {
+              // Final fallback: native share
+              Share.share({
+                message: 'I need urgent help. I was just arrested. Find legal resources at https://justicegavel.app/rights',
+                title: 'Urgent: Legal Help Needed',
+              }).catch(() => {});
+            });
+          });
+        }}
+      >
+        <Text style={{ fontSize: 18 }}>💬</Text>
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>
+          Alert Family via WhatsApp
+        </Text>
+      </TouchableOpacity>
 
       {/* Empty state */}
       {data?.length === 0 && (

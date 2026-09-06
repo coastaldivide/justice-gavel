@@ -7,7 +7,7 @@ declare var navigator: any;
  * AppNavigator.tsx — Navigation structure
  * Contains all stack and tab navigators.
  */
-import React, { Suspense } from 'react';
+import React, { useState } from 'react';
 import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -19,92 +19,129 @@ import JTBLogo from '../components/JTBLogo';
 // ── Bar Exam Prep screens ────────────────────────────────────────────────────
 import BarPrepHomeScreen        from '../screens/BarPrepHomeScreen';
 import BarPrepQuizScreen        from '../screens/BarPrepQuizScreen';
-import BarPrepExplanationScreen from '../screens/BarPrepExplanationScreen';
 import BarPrepProgressScreen    from '../screens/BarPrepProgressScreen';
 import BarPrepScheduleScreen    from '../screens/BarPrepScheduleScreen';
 import BarPrepResultsScreen     from '../screens/BarPrepResultsScreen';
 
-import AdminVerificationScreen from '../screens/AdminVerificationScreen';
-import AdvocacyScreen from '../screens/AdvocacyScreen';
-import ArrestMonitorScreen from '../screens/ArrestMonitorScreen';
 import AttorneyInboxScreen   from '../screens/AttorneyInboxScreen';
-import AttorneyDashboardScreen from '../screens/AttorneyDashboardScreen';
 import JustArrestedScreen   from '../screens/JustArrestedScreen';
-import BailCalculatorScreen from '../screens/BailCalculatorScreen';
-import BailSearchScreen from '../screens/BailSearchScreen';
-import BondsmanDashboardScreen from '../screens/BondsmanDashboardScreen';
-import BookingScreen from '../screens/BookingScreen';
-import CaseScreen from '../screens/CaseScreen';
-import CaseTimelineScreen from '../screens/CaseTimelineScreen';
-import ChatScreen from '../screens/ChatScreen';
-import CheckInManagerScreen from '../screens/CheckInManagerScreen';
-import VideoConsultationScreen from '../screens/VideoConsultationScreen';
-import ConflictCheckScreen from '../screens/ConflictCheckScreen';
-import MatterScreen from '../screens/MatterScreen';
-import CheckInScreen from '../screens/CheckInScreen';
-import ConsumerSubscriptionScreen from '../screens/ConsumerSubscriptionScreen';
-import ContactsScreen from '../screens/ContactsScreen';
-import CourtFormsScreen from '../screens/CourtFormsScreen';
-import CourtLocatorScreen from '../screens/CourtLocatorScreen';
-import CrisisResourcesScreen from '../screens/CrisisResourcesScreen';
-import LegalPenaltiesScreen from '../screens/LegalPenaltiesScreen';
-import DeadlineCalculatorScreen from '../screens/DeadlineCalculatorScreen';
-import DiscoveryScreen from '../screens/DiscoveryScreen';
-import DiversionScreen from '../screens/DiversionScreen';
-import DocumentScannerScreen from '../screens/DocumentScannerScreen';
-import EmergencyScreen from '../screens/EmergencyScreen';
 import EmergencyShareScreen from '../screens/EmergencyShareScreen';
-import ExpungementScreen from '../screens/ExpungementScreen';
-import FamilyConnectScreen from '../screens/FamilyConnectScreen';
-import FamilyCourtScreen from '../screens/FamilyCourtScreen';
-import GoldenGavelScreen from '../screens/GoldenGavelScreen';
-import HelpNowScreen from '../screens/HelpNowScreen';
-import HomeScreen from '../screens/HomeScreen';
-import HousingRightsScreen from '../screens/HousingRightsScreen';
-import IceDetentionScreen from '../screens/IceDetentionScreen';
-import ImmigrationConsequencesScreen from '../screens/ImmigrationConsequencesScreen';
-import InsuranceScreen from '../screens/InsuranceScreen';
-import JuvenileJusticeScreen from '../screens/JuvenileJusticeScreen';
-import LawyerProfileScreen from '../screens/LawyerProfileScreen';
-import LawyersScreen from '../screens/LawyersScreen';
-import LegalResearchScreen from '../screens/LegalResearchScreen';
-import LessonsScreen from '../screens/LessonsScreen';
 import LoginScreen from '../screens/LoginScreen';
-import MatchScreen from '../screens/MatchScreen';
-import MessagesScreen from '../screens/MessagesScreen';
-import MotionLibraryScreen from '../screens/MotionLibraryScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
-import PILeadScreen from '../screens/PILeadScreen';
-import PaymentsScreen from '../screens/PaymentsScreen';
-import QuickConnectScreen from '../screens/QuickConnectScreen';
 import RegisterScreen from '../screens/RegisterScreen';
-import ResourcesScreen from '../screens/ResourcesScreen';
 import RightsCardScreen from '../screens/RightsCardScreen';
-import SavedLawyersScreen from '../screens/SavedLawyersScreen';
-import SearchScreen from '../screens/SearchScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import SpecialtyCourtsScreen from '../screens/SpecialtyCourtsScreen';
-import SubscriptionScreen from '../screens/SubscriptionScreen';
-import TenantRightsScreen from '../screens/TenantRightsScreen';
-import TranslatorScreen from '../screens/TranslatorScreen';
-import VoiceNoteScreen from '../screens/VoiceNoteScreen';
-import InterrogationRecorderScreen from '../screens/InterrogationRecorderScreen';
-import TermsOfServiceScreen from '../screens/TermsOfServiceScreen';
 import PrivacyPolicyScreen  from '../screens/PrivacyPolicyScreen';
-import RecoveryAgentsScreen from '../screens/RecoveryAgentsScreen';
-import FirmVerticalScreen from '../screens/FirmVerticalScreen';
-import FirmDiscoveryScreen from '../screens/FirmDiscoveryScreen';
-import FirmPublicProfileScreen from '../screens/FirmPublicProfileScreen';
-import FirmAcquisitionScreen from '../screens/FirmAcquisitionScreen';
-import MatterIntelligenceScreen from '../screens/MatterIntelligenceScreen';
 import { Analytics } from '../services/analytics';
-import HagueContactScreen from '../screens/HagueContactScreen';
 import AgeGateScreen            from '../screens/AgeGateScreen';
-import AttorneyPrivacyScreen from '../screens/AttorneyPrivacyScreen';
-import ChildSupportScreen from '../screens/ChildSupportScreen';
 import LegalDisclaimerScreen from '../screens/LegalDisclaimerScreen';
 
-declare var navigationRef: any; // hoisted from component scope
+// ── Lazy-loaded screens (non-critical path) ─────────────────────────────────
+// ── Suspense boundary for lazy screens ──────────────────────────────────────
+// REQUIRED. React.lazy() components THROW when rendered without a Suspense
+// ancestor ("A React component suspended while rendering, but no fallback UI
+// was specified"). The efficiency pass converted 69 screens to React.lazy and
+// left only a comment here, which would have crashed every one of them on
+// first navigation.
+//
+// Per-screen wrapping (not one boundary around the navigator) is deliberate:
+// a single top-level boundary would unmount and remount the whole navigation
+// tree on every lazy load, losing tab state and back history.
+function ScreenFallback() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center',
+                   backgroundColor: '#fff' }}>
+      <ActivityIndicator size="large" color="#1a3a6e" />
+    </View>
+  );
+}
+
+function withSuspense<P extends object>(
+  Lazy: React.ComponentType<P>,
+): React.ComponentType<P> {
+  const Wrapped = (props: P) => (
+    <React.Suspense fallback={<ScreenFallback />}>
+      <Lazy {...props} />
+    </React.Suspense>
+  );
+  Wrapped.displayName = `withSuspense(${(Lazy as any).displayName || 'Screen'})`;
+  return Wrapped;
+}
+
+const BarPrepExplanationScreen = withSuspense(React.lazy(() => import('../screens/BarPrepExplanationScreen')));
+const AdminVerificationScreen = withSuspense(React.lazy(() => import('../screens/AdminVerificationScreen')));
+const AdvocacyScreen = withSuspense(React.lazy(() => import('../screens/AdvocacyScreen')));
+const ArrestMonitorScreen = withSuspense(React.lazy(() => import('../screens/ArrestMonitorScreen')));
+const AttorneyDashboardScreen = withSuspense(React.lazy(() => import('../screens/AttorneyDashboardScreen')));
+const BailCalculatorScreen = withSuspense(React.lazy(() => import('../screens/BailCalculatorScreen')));
+const BailSearchScreen = withSuspense(React.lazy(() => import('../screens/BailSearchScreen')));
+const BondsmanDashboardScreen = withSuspense(React.lazy(() => import('../screens/BondsmanDashboardScreen')));
+const BookingScreen = withSuspense(React.lazy(() => import('../screens/BookingScreen')));
+const CaseScreen = withSuspense(React.lazy(() => import('../screens/CaseScreen')));
+const CaseTimelineScreen = withSuspense(React.lazy(() => import('../screens/CaseTimelineScreen')));
+const ChatScreen = withSuspense(React.lazy(() => import('../screens/ChatScreen')));
+const CheckInManagerScreen = withSuspense(React.lazy(() => import('../screens/CheckInManagerScreen')));
+const VideoConsultationScreen = withSuspense(React.lazy(() => import('../screens/VideoConsultationScreen')));
+const ConflictCheckScreen = withSuspense(React.lazy(() => import('../screens/ConflictCheckScreen')));
+const MatterScreen = withSuspense(React.lazy(() => import('../screens/MatterScreen')));
+const CheckInScreen = withSuspense(React.lazy(() => import('../screens/CheckInScreen')));
+const ConsumerSubscriptionScreen = withSuspense(React.lazy(() => import('../screens/ConsumerSubscriptionScreen')));
+const ContactsScreen = withSuspense(React.lazy(() => import('../screens/ContactsScreen')));
+const CourtFormsScreen = withSuspense(React.lazy(() => import('../screens/CourtFormsScreen')));
+const CourtLocatorScreen = withSuspense(React.lazy(() => import('../screens/CourtLocatorScreen')));
+const CrisisResourcesScreen = withSuspense(React.lazy(() => import('../screens/CrisisResourcesScreen')));
+const LegalPenaltiesScreen = withSuspense(React.lazy(() => import('../screens/LegalPenaltiesScreen')));
+const DeadlineCalculatorScreen = withSuspense(React.lazy(() => import('../screens/DeadlineCalculatorScreen')));
+const DiscoveryScreen = withSuspense(React.lazy(() => import('../screens/DiscoveryScreen')));
+const DiversionScreen = withSuspense(React.lazy(() => import('../screens/DiversionScreen')));
+const DocumentScannerScreen = withSuspense(React.lazy(() => import('../screens/DocumentScannerScreen')));
+const EmergencyScreen = withSuspense(React.lazy(() => import('../screens/EmergencyScreen')));
+const ExpungementScreen = withSuspense(React.lazy(() => import('../screens/ExpungementScreen')));
+const FamilyConnectScreen = withSuspense(React.lazy(() => import('../screens/FamilyConnectScreen')));
+const FamilyCourtScreen = withSuspense(React.lazy(() => import('../screens/FamilyCourtScreen')));
+const GoldenGavelScreen = withSuspense(React.lazy(() => import('../screens/GoldenGavelScreen')));
+const HelpNowScreen = withSuspense(React.lazy(() => import('../screens/HelpNowScreen')));
+const HomeScreen = withSuspense(React.lazy(() => import('../screens/HomeScreen')));
+const HousingRightsScreen = withSuspense(React.lazy(() => import('../screens/HousingRightsScreen')));
+const IceDetentionScreen = withSuspense(React.lazy(() => import('../screens/IceDetentionScreen')));
+const ImmigrationConsequencesScreen = withSuspense(React.lazy(() => import('../screens/ImmigrationConsequencesScreen')));
+const InsuranceScreen = withSuspense(React.lazy(() => import('../screens/InsuranceScreen')));
+const JuvenileJusticeScreen = withSuspense(React.lazy(() => import('../screens/JuvenileJusticeScreen')));
+const LawyerProfileScreen = withSuspense(React.lazy(() => import('../screens/LawyerProfileScreen')));
+const LawyersScreen = withSuspense(React.lazy(() => import('../screens/LawyersScreen')));
+const LegalResearchScreen = withSuspense(React.lazy(() => import('../screens/LegalResearchScreen')));
+const LessonsScreen = withSuspense(React.lazy(() => import('../screens/LessonsScreen')));
+const MatchScreen = withSuspense(React.lazy(() => import('../screens/MatchScreen')));
+const MessagesScreen = withSuspense(React.lazy(() => import('../screens/MessagesScreen')));
+const MotionLibraryScreen = withSuspense(React.lazy(() => import('../screens/MotionLibraryScreen')));
+const PILeadScreen = withSuspense(React.lazy(() => import('../screens/PILeadScreen')));
+const PaymentsScreen = withSuspense(React.lazy(() => import('../screens/PaymentsScreen')));
+const QuickConnectScreen = withSuspense(React.lazy(() => import('../screens/QuickConnectScreen')));
+const ResourcesScreen = withSuspense(React.lazy(() => import('../screens/ResourcesScreen')));
+const SavedLawyersScreen = withSuspense(React.lazy(() => import('../screens/SavedLawyersScreen')));
+const SearchScreen = withSuspense(React.lazy(() => import('../screens/SearchScreen')));
+const SettingsScreen = withSuspense(React.lazy(() => import('../screens/SettingsScreen')));
+const SpecialtyCourtsScreen = withSuspense(React.lazy(() => import('../screens/SpecialtyCourtsScreen')));
+const SubscriptionScreen = withSuspense(React.lazy(() => import('../screens/SubscriptionScreen')));
+const TenantRightsScreen = withSuspense(React.lazy(() => import('../screens/TenantRightsScreen')));
+const TranslatorScreen = withSuspense(React.lazy(() => import('../screens/TranslatorScreen')));
+const VoiceNoteScreen = withSuspense(React.lazy(() => import('../screens/VoiceNoteScreen')));
+const InterrogationRecorderScreen = withSuspense(React.lazy(() => import('../screens/InterrogationRecorderScreen')));
+const TermsOfServiceScreen = withSuspense(React.lazy(() => import('../screens/TermsOfServiceScreen')));
+// RecoveryAgentsScreen import removed — item 5.5 (screen unregistered,
+// directory unverified, activity prohibited in 4 states).
+const FirmVerticalScreen = withSuspense(React.lazy(() => import('../screens/FirmVerticalScreen')));
+const FirmDiscoveryScreen = withSuspense(React.lazy(() => import('../screens/FirmDiscoveryScreen')));
+const FirmPublicProfileScreen = withSuspense(React.lazy(() => import('../screens/FirmPublicProfileScreen')));
+const FirmAcquisitionScreen = withSuspense(React.lazy(() => import('../screens/FirmAcquisitionScreen')));
+const MatterIntelligenceScreen = withSuspense(React.lazy(() => import('../screens/MatterIntelligenceScreen')));
+const HagueContactScreen = withSuspense(React.lazy(() => import('../screens/HagueContactScreen')));
+const AttorneyPrivacyScreen = withSuspense(React.lazy(() => import('../screens/AttorneyPrivacyScreen')));
+const ChildSupportScreen = withSuspense(React.lazy(() => import('../screens/ChildSupportScreen')));
+
+
+
+
+
 // ── Deep link configuration ────────────────────────────────────────────────────
 // Handles universal links (https://justicegavel.app/...) and
 // custom scheme (justicegavel://...) from push notifications,
@@ -156,6 +193,10 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 
 // ── More stack — all secondary screens ────────────────────────────────────────
 function MoreNavigator() {
+  // RESTORED from `declare var` (type-only, emitted no JS -- every read threw
+  // ReferenceError on mount). Scoped to MoreNavigator, where the references live.
+  const [navigationRef, setNavigationRef] = useState<any>(null);
+
   // Expose navigation to Electron menu and deep links
   // electron/main.js calls: window.__navigateTo('Settings')
   // This bridge is harmless on mobile — window is not defined in RN native
@@ -200,16 +241,8 @@ function MoreNavigator() {
           <MoreStack.Screen name="BarPrepResults"     component={BarPrepResultsScreen}     options={{ title: '📊 Quiz Results', headerShown: false }} />
       <MoreStack.Screen name="AdminVerification"     component={AdminVerificationScreen}     options={{ title: '⚖️ Bar Verification' }} />
       <MoreStack.Screen name="Advocacy"              component={AdvocacyScreen}              options={{ title: '📊 Advocacy Stats' }} />
-      <MoreStack.Screen
-        name="RecoveryAgents"
-        component={RecoveryAgentsScreen}
-        options={{
-          title: 'Recovery Agents',
-          headerStyle: { backgroundColor: '#042C53' },
-          headerTintColor: '#fff',
-        }}
-      />
-      <MoreStack.Screen name="BondsmanDashboard"     component={BondsmanDashboardScreen}     options={{ title: '🔓 Lead Dashboard' }} />
+      {/* RecoveryAgent screen suspended — pending license verification */}
+          <MoreStack.Screen name="BondsmanDashboard"     component={BondsmanDashboardScreen}     options={{ title: '🔓 Lead Dashboard' }} />
       <MoreStack.Screen name="Subscription"          component={SubscriptionScreen}          options={{ title: '⚖️ Attorney Plans' }} />
       <MoreStack.Screen name="FamilyConnect"         component={FamilyConnectScreen}         options={{ title: '🚨 Emergency Connection' }} />
       <MoreStack.Screen name="QuickConnect"          component={QuickConnectScreen}          options={{ title: '⚡ Quick Connect' }} />

@@ -124,23 +124,66 @@ export function effectiveMonthlyRate(tierKey) {
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
-// Lead fee schedule (in cents)
-// OR release ($0 bail) = no lead fee — bondsman not needed
-// Fee scales with bail amount since larger bail = more valuable connection
-export function calcLeadFee(bailAmount) {
-  // Lead fee scales with bail amount — bondsman earns 10% of bail as premium.
-  // A $100k bail earns the bondsman $10k premium; we earn a referral fee.
-  // Fee tiers revised to be proportional to case value.
-  const amt = Math.max(0, parseFloat(bailAmount) || 0);
-  if (amt < 100)       return 0;        // below $100 = no viable lead (real bail minimum)
-  if (amt < 1000)      return 1500;     // minor bail ($100–$999)
-  if (amt < 5000)      return 3500;     // $35   — misdemeanor range
-  if (amt < 25000)     return 7500;     // $75   — low felony range
-  if (amt < 100000)    return 15000;    // $150  — mid felony range
-  if (amt < 250000)    return 25000;    // $250  — serious felony
-  if (amt < 500000)    return 40000;    // $400  — high felony ($250k–$500k bail)
-  if (amt < 1000000)   return 60000;    // $600  — major case ($500k–$1M bail)
-  return 100000;                        // $1000 — murder/federal ($1M+ bail)
+// ── Bondsman subscription tiers (flat recurring, no per-lead component) ───────────
+// Per-lead fees on arrestees implicate runner-capper / barratry statutes
+// (TX §38.12, FL §877.02, and equivalents in most states — some are felonies).
+// Restructured to market-access subscriptions: bondsmen pay for geographic
+// coverage, not per-lead delivery. Standard in licensed professional directories.
+// ── Bondsman geographic tier subscriptions ────────────────────────────────────
+// Three tiers based on market access (counties covered), not lead volume.
+// No per-lead fees — pricing is for directory access and platform tools.
+// Stripe price IDs: create these in Stripe Dashboard → Products → Bondsman [Tier]
+//
+// Create a Product for each in Stripe, then set the price IDs in Railway:
+//   STRIPE_BONDSMAN_STARTER_ID   = price_xxxx  ($49/mo)
+//   STRIPE_BONDSMAN_PRO_ID       = price_xxxx  ($149/mo)
+//   STRIPE_BONDSMAN_MARKET_ID    = price_xxxx  ($349/mo)
+//
+// Revenue notes:
+//   Pro ($149/mo) is the revenue-optimal tier — most active bondsmen need
+//   2-3 counties, cost is covered by one bond written. 100 Pro seats = $14,900 MRR.
+export const BONDSMAN_TIERS = {
+  starter: {
+    name:          'Bondsman Starter',
+    monthly_cents: 4900,
+    display:       '$49/mo',
+    counties:      1,
+    label:         '1 county · Arrival alerts · Case tracking',
+    price_id:      process.env.STRIPE_BONDSMAN_STARTER_ID || null,
+    // Annual option: $490/yr (2 months free, $40.83/mo effective)
+    annual_cents:  49000,
+    annual_price_id: process.env.STRIPE_BONDSMAN_STARTER_ANNUAL_ID || null,
+  },
+  pro: {
+    name:          'Bondsman Pro',
+    monthly_cents: 14900,
+    display:       '$149/mo',
+    counties:      3,
+    label:         '3 counties · Priority inbox · CRM sync',
+    price_id:      process.env.STRIPE_BONDSMAN_PRO_ID || null,
+    // Annual option: $1,490/yr (2 months free, $124.17/mo effective)
+    annual_cents:  149000,
+    annual_price_id: process.env.STRIPE_BONDSMAN_PRO_ANNUAL_ID || null,
+  },
+  market: {
+    name:          'Bondsman Market',
+    monthly_cents: 34900,
+    display:       '$349/mo',
+    counties:      999,
+    label:         'Full metro DMA · All features · API access',
+    price_id:      process.env.STRIPE_BONDSMAN_MARKET_ID || null,
+    // Annual option: $3,490/yr (2 months free, $290.83/mo effective)
+    annual_cents:  349000,
+    annual_price_id: process.env.STRIPE_BONDSMAN_MARKET_ANNUAL_ID || null,
+  },
+};
+
+// Resolve bondsman tier from Stripe price ID (used in webhooks)
+export function bondsTierFromPriceId(priceId) {
+  for (const [key, tier] of Object.entries(BONDSMAN_TIERS)) {
+    if (tier.price_id === priceId || tier.annual_price_id === priceId) return key;
+  }
+  return null;
 }
 
 export async function getOrCreateStripeCustomer(user) {

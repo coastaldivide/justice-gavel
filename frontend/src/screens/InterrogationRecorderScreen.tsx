@@ -31,9 +31,38 @@ import { t } from '../i18n';
 
 type Phase = 'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'error';
 
-const TWO_PARTY_STATES = new Set([
-  'CA','CT','FL','IL','MD','MA','MI','MT','NH','OR','PA','WA','WI'
+// Two-party consent states — all-party consent required for recording
+// Populated with both 2-letter codes (Android) and full names (iOS)
+// because Location.reverseGeocodeAsync returns different formats per platform.
+// Wrong warning in a two-party state = potential felony for the user.
+const TWO_PARTY_STATE_CODES = new Set([
+  'CA','CT','FL','IL','MD','MA','MI','MT','NH','OR','PA','WA','WI',
 ]);
+const TWO_PARTY_STATE_NAMES = new Set([
+  'California','Connecticut','Florida','Illinois','Maryland','Massachusetts',
+  'Michigan','Montana','New Hampshire','Oregon','Pennsylvania','Washington','Wisconsin',
+]);
+// Normalize any region string to abbreviation for consistent checking
+const normalizeStateCode = (region: string): string => {
+  const upper = region?.trim().toUpperCase() ?? '';
+  // Already a 2-letter code
+  if (upper.length === 2) return upper;
+  // Full name → abbreviation map for two-party states
+  const NAME_TO_CODE: Record<string, string> = {
+    'CALIFORNIA':'CA','CONNECTICUT':'CT','FLORIDA':'FL','ILLINOIS':'IL',
+    'MARYLAND':'MD','MASSACHUSETTS':'MA','MICHIGAN':'MI','MONTANA':'MT',
+    'NEW HAMPSHIRE':'NH','OREGON':'OR','PENNSYLVANIA':'PA',
+    'WASHINGTON':'WA','WISCONSIN':'WI',
+  };
+  return NAME_TO_CODE[upper] || upper;
+};
+const TWO_PARTY_STATES = {
+  has: (region: string) => {
+    const code = normalizeStateCode(region);
+    return TWO_PARTY_STATE_CODES.has(code) ||
+           TWO_PARTY_STATE_NAMES.has(region?.trim() ?? '');
+  },
+};
 
 function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { confirm } = useConfirm();
@@ -79,14 +108,43 @@ function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Ele
     return () => _task.cancel();
   }, []);
 
-  // Load user state for consent law check
+  // Determine consent law from CURRENT LOCATION at mount time — not stored profile.
+  // The governing two-party consent law is where the RECORDING HAPPENS, not where
+  // the user lives. A user arrested across a state line gets the wrong warning
+  // if we read from their profile. Wrong warning in a two-party state = felony exposure.
   useEffect(() => {
-    AsyncStorage.getItem('user_state').then(s => {
-      if (s && mountedRef.current) {
-        setUserState(s);
-        fetchLaw(s);
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted' && mountedRef.current) {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          const [geo] = await Location.reverseGeocodeAsync({
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+          });
+          const detectedState = geo?.region || geo?.isoCountryCode || '';
+          if (detectedState && mountedRef.current) {
+            setUserState(detectedState);
+            fetchLaw(detectedState);
+          }
+        } else {
+          // Fallback to stored profile state if location denied
+          AsyncStorage.getItem('user_state').then(s => {
+            if (s && mountedRef.current) {
+              setUserState(s);
+              fetchLaw(s);
+            }
+          }).catch(() => {});
+        }
+      } catch {
+        // Fallback to stored state on any location error
+        AsyncStorage.getItem('user_state').then(s => {
+          if (s && mountedRef.current) { setUserState(s); fetchLaw(s); }
+        }).catch(() => {});
       }
-    }).catch(() => {});
+    })();
   }, []);
 
   const fetchLaw = async (state: string) => {
@@ -115,7 +173,7 @@ function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Ele
   const startRecording = async () => {
     // Two-party consent warning
     if (TWO_PARTY_STATES.has(userState) && !recordingLaw?.acknowledged) {
-      confirm('⚠️ Recording Law', (recordingLaw?.note || 'Your state may require all parties to consent.') + '\n\nRecording police in PUBLIC spaces is generally protected by the First Amendment.',
+      confirm('⚠️ Two-Party Consent Warning — Custodial Setting', (recordingLaw?.note || 'Your state may require all parties to consent.') + '\n\nCUSTODIAL INTERROGATION NOTE: You are likely in a police interview room, not a public space. First Amendment public-recording protections do NOT apply here. This recording is for YOUR PERSONAL RECORDS ONLY — consult an attorney before disclosing it to anyone.',
       { confirmLabel: 'I Understand — Start Recording' }).then(ok => { if (ok) startRecording; });
       return;
     }
@@ -343,7 +401,8 @@ showToast('Allow microphone access in Settings.', 'warning');
               REC  {formatTime(elapsed)}
             </Text>
           </View>
-          <TouchableOpacity accessibilityRole="button"
+          <TouchableOpacity
+      accessibilityLabel="⏹ STOP & TRANSCRIBE" accessibilityRole="button"
             style={[styles.stopBtn, { backgroundColor: colors.bgCard, borderColor: colors.emergency }]}
             onPress={stopAndProcess}
             activeOpacity={0.85}
@@ -387,6 +446,7 @@ showToast('Allow microphone access in Settings.', 'warning');
           {/* Save PDF */}
           {pdfBase64 ? (
             <TouchableOpacity
+      accessibilityLabel="📄 Save & Share PDF"
               accessibilityRole="button"
               style={[styles.saveBtn, { backgroundColor: colors.legalDark }]}
               onPress={savePDF}
@@ -429,7 +489,8 @@ showToast('Allow microphone access in Settings.', 'warning');
           </View>
 
           {/* Record again */}
-          <TouchableOpacity accessibilityRole="button"
+          <TouchableOpacity
+      accessibilityLabel="+ Record Another Encounter" accessibilityRole="button"
             style={[styles.recordAgainBtn, { backgroundColor: colors.bgElevated }]}
             onPress={reset}
             activeOpacity={0.85}

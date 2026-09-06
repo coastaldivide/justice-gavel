@@ -10,7 +10,7 @@
  *
  * Lead fee schedule:
  *   Personal Injury — by severity:
- *     minor ($50) | moderate ($150) | serious ($300) | catastrophic ($500)
+ *     flat fee: $75 per lead — no severity tiering (Rule 5.4/7.2 compliance)
  *   Civil Rights  — flat $200 (wrongful arrest is high-value case)
  *   Employment    — $100 flat
  *   ICE Detention — $75 flat (time-critical, lower case value)
@@ -23,6 +23,9 @@ import { authRequired } from '../middleware/auth.js';
 // ── Lead submission rate limiter (public endpoint — protect from spam) ────────
 import rateLimit from 'express-rate-limit';
 import logger from '../utils/logger.js';
+// Added: these names were used at module scope but never imported --
+// an ESM ReferenceError at import time, which blocked the whole app.
+import { validate, schemas } from '../validation/schemas.js';
 const piLeadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 5,                    // 5 lead submissions per IP per hour
@@ -39,8 +42,16 @@ const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET ||
 // ── Lead fee schedule ─────────────────────────────────────────────────────────
 function calcCivilLeadFee(leadType, severity = 'moderate') {
   if (leadType === 'personal_injury') {
-    const fees = { minor: 5000, moderate: 15000, serious: 30000, catastrophic: 50000 };
-    return fees[severity] ?? 15000;
+    // ── FLAT FEE — severity tiering removed ────────────────────────────────────
+  // Value-scaled fees (minor→catastrophic) move from advertising cost to
+  // compensation tied to expected attorney fee — implicating Rule 5.4(a)
+  // (fee-splitting with non-lawyer) and Rule 7.2(b) (paying for recommendation).
+  // ABA Formal Opinion 501 (2022): flat per-lead is generally permissible;
+  // scaled-to-matter-value is the prohibited fact pattern.
+  //
+  // PI platform lead fee: $75 flat per revealed contact
+  // Attorneys choose which leads to purchase; we do not rank by injury severity.
+  return 7500; // $75.00 flat fee regardless of severity
   }
   if (leadType === 'civil_rights')  return 20000;  // $200
   if (leadType === 'employment')    return 10000;  // $100
