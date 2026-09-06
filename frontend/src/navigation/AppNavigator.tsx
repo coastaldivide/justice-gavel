@@ -7,7 +7,7 @@ declare var navigator: any;
  * AppNavigator.tsx — Navigation structure
  * Contains all stack and tab navigators.
  */
-import React from 'react';
+import React, { Suspense } from 'react';
 import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';

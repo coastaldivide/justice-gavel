@@ -146,7 +146,7 @@ export const ALL_ENV_VARS = {
   ADMIN_PANEL_URL:          process.env.ADMIN_PANEL_URL            || '',
 
   // ── Stripe ───────────────────────────────────────────────────────────────
-  STRIPE_SECRET:            process.env.STRIPE_SECRET              || '',
+  STRIPE_SECRET:            process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET              || '',
   STRIPE_WEBHOOK_SECRET:    process.env.STRIPE_WEBHOOK_SECRET      || '',
   STRIPE_ACH_ENABLED:       process.env.STRIPE_ACH_ENABLED         || 'false',
   STRIPE_SUCCESS_URL:       process.env.STRIPE_SUCCESS_URL         || 'https://justicegavel.app/payment/success',

@@ -54,7 +54,8 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
 
   let specialties: string[] = [];
   if (contact.specialties) {
-    try { specialties = JSON.parse(contact.specialties); } catch (e: any) { __DEV__ && console.warn(e?.message); }
+    try { specialties = JSON.parse(contact.specialties); } catch (e: any) {
+      setLoading(false); __DEV__ && console.warn(e?.message); }
   }
 
   return (
@@ -201,6 +202,7 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
       // Fire post-purchase retention trigger (48hr arrest monitoring upsell)
       api.post('/push/retention/post-purchase', { purchase_type: 'quickconnect' }).catch((e) => { __DEV__ && console.warn(e?.message); });
     } catch (e: any) {
+      setLoading(false);
       const errMsg   = e.response?.data?.error || e.message || '';
       const status   = e.response?.status;
       let userMsg = errMsg;

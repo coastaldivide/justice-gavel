@@ -1,3 +1,4 @@
+import { guardedSchedule } from '../utils/cronGuard.js';
 import { getDb } from '../db/index.js';
 const JOB_LAST_RUN = new Map(); // prevents duplicate runs within same window
 
@@ -540,7 +541,7 @@ export function startScheduler() {
     } catch(e) { logger.warn('[reminder/hourly]', e?.message); }
   }, 3_600_000);
 
-  linkExpiryTask = cron.schedule('0 */2 * * *', async () => {
+  linkExpiryTask = guardedSchedule('0 */2 * * *', async () => {
     try {
       const r = await expireOldPaymentLinks();
       if (r.expired > 0) logger.info(`[scheduler] Expired ${r.expired} payment links`);
