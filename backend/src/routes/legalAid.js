@@ -9,6 +9,7 @@
  */
 
 import { Router } from 'express';
+import { sharedAiLimiter } from '../middleware/sharedAiLimiter.js';
 import { asyncRoute } from '../utils/routeHelpers.js';
 import { authRequired } from '../middleware/auth.js';
 import { enqueueAIJob } from '../services/aiQueue.js';
@@ -40,7 +41,7 @@ router.get('/clients', authRequired, asyncRoute(async (req, res) => {
 }));
 
 /** POST /api/legal-aid/expungement-petition — AI-assisted petition drafting */
-router.post('/expungement-petition', authRequired, asyncRoute(async (req, res) => {
+router.post('/expungement-petition', sharedAiLimiter, authRequired, asyncRoute(async (req, res) => {
   const {
     client_id, case_id, charge_type, disposition,
     sentence_completed, years_since_completion, state,

@@ -10,6 +10,7 @@
  */
 
 import { Router }     from 'express';
+import { sharedAiLimiter } from '../middleware/sharedAiLimiter.js';
 import { asyncRoute } from '../utils/routeHelpers.js';
 import { authRequired } from '../middleware/auth.js';
 import { sendEmail } from '../services/email.js';
@@ -21,7 +22,7 @@ const router = Router();
  * Called when attorney or user marks a case as closed.
  * Triggers the retention flow.
  */
-router.post('/:id/close', authRequired, asyncRoute(async (req, res) => {
+router.post('/:id/close', sharedAiLimiter, authRequired, asyncRoute(async (req, res) => {
   const { id }    = req.params;
   const { reason, outcome } = req.body;
   const userId    = req.user.id;

@@ -17,6 +17,7 @@
  */
 
 import { Router }     from 'express';
+import { sharedAiLimiter } from '../middleware/sharedAiLimiter.js';
 import { asyncRoute } from '../utils/routeHelpers.js';
 import { authRequired } from '../middleware/auth.js';
 
@@ -130,7 +131,7 @@ router.get('/dashboard', authRequired, asyncRoute(async (req, res) => {
  * POST /api/pretrial/enroll
  * Court officer enrolls a defendant in monitoring
  */
-router.post('/enroll', authRequired, asyncRoute(async (req, res) => {
+router.post('/enroll', sharedAiLimiter, authRequired, asyncRoute(async (req, res) => {
   const {
     defendant_id, case_number, court_date,
     required_checkins = 1, agency_id, officer_id,
