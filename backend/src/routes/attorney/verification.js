@@ -98,7 +98,7 @@ router.post('/verify-bar', authRequired, routeLimiter, async (req, res) => {
              bar_state               = ?,
              pending_bar_verification = 1,
              bar_verified             = 0,
-             bar_submitted_at         = datetime('now')
+             bar_submitted_at         = NOW()
        WHERE id = ?`,
       [cleanBar, stateUpper, req.user.id]
     );
@@ -214,7 +214,7 @@ router.post('/approve-verification', authRequired, routeLimiter, async (req, res
         `UPDATE users
            SET bar_verified              = 1,
                pending_bar_verification   = 0,
-               bar_verified_at            = datetime('now'),
+               bar_verified_at            = NOW(),
                bar_verified_by            = ?
          WHERE id = ?`,
         [verified_by || req.user.id, attorney_user_id]

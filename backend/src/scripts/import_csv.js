@@ -181,7 +181,7 @@ async function upsertRow(db, row, type, defaultCity, dryRun) {
         `UPDATE lawyers SET phone=COALESCE(phone,?), address=COALESCE(address,?),
          email=COALESCE(email,?), website=COALESCE(website,?),
          bar_number=COALESCE(bar_number,?), verified=MAX(verified,?),
-         lat=COALESCE(lat,?), lng=COALESCE(lng,?), updated_at=datetime('now')
+         lat=COALESCE(lat,?), lng=COALESCE(lng,?), updated_at=NOW()
          WHERE id=?`,
         [phone, address, email, website, row.bar_number || null, verified, lat, lng, existing.id]
       );
@@ -191,7 +191,7 @@ async function upsertRow(db, row, type, defaultCity, dryRun) {
       `INSERT INTO lawyers (city, name, phone, address, lat, lng, website, email,
        bar_number, verified, pro_bono, sliding_scale, free_consultation,
        years_experience, bio, specialties, languages, source, source_id, active, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,datetime('now'))`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,NOW())`,
       [
         city, name, phone, address, lat, lng, website, email,
         row.bar_number || null,
@@ -216,7 +216,7 @@ async function upsertRow(db, row, type, defaultCity, dryRun) {
       await db.run(
         `UPDATE bail_agents SET phone=COALESCE(phone,?), email=COALESCE(email,?),
          website=COALESCE(website,?), hours=COALESCE(hours,?),
-         lat=COALESCE(lat,?), lng=COALESCE(lng,?), updated_at=datetime('now')
+         lat=COALESCE(lat,?), lng=COALESCE(lng,?), updated_at=NOW()
          WHERE id=?`,
         [phone, email, website, row.hours || null, lat, lng, existing.id]
       );
@@ -225,7 +225,7 @@ async function upsertRow(db, row, type, defaultCity, dryRun) {
     await db.run(
       `INSERT INTO bail_agents (city, name, phone, address, lat, lng, website, email,
        hours, verified, source, source_id, active, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,datetime('now'))`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,NOW())`,
       [city, name, phone, address, lat, lng, website, email, row.hours || null, verified, 'csv', sourceId]
     );
     return 'inserted';

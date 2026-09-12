@@ -112,7 +112,7 @@ export async function awardBarPrepPoints({
       try {
         await db.run(
           `INSERT OR IGNORE INTO user_badges (user_id, badge_key, label, emoji, awarded_at)
-           VALUES (?, ?, ?, ?, datetime('now'))`,
+           VALUES (?, ?, ?, ?, NOW())`,
           [userId, badge.key, badge.label, badge.emoji]
         );
         newBadges.push(badge);

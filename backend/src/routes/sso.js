@@ -461,7 +461,7 @@ router.post('/config/:firmId', authRequired, routeLimiter, requireFirmRole('firm
           provider=?, entity_id=?, sso_url=?, slo_url=?, certificate=?,
           attribute_email=?, attribute_name=?, attribute_role=?,
           sp_entity_id=?, sp_acs_url=?, force_sso=?, active=1,
-          updated_at=datetime('now')
+          updated_at=NOW()
          WHERE firm_id=?`,
         [safeProvider, entity_id, sso_url, slo_url || null, certificate,
          attribute_email, attribute_name, attribute_role || null,

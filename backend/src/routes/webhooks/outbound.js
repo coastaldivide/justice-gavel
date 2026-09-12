@@ -151,7 +151,7 @@ export async function deliverWebhook(db, subscription, eventType, payload, attem
   // Update subscription stats
   if (success) {
     await db.run(
-      "UPDATE webhook_subscriptions SET last_triggered_at=datetime('now'), failure_count=0 WHERE id=?",
+      "UPDATE webhook_subscriptions SET last_triggered_at=NOW(), failure_count=0 WHERE id=?",
       [subscription.id]
     ).catch(e => logger.warn('[webhook/stat-reset]', e?.message));
   } else {
@@ -351,7 +351,7 @@ router.put('/subscriptions/:id', authRequired, requireFirmRole('firm_admin'), as
     if (active !== undefined) { updates.push('active=?'); params.push(active ? 1 : 0); }
     if (!updates.length) return err400(res, 'Nothing to update.');
 
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(safeInt(req.params.id));
     await db.run(`UPDATE webhook_subscriptions SET ${updates.join(',')} WHERE id=?`, params);
 

@@ -225,7 +225,7 @@ router.put('/:id', authRequired, async (req, res) => {
 
     if (!updates.length) return err400(res, 'No valid fields to update.');
 
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(safeInt(req.params.id), req.user.id);
 
     await db.run(

@@ -69,7 +69,7 @@ export async function writeMatterVersion(db, matterId, firmId, changedBy, before
     await db.run(
       `INSERT INTO matter_versions
          (matter_id, firm_id, changed_by, changed_at, change_type, field_changes, changed_via)
-       VALUES (?, ?, ?, datetime('now'), ?, ?, 'api')`,
+       VALUES (?, ?, ?, NOW(), ?, ?, 'api')`,
       [matterId, firmId, changedBy, changeType, JSON.stringify(fieldChanges)]
     );
 
@@ -146,7 +146,7 @@ export async function applyLegalHold(holdType, targetId, firmId, appliedBy, reas
 
   const result = await db.run(
     `INSERT INTO legal_holds (hold_type, target_id, firm_id, applied_by, reason, applied_at, active)
-     VALUES (?, ?, ?, ?, ?, datetime('now'), 1)`,
+     VALUES (?, ?, ?, ?, ?, NOW(), 1)`,
     [holdType, targetId, firmId, appliedBy, reason]
   );
 
@@ -252,7 +252,7 @@ export async function archiveCompletedDocketEntries(daysThreshold = 90) {
              (id, matter_id, firm_id, title, entry_type, due_date, due_time,
               completed_at, priority, status, notes, assigned_to,
               original_created_at, archived_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
           [
             entry.id, entry.matter_id, entry.firm_id, entry.title, entry.entry_type,
             entry.due_date, entry.due_time, entry.updated_at, entry.priority,
@@ -303,7 +303,7 @@ export async function onSubscriptionLapse(firmId) {
     `UPDATE firms
      SET subscription_status='grace',
          subscription_grace_until=?,
-         updated_at=datetime('now')
+         updated_at=NOW()
      WHERE id=?`,
     [graceDate, firmId]
   );
@@ -358,7 +358,7 @@ export async function onSubscriptionLapse(firmId) {
   // If emailsFailed > 0, the health scan's retention section will surface this.
   const notifStatus = emailsFailed === 0 ? 'sent' : emailsSent > 0 ? 'partial' : 'failed';
   await db.run(
-    `UPDATE firms SET updated_at=datetime('now') WHERE id=?`,
+    `UPDATE firms SET updated_at=NOW() WHERE id=?`,
     [firmId]
   ).catch(() => {});
 
@@ -432,7 +432,7 @@ export async function checkAccountInactivity() {
       // Check if we've already sent this type of alert recently (within 30 days)
       const recentAlert = await db.get(
         `SELECT id FROM account_inactivity_log
-         WHERE user_id=? AND alert_type=? AND logged_at > datetime('now', '-30 days')
+         WHERE user_id=? AND alert_type=? AND logged_at > (NOW() - INTERVAL '30 days')
          LIMIT 1`,
         [user.user_id, threshold.type]
       ).catch(() => null);
@@ -444,7 +444,7 @@ export async function checkAccountInactivity() {
         `INSERT INTO account_inactivity_log
            (user_id, firm_id, last_seen_at, days_inactive, alert_sent_at, alert_type,
             matters_count, cases_count)
-         VALUES (?, ?, ?, ?, datetime('now'), ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, NOW(), ?, ?, ?)`,
         [
           user.user_id, user.firm_id, user.last_login_at, threshold.days,
           threshold.type, user.matters_count, user.cases_count,

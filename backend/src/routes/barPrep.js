@@ -146,7 +146,7 @@ router.post('/sessions', sessionLimiter, checkSampleLimit, async (req, res) => {
       `INSERT INTO quiz_sessions
          (user_id, subject_id, category, mode, question_count, started_at,
           session_type, total_questions, time_limit_secs, status)
-       VALUES (?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, 'active')`,
+       VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, 'active')`,
       [req.user.id, subject_id, category || null, mode, count,
        mode, count, mode === 'timed' ? count * 90 : null]
     );
@@ -225,7 +225,7 @@ router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
       await db.run(
         `INSERT OR IGNORE INTO quiz_answers
            (session_id, question_id, user_id, selected_answer, is_correct, time_spent_ms, answered_at)
-         VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
+         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
         [sessionId, ans.question_id, req.user.id,
          ans.selected_answer, isRight ? 1 : 0, ans.time_spent_ms || null]
       );
@@ -243,7 +243,7 @@ router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
         `INSERT INTO spaced_repetition_state
            (user_id, question_id, easiness, interval_days, repetitions,
             last_quality, next_review_at, times_seen, times_correct, last_seen_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
          ON CONFLICT(user_id, question_id) DO UPDATE SET
            easiness       = excluded.easiness,
            interval_days  = excluded.interval_days,
@@ -253,7 +253,7 @@ router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
            times_seen     = excluded.times_seen,
            times_correct  = excluded.times_correct,
            last_seen_at   = excluded.last_seen_at,
-           updated_at     = datetime('now')`,
+           updated_at     = NOW()`,
         [req.user.id, ans.question_id,
          next.easiness, next.interval_days, next.repetitions,
          next.last_quality, next.next_review_at,
@@ -277,7 +277,7 @@ router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
 
     await db.run(
       `UPDATE quiz_sessions
-       SET completed_at = datetime('now'), correct_count = ?, total_answered = ?, score_pct = ?
+       SET completed_at = NOW(), correct_count = ?, total_answered = ?, score_pct = ?
        WHERE id = ?`,
       [correct, total, pct, sessionId]
     );
@@ -359,14 +359,14 @@ router.put('/progress', quizLimiter, async (req, res) => {
     const db = await getDb();
     args.push(req.user.id);
     await db.run(
-      `UPDATE bar_prep_progress SET ${updates.join(', ')}, updated_at = datetime('now') WHERE user_id = ?`,
+      `UPDATE bar_prep_progress SET ${updates.join(', ')}, updated_at = NOW() WHERE user_id = ?`,
       args
     );
 
     if (exam_date !== undefined) {
       await db.run(
-        `INSERT INTO study_streaks (user_id, exam_date, updated_at) VALUES (?, ?, datetime('now'))
-         ON CONFLICT(user_id) DO UPDATE SET exam_date = excluded.exam_date, updated_at = datetime('now')`,
+        `INSERT INTO study_streaks (user_id, exam_date, updated_at) VALUES (?, ?, NOW())
+         ON CONFLICT(user_id) DO UPDATE SET exam_date = excluded.exam_date, updated_at = NOW()`,
         [req.user.id, exam_date || null]
       );
       try {
@@ -408,7 +408,7 @@ router.post('/questions/:id/flag', quizLimiter, async (req, res) => {
 
     await db.run(
       `INSERT INTO quiz_question_flags (question_id, user_id, reason, note, status, created_at)
-       VALUES (?, ?, ?, ?, 'open', datetime('now'))
+       VALUES (?, ?, ?, ?, 'open', NOW())
        ON CONFLICT(question_id, user_id) DO UPDATE
          SET reason = excluded.reason, note = excluded.note, status = 'open'`,
       [questionId, req.user.id, reason, note]

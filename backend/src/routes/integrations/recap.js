@@ -173,7 +173,7 @@ router.post('/link', authRequired, async (req, res) => {
     await db.run(
       `INSERT INTO integration_external_ids
          (firm_id, provider, entity_type, internal_id, external_id, synced_at)
-       VALUES (?, 'recap', 'matter', ?, ?, datetime('now'))
+       VALUES (?, 'recap', 'matter', ?, ?, NOW())
        ON CONFLICT(firm_id, provider, entity_type, internal_id)
        DO UPDATE SET external_id=excluded.external_id, synced_at=excluded.synced_at`,
       [ctx.firm_id, safeInt(matter_id), String(docket_id)]
@@ -181,7 +181,7 @@ router.post('/link', authRequired, async (req, res) => {
 
     // Store docket metadata on the matter for display
     await db.run(
-      `UPDATE matters SET updated_at=datetime('now') WHERE id=?`,
+      `UPDATE matters SET updated_at=NOW() WHERE id=?`,
       [safeInt(matter_id)]
     );
 
@@ -279,7 +279,7 @@ router.post('/import/:matterId', authRequired, recapLimiter, async (req, res) =>
         `INSERT INTO docket_entries
            (matter_id, firm_id, title, entry_type, due_date, status, priority,
             notes, rule_citation, calculated_from, days_from_event, created_at)
-         VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, 'RECAP Import', ?, 0, datetime('now'))`,
+         VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, 'RECAP Import', ?, 0, NOW())`,
         [
           matterId, ctx.firm_id,
           truncateStr(sanitizeStr(desc, 500), 500),
@@ -294,7 +294,7 @@ router.post('/import/:matterId', authRequired, recapLimiter, async (req, res) =>
         await db.run(
           `INSERT OR IGNORE INTO integration_external_ids
              (firm_id, provider, entity_type, internal_id, external_id, synced_at)
-           VALUES (?, 'recap', 'docket_entry', ?, ?, datetime('now'))`,
+           VALUES (?, 'recap', 'docket_entry', ?, ?, NOW())`,
           [ctx.firm_id, result.lastID, externalId]
         ).catch(() => {});
         imported++;
@@ -303,7 +303,7 @@ router.post('/import/:matterId', authRequired, recapLimiter, async (req, res) =>
 
     // Update last sync on the link record
     await db.run(
-      `UPDATE integration_external_ids SET synced_at=datetime('now')
+      `UPDATE integration_external_ids SET synced_at=NOW()
        WHERE firm_id=? AND provider='recap' AND entity_type='matter' AND internal_id=?`,
       [ctx.firm_id, matterId]
     ).catch(() => {});
@@ -423,7 +423,7 @@ router.post('/refresh/:matterId', authRequired, recapLimiter, async (req, res) =
       const result = await db.run(
         `INSERT INTO docket_entries
            (matter_id, firm_id, title, entry_type, due_date, status, priority, notes, created_at)
-         VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, datetime('now'))`,
+         VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, NOW())`,
         [matterId, ctx.firm_id, truncateStr(sanitizeStr(desc, 500), 500),
          type, entryDate, priority,
          entry.pacer_doc_id ? `PACER Doc #${entry.pacer_doc_id}` : null]
@@ -439,7 +439,7 @@ router.post('/refresh/:matterId', authRequired, recapLimiter, async (req, res) =
     }
 
     await db.run(
-      `UPDATE integration_external_ids SET synced_at=datetime('now') WHERE firm_id=? AND provider='recap' AND entity_type='matter' AND internal_id=?`,
+      `UPDATE integration_external_ids SET synced_at=NOW() WHERE firm_id=? AND provider='recap' AND entity_type='matter' AND internal_id=?`,
       [ctx.firm_id, matterId]
     ).catch(() => {});
 
@@ -507,7 +507,7 @@ export async function importDocketEntries(db, ctx, matterId, docketId, opts = {}
     const result = await db.run(
       `INSERT INTO docket_entries
          (matter_id, firm_id, title, entry_type, due_date, status, priority, notes, created_at)
-       VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, datetime('now'))`,
+       VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, NOW())`,
       [
         matterId, ctx.firm_id,
         truncateStr(sanitizeStr(desc, 500), 500),
@@ -520,7 +520,7 @@ export async function importDocketEntries(db, ctx, matterId, docketId, opts = {}
       await db.run(
         `INSERT OR IGNORE INTO integration_external_ids
            (firm_id, provider, entity_type, internal_id, external_id, synced_at)
-         VALUES (?, 'recap', 'docket_entry', ?, ?, datetime('now'))`,
+         VALUES (?, 'recap', 'docket_entry', ?, ?, NOW())`,
         [ctx.firm_id, result.lastID, externalId]
       ).catch(() => {});
       imported++;
@@ -529,7 +529,7 @@ export async function importDocketEntries(db, ctx, matterId, docketId, opts = {}
 
   // Update last-synced timestamp on the matter link
   await db.run(
-    `UPDATE integration_external_ids SET synced_at=datetime('now')
+    `UPDATE integration_external_ids SET synced_at=NOW()
      WHERE firm_id=? AND provider='recap' AND entity_type='matter' AND internal_id=?`,
     [ctx.firm_id, matterId]
   ).catch(() => {});

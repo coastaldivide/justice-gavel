@@ -61,7 +61,7 @@ router.get('/:caseId', authRequired, async (req, res) => {
 
     // Mark visible messages as read
     await db.run(
-      `UPDATE case_messages SET read_at = datetime('now')
+      `UPDATE case_messages SET read_at = NOW()
         WHERE case_id = ? AND sender_id != ? AND read_at IS NULL`,
       [caseId, req.user.id]
     ).catch(() => {});
@@ -123,7 +123,7 @@ router.post('/:caseId', authRequired, async (req, res) => {
     const result = await db.run(
       `INSERT INTO case_messages
          (case_id, sender_id, sender_type, body, message_type, sent_at)
-       VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+       VALUES (?, ?, ?, ?, ?, NOW())`,
       [caseId, req.user.id, senderType, safeBody, msgType]
     );
 
@@ -223,7 +223,7 @@ router.delete('/:id', authRequired, async (req, res) => {
       return err403(res, 'Cannot delete this message');
 
     await db.run(
-      `UPDATE case_messages SET deleted_at = datetime('now') WHERE id = ?`,
+      `UPDATE case_messages SET deleted_at = NOW() WHERE id = ?`,
       [id]
     );
     return res.json({ deleted: true });

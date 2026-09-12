@@ -245,7 +245,7 @@ function crudRoutes(table, extraWriteFields = []) {
       if (body.specialties && Array.isArray(body.specialties)) body.specialties = JSON.stringify(body.specialties);
       if (body.languages && Array.isArray(body.languages)) body.languages = JSON.stringify(body.languages);
       const setClause = allowed.map(f => `${f} = ?`).join(', ');
-      await db.run(`UPDATE ${safeTable(table)} SET ${setClause}, updated_at = datetime('now') WHERE id = ?`,
+      await db.run(`UPDATE ${safeTable(table)} SET ${setClause}, updated_at = NOW() WHERE id = ?`,
         [...allowed.map(f => body[f]), safeInt(req.params.id)]);
       const after = await db.get(`SELECT * FROM ${safeTable(table)} WHERE id = ?`, [safeInt(req.params.id)]);
       await logAllChanges(db, table, safeInt(req.params.id), before, after);
@@ -266,7 +266,7 @@ function crudRoutes(table, extraWriteFields = []) {
       if (body.specialties && Array.isArray(body.specialties)) body.specialties = JSON.stringify(body.specialties);
       if (body.languages && Array.isArray(body.languages)) body.languages = JSON.stringify(body.languages);
       const setClause = allowed.map(f => `${f} = ?`).join(', ');
-      await db.run(`UPDATE ${safeTable(table)} SET ${setClause}, updated_at = datetime('now') WHERE id = ?`,
+      await db.run(`UPDATE ${safeTable(table)} SET ${setClause}, updated_at = NOW() WHERE id = ?`,
         [...allowed.map(f => body[f]), safeInt(req.params.id)]);
       const after = await db.get(`SELECT * FROM ${safeTable(table)} WHERE id = ?`, [safeInt(req.params.id)]);
       await logAllChanges(db, table, safeInt(req.params.id), before, after);
@@ -281,7 +281,7 @@ function crudRoutes(table, extraWriteFields = []) {
       const db = await openDb();
       const before = await db.get(`SELECT * FROM ${safeTable(table)} WHERE id = ?`, [safeInt(req.params.id)]);
       if (!before) return err404(res, 'Not found');
-      await db.run(`UPDATE ${safeTable(table)} SET active = 0, updated_at = datetime('now') WHERE id = ?`, [safeInt(req.params.id)]);
+      await db.run(`UPDATE ${safeTable(table)} SET active = 0, updated_at = NOW() WHERE id = ?`, [safeInt(req.params.id)]);
       await logChange(db, table, safeInt(req.params.id), 'active', '1', '0', 'admin');
       res.json({ ok: true, id: safeInt(req.params.id), active: false });
     } catch (e) {
@@ -295,7 +295,7 @@ function crudRoutes(table, extraWriteFields = []) {
       const before = await db.get(`SELECT verified FROM ${safeTable(table)} WHERE id = ?`, [safeInt(req.params.id)]);
       if (!before) return err404(res, 'Not found');
       await db.run(
-        `UPDATE ${safeTable(table)} SET verified = 1, last_verified_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`,
+        `UPDATE ${safeTable(table)} SET verified = 1, last_verified_at = NOW(), updated_at = NOW() WHERE id = ?`,
         [safeInt(req.params.id)]
       );
       await logChange(db, table, safeInt(req.params.id), 'verified', String(before.verified), '1', 'admin');
@@ -308,7 +308,7 @@ function crudRoutes(table, extraWriteFields = []) {
   sub.post('/:id/restore', async (req, res) => {
     try {
       const db = await openDb();
-      await db.run(`UPDATE ${safeTable(table)} SET active = 1, updated_at = datetime('now') WHERE id = ?`, [safeInt(req.params.id)]);
+      await db.run(`UPDATE ${safeTable(table)} SET active = 1, updated_at = NOW() WHERE id = ?`, [safeInt(req.params.id)]);
       await logChange(db, table, safeInt(req.params.id), 'active', '0', '1', 'admin');
       res.json({ ok: true, id: safeInt(req.params.id), active: true });
     } catch (e) {
@@ -376,7 +376,7 @@ router.get('/stats', async (req, res) => {
       db.get('SELECT COUNT(*) as n FROM bail_agents WHERE active=1'),
       db.get('SELECT COUNT(*) as n FROM bail_agents WHERE verified=1'),
       db.get('SELECT COUNT(*) as n FROM provider_update_log'),
-      db.get("SELECT COUNT(*) as n FROM provider_update_log WHERE changed_at > datetime('now','-7 days')"),
+      db.get("SELECT COUNT(*) as n FROM provider_update_log WHERE changed_at > (NOW() - INTERVAL '7 days')"),
       db.all('SELECT city, COUNT(*) as lawyers FROM lawyers WHERE active=1 GROUP BY city ORDER BY city LIMIT 500'),
     ]);
     res.json({
@@ -464,7 +464,7 @@ router.get('/health-scan/latest', authRequired, async (req, res) => {
     await db.run(`CREATE TABLE IF NOT EXISTS scan_results (
       id INTEGER PRIMARY KEY AUTOINCREMENT, scan_id TEXT, started_at TEXT,
       completed_at TEXT, elapsed_ms INTEGER, overall TEXT,
-      summary_json TEXT, findings_json TEXT, created_at TEXT DEFAULT (datetime('now'))
+      summary_json TEXT, findings_json TEXT, created_at TEXT DEFAULT (NOW())
     )`).catch(() => {});
     const result = await db.get(
       'SELECT id, scan_id, overall, summary_json AS summary, findings_json, created_at FROM scan_results ORDER BY id DESC LIMIT 1'
@@ -497,7 +497,7 @@ router.get('/health-scan/history', authRequired, async (req, res) => {
     await db.run(`CREATE TABLE IF NOT EXISTS scan_results (
       id INTEGER PRIMARY KEY AUTOINCREMENT, scan_id TEXT, started_at TEXT,
       completed_at TEXT, elapsed_ms INTEGER, overall TEXT,
-      summary_json TEXT, findings_json TEXT, created_at TEXT DEFAULT (datetime('now'))
+      summary_json TEXT, findings_json TEXT, created_at TEXT DEFAULT (NOW())
     )`).catch(() => {});
     const limit  = Math.min(parseInt(req.query.limit) || 30, 100);
     const results = await db.all(

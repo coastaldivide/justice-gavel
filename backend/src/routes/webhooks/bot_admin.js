@@ -81,7 +81,7 @@ router.get('/status', requireAdmin, adminLimiter, async (req, res) => {
       ).catch(() => ({ n: 0, total: 0 })),
       db.get(
         `SELECT COUNT(*) as sales, SUM(gross_cents) as gross, SUM(net_cents) as net
-         FROM revenue_log WHERE recorded_at >= datetime('now', '-7 days')`
+         FROM revenue_log WHERE recorded_at >= (NOW() - INTERVAL '7 days')`
       ).catch(() => ({ sales: 0, gross: 0, net: 0 })),
     ]);
 

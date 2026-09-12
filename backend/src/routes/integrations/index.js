@@ -188,7 +188,7 @@ export async function refreshTokenIfNeeded(db, conn) {
       const errText = await resp.text().catch(() => '');
       logger.warn(`[integrations/refresh] ${conn.provider} token refresh ${resp.status}: ${errText.slice(0,100)}`);
       await db.run(
-        "UPDATE integration_connections SET status='token_expired', last_error=?, updated_at=datetime('now') WHERE id=?",
+        "UPDATE integration_connections SET status='token_expired', last_error=?, updated_at=NOW() WHERE id=?",
         [`Re-authorization required — token refresh failed (${resp.status})`, conn.id]
       ).catch(() => {});
       return conn;
@@ -204,7 +204,7 @@ export async function refreshTokenIfNeeded(db, conn) {
     await db.run(
       `UPDATE integration_connections
        SET access_token=?, refresh_token=?, token_expires_at=?,
-           status='active', last_error=NULL, updated_at=datetime('now')
+           status='active', last_error=NULL, updated_at=NOW()
        WHERE id=?`,
       [newAccess, newRefresh, newExpiry, conn.id]
     );
@@ -353,7 +353,7 @@ router.post('/connect', authRequired, requireFirmRole('firm_admin'), connLimiter
           [ctx.firm_id, req.user.id, provider, 'pending']
         );
       } else {
-        await db.run("UPDATE integration_connections SET status='pending', updated_at=datetime('now') WHERE firm_id=? AND provider=?", [ctx.firm_id, provider]);
+        await db.run("UPDATE integration_connections SET status='pending', updated_at=NOW() WHERE firm_id=? AND provider=?", [ctx.firm_id, provider]);
       }
 
       return res.json({
@@ -385,7 +385,7 @@ router.post('/connect', authRequired, requireFirmRole('firm_admin'), connLimiter
       await db.run(
         `UPDATE integration_connections SET
            status='active', access_token=?, instance_url=?, customer_id=?,
-           metadata=?, updated_at=datetime('now')
+           metadata=?, updated_at=NOW()
          WHERE id=?`,
         [effectiveToken, instance_url || null, customer_id || null,
          JSON.stringify(metadata), existing.id]
@@ -496,7 +496,7 @@ router.get('/oauth/callback', async (req, res) => {
       await db.run(
         `UPDATE integration_connections SET
            status=?, access_token=?, refresh_token=?, token_expires_at=?,
-           updated_at=datetime('now')
+           updated_at=NOW()
          WHERE id=?`,
         [newStatus, accessToken, refreshToken, expiresAt, existing.id]
       );
@@ -536,7 +536,7 @@ router.delete('/:provider', authRequired, requireFirmRole('firm_admin'), async (
     const conn = await db.get('SELECT id FROM integration_connections WHERE firm_id=? AND provider=?', [ctx.firm_id, provider]);
     if (!conn) return err404(res, `No ${provider} connection found.`);
 
-    await db.run("UPDATE integration_connections SET status='revoked', access_token=NULL, refresh_token=NULL, updated_at=datetime('now') WHERE id=?", [conn.id]);
+    await db.run("UPDATE integration_connections SET status='revoked', access_token=NULL, refresh_token=NULL, updated_at=NOW() WHERE id=?", [conn.id]);
 
     await writeAuditLog(db, {
       user_id: req.user.id, firm_id: ctx.firm_id,
@@ -603,9 +603,9 @@ router.post('/:provider/sync', authRequired, requireFirmRole('partner'), connLim
     );
 
     if (result.status === 'success') {
-      await db.run("UPDATE integration_connections SET last_sync_at=datetime('now'), last_error=NULL WHERE id=?", [conn.id]);
+      await db.run("UPDATE integration_connections SET last_sync_at=NOW(), last_error=NULL WHERE id=?", [conn.id]);
     } else if (result.status === 'error') {
-      await db.run("UPDATE integration_connections SET last_error=?, updated_at=datetime('now') WHERE id=?", [result.error?.slice(0,200), conn.id]);
+      await db.run("UPDATE integration_connections SET last_error=?, updated_at=NOW() WHERE id=?", [result.error?.slice(0,200), conn.id]);
     }
 
     res.json({

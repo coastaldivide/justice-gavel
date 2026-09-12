@@ -134,7 +134,7 @@ export async function ensureAuditTable(db) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER, action TEXT, resource_type TEXT,
       resource_id TEXT, details TEXT, ip TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
+      created_at TEXT DEFAULT (NOW())
     )`);
   } catch {}
 }

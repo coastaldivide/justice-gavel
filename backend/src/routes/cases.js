@@ -215,7 +215,7 @@ router.put('/:id', authMiddleware, validate(schemas.cases.update), authRequired,
 
     if (!updates.length) return err400(res, 'Nothing to update.');
 
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     vals.push(caseId, req.user.id);
 
     await db.run('BEGIN');
@@ -286,7 +286,7 @@ router.delete('/:id', authRequired, async (req, res) => {
       });
     }
 
-    await db.run("UPDATE cases SET deleted_at=datetime('now') WHERE id=? AND user_id=?", [caseId, req.user.id]);
+    await db.run("UPDATE cases SET deleted_at=NOW() WHERE id=? AND user_id=?", [caseId, req.user.id]);
     res.json({ ok: true });
   } catch (e) {
     logger.error('[cases/delete]', e.message);
@@ -426,7 +426,7 @@ router.get('/shared/:token', async (req, res) => {
     const token = sanitizeStr(req.params.token, 80);
     const row   = await db.get(
       `SELECT id, title, status, next_court_date, created_at, state
-       FROM cases WHERE share_token=? AND share_expires_at > datetime('now')`,
+       FROM cases WHERE share_token=? AND share_expires_at > NOW()`,
       [token]
     );
     if (!row) return err404(res, 'Share link expired or invalid.');

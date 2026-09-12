@@ -20,7 +20,7 @@ async function migrate() {
        ip_address  TEXT,
        user_agent  TEXT,
        metadata    TEXT,
-       created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+       created_at  TEXT    NOT NULL DEFAULT (NOW())
      )`,
     `CREATE INDEX IF NOT EXISTS idx_audit_user   ON audit_log(user_id)`,
     `CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(action)`,
@@ -33,12 +33,12 @@ async function migrate() {
        title       TEXT    NOT NULL,
        effective_at TEXT   NOT NULL,
        content_hash TEXT   NOT NULL,
-       created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+       created_at  TEXT    NOT NULL DEFAULT (NOW())
      )`,
     `CREATE TABLE IF NOT EXISTS user_disclaimer_acceptance (
        user_id    INTEGER NOT NULL,
        version    TEXT    NOT NULL,
-       accepted_at TEXT   NOT NULL DEFAULT (datetime('now')),
+       accepted_at TEXT   NOT NULL DEFAULT (NOW()),
        ip_address  TEXT,
        PRIMARY KEY (user_id, version)
      )`,
@@ -50,7 +50,7 @@ async function migrate() {
        token_hash TEXT    NOT NULL,
        expires_at TEXT    NOT NULL,
        used       INTEGER NOT NULL DEFAULT 0,
-       created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+       created_at TEXT    NOT NULL DEFAULT (NOW()),
        UNIQUE(user_id, token_hash)
      )`,
     `CREATE INDEX IF NOT EXISTS idx_rt_user ON refresh_tokens(user_id)`,
@@ -62,7 +62,7 @@ async function migrate() {
        token      TEXT NOT NULL UNIQUE,
        expires_at TEXT NOT NULL,
        used       INTEGER NOT NULL DEFAULT 0,
-       created_at TEXT NOT NULL DEFAULT (datetime('now'))
+       created_at TEXT NOT NULL DEFAULT (NOW())
      )`,
     // Ensure callback_requests table exists
     `CREATE TABLE IF NOT EXISTS callback_requests (
@@ -74,7 +74,7 @@ async function migrate() {
        requested_at TEXT,
        notes        TEXT,
        status       TEXT NOT NULL DEFAULT 'pending',
-       created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+       created_at   TEXT NOT NULL DEFAULT (NOW())
      )`,
     // Ensure payment_history table exists
     `CREATE TABLE IF NOT EXISTS payment_history (
@@ -84,7 +84,7 @@ async function migrate() {
        description   TEXT,
        stripe_pi_id  TEXT,
        status        TEXT NOT NULL DEFAULT 'succeeded',
-       created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+       created_at    TEXT NOT NULL DEFAULT (NOW())
      )`,
   ];
 

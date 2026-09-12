@@ -42,7 +42,7 @@ async function syncSubscriptionState(db, stripeSubId, newStatus, userId) {
     `UPDATE users SET
        subscription_tier   = CASE WHEN ? = 1 THEN subscription_tier ELSE 'free' END,
        subscription_status = ?,
-       updated_at          = datetime('now')
+       updated_at          = NOW()
      WHERE id = ?`,
     [state.tier_locked ? 0 : 1, newStatus, userId]
   ).catch(e => logger.error('[webhooks] syncSubscriptionState failed:', e.message));
@@ -67,7 +67,7 @@ async function handleStripeWebhook(event, db) {
     if (userId) {
       const active = ['active','trialing'].includes(status);
       await db.run(
-        `UPDATE subscriptions SET status=?, stripe_status=?, updated_at=datetime('now') WHERE stripe_sub_id=?`,
+        `UPDATE subscriptions SET status=?, stripe_status=?, updated_at=NOW() WHERE stripe_sub_id=?`,
         [active ? 'active' : 'canceled', status, sub.id]
       ).catch(() => {});
     }
@@ -160,7 +160,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         const status = sub.status; // 'active' | 'canceled' | 'past_due' | 'unpaid'
         if (sub.metadata?.user_id) {
           await db.run(
-            `UPDATE subscriptions SET status=?, updated_at=datetime('now')
+            `UPDATE subscriptions SET status=?, updated_at=NOW()
              WHERE user_id=? AND stripe_sub_id=?`,
             [status, sub.metadata.user_id, sub.id]
           ).catch(() => {});
@@ -265,7 +265,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         // Update subscription status to active (handles recovery from past_due)
         if (inv.subscription && userId) {
           await db.run(
-            `UPDATE subscriptions SET status='active', updated_at=datetime('now')
+            `UPDATE subscriptions SET status='active', updated_at=NOW()
              WHERE user_id=? AND stripe_sub_id=?`,
             [userId, inv.subscription]
           ).catch(() => {});
@@ -391,7 +391,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         const db = await getDb();
         await db.run(
           `UPDATE bondsman_subscriptions
-             SET status=?, tier=?, cancel_at_period_end=?, renews_at=?, updated_at=datetime('now')
+             SET status=?, tier=?, cancel_at_period_end=?, renews_at=?, updated_at=NOW()
            WHERE stripe_sub_id=?`,
           [sub.cancel_at_period_end ? 'active' : sub.status,
            tier, sub.cancel_at_period_end ? 1 : 0,

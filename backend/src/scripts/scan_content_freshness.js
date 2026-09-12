@@ -107,7 +107,7 @@ const CONTENT_INVENTORY = [
     const res = await db.get(
       `SELECT COUNT(*) as cnt FROM ${table}
         WHERE last_reviewed_at IS NULL
-           OR last_reviewed_at < datetime('now', '-180 days')`
+           OR last_reviewed_at < (NOW() - INTERVAL '180 days')`
     ).catch(() => ({ cnt: 0 }));
     db_stale_rows[table] = res.cnt;
   }

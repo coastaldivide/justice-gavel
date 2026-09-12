@@ -188,7 +188,7 @@ router.post('/refund', billingLimiter, authRequired, async (req, res) => {
       `INSERT INTO refund_requests
          (user_id, subscription_id, stripe_sub_id, reason, additional_info,
           days_since_charge, auto_approve, status, created_at)
-       VALUES (?,?,?,?,?,?,?,?,datetime('now'))`,
+       VALUES (?,?,?,?,?,?,?,?,NOW())`,
       [
         req.user.id,
         sub.id,

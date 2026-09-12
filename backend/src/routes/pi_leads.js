@@ -119,7 +119,7 @@ router.get('/', authRequired, async (req, res) => {
     const db = await getDb();
     const { type, state, limit = 30 } = req.query;
 
-    let where = "cl.status = 'open' AND (cl.expires_at IS NULL OR cl.expires_at > datetime('now'))";
+    let where = "cl.status = 'open' AND (cl.expires_at IS NULL OR cl.expires_at > NOW())";
     const params = [];
 
     if (type)  { where += ' AND cl.lead_type = ?';  params.push(type);  }

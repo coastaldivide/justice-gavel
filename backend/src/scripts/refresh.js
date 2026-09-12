@@ -222,14 +222,14 @@ async function upsertRecord(db, record, source) {
       if (record[f] != null) updates[f] = record[f];
     }
     // Always update source tracking
-    updates['updated_at'] = "datetime('now')";
+    updates['updated_at'] = "NOW()";
 
     if (Object.keys(updates).length > 0) {
       const setClauses = Object.keys(updates).filter(k => k !== 'updated_at')
         .map(k => `${k} = ?`).join(', ');
       const vals = Object.keys(updates).filter(k => k !== 'updated_at').map(k => updates[k]);
       await db.run(
-        `UPDATE ${table} SET ${setClauses}, updated_at = datetime('now') WHERE id = ?`,
+        `UPDATE ${table} SET ${setClauses}, updated_at = NOW() WHERE id = ?`,
         [...vals, existing.id]
       );
       await logChanges(db, table, existing.id, existing, record, source);
@@ -240,7 +240,7 @@ async function upsertRecord(db, record, source) {
       const result = await db.run(`
         INSERT INTO lawyers (city, name, phone, address, lat, lng, website, email, hours,
           source, source_id, rating, reviews, active, updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1,datetime('now'))
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1,NOW())
       `, [record.city, record.name, record.phone, record.address, record.lat, record.lng,
           record.website, record.email || null, record.hours || null,
           source, record.source_id, record.rating, record.reviews]);
@@ -249,7 +249,7 @@ async function upsertRecord(db, record, source) {
       const result = await db.run(`
         INSERT INTO bail_agents (city, name, phone, address, lat, lng, website, email, hours,
           source, source_id, rating, reviews, active, updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1,datetime('now'))
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1,NOW())
       `, [record.city, record.name, record.phone, record.address, record.lat, record.lng,
           record.website, record.email || null, record.hours || null,
           source, record.source_id, record.rating, record.reviews]);

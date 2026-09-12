@@ -89,7 +89,7 @@ export async function upsertProvider(db, record) {
       INSERT OR REPLACE INTO attorneys
         (name,firm,phone,email,address,city,state,lat,lng,specialties,
          bar_number,bar_verified,website,rating,review_count,source,source_id,verified,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
     `, [
       record.name, record.firm, record.phone, record.email,
       record.address, record.city, record.state, record.lat, record.lng,
@@ -121,7 +121,7 @@ export async function upsertBailAgent(db, record) {
     db.run(`
       INSERT OR REPLACE INTO bail_agents
         (name,company,phone,address,city,state,lat,lng,license,verified,source,source_id,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW())
     `, [
       record.name, record.company, record.phone, record.address,
       record.city, record.state, record.lat, record.lng,

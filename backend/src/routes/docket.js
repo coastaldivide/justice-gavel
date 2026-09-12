@@ -722,7 +722,7 @@ router.post('/upload', authRequired, async (req, res) => {
     const result = await db.run(
       `INSERT INTO docket_entries
          (user_id, matter_id, filename, content_type, storage_path, file_size_bytes, notes, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
       [req.user.id, matter_id || null, safe, content_type || null, path, bytes.length, notes || null]
     );
 

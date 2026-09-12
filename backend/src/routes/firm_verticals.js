@@ -1097,7 +1097,7 @@ router.post('/plea-offers', authRequired, routeLimiter, async (req, res) => {
     // Update matter flags for signal engine
     if (matter_id) {
       await db.run(
-        "UPDATE matters SET plea_offer_pending=1, plea_expires_date=?, non_citizen=?, updated_at=datetime('now') WHERE id=?",
+        "UPDATE matters SET plea_offer_pending=1, plea_expires_date=?, non_citizen=?, updated_at=NOW() WHERE id=?",
         [expires_date || null, non_citizen ? 1 : 0, safeInt(matter_id)]
       ).catch(() => {});
     }
@@ -1143,7 +1143,7 @@ router.patch('/plea-offers/:id', authRequired, routeLimiter, async (req, res) =>
     if (notes !== undefined)                    { updates.push('notes=?');                     params.push(notes ? sanitizeStr(truncateStr(notes, 2000), 2000) : null); }
     if (!updates.length) return err400(res, 'No fields to update.');
 
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(offerId);
     await db.run(`UPDATE plea_offers SET ${updates.join(',')} WHERE id=?`, params);
 
@@ -1151,7 +1151,7 @@ router.patch('/plea-offers/:id', authRequired, routeLimiter, async (req, res) =>
     const resolved = ['accepted','rejected','expired','withdrawn'].includes(status);
     if (resolved && row.matter_id) {
       await db.run(
-        "UPDATE matters SET plea_offer_pending=0, updated_at=datetime('now') WHERE id=?",
+        "UPDATE matters SET plea_offer_pending=0, updated_at=NOW() WHERE id=?",
         [row.matter_id]
       ).catch(() => {});
     }
@@ -1234,7 +1234,7 @@ router.post('/voluntary-departure', authRequired, routeLimiter, async (req, res)
     // Set the vol_departure_date on the matter for signal computation
     if (matter_id) {
       await db.run(
-        "UPDATE matters SET vol_departure_date=?, updated_at=datetime('now') WHERE id=?",
+        "UPDATE matters SET vol_departure_date=?, updated_at=NOW() WHERE id=?",
         [departure_deadline, safeInt(matter_id)]
       ).catch(() => {});
     }
@@ -1272,7 +1272,7 @@ router.patch('/voluntary-departure/:id', authRequired, routeLimiter, async (req,
     if (notes !== undefined)                { updates.push('notes=?');                params.push(notes ? sanitizeStr(truncateStr(notes, 2000), 2000) : null); }
     if (!updates.length) return err400(res, 'No fields to update.');
 
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(vdId);
     await db.run(`UPDATE voluntary_departure SET ${updates.join(',')} WHERE id=?`, params);
 
@@ -1357,7 +1357,7 @@ router.post('/vop', authRequired, routeLimiter, async (req, res) => {
     // Flag the matter for signal engine
     if (matter_id) {
       await db.run(
-        "UPDATE matters SET supervised_release=1, updated_at=datetime('now') WHERE id=?",
+        "UPDATE matters SET supervised_release=1, updated_at=NOW() WHERE id=?",
         [safeInt(matter_id)]
       ).catch(() => {});
     }
@@ -1400,7 +1400,7 @@ router.patch('/vop/:id', authRequired, routeLimiter, async (req, res) => {
     if (notes !== undefined) { updates.push('notes=?'); params.push(notes ? sanitizeStr(truncateStr(notes, 2000), 2000) : null); }
     if (!updates.length) return err400(res, 'No fields to update.');
 
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(vopId);
     await db.run(`UPDATE vop_trackers SET ${updates.join(',')} WHERE id=?`, params);
     res.json({ updated: true });
@@ -1505,7 +1505,7 @@ router.patch('/dv-firearms/:id', authRequired, routeLimiter, async (req, res) =>
     if (notes !== undefined)            { updates.push('notes=?');            params.push(notes ? sanitizeStr(truncateStr(notes, 2000), 2000) : null); }
     if (!updates.length) return err400(res, 'No fields to update.');
 
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(fsId);
     await db.run(`UPDATE dv_firearm_surrender SET ${updates.join(',')} WHERE id=?`, params);
     res.json({ updated: true });
@@ -1590,7 +1590,7 @@ router.post('/bop-exhaustion', authRequired, routeLimiter, async (req, res) => {
     // Set bop_request_date on matter for signal engine
     if (matter_id && warden_request_date) {
       await db.run(
-        "UPDATE matters SET bop_request_date=?, updated_at=datetime('now') WHERE id=?",
+        "UPDATE matters SET bop_request_date=?, updated_at=NOW() WHERE id=?",
         [warden_request_date, safeInt(matter_id)]
       ).catch(() => {});
     }
@@ -1630,7 +1630,7 @@ router.patch('/bop-exhaustion/:id', authRequired, routeLimiter, async (req, res)
     if (notes !== undefined)                { updates.push('notes=?');                params.push(notes ? sanitizeStr(truncateStr(notes, 2000), 2000) : null); }
     if (!updates.length) return err400(res, 'No fields to update.');
 
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(bopId);
     await db.run(`UPDATE bop_exhaustion SET ${updates.join(',')} WHERE id=?`, params);
     res.json({ updated: true });
@@ -1739,7 +1739,7 @@ router.patch('/codefendants/:id', authRequired, routeLimiter, async (req, res) =
     if (notes !== undefined)        { updates.push('notes=?');        params.push(notes ? sanitizeStr(truncateStr(notes, 2000), 2000) : null); }
     if (!updates.length) return err400(res, 'No fields to update.');
 
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(cdId);
     await db.run(`UPDATE codefendant_links SET ${updates.join(',')} WHERE id=?`, params);
     res.json({ updated: true });
@@ -1984,7 +1984,7 @@ router.patch('/collateral-consequences/:id', authRequired, routeLimiter, async (
       }
     }
     if (!updates.length) return err400(res, 'No fields to update.');
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(ccId);
     await db.run(`UPDATE collateral_consequences SET ${updates.join(',')} WHERE id=?`, params);
     res.json({ updated: true });
@@ -2095,7 +2095,7 @@ router.patch('/ability-to-pay/:id', authRequired, routeLimiter, async (req, res)
     if (can_pay_partial !== undefined) { updates.push('can_pay_partial=?'); params.push(can_pay_partial?1:0); }
     if (notes !== undefined) { updates.push('notes=?'); params.push(notes ? sanitizeStr(truncateStr(notes,2000),2000) : null); }
     if (!updates.length) return err400(res, 'No fields to update.');
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(atpId);
     await db.run(`UPDATE ability_to_pay SET ${updates.join(',')} WHERE id=?`, params);
     res.json({ updated: true });
@@ -2121,7 +2121,7 @@ router.get('/hague', authRequired, async (req, res) => {
     const offset = safeInt(req.query.offset, 0);
 
     const rows = await db.all(
-      `SELECT hp.*, CAST(julianday('now') - julianday(hp.removal_date) AS INTEGER) as days_since_removal
+      `SELECT hp.*, CAST(EXTRACT(EPOCH FROM (NOW() - hp.removal_date))/86400 AS INTEGER) as days_since_removal
        FROM hague_proceedings hp
        WHERE hp.firm_id=?
        ORDER BY hp.removal_date ASC
@@ -2231,7 +2231,7 @@ router.patch('/hague/:id', authRequired, routeLimiter, async (req, res) => {
     if (settled_defense_risk !== undefined) { updates.push('settled_defense_risk=?'); params.push(settled_defense_risk?1:0); }
     if (notes !== undefined) { updates.push('notes=?'); params.push(notes ? sanitizeStr(truncateStr(notes,2000),2000) : null); }
     if (!updates.length) return err400(res, 'No fields to update.');
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(hagId);
     await db.run(`UPDATE hague_proceedings SET ${updates.join(',')} WHERE id=?`, params);
     res.json({ updated: true });
@@ -2421,7 +2421,7 @@ router.post('/dual-sovereignty', authRequired, routeLimiter, async (req, res) =>
     );
 
     // Update matter flag
-    await db.run("UPDATE matters SET dual_sovereignty_risk=1, updated_at=datetime('now') WHERE id=?", [safeInt(matter_id)]).catch(() => {});
+    await db.run("UPDATE matters SET dual_sovereignty_risk=1, updated_at=NOW() WHERE id=?", [safeInt(matter_id)]).catch(() => {});
 
     res.status(201).json({ created: true, id: r.lastID });
   } catch (e) {
@@ -2448,7 +2448,7 @@ router.patch('/dual-sovereignty/:id', authRequired, routeLimiter, async (req, re
     if (federal_agency !== undefined) { updates.push('federal_agency=?'); params.push(federal_agency ? sanitizeStr(federal_agency,50) : null); }
     if (notes !== undefined) { updates.push('notes=?'); params.push(notes ? sanitizeStr(truncateStr(notes,2000),2000) : null); }
     if (!updates.length) return err400(res, 'No fields to update.');
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(dsId);
     await db.run(`UPDATE dual_sovereignty_flags SET ${updates.join(',')} WHERE id=?`, params);
     res.json({ updated: true });
@@ -2584,7 +2584,7 @@ router.patch('/eviction/:id', authRequired, routeLimiter, async (req, res) => {
     if (defenses !== undefined) { updates.push('defenses=?'); params.push(defenses ? sanitizeStr(truncateStr(defenses,500),500) : null); }
     if (notes    !== undefined) { updates.push('notes=?');    params.push(notes    ? sanitizeStr(truncateStr(notes,2000),2000)   : null); }
     if (!updates.length) return err400(res, 'No fields to update.');
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(evId);
     await db.run(`UPDATE eviction_trackers SET ${updates.join(',')} WHERE id=?`, params);
     res.json({ updated: true });
@@ -2611,7 +2611,7 @@ router.patch('/:firmId/:trackerId/resolve', authRequired, async (req, res) => {
       // eslint-disable-next-line no-await-in-loop
       try {
         const r = await db.run(
-          `UPDATE ${table} SET status = ?, resolution_notes = ?, updated_at = datetime('now')
+          `UPDATE ${table} SET status = ?, resolution_notes = ?, updated_at = NOW()
            WHERE id = ? AND firm_id = ?`,
           [resolved ? 'resolved' : 'pending', resolution_notes || null, trackerId, firmId]
         );

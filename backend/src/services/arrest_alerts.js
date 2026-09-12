@@ -112,7 +112,7 @@ async function sendAlert(recipient, message, type, db) {
   await db.run(
     `INSERT INTO attorney_alerts
       (recipient_id, recipient_type, subject, body, count, sent_at)
-     VALUES (?,?,?,?,?,datetime('now'))`,
+     VALUES (?,?,?,?,?,NOW())`,
     [recipient.id, type, message.subject, message.body, message.count]
   ).catch(e => logger.warn('[alerts] DB insert error:', e?.message));
 
@@ -159,7 +159,7 @@ export async function sendArrestAlerts(options = {}) {
     `SELECT id, name, booking_date, charges, bail_amount, county, state, jail_location, has_attorney, alert_sent
      FROM arrest_records
      WHERE alert_sent = 0
-       AND created_at >= datetime('now', '-24 hours')
+       AND created_at >= (NOW() - INTERVAL '24 hours')
      ORDER BY booking_date DESC
      LIMIT 1000`
   );

@@ -304,7 +304,7 @@ router.post('/:id/complete', authRequired, lessonsLimiter, async (req, res) => {
     if (!existing) {
       await db.run(
         `INSERT INTO lesson_progress (user_id, lesson_id, completed, completed_at)
-         VALUES (?,?,1,datetime('now'))`,
+         VALUES (?,?,1,NOW())`,
         [user_id, lesson_id]
       );
     }

@@ -70,7 +70,7 @@ export async function deliverScheduledPushes() {
   const due = await db.all(
     `SELECT id, push_token, title, body, data, deliver_at, notification_type, case_id, channelId, expo_ticket_id
      FROM scheduled_pushes
-     WHERE deliver_at <= datetime('now')
+     WHERE deliver_at <= NOW()
        AND status = 'pending'
      ORDER BY deliver_at ASC
      LIMIT 50`
@@ -118,7 +118,7 @@ export async function deliverScheduledPushes() {
         failed++;
       } else {
         await db.run(
-          "UPDATE scheduled_pushes SET status='sent', sent_at=datetime('now') WHERE id=?",
+          "UPDATE scheduled_pushes SET status='sent', sent_at=NOW() WHERE id=?",
           [push.id]
         );
         sent++;
@@ -158,7 +158,7 @@ export async function checkPushReceipts() {
          FROM scheduled_pushes
         WHERE status = 'sent'
           AND expo_ticket_id IS NOT NULL
-          AND sent_at > datetime('now', '-48 hours')
+          AND sent_at > (NOW() - INTERVAL '48 hours')
         LIMIT 100`
     ).catch(() => []);
 

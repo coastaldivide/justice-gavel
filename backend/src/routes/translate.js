@@ -216,7 +216,7 @@ router.post('/session/:code/message', async (req, res) => {
 
     // Update last_active
     await db.run(
-      `UPDATE translation_sessions SET last_active=datetime('now') WHERE code=?`,
+      `UPDATE translation_sessions SET last_active=NOW() WHERE code=?`,
       [code]
     );
 

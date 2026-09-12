@@ -74,7 +74,7 @@ router.patch('/templates/:id/approve', authRequired, routeLimiter, async (req, r
       return res.status(403).json({ error: 'Supervisor or admin role required to approve templates' });
 
     await db.run(
-      `UPDATE motion_templates SET status=?, approved_by=?, approved_at=datetime('now'),
+      `UPDATE motion_templates SET status=?, approved_by=?, approved_at=NOW(),
        notes = CASE WHEN ? !== '' THEN notes || char(10) || 'Reviewer: ' || ? ELSE notes END
        WHERE id=? AND office_id=?`,
       [approved ? 'approved' : 'rejected', req.user.id,

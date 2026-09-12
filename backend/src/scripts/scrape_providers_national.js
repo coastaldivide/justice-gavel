@@ -542,7 +542,7 @@ async function upsertProvider(db, record, dryRun) {
     if (Object.keys(updates).length) {
       const sets = Object.keys(updates).map(k => `${k}=?`).join(',');
       await db.run(
-        `UPDATE ${table} SET ${sets}, updated_at=datetime('now') WHERE id=?`,
+        `UPDATE ${table} SET ${sets}, updated_at=NOW() WHERE id=?`,
         [...Object.values(updates), existing.id]
       );
     }
@@ -553,7 +553,7 @@ async function upsertProvider(db, record, dryRun) {
     await db.run(`
       INSERT INTO lawyers (city,name,phone,address,lat,lng,website,email,
         bar_number,verified,pro_bono,specialties,languages,source,source_id,rating,reviews,active,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,1,datetime('now'))`,
+      VALUES (?,?,?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,1,NOW())`,
       [record.city, record.name, record.phone, record.address, record.lat, record.lng,
        record.website, record.email||null, record.bar_number||null,
        record.verified||0,
@@ -565,7 +565,7 @@ async function upsertProvider(db, record, dryRun) {
     await db.run(`
       INSERT INTO bail_agents (city,name,phone,address,lat,lng,website,email,
         hours,source,source_id,rating,reviews,active,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1,datetime('now'))`,
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1,NOW())`,
       [record.city, record.name, record.phone, record.address, record.lat, record.lng,
        record.website, record.email||null, record.hours||null,
        record.source, record.source_id, record.rating, record.reviews]

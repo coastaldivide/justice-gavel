@@ -107,7 +107,7 @@ router.post('/session', authRequired, async (req, res) => {
     INSERT INTO video_sessions
          (user_id, matter_id, attorney_id, daily_room_name, daily_room_url,
           topic, scheduled_for, expires_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, datetime(?, 'unixepoch'), datetime('now'))`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, datetime(?, 'unixepoch'), NOW())`,
       [req.user.id, matter_id || null, attorney_id || null,
        room.name, room.url, safeTopic,
        scheduled_for || null, expiresAt]

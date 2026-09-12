@@ -360,7 +360,7 @@ router.put('/entries/:id', authRequired, async (req, res) => {
       updates.push(`${key}=?`); params.push(val);
     }
     if (!updates.length) return err400(res, 'Nothing to update.');
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(safeInt(req.params.id));
     await db.run(`UPDATE privilege_log SET ${updates.join(',')} WHERE id=?`, params);
     const updated = await db.get('SELECT id, firm_id, matter_id, matter_table, doc_number, doc_date, doc_type, author, recipients, description, privilege_basis, withheld, page_count, ai_generated, reviewed_by, created_by, created_at, updated_at FROM privilege_log WHERE id=?', [safeInt(req.params.id)]);
@@ -592,7 +592,7 @@ router.put('/entries/:id/review', authRequired, requireFirmRole('partner'), asyn
     if (entry.firm_id !== ctx?.firm_id) return err403(res);
 
     await db.run(
-      "UPDATE privilege_log SET reviewed_by=?, updated_at=datetime('now') WHERE id=?",
+      "UPDATE privilege_log SET reviewed_by=?, updated_at=NOW() WHERE id=?",
       [req.user.id, safeInt(req.params.id)]
     );
 

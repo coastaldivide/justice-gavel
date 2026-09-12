@@ -214,7 +214,7 @@ router.post('/report-intake', authRequired, routeLimiter, async (req, res) => {
     await db.run(`
       INSERT OR REPLACE INTO hague_intakes
         (case_id, user_id, country_code, child_name, child_age, abduction_date, notes, created_at)
-      VALUES (?,?,?,?,?,?,?,datetime('now'))
+      VALUES (?,?,?,?,?,?,?,NOW())
     `, [safeInt(caseId), userId, code, sanitizeStr(childName, 100),
         safeInt(childAge), sanitizeStr(abductionDate, 20), sanitizeStr(notes || '', 2000)]);
 

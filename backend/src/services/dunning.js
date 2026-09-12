@@ -16,7 +16,7 @@ export async function handlePaymentFailed({ invoice, subscription }) {
   try {
     // Update subscription status
     await db.run(
-      `UPDATE subscriptions SET status='past_due', updated_at=datetime('now')
+      `UPDATE subscriptions SET status='past_due', updated_at=NOW()
        WHERE stripe_sub_id=?`,
       [subscription.id]
     );

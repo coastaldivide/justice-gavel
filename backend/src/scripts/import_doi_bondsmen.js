@@ -283,7 +283,7 @@ function titleCase(str) {
     if (existing) {
       await db.run(
         `UPDATE bail_agents SET name=?,phone=?,address=?,email=?,
-         license_number=?,updated_at=datetime('now') WHERE source_id=?`,
+         license_number=?,updated_at=NOW() WHERE source_id=?`,
         [data.name, data.phone, data.address, data.email, data.license_number, sid]
       );
       updated++;
@@ -300,7 +300,7 @@ function titleCase(str) {
           license_number,bond_rate,payment_plans,hours,verified,active,
           source,available_24_7,fee_percent,bio,created_at,updated_at)
          VALUES (?,?,?,?,?,?,?,?,?,?,10,1,"24/7",1,1,?,1,10,?,
-                 datetime('now'),datetime('now'))`,
+                 NOW(),NOW())`,
         [sid, data.city, data.name, data.phone, data.address,
          cityRow?.lat || null, cityRow?.lng || null, stateCode, data.email,
          data.license_number, 'doi_import',

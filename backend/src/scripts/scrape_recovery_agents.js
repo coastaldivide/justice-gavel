@@ -179,7 +179,7 @@ async function upsertAgent(db, record, dryRun) {
     await db.run(
       `UPDATE recovery_agents SET
         phone=?, address=?, lat=?, lng=?, website=?, rating=?, reviews=?,
-        hours=?, available_24_7=?, updated_at=datetime('now')
+        hours=?, available_24_7=?, updated_at=NOW()
        WHERE id=?`,
       [record.phone, record.address, record.lat, record.lng,
        record.website, record.rating, record.reviews,
@@ -192,7 +192,7 @@ async function upsertAgent(db, record, dryRun) {
     `INSERT INTO recovery_agents
        (source_id, name, city, state, phone, address, lat, lng, website,
         rating, reviews, hours, available_24_7, source, active, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'),datetime('now'))`,
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())`,
     [record.source_id, record.name, record.city, record.state,
      record.phone, record.address, record.lat, record.lng, record.website,
      record.rating, record.reviews, record.hours, record.available_24_7,

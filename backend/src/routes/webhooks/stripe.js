@@ -152,7 +152,7 @@ async function handleInvoiceSucceeded(invoice) {
     const periodEnd = invoice.lines?.data?.[0]?.period?.end;
     await db.run(
       `UPDATE subscriptions
-       SET status = 'active', current_period_end = ?, updated_at = datetime('now')
+       SET status = 'active', current_period_end = ?, updated_at = NOW()
        WHERE stripe_sub_id = ?`,
       [periodEnd ? new Date(periodEnd * 1000).toISOString() : null, subId]
     ).catch(e => logger.warn('[webhook:stripe/invoice-succeeded] sub update failed:', e?.message));
@@ -170,7 +170,7 @@ async function handleInvoiceFailed(invoice) {
   const db = await getDb();
   try {
     await db.run(
-      `UPDATE subscriptions SET status = 'past_due', updated_at = datetime('now') WHERE stripe_sub_id = ?`,
+      `UPDATE subscriptions SET status = 'past_due', updated_at = NOW() WHERE stripe_sub_id = ?`,
       [subId]
     ).catch(e => logger.warn('[webhook:stripe/invoice-failed] sub update failed:', e?.message));
     logger.info(`[webhook:stripe] Subscription ${subId} payment FAILED — marked past_due`);
@@ -184,7 +184,7 @@ async function handleSubscriptionDeleted(sub) {
   const db = await getDb();
   try {
     await db.run(
-      `UPDATE subscriptions SET status = 'cancelled', updated_at = datetime('now') WHERE stripe_sub_id = ?`,
+      `UPDATE subscriptions SET status = 'cancelled', updated_at = NOW() WHERE stripe_sub_id = ?`,
       [sub.id]
     ).catch(e => logger.warn('[webhook:stripe/sub-deleted] sub update failed:', e?.message));
 

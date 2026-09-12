@@ -77,7 +77,7 @@ export async function recordDisclaimerAcceptance(userId, req) {
     await db.run(
       `INSERT OR REPLACE INTO user_disclaimer_acceptance
          (user_id, version, accepted_at, ip_address)
-       VALUES (?, ?, datetime('now'), ?)`,
+       VALUES (?, ?, NOW(), ?)`,
       [userId, CURRENT_DISCLAIMER_VERSION, req?.ip ?? null]
     );
     logger.info('[disclaimer] accepted', { userId, version: CURRENT_DISCLAIMER_VERSION });

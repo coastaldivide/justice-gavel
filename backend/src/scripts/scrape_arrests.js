@@ -778,7 +778,7 @@ async function upsertArrest(db, arrest, dryRun) {
         court_date=COALESCE(?,court_date),
         attorney_of_record=COALESCE(?,attorney_of_record),
         has_attorney=?,
-        updated_at=datetime('now')
+        updated_at=NOW()
        WHERE id=?`,
       [arrest.bail_amount, arrest.court_date, arrest.attorney_of_record,
        arrest.has_attorney ? 1 : 0, existing.id]
@@ -791,7 +791,7 @@ async function upsertArrest(db, arrest, dryRun) {
       (name,booking_date,charges,bail_amount,court_date,attorney_of_record,
        has_attorney,case_number,jail_location,county,state,source,alert_sent,
        created_at,updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,datetime('now'),datetime('now'))`,
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,NOW(),NOW())`,
     [arrest.name, arrest.booking_date, arrest.charges, arrest.bail_amount,
      arrest.court_date, arrest.attorney_of_record, arrest.has_attorney ? 1 : 0,
      arrest.case_number, arrest.jail_location, arrest.county, arrest.state, arrest.source]
@@ -837,8 +837,8 @@ async function upsertArrest(db, arrest, dryRun) {
       state              TEXT,
       source             TEXT,
       alert_sent         INTEGER DEFAULT 0,
-      created_at         TEXT DEFAULT (datetime('now')),
-      updated_at         TEXT DEFAULT (datetime('now'))
+      created_at         TEXT DEFAULT (NOW()),
+      updated_at         TEXT DEFAULT (NOW())
     );
     CREATE INDEX IF NOT EXISTS idx_ar_state   ON arrest_records(state);
     CREATE INDEX IF NOT EXISTS idx_ar_county  ON arrest_records(county);

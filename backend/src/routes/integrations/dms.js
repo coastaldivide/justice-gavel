@@ -172,7 +172,7 @@ async function pullDocumentsFromImanage(db, conn, matter) {
   // Update doc count in mapping
   if (mapping) {
     await db.run(
-      "UPDATE document_sync_map SET doc_count=?, last_synced_at=datetime('now') WHERE id=?",
+      "UPDATE document_sync_map SET doc_count=?, last_synced_at=NOW() WHERE id=?",
       [docs.length, mapping.id]
     );
   }
@@ -262,7 +262,7 @@ async function pullDocumentsFromNetdocs(db, conn, matter) {
 
   if (mapping) {
     await db.run(
-      "UPDATE document_sync_map SET doc_count=?, last_synced_at=datetime('now') WHERE id=?",
+      "UPDATE document_sync_map SET doc_count=?, last_synced_at=NOW() WHERE id=?",
       [docs.length, mapping.id]
     );
   }

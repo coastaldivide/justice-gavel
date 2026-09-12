@@ -550,6 +550,16 @@ if (Sentry?.Handlers?.errorHandler) {
 
 
 // ── 404 — route not found ────────────────────────────────────────────────────
+// ── Late-registered routes (moved before 404 handler) ──
+app.use('/api/cases', caseLifecycleRouter);
+app.use('/api/pretrial', pretrialRouter);
+app.use('/api/bondsman', bondsmanCRMRouter);
+app.use('/api/legal-aid', legalAidRouter);
+app.use('/api/impact', impactRouter);
+app.use('/api/admin/bar-verification', barVerifyRouter);
+app.use('/api/admin/bar-prep', barPrepContentRouter);
+app.use('/api/bar-prep',       barPrepRouter);
+
 app.use((req, res) => {
   res.status(404).json({
     error:  'Not found',
@@ -613,17 +623,8 @@ function gracefulShutdown(signal) {
 }
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
-app.use('/api/cases', caseLifecycleRouter);
 
-app.use('/api/pretrial', pretrialRouter);
 
-app.use('/api/bondsman', bondsmanCRMRouter);
 
-app.use('/api/legal-aid', legalAidRouter);
 
-app.use('/api/impact', impactRouter);
 
-app.use('/api/admin/bar-verification', barVerifyRouter);
-
-app.use('/api/admin/bar-prep', barPrepContentRouter);
-app.use('/api/bar-prep',       barPrepRouter);        // consumer MBE drilling

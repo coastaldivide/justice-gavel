@@ -737,7 +737,7 @@ async function scanPushTokenHealth(report) {
     const tokenStats = await db.get(
       `SELECT
         COUNT(*) as total,
-        SUM(CASE WHEN created_at < datetime('now', '-90 days') THEN 1 ELSE 0 END) as old_tokens,
+        SUM(CASE WHEN created_at < (NOW() - INTERVAL '90 days') THEN 1 ELSE 0 END) as old_tokens,
         COUNT(DISTINCT user_id) as users_with_tokens
        FROM push_tokens`
     ).catch(() => null);
@@ -798,7 +798,7 @@ async function scanEscalationSLA(report) {
       `SELECT m.id, m.title, m.firm_id, m.vulnerability_level, m.time_pressure,
               m.updated_at, f.name as firm_name,
               datetime('now', '-1 hour') as sla_threshold_1h,
-              datetime('now', '-4 hours') as sla_threshold_4h
+              (NOW() - INTERVAL '4 hours') as sla_threshold_4h
        FROM matters m
        LEFT JOIN firms f ON f.id = m.firm_id
        WHERE m.status = 'active'
@@ -988,7 +988,7 @@ async function persistScanResult(report) {
         overall      TEXT,
         summary_json TEXT,
         findings_json TEXT,
-        created_at   TEXT DEFAULT (datetime('now'))
+        created_at   TEXT DEFAULT (NOW())
       )
     `).catch(() => {}); // table may already exist
 
@@ -1009,7 +1009,7 @@ async function persistScanResult(report) {
 
     // Prune old results — keep 30 days
     await db.run(
-      "DELETE FROM scan_results WHERE created_at < datetime('now', '-30 days')"
+      "DELETE FROM scan_results WHERE created_at < (NOW() - INTERVAL '30 days')"
     ).catch(() => {});
 
     logger.info(`[scan] Result persisted: ${report.scan_id} (${report.overall})`);

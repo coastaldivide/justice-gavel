@@ -50,7 +50,7 @@ router.post('/:id/sign', authRequired, signLimiter, async (req, res) => {
     await db.run(
       `INSERT INTO contract_executions
         (contract_id, user_id, signer_name, signer_email, signed_at, signature_method, status)
-       VALUES (?,?,?,?,datetime('now'),?,?)`,
+       VALUES (?,?,?,?,NOW(),?,?)`,
       [contract.id, req.user.id, safeName, safeEmail, safeMethod, 'signed']
     );
 

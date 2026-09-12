@@ -115,7 +115,7 @@ router.put('/profile/availability', authRequired, routeLimiter, async (req, res)
 
     await db.run(
       `UPDATE lawyers SET weekly_availability=?, availability_note=?,
-       updated_at=datetime('now') WHERE user_id=?`,
+       updated_at=NOW() WHERE user_id=?`,
       [JSON.stringify(clean), String(note).slice(0, 200), req.user.id]
     );
     return res.json({ ok: true, schedule: clean });

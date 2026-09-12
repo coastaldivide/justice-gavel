@@ -368,7 +368,7 @@ router.post('/hall/opt-in', authRequired, gavelLimiter, async (req, res) => {
     await db.run(
       `INSERT OR REPLACE INTO golden_gavel_hall
        (user_id, display_name, tier, state, people_helped, gavel_level, opted_in_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
       [req.user.id, display_name || user.name, user.golden_gavel_tier || 'consumer', state||'', helped, level]
     );
     res.json({ success: true, people_helped: helped, gavel_level: level, level_label: GAVEL_LABEL[level] });

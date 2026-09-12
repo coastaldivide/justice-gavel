@@ -42,8 +42,8 @@ async function cleanupRefreshTokens() {
   const db = await getDb();
   const result = await db.run(
     `DELETE FROM refresh_tokens
-     WHERE expires_at < datetime('now')
-        OR (used = 1 AND created_at < datetime('now', '-7 days'))`,
+     WHERE expires_at < NOW()
+        OR (used = 1 AND created_at < (NOW() - INTERVAL '7 days'))`,
   ).catch(() => ({ changes: 0 }));
   if (result.changes > 0) {
     logger.info('[scheduler] cleaned up refresh tokens:', result.changes);
@@ -55,7 +55,7 @@ async function cleanupRefreshTokens() {
 async function archiveOldAuditLogs() {
   const db = await getDb();
   const result = await db.run(
-    `DELETE FROM audit_log WHERE created_at < datetime('now', '-90 days')`,
+    `DELETE FROM audit_log WHERE created_at < (NOW() - INTERVAL '90 days')`,
   ).catch(() => ({ changes: 0 }));
   if (result.changes > 0) {
     logger.info('[scheduler] archived old audit entries:', result.changes);
@@ -218,13 +218,13 @@ async function runExpungementTriggerSweep(db) {
          JOIN users u ON u.id = c.user_id
         WHERE c.status = 'closed'
           AND c.outcome IN ('dismissed','acquitted','not_guilty','deferred','plea_deal')
-          AND c.outcome_recorded_at >= datetime('now', '-35 days')
-          AND c.outcome_recorded_at <= datetime('now', '-25 days')
+          AND c.outcome_recorded_at >= (NOW() - INTERVAL '35 days')
+          AND c.outcome_recorded_at <= (NOW() - INTERVAL '25 days')
           AND c.user_id NOT IN (
             -- Don't re-trigger if they've already opened the expungement screen
             -- Tracked via analytics event or a simple flag on the case
             SELECT DISTINCT user_id FROM expungement_check_log
-             WHERE checked_at >= datetime('now', '-60 days')
+             WHERE checked_at >= (NOW() - INTERVAL '60 days')
           )
         ORDER BY c.outcome_recorded_at DESC
         LIMIT 200`
@@ -365,7 +365,7 @@ async function runConsultationReminderSweep(db) {
 
         // Mark reminder sent
         await db.run(
-          `UPDATE consultation_bookings SET reminder_sent = datetime('now') WHERE id = ?`,
+          `UPDATE consultation_bookings SET reminder_sent = NOW() WHERE id = ?`,
           [row.id]
         ).catch(() => {});
         sent++;
@@ -578,7 +578,7 @@ async function cleanupExpiredTokens() {
   try {
     const db = await getDb();
     const result = await db.run(
-      `DELETE FROM refresh_tokens WHERE expires_at < datetime('now') OR used = 1`
+      `DELETE FROM refresh_tokens WHERE expires_at < NOW() OR used = 1`
     );
     logger.info('[scheduler] token cleanup:', result?.changes, 'rows removed');
   } catch (err) {

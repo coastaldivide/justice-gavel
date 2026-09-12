@@ -134,7 +134,7 @@ router.post('/cases/:caseId/assign', authRequired, assignLimiter, async (req, re
     await db.run(
       `INSERT OR REPLACE INTO case_assignments
          (case_id, defender_id, assigned_by, office_id, status, notes, assigned_at)
-       VALUES (?,?,?,?,?,?,datetime('now'))`,
+       VALUES (?,?,?,?,?,?,NOW())`,
       [caseId, assignTo, req.user.id, ctx.user.office_id || null, 'active', safeNotes]
     );
     res.status(201).json({ ok: true, case_id: caseId, defender_id: assignTo });
@@ -213,7 +213,7 @@ router.post('/cases/:caseId/outcome', authRequired, assignLimiter, async (req, r
     // Update case with outcome
     await db.run(
       `UPDATE cases SET status = 'closed', outcome = ?, outcome_notes = ?,
-                        outcome_recorded_by = ?, outcome_recorded_at = datetime('now')
+                        outcome_recorded_by = ?, outcome_recorded_at = NOW()
         WHERE id = ?`,
       [outcome, sanitizeStr(notes, 500), req.user.id, caseId]
     );

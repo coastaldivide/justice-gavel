@@ -33,13 +33,13 @@ export async function refreshLegalContent() {
   try {
     const stale = await db.all(
       `SELECT id, state, content_verified_at FROM expungement_rules
-        WHERE content_verified_at < datetime('now', '-30 days') OR content_verified_at IS NULL`
+        WHERE content_verified_at < (NOW() - INTERVAL '30 days') OR content_verified_at IS NULL`
     ).catch(() => []);
 
     if (stale.length) {
       await db.run(
-        `UPDATE expungement_rules SET needs_review=1, stale_since=COALESCE(stale_since,datetime('now'))
-          WHERE content_verified_at < datetime('now', '-30 days') OR content_verified_at IS NULL`
+        `UPDATE expungement_rules SET needs_review=1, stale_since=COALESCE(stale_since,NOW())
+          WHERE content_verified_at < (NOW() - INTERVAL '30 days') OR content_verified_at IS NULL`
       ).catch(() => {});
       const states = stale.map(r => r.state).join(', ');
       results.warnings.push(`expungement_rules: ${stale.length} states stale (${states}) — needs attorney review`);
@@ -52,7 +52,7 @@ export async function refreshLegalContent() {
 
     const oldest = await db.get(
       `SELECT state, content_verified_at,
-              CAST(julianday('now')-julianday(content_verified_at) AS INTEGER) as days_old
+              CAST(EXTRACT(EPOCH FROM (NOW() - content_verified_at))/86400 AS INTEGER) as days_old
          FROM expungement_rules WHERE content_verified_at IS NOT NULL
         ORDER BY content_verified_at ASC LIMIT 1`
     ).catch(() => null);
@@ -63,13 +63,13 @@ export async function refreshLegalContent() {
   try {
     const staleCards = await db.all(
       `SELECT id, title FROM rights_cards
-        WHERE content_verified_at < datetime('now', '-60 days') OR content_verified_at IS NULL`
+        WHERE content_verified_at < (NOW() - INTERVAL '60 days') OR content_verified_at IS NULL`
     ).catch(() => []);
 
     if (staleCards.length) {
       await db.run(
-        `UPDATE rights_cards SET needs_review=1, stale_since=COALESCE(stale_since,datetime('now'))
-          WHERE content_verified_at < datetime('now', '-60 days') OR content_verified_at IS NULL`
+        `UPDATE rights_cards SET needs_review=1, stale_since=COALESCE(stale_since,NOW())
+          WHERE content_verified_at < (NOW() - INTERVAL '60 days') OR content_verified_at IS NULL`
       ).catch(() => {});
       results.warnings.push(`rights_cards: ${staleCards.length} cards stale`);
     } else {
@@ -81,18 +81,18 @@ export async function refreshLegalContent() {
   try {
     const staleRes = await db.all(
       `SELECT id, name FROM crisis_resources
-        WHERE last_verified < datetime('now', '-30 days') OR last_verified IS NULL`
+        WHERE last_verified < (NOW() - INTERVAL '30 days') OR last_verified IS NULL`
     ).catch(() => []);
 
     if (staleRes.length) {
       await db.run(
         `UPDATE crisis_resources SET needs_verification=1
-          WHERE last_verified < datetime('now', '-30 days') OR last_verified IS NULL`
+          WHERE last_verified < (NOW() - INTERVAL '30 days') OR last_verified IS NULL`
       ).catch(() => {});
       results.warnings.push(`crisis_resources: ${staleRes.length} need phone verification`);
     } else {
       try {
-        await db.run(`UPDATE crisis_resources SET last_verified=datetime('now')`);
+        await db.run(`UPDATE crisis_resources SET last_verified=NOW()`);
         results.updated.push('crisis_resources: all verified');
       } catch (e) {
         // Failure means next run will re-verify all resources (wasted work, not data loss)
@@ -107,7 +107,7 @@ export async function refreshLegalContent() {
     await db.run(
       `INSERT INTO content_refresh_log
          (run_at, category, results, warnings, errors)
-       VALUES (datetime('now'), 'full_refresh', ?, ?, ?)`,
+       VALUES (NOW(), 'full_refresh', ?, ?, ?)`,
       [JSON.stringify(results.updated), JSON.stringify(results.warnings), JSON.stringify(results.errors)]
     ).catch(() => {});
   } catch (e) { logger.warn('[contentRefresh/logRun]', e?.message); }
@@ -135,7 +135,7 @@ export async function getContentAge(table, id) {
     const col = table === 'expungement_rules' ? 'state' : 'id';
     const row = await db.get(
       `SELECT content_verified_at, law_effective_date, needs_review,
-              CAST(julianday('now')-julianday(content_verified_at) AS INTEGER) as days_old
+              CAST(EXTRACT(EPOCH FROM (NOW() - content_verified_at))/86400 AS INTEGER) as days_old
          FROM ${table} WHERE ${col}=? LIMIT 1`, [id]
     ).catch(() => null);
     if (!row) return null;

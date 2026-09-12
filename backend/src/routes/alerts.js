@@ -179,7 +179,7 @@ router.delete('/record/:recordId', authRequired, async (req, res) => {
 
     // Suppress from future alerts and API responses
     await db.run(
-      `UPDATE arrests SET suppressed = 1, suppressed_at = datetime('now'),
+      `UPDATE arrests SET suppressed = 1, suppressed_at = NOW(),
                           suppressed_reason = 'takedown_request'
          WHERE id = ?`,
       [recordId]
@@ -189,7 +189,7 @@ router.delete('/record/:recordId', authRequired, async (req, res) => {
     await db.run(
       `INSERT INTO arrest_takedown_log
          (arrest_id, requested_by, requested_at, status)
-       VALUES (?, ?, datetime('now'), 'suppressed')`,
+       VALUES (?, ?, NOW(), 'suppressed')`,
       [recordId, req.user.id]
     ).catch(() => {}); // Non-fatal if table doesn't exist yet
 
@@ -217,7 +217,7 @@ router.post('/record/:recordId/disposition', authRequired, async (req, res) => {
     const db = await getDb();
     await db.run(
       `UPDATE arrests SET disposition = ?, disposition_date = ?, disposition_court = ?,
-                          disposition_added_at = datetime('now')
+                          disposition_added_at = NOW()
          WHERE id = ?`,
       [disposition, disposition_date, court, safeInt(req.params.recordId)]
     );

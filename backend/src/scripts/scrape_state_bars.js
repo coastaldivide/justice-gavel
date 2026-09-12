@@ -581,7 +581,7 @@ async function upsertAttorney(db, atty, dryRun) {
       await db.run(
         `UPDATE lawyers SET phone=COALESCE(phone,?), email=COALESCE(email,?),
          website=COALESCE(website,?), bar_number=COALESCE(bar_number,?),
-         verified=1, updated_at=datetime('now') WHERE id=?`,
+         verified=1, updated_at=NOW() WHERE id=?`,
         [atty.phone, atty.email, atty.website, atty.barNumber, existing.id]
       );
       return 'updated';
@@ -590,7 +590,7 @@ async function upsertAttorney(db, atty, dryRun) {
     await db.run(
       `INSERT INTO lawyers (city, name, phone, address, lat, lng, website, email,
        bar_number, verified, pro_bono, specialties, languages, source, source_id, active, updated_at)
-       VALUES (?,?,?,?,NULL,NULL,?,?,?,1,0,?,?,?,?,1,datetime('now'))`,
+       VALUES (?,?,?,?,NULL,NULL,?,?,?,1,0,?,?,?,?,1,NOW())`,
       [
         atty.city, atty.name, atty.phone, atty.address,
         atty.website, atty.email, atty.barNumber,

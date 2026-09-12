@@ -191,7 +191,7 @@ router.post('/inbox/mark-read/:caseId', authRequired, markReadLimiter, async (re
 
     await db.run(
       `UPDATE case_messages
-          SET read_at = datetime('now')
+          SET read_at = NOW()
         WHERE case_id = ?
           AND read_at IS NULL
           AND sender_type = 'user'`,
@@ -227,7 +227,7 @@ router.post('/inbox/accept/:assignmentId', authRequired, acceptLimiter, async (r
     if (!assignment) return err403(res, 'Assignment not found or already actioned');
 
     await db.run(
-      `UPDATE case_assignments SET status = 'active', accepted_at = datetime('now') WHERE id = ?`,
+      `UPDATE case_assignments SET status = 'active', accepted_at = NOW() WHERE id = ?`,
       [assignmentId]
     );
 

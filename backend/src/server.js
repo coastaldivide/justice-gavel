@@ -46,11 +46,11 @@ async function runBarReVerification() {
     const staleVerified = await db.all(`
       SELECT u.id, u.email, u.bar_number, u.bar_state,
              u.bar_verified_at,
-             CAST(julianday('now') - julianday(u.bar_verified_at) AS INTEGER) as days_since_verify
+             CAST(EXTRACT(EPOCH FROM (NOW() - u.bar_verified_at))/86400 AS INTEGER) as days_since_verify
         FROM users u
        WHERE u.bar_verified = 1
          AND u.role IN ('attorney', 'defender')
-         AND (u.bar_verified_at < datetime('now', '-90 days') OR u.bar_verified_at IS NULL)
+         AND (u.bar_verified_at < (NOW() - INTERVAL '90 days') OR u.bar_verified_at IS NULL)
        ORDER BY u.bar_verified_at ASC
        LIMIT 50
     `).catch(() => []);

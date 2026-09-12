@@ -154,9 +154,9 @@ export async function recordAttorneyReview(db, { contentType, contentKey, attorn
   await db.run(
     `INSERT INTO legal_content_versions
        (content_type, content_key, last_reviewed_at, reviewed_by, bar_number, notes)
-     VALUES (?, ?, datetime('now'), ?, ?, ?)
+     VALUES (?, ?, NOW(), ?, ?, ?)
      ON CONFLICT(content_type, content_key) DO UPDATE SET
-       last_reviewed_at = datetime('now'),
+       last_reviewed_at = NOW(),
        reviewed_by      = excluded.reviewed_by,
        bar_number       = excluded.bar_number,
        notes            = excluded.notes,

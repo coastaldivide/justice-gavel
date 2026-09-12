@@ -286,7 +286,7 @@ router.post('/bondsman/verified-badge/cancel', billingLimiter, authRequired, asy
       await stripe.subscriptions.cancel(sub.stripe_sub_id);
     }
     await db.run(
-      "UPDATE verified_badge_subscriptions SET status='cancelled', cancelled_at=datetime('now') WHERE id=?",
+      "UPDATE verified_badge_subscriptions SET status='cancelled', cancelled_at=NOW() WHERE id=?",
       [sub.id]
     );
     await db.run(
@@ -486,7 +486,7 @@ router.post('/bondsman/subscription/cancel', billingLimiter, authRequired, async
 
     // Demo mode — immediate cancel
     await db.run(
-      `UPDATE bondsman_subscriptions SET status='cancelled', cancelled_at=datetime('now') WHERE id=?`,
+      `UPDATE bondsman_subscriptions SET status='cancelled', cancelled_at=NOW() WHERE id=?`,
       [sub.id]
     );
     await db.run(`UPDATE bondsman_profiles SET verified_badge=0, tier=NULL WHERE user_id=?`, [req.user.id]);

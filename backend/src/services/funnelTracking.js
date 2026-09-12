@@ -52,7 +52,7 @@ export async function trackFunnel(db, userId, stage, metadata = {}) {
     await db.run(
       `INSERT OR IGNORE INTO funnel_events
          (user_id, stage, metadata, occurred_at)
-       VALUES (?, ?, ?, datetime('now'))`,
+       VALUES (?, ?, ?, NOW())`,
       [userId, stage, JSON.stringify(metadata)]
     );
   } catch (e) {

@@ -292,7 +292,7 @@ export async function runOutboundBot(options = {}) {
        WHERE alert_sent = 0
        AND bail_amount > 0
        AND has_attorney = 0
-       AND created_at >= datetime('now', '-24 hours')
+       AND created_at >= (NOW() - INTERVAL '24 hours')
        ORDER BY bail_amount DESC
        LIMIT 500`
     ).catch(() => []);
@@ -394,7 +394,7 @@ async function logBotRun(db, runType, stats, errors, startTime) {
   try {
     await db.run(
       `INSERT INTO bot_runs (run_type, arrests_found, messages_sent, leads_sold, revenue_cents, errors, completed_at, duration_ms)
-       VALUES (?,?,?,?,?,?,datetime('now'),?)`,
+       VALUES (?,?,?,?,?,?,NOW(),?)`,
       [runType, stats.arrestsFound, stats.messagesSent, stats.leadsSold, stats.revenueCents, JSON.stringify(errors), Date.now() - startTime]
     );
   } catch (e) { logger.warn('[outbound_bot/logRun]', e?.message); }
@@ -488,7 +488,7 @@ export async function deliverLead({ phone, arrestId, stripeLinkId, stripePayment
 
     // Mark payment link as paid
     await db.run(
-      `UPDATE payment_links SET status = 'paid', paid_at = datetime('now'), stripe_pi_id = ? WHERE arrest_id = ? AND recipient_phone = ?`,
+      `UPDATE payment_links SET status = 'paid', paid_at = NOW(), stripe_pi_id = ? WHERE arrest_id = ? AND recipient_phone = ?`,
       [stripePaymentIntentId || null, arrestId, phone]
     ).catch(() => {});
 
@@ -588,7 +588,7 @@ export async function expireOldPaymentLinks() {
       `SELECT id, stripe_link_id, stripe_link_url, arrest_id, recipient_phone, recipient_type, recipient_id, fee_cents, status, expires_at
        FROM payment_links
        WHERE status = 'pending'
-       AND expires_at < datetime('now')
+       AND expires_at < NOW()
        LIMIT 100`
     ).catch(() => []);
 

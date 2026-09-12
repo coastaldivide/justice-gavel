@@ -149,7 +149,7 @@ router.get('/reminders', authRequired, async (req, res) => {
        FROM scheduled_pushes
        WHERE user_id=? AND delivered=0
          AND data LIKE '%case_id%'
-         AND deliver_at > datetime('now')
+         AND deliver_at > NOW()
        ORDER BY deliver_at ASC
        LIMIT 20`,
       [req.user.id]

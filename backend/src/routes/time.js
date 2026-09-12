@@ -257,7 +257,7 @@ router.put('/entries/:id', authRequired, async (req, res) => {
       }
     }
     if (!updates.length) return err400(res, 'Nothing to update.');
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(safeInt(req.params.id));
     await db.run(`UPDATE time_entries SET ${updates.join(',')} WHERE id=?`, params);
     const updated = await db.get('SELECT id, firm_id, matter_id, matter_table, user_id, entry_date, hours, rate_cents, narrative, task_code, activity_code, billing_status, invoice_id, created_at, updated_at FROM time_entries WHERE id=?', [safeInt(req.params.id)]);
@@ -535,7 +535,7 @@ router.put('/invoices/:id', authRequired, requireFirmRole('partner'), async (req
 
     if (status === 'paid' && invoice.status !== 'paid') dispatchWebhookEvent(db, ctx?.firm_id, 'invoice.paid', { invoice_id: invoice.id }).catch(()=>{});
     if (status === 'sent' && invoice.status !== 'sent') dispatchWebhookEvent(db, ctx?.firm_id, 'invoice.sent', { invoice_id: invoice.id }).catch(()=>{});
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(safeInt(req.params.id));
     await db.run(`UPDATE invoices SET ${updates.join(',')} WHERE id=?`, params);
     const updated = await db.get('SELECT id, firm_id, matter_id, matter_table, invoice_number, client_name, client_email, billing_period_start, billing_period_end, subtotal_cents, tax_rate, tax_cents, total_cents, status, due_date, paid_date, notes, pdf_generated, created_by, created_at, updated_at FROM invoices WHERE id=?', [safeInt(req.params.id)]);

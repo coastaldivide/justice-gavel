@@ -131,7 +131,7 @@ router.post('/pi-lead/accept/:id', billingLimiter, authRequired, async (req, res
 
     // Mark accepted + reveal full description
     await db.run(
-      `UPDATE pi_leads SET status='accepted', accepted_by=?, accepted_at=datetime('now') WHERE id=?`,
+      `UPDATE pi_leads SET status='accepted', accepted_by=?, accepted_at=NOW() WHERE id=?`,
       [req.user.id, lead.id]
     );
 

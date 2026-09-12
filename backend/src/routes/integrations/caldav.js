@@ -253,7 +253,7 @@ export async function syncCalendar({ db, conn: _conn, ctx, entity_type, directio
         const existing = await db.get('SELECT id FROM calendar_push_events WHERE external_uid=?', [uid]).catch(() => null);
         if (existing) {
           await db.run(
-            "UPDATE calendar_push_events SET external_href=?, sync_status='synced', last_sync_at=datetime('now') WHERE id=?",
+            "UPDATE calendar_push_events SET external_href=?, sync_status='synced', last_sync_at=NOW() WHERE id=?",
             [result.href, existing.id]
           );
         } else {
@@ -262,7 +262,7 @@ export async function syncCalendar({ db, conn: _conn, ctx, entity_type, directio
             `INSERT INTO calendar_push_events
                (connection_id, docket_entry_id, external_uid, external_href, calendar_url,
                 summary, dtstart, dtend, status, sync_status, last_sync_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now'))`,
+             VALUES (?,?,?,?,?,?,?,?,?,?,NOW())`,
             [
               conn.id, entry.id, uid, result.href,
               meta.calendar_url || conn.instance_url || null,
@@ -322,7 +322,7 @@ router.post('/push/:entryId', authRequired, calLimiter, async (req, res) => {
     const meta = (() => { try { return safeJson(conn.metadata, {}); } catch { return {}; } })();
     if (existingEvt) {
       await db.run(
-        "UPDATE calendar_push_events SET external_href=?, sync_status='synced', last_sync_at=datetime('now') WHERE id=?",
+        "UPDATE calendar_push_events SET external_href=?, sync_status='synced', last_sync_at=NOW() WHERE id=?",
         [result.href, existingEvt.id]
       );
     } else {
@@ -330,7 +330,7 @@ router.post('/push/:entryId', authRequired, calLimiter, async (req, res) => {
         `INSERT INTO calendar_push_events
            (connection_id, docket_entry_id, external_uid, external_href, calendar_url,
             summary, dtstart, dtend, status, sync_status, last_sync_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now'))`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,NOW())`,
         [conn.id, entryId, uid, result.href, meta.calendar_url || conn.instance_url || null,
          entry.title, entry.due_date + 'T09:00:00Z', addCalDays(entry.due_date, 1) + 'T09:00:00Z',
          'confirmed', 'synced']
@@ -388,7 +388,7 @@ router.delete('/events/:uid', authRequired, calLimiter, async (req, res) => {
       await caldavDelete(conn, evt.external_href);
     }
 
-    await db.run("UPDATE calendar_push_events SET sync_status='deleted', last_sync_at=datetime('now') WHERE id=?", [evt.id]);
+    await db.run("UPDATE calendar_push_events SET sync_status='deleted', last_sync_at=NOW() WHERE id=?", [evt.id]);
 
     res.json({ ok: true, uid, deleted: true });
   } catch (e) {

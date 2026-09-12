@@ -659,7 +659,7 @@ router.post('/accept-tos', authRequired, async (req, res) => {
     await db.run(
       `UPDATE users
        SET tos_accepted_at = ?, tos_version_accepted = ?, tos_platform = ?, tos_ip_hash = ?,
-           updated_at = datetime('now')
+           updated_at = NOW()
        WHERE id = ?`,
       [acceptedAt, version, platform || null, ipHash, req.user.id]
     );

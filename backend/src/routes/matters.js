@@ -338,7 +338,7 @@ router.put('/:id', authRequired, requireMatterAccess('id', 'associate'), auditLo
       }
     }
     if (!updates.length) return err400(res, 'No valid fields to update.');
-    updates.push("updated_at=datetime('now')");
+    updates.push("updated_at=NOW()");
     params.push(safeInt(req.params.id));
 
     // Legal hold check — refuse update if hold is active

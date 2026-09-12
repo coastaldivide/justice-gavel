@@ -288,7 +288,7 @@ router.post('/book', validate(schemas.consultations.book), authRequired, consult
       `INSERT INTO consultation_bookings
          (user_id, lawyer_id, lawyer_name, lawyer_phone, date_slot, time_slot,
           duration_min, platform_fee_cents, notes, status, stripe_pi_id, meeting_link, confirmed_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW())`,
       [
         req.user.id, lawyer_id ?? null, lawyer_name.trim(), lawyer_phone.trim(),
         date_slot, time_slot, duration_min, feeCents,
@@ -358,7 +358,7 @@ router.post('/:id/cancel', authRequired, consultationsLimiter, async (req, res) 
     await db.run(
       `UPDATE consultation_bookings
           SET status      = 'cancelled',
-              cancelled_at = datetime('now'),
+              cancelled_at = NOW(),
               refund_id   = ?
         WHERE id = ?`,
       [refundId, safeInt(req.params.id)]

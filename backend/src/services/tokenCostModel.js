@@ -87,7 +87,7 @@ export async function logTokenUsage(db, {
     await db.run(
       `INSERT INTO ai_token_usage
          (user_id, tier, model, input_tokens, output_tokens, cost_usd, endpoint, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
       [userId, tier, model, inputTokens, outputTokens, cost, endpoint]
     );
   } catch (e) {
