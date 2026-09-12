@@ -450,7 +450,7 @@ confirm('Delete analysis?','This cannot be undone.',
         : '',
     ].filter(Boolean).join('\n');
     try {
-      await Share.share({ message: text, title: analysis.filename });
+      await RNShare.share({ message: text, title: analysis.filename });
     } catch (shareErr: any) {
       // Share API unavailable on this browser/device — fail silently
     }

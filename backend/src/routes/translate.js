@@ -229,6 +229,15 @@ router.post('/session/:code/message', async (req, res) => {
 
 // ── GET /api/translate/session/:code/messages?since=<id> ─────────────────────
 // Short-poll endpoint — called every 2 seconds by both sides
+
+// Supported live translation languages (matches i18n locales + common immigrant languages)
+const SUPPORTED_LANGUAGES = {
+  es: 'Spanish', pt: 'Portuguese', vi: 'Vietnamese',
+  zh: 'Chinese (Simplified)', fr: 'French', de: 'German',
+  ar: 'Arabic', ko: 'Korean', ja: 'Japanese', it: 'Italian',
+  ru: 'Russian', hi: 'Hindi', tl: 'Tagalog', uk: 'Ukrainian',
+};
+
 router.get('/session/:code/messages', async (req, res) => {
   try {
     const db = await getDb();

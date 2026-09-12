@@ -29,6 +29,251 @@
         "scheme": "bearer",
         "bearerFormat": "JWT"
       }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "consumer",
+              "attorney",
+              "bondsman",
+              "admin",
+              "defender"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Lawyer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "specialties": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "bar_verified": {
+            "type": "boolean"
+          },
+          "jtb_verified": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BailAgent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          },
+          "rate_pct": {
+            "type": "number",
+            "description": "Bail bond premium percentage (typically 10%)"
+          },
+          "doi_verified": {
+            "type": "boolean"
+          },
+          "license_number": {
+            "type": "string"
+          }
+        }
+      },
+      "Case": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "case_type": {
+            "type": "string"
+          },
+          "charge": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "pending",
+              "closed",
+              "dismissed"
+            ]
+          },
+          "next_court_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BondsmanTier": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "starter",
+              "pro",
+              "market"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "monthly_cents": {
+            "type": "integer"
+          },
+          "display": {
+            "type": "string"
+          },
+          "counties": {
+            "type": "integer"
+          },
+          "label": {
+            "type": "string"
+          },
+          "price_id": {
+            "type": "string",
+            "description": "Stripe price ID"
+          }
+        }
+      },
+      "MatterSignals": {
+        "type": "object",
+        "description": "40 computed signals for a legal matter",
+        "properties": {
+          "expeditedBail": {
+            "type": "boolean"
+          },
+          "dismissLikely": {
+            "type": "boolean"
+          },
+          "violentCharge": {
+            "type": "boolean"
+          },
+          "plea_offer_pending": {
+            "type": "boolean"
+          },
+          "plea_offer_expiring_48h": {
+            "type": "boolean"
+          },
+          "mandatoryMin": {
+            "type": "boolean"
+          },
+          "safetyValveEligible": {
+            "type": "boolean"
+          },
+          "bookerVariance": {
+            "type": "boolean"
+          },
+          "evidenceStrength": {
+            "type": "string",
+            "enum": [
+              "weak",
+              "contested",
+              "moderate",
+              "strong"
+            ]
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "AuthToken": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "JWT bearer token"
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      }
     }
   },
   "paths": {
@@ -15165,6 +15410,896 @@
         "responses": {
           "200": {
             "description": "JTB platform profile or {is_jtb_registered: false}"
+          }
+        }
+      }
+    },
+    "/api/matter-intelligence/{matterId}/analytics": {
+      "get": {
+        "tags": [
+          "Matter Intelligence"
+        ],
+        "summary": "Matter analytics and timeline data",
+        "description": "Access: attorney",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/bondsman/dashboard": {
+      "get": {
+        "tags": [
+          "Bondsman CRM"
+        ],
+        "summary": "Bondsman dashboard with lead counts and active defendants",
+        "description": "Access: bondsman",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/bondsman/leads/{id}": {
+      "patch": {
+        "tags": [
+          "Bondsman CRM"
+        ],
+        "summary": "Update lead status (accept/decline/contact)",
+        "description": "Access: bondsman",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/immigration/rights": {
+      "get": {
+        "tags": [
+          "Immigration"
+        ],
+        "summary": "Know-your-rights guide for immigrants",
+        "description": "Access: public",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/immigration/asylum-clock": {
+      "post": {
+        "tags": [
+          "Immigration"
+        ],
+        "summary": "Record asylum clock events and calculate days",
+        "description": "Access: authenticated",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/immigration/voluntary-departure": {
+      "post": {
+        "tags": [
+          "Immigration"
+        ],
+        "summary": "Voluntary departure eligibility and deadline calculation",
+        "description": "Access: authenticated",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/immigration/relief-options": {
+      "get": {
+        "tags": [
+          "Immigration"
+        ],
+        "summary": "Available immigration relief options by status",
+        "description": "Access: authenticated",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/resources": {
+      "get": {
+        "tags": [
+          "Resources"
+        ],
+        "summary": "List legal resource directory",
+        "description": "Access: public",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/checkins/my": {
+      "get": {
+        "tags": [
+          "Check-ins"
+        ],
+        "summary": "Defendant views their own check-in history",
+        "description": "Access: authenticated",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/checkins/status": {
+      "get": {
+        "tags": [
+          "Check-ins"
+        ],
+        "summary": "Today's check-in status for current user",
+        "description": "Access: authenticated",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/legal-aid/clients": {
+      "get": {
+        "tags": [
+          "Legal Aid B2B"
+        ],
+        "summary": "Public defender's client queue",
+        "description": "Access: attorney",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/legal-aid/expungement-petition": {
+      "post": {
+        "tags": [
+          "Legal Aid B2B"
+        ],
+        "summary": "AI-assisted expungement petition drafting",
+        "description": "Access: attorney",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/legal-aid/intake": {
+      "post": {
+        "tags": [
+          "Legal Aid B2B"
+        ],
+        "summary": "Client intake with AI case assessment",
+        "description": "Access: attorney",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/family/contacts": {
+      "post": {
+        "tags": [
+          "Family"
+        ],
+        "summary": "Add emergency contact",
+        "description": "Access: authenticated",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/family/share": {
+      "post": {
+        "tags": [
+          "Family"
+        ],
+        "summary": "Send emergency share SMS with GPS and bail agent",
+        "description": "Access: authenticated",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/billing/bondsman/tiers": {
+      "get": {
+        "tags": [
+          "Billing \u2014 Bondsman"
+        ],
+        "summary": "List available bondsman subscription tiers",
+        "description": "Access: public",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/billing/bondsman/subscription": {
+      "get": {
+        "tags": [
+          "Billing \u2014 Bondsman"
+        ],
+        "summary": "Get current bondsman subscription",
+        "description": "Access: bondsman",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/billing/bondsman/subscribe": {
+      "post": {
+        "tags": [
+          "Billing \u2014 Bondsman"
+        ],
+        "summary": "Subscribe to a bondsman tier",
+        "description": "Access: bondsman",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/billing/bondsman/cancel": {
+      "post": {
+        "tags": [
+          "Billing \u2014 Bondsman"
+        ],
+        "summary": "Cancel bondsman subscription",
+        "description": "Access: bondsman",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/billing/bondsman/change": {
+      "post": {
+        "tags": [
+          "Billing \u2014 Bondsman"
+        ],
+        "summary": "Change bondsman subscription tier (proration applied)",
+        "description": "Access: bondsman",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/billing/pi-leads/purchase": {
+      "post": {
+        "tags": [
+          "Billing \u2014 PI Leads"
+        ],
+        "summary": "Purchase PI lead for $75 flat fee",
+        "description": "Access: attorney",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/analytics/funnel": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Investor funnel cohort data",
+        "description": "Access: admin",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/analytics/events": {
+      "post": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Track funnel event",
+        "description": "Access: authenticated",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/alerts/monitor": {
+      "post": {
+        "tags": [
+          "Arrest Monitor"
+        ],
+        "summary": "Set up arrest monitor for a named person",
+        "description": "Access: authenticated",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/alerts/monitors": {
+      "get": {
+        "tags": [
+          "Arrest Monitor"
+        ],
+        "summary": "List user's active arrest monitors",
+        "description": "Access: authenticated",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/alerts/monitors/{id}": {
+      "delete": {
+        "tags": [
+          "Arrest Monitor"
+        ],
+        "summary": "Delete arrest monitor",
+        "description": "Access: authenticated",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/pretrial/enroll": {
+      "post": {
+        "tags": [
+          "Pretrial Services"
+        ],
+        "summary": "Enroll defendant in pretrial check-in program",
+        "description": "Access: attorney",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/pretrial/compliance-report/{defendantId}": {
+      "get": {
+        "tags": [
+          "Pretrial Services"
+        ],
+        "summary": "Generate court-ready compliance report",
+        "description": "Access: attorney",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "defendantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/pretrial/dashboard": {
+      "get": {
+        "tags": [
+          "Pretrial Services"
+        ],
+        "summary": "Pretrial officer dashboard",
+        "description": "Access: attorney",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/courthouses": {
+      "get": {
+        "tags": [
+          "Court Locator"
+        ],
+        "summary": "Search courthouses by city/state/type",
+        "description": "Access: public",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "500": {
+            "description": "Server error"
           }
         }
       }

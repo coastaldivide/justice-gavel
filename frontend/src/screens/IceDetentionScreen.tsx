@@ -333,7 +333,7 @@ function IceDetentionScreen(): React.JSX.Element {
 
   const shareInfo = useCallback(() => {
     hapticImpact();
-    Share.share({ message: L.shareMsg, title: 'ICE Detention Rights' });
+    RNShare.share({ message: L.shareMsg, title: 'ICE Detention Rights' });
   }, [L.shareMsg]);
 
   return (

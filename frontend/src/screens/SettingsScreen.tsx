@@ -764,7 +764,7 @@ function SettingsScreen({ route, navigation }: any) {
                 const res = await api.get('/auth/export');
                 const data = JSON.stringify(res.data, null, 2);
                 const { Share } = require('react-native');
-                await Share.share({ message: data, title: 'My Justice Gavel Data Export' });
+                await RNShare.share({ message: data, title: 'My Justice Gavel Data Export' });
               } catch {
                 showToast('Could not export your data. Please try again.');
               }

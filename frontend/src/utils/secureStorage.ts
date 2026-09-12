@@ -1,12 +1,39 @@
+import { Platform } from 'react-native';
+
+const isWeb = Platform.OS === 'web';
+
+// ── Web fallback ──────────────────────────────────────────────────────────────
+// expo-secure-store is native-only. On web we use sessionStorage (cleared on
+// tab close) rather than localStorage to minimize token exposure time.
+// For production web builds, consider a httpOnly cookie instead.
+
+const webStore = {
+  getItemAsync: async (key: string): Promise<string | null> => {
+    if (typeof sessionStorage === 'undefined') return null;
+    return sessionStorage.getItem(`jg_${key}`);
+  },
+  setItemAsync: async (key: string, value: string): Promise<void> => {
+    if (typeof sessionStorage === 'undefined') return;
+    sessionStorage.setItem(`jg_${key}`, value);
+  },
+  deleteItemAsync: async (key: string): Promise<void> => {
+    if (typeof sessionStorage === 'undefined') return;
+    sessionStorage.removeItem(`jg_${key}`);
+  },
+};
+
+async function getNativeStore() {
+  const m = await import('expo-secure-store').catch(() => null);
+  return m;
+}
+
 /**
- * secureStorage.ts — Secure token storage using expo-secure-store
  *
  * WHY THIS MATTERS:
  *   AsyncStorage on Android stores data as plain text in the app's
  *   data directory. Any process with file system access (including
  *   malware that obtained root) can read it.
  *
- *   expo-secure-store uses:
  *     iOS  — Keychain Services (hardware-backed on devices with Secure Enclave)
  *     Android — Android Keystore System (hardware-backed on API 23+)
  *
@@ -26,7 +53,6 @@
  *     'onboarding_done', 'chat_session_id', etc.
  */
 
-import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SECURE_KEYS = new Set(['token', 'refresh_token', 'user']);
@@ -89,4 +115,26 @@ export async function clearAuth(): Promise<void> {
     AsyncStorage.removeItem('token').catch(() => {}),  // clear legacy location
     AsyncStorage.removeItem('user').catch(() => {}),
   ]);
+}
+
+// ── Cross-platform wrappers ───────────────────────────────────────────────────
+export async function setSecure(key: string, value: string): Promise<void> {
+  if (isWeb) return webStore.setItemAsync(key, value);
+  const store = await getNativeStore();
+  if (!store) return webStore.setItemAsync(key, value);
+  return store.setItemAsync(key, value);
+}
+
+export async function getSecure(key: string): Promise<string | null> {
+  if (isWeb) return webStore.getItemAsync(key);
+  const store = await getNativeStore();
+  if (!store) return webStore.getItemAsync(key);
+  return store.getItemAsync(key);
+}
+
+export async function deleteSecure(key: string): Promise<void> {
+  if (isWeb) return webStore.deleteItemAsync(key);
+  const store = await getNativeStore();
+  if (!store) return webStore.deleteItemAsync(key);
+  return store.deleteItemAsync(key);
 }

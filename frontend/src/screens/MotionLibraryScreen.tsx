@@ -720,7 +720,7 @@ const loadHistory = useCallback(async () => {
       return;
     }
     try {
-      await Share.share({ message: editDraft, title: selected?.label || 'Motion' });
+      await RNShare.share({ message: editDraft, title: selected?.label || 'Motion' });
     } catch (shareErr: any) {
       // Share API unavailable on this browser/device — fail silently
     }

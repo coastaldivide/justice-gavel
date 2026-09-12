@@ -578,7 +578,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                     onPress={async () => {
                       const { Share } = await import('react-native');
                       try {
-                        await Share.share({ message: petitionDraft, title: 'Expungement Petition Draft' })
+                        await RNShare.share({ message: petitionDraft, title: 'Expungement Petition Draft' })
                       } catch (shareErr: any) {
                         // Share API unavailable on this browser/device — fail silently
 

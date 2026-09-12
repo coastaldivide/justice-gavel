@@ -339,3 +339,82 @@ export { KeyboardAvoidingView } from 'react-native';
 
 // ── Safe area (web: no notch, use platform default) ──────────────────────────
 export const SafeAreaInsets = isWeb ? { top: 0, bottom: 0, left: 0, right: 0 } : null;
+
+// ── Clipboard shim ────────────────────────────────────────────────────────────
+// @react-native-clipboard/clipboard is native-only.
+// On web, use the browser Clipboard API.
+
+export const Clipboard = {
+  setString: (text: string): void => {
+    if (isWeb) {
+      navigator.clipboard?.writeText(text).catch(() => {
+        // Fallback: create a temporary textarea
+        const el = typeof document !== 'undefined' ? document.createElement('textarea') : null;
+        if (!el) return;
+        el.value = text;
+        el.style.position = 'fixed';
+        el.style.opacity  = '0';
+        document.body?.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body?.removeChild(el);
+      });
+      return;
+    }
+    // Native — dynamically import to avoid web bundle issues
+    import('@react-native-clipboard/clipboard').then(m => m.default.setString(text)).catch(() => {});
+  },
+  getString: async (): Promise<string> => {
+    if (isWeb) {
+      try { return await navigator.clipboard.readText(); } catch { return ''; }
+    }
+    const m = await import('@react-native-clipboard/clipboard').catch(() => null);
+    return m?.default.getString() ?? '';
+  },
+};
+
+// ── RNShare shim ──────────────────────────────────────────────────────────────
+// React Native's Share.share() is native-only.
+// On web, use navigator.share() if available, otherwise copy to clipboard.
+
+export const RNShare = {
+  share: async (content: { message?: string; url?: string; title?: string },
+                _options?: unknown): Promise<{ action: string }> => {
+    if (isWeb) {
+      const text = content.message || content.url || '';
+      if (navigator.share && (content.url || content.title)) {
+        try {
+          await navigator.share({
+            title:  content.title,
+            text:   content.message,
+            url:    content.url,
+          });
+          return { action: 'sharedAction' };
+        } catch { /* fall through to clipboard */ }
+      }
+      // Fallback: copy to clipboard
+      await navigator.clipboard?.writeText(text).catch(() => {});
+      return { action: 'sharedAction' };
+    }
+    const { Share } = await import('react-native');
+    return Share.share(content as never);
+  },
+};
+
+// ── Web Push Notifications ────────────────────────────────────────────────────
+// expo-notifications is native-only.
+// On web, use the browser Notification API.
+
+export const WebPush = {
+  requestPermission: async (): Promise<NotificationPermission | 'undetermined'> => {
+    if (!isWeb) return 'undetermined';
+    if (typeof Notification === 'undefined') return 'denied';
+    return Notification.requestPermission();
+  },
+  show: (title: string, body: string, icon?: string): void => {
+    if (!isWeb || typeof Notification === 'undefined') return;
+    if (Notification.permission === 'granted') {
+      new Notification(title, { body, icon });
+    }
+  },
+};

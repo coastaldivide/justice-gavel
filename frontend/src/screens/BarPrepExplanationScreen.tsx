@@ -9,6 +9,7 @@
  *   BarPrepProgressScreen (flag review)
  */
 
+import { RNShare } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -84,7 +85,7 @@ export default function BarPrepExplanationScreen({
     if (!data) return;
     // @ts-ignore
     impact('light');
-    await Share.share({
+    await RNShare.share({
       title: `MBE Explanation — ${data.rule_tested}`,
       message: `Rule: ${data.rule_tested}\n\n${data.explanation}\n\n— Justice Gavel Bar Prep`,
     });

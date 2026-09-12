@@ -169,7 +169,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
   const handleShare = async () => {
     if (!lawyer) return;
     try {
-      await Share.share({
+      await RNShare.share({
         title: `${lawyer.name} -- Criminal Defense Attorney`,
         message: `Attorney: ${lawyer.name}\nCity: ${lawyer.city}, ${lawyer.state}\n${lawyer.phone ? 'Phone: '+lawyer.phone+'\n' : ''}Find legal help on Justice Gavel: https://justicegavel.app`,
         url: lawyer.website || 'https://justicegavel.app',

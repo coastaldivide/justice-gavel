@@ -241,7 +241,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
             gap:8, paddingVertical:10, paddingHorizontal:16, marginTop:8 }}
           onPress={() => {
           try {
-          Share.share({
+          RNShare.share({
             message: 'If you or someone you know ever gets arrested, use Justice Gavel -- it tells you exactly what to do and connects you with lawyers and bail bondsmen immediately. Get it free: https://justicegavel.app',
             title: 'Justice Gavel -- Free legal help if you get arrested',
           });
@@ -280,7 +280,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
             // WhatsApp not installed — try wa.me web link
             Linking.openURL(`https://wa.me/?text=${msg}`).catch(() => {
               // Final fallback: native share
-              Share.share({
+              RNShare.share({
                 message: 'I need urgent help. I was just arrested. Find legal resources at https://justicegavel.app/rights',
                 title: 'Urgent: Legal Help Needed',
               }).catch(() => {});

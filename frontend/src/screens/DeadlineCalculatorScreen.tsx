@@ -1,3 +1,4 @@
+import { RNShare } from '../utils/webCompat';
 import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -689,7 +690,7 @@ showToast('Reminder set for 3 days before.', 'success');
             alignItems:'center', marginHorizontal:16, marginBottom:12 }}
           onPress={async () => {
           try {
-              await Share.share({
+              await RNShare.share({
                 message: 'Justice Gavel -- Deadline Calculator Results\n\n'
                   + 'Use the Justice Gavel app to calculate your legal deadlines.',
                 title: 'Legal Deadlines' });
