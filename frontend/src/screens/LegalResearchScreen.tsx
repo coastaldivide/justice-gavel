@@ -96,7 +96,12 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
         return <Text maxFontSizeMultiplier={1.4} key={key} style={{ fontStyle: 'italic', color: citationBlue }}>{seg.slice(1,-1)}</Text>;
       }
       if (/v\.\s+[A-Z].*\d+/.test(seg)) {
-        return (
+        if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return (
           <Text maxFontSizeMultiplier={1.4} key={key}
             style={{ fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: citationBlue,
               textDecorationLine: 'underline', fontSize: 14 }}
@@ -486,6 +491,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
   const [searching,  setSearching]  = useState(false);
   const [hasAccess,  setHasAccess]  = useState<boolean | null>(null);
   const [subLoading, setSubLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [history,    setHistory]    = useState<Session[]>([]);
   const [histLoading,setHistLoad]   = useState(false);
 
@@ -546,6 +552,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
         setPhase('home');
         showToast('Your Legal Research trial is active. Start searching.');
       } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
         const msg = e.response?.data?.error || 'Could not start subscription.';
 showToast(msg, 'error');
         setSubLoading(false);

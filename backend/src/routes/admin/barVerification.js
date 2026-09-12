@@ -1,3 +1,4 @@
+import { writeLimiter } from '../../middleware/rateLimiters.js';
 /**
  * routes/admin/barVerification.js — Admin endpoints for bar verification
  */
@@ -9,7 +10,7 @@ import { authRequired } from '../../middleware/auth.js';
 const router = Router();
 
 /** Trigger a full verification sweep (admin only) */
-router.post('/sweep', authRequired, asyncRoute(async (req, res) => {
+router.post('/sweep', writeLimiter, authRequired, asyncRoute(async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
   const result = await runNightlyVerification();
   return res.json({ data: result });

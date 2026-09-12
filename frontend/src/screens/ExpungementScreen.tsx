@@ -162,6 +162,11 @@ showToast('Reminder set for when you become eligible.', 'success');
     }
   }, [eligible, isEligible, now]);
 
+  if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
   return (
     <View testID="expungement-screen" style={{ backgroundColor: isEligible ? COLORS.legalBg : COLORS.bgSubtle,
       borderRadius: 12, padding: 14, marginTop: 10,
@@ -287,6 +292,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
   const [stateError, setStateError]   = useState('');
   const [charges, setCharges]   = useState(incomingCharges || '');
   const [caseStatus, setCaseStatus] = useState('Closed');
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
 
   // Retry logic: exponential backoff on API failures
   const [retryCount, setRetryCount] = React.useState(0);
@@ -326,6 +332,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       }
       setStep('result');
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       showToast(e.response?.data?.error || 'Could not check eligibility. Try again.', 'info'); setRetryCount(0);
     } finally {
       setLoading(false);

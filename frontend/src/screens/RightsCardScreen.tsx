@@ -18,7 +18,7 @@ import { AppIcon } from '../components/AppIcon';
  * Free for 24 Hour Advisor+ subscribers. Unsubscribed users see a preview + upgrade prompt.
  * Designed for TikTok virality: "Print this before you go out tonight"
  */
-import { Linking, LayoutAnimation, InteractionManager} from 'react-native';
+import { Linking, LayoutAnimation, InteractionManager, View, Text} from 'react-native';
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useState, useEffect, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
@@ -70,7 +70,12 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = useRef(true);
   useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { mountedRef.current = false; };
     });
     return () => _task.cancel();
   }, []);
@@ -86,6 +91,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [loading, setLoading]   = useState(false);
   const [sharing, setSharing]   = useState(false);
   const [isSubscriber, setIsSubscriber] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [showPicker, setShowPicker]     = useState(false);
 
   // Check subscription status
@@ -99,7 +105,8 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
                     'starter_annual','pro_annual','legal_radar_annual'].includes(sub.tier)) {
           setIsSubscriber(true);
         }
-      } catch (e: any) { __DEV__ && console.warn(e?.message); }
+      } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
     });
 
     // Load user's saved state preference -- set during onboarding or Settings

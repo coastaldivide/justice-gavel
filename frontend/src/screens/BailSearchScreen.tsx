@@ -49,7 +49,12 @@ function SkeletonCard({ colors }: { colors: ThemeColors }) {
     ).start();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
-    return () => shimmer.stopAnimation();
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => shimmer.stopAnimation();
   }, []);
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
   const bg = colors?.bgSubtle || COLORS.bgSubtle;
@@ -100,6 +105,7 @@ function BailSearchScreen(): React.JSX.Element {
   // on mount. Reinstated as real state; initial values inferred from usage.
 
   const [filteredCities, setFilteredCities] = useState<any[]>([]);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
 
 
   // RESTORED: these were `declare var` declarations -- type-only, emitting no
@@ -168,6 +174,7 @@ function BailSearchScreen(): React.JSX.Element {
           res = await api.get('/providers/bail', { params });
           break;
         } catch (apiErr: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
           // CATCH BINDING MISMATCH. The catch bound `_`/`apiErr`/`shareErr` but the
           // body referenced `e`, which is not in scope -- a ReferenceError thrown
           // from inside an error handler, i.e. exactly when something has already

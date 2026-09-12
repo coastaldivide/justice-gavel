@@ -68,7 +68,12 @@ function FirmAcquisitionScreen({ navigation }: any) {
   const mountedRef = useRef(true);
   useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { mountedRef.current = false; };
     });
     return () => _task.cancel();
   }, []);
@@ -79,6 +84,7 @@ function FirmAcquisitionScreen({ navigation }: any) {
 
   // Browse state
   const [selectedV, setSelectedV] = useState('criminal_defense');
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [pitch, setPitch]         = useState<any>(null);
   const [plans, setPlans]         = useState<any[]>([]);
   const [pitchLoading, setPL]     = useState(false);
@@ -125,6 +131,7 @@ function FirmAcquisitionScreen({ navigation }: any) {
       const res = await api.get(`/firm-acquisition/vertical-demo?vertical=${v}`);
       if (!pitchAbort.current?.signal.aborted) setPitch(res.data || null);
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       // Ignore AbortError — a newer request is taking over
       // Guard all cancellation signal variants (browser AbortError, Axios ERR_CANCELED/CanceledError)
       const isCancellation = e?.name === 'AbortError' ||

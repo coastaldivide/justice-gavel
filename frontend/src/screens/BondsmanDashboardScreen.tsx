@@ -63,6 +63,7 @@ function timeAgo(dateStr: string): string {
 function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () => void }) {
   const [_fetchError, _setFetchError] = useState<string|null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const tier = bailTier(lead.bail_amount);
 
 
@@ -74,6 +75,11 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
   );
 
 
+  if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
   return (
     <TouchableOpacity accessibilityRole="button" testID="lead-card"
       style={[styles.card, lead.purchased && styles.cardPurchased]}
@@ -193,6 +199,7 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
         states: licenseState ? [licenseState.toUpperCase()] : []});
       onSaved();
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       showToast('Check your internet and pull down to refresh.');
     } finally {
       setSaving(false);

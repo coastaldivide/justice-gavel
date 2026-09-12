@@ -65,6 +65,11 @@ function PurposeCard({ p, selected, onSelect }: any) {
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
+  if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
   return (
     <TouchableOpacity
           accessibilityRole="button"
@@ -201,6 +206,7 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [loading, setLoading]     = useState(false);
   const [status, setStatus]       = useState('');
   const [lastMethod, setLastMethod] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [generatingReceipt, setGeneratingReceipt] = React.useState(false);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
 
@@ -264,6 +270,7 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         setStatus('Payment initiated. Check your email for confirmation.');
       }
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       setLoading(false);
       const serverMsg = e.response?.data?.error || e.message || '';
       const statusCode = e.response?.status;

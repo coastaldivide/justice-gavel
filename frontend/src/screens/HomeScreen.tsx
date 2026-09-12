@@ -76,13 +76,19 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { mountedRef.current = false; };
   }, []);
 
   // Network status -- passive detection, no permissions needed
 
   // Subscription tier for analytics preview
   const [isPro, setIsPro] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [barPrepStreak, setBarPrepStreak] = useState(0);
   useEffect(() => {
     AsyncStorage.getItem('user_subscription')
@@ -176,6 +182,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           await api.post('/alerts', { userName: user.displayName || user.name || 'User', contacts: active, lat, lng });
           showToast('Your emergency contacts have been notified.');
         } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
           // @ts-ignore
           showToast(e.message || 'Check your connection and try again.', 'error'); setRetryCount(0);
         } finally { setSosSending(false); }

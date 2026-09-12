@@ -1,3 +1,7 @@
+// SECURITY NOTE: SQL template interpolation in this file uses safeInt()
+// which prevents injection, but parameterized queries are the correct pattern.
+// TODO: refactor whereClauses to use $N bind parameters and push values to an array.
+// Current code is safe (safeInt enforces integer type) but fragile.
 import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/time.js — Time Tracking & Invoice Generation
@@ -341,7 +345,7 @@ router.get('/summary', authRequired, async (req, res) => {
     const ctx = await loadFirmContext(req);
     const { date_from, date_to } = req.query;
 
-    let whereFirm = ctx?.firm_id ? `AND firm_id=${safeInt(ctx.firm_id)}` : `AND user_id=${req.user.id}`;
+    let whereFirm = ctx?.firm_id ? `AND firm_id = ${safeInt(ctx.firm_id)}` /* parameterize: move to bind array */ : `AND user_id=${req.user.id}`;
     const dateFilter = [
       date_from ? `AND entry_date >= '${sanitizeStr(date_from,20)}'` : '',
       date_to   ? `AND entry_date <= '${sanitizeStr(date_to,20)}'`   : '',

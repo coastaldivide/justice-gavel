@@ -34,6 +34,11 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
   }, []);
 
   const filled = Math.round(rating);
+  if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
   return (
     <View style={{ flexDirection:'row', alignItems:'center', gap:4 }}>
     {fetchError && (
@@ -108,6 +113,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
 
   const [lawyer, setLawyer]   = useState<any>(preload || null);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [jtbProfile, setJtbProfile] = React.useState<any>(null);
 
   // Retry logic: exponential backoff on API failures

@@ -60,6 +60,7 @@ function daysUntilColor(days: number): string {
 export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPrepSchedule'>) {
   const { colors }             = useTheme();
   const [schedule, setSchedule] = useState<StudySchedule | null>(null);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [examDate, setExamDate] = useState('');
@@ -105,7 +106,12 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
   const styles = makeStyles(colors);
 
   if (loading) {
-    return (
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>

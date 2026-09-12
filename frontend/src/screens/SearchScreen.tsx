@@ -88,13 +88,19 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { mountedRef.current = false; };
   }, []);
   
 
   const { colors } = useTheme();
   const [query, setQuery]       = useState('');
   const [searchError, setSearchError] = useState('');
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [results, setResults]   = useState<SearchResult[]>([]);
 
   // Retry logic: exponential backoff on API failures

@@ -136,7 +136,12 @@ function FirmVerticalScreen({ navigation }: any) {
 
   const mountedRef = useRef(true);
   useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { mountedRef.current = false; }; }, []);
   const [tab, setTab]               = useState<Tab>('setup');
   // Read initial tab from navigation params (e.g. FirmAcquisition sends { tab: 'pricing' })
   React.useEffect(() => {
@@ -168,6 +173,7 @@ function FirmVerticalScreen({ navigation }: any) {
   // Pricing state
   const [tiers, setTiers]           = useState<any[]>([]);
   const [missionOrg, setMissionOrg] = useState('nonprofit');
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [missionEIN, setMissionEIN] = useState('');
   const [missionWeb, setMissionWeb] = useState('');
   const [submittingMV, setSubMV]    = useState(false);
@@ -244,6 +250,7 @@ function FirmVerticalScreen({ navigation }: any) {
         setTiers(pricingResult.value.data?.tiers || []);
       }
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       if (e?.response?.status !== 400) showToast('Could not load firm configuration.');
     } finally {
       setLoading(false);

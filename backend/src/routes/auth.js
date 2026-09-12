@@ -154,7 +154,7 @@ function authRateLimit(req, res, next) {
 const router = Router();
 
 // ── Identifier normalization ──────────────────────────────────────────────────
-// Accepts: email, +1XXXXXXXXXX, 1XXXXXXXXXX, XXXXXXXXXX (10 digits)
+// Accepts: email, +1+1XXXXXXXXXX or 10 digits
 
 function normalizeIdentifier(raw = '') {
   const s = raw.trim().toLowerCase();

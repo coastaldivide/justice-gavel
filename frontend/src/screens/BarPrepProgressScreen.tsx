@@ -71,6 +71,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
   const [data, setData]         = useState<Dashboard | null>(null);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -91,7 +92,12 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
   const styles = makeStyles(colors);
 
   if (loading) {
-    return (
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>

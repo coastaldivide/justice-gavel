@@ -72,7 +72,12 @@ function getLang(code: string) {
   const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     const t = InteractionManager.runAfterInteractions(() => {});
-    return () => t.cancel();
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => t.cancel();
   }, []);
   return LANGUAGES.find(l => l.code === code) || LANGUAGES[0];
 }
@@ -211,6 +216,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
   const [sessionCode, setCode]    = useState('');
   const [joinCode,  setJoinCode]  = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [joiningAs, setJoiningAs] = useState<'a'|'b'>('b');
   const [messages,  setMessages]  = useState<TurnMessage[]>([]);
   const [inputA,    setInputA]    = useState('');
@@ -258,7 +264,8 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
           lastMsgIdRef.current = newId;
           setLastMsgId(newId);
         }
-      } catch (e: any) { __DEV__ && console.warn(e?.message); }
+      } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
     }, 2000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [phase, mode, sessionCode]); // lastMsgId via ref -- no restart on each message

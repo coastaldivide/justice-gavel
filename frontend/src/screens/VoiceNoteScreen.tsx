@@ -80,7 +80,12 @@ function PulseRing({ active }: { active: boolean }) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
-    return () => anim.current?.stop();
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => anim.current?.stop();
   }, [active]);
 
   return (
@@ -95,6 +100,7 @@ function PulseRing({ active }: { active: boolean }) {
 // ── Timer ─────────────────────────────────────────────────────────────────────
 function useTimer(running: boolean) {
   const [secs, setSecs] = useState(0);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const ref = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (running) {
@@ -195,6 +201,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       recordingRef.current = recording;
       setPhase('recording');
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       showToast(e.message || 'Try typing your note instead.', 'error'); setRetryCount(0);
       setPhase('text_input');
     }

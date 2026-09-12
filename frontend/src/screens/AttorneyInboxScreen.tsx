@@ -135,6 +135,7 @@ export default function AttorneyInboxScreen() {
   const [data, setData]           = useState<InboxData | null>(null);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [accepting, setAccepting] = useState<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -145,6 +146,7 @@ export default function AttorneyInboxScreen() {
       const resp = await api.get('/attorney/inbox');
       setData(resp.data);
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       showToast(e?.response?.data?.error || 'Could not load inbox', 'error');
     } finally {
       setLoading(false);
@@ -156,7 +158,12 @@ export default function AttorneyInboxScreen() {
     load();
     // Poll every 60 seconds so unread count stays fresh
     pollRef.current = setInterval(() => load(), 60_000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [load]);
 
   const markRead = useCallback(async (caseId: number) => {

@@ -133,6 +133,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
   const [loading, setLoading]           = useState(true);
   const [refreshing, setRefreshing]     = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [mode, setMode]                 = useState<'practice' | 'timed'>('practice');
   const [questionCount, setQuestionCount] = useState(10);
@@ -149,6 +150,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
         setSelectedSubject(subRes.data.subjects[0].id);
       }
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       if (e?.response?.status !== 402) {
         Alert.alert('Error', 'Could not load bar prep data.');
       }
@@ -191,7 +193,12 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
   const styles = makeStyles(colors);
 
   if (loading) {
-    return (
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>

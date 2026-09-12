@@ -103,6 +103,7 @@ async function getSessionId(): Promise<string> {
     }
     return id;
   } catch (_) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
     // AsyncStorage unavailable — use in-memory session ID (resets on restart)
     return randomId();
   }
@@ -145,6 +146,11 @@ function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
     Clipboard.setStringAsync(text).then(() => showToast('Copied to clipboard', 'success')).catch(() => {});
   };
 
+  if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
   return (
     <View style={[styles.bubbleWrap, isUser && styles.bubbleWrapUser]}
       testID="chat-screen">

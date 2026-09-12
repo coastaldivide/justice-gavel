@@ -85,7 +85,12 @@ function ProgressBar({ active }: { active: boolean }) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
-    return () => anim.current?.stop();
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => anim.current?.stop();
   }, [active]);
 
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
@@ -253,6 +258,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
   const [docType,   setDocType]   = useState('');
   const [analysis,  setAnalysis]  = useState<Analysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [history,   setHistory]   = useState<any[]>([]);
   const [histLoad,  setHistLoad]  = useState(false);
   const [hasPro,    setHasPro]    = useState(false);
@@ -320,6 +326,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       }
       setFile({ name: asset.name, uri: asset.uri, size: asset.size || 0 });
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       showToast(e.message, 'error');
     }
   }, []);

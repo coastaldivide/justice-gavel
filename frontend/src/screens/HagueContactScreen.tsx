@@ -65,10 +65,16 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
   const { caseId, caseName } = route?.params || {};
 
   const [phase, setPhase] = useState<'home'|'lookup'|'intake'|'result'>('home');
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { mountedRef.current = false; };
     });
     return () => _task.cancel();
   }, []);

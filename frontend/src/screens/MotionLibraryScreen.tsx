@@ -266,6 +266,11 @@ function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPE
     ]).start(() => onPress());
   };
 
+  if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '48%' }}>
               {/* AI Review button */}
@@ -352,6 +357,7 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
   const { colors, isDark } = useTheme();
   const m = MOTION_TYPES.find(t => t.key === item.motion_type);
   const [showPicker, setShowPicker] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [status, setStatus] = useState<FilingStatus>(item.filing_status || 'draft');
   const [updating, setUpdating] = useState(false);
 
@@ -650,7 +656,8 @@ const loadHistory = useCallback(async () => {
       const res = await api.get('/motions/history');
       setHistory(res.data || []);
       setPhase('history');
-    } catch (e: any) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
     setHistLoad(false);
   }, []);
 

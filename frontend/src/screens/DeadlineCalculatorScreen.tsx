@@ -373,6 +373,7 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
 }) {
   const { showToast } = useToast();
   const [remindLoading, setRemindLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [expanded, setExpanded] = useState(false);
   const deadline = arrest ? rule.compute(arrest, judgment, state || '') : null;
@@ -413,7 +414,12 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
   }, []);
 
   if (!deadline) {
-    return (
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return (
       <View style={[styles.row, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border, opacity: 0.5 }]}
         testID="deadline-calculator-screen">
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20 }}>{rule.icon}</Text>

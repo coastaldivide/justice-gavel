@@ -73,7 +73,13 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
   const [msgPhone,   setMsgPhone]   = useState('');
   const [msgNote,    setMsgNote]    = useState('');
   const [msgSending, setMsgSending] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [msgSent,    setMsgSent]    = useState(false);
+  if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
   return (
     <TouchableOpacity
       accessibilityRole="button"
@@ -371,6 +377,7 @@ function MatchScreen(): React.JSX.Element {
       setResults(res.data || []);
       setStatusMsg(res.data?.length === 0 ? 'No matches found. Try removing filters.' : '');
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       const errMsg  = e.response?.data?.error || e.message || '';
       const status  = e.response?.status;
       if (status === 503 || errMsg.toLowerCase().includes('api') || errMsg.toLowerCase().includes('anthropic')) {

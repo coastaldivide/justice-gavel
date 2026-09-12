@@ -75,9 +75,15 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => { if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { mountedRef.current = false; }; }, []);
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [situation, setSituation] = React.useState<string | null>(null);
   const [showSituationPicker, setShowSituationPicker] = React.useState(true);
   // Active slides -- changes based on situation selected
@@ -186,7 +192,8 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
             if (!stored) { setLang('vi'); }
           });
         }
-      } catch (e: any) { __DEV__ && console.warn(e?.message); }
+      } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
     }).catch(() => {});
   }, []);
 

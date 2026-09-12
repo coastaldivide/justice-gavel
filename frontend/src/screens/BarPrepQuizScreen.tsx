@@ -65,6 +65,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
   const [selected, setSelected]           = useState<OptionLetter | null>(null);
   const [revealed, setRevealed]           = useState(false);
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [quizLoading, setQuizLoading] = useState(false);
   const [explanation, setExplanation]     = useState<string | null>(null);
   const [submitting, setSubmitting]       = useState(false);
@@ -106,7 +107,12 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(timerRef.current!);
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => clearInterval(timerRef.current!);
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
   // Note: intentionally [mode]-only so the timer is not restarted on answer changes.
   // handleSubmit is accessed via ref to avoid the stale-closure problem.
@@ -217,6 +223,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
         timed_out:        isTimeout,
       });
     } catch (e) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       setSubmitting(false);
       Alert.alert('Error', 'Failed to submit answers. Try again.');
     }

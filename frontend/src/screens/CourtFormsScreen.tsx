@@ -84,6 +84,7 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
   const s = styles(COLORS, FONTS);
 
   const [phase, setPhase] = useState<Phase>('state_select');
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [selectedState, setSelectedState] = useState<CourtFormSource | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -204,7 +205,12 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
 
   // ── Phase: State selection ─────────────────────────────────────────────────
   if (phase === 'state_select') {
-    return (
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return (
       <View style={s.root}
         testID="court-forms-screen">
         <View style={s.header}>

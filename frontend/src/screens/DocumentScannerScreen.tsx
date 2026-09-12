@@ -49,7 +49,12 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
     const sub = AppState.addEventListener('change', state => {
       setIsCameraActive(state === 'active');
     });
-    return () => sub.remove();
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => sub.remove();
   }, []);
   const [scanError, setScanError] = React.useState<string|null>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -109,6 +114,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
         headers: { 'Content-Type': 'multipart/form-data' } });
 
       } catch (_err) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
 
         if (__DEV__) console.error(_err);
 

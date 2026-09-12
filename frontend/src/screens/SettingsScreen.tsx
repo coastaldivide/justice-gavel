@@ -71,7 +71,12 @@ function TierGatedRow({
   const hasAccess = tiers.includes(currentTier);
 
   if (hasAccess) {
-    return (
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return (
       <View style={[gStyles.row, { opacity: 1 }]}>
         <View style={{ flex: 1 }}>
           <Text maxFontSizeMultiplier={1.4} style={[gStyles.label, { color: COLORS.textPrimary }]}>{label}</Text>
@@ -278,6 +283,7 @@ function SettingsScreen({ route, navigation }: any) {
 
   const [user, setUser]                   = useState<User>({});
   const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [isAdmin,          setIsAdmin]          = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [language, setLanguage]           = useState('en');
@@ -365,6 +371,7 @@ function SettingsScreen({ route, navigation }: any) {
     try {
           /* referral share removed */
         } catch (shareErr: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
           // Share failed (unsupported browser) — silently ignore
         };
   };

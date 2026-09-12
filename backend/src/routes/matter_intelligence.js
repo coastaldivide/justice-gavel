@@ -1268,6 +1268,10 @@ router.get('/:matterId/escalation', authRequired, async (req, res) => {
 
 // POST /api/matter-intelligence/:matterId/taxonomy
 router.post('/:matterId/taxonomy', authRequired, routeLimiter, async (req, res) => {
+  // Input validation guard
+  if (req.body && JSON.stringify(req.body).length > 50000) {
+    return res.status(413).json({ error: 'Request body too large' });
+  }
   try {
     const db  = await getDb();
     const ctx = await getFirmCtx(db, req.user.id);

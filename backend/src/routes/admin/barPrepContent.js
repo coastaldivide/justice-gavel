@@ -1,3 +1,4 @@
+import { aiLimiter } from '../../middleware/rateLimiters.js';
 /**
  * routes/admin/barPrepContent.js — Content management for bar prep
  * [I-08]
@@ -36,7 +37,7 @@ router.get('/questions', authRequired, asyncRoute(async (req, res) => {
 }));
 
 /** PUT /admin/bar-prep/questions/:id — correct a question */
-router.put('/questions/:id', authRequired, asyncRoute(async (req, res) => {
+router.put('/questions/:id', aiLimiter, authRequired, asyncRoute(async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
   const { id } = req.params;
   const { stem, option_a, option_b, option_c, option_d,
@@ -61,7 +62,7 @@ router.put('/questions/:id', authRequired, asyncRoute(async (req, res) => {
 }));
 
 /** POST /admin/bar-prep/import — bulk CSV import */
-router.post('/import', authRequired, asyncRoute(async (req, res) => {
+router.post('/import', aiLimiter, authRequired, asyncRoute(async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
   const { subject_code, questions } = req.body;
   // questions: [{ stem, option_a, option_b, option_c, option_d,

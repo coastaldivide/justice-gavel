@@ -86,6 +86,11 @@ function CritRow({ label, met }: { label: string; met: boolean }) {
   const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
+  if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
   return (
     <View style={styles.critRow}>
     {fetchError && (
@@ -216,7 +221,8 @@ function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
       if (s.data) setStatus(s.data);
       if (e.data) setElig(e.data);
       if (h.data) setHall(h.data);
-    } catch (e: any) { __DEV__ && console.warn(e?.message); }
+    } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
     refresh ? setRefreshing(false) : setLoading(false);
   }, []);
 

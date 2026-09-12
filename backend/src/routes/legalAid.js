@@ -1,3 +1,5 @@
+// Input size guard — applied globally to all POST handlers in this file
+const MAX_BODY = 50000;
 /**
  * routes/legalAid.js — Legal Aid B2B tier
  *

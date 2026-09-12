@@ -33,7 +33,12 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { mountedRef.current = false; }; }, []);
 
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -41,6 +46,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
   const incomingQuery    = (route?.params as import('../types/api').RouteParams)?.query    || null;
   const [lessons, setLessons]   = useState<Lesson[]>([]);
   const [completed, setCompleted] = useState<Set<number>>(new Set());
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [expanded, setExpanded]   = useState<number | null>(null);
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -83,6 +89,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       await AsyncStorage.setItem(`points_${userId}`, String(newPts));
       showToast(`+${pts} points added to your rewards!`, 'success');
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       showToast(e.response?.data?.error || 'Could not mark complete.', 'info');
     }
   };

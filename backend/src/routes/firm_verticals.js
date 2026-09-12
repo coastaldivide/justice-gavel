@@ -74,7 +74,7 @@ function isValidDate(s) { return typeof s === 'string' && ISO_DATE_RE.test(s); }
 // URL validator — must start with http:// or https://
 const URL_RE = /^https?:\/\//i;
 
-// EIN validator (US format XX-XXXXXXX)
+// EIN validator (US format XX-555-1234)
 const EIN_RE = /^\d{2}-\d{7}$/;
 function isValidEIN(s) { return typeof s === 'string' && EIN_RE.test(s.trim()); }
 
@@ -392,7 +392,7 @@ router.post('/mine/mission-verify', authRequired, routeLimiter, async (req, res)
     const { org_type, ein, website, documentation } = req.body || {};
     if (!org_type) return err400(res, 'org_type is required.');
     if (!VALID_ORG.includes(org_type)) return err400(res, `org_type must be one of: ${VALID_ORG.join(', ')}`);
-    if (ein && !isValidEIN(ein)) return err400(res, 'EIN must be in format XX-XXXXXXX (e.g. 12-3456789).');
+    if (ein && !isValidEIN(ein)) return err400(res, 'EIN must be in format XX-555-1234 (e.g. 12-3456789).');
     if (website && !URL_RE.test(website)) return err400(res, 'website must start with http:// or https://');
     if (website && website.length > 500) return err400(res, 'website must be 500 characters or fewer.');
 

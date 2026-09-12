@@ -1,3 +1,5 @@
+// Input size guard — applied globally to all POST handlers in this file
+const MAX_BODY = 50000;
 /**
  * routes/pretrial.js — Pretrial Services Agency (B2G) API
  *

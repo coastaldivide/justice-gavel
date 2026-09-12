@@ -148,7 +148,12 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { mountedRef.current = false; };
     });
     return () => _task.cancel();
   }, []);
@@ -164,6 +169,7 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   }, []);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [showAdd, setShowAdd]     = useState(false);
   const [saving, setSaving]       = useState(false);
 
@@ -241,7 +247,8 @@ confirm('Remove Event?', 'This will permanently remove this event from your time
       try {
               setEvents(prev => prev.filter(e => e.id !== eventId));
               await api.delete(`/cases/${caseId}/events/${eventId}`);
-            } catch (e: any) { }
+            } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.'); }
               // Rollback: re-fetch events to restore the deleted item
               setEvents(prev => prev);
               // @ts-ignore

@@ -298,4 +298,300 @@ CREATE TABLE IF NOT EXISTS bot_runs (
   ended_at   TIMESTAMPTZ
 );
 
+
+-- Additional missing feature tables
+-- ability_to_pay (bail reform — Humphrey hearings, CA/NY)
+CREATE TABLE IF NOT EXISTS ability_to_pay (
+  id           BIGSERIAL PRIMARY KEY,
+  user_id      BIGINT,
+  case_id      BIGINT,
+  monthly_income DOUBLE PRECISION,
+  dependents   BIGINT DEFAULT 0,
+  assets_text  TEXT,
+  submitted_at TIMESTAMPTZ DEFAULT NOW(),
+  reviewed_at  TIMESTAMPTZ,
+  reviewed_by  BIGINT,
+  determination TEXT
+);
+
+
+-- account_deletion_log
+CREATE TABLE IF NOT EXISTS account_deletion_log (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT,
+  reason     TEXT,
+  deleted_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_by BIGINT,
+  data_purged BOOLEAN DEFAULT FALSE
+);
+
+
+-- acquisition_leads
+CREATE TABLE IF NOT EXISTS acquisition_leads (
+  id          BIGSERIAL PRIMARY KEY,
+  email       TEXT,
+  source      TEXT,
+  campaign    TEXT,
+  referrer    TEXT,
+  converted   BOOLEAN DEFAULT FALSE,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- ai_daily_costs
+CREATE TABLE IF NOT EXISTS ai_daily_costs (
+  id          BIGSERIAL PRIMARY KEY,
+  date        DATE UNIQUE,
+  total_cost_usd DOUBLE PRECISION DEFAULT 0,
+  request_count  BIGINT DEFAULT 0,
+  token_count    BIGINT DEFAULT 0,
+  by_tier     TEXT -- JSON: { free: X, pro: Y, ... }
+);
+
+
+-- ai_user_monthly_spend
+CREATE TABLE IF NOT EXISTS ai_user_monthly_spend (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     BIGINT,
+  month       TEXT, -- YYYY-MM
+  cost_usd    DOUBLE PRECISION DEFAULT 0,
+  token_count BIGINT DEFAULT 0,
+  UNIQUE(user_id, month)
+);
+
+
+-- arrest_takedown_log
+CREATE TABLE IF NOT EXISTS arrest_takedown_log (
+  id           BIGSERIAL PRIMARY KEY,
+  record_id    BIGINT,
+  requestor    TEXT,
+  reason       TEXT,
+  taken_down_at TIMESTAMPTZ DEFAULT NOW(),
+  taken_down_by BIGINT
+);
+
+
+-- cases_fts (full-text search index for cases)
+CREATE TABLE IF NOT EXISTS cases_fts (
+  id       BIGSERIAL PRIMARY KEY,
+  case_id  BIGINT UNIQUE,
+  content  TEXT, -- tsvector-ready text
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- cle_completions (CLE credit tracking for attorneys)
+CREATE TABLE IF NOT EXISTS cle_completions (
+  id          BIGSERIAL PRIMARY KEY,
+  lawyer_id   BIGINT,
+  course_id   BIGINT,
+  completed_at TIMESTAMPTZ DEFAULT NOW(),
+  credits     DOUBLE PRECISION DEFAULT 1.0,
+  certificate_url TEXT
+);
+
+
+-- cle_courses
+CREATE TABLE IF NOT EXISTS cle_courses (
+  id          BIGSERIAL PRIMARY KEY,
+  title       TEXT,
+  provider    TEXT,
+  credits     DOUBLE PRECISION DEFAULT 1.0,
+  subject     TEXT,
+  url         TEXT,
+  active      BOOLEAN DEFAULT TRUE,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- client_assignments
+CREATE TABLE IF NOT EXISTS client_assignments (
+  id          BIGSERIAL PRIMARY KEY,
+  client_id   BIGINT,
+  lawyer_id   BIGINT,
+  case_id     BIGINT,
+  assigned_at TIMESTAMPTZ DEFAULT NOW(),
+  status      TEXT DEFAULT 'active',
+  UNIQUE(client_id, lawyer_id, case_id)
+);
+
+
+-- codefendant_links
+CREATE TABLE IF NOT EXISTS codefendant_links (
+  id           BIGSERIAL PRIMARY KEY,
+  case_id      BIGINT,
+  user_id      BIGINT,
+  codefendant_name TEXT,
+  relationship TEXT,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- conflict_waivers
+CREATE TABLE IF NOT EXISTS conflict_waivers (
+  id          BIGSERIAL PRIMARY KEY,
+  firm_id     BIGINT,
+  matter_id   BIGINT,
+  client_id   BIGINT,
+  waiver_text TEXT,
+  signed_at   TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- contract_redlines
+CREATE TABLE IF NOT EXISTS contract_redlines (
+  id          BIGSERIAL PRIMARY KEY,
+  contract_id BIGINT,
+  user_id     BIGINT,
+  field       TEXT,
+  original    TEXT,
+  redlined    TEXT,
+  status      TEXT DEFAULT 'pending',
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- contract_reviews
+CREATE TABLE IF NOT EXISTS contract_reviews (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     BIGINT,
+  document_url TEXT,
+  analysis    TEXT,
+  risk_score  BIGINT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- evidence_score (AI evidence strength assessment)
+CREATE TABLE IF NOT EXISTS evidence_score (
+  id          BIGSERIAL PRIMARY KEY,
+  case_id     BIGINT,
+  score       DOUBLE PRECISION,
+  factors     TEXT, -- JSON
+  scored_at   TIMESTAMPTZ DEFAULT NOW(),
+  scored_by   TEXT DEFAULT 'ai'
+);
+
+
+-- expungement_applications
+CREATE TABLE IF NOT EXISTS expungement_applications (
+  id            BIGSERIAL PRIMARY KEY,
+  user_id       BIGINT,
+  case_id       BIGINT,
+  state         TEXT,
+  charge_type   TEXT,
+  status        TEXT DEFAULT 'draft',
+  submitted_at  TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- firm_pricing_configs
+CREATE TABLE IF NOT EXISTS firm_pricing_configs (
+  id          BIGSERIAL PRIMARY KEY,
+  firm_id     BIGINT UNIQUE,
+  hourly_rate BIGINT, -- cents
+  flat_fee    BIGINT, -- cents
+  contingency_pct DOUBLE PRECISION,
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- firm_trials
+CREATE TABLE IF NOT EXISTS firm_trials (
+  id          BIGSERIAL PRIMARY KEY,
+  firm_id     BIGINT UNIQUE,
+  started_at  TIMESTAMPTZ DEFAULT NOW(),
+  ends_at     TIMESTAMPTZ,
+  converted   BOOLEAN DEFAULT FALSE
+);
+
+
+-- firm_upgrade_requests
+CREATE TABLE IF NOT EXISTS firm_upgrade_requests (
+  id          BIGSERIAL PRIMARY KEY,
+  firm_id     BIGINT,
+  requested_plan TEXT,
+  reason      TEXT,
+  status      TEXT DEFAULT 'pending',
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- last_active (session presence tracking)
+CREATE TABLE IF NOT EXISTS last_active (
+  user_id    BIGINT PRIMARY KEY,
+  seen_at    TIMESTAMPTZ DEFAULT NOW(),
+  device     TEXT,
+  version    TEXT
+);
+
+
+-- lessons_fts (full-text search for bar prep lessons)
+CREATE TABLE IF NOT EXISTS lessons_fts (
+  id        BIGSERIAL PRIMARY KEY,
+  lesson_id BIGINT UNIQUE,
+  content   TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- material_support_screening (immigration — 8 U.S.C. § 1182)
+CREATE TABLE IF NOT EXISTS material_support_screening (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     BIGINT,
+  case_id     BIGINT,
+  result      TEXT,
+  screened_at TIMESTAMPTZ DEFAULT NOW(),
+  screened_by BIGINT
+);
+
+
+-- password_resets
+CREATE TABLE IF NOT EXISTS password_resets (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT,
+  token      TEXT UNIQUE,
+  expires_at TIMESTAMPTZ,
+  used_at    TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- session_events
+CREATE TABLE IF NOT EXISTS session_events (
+  id         BIGSERIAL PRIMARY KEY,
+  session_id TEXT,
+  user_id    BIGINT,
+  event      TEXT,
+  payload    TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- soc2_controls (compliance tracking)
+CREATE TABLE IF NOT EXISTS soc2_controls (
+  id          BIGSERIAL PRIMARY KEY,
+  control_id  TEXT UNIQUE,
+  title       TEXT,
+  status      TEXT DEFAULT 'not_started',
+  evidence    TEXT,
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by BIGINT
+);
+
+
+-- translation_logs
+CREATE TABLE IF NOT EXISTS translation_logs (
+  id          BIGSERIAL PRIMARY KEY,
+  session_id  TEXT,
+  from_lang   TEXT,
+  to_lang     TEXT,
+  char_count  BIGINT DEFAULT 0,
+  cost_usd    DOUBLE PRECISION DEFAULT 0,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+
 COMMIT;

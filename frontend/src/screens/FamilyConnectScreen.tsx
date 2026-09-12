@@ -28,7 +28,12 @@ function callPhone(phone: string) {
   const { showToast } = useToast();
   React.useEffect(() => {
     const t = InteractionManager.runAfterInteractions(() => {});
-    return () => t.cancel();
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => t.cancel();
   }, []);
   Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error'));
 }
@@ -139,6 +144,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
   const [step, setStep] = useState(1);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
 
   // Step 1: find arrest
   const [searchName, setSearchName] = useState('');
@@ -181,6 +187,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         showToast('We don\'t have a record matching that name yet. You can still connect with attorneys and bail agents by continuing without an arrest record.');
       }
     } catch (e: any) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
       showToast('Could not search right now. Check your connection and try again.');
     } finally {
       setSearching(false);

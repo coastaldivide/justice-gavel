@@ -113,12 +113,18 @@ function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.El
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { mountedRef.current = false; };
   }, []);
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [dbLines, setDbLines] = React.useState<any[]>([]);
   const [fetchError, setFetchError] = useState<string>('');
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   React.useEffect(() => {
     api.get('/resources?category=CRISIS_LINE&limit=20')
       .then(r => { if (r.data?.length) setDbLines(r.data || []); })

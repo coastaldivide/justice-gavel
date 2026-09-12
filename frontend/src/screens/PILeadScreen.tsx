@@ -56,7 +56,12 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const [refreshing, setRefreshing] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
+  return () => { mountedRef.current = false; }; }, []);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1200)
@@ -68,6 +73,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
 
   const [step, setStep]         = useState<Step>(initType ? 'severity' : 'type');
   const [caseType, setCaseType] = useState(initType);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [severity, setSeverity] = useState('');
   const [description, setDesc]  = useState('');
   const [loading, setLoading]   = useState(false);
@@ -90,6 +96,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
         description: description.trim(),
       });
       } catch (_err) {
+      setErrorMsg('Unable to load. Please check your connection and try again.');
         if (__DEV__) console.error(_err);
       }
       if (mountedRef.current) setStep('submitted');

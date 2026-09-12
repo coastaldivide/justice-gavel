@@ -36,6 +36,7 @@ function FirmDiscoveryScreen() {
   const [firms, setFirms]           = useState<Firm[]>([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [stateFilter, setStateFilter] = useState('');
   const [areaFilter, setAreaFilter]   = useState('');
   const [code, setCode]               = useState('');
@@ -111,6 +112,11 @@ function FirmDiscoveryScreen() {
     </TouchableOpacity>
   );
 
+  if (errorMsg) return (
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
+      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
+    </View>
+  );
   return (
     <View style={[s.container, { backgroundColor: colors.primary }]}>
       {/* Referral code entry */}
