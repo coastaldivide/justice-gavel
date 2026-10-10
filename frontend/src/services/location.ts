@@ -76,10 +76,9 @@ export async function getLocation(): Promise<Coords> {
   // Fresh GPS fix with 5-second timeout — prevents indefinite hang on Android cold start
   const loc = await Promise.race([
     Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-      // eslint-disable-next-line no-promise-executor-return
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('GPS timeout')), 5_000)
-    ),
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('GPS timeout')), 5_000);
+    }),
   ]).catch(() =>
     // Timeout fallback: try one more time with reduced accuracy
     Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Lowest })

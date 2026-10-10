@@ -16,7 +16,7 @@
  *   </TabletLayout>
  */
 
-import React, { memo } from 'react';
+import React from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 

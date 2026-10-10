@@ -1,9 +1,6 @@
-import { useHaptics } from '../hooks/useHaptics';
 import { RNShare } from '../utils/webCompat';
 import { useToast } from '../components/ToastProvider';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
  * EmergencyShareScreen -- One-tap emergency share
@@ -24,24 +21,22 @@ import { AppIcon } from '../components/AppIcon';
  *   2. EmergencyScreen
  *   3. HelpNowScreen bottom CTA
  */
-import React, { useState, useEffect, useRef, useMemo} from 'react';
-import { ActivityIndicator, BackHandler, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, RefreshControl, LayoutAnimation} from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { ActivityIndicator, BackHandler, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { getLocation } from '../services/location';
 import { getContacts } from '../services/storage';
-import { haptic, hapticCall, hapticSuccess, hapticWarn } from '../services/haptics';
+import { hapticCall, hapticSuccess, hapticWarn } from '../services/haptics';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { t } from '../i18n';
 
 type Phase = 'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' | 'error';
 
 // Message template lines are built inside buildMessage()
 
-function EmergencyShareScreen({ route, navigation }: ScreenProps) {
-  const { impact, success, error: hapticError } = useHaptics();
+function EmergencyShareScreen({ navigation }: ScreenProps) {
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -50,12 +45,10 @@ function EmergencyShareScreen({ route, navigation }: ScreenProps) {
     return () => { mountedRef.current = false; };
   }, []);
 
-  const [submitting, setSubmitting] = React.useState(false);
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
 
   const [phase, setPhase]       = useState<Phase>('ready');
-  const [loading, setLoading] = useState(false);
   const [userName, setUserName] = useState('');
   const [contacts, setContacts] = useState<string[]>([]);
   const [coords, setCoords]     = useState<{ lat: number; lng: number } | null>(null);
@@ -201,7 +194,7 @@ function EmergencyShareScreen({ route, navigation }: ScreenProps) {
     );
 
     // If we have phone contacts, open SMS; otherwise use Share sheet
-    const phoneContacts = contacts.filter(c => /\d{7 }/.test(c.replace(/\D/g, '')));
+    const phoneContacts = contacts.filter(c => /\d{7,}/.test(c.replace(/\D/g, '')));
     const firstPhone = phoneContacts[0];
 
     try {
@@ -225,10 +218,10 @@ function EmergencyShareScreen({ route, navigation }: ScreenProps) {
       let result;
       try {
         result = await RNShare.share({ message, title: `${userName} needs help` });
-      } catch (shareErr: any) {
+      } catch {
         // Share sheet unavailable — fallback already handled above
       }
-      if (result.action === Share.sharedAction) {
+      if (result?.action === Share.sharedAction) {
         setSharedTo(contacts.length);
         setPhase('done');
         hapticSuccess();
@@ -253,11 +246,6 @@ function EmergencyShareScreen({ route, navigation }: ScreenProps) {
     return (
       <View style={{ flex:1, backgroundColor:colors.bgSubtle, alignItems:'center', justifyContent:'center' }}
         testID="emergency-share-screen">
-      {loading && (
-        <View style={{ flex:1, alignItems:'center', justifyContent:'center' }}>
-          <ActivityIndicator size="large" color={COLORS.navy} />
-        </View>
-      )}
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize:24 }}>🌤️</Text>
       </View>
     );
@@ -336,6 +324,8 @@ if (phase === 'ready') return (
       <TouchableOpacity
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
+        style={styles.editContactsLink}
+        onPress={() => navigation.navigate('Contacts')}
        accessibilityLabel={"Edit emergency contacts \u2192"}>
         <Text maxFontSizeMultiplier={1.4} style={styles.editContactsText}>Edit emergency contacts →</Text>
       </TouchableOpacity>
@@ -452,7 +442,10 @@ if (phase === 'ready') return (
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate">
+          accessibilityHint="Double-tap to activate"
+        style={styles.retryBtn}
+        onPress={sendShare}
+        accessibilityLabel="Try again">
         <Text maxFontSizeMultiplier={1.4} style={styles.retryBtnText}>Try Again</Text>
       </TouchableOpacity>
     </View>
@@ -463,10 +456,13 @@ if (phase === 'ready') return (
     <View style={styles.center}>
       <Text maxFontSizeMultiplier={1.4} style={styles.doneIcon}>✓</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.doneTitle}>Message sent!</Text>
-      <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>Your emergency contacts have been notified.</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>
+        Your message was handed to {sharedTo > 1 ? `your ${sharedTo} emergency contacts` : 'your emergency contact'}.
+      </Text>
       <TouchableOpacity
   accessibilityRole="button"
-
+        style={styles.doneBtn}
+        onPress={() => { if (navigation.canGoBack()) navigation.goBack(); else setPhase('ready'); }}
          accessibilityLabel="Done Sharing"
           accessibilityHint="Confirms and closes this view">
         <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done Sharing</Text>
@@ -515,6 +511,7 @@ if (phase === 'ready') return (
             <TouchableOpacity
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
+               onPress={() => Linking.openURL('tel:' + String(bondsman.phone).replace(/[^0-9+]/g, '')).catch(() => showToast(`Please dial ${bondsman.phone} manually.`, 'warning'))}
                accessibilityLabel={bondsman.phone}>
               <Text maxFontSizeMultiplier={1.4} style={styles.providerPhone}>{bondsman.phone}</Text>
             </TouchableOpacity>
@@ -529,6 +526,7 @@ if (phase === 'ready') return (
             <TouchableOpacity
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
+               onPress={() => Linking.openURL('tel:' + String(lawyer.phone).replace(/[^0-9+]/g, '')).catch(() => showToast(`Please dial ${lawyer.phone} manually.`, 'warning'))}
                accessibilityLabel={lawyer.phone}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.providerPhone, { color: COLORS.legal }]}>{lawyer.phone}</Text>
             </TouchableOpacity>
@@ -538,6 +536,9 @@ if (phase === 'ready') return (
       <TouchableOpacity
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
+        style={styles.sendBtn}
+        onPress={sendShare}
+        testID="emergency-share-send"
        accessibilityLabel={"\ud83d\udea8  Send Now"}>
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>🚨  Send Now</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnSub}>Opens your Messages app</Text>
@@ -545,7 +546,8 @@ if (phase === 'ready') return (
 
       <TouchableOpacity
   accessibilityRole="button"
-
+        style={styles.cancelBtn}
+        onPress={() => setPhase('ready')}
          accessibilityLabel="Cancel"
           accessibilityHint="Cancels and returns to previous screen">
         <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Cancel</Text>

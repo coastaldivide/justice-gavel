@@ -1,4 +1,3 @@
-import { useHaptics } from '../hooks/useHaptics';
 
 /**
  * VoiceNoteScreen.web.tsx -- Web platform using MediaRecorder API
@@ -6,15 +5,13 @@ import { useHaptics } from '../hooks/useHaptics';
  * Records audio in the browser, uploads for transcription,
  * and saves as a case note -- same flow as native.
  */
-import React, { useState, useRef, useCallback} from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, LayoutAnimation} from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api } from '../services/api';
-import { t } from '../i18n';
 
 function VoiceNoteScreen(): React.JSX.Element {
-  const { impact, success, error: hapticError } = useHaptics();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [recording, setRecording] = useState(false);
@@ -50,9 +47,8 @@ function VoiceNoteScreen(): React.JSX.Element {
     if (timerRef.current) clearInterval(timerRef.current);
     setRecording(false);
     setUploading(true);
-    // eslint-disable-next-line no-promise-executor-return
     // Wait for final chunk
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise<void>(r => { setTimeout(r, 400); });
     try {
       const blob = new Blob(chunksRef.current as any, { type: 'audio/webm' } as any);
       const form = new FormData();

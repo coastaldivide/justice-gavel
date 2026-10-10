@@ -1,12 +1,6 @@
-import { useNetworkError } from '../hooks/useNetworkError';
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import { CaseStatusBadge } from '../components/CaseStatusBadge';
 /**
  * CaseTimelineScreen -- Chronological view of a case's events
  *
@@ -16,17 +10,15 @@ import { CaseStatusBadge } from '../components/CaseStatusBadge';
  *
  * Navigated to from CaseScreen with params: { caseId, caseTitle }
  */
-import React, { useState, useCallback, useRef } from 'react';
-import {Alert, View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, RefreshControl, Platform, ActivityIndicator, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, RefreshControl, Platform, ActivityIndicator, KeyboardAvoidingView, LayoutAnimation, InteractionManager } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, RADIUS, SHADOW, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { hapticImpact, hapticNotification } from '../utils/webCompat';
 import { cacheTimeline, getCachedTimeline } from '../services/offlineCache';
 import { useFocusEffect } from '@react-navigation/native';
-import SkeletonLoader from '../components/SkeletonLoader';
-import { t } from '../i18n';
 
 const EVENT_ICONS: Record<string, string> = {
   arrest:          '🔒',
@@ -103,15 +95,8 @@ function formatAmount(cents: number | null): string {
 }
 
 
-const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
-  <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
-    <Text style={{ fontSize: 48, marginBottom: 16 }}>{icon}</Text>
-    <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.navy, textAlign: 'center', marginBottom: 8 }}>{title}</Text>
-    <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 }}>{subtitle}</Text>
-  </View>
-);
 
-function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
 
@@ -156,11 +141,6 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   const [_fetchError, _setFetchError] = useState<string|null>(null);
   const [events, setEvents]       = useState<CaseEvent[]>([]);
 
-  // Retry logic: exponential backoff on API failures
-  const [retryCount, setRetryCount] = React.useState(0);
-  const handleRetry = React.useCallback(() => {
-    setRetryCount(c => c + 1);
-  }, []);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showAdd, setShowAdd]     = useState(false);
@@ -244,7 +224,7 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
     }
   };
 
-  const s = styles(colors as any);
+  const s = styles();
 
   const renderItem = ({ item, index }: { item: CaseEvent; index: number }) => {
     const color = EVENT_COLORS[item.event_type] || EVENT_COLORS.textMuted;
@@ -502,7 +482,7 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   );
 }
 
-const styles = (C: Record<string, string>) => StyleSheet.create({
+const styles = () => StyleSheet.create({
   screen:       { flex:1 },
   list:         { padding:16, paddingBottom:100 },
   header:       { marginBottom:20 },

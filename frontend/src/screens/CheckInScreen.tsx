@@ -1,9 +1,6 @@
-import { useHaptics } from '../hooks/useHaptics';
 import { parseLocalDate, formatDate, daysUntil } from '../utils/dateUtils';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { hapticNotification } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 /**
@@ -17,29 +14,20 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
  *   1. Deep link from bondsman's SMS (enrollment_id in URL params)
  *   2. Direct navigation if defendant has the app
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Animated, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation, InteractionManager} from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
-import { haptic, hapticSelect, hapticSuccess } from '../services/haptics';
+import { hapticSuccess } from '../services/haptics';
 import { getLocation } from '../services/location';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import * as Location from 'expo-location';
 import { t } from '../i18n';
 
 type CheckInPhase = 'loading' | 'ready' | 'gps' | 'submitting' | 'done' | 'already_done' | 'error' | 'no_enrollment';
 
 
-const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
-  <View testID="checkin-already-done" style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
-    <Text style={{ fontSize: 48, marginBottom: 16 }}>{icon}</Text>
-    <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.navy, textAlign: 'center', marginBottom: 8 }}>{title}</Text>
-    <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 }}>{subtitle}</Text>
-  </View>
-);
 
 function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | null {
-  const { impact, success, error: hapticError } = useHaptics();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   // Loader is declared further down; reach it through a ref updated each render.
@@ -61,8 +49,6 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
 
   const [phase, setPhase]         = useState<CheckInPhase>('loading');
   const [enrollment, setEnrollment] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [todayStatus, setTodayStatus] = useState<any>(null);
   const [notes, setNotes]         = useState('');
   const [locationLabel, setLocationLabel] = useState('');
   const [gpsReady, setGpsReady]   = useState(false);
@@ -70,7 +56,6 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
   const [errorMsg, setErrorMsg]   = useState('');
   const [streak, setStreak]       = useState(0);
   const [gpsVerify, setGpsVerify]   = React.useState(false);
-  const [gpsCoords, setGpsCoords]   = React.useState<{ lat: number; lng: number } | null>(null);
   const [gpsStatus, setGpsStatus]   = React.useState('');
 
   // Pulse animation for the big check-in button
@@ -82,42 +67,41 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         Animated.timing(pulse, { toValue: 1.04, duration: 900, useNativeDriver: true }),
         Animated.timing(pulse, { toValue: 1.00, duration: 900, useNativeDriver: true }),
       ])
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
     ).start();
     return () => { pulse.stopAnimation(); };
-  }, []);
+  }, [pulse]);
+
+  const loadStatus = useCallback(async () => {
+    setPhase('loading');
+    try {
+      const res = await api.get(`/checkins/status/${enrollmentId}`);
+      setEnrollment(res.data?.enrollment);
+      setStreak(res.data?.total_checkins || 0);
+      setPhase(res.data?.checked_in_today ? 'already_done' : 'ready');
+    } catch (e: any) {
+      setPhase('error');
+      setErrorMsg(apiErrorMessage(e, 'Could not load your check-in. Check your internet.'));
+    }
+  }, [enrollmentId]);
 
   useEffect(() => {
     if (!enrollmentId) {
       setPhase('no_enrollment');
       return;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }
     loadStatus();
-  }, [enrollmentId]);
+  }, [enrollmentId, loadStatus]);
 
-  const loadStatus = async () => {
-    setPhase('loading');
-    try {
-      const res = await api.get(`/checkins/status/${enrollmentId}`);
-      setEnrollment(res.data?.enrollment);
-      setTodayStatus(res.data || null);
-      setStreak(res.data?.total_checkins || 0);
-      if (res.data?.checked_in_today) {
-        setPhase('already_done');
-      } else {
-        setPhase('ready');
-        // Pre-fetch GPS in background
-        getLocation()
-          .then(loc => { setCoords(loc); setGpsReady(true); })
-          .catch(() => { setGpsReady(false); });
-      }
-    } catch (e: any) {
-      setPhase('error');
-      setErrorMsg(apiErrorMessage(e, 'Could not load your check-in. Check your internet.'));
-    }
+  // Location is opt-in ("Include my location"): GPS is only requested, and
+  // coordinates only sent, while the toggle is on.
+  const toggleGps = () => {
+    const next = !gpsVerify;
+    setGpsVerify(next);
+    if (!next) { setGpsStatus(''); setGpsReady(false); setCoords(null); return; }
+    setGpsStatus('Getting your location…');
+    getLocation()
+      .then(loc => { setCoords(loc); setGpsReady(true); setGpsStatus('✓ Location ready'); })
+      .catch(() => { setGpsReady(false); setGpsStatus('Location unavailable -- you can still check in without it'); });
   };
 
   const doCheckIn = async () => {
@@ -125,14 +109,16 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
     let lat: number | undefined, lng: number | undefined, locLabel = locationLabel;
 
     try {
-      if (!coords) {
+      if (!gpsVerify) {
+        // Location not opted in -- check in without coordinates.
+      } else if (!coords) {
         const loc = await getLocation();
         lat = loc.lat; lng = loc.lng;
         if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) throw new Error('GPS coordinates unavailable');
       } else {
         lat = coords.lat; lng = coords.lng;
       }
-      locLabel = locLabel || `${lat?.toFixed(4)}, ${lng?.toFixed(4)}`;
+      if (typeof lat === 'number' && typeof lng === 'number') locLabel = locLabel || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     } catch {
       // GPS unavailable -- still allow check-in without location
     }
@@ -339,9 +325,9 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         </View>
         <View style={styles.statBlock}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.statNum, { color: gpsReady ? COLORS.legal : COLORS.textMuted }]}>
-            {gpsReady ? '📍' : '…'}
+            {gpsReady ? '📍' : gpsVerify ? '…' : '—'}
           </Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{gpsReady ? 'GPS ready' : 'Getting GPS'}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>{gpsReady ? 'GPS ready' : gpsVerify ? 'Getting GPS' : 'GPS off'}</Text>
         </View>
         {enrollment?.court_date && (
           <View style={styles.statBlock}>
@@ -378,9 +364,9 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
           returnKeyType="next"
           blurOnSubmit
         />
-        {gpsReady && coords && (
+        {gpsVerify && gpsReady && coords && (
           <Text maxFontSizeMultiplier={1.4} style={styles.gpsStatus}>
-            ✓ GPS location captured automatically
+            ✓ GPS location will be included
           </Text>
         )}
       </View>
@@ -408,7 +394,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
           accessibilityHint="Double-tap to activate"
         style={{ flexDirection:'row', alignItems:'center', paddingVertical:12,
           borderTopWidth:1, borderTopColor:colors.border, marginBottom:16, gap:12 }}
-        onPress={() => setGpsVerify(v => !v)}
+        onPress={toggleGps}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
         accessibilityState={{ checked: gpsVerify }}
         accessibilityLabel="Include GPS location in this check-in"

@@ -6,10 +6,9 @@
  * Supports icon, title, subtitle, badge, back button, and action slot.
  */
 
-import React, { memo } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../constants/theme';
 import { AppIcon, ICONS } from './AppIcon';
 
 interface GradientHeaderProps {
@@ -64,7 +63,7 @@ export function GradientHeader({
         {(icon || iconName) && (
           <View style={[s.iconWrap, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
             <AppIcon
-              name={(iconName || ICONS[icon!]) as any}
+              name={(iconName || (icon ? ICONS[icon] : undefined)) as any}
               size={compact ? 20 : 26}
               color="#fff"
             />

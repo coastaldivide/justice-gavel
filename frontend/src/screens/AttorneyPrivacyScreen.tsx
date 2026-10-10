@@ -1,13 +1,9 @@
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Linking, LayoutAnimation} from 'react-native';
 import { COLORS } from '../constants/theme';
-import { t } from '../i18n';
 
 const SECTIONS = [
   {
@@ -74,8 +70,7 @@ This disclaimer is non-removable and appears on all AI output delivered to clien
   },
 ];
 
-function AttorneyPrivacyScreen({ navigation }: any) {
-  const { impact, success, error: hapticError } = useHaptics();
+function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name: string) => void } }) {
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
@@ -106,6 +101,8 @@ function AttorneyPrivacyScreen({ navigation }: any) {
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
+          accessibilityLabel="Full Privacy Policy"
+          onPress={() => navigation?.navigate('PrivacyPolicy')}
         >
           <Text style={[s.fullPolicyLink, { color: COLORS.navy }]} maxFontSizeMultiplier={1.4}>Full Privacy Policy →</Text>
         </TouchableOpacity>
@@ -164,6 +161,8 @@ function AttorneyPrivacyScreen({ navigation }: any) {
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={[s.contactBtn, { backgroundColor: COLORS.navy }]}
+          accessibilityLabel="Contact legal team"
+          onPress={() => Linking.openURL('mailto:legal@justicegavel.app?subject=BAA%20%2F%20DPA%20request').catch(() => showToast('legal@justicegavel.app'))}
         >
           <Text style={s.contactBtnText} maxFontSizeMultiplier={1.4}>Contact Legal Team</Text>
         </TouchableOpacity>

@@ -13,15 +13,23 @@
 
 import React from 'react';
 import Animated, {
-  useSharedValue, useAnimatedStyle,
-  withTiming, withSpring, withDelay,
-  withSequence, withRepeat,
-  FadeIn, FadeOut, SlideInRight, SlideInDown,
-  SlideOutRight, SlideOutDown, ZoomIn, ZoomOut,
-  LinearTransition, Easing,
-  runOnJS,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  withSequence,
+  withRepeat,
+  FadeIn,
+  FadeOut,
+  SlideInRight,
+  SlideInDown,
+  SlideOutRight,
+  SlideOutDown,
+  ZoomIn,
+  ZoomOut,
+  LinearTransition,
 } from 'react-native-reanimated';
-import { Pressable, ViewStyle, StyleSheet } from 'react-native';
+import { Pressable, ViewStyle } from 'react-native';
 
 // ── Spring config presets ─────────────────────────────────────────────────
 export const SPRING = {
@@ -139,7 +147,7 @@ export const usePulse = (active = true) => {
     } else {
       opacity.value = withTiming(1);
     }
-  }, [active]);
+  }, [active, opacity]);
   return useAnimatedStyle(() => ({ opacity: opacity.value }));
 };
 

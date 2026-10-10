@@ -1,15 +1,10 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { apiErrorMessage } from '../services/api';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { cacheBailAgents, getCachedBailAgents } from '../services/offlineCache';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import { t, initLang } from '../i18n';
-import { haptic, hapticCall } from '../services/haptics';
-import React, { useState, useEffect, useRef, useCallback , useMemo} from 'react';
+import { hapticCall } from '../services/haptics';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useLatestRef } from '../hooks/useLatestRef';
 import {ActivityIndicator, Animated, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { getLocation, formatDistance } from '../services/location';
@@ -23,7 +18,6 @@ import { COLORS, useTheme } from '../constants/theme';
 // custom hook (`useCallPhone`) that returns the helper, so the
 // hooks run in a legal position and callers get the same function.
 function useCallPhone() {
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   return function callPhone(phone: string) {
     hapticCall();
@@ -38,6 +32,15 @@ function openDirections(lat: number, lng: number, name: string, onError?: () => 
 }
 
 
+/** Cities offered in the GPS-denied fallback box. */
+const CITY_SUGGESTIONS = [
+  'Nashville, TN', 'Memphis, TN', 'Knoxville, TN', 'Chattanooga, TN',
+  'Atlanta, GA', 'Houston, TX', 'Dallas, TX', 'Austin, TX',
+  'Charlotte, NC', 'Phoenix, AZ', 'Denver, CO', 'Seattle, WA',
+  'Detroit, MI', 'Baltimore, MD', 'Kansas City, MO', 'Milwaukee, WI',
+  'Albuquerque, NM', 'Louisville, KY', 'Indianapolis, IN',
+];
+
 // ── Skeleton placeholder card ─────────────────────────────────────────────
 function SkeletonCard({ colors }: { colors: ThemeColors }) {
   const shimmer = React.useRef(new Animated.Value(0)).current;
@@ -49,10 +52,8 @@ function SkeletonCard({ colors }: { colors: ThemeColors }) {
         Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
       ])
     ).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   return () => shimmer.stopAnimation();
-  }, []);
+  }, [shimmer]);
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
   const bg = colors?.bgSubtle || COLORS.bgSubtle;
   return (
@@ -90,29 +91,22 @@ function BailSearchScreen(): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [_fetchError, _setFetchError] = useState<string|null>(null);
 
 
-  // RESTORED: `declare var` -- type-only, no emitted JS, so each read threw
-
-  // on mount. Reinstated as real state; initial values inferred from usage.
-
-  const [filteredCities, setFilteredCities] = useState<any[]>([]);
-
-
-  // RESTORED: these were `declare var` declarations -- type-only, emitting no
-
-  // JavaScript, so reading them threw ReferenceError on mount. Reinstated as
-
-  // real component state. Initial values inferred from how each is used.
-
-  const [city, setCity] = useState<any>(null);
-
-  const [cityQuery, setCityQuery] = useState<any>(null);
+  const [cityQuery, setCityQuery] = useState('');
+  // Suggestions for the GPS-denied city box: matching known cities, plus the
+  // typed text itself so any city can be searched.
+  const filteredCities = useMemo(() => {
+    const q = cityQuery.trim().toLowerCase();
+    if (!q) return CITY_SUGGESTIONS;
+    const matches = CITY_SUGGESTIONS.filter(c => c.toLowerCase().includes(q));
+    return matches.some(c => c.toLowerCase() === q) ? matches : [cityQuery.trim(), ...matches];
+  }, [cityQuery]);
 
   const [locationDenied, setLocationDenied] = useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -123,14 +117,14 @@ function BailSearchScreen(): React.JSX.Element {
   const [searched, setSearched] = useState(false);
 
   // Auto-search on mount -- no button tap required
-// eslint-disable-next-line react-hooks/exhaustive-deps
-// eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { return () => { if (timerRef.current) clearTimeout(timerRef.current); }; }, []);
 
-  useEffect(() => { Promise.resolve(initLang()).then(() => search()).catch(() => {}); }, []);
+  // Mount-only auto-search; called through a ref so the effect does not
+  // re-run each render (search is re-created every render).
+  const searchRef = useLatestRef((cityOverride?: string) => search(cityOverride));
+  useEffect(() => { Promise.resolve(initLang()).then(() => searchRef.current()).catch(() => {}); }, [searchRef]);
 
   const [retryCount, setRetryCount] = useState(0);
-  const [showFilters, setShowFilters]       = React.useState(false);
   const [filterAvailNow, setFilterAvailNow] = React.useState(false);
   const [filterVerified, setFilterVerified] = React.useState(false);
   const [filterPaymentPlan, setFilterPaymentPlan] = React.useState(false);
@@ -177,9 +171,8 @@ function BailSearchScreen(): React.JSX.Element {
           console.warn('[BailSearch]', (apiErr as any)?.message ?? apiErr);
           attempt++;
           if (attempt >= 3) throw apiErr;
-          // eslint-disable-next-line no-promise-executor-return
           setStatus(`Connection issue -- retrying (${attempt}/3)…`);
-          await new Promise(r => timerRef.current = setTimeout(r, attempt * 800));
+          await new Promise<void>(r => { timerRef.current = setTimeout(r, attempt * 800); });
         }
       }
 
@@ -188,7 +181,7 @@ function BailSearchScreen(): React.JSX.Element {
       setSearched(true);
       setRetryCount(0);
       setStatus(res.data?.length === 0 ? 'No bail agents found in this area. Try a nearby city.' : '');
-    } catch (e: any) {
+    } catch {
       // Try offline cache on failure
       const { agents: cached } = (await getCachedBailAgents().catch(() => ({ agents: [] }))) as any;
       if (cached.length > 0) {
@@ -198,7 +191,6 @@ function BailSearchScreen(): React.JSX.Element {
         setLoading(false);
         return;
       }
-      const msg = apiErrorMessage(e, 'Connection error');
       setStatus('');
       setRetryCount(n => n + 1);
       // After 2 failed attempts, offer city fallback
@@ -421,6 +413,10 @@ function BailSearchScreen(): React.JSX.Element {
             placeholderTextColor={colors.textMuted}
             value={cityQuery}
             onChangeText={setCityQuery}
+            onSubmitEditing={() => {
+              const q = cityQuery.trim();
+              if (q) { setLocationDenied(false); setCityQuery(''); search(q); }
+            }}
             autoFocus
             returnKeyType="search"
           blurOnSubmit
@@ -428,12 +424,7 @@ function BailSearchScreen(): React.JSX.Element {
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel="Use My Location"
-            onPress={async () => {
-              try {
-                const loc = await import('../services/location').then(m => m.detectAndSaveUserState());
-                if ((loc as any)?.city) setCity((loc as any).city);
-              } catch { /* location unavailable */ }
-            }}
+            onPress={() => { search(); }}
             style={{ flexDirection:'row', alignItems:'center', gap:6,
               paddingVertical:8, paddingHorizontal:12,
               backgroundColor:colors.infoBg, borderRadius:20, marginTop:6 }}

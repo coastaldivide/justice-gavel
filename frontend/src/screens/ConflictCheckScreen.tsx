@@ -1,5 +1,4 @@
 import { COLORS } from '../constants/theme';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
  * ConflictCheckScreen.tsx — Attorney conflict of interest check
@@ -7,14 +6,13 @@ import { useToast } from '../components/ToastProvider';
  * Legal Pro + Esquire tier only.
  */
 import React, { useCallback, useState } from 'react';
-import { KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
+import { LayoutAnimation } from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import {
   View, Text, TextInput, TouchableOpacity, RefreshControl,
   ActivityIndicator, StyleSheet,
 } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
-import { t } from '../i18n';
 
 interface ConflictResult {
   found: boolean;
@@ -22,10 +20,9 @@ interface ConflictResult {
   checked: number;
 }
 
-interface Props { navigation: any; }
 
-function ConflictCheckScreen({ navigation }: Props) {
-  const { impact, success, error: hapticError } = useHaptics();
+
+function ConflictCheckScreen() {
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
@@ -57,7 +54,7 @@ function ConflictCheckScreen({ navigation }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [parties, navigation]);
+  }, [parties, showToast]);
 
   return (
     <View style={styles.screen}>

@@ -10,15 +10,14 @@
  *   <Text style={{ fontSize: r.font(16) }}>
  */
 
-import { Dimensions, Platform, PixelRatio, ScaledSize } from 'react-native';
+import { Dimensions, Platform, ScaledSize } from 'react-native';
 
 // ── Screen dimensions ──────────────────────────────────────────────────────────
-let { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+let SCREEN_W = Dimensions.get('window').width;
 
 // Re-compute on orientation change
 Dimensions.addEventListener('change', ({ window }: { window: ScaledSize }) => {
   SCREEN_W = window.width;
-  SCREEN_H = window.height;
 });
 
 // ── Platform flags ─────────────────────────────────────────────────────────────

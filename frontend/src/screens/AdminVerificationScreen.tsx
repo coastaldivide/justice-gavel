@@ -1,6 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
 /**
  * AdminVerificationScreen -- Bar Verification Approval Queue
@@ -15,12 +14,11 @@ import { AppIcon } from '../components/AppIcon';
  * Works offline: shows cached pending list from last load.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useState, useEffect, useCallback, useMemo} from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, ActivityIndicator, LayoutAnimation} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, LayoutAnimation } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
-import { t } from '../i18n';
 
 interface PendingAtty {
   user_id:      number;
@@ -35,7 +33,6 @@ interface PendingAtty {
 function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -140,7 +137,7 @@ confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.'
         </View>
       )}
 
-      {pending.map((atty, i) => (
+      {pending.map((atty) => (
         <View
           key={atty.user_id}
           style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}

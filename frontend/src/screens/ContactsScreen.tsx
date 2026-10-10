@@ -1,30 +1,21 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import React, { useRef, useEffect, useState, useCallback} from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setContacts, getContacts } from '../services/storage';
 import {  useTheme, COLORS } from '../constants/theme';
-import { t } from '../i18n';
 
 interface Contact { value: string; label: string; }
 
 function ContactsScreen(): React.JSX.Element {
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
-  const [submitting, setSubmitting] = React.useState(false);
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
 
-  const [formError, setFormError] = useState('');
-  const [loading, setLoading] = useState(false);
   const [contacts, setLocalContacts] = useState<Contact[]>([
     { value: '', label: 'Contact 1' },
     { value: '', label: 'Contact 2' },

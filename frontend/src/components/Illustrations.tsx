@@ -16,11 +16,7 @@
  */
 
 import React, { memo } from 'react';
-import Svg, {
-  Circle, Rect, Path, G, Ellipse, Line, Polygon, Defs,
-  LinearGradient as SvgLinearGradient, Stop, ClipPath,
-} from 'react-native-svg';
-import { View } from 'react-native';
+import Svg, { Circle, Rect, Path, Ellipse, Line } from 'react-native-svg';
 
 interface IllustrationProps {
   width?: number;
@@ -98,7 +94,7 @@ export function IllustrationBailSuccess({ width = 200, height = 170 }: Illustrat
 // ── Rights Being Read ─────────────────────────────────────────────────────────
 export function IllustrationRights({ width = 200, height = 180 }: IllustrationProps) {
   return (
-    <Svg width={200} height={180} viewBox="0 0 200 180">
+    <Svg width={width} height={height} viewBox="0 0 200 180">
       {/* Document */}
       <Rect x="45" y="25" width="110" height="140" rx="10" fill="#fff" stroke="#C9DAEA" strokeWidth="1.5" />
       <Rect x="45" y="25" width="110" height="32" rx="10" fill="#042C53" />
@@ -125,7 +121,7 @@ export function IllustrationRights({ width = 200, height = 180 }: IllustrationPr
 // ── Crisis Support ────────────────────────────────────────────────────────────
 export function IllustrationCrisis({ width = 200, height = 170 }: IllustrationProps) {
   return (
-    <Svg width={200} height={170} viewBox="0 0 200 170">
+    <Svg width={width} height={height} viewBox="0 0 200 170">
       {/* Phone */}
       <Rect x="70" y="30" width="60" height="110" rx="14" fill="#042C53" />
       <Rect x="76" y="40" width="48" height="82" rx="6" fill="#EEF3FA" />
@@ -149,7 +145,7 @@ export function IllustrationCrisis({ width = 200, height = 170 }: IllustrationPr
 // ── Document Generated ────────────────────────────────────────────────────────
 export function IllustrationDocumentReady({ width = 200, height = 170 }: IllustrationProps) {
   return (
-    <Svg width={200} height={170} viewBox="0 0 200 170">
+    <Svg width={width} height={height} viewBox="0 0 200 170">
       {/* Paper stack shadow */}
       <Rect x="55" y="40" width="95" height="120" rx="8" fill="#C9DAEA" transform="translate(5,5)" />
       {/* Paper */}
@@ -178,7 +174,7 @@ export function IllustrationDocumentReady({ width = 200, height = 170 }: Illustr
 // ── Error State ───────────────────────────────────────────────────────────────
 export function IllustrationError({ width = 200, height = 170 }: IllustrationProps) {
   return (
-    <Svg width={200} height={170} viewBox="0 0 200 170">
+    <Svg width={width} height={height} viewBox="0 0 200 170">
       <Ellipse cx="100" cy="155" rx="65" ry="8" fill="#F5E8E8" />
       {/* Triangle warning */}
       <Path d="M100 30 L170 150 L30 150 Z" fill="#FFEBEE" stroke="#C62828" strokeWidth="2" strokeLinejoin="round" />

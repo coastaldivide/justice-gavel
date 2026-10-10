@@ -1,14 +1,10 @@
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
-import React, { useState, useCallback} from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, ActivityIndicator, LayoutAnimation} from 'react-native';
 import { COLORS } from '../constants/theme';
 import { api } from '../services/api';
-import { t } from '../i18n';
 
 const VERSION = '2026-01-01.1';
 
@@ -45,7 +41,6 @@ interface Props {
 }
 
 function LegalDisclaimerScreen({ onAccepted }: Props) {
-  const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);

@@ -395,7 +395,7 @@ describe('ONB. OnboardingScreen — browseNow', () => {
     expect(src).toContain('browseNow');
     expect(src).toContain('AsyncStorage');
     expect(src).toContain('onboarding_done');
-    expect(src).toContain('setUserState');
+    expect(src).toContain('detectAndSaveUserState');
   });
 });
 

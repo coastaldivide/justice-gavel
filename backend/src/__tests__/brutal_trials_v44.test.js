@@ -181,7 +181,7 @@ describe('S6c. SearchScreen — Global Search', () => {
     expect(src).toContain('Global search across all user data');
     expect(src).toContain('query');
     expect(src).toContain('results');
-    expect(src).toContain('fetchError');
+    expect(src).toContain('searchError');
     expect(src).toContain('/search');
   });
 });
@@ -212,7 +212,7 @@ describe('S6e. BookingScreen — 3-Step Consultation Booking', () => {
   test('S6e-02: APIs: /attorney/profile/availability + /consultations/book + /callback-request', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BookingScreen.tsx', 'utf8');
-    expect(src).toContain('/attorney/profile/availability');
+    expect(src).toContain('/consultations/slots/');
     expect(src).toContain('/consultations/book');
     expect(src).toContain('/consultations/callback-request');
   });
@@ -226,7 +226,7 @@ describe('S6f. CrisisResourcesScreen — Crisis Line Directory', () => {
     expect(src).toContain('CRISIS_LINE');
     expect(src).toContain('dbLines');
     expect(src).toContain('isLoading');
-    expect(src).toContain('fetchError');
+    expect(src).toContain('directoryLines');
     expect(src).toContain('mountedRef');
   });
 });

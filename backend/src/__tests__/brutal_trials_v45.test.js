@@ -198,7 +198,7 @@ describe('S6. Screens — 15-19 Hit Range', () => {
     expect(src).toContain('/checkins/submit');
     expect(src).toContain('phase');
     expect(src).toContain('enrollment');
-    expect(src).toContain('todayStatus');
+    expect(src).toContain('checked_in_today');
     expect(src).toContain('RefreshControl');
     const lines = src.split('\n').length;
     expect(lines).toBeGreaterThan(500);

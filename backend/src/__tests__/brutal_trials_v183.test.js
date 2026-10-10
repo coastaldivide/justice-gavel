@@ -49,7 +49,7 @@ describe('SVC. Service Files Complete Audit', () => {
   test('SVC-04: api.ts has circuit breaker + error normalization + 401 handler', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/services/api.ts','utf8');
-    expect(src).toMatch(/checkCircuit|circuitBreaker|circuit/i);
+    expect(src).toContain('withRetry'); // dead circuit-breaker code removed (step 2)
     expect(src).toContain('ECONNABORTED');
     expect(src).toContain("check your connection");
     expect(src).toContain('error?.response?.data?.error');

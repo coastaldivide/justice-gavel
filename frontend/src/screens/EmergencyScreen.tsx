@@ -1,23 +1,27 @@
-import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { AppIcon } from '../components/AppIcon';
 /**
  * EmergencyScreen -- SOS alert + quick actions + rights cards
  * Designed for panicked, possibly impaired users.
  * Large buttons. Plain language. Haptic feedback on every tap.
  */
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { hapticImpact, hapticNotification } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
-import React, { useState, useEffect, useRef, useMemo} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Linking, Alert, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Linking,
+  ActivityIndicator,
+  RefreshControl,
+  LayoutAnimation,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocation } from '../services/location';
 import { getContacts } from '../services/storage';
 import { api } from '../services/api';
-import { t } from '../i18n';
 import {  useTheme, COLORS } from '../constants/theme';
 
 type Phase = 'ready' | 'countdown' | 'sending' | 'done' | 'error';
@@ -29,9 +33,8 @@ const RIGHTS_CARDS = [
   { icon: '📞', title: 'Your phone call', body: 'You have the right to a call. Call family or a lawyer. Do not discuss your case on the call.' },
 ];
 
-function EmergencyScreen({ route, navigation }: ScreenProps) {
+function EmergencyScreen({ navigation }: ScreenProps) {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -39,8 +42,8 @@ function EmergencyScreen({ route, navigation }: ScreenProps) {
   return () => { mountedRef.current = false; };
   }, []);
 
-  const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
+  const { colors } = useTheme();
+  const styles = makeStyles();
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -50,7 +53,6 @@ function EmergencyScreen({ route, navigation }: ScreenProps) {
   const [phase, setPhase]       = useState<Phase>('ready');
   const [countdown, setCount]   = useState(5);
   const [result, setResult]     = useState('');
-  const [loading, setLoading] = useState(false);
   const [contacts, setContacts] = useState<string[]>([]);
   const [sendingSOS, setSendingSOS] = useState(false);
   const timerRef = useRef<any>(null);
@@ -131,6 +133,7 @@ function EmergencyScreen({ route, navigation }: ScreenProps) {
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.stripBtn, { backgroundColor: colors.emergencyDark }]}
+          accessibilityLabel="Call 911" onPress={() => call('911')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>🚨  CALL 911</Text>
         </TouchableOpacity>
@@ -293,7 +296,7 @@ function EmergencyScreen({ route, navigation }: ScreenProps) {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   scroll: { paddingBottom: 40 },
 
   emergencyStrip: {
@@ -371,5 +374,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
 export default React.memo(EmergencyScreen);

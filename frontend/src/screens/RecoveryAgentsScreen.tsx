@@ -1,11 +1,7 @@
 import { COLORS } from '../constants/theme';
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { SkeletonLoader } from '../components/SkeletonLoader';
 import { AppIcon } from '../components/AppIcon';
-import ScreenHeader from '../components/ScreenHeader';
 /**
  * RecoveryAgentsScreen
  *
@@ -20,15 +16,12 @@ import ScreenHeader from '../components/ScreenHeader';
  * - Clear disclaimer and state law notice on every result
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import type { ScreenProps } from '../types/navigation';
-import {View, Text, TouchableOpacity, StyleSheet, Linking, Alert, ActivityIndicator, Switch, ScrollView, LayoutAnimation} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking, ActivityIndicator, Switch, ScrollView, LayoutAnimation } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { hapticImpact } from '../utils/webCompat';
 import * as Location from 'expo-location';
 import { api } from '../services/api';
 import {useTheme} from '../constants/theme';
-import EmergencyStrip from '../components/EmergencyStrip';
-import { t } from '../i18n';
 
 type Agent = {
   id: number;
@@ -63,9 +56,8 @@ const US_STATES = [
   // Not included: IL, KY, DC -- commercial bail effectively banned there
 ];
 
-function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
+function RecoveryAgentsScreen(): React.JSX.Element {
   const { confirm } = useConfirm();
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
 
@@ -120,13 +112,13 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
       if (!mountedRef.current) return;
       setAgents(res.data?.agents || []);
       setStateLaw(res.data?.state_law || null);
-    } catch (e: unknown) {
+    } catch {
       if (!mountedRef.current) return;
       setError('Could not load agents. Check your connection and try again.');
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [selectedState, armedOnly, userLat, userLng]);
+  }, [selectedState, armedOnly, userLat, userLng, showToast]);
 
   const onRefresh = useCallback(async () => {
     if (!selectedState) return;  // no search to refresh if nothing selected
@@ -136,15 +128,15 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
   }, [selectedState, search]);
 
 
-  const call = (phone: string, name: string) => {
+  const call = useCallback((phone: string, name: string) => {
     hapticImpact();
     confirm(`Call ${name}?`, phone, { confirmLabel: 'Call' }).then(ok => { if (ok) Linking.openURL(`tel:${phone.replace(/[^0-9]/g,'')}`).catch(() => {}); });
-  };
+  }, [confirm]);
 
-  const openWeb = (url: string) => {
+  const openWeb = useCallback((url: string) => {
     hapticImpact();
     Linking.openURL(url.startsWith('http') ? url : `https://${url}`).catch(() => showToast('Action unavailable.', 'error'));
-  };
+  }, [showToast]);
 
   const renderAgent = useCallback(({ item }: { item: Agent }) => (
     <View style={[styles.agentCard, { backgroundColor: colors.bgCard,
@@ -254,7 +246,7 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
         ) : null}
       </View>
     </View>
-  ), [colors]);
+  ), [colors, call, openWeb]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}

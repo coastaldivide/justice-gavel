@@ -1,10 +1,5 @@
-import { useNetworkError } from '../hooks/useNetworkError';
-import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
  * LawyerProfileScreen -- Full attorney profile
@@ -16,11 +11,11 @@ import { AppIcon } from '../components/AppIcon';
  * Navigation params: { lawyerId: number, lawyerData?: object }
  */
 import React, { useState, useCallback, useEffect } from 'react';
-import { ActivityIndicator, Alert, Linking, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, RefreshControl, LayoutAnimation} from 'react-native';
-import { api } from '../services/api';
+import { ActivityIndicator, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, RefreshControl, LayoutAnimation } from 'react-native';
+import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
-import { hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
+import { hapticImpact, RNShare } from '../utils/webCompat';
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
   const filled = Math.round(rating);
@@ -42,7 +37,6 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
 }
 
 import Analytics from '../services/analytics';
-import { t } from '../i18n';
 function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
 
@@ -62,8 +56,8 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         rating: userRating,
         comment: reviewText.trim(),
         created_at: new Date().toISOString() }, ...prev]);
-    } catch {
-      showToast('Check your connection and try again.');
+    } catch (e: any) {
+      showToast(apiErrorMessage(e, 'Check your connection and try again.'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -74,8 +68,6 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
   };
   const { colors } = useTheme();
   const mountedRef = React.useRef(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     if (!lawyerId) return;
     api.get(`/match/profile/${lawyerId}`)
@@ -83,25 +75,29 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
       .catch(() => {});
   }, [lawyerId]);
 
-    useEffect(() => {
+  useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (lawyer?.id) Analytics.lawyerView(lawyer.id, lawyer.city || '', lawyer.specialties || ''); return () => { mountedRef.current = false; }; }, []);
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const [lawyer, setLawyer]   = useState<any>(preload || null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [jtbProfile, setJtbProfile] = React.useState<any>(null);
 
-  // Retry logic: exponential backoff on API failures
-  const [retryCount, setRetryCount] = React.useState(0);
-  const handleRetry = React.useCallback(() => {
-    setRetryCount(c => c + 1);
-  }, []);
   const [loading, setLoading] = useState(!preload);
   const [userRating,  setUserRating]  = useState(0);
   const [reviewText,  setReviewText]  = useState('');
   const [submitting,  setSubmitting]  = useState(false);
   const [submitted,   setSubmitted]   = useState(false);
   const [showReview,  setShowReview]  = useState(false);
+
+  // Analytics: one profile view per lawyer id (not on every refresh of the object).
+  const viewedIdRef = React.useRef<unknown>(null);
+  useEffect(() => {
+    if (!lawyer?.id || viewedIdRef.current === lawyer.id) return;
+    viewedIdRef.current = lawyer.id;
+    Analytics.lawyerView(lawyer.id, lawyer.city || '', lawyer.specialties || '');
+  }, [lawyer]);
 
   const [refreshing, setRefreshing] = useState(false);
   const loadProfile = useCallback(async (forceLawyer = false) => {
@@ -143,8 +139,8 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
 
   const handleCall = useCallback(() => {
     if (!lawyer?.phone) return;
-    Linking.openURL(`tel:${lawyer.phone.replace(/\D/g,'')}`).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0); });
-  }, [lawyer]);
+    Linking.openURL(`tel:${lawyer.phone.replace(/\D/g,'')}`).catch(() => { showToast('Action failed. Please try again.', 'error'); });
+  }, [lawyer, showToast]);
 
   const handleShare = async () => {
     if (!lawyer) return;
@@ -374,11 +370,63 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         )}
 
         {/* Reviews */}
-        {reviews.length > 0 && (
+        {(
           <View style={s.section}>
             <Text maxFontSizeMultiplier={1.4} style={[s.sectionTitle, { color:colors.textPrimary }]}>
               Reviews
             </Text>
+            {reviews.length > 0 && (
+              <View style={{ marginBottom: 10 }}>
+                <StarRating
+                  rating={reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / reviews.length}
+                  count={reviews.length}
+                />
+              </View>
+            )}
+            {submitted ? (
+              <Text testID="review-submitted" maxFontSizeMultiplier={1.4} style={{ fontSize: 13, color: colors.legal, marginBottom: 10 }}>
+                ✓ Thanks -- your review was posted.
+              </Text>
+            ) : showReview ? (
+              <View testID="review-form" style={[s.reviewCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <TouchableOpacity key={n} accessibilityRole="button" accessibilityLabel={`${n} star${n > 1 ? 's' : ''}`}
+                      accessibilityState={{ selected: userRating === n }} onPress={() => setUserRating(n)}
+                      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+                      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 24, color: colors.gold }}>{n <= userRating ? '★' : '☆'}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput
+                  accessibilityLabel="Review comment (optional)"
+                  value={reviewText}
+                  onChangeText={setReviewText}
+                  placeholder="Share your experience (optional)"
+                  placeholderTextColor={colors.textMuted}
+                  multiline
+                  maxLength={1000}
+                  style={{ minHeight: 60, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10,
+                    color: colors.textPrimary, textAlignVertical: 'top', marginBottom: 10 }}
+                />
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <TouchableOpacity accessibilityRole="button" accessibilityLabel="Post review"
+                    disabled={userRating === 0 || submitting} onPress={submitReview}
+                    style={[s.actionBtn, { flex: 1, backgroundColor: colors.navy, opacity: userRating === 0 || submitting ? 0.5 : 1 }]}>
+                    <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>{submitting ? 'Posting…' : 'Post review'}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cancel review"
+                    onPress={() => setShowReview(false)} style={[s.actionBtn, { paddingHorizontal: 16 }]}>
+                    <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color: colors.textSecond }]}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Write a review" testID="write-review-button"
+                onPress={() => setShowReview(true)} style={{ paddingVertical: 8, marginBottom: 8 }}>
+                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, fontWeight: '700', color: colors.navy }}>✍️ Write a review</Text>
+              </TouchableOpacity>
+            )}
             {reviews.length === 0 ? (
               <Text style={{color: colors.textMuted, textAlign: 'center', padding: 16}}>No reviews yet</Text>
             ) : reviews.map((r, i) => (
@@ -417,7 +465,8 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={[s.actionBtn, { backgroundColor:colors.legal }]}
+          accessibilityHint="Opens a message thread with this attorney" style={[s.actionBtn, { backgroundColor:colors.legal }]}
+          accessibilityLabel="Send Message" onPress={handleMessage}
                   >
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>💬 Send Message</Text>
         </TouchableOpacity>

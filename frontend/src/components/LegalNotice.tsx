@@ -15,8 +15,8 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
-import { useTheme, COLORS, FONTS, FONT } from '../constants/theme';
+import { View, Text, StyleSheet, Linking } from 'react-native';
+import { COLORS, FONT } from '../constants/theme';
 
 type Context = 'general' | 'motions' | 'research' | 'forms' | 'expungement';
 
@@ -34,7 +34,6 @@ const NOTICES: Record<Context, string> = {
 };
 
 function LegalNotice({ context = 'general', style }: Props) {
-  const { colors, isDark } = useTheme()
   const s = styles(COLORS, FONT);
 
   return (

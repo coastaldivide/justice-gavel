@@ -28,19 +28,9 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { COLORS, FONTS, FONT } from '../constants/theme';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  StyleSheet,
-  Linking,
-  Platform,
-  Image,
-} from 'react-native';
+import { COLORS, FONT } from '../constants/theme';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, Linking, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from '../constants/theme';
 
 // ── Versioning ────────────────────────────────────────────────────────────────
 export const CONSENT_VERSION = '2.0';
@@ -59,7 +49,7 @@ export async function hasValidConsent(): Promise<boolean> {
 export async function storeConsent(): Promise<void> {
   try {
     await AsyncStorage.setItem(CONSENT_KEY, 'true');
-  } catch (_) {
+  } catch {
     // Non-fatal — if storage fails, consent is re-asked on next launch
   }
 }
@@ -77,7 +67,6 @@ interface Props {
 }
 
 function LegalDisclaimerModal({ visible, onAccept }: Props) {
-  const { colors, isDark } = useTheme()
   const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {

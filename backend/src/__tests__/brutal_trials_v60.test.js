@@ -175,7 +175,7 @@ describe('FV3. FirmVerticalScreen — submitMission + saveConfig', () => {
     expect(src).toContain('submitMission');
     expect(src).toContain('missionEIN');
     expect(src).toContain('missionWeb');
-    expect(src).toContain('Alert');
+    expect(src).toContain('Provide your EIN or organization website');
   });
   test('FV3-02: saveConfig PATCHes /firm-verticals/mine with vertical config', async () => {
     const fs = await import('fs');

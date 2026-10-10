@@ -7,6 +7,10 @@ import React from 'react';
 import { render, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { ThemeProvider } from '../../constants/theme';
 import { ToastProvider } from '../../components/ToastProvider';
+import AgeGateScreen from '../../screens/AgeGateScreen';
+import LoginScreen from '../../screens/LoginScreen';
+import OfflineStatusScreen from '../../screens/OfflineStatusScreen';
+import { usePaymentSheet, PAYMENTS_COMING_SOON, paymentsEnabled } from '../../payments';
 
 const navigation: any = {
   navigate: jest.fn(), goBack: jest.fn(), canGoBack: jest.fn(() => false), setOptions: jest.fn(),
@@ -19,7 +23,6 @@ function wrap(node: React.ReactElement) {
 
 describe('render smoke', () => {
   it('AgeGateScreen renders and verifies an adult birth year', async () => {
-    const AgeGateScreen = require('../../screens/AgeGateScreen').default;
     const onVerified = jest.fn();
     wrap(<AgeGateScreen onVerified={onVerified} />);
     fireEvent.changeText(screen.getByLabelText('Enter your birth year'), '1990');
@@ -28,7 +31,6 @@ describe('render smoke', () => {
   });
 
   it('AgeGateScreen blocks under-18 users', async () => {
-    const AgeGateScreen = require('../../screens/AgeGateScreen').default;
     const onVerified = jest.fn();
     wrap(<AgeGateScreen onVerified={onVerified} />);
     fireEvent.changeText(screen.getByLabelText('Enter your birth year'), String(new Date().getFullYear() - 10));
@@ -37,7 +39,6 @@ describe('render smoke', () => {
   });
 
   it('LoginScreen shows a friendly error when the API is unreachable', async () => {
-    const LoginScreen = require('../../screens/LoginScreen').default;
     wrap(<LoginScreen navigation={navigation} />);
     fireEvent.changeText(screen.getByTestId('login-email-input'), 'user@example.com');
     fireEvent.changeText(screen.getByTestId('login-password-input'), 'secret');
@@ -46,14 +47,12 @@ describe('render smoke', () => {
   });
 
   it('OfflineStatusScreen lists offline tools and navigates', () => {
-    const OfflineStatusScreen = require('../../screens/OfflineStatusScreen').default;
     wrap(<OfflineStatusScreen navigation={navigation} />);
     fireEvent.press(screen.getByLabelText('Open Know Your Rights Card'));
     expect(navigation.navigate).toHaveBeenCalledWith('RightsCard');
   });
 
   it('payments layer reports "coming soon" without a Stripe key', async () => {
-    const { usePaymentSheet, PAYMENTS_COMING_SOON, paymentsEnabled } = require('../../payments');
     expect(paymentsEnabled).toBe(false);
     let api: any;
     function Probe() { api = usePaymentSheet(); return null; }

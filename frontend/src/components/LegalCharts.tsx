@@ -11,9 +11,7 @@
 
 import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, Path, G, Rect, Text as SvgText, Defs,
-              LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
-import * as Haptics from 'expo-haptics';
+import Svg, { Path, Text as SvgText } from 'react-native-svg';
 import { COLORS } from '../constants/theme';
 import { AppIcon, ICONS } from './AppIcon';
 
@@ -29,7 +27,6 @@ export function LethalilyGauge({ score, maxScore = 11, size = 160 }: LethalilyGa
   const r        = size * 0.38;
   const cx       = size / 2;
   const cy       = size / 2;
-  const circumf  = 2 * Math.PI * r;
   // Start at -220 degrees, sweep 260 degrees (a wide arc opening at bottom)
   const startAngle = -220 * (Math.PI / 180);
   const sweepAngle = 260 * (Math.PI / 180);

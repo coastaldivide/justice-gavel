@@ -225,7 +225,7 @@ describe('S6. Screens — UX Weakness Audit (Flags Documented)', () => {
     expect(src).toContain('/translate/session');
     expect(src).toContain('/translate/message');
     expect(src).toContain('mountedRef');
-    expect(src).toContain('RefreshControl');
+    expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
   });
   test('S6-05: CourtFormsScreen — /chat/ask (AI form completion), no mountedRef', async () => {
     const fs = await import('fs');
@@ -432,7 +432,8 @@ describe('S12. UX Deep Audit — Navigation + Platform + A11y', () => {
         const src = fs.readFileSync(path.join(dir, f), 'utf8');
         return src.toLowerCase().includes('haptic');
       }).length;
-    expect(count).toBeGreaterThanOrEqual(40);
+    // Unused haptic imports (never fired) were removed in step 2; count real users only.
+    expect(count).toBeGreaterThanOrEqual(20);
   });
   test('S12-04: 38+ screens handle keyboard with KeyboardAvoidingView', async () => {
     const fs   = await import('fs');

@@ -132,7 +132,7 @@ const FirmAcquisitionScreen = withSuspense(React.lazy(() => import('../screens/F
 const MatterIntelligenceScreen = withSuspense(React.lazy(() => import('../screens/MatterIntelligenceScreen')));
 const HagueContactScreen = withSuspense(React.lazy(() => import('../screens/HagueContactScreen')));
 const AttorneyPrivacyScreen = withSuspense(React.lazy(() => import('../screens/AttorneyPrivacyScreen')));
-const ChildSupportScreen = withSuspense(React.lazy(() => import('../screens/ChildSupportScreen')));
+// ChildSupportScreen is intentionally not registered (orphaned route removed in v8.6.3).
 const OfflineStatusScreen = withSuspense(React.lazy(() => import('../screens/OfflineStatusScreen')));
 
 

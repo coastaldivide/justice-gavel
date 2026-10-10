@@ -1,14 +1,9 @@
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 
 import type { ScreenProps } from '../types/navigation';
-import {ActivityIndicator, Alert, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
+import { ActivityIndicator, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, LayoutAnimation, InteractionManager } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 /**
  * BondsmanDashboardScreen -- Real-time lead feed for bail bondsmen
@@ -19,15 +14,14 @@ import { FlashList } from '@shopify/flash-list';
  * amount comes from the server (backend/src/routes/billing/leadFee.js).
  */
 
-import React, { useCallback, useEffect, useState, useMemo} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
-import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { ScreenCapture } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 import { useAuthGate } from '../components/AuthGate';
-import { t } from '../i18n';
 import { leadFeeLabel } from '../constants/leadFee';
 import { SampleRecordBadge } from '../components/SampleRecordBadge';
 
@@ -154,7 +148,6 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
 // ── Profile setup modal ───────────────────────────────────────────────────────
 function ProfileModal({ visible, onClose, onSaved }: any) {
   const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
   const [company, setCompany] = useState('');
   const [license, setLicense]         = useState('');
   const [licenseState, setLicenseState] = useState('');
@@ -172,7 +165,7 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
         counties: counties.split(',').map(c => c.trim().toLowerCase()).filter(Boolean),
         states: licenseState ? [licenseState.toUpperCase()] : []});
       onSaved();
-    } catch (e: any) {
+    } catch {
       showToast('Check your internet and pull down to refresh.');
     } finally {
       setSaving(false);
@@ -201,8 +194,7 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
             placeholderTextColor={COLORS.textMuted}
           returnKeyType="next"
           blurOnSubmit
-        maxLength={15}
-        keyboardType="numeric"
+          maxLength={120}
         />
           <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>License Number</Text>
           <TextInput
@@ -211,6 +203,20 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
             onChangeText={setLicense}
             placeholder="TN-12345"
             placeholderTextColor={COLORS.textMuted}
+          returnKeyType="next"
+          blurOnSubmit
+        />
+          <Text maxFontSizeMultiplier={1.4} style={styles.fieldLabel}>License State</Text>
+          <TextInput
+            testID="bondsman-license-state"
+            style={styles.input}
+            value={licenseState}
+            onChangeText={v => setLicenseState(v.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase())}
+            placeholder="TN"
+            placeholderTextColor={COLORS.textMuted}
+            autoCapitalize="characters"
+            maxLength={2}
+            accessibilityLabel="License state (2-letter code)"
           returnKeyType="next"
           blurOnSubmit
         />
@@ -249,7 +255,6 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
 // ── Accept confirmation modal ─────────────────────────────────────────────────
 function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
   if (!lead) return null;
-  const tier = bailTier(lead.bail_amount);
   return (
     <Modal accessibilityViewIsModal={true} visible={visible} animationType="fade" transparent
         onRequestClose={() => {}}>
@@ -310,7 +315,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
 function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
 
   // Prevent screenshots on this sensitive screen
@@ -340,7 +345,6 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
   const [filterHours, setFilterHours] = useState(48);
   const [badgeStatus, setBadgeStatus] = useState<any>(null);
   const [badgeLoading, setBadgeLoading] = useState(false);
-  const [availToggle, setAvailToggle] = React.useState<'accepting'|'limited'|'closed'>('accepting');
 
   const loadProfile = useCallback(async () => {
     try {
@@ -362,7 +366,7 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       if ((res.data?.leads || []).length === 0) {
         setStatusMsg('No new leads in the last ' + filterHours + ' hours.');
       }
-    } catch (e: any) {
+    } catch {
       setStatusMsg('Could not load leads. Pull down to retry.');
     } finally {
       setLoading(false);
@@ -378,15 +382,18 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
         // Will show AuthGateModal via requireAuth when they tap any action
       } else {
         loadProfile().then(p => { if (!p) setShowProfile(true); });
-        loadLeads();
         api.get('/billing/bondsman/verified-badge/status')
           .then(r => setBadgeStatus(r.data || null))
           .catch((e) => { __DEV__ && console.warn(e?.message); });
       }
     });
-  }, [loadLeads, loadProfile]);
+  }, [loadProfile]);
 
-  useEffect(() => { loadLeads(); }, [filterHours, loadLeads]);
+  // Lead feed: loads on focus (so it is fresh when returning to the screen) and
+  // whenever the hours filter changes (loadLeads is re-created with it).
+  useFocusEffect(useCallback(() => {
+    secureStorage.getToken().then(token => { if (token) loadLeads(); }).catch(() => {});
+  }, [loadLeads]));
 
   const handleAccept = (lead: Record<string,unknown>) => requireAuth(() => setSelectedLead(lead));
 
@@ -408,7 +415,7 @@ confirm('Cancel Badge?', 'Your Verified badge will be removed from all listings.
           await api.post('/billing/bondsman/verified-badge/cancel');
           setBadgeStatus({ active: false, verified_badge: false });
           showToast('Badge subscription cancelled.');
-        } catch (e: any) {
+        } catch {
           showToast('Check your internet and pull down to refresh.');
             }
     })
@@ -423,7 +430,7 @@ confirm('Cancel Badge?', 'Your Verified badge will be removed from all listings.
 showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.`, 'success');
       loadLeads(true);
       setAcceptedMsg(`Lead accepted. ${res.data?.fee_charged || ''} charged.`);
-    } catch (e: any) {
+    } catch {
       showToast('Could not process payment. Check your card details and try again.');
     } finally {
       setAccepting(false);

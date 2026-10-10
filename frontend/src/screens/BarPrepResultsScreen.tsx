@@ -112,8 +112,8 @@ function AnswerRow({
 
 export default function BarPrepResultsScreen({ route, navigation }: Props) {
   const {
-    session_id, score_pct, correct, total, mode,
-    subject_id, answers, questions, timed_out,
+    score_pct, correct, total, mode,
+    answers, questions, timed_out,
   } = (route.params ?? {}) as Props['route']['params'];
 
   // Build a quick-lookup: question_id → answer data

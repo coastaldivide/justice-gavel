@@ -16,9 +16,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-import {
-  View, Text, StyleSheet, Animated, Platform, TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -55,7 +53,7 @@ const ICONS: Record<ToastType, string> = {
   info:    'ℹ',
 };
 
-function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
+function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number) => void }) {
   const opacity = useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -63,8 +61,8 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
       Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
       Animated.delay(2600),
       Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-    ]).start(onDismiss);
-  }, []);
+    ]).start(() => onDismiss(toast.id));
+  }, [opacity, onDismiss, toast.id]);
 
   return (
     <Animated.View style={[styles.toast, { opacity }]}>
@@ -72,7 +70,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
         <Text style={styles.icon}>{ICONS[toast.type]}</Text>
       </View>
       <Text style={styles.message} numberOfLines={3}>{toast.message}</Text>
-      <TouchableOpacity onPress={onDismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+      <TouchableOpacity onPress={() => onDismiss(toast.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
         <Text style={styles.close}>✕</Text>
       </TouchableOpacity>
     </Animated.View>
@@ -99,7 +97,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <View style={[styles.container, { bottom: insets.bottom + 16 }]} pointerEvents="box-none">
         {toasts.map(t => (
-          <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />
+          <ToastItem key={t.id} toast={t} onDismiss={dismiss} />
         ))}
       </View>
     </ToastContext.Provider>

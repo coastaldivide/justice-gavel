@@ -318,10 +318,9 @@ describe('4. FloatingSOSButton — Pulse/Ring Animation Model', () => {
   test('4-06: FloatingSOSButton fires haptic on press', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/FloatingSOSButton.tsx', 'utf8');
-    // FloatingSOSButton imports expo-haptics directly
-    expect(src).toContain("import * as Haptics from 'expo-haptics'");
-    // FloatingSOSButton imports Haptics module — the object is available for use
-    expect(src).toContain('expo-haptics');
+    // Heavy haptic fires on press (web-safe helper from utils/webCompat)
+    expect(src).toContain("hapticImpact('Heavy')");
+    expect(src).toContain('onPress={() => { hapticImpact');
   });
 
   test('4-07: FloatingSOSButton uses Heavy impact for emergency action', async () => {

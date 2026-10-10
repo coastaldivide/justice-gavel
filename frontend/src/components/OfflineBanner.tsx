@@ -14,7 +14,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Text, StyleSheet, Animated } from 'react-native';
 import { useNetwork } from '../store';
 
 export function OfflineBanner() {
@@ -27,7 +27,7 @@ export function OfflineBanner() {
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, [isOnline]);
+  }, [isOnline, opacity]);
 
   if (isOnline) return null;
 

@@ -1,18 +1,17 @@
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
 /**
  * JustArrestedScreen -- Step-by-step arrest guide
  * For panicked, possibly impaired users.
  * One step at a time. Giant text. Big buttons. No confusion.
  */
-import React, { useState, useCallback} from 'react';
+import React, { useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { Share, View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet, Alert, LayoutAnimation} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet } from 'react-native';
 import {  useTheme, COLORS } from '../constants/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
-import { hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
+import { hapticImpact, RNShare } from '../utils/webCompat';
 
 const STEPS = [
   {
@@ -57,19 +56,13 @@ const STEPS = [
   },
 ];
 
-import Analytics from '../services/analytics';
 import { PlaceholderIllustration } from '../components/PlaceholderIllustration';
-import { t } from '../i18n';
 function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles();
   const [step, setStep] = useState(0);
 
-  // RESTORED: `data` was a `declare var` -- no runtime value, so the
-  // empty-state branch threw on mount.
-  const [data, setData] = useState<any[]>([]);
   const current = STEPS[step];
 
   const bg   = isDark ? colors.bg : current.bg;
@@ -253,7 +246,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
             message: 'If you or someone you know ever gets arrested, use Justice Gavel -- it tells you exactly what to do and connects you with lawyers and bail bondsmen immediately. Get it free: https://justicegavel.app',
             title: 'Justice Gavel -- Free legal help if you get arrested',
           });
-        } catch (shareErr: any) {
+        } catch {
           // Share failed (unsupported browser) — silently ignore
         }}
         }
@@ -302,14 +295,6 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         </Text>
       </TouchableOpacity>
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>📭</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No results found</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection or try again.</Text>
-        </View>
-      )}
       
 
   {/* What Happens Next — absorbed from WhatHappensNextScreen */}
@@ -371,7 +356,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
     sectionCard:    { borderRadius: 12, padding: 16, marginHorizontal: 0 },
     sectionTitle:   { fontSize: 16, fontWeight: '700', marginBottom: 12 },
     timelineStep:   { flexDirection: 'row', marginBottom: 0, position: 'relative', paddingLeft: 28 },
@@ -418,5 +403,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
 export default React.memo(JustArrestedScreen);

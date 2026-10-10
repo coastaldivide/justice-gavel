@@ -1,5 +1,4 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
  * HousingRightsScreen -- Housing Rights & Criminal Record
@@ -16,15 +15,12 @@ import { AppIcon } from '../components/AppIcon';
  *
  * Fully static. Works offline.
  */
-import { api } from '../services/api';
-import React, { useState, useRef, useCallback } from 'react';
+import React from 'react';
 
-import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, LayoutAnimation} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
-import { t } from '../i18n';
+import { InfoTabs } from '../components/InfoTabs';
 
-type Tab = 'record' | 'eviction';
 
 const RECORD_SECTIONS = [
   {
@@ -104,13 +100,10 @@ function HousingRightsScreen(): React.JSX.Element {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [tab, setTab] = React.useState(0);
-
-  const sections = RECORD_SECTIONS;
-  const section  = Array.isArray(sections) ? sections[tab] : null;
-  const allSections = Array.isArray(sections) ? sections : [];
+  const [tab, setTab] = React.useState<'record' | 'eviction'>('record');
+  const sections = tab === 'record' ? RECORD_SECTIONS : EVICTION_SECTIONS;
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
@@ -125,25 +118,21 @@ function HousingRightsScreen(): React.JSX.Element {
         <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>Tenant rights & evictions</Text>
       </View>
 
-      {/* Section cards */}
-      {allSections?.length === 0 ? (
+      <InfoTabs
+        testID="housing-rights-tabs"
+        tabs={[{ key: 'record', label: 'Criminal Record & Housing' }, { key: 'eviction', label: 'Eviction Defense' }]}
+        active={tab}
+        onChange={k => setTab(k as 'record' | 'eviction')}
+      />
 
-        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            Nothing here yet
-          </Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
-            Results will appear here when available
-          </Text>
-        </View>
-        ) : allSections.map((sec: any, idx: number) => (
-        <View key={`allSecti-${idx}`} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          {sec.title ? <Text style={[styles.cardTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{sec.title}</Text> : null}
-          {sec.body  ? <Text style={[styles.cardBody,  { color: colors.textMuted  }]} maxFontSizeMultiplier={1.4}>{sec.body}</Text>  : null}
-          {sec.steps ? sec.steps.map((step: string, si: number) => (
-            <Text key={si} style={[styles.cardBody, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>• {step}</Text>
-          )) : null}
+      {/* Section cards */}
+      {sections.map(sec => (
+        <View key={sec.title} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardIcon} maxFontSizeMultiplier={1.4}>{sec.icon}</Text>
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{sec.title}</Text>
+          </View>
+          <Text style={[styles.cardBody, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{sec.body}</Text>
         </View>
       ))}
 

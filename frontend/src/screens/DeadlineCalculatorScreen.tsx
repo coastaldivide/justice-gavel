@@ -2,11 +2,7 @@ import { RNShare } from '../utils/webCompat';
 import { parseLocalDate } from '../utils/dateUtils';
 import { api } from '../services/api';
 import { AIDisclaimer } from '../components/AIDisclaimer';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * DeadlineCalculatorScreen -- Criminal defense deadline calculator
@@ -28,10 +24,9 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
  *   2. MoreStack navigator
  */
 import React, { useState, useMemo } from 'react';
-import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
-import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Share, KeyboardAvoidingView, Platform, RefreshControl, Alert, LayoutAnimation} from 'react-native';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation } from 'react-native';
 import { getUserState } from '../utils/userState';
-import { t } from '../i18n';
 
 // ── Deadline rules per stage ──────────────────────────────────────────────────
 interface DeadlineRule {
@@ -108,6 +103,18 @@ const DEADLINE_RULES: DeadlineRule[] = [
       const d = new Date(arrest);
       const hrs = (state && STATE_ARRAIGNMENT_HRS[state]) || 72;
       d.setHours(d.getHours() + hrs);
+      return d;
+    } },
+  {
+    label: 'DMV License Hearing (DUI/DWI only)',
+    icon:  '🚗',
+    description: 'Deadline to request a hearing to keep your driving privileges',
+    note: 'Only applies to DUI/DWI arrests. Missing it usually means an automatic license suspension. Shown once your state is set.',
+    compute: (arrest, _, state) => {
+      const days = state ? STATE_DMV_DUI_DAYS[state] : undefined;
+      if (!days) return null;
+      const d = new Date(arrest);
+      d.setDate(d.getDate() + days);
       return d;
     } },
   {
@@ -363,9 +370,9 @@ function parseDate(str: string): Date | null {
 }
 
 // ── Deadline row ──────────────────────────────────────────────────────────────
-function DeadlineRow({ rule, arrest, judgment, today, colors, isDark, state }: {
+function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
   rule: DeadlineRule; arrest: Date | null; judgment: Date | null;
-  today: Date; colors: ThemeColors; isDark: boolean; state?: string;
+  today: Date; isDark: boolean; state?: string;
 }) {
   const { showToast } = useToast();
   const [remindLoading, setRemindLoading] = useState(false);
@@ -405,7 +412,7 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark, state }: {
     } catch {
       showToast('Could not add event. Please try again.');
     }
-  }, []);
+  }, [showToast]);
 
   // Schedule a push notification reminder 3 days before a deadline
   const scheduleReminder = async (label: string, due: Date) => {
@@ -523,7 +530,6 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark, state }: {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function DeadlineCalculatorScreen(): React.JSX.Element {
-  const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -543,7 +549,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
   }, []);
 
   const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles();
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -561,12 +567,12 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
   const urgentCount = useMemo(() => {
     if (!arrestDate) return 0;
     return DEADLINE_RULES.filter(r => {
-      const d = r.compute(arrestDate, judgmentDate, '');
+      const d = r.compute(arrestDate, judgmentDate, userState);
       if (!d) return false;
       const status = deadlineColor(d, today);
       return status === 'red' || status === 'amber';
     }).length;
-  }, [arrestDate, judgmentDate, today]);
+  }, [arrestDate, judgmentDate, today, userState]);
 
   return (
     <KeyboardAvoidingView
@@ -649,6 +655,11 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
       </View>
 
       {/* Deadlines */}
+      {!!stateName && (
+        <Text testID="deadline-state-note" maxFontSizeMultiplier={1.4} style={[styles.legendText, { color: colors.textSecond, marginBottom: 8 }]}>
+          Using {stateName} rules where deadlines differ by state.
+        </Text>
+      )}
       <View style={styles.deadlineList}>
         {DEADLINE_RULES.map((rule, i) => (
           <DeadlineRow
@@ -657,7 +668,6 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
             arrest={arrestDate}
             judgment={judgmentDate}
             today={today}
-            colors={colors}
             isDark={isDark}
             state={userState}
           />
@@ -714,7 +724,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   screen:       { flex: 1 },
   scroll:       { padding: 16, paddingBottom: 40 },
   header:       { marginBottom: 16 },
@@ -751,5 +761,5 @@ const makeStyles = (colors: any) => StyleSheet.create({
   disclaimer:   { fontSize: 11, lineHeight: 17, textAlign: 'center', fontStyle: 'italic' } });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
+const styles = makeStyles();
 export default React.memo(DeadlineCalculatorScreen);

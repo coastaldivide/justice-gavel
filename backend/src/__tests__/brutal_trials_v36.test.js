@@ -308,7 +308,7 @@ describe('S12. UX — useMemo Pattern + firm_verticals Architecture', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SpecialtyCourtsScreen.tsx', 'utf8');
     expect(src).toContain('cachedGet');
-    expect(src).toContain("import { api, cachedGet }");
+    expect(src).toMatch(/import \{[^}]*cachedGet[^}]*\} from '..\/services\/api'/);
   });
   test('S12-04: 10 useMemo screens verified across corpus', async () => {
     const fs   = await import('fs');

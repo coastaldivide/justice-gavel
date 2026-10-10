@@ -1,4 +1,3 @@
-import { useHaptics } from '../hooks/useHaptics';
 
 /**
  * InterrogationRecorderScreen.web.tsx -- Web version
@@ -8,18 +7,14 @@ import { useHaptics } from '../hooks/useHaptics';
  * Functionally identical to the native version.
  */
 import React, { useState, useRef, useCallback } from 'react';
-import {
-  View, Text, TouchableOpacity, ScrollView,
-  ActivityIndicator, TextInput, LayoutAnimation} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api } from '../services/api';
-import { t } from '../i18n';
 
 type Step = 'idle' | 'recording' | 'uploading' | 'done' | 'error';
 
 function InterrogationRecorderScreen(): React.JSX.Element {
-  const { impact, success, error: hapticError } = useHaptics();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();
   const [step,       setStep]       = useState<Step>('idle');
@@ -68,9 +63,8 @@ function InterrogationRecorderScreen(): React.JSX.Element {
     if (timerRef.current) clearInterval(timerRef.current);
     setStep('uploading');
 
-    // eslint-disable-next-line no-promise-executor-return
     // Wait for final data chunk
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise<void>(r => { setTimeout(r, 600); });
 
     try {
       const blob = new Blob(chunksRef.current as any, { type: 'audio/webm' } as any);

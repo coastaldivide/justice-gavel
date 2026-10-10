@@ -16,8 +16,14 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, RefreshControl,
-  ActivityIndicator, StyleSheet, Alert, Linking,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+  StyleSheet,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme, COLORS, RADIUS } from '../constants/theme';
@@ -259,7 +265,7 @@ export default function AttorneyInboxScreen() {
       {(data?.pending_assignments?.length ?? 0) > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>⚠️  Pending Assignments</Text>
-          {data!.pending_assignments.map(a => (
+          {(data?.pending_assignments ?? []).map(a => (
             <View key={a.assignment_id} style={[styles.card, styles.cardUrgent]}>
               <Text style={styles.cardTitle}>{a.title}</Text>
               <Text style={styles.cardMeta}>
@@ -299,7 +305,7 @@ export default function AttorneyInboxScreen() {
         ).length ?? 0) + (data?.today_hearings?.length ?? 0)) > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>📅  Today</Text>
-          {data!.today_hearings.map(h => (
+          {(data?.today_hearings ?? []).map(h => (
             <View key={`h-${h.case_id}`} style={[styles.card, styles.cardToday]}>
               <Text style={styles.cardBadgeText}>🏛  HEARING</Text>
               <Text style={styles.cardTitle}>{h.title}</Text>
@@ -314,7 +320,7 @@ export default function AttorneyInboxScreen() {
               </TouchableOpacity>
             </View>
           ))}
-          {data!.upcoming_consultations
+          {(data?.upcoming_consultations ?? [])
             .filter(c => c.date_slot === toLocalISODate(new Date()))
             .map(c => (
               <View key={`c-${c.id}`} style={[styles.card, styles.cardToday]}>
@@ -344,7 +350,7 @@ export default function AttorneyInboxScreen() {
       {(data?.unread_messages?.length ?? 0) > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>💬  Unread Messages</Text>
-          {data!.unread_messages.map(m => (
+          {(data?.unread_messages ?? []).map(m => (
             <TouchableOpacity
               key={m.id}
               accessibilityRole="button"
@@ -373,7 +379,7 @@ export default function AttorneyInboxScreen() {
         ).length ?? 0) > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>🗓  Upcoming Consultations</Text>
-          {data!.upcoming_consultations
+          {(data?.upcoming_consultations ?? [])
             .filter(c => c.date_slot !== toLocalISODate(new Date()))
             .map(c => (
               <View key={`uc-${c.id}`} style={styles.card}>
@@ -392,7 +398,7 @@ export default function AttorneyInboxScreen() {
       {(data?.recent_cases?.length ?? 0) > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>📁  Active Cases</Text>
-          {data!.recent_cases.map(c => (
+          {(data?.recent_cases ?? []).map(c => (
             <TouchableOpacity
               key={c.case_id}
               accessibilityRole="button"

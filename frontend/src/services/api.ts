@@ -10,7 +10,6 @@
  */
 
 import axios, { AxiosRequestConfig } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken, clearAuth, setToken as storeToken } from '../utils/secureStorage';
 import { setAppAuth } from './auth';
 
@@ -32,7 +31,6 @@ if (!process.env.EXPO_PUBLIC_API_BASE && !__DEV__) {
 // ── Cache ─────────────────────────────────────────────────────────────────────
 type CacheEntry = { data: unknown; ts: number };
 const _cache = new Map<string, CacheEntry>();
-const TTL_DYNAMIC = 60_000;   // 60s  — search results, leads
 const TTL_STATIC  = 300_000;  // 5min — laws, resources, courthouses
 
 // ── Axios instance ────────────────────────────────────────────────────────────
@@ -56,24 +54,6 @@ instance.interceptors.request.use(async (config) => {
 });
 
 
-// ── Circuit breaker ────────────────────────────────────────────────────────────
-let _cbFailures = 0;
-let _cbOpenUntil = 0;
-const CB_THRESHOLD = 5;
-const CB_RESET_MS  = 30_000;
-
-function checkCircuit(): void {
-  if (_cbFailures >= CB_THRESHOLD && Date.now() < _cbOpenUntil) {
-    throw Object.assign(new Error('Server temporarily unavailable — try again in 30 seconds'), {
-      status: 503, circuit: true,
-    });
-  }
-}
-function circuitSuccess(): void { _cbFailures = 0; }
-function circuitFailure(): void {
-  _cbFailures++;
-  if (_cbFailures >= CB_THRESHOLD) _cbOpenUntil = Date.now() + CB_RESET_MS;
-}
 
 
 // ── Proactive token refresh ─────────────────────────────────────────────
@@ -129,13 +109,8 @@ export function apiErrorMessage(e: any, fallback = 'Something went wrong. Please
 // Auto-logout on 401 — JWT expired or revoked
 // Clears secure token storage and returns user to guest/login screen.
 instance.interceptors.response.use(
-  (response) => {
-    circuitSuccess();
-    return response;
-  },
+  (response) => response,
   async (error) => {
-    circuitFailure();
-
     // ── Normalise API error messages ────────────────────────────────────
     // Extract the server's error string from the response body so screens
     // can do `catch (e: any) { setError(e.message) }` and get a real message.
@@ -196,9 +171,8 @@ async function withRetry<T>(
   }
   throw lastErr;
 }
-// eslint-disable-next-line no-promise-executor-return
 
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise<void>(r => { setTimeout(r, ms); });
 
 // ── In-flight request deduplication ─────────────────────────────────────────
 // If two callers request the same GET URL simultaneously, they share one promise.
@@ -207,7 +181,8 @@ const _inFlight = new Map<string, Promise<any>>();
 
 export function deduplicatedGet(url: string, config?: Parameters<typeof instance.get>[1]): Promise<any> {
   const key = url + (config?.params ? JSON.stringify(config.params) : '');
-  if (_inFlight.has(key)) return _inFlight.get(key)!;
+  const pending = _inFlight.get(key);
+  if (pending) return pending;
   const promise = instance.get(url, config).finally(() => _inFlight.delete(key));
   _inFlight.set(key, promise);
   return promise;

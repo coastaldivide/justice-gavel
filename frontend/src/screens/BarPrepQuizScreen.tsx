@@ -38,6 +38,8 @@ interface Answer {
   question_id:     number;
   selected_answer: string;
   time_spent_ms:   number;
+  /** Set from the server's grading (practice: per answer; timed: on submit). */
+  is_correct?:     boolean;
 }
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const;
@@ -66,7 +68,6 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
   const [selected, setSelected]           = useState<OptionLetter | null>(null);
   const [revealed, setRevealed]           = useState(false);
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
-  const [quizLoading, setQuizLoading] = useState(false);
   const [explanation, setExplanation]     = useState<string | null>(null);
   const [submitting, setSubmitting]       = useState(false);
   const [timeLeft, setTimeLeft]           = useState(time_limit_seconds);
@@ -97,7 +98,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev === null || prev <= 1) {
-          clearInterval(timerRef.current!);
+          clearInterval(timerRef.current);
           // FIX #10: call via ref so we get the latest handleSubmit (not stale mount-time closure)
           handleSubmitRef.current?.(true);
           return 0;
@@ -105,9 +106,9 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
         return prev - 1;
       });
     }, 1000);
-  return () => clearInterval(timerRef.current!);
-  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Note: intentionally [mode]-only so the timer is not restarted on answer changes.
+  return () => clearInterval(timerRef.current);
+  }, [mode, time_limit_seconds]);
+  // mode / time limit are route params, so the timer is not restarted on answer changes.
   // handleSubmit is accessed via ref to avoid the stale-closure problem.
 
   // ── Back button guard ─────────────────────────────────────────────────────
@@ -126,7 +127,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
       duration:        300,
       useNativeDriver: false,
     }).start();
-  }, [currentIndex, total]);
+  }, [currentIndex, total, progressAnim]);
 
   // ── Select an answer ──────────────────────────────────────────────────────
   const selectAnswer = useCallback(async (letter: OptionLetter) => {
@@ -152,6 +153,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
         });
         const result = submitRes.data.results?.[0];
         if (result) {
+          setAnswers(prev => ({ ...prev, [current.id]: { ...ans, is_correct: !!result.is_correct } }));
           setCorrectAnswer(result.correct_answer);
           setExplanation(result.explanation);
           result.is_correct ? impact('heavy') : Vibration.vibrate(200);
@@ -183,23 +185,27 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
   // ── Submit all answers ────────────────────────────────────────────────────
   const handleSubmit = useCallback(async (isTimeout = false) => {
     if (submitting) return;
-    clearInterval(timerRef.current!);
+    clearInterval(timerRef.current);
     setSubmitting(true);
 
     try {
-      let results: any = null;
+      // Graded answers: practice answers were graded one by one as they were
+      // revealed; timed answers are graded here in one batch.
+      let graded: Record<number, Answer> = answers;
       if (mode === 'timed') {
-        const batchAnswers = Object.values(answers);
         const res = await api.post(`/bar-prep/sessions/${session_id}/answers`, {
-          answers: batchAnswers,
+          answers: Object.values(answers),
         });
-        results = res.data;
+        const serverResults: { question_id: number; is_correct: boolean }[] = res.data?.results ?? [];
+        graded = { ...answers };
+        for (const r of serverResults) {
+          if (graded[r.question_id]) graded[r.question_id] = { ...graded[r.question_id], is_correct: !!r.is_correct };
+        }
       }
 
       // Navigate to results screen with full session context
-      const batchAnswers = mode !== 'timed' ? Object.values(answers) : [];
-      const totalAns  = Object.keys(answers).length;
-      const correctAns = Object.values(answers).filter((a: any) => a.is_correct).length;
+      const totalAns  = Object.keys(graded).length;
+      const correctAns = Object.values(graded).filter(a => a.is_correct).length;
       navigation.replace('BarPrepResults', {
         session_id,
         score_pct:        totalAns > 0 ? Math.round((correctAns / totalAns) * 100) : 0,
@@ -207,15 +213,15 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
         total:            totalAns || total,
         mode,
         subject_id,
-        answers:          answers,    // { [question_id]: { answer, is_correct, time_spent_ms } }
+        answers:          graded,     // { [question_id]: { selected_answer, is_correct, time_spent_ms } }
         questions,
         timed_out:        isTimeout,
       });
-    } catch (e) {
+    } catch {
       setSubmitting(false);
       Alert.alert('Error', 'Failed to submit answers. Try again.');
     }
-  }, [submitting, answers, mode, session_id, navigation]);
+  }, [submitting, answers, mode, session_id, navigation, total, subject_id, questions]);
 
   // Keep ref in sync with latest callback
   handleSubmitRef.current = handleSubmit;

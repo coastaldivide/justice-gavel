@@ -122,7 +122,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHome'>) {
   const { colors }                      = useTheme();
   const { impact }                      = useHaptics();
-  const { requireAuth, AuthGateModal }  = useAuthGate(navigation);
+  const { AuthGateModal }               = useAuthGate(navigation);
   // Bar prep disclaimer — shown once in the UI, not on every question
   const BAR_PREP_DISCLAIMER = 'MBE study supplement · 548 practice questions · Not a substitute for Barbri or Themis';
   const [subjects, setSubjects]         = useState<Subject[]>([]);
@@ -142,8 +142,9 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
       ]);
       setSubjects(subRes.data.subjects || []);
       setDashboard(progRes.data);
-      if (!selectedSubject && subRes.data.subjects?.length > 0) {
-        setSelectedSubject(subRes.data.subjects[0].id);
+      if (subRes.data.subjects?.length > 0) {
+        // Default to the first subject only when none is selected yet.
+        setSelectedSubject(prev => prev ?? subRes.data.subjects[0].id);
       }
     } catch (e: any) {
       if (e?.response?.status !== 402) {
@@ -153,9 +154,9 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedSubject]);
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
 
@@ -209,6 +210,10 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           contentContainerStyle={styles.scrollContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
+          <Text testID="bar-prep-disclaimer" maxFontSizeMultiplier={1.4}
+            style={{ fontSize: 11, lineHeight: 16, color: colors.textMuted, marginBottom: 10 }}>
+            {BAR_PREP_DISCLAIMER}
+          </Text>
           {/* ── Stats Banner ─────────────────────────────────────────── */}
           {dashboard && (
             <View style={styles.statsBanner}>

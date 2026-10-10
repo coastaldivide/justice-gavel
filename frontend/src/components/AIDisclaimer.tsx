@@ -13,10 +13,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View, Text, TouchableOpacity, StyleSheet, Modal,
-  ScrollView, Platform,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { storage, storageReady } from '../utils/storage';
 import { useTheme } from '../constants/theme';
 

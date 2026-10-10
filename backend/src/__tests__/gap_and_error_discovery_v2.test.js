@@ -1411,7 +1411,7 @@ describe('17. Regression — Prior Fixes Confirmed', () => {
   test('17-12: ArrestMonitorScreen has useNavigation hook', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ArrestMonitorScreen.tsx', 'utf8');
-    expect(src).toContain('useNavigation');
+    expect(src).toContain('{ navigation }: ScreenProps'); // navigation arrives as a prop
   });
 
 

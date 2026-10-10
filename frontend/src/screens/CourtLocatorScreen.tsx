@@ -1,16 +1,11 @@
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { GradientHeader } from '../components/GradientHeader';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
-import ScreenHeader from '../components/ScreenHeader';
 import React, { useState, useEffect, useCallback } from 'react';
 import {View, Text, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import {api} from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
-import { t } from '../i18n';
 
 type Courthouse = {
   id: number;
@@ -29,17 +24,9 @@ type Courthouse = {
 };
 
 
-const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
-  <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
-    <Text style={{ fontSize: 48, marginBottom: 16 }}>{icon}</Text>
-    <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.navy, textAlign: 'center', marginBottom: 8 }}>{title}</Text>
-    <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 }}>{subtitle}</Text>
-  </View>
-);
 
 function CourtLocatorScreen(): React.JSX.Element {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -271,7 +258,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                     <TouchableOpacity
                       accessibilityRole="button"
                       accessibilityLabel="Court Website"
-                      onPress={() => Linking.openURL(item.url!).catch(() => showToast('Action failed. Please try again.', 'error'))}
+                      onPress={() => Linking.openURL(item.url ?? '').catch(() => showToast('Action failed. Please try again.', 'error'))}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16 }}>🌐</Text>
                       <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontSize: 12 }} numberOfLines={1}>

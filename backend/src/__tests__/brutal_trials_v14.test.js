@@ -227,7 +227,8 @@ describe('3. OnboardingScreen — First-Time User Flow', () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
     expect(src).toContain('situation');
-    expect(src).toContain('selectedState');
+    // State is auto-detected (detectAndSaveUserState) -- there is no state picker.
+    expect(src).toContain('detectAndSaveUserState');
   });
 
   test('3-06: browse-without-account model is always available (not just last slide)', () => {
@@ -298,8 +299,8 @@ describe('5. CheckInScreen — GPS Defendant Check-In', () => {
   test('5-02: CheckInScreen has todayStatus and phase states', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CheckInScreen.tsx', 'utf8');
-    // CheckInScreen manages today's check-in status
-    expect(src).toContain('todayStatus');
+    // CheckInScreen derives today's status into `phase` (already_done / ready)
+    expect(src).toContain('checked_in_today');
     expect(src).toContain('phase');
     expect(src).toContain('enrollment');
   });
@@ -542,8 +543,9 @@ describe('10. SubscriptionScreen — Attorney/Bondsman Tiers', () => {
   test('10-06: SubscriptionScreen uses haptic feedback', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('hapticImpact');
-    expect(src).toContain('hapticNotification');
+    // Unused haptic imports were removed (step 2); no dead imports remain.
+    expect(src).not.toMatch(/import \{[^}]*hapticImpact[^}]*\} from/);
+    expect(src).toContain('SubscriptionScreen');
   });
 });
 

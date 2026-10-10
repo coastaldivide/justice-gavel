@@ -215,7 +215,7 @@ describe('SCR2. Complex Screens — Attorney Dashboard + Settings + Firm Vertica
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SettingsScreen.tsx','utf8');
     const apis = (src.match(/api\.(get|post|put|delete)/g)||[]).length;
-    expect(apis).toBeGreaterThanOrEqual(8);
+    expect(apis).toBeGreaterThanOrEqual(7); // the unused /billing/consumer/subscription fetch was removed (step 2)
     expect(src).toContain('SettingsScreen');
   });
   test('SCR2-03: FirmVerticalScreen — 12 API calls, firm management hub', async () => {

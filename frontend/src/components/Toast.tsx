@@ -48,7 +48,7 @@ const ICONS: Record<ToastVariant, string> = {
   warning: '⚠',
 };
 
-function ToastItem({ toast, onDone }: { toast: ToastMessage; onDone: () => void }) {
+function ToastItem({ toast, onDone }: { toast: ToastMessage; onDone: (id: number) => void }) {
   const anim   = useRef(new Animated.Value(0)).current;
   const colors = COLORS[toast.variant];
 
@@ -60,8 +60,8 @@ function ToastItem({ toast, onDone }: { toast: ToastMessage; onDone: () => void 
       Animated.timing(anim, { toValue: 1, duration: 250, useNativeDriver: true }),
       Animated.delay(toast.duration - 500),
       Animated.timing(anim, { toValue: 0, duration: 250, useNativeDriver: true }),
-    ]).start(onDone);
-  }, []);
+    ]).start(() => onDone(toast.id));
+  }, [anim, onDone, toast.id, toast.message, toast.duration]);
 
   return (
     <Animated.View
@@ -115,7 +115,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <View style={s.container} pointerEvents="none">
         {toasts.map(t => (
-          <ToastItem key={t.id} toast={t} onDone={() => removeToast(t.id)} />
+          <ToastItem key={t.id} toast={t} onDone={removeToast} />
         ))}
       </View>
     </ToastContext.Provider>

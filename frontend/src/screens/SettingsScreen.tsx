@@ -1,7 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**
  * SettingsScreen -- User preferences
@@ -17,11 +15,11 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import type {} from '../types/navigation';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert, Share, ActivityIndicator, RefreshControl, LayoutAnimation, Modal, FlatList, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, ActivityIndicator, RefreshControl, LayoutAnimation, Modal, FlatList, Platform } from 'react-native';
 import AsyncStorage          from '@react-native-async-storage/async-storage';
-import { ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
+import { ScreenCapture, StoreReview, hapticImpact, RNShare } from '../utils/webCompat';
 import Constants   from 'expo-constants';
 import { api, apiErrorMessage } from '../services/api';
 import { setLang, t } from '../i18n'  // t() already available;
@@ -46,87 +44,6 @@ const DEFAULT_PREFS: NotifPrefs = {
   notif_arrest_alerts:     true,
   notif_checkin_reminders: true,
   notif_marketing:         true };
-
-// ── Tier-gated notification row ──────────────────────────────────────────────
-const STARTER_TIERS = ['advisor','legal_pro','legal_radar','starter_annual','pro_annual','legal_radar_annual','attorney_basic','attorney_alert','attorney_featured'];
-const PRO_TIERS     = ['legal_pro','legal_radar','pro_annual','legal_radar_annual','attorney_alert','attorney_featured'];
-
-function TierGatedRow({
-  label, hint, requiredTier, requiredKey, currentTier,
-  value, onChange, navigation, colors, isDark }: {
-  label: string; hint: string; requiredTier: string; requiredKey: string;
-  currentTier: string; value: boolean; onChange: (v: boolean) => void;
-  navigation: any; colors: ThemeColors; isDark: boolean;
-}) {
-  const tiers = requiredKey === 'legal_pro' ? PRO_TIERS : STARTER_TIERS;
-  const hasAccess = tiers.includes(currentTier);
-
-  if (hasAccess) {
-  return (
-      <View style={[gStyles.row, { opacity: 1 }]}>
-        <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={[gStyles.label, { color: COLORS.textPrimary }]}>{label}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={[gStyles.hint,  { color: COLORS.textMuted   }]}>{hint}</Text>
-        </View>
-        <Switch
-          value={value}
-          onValueChange={onChange}
-          trackColor={{ true: COLORS.steel, false: COLORS.border }}
-          thumbColor={COLORS.bgCard}
-          accessibilityRole="switch"
-          accessibilityState={{ checked: value }}
-        />
-
-      </View>
-    );
-  }
-
-  // Locked -- show tier badge + upgrade CTA
-  return (
-    <>
-    <TouchableOpacity accessibilityRole="button"
-      style={[gStyles.row, gStyles.lockedRow, {
-        backgroundColor: isDark ? COLORS.bgCard : COLORS.bg,
-        borderColor: COLORS.border }]}
-      onPress={() => navigation.navigate('ConsumerSubscription')}
-      activeOpacity={0.8}
-      accessibilityLabel={`${label} -- requires ${requiredTier} plan`}
-    >
-      <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-          <Text maxFontSizeMultiplier={1.4} style={[gStyles.label, { color: COLORS.textMuted }]}>{label}</Text>
-          <View style={[gStyles.tierPill, {
-            backgroundColor: requiredKey === 'legal_pro'
-              ? (isDark ? COLORS.bgElevated : COLORS.bgSubtle)
-              : (isDark ? COLORS.legalBg : COLORS.legalBg) }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[gStyles.tierPillText, {
-              color: requiredKey === 'legal_pro' ? COLORS.blue : COLORS.legal }]}>
-              {requiredTier}+
-            </Text>
-          </View>
-        </View>
-        <Text maxFontSizeMultiplier={1.4} style={[gStyles.hint, { color: COLORS.textMuted }]}>{hint}</Text>
-      </View>
-      <View style={gStyles.lockWrap}>
-        <AppIcon name="lock-closed-outline" size={20} color={COLORS.navy} />
-      </View>
-    </TouchableOpacity>
-    </>
-  );
-}
-
-const gStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  label:{ fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  hint: { fontSize: 11, marginTop: 1 },
-  lockedRow: {
-    borderRadius: 8, borderWidth: 1,
-    paddingHorizontal: 10, marginVertical: 2 },
-  tierPill: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8 },
-  tierPillText: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: 0.5 },
-  lockWrap: { marginLeft: 8 },
-  lockIcon: { fontSize: 16,
-    lineHeight: 24 } });
 
 const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1 },
@@ -198,8 +115,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   menuHint: { fontSize: 11, marginTop: 1, color: COLORS.textMuted } });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
-function SettingsScreen({ route, navigation }: any) {
+function SettingsScreen({ navigation }: any) {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
 
@@ -245,10 +161,8 @@ function SettingsScreen({ route, navigation }: any) {
   const [prefs, setPrefs]                 = useState<NotifPrefs>(DEFAULT_PREFS);
   const [prefsLoading, setPrefsLoading]   = useState(false);
   const [prefsSaving, setPrefsSaving]     = useState(false);
-  const [subTier, setSubTier]             = useState<string>('free');
   const [userState, setUserStatePref] = React.useState('');
   const [showStatePicker, setShowStatePickerSettings] = React.useState(false);
-  const [submitting, setSubmitting] = React.useState(false);
   const { toggleDark } = useTheme();
 
   // Biometric lock availability + saved preference
@@ -289,17 +203,21 @@ function SettingsScreen({ route, navigation }: any) {
   useEffect(() => {
     (async () => {
       const u = await AsyncStorage.getItem('user');
-      if (u) { try { setUser(JSON.parse(u)); } catch {} }
+      if (u) {
+        try {
+          const parsed = JSON.parse(u);
+          setUser(parsed);
+          // Shows the Admin section; the server still enforces admin on every admin endpoint.
+          setIsAdmin(!!(parsed?.is_admin || parsed?.role === 'admin'));
+        } catch {}
+      }
       const lang = await AsyncStorage.getItem('lang');
       if (lang) setLanguage(lang);
       const n = await AsyncStorage.getItem('notifs');
       if (n !== null) setNotifMaster(n === 'true');
 
 
-      // Load subscription tier + per-category prefs
-      api.get('/billing/consumer/subscription').then(r => {
-        setSubTier(r.data?.subscription?.tier || 'free');
-      }).catch((e) => { __DEV__ && console.warn(e?.message); });
+      // Per-category notification prefs
       api.get('/golden-gavel/status').then(r => {
         setGoldenGavel(r.data?.golden_gavel === true);
       }).catch((e) => { __DEV__ && console.warn(e?.message); });
@@ -800,7 +718,7 @@ function SettingsScreen({ route, navigation }: any) {
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             onPress={async () => {
               let isAvailable = false;
-              try { isAvailable = await StoreReview.isAvailableAsync(); } catch (_) {}
+              try { isAvailable = await StoreReview.isAvailableAsync(); } catch {}
               if (isAvailable) {
                 await StoreReview.requestReview();
               }

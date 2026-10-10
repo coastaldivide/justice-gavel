@@ -179,8 +179,8 @@ jobs:
       - name: TypeScript type check
         run: npx tsc --noEmit
 
-      - name: ESLint (errors fail, warnings allowed)
-        run: npx eslint src App.tsx
+      - name: ESLint (0 errors, 0 warnings)
+        run: npx eslint src App.tsx --max-warnings 0
 
       - name: Navigation targets resolve
         run: node scripts/check-nav-targets.mjs

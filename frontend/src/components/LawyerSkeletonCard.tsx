@@ -5,7 +5,6 @@
 import React from 'react';
 import { Animated, View } from 'react-native';
 
-type ThemeColors = any;
 
 function SkeletonCard({ colors }: { colors: any }) {
   const shimmer = React.useRef(new Animated.Value(0)).current;
@@ -16,10 +15,8 @@ function SkeletonCard({ colors }: { colors: any }) {
         Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
       ])
     ).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => shimmer.stopAnimation();
-  }, []);
+  }, [shimmer]);
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
   const bg = colors?.bgSubtle || '#E8EEF4';
   return (

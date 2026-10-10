@@ -1,15 +1,8 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
 import { parseLocalDate } from '../utils/dateUtils';
-import { useNetworkError } from '../hooks/useNetworkError';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
-import LegalNotice from '../components/LegalNotice';
 /**
  * ExpungementScreen -- Expungement eligibility + marketplace
  *
@@ -21,14 +14,14 @@ import LegalNotice from '../components/LegalNotice';
  * Flow: state picker → charge summary → eligibility result → partner CTA
  */
 import React, { useState, useEffect } from 'react';
+import { useLatestRef } from '../hooks/useLatestRef';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager } from 'react-native';
 import { api, cachedGet, apiErrorMessage } from '../services/api';
 import { cacheExpungement } from '../services/offlineCache';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
+import { RNShare } from '../utils/webCompat';
 import { getUserState } from '../utils/userState';
-import { t } from '../i18n';
 
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
@@ -50,80 +43,12 @@ type EligibilityResult = {
   disclaimer: string;
 };
 
-// ── Static 50-state expungement reference cards ───────────────────────────────
-// Pulled from backend STATE_RULES -- kept in sync manually or via API
-const STATE_CARDS: Record<string, {
-  name: string;
-  misdemeanor: string; felony: string; dui: string; dismissed: string;
-  statute: string; highlight: string;
-}> = {
-  AL:{ name:'Alabama',       misdemeanor:'5 yr wait, first-time only',    felony:'Class C non-violent, 5 yr', dui:'Not eligible',       dismissed:'Immediately',        statute:'Ala. Code § 15-27-2',         highlight:'First-offense misdemeanors only. DUI and domestic violence excluded.' },
-  AK:{ name:'Alaska',        misdemeanor:'Petition, age 18+ offense-free', felony:'Limited, petition required', dui:'Case-by-case',     dismissed:'Immediately',        statute:'AS § 12.62.180',              highlight:'One of the stricter states. Violent offenses and sex crimes excluded.' },
-  AZ:{ name:'Arizona',       misdemeanor:'Petition after probation ends',  felony:'Non-dangerous only',         dui:'Not eligible',     dismissed:'Petition required',  statute:'A.R.S. § 13-907',             highlight:'Set-aside system -- not full expungement. Record shows "set aside."' },
-  AR:{ name:'Arkansas',      misdemeanor:'5 yr, first offense',            felony:'Class C/D non-violent, 5 yr',dui:'Not eligible',     dismissed:'Immediately',        statute:'Ark. Code § 16-90-1417',      highlight:'Broad felony eligibility for first offenders. DWI excluded.' },
-  CA:{ name:'California',    misdemeanor:'1 yr or probation end',          felony:'Wobbler reductions available',dui:'Possible, 10 yr', dismissed:'Immediately',        statute:'Pen. Code § 1203.4',          highlight:'Dismissal (not expungement). AB 1076 adds automatic relief.' },
-  CO:{ name:'Colorado',      misdemeanor:'3 yr wait',                      felony:'Non-violent, 5-10 yr',       dui:'Not eligible',     dismissed:'Petition available', statute:'C.R.S. § 24-72-706',          highlight:'Broad 2022 law adds automatic sealing for many old convictions.' },
-  CT:{ name:'Connecticut',   misdemeanor:'3 yr, automatic',                felony:'5 yr, petition',             dui:'Not eligible',     dismissed:'Automatic',          statute:'C.G.S. § 54-142a',            highlight:'Strong automatic erasure. Violent/sex offenses excluded.' },
-  DE:{ name:'Delaware',      misdemeanor:'5 yr, petition',                 felony:'7 yr, non-violent only',     dui:'Not eligible',     dismissed:'Petition available', statute:'11 Del. C. § 4372',           highlight:'Must be offense-free since adjudication.' },
-  FL:{ name:'Florida',       misdemeanor:'Seal 10 yr, then expunge',       felony:'Seal only, limited',         dui:'Not eligible',     dismissed:'Immediately',        statute:'F.S. § 943.0585',             highlight:'Two-step: seal then expunge. DUI never eligible. One shot per lifetime.' },
-  GA:{ name:'Georgia',       misdemeanor:'Restriction after 4 yr',        felony:'First Offender Act only',    dui:'Not eligible',     dismissed:'Immediately',        statute:'O.C.G.A. § 35-3-37',          highlight:'Restriction, not expungement. First Offender Act is the key pathway.' },
-  HI:{ name:'Hawaii',        misdemeanor:'5 yr, petition',                 felony:'Non-violent, 10 yr',         dui:'Not eligible',     dismissed:'Petition available', statute:'HRS § 831-3.2',               highlight:'Expungement by executive pardon system. Limited pathways.' },
-  ID:{ name:'Idaho',         misdemeanor:'5 yr, petition',                 felony:'5 yr non-violent, petition', dui:'Case-by-case',     dismissed:'Petition available', statute:'Idaho Code § 19-2604',         highlight:'Judge has discretion. First-time offenders most likely to succeed.' },
-  IL:{ name:'Illinois',      misdemeanor:'3 yr, many automatic',           felony:'4-7 yr, non-violent',        dui:'Not eligible',     dismissed:'Automatic',          statute:'720 ILCS 5/5-5-3.2',          highlight:'Strong 2023 CLEAR act. Broad automatic sealing for old records.' },
-  IN:{ name:'Indiana',       misdemeanor:'5 yr, petition',                 felony:'8-10 yr, non-violent',       dui:'Not eligible',     dismissed:'After 1 yr',         statute:'I.C. § 35-38-9',              highlight:'Restricted access (not full expungement) for most convictions.' },
-  IA:{ name:'Iowa',          misdemeanor:'8 yr, petition',                 felony:'Not eligible (most)',        dui:'Not eligible',     dismissed:'After 180 days',     statute:'Iowa Code § 901C.1',           highlight:'One of the stricter states. Simple misdemeanors only.' },
-  KS:{ name:'Kansas',        misdemeanor:'3-5 yr, petition',               felony:'5 yr non-violent, petition', dui:'Not eligible',     dismissed:'After case closed',  statute:'K.S.A. § 21-6614',            highlight:'Multiple prior convictions make expungement harder.' },
-  KY:{ name:'Kentucky',      misdemeanor:'5 yr, Class B only',             felony:'Class D non-violent, 5 yr',  dui:'Not eligible',     dismissed:'Immediately',        statute:'KRS § 431.073-078',           highlight:'Limited but improving. Class B misdemeanors + limited Class D felonies.' },
-  LA:{ name:'Louisiana',     misdemeanor:'5 yr, first offense',            felony:'10 yr non-violent',          dui:'Not eligible',     dismissed:'Immediately',        statute:'La. C.Cr.P. art. 977',        highlight:'Must have completed all terms of sentence.' },
-  ME:{ name:'Maine',         misdemeanor:'3 yr, petition',                 felony:'10 yr, Class C only',        dui:'Not eligible',     dismissed:'Petition available', statute:'15 M.R.S. § 2255',            highlight:'New 2021 law expanded access significantly.' },
-  MD:{ name:'Maryland',      misdemeanor:'3 yr, petition/automatic',       felony:'15 yr, very limited',        dui:'Not eligible',     dismissed:'Immediately',        statute:'Md. Code Crim. Proc. § 10-105',highlight:'Shielding system for misdemeanors. Broad 2023 Clean Slate Act.' },
-  MA:{ name:'Massachusetts', misdemeanor:'3-5 yr, petition',               felony:'7-10 yr, petition',          dui:'Not eligible',     dismissed:'Immediately',        statute:'G.L. c. 276, § 100A',         highlight:'Sealing (not expungement) is the primary remedy.' },
-  MI:{ name:'Michigan',      misdemeanor:'3 yr, petition or automatic',    felony:'5-7 yr, petition',           dui:'Not eligible',     dismissed:'Immediately',        statute:'MCL § 780.621',               highlight:'2021 Clean Slate Act added automatic expungement for many old convictions.' },
-  MN:{ name:'Minnesota',     misdemeanor:'2 yr, many automatic',           felony:'5 yr non-violent, petition', dui:'Not eligible',     dismissed:'Automatic',          statute:'Minn. Stat. § 609A.02',       highlight:'Strong automatic expungement. One of the best states for clean slate.' },
-  MS:{ name:'Mississippi',   misdemeanor:'5 yr, first offense',            felony:'Not eligible (most)',         dui:'Not eligible',     dismissed:'Dismissed/NP only',  statute:'Miss. Code § 99-19-71',       highlight:'Very limited. First offense misdemeanors only.' },
-  MO:{ name:'Missouri',      misdemeanor:'3 yr, petition',                 felony:'7 yr, non-violent',          dui:'Not eligible',     dismissed:'After case closed',  statute:'RSMo § 610.140',              highlight:'2018 law significantly expanded eligibility. Misdemeanor 3 yr, felony 7 yr.' },
-  MT:{ name:'Montana',       misdemeanor:'5 yr, petition',                 felony:'5 yr, deferred sentence only',dui:'Not eligible',   dismissed:'Petition available', statute:'Mont. Code § 46-18-1102',     highlight:'Deferred imposition of sentence is key vehicle. Conviction itself rarely expunged.' },
-  NE:{ name:'Nebraska',      misdemeanor:'3 yr, petition',                 felony:'10 yr, non-violent',         dui:'Not eligible',     dismissed:'Petition available', statute:'Neb. Rev. Stat. § 29-3523',   highlight:'Set-aside system. Must complete all terms of sentence.' },
-  NV:{ name:'Nevada',        misdemeanor:'2 yr, petition',                 felony:'7 yr non-violent, petition', dui:'7 yr, first only', dismissed:'Immediately',        statute:'NRS § 179.245',               highlight:'DUI expungement possible after 7 yr for first offense -- one of few states.' },
-  NH:{ name:'New Hampshire', misdemeanor:'3 yr, petition',                 felony:'10 yr non-violent, petition', dui:'Not eligible',   dismissed:'After case closed',  statute:'RSA § 651:5',                 highlight:'Annulment system. Judge has broad discretion.' },
-  NJ:{ name:'New Jersey',    misdemeanor:'5 yr, petition',                 felony:'6-10 yr, petition',          dui:'Not eligible',     dismissed:'Immediately',        statute:'N.J.S.A. § 2C:52-2',         highlight:'Comprehensive system. Multiple convictions can be expunged together.' },
-  NM:{ name:'New Mexico',    misdemeanor:'1-2 yr, petition',               felony:'Deferred only, non-violent', dui:'Not eligible',     dismissed:'Immediately',        statute:'NMSA § 29-3A-1',              highlight:'Broad misdemeanor access. Deferred sentence vehicle for felonies.' },
-  NY:{ name:'New York',      misdemeanor:'Sealing, 3 yr',                  felony:'Sealing, 10 yr, 1 felony max',dui:'Not eligible',   dismissed:'Automatic',          statute:'CPL § 160.59',                highlight:'Sealing (not expungement). Max 2 sealed convictions. DWI never eligible.' },
-  NC:{ name:'North Carolina',misdemeanor:'5 yr, first offense',            felony:'Class H/I non-violent, 10 yr',dui:'Not eligible',   dismissed:'Immediately',        statute:'G.S. § 15A-145',              highlight:'Limited but consistent. First-time misdemeanor + limited felony.' },
-  ND:{ name:'North Dakota',  misdemeanor:'3-5 yr, petition',               felony:'5-10 yr, petition',          dui:'Not eligible',     dismissed:'After case closed',  statute:'N.D.C.C. § 12.1-02-04',       highlight:'Misdemeanor + Class C/D felonies eligible. Judge has discretion.' },
-  OH:{ name:'Ohio',          misdemeanor:'1-3 yr, petition',               felony:'3-7 yr, non-violent',        dui:'Not eligible',     dismissed:'After case closed',  statute:'ORC § 2953.32',               highlight:'Sealing system. Broad 2023 expansion. Marijuana offenses widely eligible.' },
-  OK:{ name:'Oklahoma',      misdemeanor:'5 yr, petition',                 felony:'5 yr non-violent, petition', dui:'Not eligible',     dismissed:'After case closed',  statute:'22 O.S. § 18',                highlight:'Broad eligibility. Can expunge misdemeanors AND non-violent felonies.' },
-  OR:{ name:'Oregon',        misdemeanor:'3-5 yr, automatic or petition',  felony:'3-7 yr, non-violent',        dui:'Not eligible',     dismissed:'Immediately',        statute:'ORS § 137.225',               highlight:'Strong automatic set-aside. Broad eligibility. Measure 11 offenses excluded.' },
-  PA:{ name:'Pennsylvania',  misdemeanor:'10 yr or age 70+',               felony:'Very limited -- pardons only', dui:'Not eligible',   dismissed:'Immediately',        statute:'18 Pa.C.S. § 9122',           highlight:'Limited. Clean Slate Act (2018) automates some sealing. Felonies mostly excluded.' },
-  RI:{ name:'Rhode Island',  misdemeanor:'5 yr, petition',                 felony:'10 yr non-violent, petition', dui:'Not eligible',   dismissed:'Immediately',        statute:'R.I. Gen. Laws § 12-1.3',     highlight:'Expungement available for first offenders. No prior convictions allowed.' },
-  SC:{ name:'South Carolina',misdemeanor:'3 yr, first offense',            felony:'Not eligible (most)',         dui:'Not eligible',   dismissed:'Immediately',        statute:'S.C. Code § 22-5-910',        highlight:'Felony expungement very limited. First-time misdemeanor is primary pathway.' },
-  SD:{ name:'South Dakota',  misdemeanor:'Petition after probation',       felony:'Pardon or deferred',          dui:'Not eligible',   dismissed:'After 10 yr',        statute:'SDCL § 23A-3-24',             highlight:'One of the more restrictive states. Pardon is main felony pathway.' },
-  TN:{ name:'Tennessee',     misdemeanor:'5 yr, A & B classes',            felony:'Class E non-violent, 5 yr',  dui:'5 yr, first only',dismissed:'Immediately',        statute:'T.C.A. § 40-32-101',          highlight:'First-time DUI expungement possible after 5 yr -- one of few states.' },
-  TX:{ name:'Texas',         misdemeanor:'Non-disclosure after probation', felony:'Non-disclosure, limited',     dui:'Not eligible',   dismissed:'Immediately',        statute:'Tex. Govt Code § 411.072',  highlight:'Non-disclosure (sealing) not expungement for most. Dismissals can be expunged.' },
-  UT:{ name:'Utah',          misdemeanor:'3-4 yr, petition',               felony:'7 yr non-violent, petition',  dui:'Not eligible',  dismissed:'Petition available', statute:'Utah Code § 77-40-105',        highlight:'Certificate of eligibility required before petition. Process takes months.' },
-  VT:{ name:'Vermont',       misdemeanor:'5 yr, automatic (2018 law)',     felony:'Very limited, petition',      dui:'Not eligible',  dismissed:'Automatically',      statute:'13 V.S.A. § 7607',            highlight:'2018 law added automatic expungement for many misdemeanors. Strong clean slate.' },
-  VA:{ name:'Virginia',      misdemeanor:'Sealing, 7 yr (2021 law)',       felony:'Sealing, 10 yr (2021 law)',   dui:'Not eligible',  dismissed:'Immediately',        statute:'Va. Code § 19.2-392.6',       highlight:'2021 Clean Slate Act. Sealing not expungement. Violent/DUI excluded.' },
-  WA:{ name:'Washington',    misdemeanor:'3 yr, vacation of conviction',   felony:'10 yr non-violent, vacation', dui:'Not eligible',  dismissed:'After case closed',  statute:'RCW § 9.94A.640',             highlight:'Vacation of conviction system. Very broad eligibility. Cannabis auto-vacated.' },
-  WV:{ name:'West Virginia', misdemeanor:'1 yr, first offense',            felony:'5 yr first offense, non-violent',dui:'Not eligible',dismissed:'Immediately',       statute:'W. Va. Code § 61-11-26',       highlight:'One of the shorter wait periods for misdemeanors in the country.' },
-  WI:{ name:'Wisconsin',     misdemeanor:'5 yr, expungement at sentencing',felony:'At sentencing only',          dui:'Not eligible',  dismissed:'After case closed',  statute:'Wis. Stat. § 973.015',        highlight:'Must be ordered at sentencing -- cannot petition later for most cases.' },
-  WY:{ name:'Wyoming',       misdemeanor:'5 yr, petition',                 felony:'5 yr non-violent, petition',  dui:'Not eligible',  dismissed:'After case closed',  statute:'Wyo. Stat. § 7-13-1501',      highlight:'Relatively broad for non-violent felonies. Must be offense-free.' },
-  DC:{ name:'District of Columbia', misdemeanor:'5 yr from sentence end (2025 law)',         felony:'10 yr, non-violent',          dui:'Not eligible',  dismissed:'After 2 yr',         statute:'D.C. Code § 16-803',          highlight:'Clean Hands Act (2023) expanded eligibility significantly.' },
-};
 
 // ── Expungement eligibility countdown ────────────────────────────────────────
-function ExpungementCountdown({ waitYears, caseDate, navigation }: {
-  waitYears: number; caseDate: string; navigation: Record<string, any>;
+function ExpungementCountdown({ waitYears, caseDate }: {
+  waitYears: number; caseDate: string;
 }) {
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
-  const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200)
-  }, []);
 
   const eligible = React.useMemo(() => {
     // Date-only strings are local calendar dates (avoid the UTC shift of new Date('YYYY-MM-DD'))
@@ -131,9 +56,8 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
     d.setFullYear(d.getFullYear() + waitYears);
     return d;
   }, [caseDate, waitYears]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
 
-  const now = new Date();
+  const now = React.useMemo(() => new Date(), []);
   const isEligible = eligible <= now;
   const daysLeft = Math.max(0, Math.ceil((eligible.getTime() - now.getTime()) / 86400000));
   const yearsLeft = (daysLeft / 365).toFixed(1);
@@ -157,7 +81,7 @@ showToast('Reminder set for when you become eligible.', 'success');
     } catch {
       showToast('Make sure notifications are enabled in Settings.');
     }
-  }, [eligible, isEligible, now]);
+  }, [eligible, now, showToast]);
 
   return (
     <View testID="expungement-screen" style={{ backgroundColor: isEligible ? COLORS.legalBg : COLORS.bgSubtle,
@@ -260,24 +184,10 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       }).catch(() => {});
     }
   }, [incomingState]);
-  // Auto-submit when navigated from CaseScreen with charges + state
-  // so user sees results immediately without re-entering data
-  React.useEffect(() => {
-    if (incomingCharges && incomingState && step === 'form') {
-      // Give state one tick to update before submitting
-      const t = setTimeout(() => {
-        checkEligibility();
-      }, 400);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-      return () => clearTimeout(t);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incomingState]);
 
 
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const incomingCaseId = (route?.params as import('../types/api').RouteParams)?.case_id;
-  const incomingCaseTitle = (route?.params as import('../types/api').RouteParams)?.caseTitle || null;
 
   const [step, setStep]         = useState<'form'|'result'>('form');
   const [state, setState]       = useState(incomingState);
@@ -285,19 +195,11 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
   const [charges, setCharges]   = useState(incomingCharges || '');
   const [caseStatus, setCaseStatus] = useState('Closed');
 
-  // Retry logic: exponential backoff on API failures
-  const [retryCount, setRetryCount] = React.useState(0);
-  const handleRetry = React.useCallback(() => {
-    setRetryCount(c => c + 1);
-  }, []);
   const [loading, setLoading]   = useState(false);
   const [result, setResult]     = useState<EligibilityResult | null>(null);
   const [showStatePicker, setShowStatePicker] = useState(false);
   const [attorneys,       setAttorneys]       = useState<any[]>([]);
   const [attLoading,      setAttLoading]      = useState(false);
-  const [viewMode, setViewMode]         = useState<'checker'|'cards'>('checker');
-  const [cardState, setCardState]       = useState('');
-  const [cardFilter, setCardFilter]     = useState<'all'|'misdemeanor'|'felony'>('all');
   const [petitionDraft, setPetitionDraft]   = useState('');
   const [genPetition, setGenPetition]       = useState(false);
   const [showPetition, setShowPetition]     = useState(false);
@@ -323,11 +225,27 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       }
       setStep('result');
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Could not check eligibility. Try again.'), 'info'); setRetryCount(0);
+      showToast(apiErrorMessage(e, 'Could not check eligibility. Try again.'), 'info');
     } finally {
       setLoading(false);
     }
   };
+
+  // Auto-submit when navigated from CaseScreen with charges + state, so the
+  // user sees results without re-entering data. Fires on the incoming params
+  // only (not on step / handler changes); checkEligibility and step are read
+  // through refs.
+  const checkEligibilityRef = useLatestRef(() => checkEligibility());
+  const stepRef = useLatestRef(step);
+  React.useEffect(() => {
+    if (incomingCharges && incomingState && stepRef.current === 'form') {
+      // Give state one tick to update before submitting
+      const t = setTimeout(() => {
+        checkEligibilityRef.current();
+      }, 400);
+      return () => clearTimeout(t);
+    }
+  }, [incomingState, incomingCharges, checkEligibilityRef, stepRef]);
 
   const eligColor = result
     ? result?.eligibility?.likely       ? COLORS.legal
@@ -500,7 +418,6 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
               <ExpungementCountdown
                 waitYears={(result as any).eligibility?.waitYears}
                 caseDate={(result as any).caseCreatedAt}
-                navigation={navigation}
               />
             )}
 
@@ -554,6 +471,8 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                   borderBottomWidth: 1, borderBottomColor: colors.border }}>
                   <TouchableOpacity
   accessibilityRole="button"
+                    accessibilityLabel="Close petition draft"
+                    onPress={() => setShowPetition(false)}
                     >
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16,
                       color: colors.navy }}>← Close</Text>
@@ -564,10 +483,9 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                   </Text>
                   <TouchableOpacity accessibilityRole="button"
                     onPress={async () => {
-                      const { Share } = await import('react-native');
                       try {
                         await RNShare.share({ message: petitionDraft, title: 'Expungement Petition Draft' })
-                      } catch (shareErr: any) {
+                      } catch {
                         // Share API unavailable on this browser/device — fail silently
 
                     }}}
@@ -683,10 +601,6 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       )}
       <Text maxFontSizeMultiplier={1.4} style={styles.disclaimerNote}>{result?.disclaimer}</Text>
 
-      <TouchableOpacity
-  accessibilityRole="button"
-      >
-      </TouchableOpacity>
 
       <View style={{ height: 40 }} />
       <AIDisclaimer variant="banner" />
@@ -695,7 +609,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.bg },
   scroll: { padding: 16 },
 
@@ -791,5 +705,5 @@ const makeStyles = (colors: any) => StyleSheet.create({
 });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
+const styles = makeStyles();
 export default React.memo(ExpungementScreen);

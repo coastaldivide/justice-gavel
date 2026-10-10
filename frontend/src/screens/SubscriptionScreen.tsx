@@ -1,12 +1,6 @@
 import { useConfirm } from '../hooks/useConfirm';
 import { BONDSMAN_LEAD_FEE_DISPLAY } from '../constants/leadFee';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 /**
  * SubscriptionScreen -- Attorney & bail agent subscription tiers
  *
@@ -16,13 +10,11 @@ import { AppIcon } from '../components/AppIcon';
 
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation} from 'react-native';
+import { ActivityIndicator, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
 import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
 import { PAYMENTS_COMING_SOON } from '../payments';
 import {  useTheme, COLORS } from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
-import { t } from '../i18n';
 
 const TIERS = [
   {
@@ -89,10 +81,6 @@ const INTEL_TIER = {
 };
 
 function TierCard({ tier, active, onSubscribe, loading }: any) {
-  const { confirm } = useConfirm();
-  const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
   return (
     <View style={[styles.tierCard, tier.highlight && styles.tierCardHighlight]}>
       {tier.badge && (
@@ -180,7 +168,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
     try {
       const res = await api.get('/billing/subscription');
       setSubscription(res.data?.subscription);
-    } catch (e: any) {
+    } catch {
       // subscription not available -- screen still renders with upgrade CTAs
       // not subscribed yet -- that's fine
     } finally {

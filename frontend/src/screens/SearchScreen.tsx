@@ -1,9 +1,3 @@
-import { useNetworkError } from '../hooks/useNetworkError';
-import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**
  * SearchScreen -- Global search across all user data
@@ -19,7 +13,6 @@ import { api } from '../services/api';
 import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { getUserState } from '../utils/userState';
-import { t } from '../i18n';
 import {
   cacheSearch, getCachedSearch,
   saveRecentSearch, getRecentSearches, clearRecentSearches } from '../services/offlineCache';
@@ -48,17 +41,8 @@ const TYPE_LABELS: Record<string, string> = {
 const SECTION_ORDER = ['case', 'message', 'lawyer', 'lesson'];
 
 
-const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
-  <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
-    <Text style={{ fontSize: 48, marginBottom: 16 }}>{icon}</Text>
-    <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.navy, textAlign: 'center', marginBottom: 8 }}>{title}</Text>
-    <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 }}>{subtitle}</Text>
-  </View>
-);
 
 function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
-  const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
 
   const userStateRef = React.useRef<string>('');
   React.useEffect(() => {
@@ -97,25 +81,11 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [searchError, setSearchError] = useState('');
   const [results, setResults]   = useState<SearchResult[]>([]);
 
-  // Retry logic: exponential backoff on API failures
-  const [retryCount, setRetryCount] = React.useState(0);
-  const handleRetry = React.useCallback(() => {
-    setRetryCount(c => c + 1);
-  }, []);
   const [loading, setLoading]   = useState(false);
-  const [fetchError, setFetchError] = useState<string>('');
   const [searched, setSearched] = useState(false);
   const [recentSearches, setRecentSearches] = React.useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const onRefresh = useCallback(async () => {
-    if (!query.trim()) return;
-    setRefreshing(true);
-    await doSearch(query).catch(() => {});
-    setRefreshing(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
 
   const doSearch = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
@@ -140,6 +110,13 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
     }
   }, []);
 
+  const onRefresh = useCallback(async () => {
+    if (!query.trim()) return;
+    setRefreshing(true);
+    await doSearch(query).catch(() => {});
+    setRefreshing(false);
+  }, [query, doSearch]);
+
   const handleChange = (text: string) => {
     setQuery(text);
     if (debounce.current) clearTimeout(debounce.current);
@@ -159,7 +136,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
       params: item.params });
   };
 
-  const s = styles(colors as any);
+  const s = styles();
 
   return (
     <KeyboardAvoidingView
@@ -323,7 +300,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
   );
 }
 
-const styles = (C: Record<string, string>) => StyleSheet.create({
+const styles = () => StyleSheet.create({
   screen:       { flex:1 },
   searchBar:    { flexDirection:'row', alignItems:'center', margin:16,
                   borderRadius:RADIUS.lg, borderWidth:1, paddingHorizontal:12, gap:8 },

@@ -55,7 +55,7 @@ export async function getHaptics(): Promise<typeof Haptics> {
     let m; try { m = await import('expo-haptics'); } catch { return {} as any; }
     _nativeHaptics = m as unknown as typeof Haptics;
   }
-  return _nativeHaptics!;
+  return _nativeHaptics;
 }
 
 /** Drop-in replacement that works on both platforms */
@@ -93,7 +93,7 @@ export const ScreenCapture = {
     let m; try { m = await import('expo-screen-capture'); } catch { return null as any; }
     return m.allowScreenCaptureAsync(tag);
   },
-  usePreventScreenCapture: (tag = 'default') => {
+  usePreventScreenCapture: (_tag = 'default') => {
     // Hook shim — on web returns a no-op effect
     if (isWeb) return;
     // Dynamically call the real hook — can't conditionally call hooks
@@ -294,7 +294,7 @@ export const DocumentPicker = isWeb ? {
   getDocumentAsync: async (opts: any = {}) => {
     return new Promise((resolve) => {
       const input = (typeof document !== 'undefined') ? document.createElement('input') : null;
-      if (!input) return resolve({ canceled: true } as any);
+      if (!input) { resolve({ canceled: true } as any); return; }
       input.type   = 'file';
       input.accept = opts.type || '*/*';
       input.onchange = (e: any) => {

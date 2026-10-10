@@ -1,8 +1,4 @@
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**
  * HelpNowScreen -- Emergency bypass screen
@@ -16,12 +12,13 @@ import { AppIcon } from '../components/AppIcon';
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import React, { useCallback, useState, useEffect } from 'react';
+import { useLatestRef } from '../hooks/useLatestRef';
+import React, { useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Linking, Modal, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
+import { ActivityIndicator, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation } from 'react-native';
 import { getLocation } from '../services/location';
 import { t, initLang } from '../i18n';
-import { haptic, hapticCall } from '../services/haptics';
+import { hapticCall } from '../services/haptics';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
@@ -40,7 +37,7 @@ function openDir(lat: number, lng: number, name: string, onError?: () => void) {
 function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'bail' | 'lawyer' }) {
   const isBail  = type === 'bail';
   const color   = isBail ? COLORS.bail   : COLORS.legal;
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { showToast } = useToast();
   const onLinkError = () => showToast('Action unavailable on this device.', 'error');
@@ -157,15 +154,8 @@ const TOP_CITIES = [
   ].sort();
 
 
-const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
-  <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
-    <Text style={{ fontSize: 48, marginBottom: 16 }}>{icon}</Text>
-    <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.navy, textAlign: 'center', marginBottom: 8 }}>{title}</Text>
-    <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 }}>{subtitle}</Text>
-  </View>
-);
 
-function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [isOffline, setIsOffline] = React.useState(false);
 
   // ── Offline detection ──────────────────────────────────────
@@ -202,12 +192,11 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [phase, setPhase]     = useState<'loading' | 'results' | 'error'>('loading');
   const [bail, setBail]       = useState<any>(null);
   const [lawyer, setLawyer]   = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState('');
-  const [loading, setLoading] = useState(false);
   const [loadMsg, setLoadMsg]       = useState(t('help_now_loading_gps'));
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [cityQuery, setCityQuery]           = useState('');
@@ -225,9 +214,25 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     ? TOP_CITIES.filter(city => city.toLowerCase().includes(cityQuery.toLowerCase())).slice(0, 8)
     : TOP_CITIES.slice(0, 10);
 
-  useEffect(() => { Promise.resolve(initLang()).then(() => fetchBoth()).catch(() => {}); }, []);
+  // Mount-only initial load; fetchBoth is re-created every render, so call it via a ref.
+  const fetchBothRef = useLatestRef(() => fetchBoth());
+  useEffect(() => { Promise.resolve(initLang()).then(() => fetchBothRef.current()).catch(() => {}); }, [fetchBothRef]);
+
+  // Offline: show the last results saved on this device (24h) instead of empty cards.
+  const applyCached = async (): Promise<boolean> => {
+    const cached = await loadCache();
+    if (!cached) return false;
+    setBail(cached.bail ?? null);
+    setLawyer(cached.lawyer ?? null);
+    setCourthouse(cached.courthouse ?? null);
+    setPublicDefender(cached.publicDefender ?? null);
+    setCrisisLine(cached.crisisLine ?? null);
+    setPhase('results');
+    return true;
+  };
 
   const fetchBoth = async () => {
+    if (isOffline && await applyCached()) return;
     setPhase('loading');
     setLoadMsg('Finding help near you…');
     // Rotate messages to show progress -- reduces abandonment by 30% (Zeigarnik effect)
@@ -277,13 +282,18 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           api.get('/resources', { params: { category: 'CRISIS_LINE', limit: 1 } }).catch(() => ({ data: [] })),
     api.get('/resources', { params: { category: 'TREATMENT', state: stateCode, limit: 3 } }).catch(() => ({ data: [] })),
         ]);
-        setCourthouse(Array.isArray(chRes.data) ? chRes.data[0] || null : null);
-        setPublicDefender(Array.isArray(pdRes.data) ? pdRes.data[0] || null : null);
-        setCrisisLine(Array.isArray(crRes.data) ? crRes.data[0] || null : null);
+        const ch = Array.isArray(chRes.data) ? chRes.data[0] || null : null;
+        const pd = Array.isArray(pdRes.data) ? pdRes.data[0] || null : null;
+        const cr = Array.isArray(crRes.data) ? crRes.data[0] || null : null;
+        setCourthouse(ch);
+        setPublicDefender(pd);
+        setCrisisLine(cr);
+        saveCache({ bail: bailResult, lawyer: lawyerResult, courthouse: ch, publicDefender: pd, crisisLine: cr });
       } catch { /* non-fatal */ }
 
       setPhase('results');
     } catch (e: any) {
+      if (await applyCached()) return;
       setErrorMsg(e.message || 'Could not load contacts. Check your connection.');
       setPhase('error');
     }
@@ -339,6 +349,13 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   // ── Results ────────────────────────────────────────────────────────────────
   return (
     <View style={styles.screen}>
+      {isOffline && (
+        <View testID="help-now-offline" style={{ backgroundColor: COLORS.warnBg, padding: 8 }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.warnDark, fontSize: 12, textAlign: 'center' }}>
+            📴 You're offline -- showing contacts saved on this device. Call 911 in an emergency.
+          </Text>
+        </View>
+      )}
 
       {/* City picker modal -- shown when GPS is denied */}
       <Modal accessibilityViewIsModal={true} visible={showCityPicker} transparent animationType="slide"

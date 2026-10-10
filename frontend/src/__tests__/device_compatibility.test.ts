@@ -12,8 +12,13 @@
  * Detox E2E tests on physical devices.
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { scale, fontScale, gridColumns, cardWidth, shadow,
          CONTENT_MAX_WIDTH } from '../utils/responsive';
+import * as compat from '../utils/webCompat';
+
+const { Haptics } = compat;
 
 describe('Responsive Utility — Cross-Device', () => {
 
@@ -105,19 +110,16 @@ describe('Responsive Utility — Cross-Device', () => {
 
 describe('Web Compatibility Shims', () => {
   test('webCompat exports exist', async () => {
-    const compat = require('../utils/webCompat');
     expect(typeof compat.Haptics).toBe('object');
   });
 
   test('Haptics shim has all required methods', async () => {
-    const { Haptics } = require('../utils/webCompat');
     expect(typeof Haptics.impactAsync).toBe('function');
     expect(typeof Haptics.notificationAsync).toBe('function');
     expect(typeof Haptics.selectionAsync).toBe('function');
   });
 
   test('Haptics shim methods do not throw', async () => {
-    const { Haptics } = require('../utils/webCompat');
     await expect(Haptics.impactAsync()).resolves.not.toThrow();
     await expect(Haptics.notificationAsync()).resolves.not.toThrow();
     await expect(Haptics.selectionAsync()).resolves.not.toThrow();
@@ -126,7 +128,6 @@ describe('Web Compatibility Shims', () => {
 
 describe('Platform-Specific Screen Routing', () => {
   test('Three .web.tsx screen alternatives exist', () => {
-    const fs = require('fs');
     const webScreens = fs.readdirSync(__dirname + '/../screens')
       .filter((f: string) => f.endsWith('.web.tsx'));
     expect(webScreens.length).toBeGreaterThanOrEqual(3);
@@ -137,8 +138,6 @@ describe('Platform-Specific Screen Routing', () => {
 
   test('Each .web.tsx file exports a default component', () => {
     // Just verify the files exist and are non-empty
-    const fs   = require('fs');
-    const path = require('path');
     const webScreens = fs.readdirSync(path.join(__dirname, '../screens'))
       .filter((f: string) => f.endsWith('.web.tsx'));
 

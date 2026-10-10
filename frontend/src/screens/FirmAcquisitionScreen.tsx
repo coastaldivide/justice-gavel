@@ -1,7 +1,4 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
 /**
  * FirmAcquisitionScreen — Self-serve firm onboarding funnel
@@ -19,14 +16,21 @@ import { AppIcon } from '../components/AppIcon';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, ActivityIndicator, Alert, RefreshControl,
-  KeyboardAvoidingView, Platform, LayoutAnimation, InteractionManager} from 'react-native';
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+  LayoutAnimation,
+  InteractionManager,
+} from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api, apiErrorMessage } from '../services/api';
 import type {} from '../types/navigation';
 import { useAuthGate } from '../components/AuthGate';
-import { t } from '../i18n';
 
 type Flow = 'browse' | 'activate' | 'status';
 
@@ -57,7 +61,6 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 function FirmAcquisitionScreen({ navigation }: any) {
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const s = styles(colors);

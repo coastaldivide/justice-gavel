@@ -12,10 +12,7 @@
 import { RNShare } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert, Share,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { api }            from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
@@ -65,7 +62,7 @@ export default function BarPrepExplanationScreen({
     }
   }, [question_id]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const flagQuestion = useCallback(async () => {
     setFlagging(true);

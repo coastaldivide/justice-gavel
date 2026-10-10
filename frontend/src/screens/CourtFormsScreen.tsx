@@ -1,6 +1,4 @@
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { HapticButton } from '../components/HapticButton';
 import { AppIcon } from '../components/AppIcon';
 /**
  * CourtFormsScreen.tsx
@@ -25,17 +23,15 @@ import { AppIcon } from '../components/AppIcon';
  */
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import {View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet, TextInput, Platform, ActivityIndicator, Alert, KeyboardAvoidingView, RefreshControl, LayoutAnimation} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet, TextInput, Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { useNavigation } from '@react-navigation/native';
-import { useTheme, COLORS, FONTS, FONT } from '../constants/theme';
+import { useTheme, COLORS, FONT } from '../constants/theme';
 import {
   STATE_COURT_FORMS,
   FEDERAL_SOURCES,
   type CourtFormSource} from '../data/courtFormsRegistry';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { api } from '../services/api';
-import { t } from '../i18n';
 
 // ── Form categories ───────────────────────────────────────────────────────────
 const FORM_CATEGORIES = [
@@ -73,9 +69,8 @@ const FORM_CATEGORIES = [
 
 type Phase = 'state_select' | 'category_select' | 'form_display' | 'ai_guide';
 
-function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null {
+function CourtFormsScreen(): React.JSX.Element | null {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   const { colors } = useTheme();
   const s = styles(COLORS, FONT);
 
@@ -84,7 +79,6 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showDisclaimer, setShowDisclaimer] = useState(false);
-  const [consentGranted, setConsentGranted] = useState(false);
   const [aiGuide, setAiGuide] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const mountedRef = useRef(true);
@@ -111,7 +105,7 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
   const onSelectState = useCallback((state: CourtFormSource) => {
     setSelectedState(state);
     setPhase('category_select');
-  }, [selectedState]);
+  }, []);
 
   // ── Category selection ─────────────────────────────────────────────────────
   const onSelectCategory = useCallback(async (categoryKey: string) => {
@@ -120,23 +114,21 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
     if (!alreadyConsented) {
       setShowDisclaimer(true);
     } else {
-      setConsentGranted(true);
       setPhase('form_display');
     }
-  }, [selectedState]);
+  }, []);
 
   const onConsentAccepted = useCallback(() => {
     setShowDisclaimer(false);
-    setConsentGranted(true);
     setPhase('form_display');
-  }, [selectedState]);
+  }, []);
 
   // ── Open official form URL ─────────────────────────────────────────────────
   const openFormUrl = useCallback((url: string) => {
     Linking.openURL(url).catch(() => {
       showToast('Please visit the URL directly in your browser.', 'warning');
     });
-  }, [selectedState]);
+  }, [showToast]);
 
   // ── Get best URL for selected state + category ────────────────────────────
   const getBestUrl = useCallback((state: CourtFormSource, category: string): string => {
@@ -144,7 +136,7 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
     if (category === 'bail_bond') return state.bailFormsUrl ?? state.criminalFormsUrl ?? state.formsPortalUrl;
     if (category === 'criminal_defense') return state.criminalFormsUrl ?? state.formsPortalUrl;
     return state.selfHelpUrl ?? state.formsPortalUrl;
-  }, [selectedState]);
+  }, []);
 
   // ── AI field guide (information only) ─────────────────────────────────────
   const loadAiGuide = useCallback(async () => {
@@ -194,7 +186,7 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
         )}
       </View>
     </TouchableOpacity>
-  ), [s, onSelectState]);
+  ), [s, onSelectState, colors]);
 
   // ── Phase: State selection ─────────────────────────────────────────────────
   if (phase === 'state_select') {

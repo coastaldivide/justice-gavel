@@ -14,7 +14,7 @@ router.get('/', authRequired, apiLimiter, async (req, res) => {
     const { category, state, q, type, free, limit = 100 } = req.query;
   const qSafe = q ? escapeLike(String(q).trim(), 100) : null;
 
-    let sql = 'SELECT id, name, category, description, phone, website, address, city, state, email, hours, free, eligibility, languages, updated_at FROM resources WHERE 1=1';
+    let sql = 'SELECT id, title, body, url, name, category, description, phone, website, address, city, state, email, hours, free, eligibility, languages, updated_at FROM resources WHERE 1=1';
     const params = [];
 
     if (category)          { sql += ' AND category=?';                           params.push(category); }
@@ -55,7 +55,7 @@ router.get('/categories', authRequired, apiLimiter, async (req, res) => {
 router.get('/:id', authRequired, apiLimiter, async (req, res) => {
   try {
     const db  = await getDb();
-    const row = await db.get('SELECT id, name, category, description, phone, website, address, city, state, email, hours, free, eligibility, languages, updated_at FROM resources WHERE id=?', [safeInt(req.params.id)]);
+    const row = await db.get('SELECT id, title, body, url, name, category, description, phone, website, address, city, state, email, hours, free, eligibility, languages, updated_at FROM resources WHERE id=?', [safeInt(req.params.id)]);
     if (!row) return err404(res, 'Not found');
     const languages = (() => { try { return JSON.parse(row?.languages || '["English"]'); } catch { return ['English']; } })();
     res.json(row);

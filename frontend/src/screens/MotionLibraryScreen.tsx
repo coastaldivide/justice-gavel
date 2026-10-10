@@ -2,13 +2,9 @@ import { AIDisclaimer } from '../components/AIDisclaimer';
 import { apiErrorMessage } from '../services/api';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import UPLDisclaimer from '../components/UPLDisclaimer';
-import { MotionTypeBadge } from '../components/MotionTypeBadge';
 import Analytics from '../services/analytics';
-import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
+import { ScreenCapture, hapticImpact, RNShare } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 /**
  * MotionLibraryScreen -- AI motion template generator
@@ -31,8 +27,9 @@ import type { ScreenProps } from '../types/navigation';
  *   1. CaseScreen → "Motions" tab (primary -- pre-fills case data)
  *   2. Direct navigation (standalone use)
  */
-import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { Linking, Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Animated, Share, LayoutAnimation, InteractionManager} from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Linking, Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Animated, LayoutAnimation, InteractionManager } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { api }         from '../services/api';
 import { pollJob } from '../services/jobPoller';
@@ -42,7 +39,6 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
-import { t } from '../i18n';
 
 // ── Motion type definitions (mirrors backend) ─────────────────────────────────
 // ── Trial-stage motions ───────────────────────────────────────────────────────
@@ -245,8 +241,7 @@ type FilingStatus = keyof typeof FILING_STATUS;
 
 // ── Motion type card ──────────────────────────────────────────────────────────
 function MotionCard({ m, onPress }: { m: typeof MOTION_TYPES[0]; onPress: () => void }) {
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePress = () => {
@@ -278,9 +273,7 @@ function MotionCard({ m, onPress }: { m: typeof MOTION_TYPES[0]; onPress: () => 
 
 // ── History item ──────────────────────────────────────────────────────────────
 function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
-  const { confirm } = useConfirm();
   const { showToast } = useToast();
-  const { colors, isDark } = useTheme();
   const m = MOTION_TYPES.find(t => t.key === item.motion_type);
   const [showPicker, setShowPicker] = useState(false);
   const [status, setStatus] = useState<FilingStatus>(item.filing_status || 'draft');
@@ -514,7 +507,6 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   const [phase,     setPhase]     = useState<Phase>('library');
   const [selected,  setSelected]  = useState<typeof MOTION_TYPES[0] | null>(null);
   const [fields,    setFields]    = useState<Record<string, string>>({});
-  const [draft,     setDraft]     = useState('');
   const [editDraft, setEditDraft] = useState('');
   const [attorneyReviewed, setAttorneyReviewed] = useState(false);
   const [showExportGate, setShowExportGate]     = useState(false);
@@ -524,13 +516,11 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   const [reviewing, setReviewing]         = useState(false);
   const [isOffline, setIsOffline] = React.useState(false);
   React.useEffect(() => {
-    const NetInfo = require('@react-native-community/netinfo').default;
-    const unsub = NetInfo.addEventListener((state: Record<string, unknown>) => {
+    const unsub = NetInfo.addEventListener(state => {
       setIsOffline(state.isConnected === false);
     });
     return unsub;
   }, []);
-  const [generating,setGenerating]= useState(false);
   const [history,   setHistory]   = useState<any[]>([]);
   const [histLoading,setHistLoad] = useState(false);
   const [copied,    setCopied]    = useState(false);
@@ -550,6 +540,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       markOnline();
       const res = await api.get('/motions/history');
       setHistory(res.data || []);
+      cacheMotions(res.data || []).catch(() => {});  // write-through cache for offline use
       setPhase('history');
     } catch (e: any) {
       showToast('Unable to load. Please check your connection and try again.', 'error'); __DEV__ && console.warn(e?.message); }
@@ -570,7 +561,6 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
         </TouchableOpacity>
       ) : null });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, navigation, loadHistory]);
 
 
@@ -586,40 +576,34 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
   const generate = useCallback(async () => {
     if (!selected) return;
+    if (!consentGranted) { setDisclaimerVisible(true); return; }
     setPhase('generating');
-    setGenerating(true);
     try {
       const res = await api.post('/motions/generate', {
         motion_type: selected.key,
-        fields });
+        fields,
+        case_id: caseId ?? undefined });
       // Async path: backend returns jobId
       if (res.data?.jobId) {
         const jobId = res.data?.jobId;
         // Stay in 'generating' phase while polling
         const job = await pollJob(jobId, {
-          timeoutMs: 120_000,
-          onProgress: ({ status, elapsed }) => {
-            // setPhase stays 'generating' -- the spinner keeps showing
-          } });
+          timeoutMs: 120_000 });  // phase stays 'generating' -- the spinner keeps showing
         const content = (job.result as any)?.content || (job.result as any)?.draft || '';
-        setDraft(content);
         setEditDraft(content);
         Analytics.motionGenerated(selected.key);
       setPhase('result');
         return;
       }
       // Sync fallback
-      setDraft(res.data?.draft || res.data?.content || '');
       setEditDraft(res.data?.draft || res.data?.content || '');
       setPhase('result');
     } catch (e: any) {
       const msg = apiErrorMessage(e, 'Could not generate motion. Check your connection.');
       showToast(msg, 'info');
       setPhase('form');
-    } finally {
-      setGenerating(false);
     }
-  }, [selected, fields]);
+  }, [selected, fields, showToast, consentGranted, caseId]);
 
   const copyToClipboard = useCallback(async () => {
     try {
@@ -632,7 +616,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
     setCopied(true);
     if (copyTimer.current) clearTimeout(copyTimer.current);
     copyTimer.current = setTimeout(() => setCopied(false), 2500);
-  }, [editDraft]);
+  }, [editDraft, showToast]);
 
   const shareMotion = useCallback(async () => {
     // Require attorney-reviewed acknowledgment before every export
@@ -643,7 +627,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
     }
     try {
       await RNShare.share({ message: editDraft, title: selected?.label || 'Motion' });
-    } catch (shareErr: any) {
+    } catch {
       // Share API unavailable on this browser/device — fail silently
     }
     setAttorneyReviewed(false); // reset for next export
@@ -703,7 +687,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
     } catch {
       showToast('Could not generate PDF. Try copying the text instead.');
     }
-  }, [editDraft, selected, caseTitle]);
+  }, [editDraft, selected, caseTitle, showToast]);
 
   const deleteHistory = useCallback(async (id: number) => {
     confirm('Delete motion?', 'This cannot be undone.',
@@ -732,6 +716,14 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         </Text>
       </View>
       <AuthGateModal />
+      <LegalDisclaimerModal visible={disclaimerVisible} onAccept={onConsentAccepted} />
+      {isOffline && (
+        <View testID="motion-offline-banner" style={{ backgroundColor: colors.warnBg, borderRadius: 8, padding: 10, margin: 12, marginBottom: 0 }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.warnDark, fontSize: 12 }}>
+            📴 You're offline. Drafting a motion needs an internet connection.
+          </Text>
+        </View>
+      )}
 
       {caseTitle && (
         <View style={[styles.casePill, { backgroundColor: COLORS.navy + '14', borderColor: COLORS.navy + '30' }]}>
@@ -753,6 +745,17 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 
       {/* Motion grid */}
       <View style={styles.grid}>
+        {/* ── Suggested for the charges passed in from the case ── */}
+        {relevantMotions.length > 0 && (
+          <>
+            <View style={[styles.sectionHeader, { borderColor: colors.border }]}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.sectionHeaderText, { color: colors.textMuted }]}>SUGGESTED FOR YOUR CHARGES</Text>
+            </View>
+            {MOTION_TYPES.filter(m => relevantMotions.includes(m.key)).map(m => (
+              <MotionCard key={`rel-${m.key}`} m={m} onPress={() => selectMotion(m)} />
+            ))}
+          </>
+        )}
         {/* ── Trial motions ── */}
         <View style={[styles.sectionHeader, { borderColor: colors.border }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.sectionHeaderText, { color: colors.textMuted }]}>TRIAL MOTIONS</Text>
@@ -1029,7 +1032,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           <TouchableOpacity accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
             style={[styles.resultAction, { backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.border }]}
-            accessibilityLabel="+ New" onPress={() => { setPhase('library'); setSelected(null); setDraft(''); }}
+            accessibilityLabel="+ New" onPress={() => { setPhase('library'); setSelected(null); setEditDraft(''); }}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.resultActionText, { color: colors.textSecond }]}>+ New</Text>
           </TouchableOpacity>
@@ -1173,7 +1176,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               onPress={() => setHistFilter(key)}
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.histFilterText, { color: active ? (cfg?.color || COLORS.navy) : colors.textMuted }]}>
-                {key === 'all' ? 'All' : `${cfg!.icon} ${cfg!.label}`}
+                {key === 'all' || !cfg ? 'All' : `${cfg.icon} ${cfg.label}`}
               </Text>
             </TouchableOpacity>
           );
@@ -1219,8 +1222,6 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
               const res = await api.get(`/motions/history/${h.id}`).catch(() => null);
               if (res?.data?.draft) {
                 setSelected(MOTION_TYPES.find(m => m.key === h.motion_type) || null);
-                setDraft(res.data?.draft);
-      cacheMotions(res.data).catch(() => {});  // write-through cache for offline use
                 setEditDraft(res.data?.draft);
                 setPhase('result');
               }
@@ -1236,7 +1237,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   screen: { flex: 1 },
   centreWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
 
@@ -1335,7 +1336,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   statusPickerLabel: { fontSize: 12 } });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
+const styles = makeStyles();
 const egStyles = StyleSheet.create({
   overlay:    { flex:1, backgroundColor:'rgba(0,0,0,0.6)', justifyContent:'center', alignItems:'center', padding:20 },
   card:       { backgroundColor:COLORS.bgCard, borderRadius:16, padding:20, width:'100%', maxWidth:420 },

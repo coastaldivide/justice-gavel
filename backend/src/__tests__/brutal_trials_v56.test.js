@@ -161,7 +161,7 @@ describe('CONT. ContactsScreen — Local AsyncStorage Emergency Contacts', () =>
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ContactsScreen.tsx', 'utf8');
     const apis = (src.match(/api\.(get|post|put|delete)\(/g) || []).length;
     expect(apis).toBe(0);
-    expect(src).toContain('submitting');
+    expect(src).toContain('saving');
     expect(src).toContain('contacts');
   });
 });

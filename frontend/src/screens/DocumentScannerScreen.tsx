@@ -1,5 +1,3 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
  * DocumentScannerScreen -- In-app document camera and attachment
@@ -18,23 +16,16 @@ import { useToast } from '../components/ToastProvider';
  *   onCapture? -- callback with the captured image URI
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View, AppState, LayoutAnimation} from 'react-native';
-// Camera -- native only. Web uses <input type="file" accept="image/*"> fallback
-const CameraView = Platform.OS === 'web'
-  ? null
-  : require('expo-camera').CameraView;
-const useCameraPermissions = Platform.OS === 'web'
-  ? () => [{ granted: false }, async () => ({ granted: false })]
-  : require('expo-camera').useCameraPermissions;
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View, AppState, LayoutAnimation } from 'react-native';
+// Camera -- native only (web uses DocumentScannerScreen.web.tsx).
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
 import {  useTheme, RADIUS, FONTS, TYPE, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { api, apiErrorMessage } from '../services/api';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
-import { t } from '../i18n';
+import { hapticImpact, hapticNotification } from '../utils/webCompat';
 
 function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { caseId, onCapture } = (route?.params ?? {}) as {
     caseId?: number;
@@ -80,7 +71,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
     } catch {
       showToast('Could not take photo. Please try again.');
     }
-  }, []);
+  }, [showToast]);
 
   // ── Upload ────────────────────────────────────────────────────────────────
   const usePhoto = useCallback(async () => {
@@ -112,7 +103,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
     } finally {
       if (mountedRef.current) setUploading(false);
     }
-  }, [captured, caseId, onCapture, navigation]);
+  }, [captured, caseId, onCapture, navigation, showToast]);
 
   const s = styles(colors as any);
 

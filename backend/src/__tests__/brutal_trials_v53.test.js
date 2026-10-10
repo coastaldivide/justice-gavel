@@ -142,7 +142,8 @@ describe('HAP. Haptics — Semantic Haptic Feedback Pattern', () => {
     const dir  = __REPO + '/frontend/src/screens';
     const selectScreens = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('hapticSelect'));
-    expect(selectScreens.length).toBeGreaterThanOrEqual(35);
+    // Most hapticSelect imports were never called and were removed in step 2.
+    expect(selectScreens.length).toBeGreaterThanOrEqual(3);
   });
 });
 
@@ -204,7 +205,7 @@ describe('S12. UX — Accessibility + Performance', () => {
     const dir  = __REPO + '/frontend/src/screens';
     const count = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('hapticSelect')).length;
-    expect(count).toBeGreaterThanOrEqual(35);
+    expect(count).toBeGreaterThanOrEqual(3); // only screens that actually call it
   });
   test('S12-05: scrollToEnd with 100ms setTimeout avoids render race condition', async () => {
     const fs = await import('fs');

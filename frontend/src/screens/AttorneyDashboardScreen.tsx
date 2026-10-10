@@ -1,10 +1,6 @@
-import { useConfirm } from '../hooks/useConfirm';
 import { apiErrorMessage } from '../services/api';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**
  * AttorneyDashboardScreen -- Practice Management Hub
@@ -22,15 +18,13 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, KeyboardAvoidingView, Platform, LayoutAnimation, InteractionManager} from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, KeyboardAvoidingView, Platform, LayoutAnimation, InteractionManager } from 'react-native';
 import { api }      from '../services/api';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
-import OfflineBanner from '../components/OfflineBanner';
 
 import { ScreenCapture } from '../utils/webCompat';
-import { daysUntil, formatDate} from '../utils/dateUtils';
+import { daysUntil } from '../utils/dateUtils';
 import { useFocusEffect } from '@react-navigation/native';
-import { t } from '../i18n';
 
 type Tab = 'cases' | 'templates' | 'cle' | 'profile';
 
@@ -67,11 +61,8 @@ const SLOTS = ['morning','afternoon','evening'] as const;
 const DAY_LABELS: Record<string, string>  = { mon:'Mon',tue:'Tue',wed:'Wed',thu:'Thu',fri:'Fri',sat:'Sat',sun:'Sun' };
 const SLOT_LABELS: Record<string, string> = { morning:'AM',afternoon:'PM',evening:'Eve' };
 
-function AvailabilityGrid({ userId }: { userId: number }) {
-  const { impact, success, error: hapticError } = useHaptics();
+function AvailabilityGrid() {
   const { showToast } = useToast();
-  const { colors } = useTheme();
-  const styles = makeStyles(colors);
   const [schedule, setSchedule] = React.useState<Record<string, string[]>>({});
   const [note, setNote]         = React.useState('');
   const [saving, setSaving]     = React.useState(false);
@@ -270,8 +261,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
     setRefreshing(false);
   }, []);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
-  // Reload when returning from CaseScreen, BookingScreen, etc.
+  // Loads on first focus and reloads when returning from CaseScreen, BookingScreen, etc.
+  // (a separate mount effect would fetch everything twice on open).
   useFocusEffect(React.useCallback(() => { loadAll(); }, [loadAll]));
 
   const onRefresh = useCallback(() => { setRefreshing(true); loadAll(); }, [loadAll]);
@@ -381,7 +372,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             key={t.key}
             style={[styles.tabBtn, tab===t.key && { borderBottomColor: colors.steel, borderBottomWidth: 2 }]}
             onPress={() => setTab(t.key)}
-            accessibilityState={{ selected: false }}
+            accessibilityState={{ selected: tab === t.key }}
             accessibilityLabel={t.label}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.tabLabel, { color: tab===t.key ? colors.textPrimary : colors.textMuted }]}>
@@ -425,7 +416,11 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               <View style={{ flexDirection:'row', gap:6, marginBottom:10 }}>
                 {(['date','name','status'] as const).map(opt => (
                   <TouchableOpacity
-  accessibilityRole="button"
+                    key={opt}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: sortBy === opt }}
+                    accessibilityLabel={`Sort cases by ${opt}`}
+                    onPress={() => setSortBy(opt)}
                     style={{ paddingHorizontal:12, paddingVertical:5, borderRadius:16,
                       borderWidth:1, borderColor:sortBy===opt?colors.navy:colors.border,
                       backgroundColor:sortBy===opt?colors.navy:colors.bgCard }}
@@ -438,7 +433,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                 ))}
               </View>
             )}
-            {[...cases].sort((a,b)=>{ if(sortBy==='name') return (a.title||'').localeCompare(b.title||''); if(sortBy==='status') return (a.status||'').localeCompare(b.status||''); const da=a.next_court_date?new Date(a.next_court_date).getTime():Infinity; const db2=b.next_court_date?new Date(b.next_court_date).getTime():Infinity; return da-db2; }).map((cas, i) => {
+            {[...cases].sort((a,b)=>{ if(sortBy==='name') return (a.title||'').localeCompare(b.title||''); if(sortBy==='status') return (a.status||'').localeCompare(b.status||''); const da=a.next_court_date?new Date(a.next_court_date).getTime():Infinity; const db2=b.next_court_date?new Date(b.next_court_date).getTime():Infinity; return da-db2; }).map((cas) => {
               const days = daysUntil(cas.next_court_date);
               return (
                 <TouchableOpacity accessibilityRole="button"
@@ -663,6 +658,15 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
         )}
         {tab === 'profile' && profile && (
           <>
+            {barRenewalReminder && (
+              <View testID="bar-renewal-reminder" style={{ borderRadius: 8, borderWidth: 1, padding: 10, marginBottom: 12,
+                borderColor: barRenewalReminder.urgent ? colors.emergency : colors.warn, backgroundColor: colors.bgCard }}>
+                <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 17,
+                  color: barRenewalReminder.urgent ? colors.emergency : colors.textSecond }}>
+                  {barRenewalReminder.urgent ? '⚠️ ' : '🗓 '}{barRenewalReminder.message}
+                </Text>
+              </View>
+            )}
             {/* Bar Verification Status */}
             <View style={[styles.barStatusCard, {
               backgroundColor: profile.bar_verified ? COLORS.legal : COLORS.steelMid,
@@ -810,6 +814,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                 : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>Save Profile</Text>
               }
             </TouchableOpacity>
+
+            <AvailabilityGrid />
 
             <TouchableOpacity accessibilityRole="button"
               style={[styles.outlineBtn, { borderColor: colors.legalDark }]}

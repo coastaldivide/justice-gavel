@@ -1,6 +1,6 @@
 /* Render-test environment: mock native modules that have no JS fallback. */
 jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
+  jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('@react-native-community/netinfo', () => ({
   __esModule: true,
   default: { addEventListener: jest.fn(() => jest.fn()), fetch: jest.fn(() => Promise.resolve({ isConnected: true })) },
@@ -17,8 +17,8 @@ jest.mock('axios', () => {
   return { __esModule: true, default: { create: () => instance, ...instance }, create: () => instance };
 });
 jest.mock('react-native-safe-area-context', () => {
-  const React = require('react');
-  const { View } = require('react-native');
+  const React = jest.requireActual('react');
+  const { View } = jest.requireActual('react-native');
   const insets = { top: 0, right: 0, bottom: 0, left: 0 };
   const frame = { x: 0, y: 0, width: 390, height: 844 };
   const Pass = ({ children }: any) => children;

@@ -1,9 +1,6 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**
  * DiscoveryScreen -- AI Discovery Document Analysis
@@ -29,10 +26,10 @@ import { AppIcon } from '../components/AppIcon';
  *   3. Direct navigation
  */
 import type { ScreenProps } from '../types/navigation';
-import React, { useState, useEffect, useCallback, useRef, useMemo} from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as Clipboard from 'expo-clipboard';
-import { ActivityIndicator, Alert, Animated, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
-import { FileSystem, hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
+import { ActivityIndicator, Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
+import { FileSystem, RNShare } from '../utils/webCompat';
 import { api, apiErrorMessage } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
@@ -75,8 +72,7 @@ function ProgressBar({ active }: { active: boolean }) {
         toValue: active ? 1 : 0, duration: 300, useNativeDriver: false }).start();
     }
     return () => anim.current?.stop();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
+  }, [active, progress]);
 
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
@@ -105,6 +101,7 @@ function ConfidenceTag({ text }: { text: string }) {
       backgroundColor: COLORS.bgSubtle, paddingHorizontal: 5, paddingVertical: 2,
       borderRadius: 4, marginBottom: 3, alignSelf: 'flex-start' }}>POSSIBLE -- verify</Text>
   );
+  return null;
 }
 function stripTag(text: string): string {
   return text.replace(/^\[(STRONG|NOTABLE|POSSIBLE)\]\s*/, '');
@@ -123,11 +120,9 @@ function Section({
   const [expanded, setExpanded] = useState(true);
   const { showToast } = useToast();
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
-  }, []);
+  }, [fadeAnim]);
 
   if (!items?.length) return null;
 
@@ -156,7 +151,7 @@ function Section({
               key={`row-${i}`}
               style={styles.itemRow}
               onPress={() => {
-                Clipboard.setStringAsync(item)
+                Clipboard.setStringAsync(stripTag(item))
                   .then(() => showToast('Copied to clipboard', 'success'))
                   .catch(() => {});
               }}
@@ -167,7 +162,11 @@ function Section({
                   {numbered ? String(i + 1) : '›'}
                 </Text>
               </View>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.itemText, { color: COLORS.textSecond }]} selectable={true}>{item}</Text>
+              {/* The analysis tags findings [STRONG]/[NOTABLE]/[POSSIBLE]: show a badge, not the raw tag. */}
+              <View style={{ flex: 1 }}>
+                <ConfidenceTag text={item} />
+                <Text maxFontSizeMultiplier={1.4} style={[styles.itemText, { color: COLORS.textSecond }]} selectable={true}>{stripTag(item)}</Text>
+              </View>
             </TouchableOpacity>
           ))}
           <Text maxFontSizeMultiplier={1.4} style={[styles.tapToCopy, { color: COLORS.textMuted }]}>
@@ -181,7 +180,6 @@ function Section({
 
 // ── History item ──────────────────────────────────────────────────────────────
 function HistoryRow({ item, onOpen, onDelete }: any) {
-  const { colors } = useTheme();
   return (
     <TouchableOpacity
   accessibilityRole="button"
@@ -251,31 +249,6 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       .catch((e) => { __DEV__ && console.warn(e?.message); });
   }, []);
 
-  useEffect(() => {
-    navigation.setOptions({
-      title: phase === 'history' ? '📄 Analysis History' : '📄 Discovery',
-      headerRight: () => (
-        <View style={{ flexDirection: 'row', gap: 12, marginRight: 14 }}>
-          {phase !== 'history' && (
-            <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" onPress={loadHistory} accessibilityLabel="History">
-              <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
-            </TouchableOpacity>
-          )}
-          {phase === 'result' && (
-            <TouchableOpacity
-              accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-              onPress={() => {
-              setPhase('upload'); setFile(null); setAnalysis(null); setDocType('');
-            }}>
-              <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
-            </TouchableOpacity>
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-          )}
-        </View>
-      ) });
-  }, [phase]);
 
   // Get icon based on file type
   const fileIcon = (name: string = '') => {
@@ -310,7 +283,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
     } catch (e: any) {
       showToast(e?.message || 'Could not open the file picker.', 'error');
     }
-  }, []);
+  }, [showToast]);
 
 
   const runAnalysis = useCallback(async () => {
@@ -319,10 +292,6 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
     setPhase('analyzing');
 
     try {
-      // Read PDF as base64
-      const base64 = Platform.OS !== 'web' ? (await FileSystem.readAsStringAsync(file.uri, {
-        encoding: FileSystem.EncodingType.Base64 })) : null;
-
       // Send as multipart form data
       const formData = new FormData();
       // Detect MIME type from extension for proper server-side routing
@@ -365,7 +334,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
     } finally {
       setAnalyzing(false);
     }
-  }, [file, docType, caseId, caseTitle]);
+  }, [file, docType, caseId, caseTitle, showToast]);
 
   const analyze = useCallback(async () => {
     if (!file) return;
@@ -393,6 +362,32 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
     setHistLoad(false);
   }, []);
 
+  // Header buttons (declared after loadHistory, which they call).
+  useEffect(() => {
+    navigation.setOptions({
+      title: phase === 'history' ? '📄 Analysis History' : '📄 Discovery',
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', gap: 12, marginRight: 14 }}>
+          {phase !== 'history' && (
+            <TouchableOpacity accessibilityRole="button"
+          accessibilityHint="Double-tap to activate" onPress={loadHistory} accessibilityLabel="History">
+              <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
+            </TouchableOpacity>
+          )}
+          {phase === 'result' && (
+            <TouchableOpacity
+              accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
+              onPress={() => {
+              setPhase('upload'); setFile(null); setAnalysis(null); setDocType('');
+            }}>
+              <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) });
+  }, [phase, loadHistory, navigation]);
+
   const openHistoryItem = useCallback(async (item: Record<string,unknown>) => {
     try {
       const res = await api.get(`/discovery/analysis/${item.id}`);
@@ -401,7 +396,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
     } catch {
       showToast(t('disc_load_error'), 'error');
     }
-  }, []);
+  }, [showToast]);
 
   const deleteAnalysis = useCallback(async (id: number) => {
     confirm('Delete analysis?','This cannot be undone.',
@@ -428,7 +423,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
     ].filter(Boolean).join('\n');
     try {
       await RNShare.share({ message: text, title: analysis.filename });
-    } catch (shareErr: any) {
+    } catch {
       // Share API unavailable on this browser/device — fail silently
     }
   }, [analysis]);

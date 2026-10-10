@@ -1,11 +1,5 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
-import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**
  * MatchScreen -- AI-powered lawyer matching with GPS location + full contact actions
@@ -16,7 +10,7 @@ import { AppIcon } from '../components/AppIcon';
  *  3. Display ranked results with AI-written match reports + one-tap contact actions
  */
 
-import React, { useState, useCallback, useMemo} from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, TextInput, Linking, ActivityIndicator, Platform, KeyboardAvoidingView, Modal, LayoutAnimation} from 'react-native';
 import { PRACTICE_AREAS } from '../components/PracticeAreaSelector';
 import { Picker } from '@react-native-picker/picker';
@@ -24,8 +18,6 @@ import { useNavigation } from '@react-navigation/native';
 import { api, apiErrorMessage } from '../services/api';
 import { getLocationWithCity, formatDistance } from '../services/location';
 import {  useTheme, COLORS } from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
-import { t } from '../i18n';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -314,7 +306,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 function MatchScreen(): React.JSX.Element {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -323,7 +315,6 @@ function MatchScreen(): React.JSX.Element {
   const [caseType, setCaseType] = useState('');
   const [language, setLanguage] = useState('');
   const [proBonoOnly, setProBonoOnly] = useState(false);
-  const [acceptingOnly, setAcceptingOnly] = useState(false);
 
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);

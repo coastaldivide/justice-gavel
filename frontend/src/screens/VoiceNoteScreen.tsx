@@ -1,10 +1,6 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
-import { useNetworkError } from '../hooks/useNetworkError';
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 /**
  * VoiceNoteScreen -- Voice-to-structured case note
  *
@@ -26,14 +22,14 @@ import { GradientHeader } from '../components/GradientHeader';
  *   shows a text input with the same Claude structuring.
  */
 import type { ScreenProps } from '../types/navigation';
+import { Audio } from 'expo-av';
 import React, {
   useState, useEffect, useRef, useCallback
 } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, ActivityIndicator, Alert, TextInput, Platform, KeyboardAvoidingView, Share, RefreshControl, LayoutAnimation, InteractionManager} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, ActivityIndicator, TextInput, Platform, KeyboardAvoidingView, LayoutAnimation, InteractionManager } from 'react-native';
 import { FileSystem, RNShare } from '../utils/webCompat';
 import { api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
-import { t } from '../i18n';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Phase = 'idle' | 'recording' | 'processing' | 'result' | 'text_input';
@@ -48,9 +44,6 @@ interface StructuredNote {
 
 // ── Animated pulse ring ───────────────────────────────────────────────────────
 function PulseRing({ active }: { active: boolean }) {
-  const { confirm } = useConfirm();
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
   const scale  = useRef(new Animated.Value(1)).current;
   const opac   = useRef(new Animated.Value(0)).current;
   const anim   = useRef<Animated.CompositeAnimation | null>(null);
@@ -76,10 +69,8 @@ function PulseRing({ active }: { active: boolean }) {
       scale.setValue(1);
       opac.setValue(0);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   return () => anim.current?.stop();
-  }, [active]);
+  }, [active, opac, scale]);
 
   return (
     <Animated.View style={[styles.pulseRing, {
@@ -112,14 +103,7 @@ function useTimer(running: boolean) {
 function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
-  const [submitting, setSubmitting] = React.useState(false);
 
-  // Retry logic: exponential backoff on API failures
-  const [retryCount, setRetryCount] = React.useState(0);
-  const handleRetry = React.useCallback(() => {
-    setRetryCount(c => c + 1);
-  }, []);
-  const [loading, setLoading] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
@@ -136,7 +120,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
     return () => _task.cancel();
   }, []);
   const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles();
 
   const { caseId, caseTitle, existingNotes = '', onSave } = (route?.params as import('../types/api').RouteParams) ?? {};
 
@@ -155,13 +139,9 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
   const AudioRef = useRef<any>(null);
 
   useEffect(() => {
-    try {
-      const { Audio } = require('expo-av');
-      AudioRef.current = Audio;
-      setAvReady(true);
-    } catch {
-      setAvReady(false);
-    }
+    // expo-av is a dependency; native only (web uses VoiceNoteScreen.web.tsx).
+    AudioRef.current = Audio;
+    setAvReady(!!Audio);
   }, []);
 
   // ── Start recording ──────────────────────────────────────────────────────────
@@ -188,10 +168,10 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       recordingRef.current = recording;
       setPhase('recording');
     } catch (e: any) {
-      showToast(e.message || 'Try typing your note instead.', 'error'); setRetryCount(0);
+      showToast(e.message || 'Try typing your note instead.', 'error');
       setPhase('text_input');
     }
-  }, [avReady]);
+  }, [avReady, confirm, showToast]);
 
   // ── Stop + process ───────────────────────────────────────────────────────────
   const stopAndProcess = useCallback(async () => {
@@ -231,13 +211,12 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       confirm('Processing error', msg + ' Would you like to type your note instead?',
       { confirmLabel: 'Type instead', cancelLabel: 'Try again' }).then(ok => { if (ok) setPhase('text_input'); else setPhase('idle'); });
     }
-  }, []);
+  }, [confirm]);
 
   // ── Process typed text ───────────────────────────────────────────────────────
   const processText = useCallback(async () => {
     if (!textIn.trim()) return;
     setPhase('processing');
-    setLoading(true);
     try {
           const res = await api.post('/transcribe/text', { text: textIn.trim() });
       if (!mountedRef.current) return;
@@ -248,7 +227,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       showToast('Could not structure your note. Try again.');
       setPhase('text_input');
     }
-  }, [textIn]);
+  }, [textIn, showToast]);
 
   // ── Save to case ─────────────────────────────────────────────────────────────
   const saveToCase = useCallback(async () => {
@@ -269,7 +248,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
     } finally {
       setSaving(false);
     }
-  }, [editText, existingNotes, caseId, onSave, navigation]);
+  }, [editText, existingNotes, caseId, onSave, navigation, showToast]);
 
   // ── Format note for case notes field ─────────────────────────────────────────
   function formatNoteForCase(n: StructuredNote): string {
@@ -511,9 +490,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           style={[styles.shareNoteBtn, { borderColor: COLORS.navy + '55' }]}
           onPress={async () => { try {
             await RNShare.share({ message: editText, title: 'Case Note' });
-          } catch (shareErr: any) { /* ignore */ } finally {
-      setLoading(false);
-    }
+          } catch { /* ignore */ }
           }}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.shareNoteBtnText, { color: COLORS.navy }]}>↑  Share Note</Text>
@@ -538,7 +515,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   screen:    { flex: 1 },
   centreWrap:{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
 
@@ -609,5 +586,5 @@ const makeStyles = (colors: any) => StyleSheet.create({
 });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
+const styles = makeStyles();
 export default React.memo(VoiceNoteScreen);

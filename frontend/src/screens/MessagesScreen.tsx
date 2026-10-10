@@ -1,10 +1,5 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
  * LegalResearchScreen -- AI Legal Research ($49/mo)
@@ -29,16 +24,14 @@ import { AppIcon } from '../components/AppIcon';
  *   3. Direct nav from Home
  */
 import type { ScreenProps } from '../types/navigation';
-import React, {
-  useState, useEffect, useCallback, useRef, useMemo
-} from 'react';
-import { View, Text, Linking, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation, InteractionManager} from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, Linking, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Animated, KeyboardAvoidingView, Platform, LayoutAnimation, InteractionManager } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
-import { hapticImpact, hapticNotification, hapticSelection, Clipboard } from '../utils/webCompat';
+import { Clipboard } from '../utils/webCompat';
 
 // ── Quick research prompts ────────────────────────────────────────────────────
 const QUICK_PROMPTS = [
@@ -59,10 +52,7 @@ type Phase = 'paywall' | 'home' | 'searching' | 'thread' | 'history';
 
 // ── Markdown + Citation renderer ─────────────────────────────────────────────
 function MarkdownText({ text, style }: { text: string; style?: object }) {
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
-  const { colors, isDark } = useTheme();
 
   const citationBlue = COLORS.blue;
   const headingColor = COLORS.textPrimary;
@@ -136,61 +126,19 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
   return <View>{elements}</View>;
 }
 
-function HighlightedText({ text, style }: { text: string; style?: object }) {
-  const { showToast } = useToast();
-  const { colors } = useTheme();
-  // Match case citations: Name v. Name, 123 F.3d 456 (Court Year)
-  const parts = text.split(/(\*[^*]+\*|\b[A-Z][a-z].*?v\..*?,\s*\d+\s+\S+\s+\d+\s*\([^)]+\))/g);
-
-  const openVerify = (citation: string) => {
-    // CourtListener full-text search -- free, comprehensive federal cases
-    const q = encodeURIComponent(citation.trim());
-    Linking.openURL(`https://www.courtlistener.com/?q=${q}&type=o&order_by=score+desc`).catch(() => showToast('Action failed. Please try again.', 'error'));
-  };
-
-  return (
-    <Text maxFontSizeMultiplier={1.4} style={style}>
-      {parts.map((part, i) => {
-        if (part.startsWith('*') && part.endsWith('*')) {
-          return <Text maxFontSizeMultiplier={1.4} key={`row-${i}`} style={{ fontStyle: 'italic', color: COLORS.navy }}>{part.slice(1,-1)}</Text>;
-        }
-        if (/v\..*\d+\s+\S+\s+\d+/.test(part)) {
-          // Tappable citation -- opens CourtListener for instant verification
-          return (
-            <Text maxFontSizeMultiplier={1.4}
-              key={`row-${i}`}
-              style={{ fontFamily: 'monospace', fontSize: 12, color: COLORS.navy,
-                fontWeight: '700', textDecorationLine: 'underline' }}
-              onPress={() => openVerify(part)}
-              accessibilityRole="link"
-              accessibilityLabel={`Verify citation: ${part}`}
-              accessibilityHint="Opens CourtListener to verify this case citation"
-            >
-              {part} ↗
-            </Text>
-          );
-        }
-        return <Text maxFontSizeMultiplier={1.4} key={`row-${i}`}>{part}</Text>;
-      })}
-    </Text>
-  );
-}
 
 // ── Message bubble (research thread) ─────────────────────────────────────────
 function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithAI?: (content: string) => void }) {
   const { showToast } = useToast();
-  const styles = makeStyles(COLORS);
-  const { colors, isDark } = useTheme();
+  const styles = makeStyles();
   const isUser = msg.role === 'user';
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
     Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
     return () => fadeAnim.stopAnimation();
-  }, []);
+  }, [fadeAnim]);
 
   if (isUser) return (
     <Animated.View style={[styles.userBubble, { opacity: fadeAnim,
@@ -275,8 +223,8 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
 }
 
 // ── Paywall screen ────────────────────────────────────────────────────────────
-function PaywallView({ onSubscribe, loading, colors }: any) {
-  const styles = makeStyles(COLORS);
+function PaywallView({ onSubscribe, loading }: any) {
+  const styles = makeStyles();
   return (
     <ScrollView contentContainerStyle={styles.paywallScroll}>
       <View style={[styles.paywallCard, {
@@ -355,7 +303,7 @@ function PaywallView({ onSubscribe, loading, colors }: any) {
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   screen:  { flex: 1 },
   centreWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyTitle: { fontSize: 18, ...FONTS.heavy, marginBottom: 16 },
@@ -456,7 +404,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
   React.useEffect(() => { hasValidConsent().then(ok => { if (!ok) setDisclaimerVisible(true); }).catch(() => {}); }, []);
 
   const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   const { initialQuery, caseContext } = (route?.params as import('../types/api').RouteParams) ?? {};
 
@@ -485,38 +433,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
     return () => _task.cancel();
   }, []);
 
-  // Header buttons
-  useEffect(() => {
-    navigation.setOptions({
-      title: phase === 'history' ? '📚 Research History' : '⚖️ Legal Research',
-      headerRight: () => hasAccess && phase !== 'paywall' ? (
-        <View style={{ flexDirection: 'row', gap: 16, marginRight: 14 }}>
-          <TouchableOpacity accessibilityRole="button" onPress={loadHistory} accessibilityLabel="History">
-            <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
-          </TouchableOpacity>
-          {phase === 'thread' && (
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={() => {
-                setMessages([]); setSessionId(null); setQuery(''); setPhase('home');
-              }}
-            >
-              <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-      ) : null,
-    });
-  }, [phase, hasAccess]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // Auto-search if initial query provided
-  useEffect(() => {
-    if (initialQuery && hasAccess) runSearch(initialQuery);
-  }, [hasAccess]);
 
   const subscribe = useCallback(async (tier: string) => {
     requireAuth(async () => {
@@ -532,7 +449,7 @@ showToast(msg, 'error');
         setSubLoading(false);
       }
     });
-  }, [requireAuth]);
+  }, [requireAuth, showToast]);
 
   const loadHistory = useCallback(async () => {
     setHistLoad(true);
@@ -554,7 +471,7 @@ showToast(msg, 'error');
     } catch {
       showToast(t('res_load_error'), 'error');
     }
-  }, []);
+  }, [showToast]);
 
   const runSearch = useCallback(async (q: string) => {
     const text = q.trim();
@@ -595,6 +512,38 @@ showToast(msg, 'error');
     }
   }, [searching, sessionId, caseContext]);
 
+  // Header buttons (declared after loadHistory, which they call)
+  useEffect(() => {
+    navigation.setOptions({
+      title: phase === 'history' ? '📚 Research History' : '⚖️ Legal Research',
+      headerRight: () => hasAccess && phase !== 'paywall' ? (
+        <View style={{ flexDirection: 'row', gap: 16, marginRight: 14 }}>
+          <TouchableOpacity accessibilityRole="button" onPress={loadHistory} accessibilityLabel="History">
+            <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
+          </TouchableOpacity>
+          {phase === 'thread' && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={() => {
+                setMessages([]); setSessionId(null); setQuery(''); setPhase('home');
+              }}
+            >
+              <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : null,
+    });
+  }, [phase, hasAccess, loadHistory, navigation]);
+
+  // Auto-search once if an initial query was provided (when access is known).
+  const autoSearchedRef = useRef(false);
+  useEffect(() => {
+    if (!initialQuery || !hasAccess || autoSearchedRef.current) return;
+    autoSearchedRef.current = true;
+    runSearch(initialQuery);
+  }, [hasAccess, initialQuery, runSearch]);
+
   // ── RENDER: Loading ───────────────────────────────────────────────────────
   if (hasAccess === null) return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -606,7 +555,7 @@ showToast(msg, 'error');
   if (phase === 'paywall') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <AuthGateModal />
-      <PaywallView onSubscribe={subscribe} loading={subLoading} colors={colors} isDark={isDark} />
+      <PaywallView onSubscribe={subscribe} loading={subLoading} />
     </View>
   );
 

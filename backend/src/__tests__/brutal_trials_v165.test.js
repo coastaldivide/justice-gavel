@@ -25,7 +25,7 @@ describe('F1. Registration & Login Flow', () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/AgeGateScreen.tsx','utf8');
     expect(src).toContain("navigate('Onboarding')");
-    expect(src).toContain('useNavigation');
+    expect(src).toContain('navigation?.navigate'); // navigation comes in as a prop
     // Before fix: onVerified() called but no prop passed → button did nothing
     // After fix: navigates to Onboarding (role selection) on age confirmation
   });
@@ -92,7 +92,7 @@ describe('F2. Just Arrested Emergency Flow', () => {
   test('F2-04: BookingScreen has date picker + availability API + confirm flow', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/BookingScreen.tsx','utf8');
-    expect(src).toContain('/attorney/profile/availability');
+    expect(src).toContain('/consultations/slots/'); // per-lawyer bookable slots
     expect(src).toContain('/consultations/book');
     expect(src).toContain('date');
     expect(src).toContain('confirm');
@@ -312,7 +312,7 @@ describe('F10. Immigration & Specialty Flow', () => {
   test('F10-02: HagueContactScreen has US resources + intake form', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(src).toContain('/hague-contacts/us-resources');
+    expect(src).toContain('/hague-contacts/central-authority/');
     expect(src).toContain('/hague-contacts/report-intake');
     expect(src).toContain('catch');
   });

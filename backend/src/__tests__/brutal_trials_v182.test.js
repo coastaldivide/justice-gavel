@@ -131,8 +131,9 @@ describe('RUNTIME. Deep Flow Simulation', () => {
   test('RT-06: Network errors handled with circuit breaker + user message', async () => {
     const fs = await import('fs');
     const api = fs.readFileSync(__REPO + '/frontend/src/services/api.ts','utf8');
-    const hasCircuit = api.includes('circuitBreaker') || api.includes('circuit') || api.includes('Circuit');
-    expect(hasCircuit).toBe(true);
+    // The client "circuit breaker" was dead code (checkCircuit was never called) and was
+    // removed in step 2; transient failures are handled by withRetry + normalised messages.
+    expect(api).toContain('withRetry');
     expect(api).toContain('ECONNABORTED');
     expect(api).toContain("Please check your connection");
     // Error normalization: server {error:'...'} → e.message for screens

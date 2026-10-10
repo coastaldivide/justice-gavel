@@ -1,9 +1,5 @@
 import { COLORS } from '../constants/theme';
-import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { HapticButton } from '../components/HapticButton';
-import { AppIcon } from '../components/AppIcon';
 /**
  * TermsOfServiceScreen
  *
@@ -18,14 +14,10 @@ import { AppIcon } from '../components/AppIcon';
  *  • Subscription and refund terms
  *  • Encounter Recorder recording law notice
  */
-import React, { useRef, useCallback} from 'react';
-import type { ScreenProps } from '../types/navigation';
-import {
-  View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Linking, LayoutAnimation} from 'react-native';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import React, { useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { hapticImpact } from '../utils/webCompat';
 import {useTheme} from '../constants/theme';
-import { t } from '../i18n';
 
 const EFFECTIVE_DATE = 'May 25, 2026';
 const COMPANY       = 'Justice Gavel LLC';
@@ -205,9 +197,8 @@ const SECTIONS: Section[] = [
   },
 ];
 
-function TermsOfServiceScreen({ navigation }: ScreenProps): React.JSX.Element {
+function TermsOfServiceScreen(): React.JSX.Element {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
 

@@ -1,14 +1,8 @@
-import { useHaptics } from '../hooks/useHaptics';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, LayoutAnimation } from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
-import { t } from '../i18n';
 
 const PLANS = [
   { key: 'basic',  label: 'Basic',  icon: '🛡️', desc: 'Consultations, document review, Q&A hotline',     color: COLORS.blue },
@@ -26,8 +20,7 @@ const FEATURES = [
 ];
 
 function InsuranceScreen({ navigation }: ScreenProps): React.JSX.Element {
-  const { impact, success, error: hapticError } = useHaptics();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -36,7 +29,6 @@ function InsuranceScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [plan, setPlan]     = useState('basic');
   const [quote, setQuote]   = useState<any>(null);
   const [error, setError]   = useState('');
-  const [loading, setLoading] = useState(false);
   const [getting, setGetting] = useState(false);
 
   const getQuote = async () => {
@@ -51,7 +43,7 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
     if (mountedRef.current) setGetting(false);
   };
 
-  const selected = PLANS.find(p => p.key === plan)!;
+  const selected = PLANS.find(p => p.key === plan) ?? PLANS[0];
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll}

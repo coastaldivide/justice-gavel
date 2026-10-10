@@ -1,7 +1,4 @@
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 /**
  * AgeGateScreen -- Year-of-birth age verification
  *
@@ -22,16 +19,13 @@ import { GradientHeader } from '../components/GradientHeader';
  * Entry point: App.tsx checks 'age_verified' key before showing any screen
  */
 import React, { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Linking, LayoutAnimation} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
-import { t } from '../i18n';
+import { hapticSelection } from '../utils/webCompat';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const MIN_YEAR     = CURRENT_YEAR - 100;   // 100 years old max
-const MAX_YEAR     = CURRENT_YEAR - 18;    // must be born ≤ 18 years ago
 
 type Phase = 'entry' | 'underage';
 
@@ -45,12 +39,11 @@ interface AgeGateProps {
 function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
 
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
   const { colors: COLORS } = useTheme();
-  const styles = makeStyles(COLORS);
+  const styles = makeStyles();
   const [year, setYear]   = useState('');
   const [phase, setPhase] = useState<Phase>('entry');
   const [error, setError] = useState('');
@@ -84,7 +77,7 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
     // 18 or older -- mark verified and proceed
     try {
       await AsyncStorage.setItem('age_verified', 'true');
-    } catch (_) {
+    } catch {
       // Storage unavailable — still proceed, gate will re-show on next launch
     }
     if (onVerified) onVerified(); else navigation?.navigate('Onboarding');
@@ -129,7 +122,7 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
             // but set a family-mode flag and let the adult proceed
             try {
               await AsyncStorage.setItem('age_verified', 'family_mode');
-            } catch (_) { /* non-fatal — family mode flag re-set on next launch */ }
+            } catch { /* non-fatal — family mode flag re-set on next launch */ }
             if (onVerified) onVerified(); else navigation?.navigate('Onboarding');
 
     } catch (e: any) {
@@ -226,7 +219,7 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   screen:  { flex: 1, backgroundColor: COLORS.navy },
   centered: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
@@ -296,6 +289,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   backBtnText:   { color: COLORS.steel, fontSize: 14, lineHeight: 21, ...FONTS.semi },
 });
 
-// Module-level fallback for helper components
-const styles = makeStyles(COLORS);
 export default React.memo(AgeGateScreen);

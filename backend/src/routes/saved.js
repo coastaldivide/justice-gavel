@@ -21,7 +21,7 @@ router.get('/lawyers', authRequired, async (req, res) => {
   try {
     const db = await getDb();
     const lawyers = await db.all(
-      `SELECT id, user_id, provider_id, name = '', phone = '', address, specialties,
+      `SELECT id, user_id, provider_id, name, phone, address, specialties,
               rating, notes, saved_at, gavel_level, golden_gavel,
               bar_verified, jtb_verified
        FROM saved_lawyers WHERE user_id = ? ORDER BY saved_at DESC`,

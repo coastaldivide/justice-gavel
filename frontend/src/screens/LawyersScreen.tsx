@@ -1,17 +1,10 @@
-import { useNetworkError } from '../hooks/useNetworkError';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import type { NavigationProp } from '@react-navigation/native';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import { EmptyState } from '../components/EmptyState';
-import LawyerSkeletonCard from '../components/LawyerSkeletonCard';
-import ErrorState from '../components/ErrorState';
 import { useAuthGate } from '../components/AuthGate';
 import { t } from '../i18n';
 import type { ScreenProps } from '../types/navigation';
-import { haptic, hapticCall } from '../services/haptics';
+import { useLatestRef } from '../hooks/useLatestRef';
 /**
  * LawyersScreen -- GPS-first lawyer finder
  *
@@ -24,7 +17,7 @@ import { haptic, hapticCall } from '../services/haptics';
  */
 
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
-import {Animated, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
+import {Animated, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Picker } from '@react-native-picker/picker';
 import { api, apiErrorMessage } from '../services/api';
@@ -32,7 +25,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocationWithCity, formatDistance } from '../services/location';
 import { cacheSearch, getCachedLawyers } from '../services/offlineCache';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
-import PracticeAreaSelector from '../components/PracticeAreaSelector';
 import { getUserState } from '../utils/userState';
 import * as secureStorage from '../utils/secureStorage';
 import {} from '@react-navigation/native';
@@ -49,25 +41,11 @@ const CITIES_FILTERED = CITIES.filter(Boolean);
 const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo'];
 const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 
-// Module-level link helpers: no hooks here. Failures (e.g. no dialer on web /
-// tablets) are reported through the optional onError callback.
-function callPhone(phone: string, onError?: () => void) {
-  hapticCall();
-  Linking.openURL('tel:' + phone.replace(/[^0-9]/g, '')).catch(() => onError?.());
-}
-function sendSMS(phone: string, onError?: () => void) {
-  Linking.openURL('sms:' + phone.replace(/[^0-9]/g, '')).catch(() => onError?.());
-}
-function openDirections(lat: number, lng: number, name: string, onError?: () => void) {
-  const encoded = encodeURIComponent(name);
-  const url = Platform.OS === 'ios'
-    ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encoded}`
-    : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  Linking.openURL(url).catch(() => onError?.());
-}
-function openWebsite(url: string, onError?: () => void) {
-  Linking.openURL(url.startsWith('http') ? url : 'https://' + url).catch(() => onError?.());
-}
+/** Page size for /providers/lawyers (the backend default); a full page means more may follow. */
+const PAGE_SIZE = 20;
+
+/** Justice Gavel's own client-review summary for one lawyer (GET /reviews/summary). */
+type ReviewSummary = { avg_rating: number; count: number; top_reviews: { rating: number; comment: string }[] };
 
 // ── Badges ────────────────────────────────────────────────────────────────────
 function DistanceBadge({ distanceKm }: { distanceKm: number | null }) {
@@ -83,32 +61,22 @@ function DistanceBadge({ distanceKm }: { distanceKm: number | null }) {
   );
 }
 
-function TagRow({ items, color = COLORS.steel }: { items: string[]; color?: string }) {
-  if (!items?.length) return null;
-  return (
-    <View style={styles.tagRow}>
-      {(items || []).map(t => (
-        <View key={t} style={[styles.tag, { backgroundColor: color + '18', borderColor: color + '55' }]}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.tagText, { color }]}>{t}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
 // ── Lawyer card ───────────────────────────────────────────────────────────────
-const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: Record<string,any>; navigation: NavigationProp<any> }) {
+const LawyerCard = React.memo(function LawyerCard({ item, navigation, isSelected = false, onToggleSelect, reviewSummary, onBadgeInfo }: {
+  item: Record<string,any>;
+  navigation: NavigationProp<any>;
+  /** Selected for "Contact multiple attorneys" (max 3). */
+  isSelected?: boolean;
+  onToggleSelect?: (id: number) => void;
+  reviewSummary?: ReviewSummary;
+  /** Opens the screen's verified-badge explainer. */
+  onBadgeInfo?: (type: 'bar' | 'jtb' | 'golden') => void;
+}) {
   const { showToast } = useToast();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   const [caseLoading, setCaseLoading] = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
-  const [msgModal, setMsgModal]   = React.useState(false);
-  const [msgName,  setMsgName]    = React.useState('');
-  const [msgPhone, setMsgPhone]   = React.useState('');
-  const [msgNote,  setMsgNote]    = React.useState('');
-  const [msgSent,  setMsgSent]    = React.useState(false);
-  const [msgSending, setMsgSending] = React.useState(false);
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
@@ -260,7 +228,9 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate" testID="lawyer-card"
             style={{ flexDirection:'row', alignItems:'center', gap:4 }}
-            onPress={() => showToast('Justice Gavel Verified: bar license and identity confirmed by our team.', 'info')}
+            onPress={() => onBadgeInfo
+              ? onBadgeInfo('jtb')
+              : showToast('Justice Gavel Verified: bar license and identity confirmed by our team.', 'info')}
             accessibilityLabel="What does Justice Gavel Verified mean?"
           >
           <View style={[styles.badge, {
@@ -338,6 +308,23 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
             {saving ? '…' : saved ? '★' : '☆'}
           </Text>
         </TouchableOpacity>
+        {onToggleSelect && (
+          <TouchableOpacity
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: isSelected }}
+            accessibilityLabel={isSelected
+              ? `Remove ${item?.name} from the attorneys to contact`
+              : `Select ${item?.name} to contact several attorneys at once (up to 3)`}
+            style={[styles.secondaryBtn, isSelected && { borderColor: COLORS.navy }]}
+            onPress={() => onToggleSelect(item.id)}
+            activeOpacity={0.75}
+            testID="lawyer-card-select"
+          >
+            <Text maxFontSizeMultiplier={1.4} style={[styles.secondaryBtnText, isSelected && { color: COLORS.navy }]}>
+              {isSelected ? '☑ Selected' : '☐ Select'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Expandable: bio, experience */}
@@ -360,6 +347,18 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
           )}
           {!!item?.bio && (
             <Text maxFontSizeMultiplier={1.4} style={styles.bio}>{item?.bio}</Text>
+          )}
+          {!!reviewSummary && reviewSummary.count > 0 && (
+            <View testID="lawyer-review-summary">
+              <Text maxFontSizeMultiplier={1.4} style={styles.exp}>
+                ★ {Number(reviewSummary.avg_rating).toFixed(1)} from {reviewSummary.count} Justice Gavel client review{reviewSummary.count !== 1 ? 's' : ''}
+              </Text>
+              {(reviewSummary.top_reviews || []).filter(r => !!r?.comment).slice(0, 2).map((r, i) => (
+                <Text key={i} maxFontSizeMultiplier={1.4} style={styles.bio} numberOfLines={3}>
+                  “{r.comment}”
+                </Text>
+              ))}
+            </View>
           )}
         </View>
       )}
@@ -390,7 +389,15 @@ function FilterModal({
         </View>
 
         <ScrollView keyboardShouldPersistTaps='handled' style={styles.modalBody}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.filterLabel}>Language</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.filterLabel}>Case type</Text>
+          <View style={styles.pickerWrap}>
+            <Picker selectedValue={caseType} onValueChange={v => setCaseType(String(v))} style={styles.picker}>
+              <Picker.Item label="Any case type" value="" />
+              {CASE_TYPE_OPTIONS.map(o => <Picker.Item key={o.key} label={o.label} value={o.key} />)}
+            </Picker>
+          </View>
+
+          <Text maxFontSizeMultiplier={1.4} style={[styles.filterLabel, { marginTop: 16 }]}>Language</Text>
           <View style={styles.pickerWrap}>
             <Picker selectedValue={language} onValueChange={v => setLanguage(String(v))} style={styles.picker}>
               <Picker.Item label="Any language" value="" />
@@ -447,6 +454,8 @@ const QUICK_NEEDS = [
     { key: '',               label: 'Something Else',         icon: '⚖️', color: COLORS.navy, bg: COLORS.bgSubtle },
     { key: 'Appeals',        label: 'Appeal / Post-Conviction' },
   ];
+/** Case types the lawyer search filters on (the quick-need keys, minus "Something Else"). */
+const CASE_TYPE_OPTIONS = QUICK_NEEDS.filter(n => !!n.key);
 
 
 
@@ -460,10 +469,8 @@ function SkeletonCard({ colors }: { colors: Record<string, any> }) {
         Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
       ])
     ).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => shimmer.stopAnimation();
-  }, []);
+  }, [shimmer]);
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
   const bg = colors?.bgSubtle || COLORS.bgSubtle;
   return (
@@ -486,8 +493,11 @@ function SkeletonCard({ colors }: { colors: Record<string, any> }) {
 }
 
 function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
+  // Pagination: fetchLawyers loads page 1, loadMore appends the next page.
   const [page, setPage] = React.useState(1);
-  const [hasMore, setHasMore] = React.useState(true);
+  const [hasMore, setHasMore] = React.useState(false);
+  const lastParamsRef = React.useRef<Record<string, unknown> | null>(null);
+  const loadingMoreRef = React.useRef(false);
 
 
   const userStateRef = React.useRef<string>('');
@@ -496,17 +506,12 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
   }, []);
 
   const searchDebounce = React.useRef<ReturnType<typeof setTimeout>|null>(null);
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
   const [lawyers, setLawyers]       = useState<any[]>([]);
 
-  // Retry logic: exponential backoff on API failures
-  const [retryCount, setRetryCount] = React.useState(0);
-  const handleRetry = React.useCallback(() => {
-    setRetryCount(c => c + 1);
-  }, []);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusMsg, setStatusMsg]   = useState('Locating you…');
@@ -523,7 +528,7 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [coords, setCoords]           = useState<{ lat: number; lng: number } | null>(null);
 
   // Count active filters for pill badge
-  const activeFilters = [language, manualCity, proBonoOnly].filter(Boolean).length;
+  const activeFilters = [caseType, language, manualCity, proBonoOnly].filter(Boolean).length;
 
   // ── Subscription tier check for soft upsell ────────────────────────────────
   const [isPro, setIsPro] = useState(false);
@@ -552,6 +557,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setStatusMsg('Searching…');
+    setHasMore(false);
 
     try {
       // ── Stale-while-revalidate: show cached data immediately ─────────────
@@ -567,7 +573,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
         }
       }
 
-      const params: Record<string, unknown> = { limit: 20, caseType, language, proBonoOnly, user_state: userStateRef.current || undefined };
+      const params: Record<string, unknown> = { limit: PAGE_SIZE, caseType, language, proBonoOnly, user_state: userStateRef.current || undefined };
 
       if (manualCity) {
         params.city = manualCity;
@@ -593,6 +599,9 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
       setStatusMsg('Finding lawyers near you…');
       var res = await api.get('/providers/lawyers', { params });
       setLawyers(res.data || []);
+      lastParamsRef.current = params;
+      setPage(1);
+      setHasMore(Array.isArray(res.data) && res.data.length >= PAGE_SIZE);
     // Fetch review summaries for first 10 lawyers (non-blocking)
     try {
       const lawyerIds = res.data?.slice(0, 10).map((l: Record<string, unknown>) => l.id);
@@ -610,13 +619,39 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
     } catch {}
     // (remove the extra ); we added above -- the original setLawyers call needs its own);
       setStatusMsg(res.data?.length === 0 ? 'No lawyers found. Try adjusting filters.' : '');
-    } catch (e: any) {
+    } catch {
       setStatusMsg('Could not load lawyers. Check your connection or try a different city.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, [manualCity, caseType, language, proBonoOnly, coords]);
+  // Effects below fire on their own triggers (mount / filter change), not every
+  // time fetchLawyers is re-created (e.g. when coords arrive), so they call it via a ref.
+  const fetchLawyersRef = useLatestRef(fetchLawyers);
+
+  // Next page for infinite scroll (same query as the last full fetch).
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMoreRef.current || !lastParamsRef.current) return;
+    loadingMoreRef.current = true;
+    const next = page + 1;
+    try {
+      const res = await api.get('/providers/lawyers', { params: { ...lastParamsRef.current, page: next } });
+      const rows: any[] = Array.isArray(res.data) ? res.data : [];
+      if (!mountedRef.current) return;
+      setLawyers(prev => {
+        const seen = new Set(prev.map(l => l.id));
+        return [...prev, ...rows.filter(l => !seen.has(l.id))];
+      });
+      setPage(next);
+      setHasMore(rows.length >= PAGE_SIZE);
+    } catch {
+      // Keep the current list; pull-to-refresh retries from page 1.
+      if (mountedRef.current) setHasMore(false);
+    } finally {
+      loadingMoreRef.current = false;
+    }
+  }, [hasMore, page]);
 
   // Show "what do you need?" modal on very first visit, then auto-fetch
   useEffect(() => {
@@ -624,32 +659,31 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
       if (!shown) {
         setShowNeedModal(true);
       } else {
-        fetchLawyers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        fetchLawyersRef.current();
       }
-    }).catch(() => fetchLawyers());
-  }, []);
+    }).catch(() => fetchLawyersRef.current());
+  }, [fetchLawyersRef]);
 
-  // Re-fetch when filters change
-  const [mounted, setMounted] = useState(false);
-  const [loadError, setLoadError] = React.useState('');
+  // Re-fetch when filters change (skipping the initial values: the mount effect fetches)
+  const filtersInitialisedRef = useRef(false);
   const [availableNow, setAvailableNow] = React.useState(false);
-  const [fastOnly, setFastOnly] = React.useState(false);
   const [selected, setSelected]       = React.useState<number[]>([]);
   const [showBulk, setShowBulk]       = React.useState(false);
   const [bulkMsg, setBulkMsg]         = React.useState('');
   const [bulkSending, setBulkSending] = React.useState(false);
   const [bulkResult, setBulkResult]   = React.useState<string | null>(null);
-  const [reviewSummaries, setReviewSummaries] = React.useState<    Record<number, { avg_rating: number; count: number; top_reviews: { rating: number; comment: string }[] }>>({});
+  const [reviewSummaries, setReviewSummaries] = React.useState<Record<number, ReviewSummary>>({});
   const [showBadgeInfo, setShowBadgeInfo] = React.useState(false);
   const [badgeInfoType, setBadgeInfoType] = React.useState<'bar'|'jtb'|'golden'>('bar');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const showBadgeExplainer = React.useCallback((type: 'bar'|'jtb'|'golden') => {
+    setBadgeInfoType(type);
+    setShowBadgeInfo(true);
+  }, []);
+
   useEffect(() => {
-    if (!mounted) { setMounted(true); return; }
-    fetchLawyers();
-  }, [manualCity, caseType, language, proBonoOnly]);
+    if (!filtersInitialisedRef.current) { filtersInitialisedRef.current = true; return; }
+    fetchLawyersRef.current();
+  }, [manualCity, caseType, language, proBonoOnly, fetchLawyersRef]);
 
   const applyFilters = () => {
     setShowFilters(false);
@@ -776,7 +810,8 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           estimatedItemSize={80}
           data={sortedLawyers}
           keyExtractor={i => String(i.id)}
-          onEndReached={() => { if (hasMore) setPage(p => p + 1); }}
+          onEndReached={loadMore}
+          extraData={{ selected, reviewSummaries }}
           onEndReachedThreshold={0.4}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetchLawyers(true)} tintColor={COLORS.navy} />}
@@ -819,16 +854,17 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               </View>
             ) : null
           }
-          renderItem={({ item }) => <LawyerCard item={item} navigation={navigation} />}
+          renderItem={({ item }) => (
+            <LawyerCard
+              item={item}
+              navigation={navigation}
+              isSelected={selected.includes(item.id)}
+              onToggleSelect={toggleSelect}
+              reviewSummary={reviewSummaries[item.id]}
+              onBadgeInfo={showBadgeExplainer}
+            />
+          )}
         />
-        {loadError ? (
-          <View style={{ padding:24, alignItems:'center' }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
-              color:colors.emergency, textAlign:'center', marginBottom:12 }}>
-              {loadError}
-            </Text>
-          </View>
-        ) : null}
         </>
       )
     }

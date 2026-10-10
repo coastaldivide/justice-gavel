@@ -1,13 +1,8 @@
-import { useNetworkError } from '../hooks/useNetworkError';
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { EmptyState } from '../components/EmptyState';
 import { useForm, Controller } from 'react-hook-form';
 import { useToast } from '../components/ToastProvider';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * FirmVerticalScreen — Practice Area Configuration & Specialty Trackers
  *
@@ -26,13 +21,23 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, ActivityIndicator, Alert, RefreshControl,
-  Switch, Platform, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+  Switch,
+  Platform,
+  KeyboardAvoidingView,
+  LayoutAnimation,
+  InteractionManager,
+} from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api, apiErrorMessage } from '../services/api';
 import type {} from '../types/navigation';
-import { t } from '../i18n';
 import { toLocalISODate } from '../utils/dateUtils';
 
 type Tab = 'setup' | 'pricing' | 'trackers' | 'deadlines';
@@ -108,12 +113,11 @@ const FEATURE_FLAGS: Record<string, { key: string; label: string; desc: string }
 const ISO_DATE_RE_FV = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const isValidDateFV  = (s: string) => ISO_DATE_RE_FV.test(s);
 
-function FirmVerticalScreen({ navigation, route }: any) {
+function FirmVerticalScreen({ route }: any) {
 
   const { confirm } = useConfirm();
-  const { impact, success, error: hapticError } = useHaptics();
   // react-hook-form: migrating from 5 individual useState form fields
-  const { control, handleSubmit, setValue, formState: { errors: formErrors } } = useForm({
+  const { control } = useForm({
     defaultValues: {
       firm: '',
       acName: '',
@@ -147,11 +151,6 @@ function FirmVerticalScreen({ navigation, route }: any) {
   const [subscriptionStatus, setSubStatus] = useState<string>('active');
   const [graceUntil, setGraceUntil]        = useState<string | null>(null);
 
-  // Retry logic: exponential backoff on API failures
-  const [retryCount, setRetryCount] = React.useState(0);
-  const handleRetry = React.useCallback(() => {
-    setRetryCount(c => c + 1);
-  }, []);
   const [loading, setLoading]       = useState(true);
   const [saving,  setSaving]        = useState(false);
   const [refreshing, setRefresh]    = useState(false);
@@ -246,7 +245,7 @@ function FirmVerticalScreen({ navigation, route }: any) {
       setLoading(false);
       setRefresh(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
@@ -255,7 +254,7 @@ function FirmVerticalScreen({ navigation, route }: any) {
 confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the tracker.`,
       { confirmLabel: 'Mark Resolved', destructive: true }).then(async ok => { if (!ok) return;
       try { await api.patch(`/firm-verticals/${type}/${id}/resolve`, {}); loadTrackers(); }
-         catch (e: any) { showToast(apiErrorMessage(e, 'Could not resolve.'), 'error'); setRetryCount(0); }
+         catch (e: any) { showToast(apiErrorMessage(e, 'Could not resolve.'), 'error'); }
     })
   };
 
@@ -292,7 +291,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       setDeadlines(res.data?.deadlines || []);
     } catch { showToast('Could not compute deadlines.'); }
     finally { setDLLoading(false); }
-  }, [firm, trigDate]);
+  }, [firm, trigDate, showToast]);
 
   // Auto-fire deadline calculation when switching to deadlines tab or changing trigger date
   useEffect(() => { if (tab === 'deadlines') loadDeadlines(); }, [tab, trigDate, loadDeadlines]);
@@ -324,7 +323,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       showToast('Mission pricing request received. Review takes 1–3 business days.');
       setMissionEIN(''); setMissionWeb('');
     } catch (e: any) {
-      showToast(apiErrorMessage(e, 'Could not submit request.'), 'error'); setRetryCount(0);
+      showToast(apiErrorMessage(e, 'Could not submit request.'), 'error');
     } finally { setSubMV(false); }
   };
 
@@ -344,7 +343,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       setACName(''); setACStart(toLocalISODate(new Date()));
       setACDet(false); setACCountry(''); setACNotes('');
       loadTrackers();
-    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create clock.'), 'error'); setRetryCount(0); }
+    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create clock.'), 'error'); }
     finally { setCreatingAC(false); }
   };
 
@@ -371,7 +370,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       setDPAName(''); setDPAAgency(''); setDPACoop('unknown'); setDPAFineM('');
       setDPASignDue(''); setDPAWellsDue(''); setDPASubDue('');
       loadTrackers();
-    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create tracker.'), 'error'); setRetryCount(0); }
+    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create tracker.'), 'error'); }
     finally { setCreatingDPA(false); }
   };
 
@@ -386,7 +385,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       });
       setTROName(''); setTRODV(false); setTROAsset('under_100k');
       loadTrackers();
-    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create TRO tracker.'), 'error'); setRetryCount(0); }
+    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create TRO tracker.'), 'error'); }
     finally { setCreatingTRO(false); }
   };
 

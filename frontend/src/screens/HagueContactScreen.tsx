@@ -1,8 +1,5 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { HapticButton } from '../components/HapticButton';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
  * HagueContactScreen.tsx — Hague Convention Central Authority Contact
@@ -20,15 +17,24 @@ import { AppIcon } from '../components/AppIcon';
  * Auth: required
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  View, Text, KeyboardAvoidingView, ScrollView, RefreshControl, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator, Linking,
-  TextInput, LayoutAnimation, InteractionManager, Platform } from 'react-native';
+  View,
+  Text,
+  KeyboardAvoidingView,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Linking,
+  TextInput,
+  LayoutAnimation,
+  InteractionManager,
+  Platform,
+} from 'react-native';
 import { useTheme } from '../constants/theme';
-import { haptic, hapticCall, hapticSelect, hapticSuccess, hapticWarn } from '../services/haptics';
+import { hapticCall, hapticSelect, hapticSuccess, hapticWarn } from '../services/haptics';
 import api from '../services/api';
-import { t } from '../i18n';
 
 // ── Member state list (subset — full list from API) ─────────────────────────
 const QUICK_COUNTRIES = [
@@ -58,7 +64,6 @@ interface HagueContactScreenProps {
 }
 
 function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors } = useTheme();
   const { caseId, caseName } = route?.params || {};
@@ -72,7 +77,6 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
     });
     return () => _task.cancel();
   }, []);
-  const [usResources, setUsResources] = useState<any>(null);
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [authorityData, setAuthorityData] = useState<any>(null);
   const [loadingAuth, setLoadingAuth] = useState(false);
@@ -84,18 +88,6 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
   const [abductionDate, setAbductionDate] = useState('');
   const [intakeNotes, setIntakeNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    loadUsResources();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loadUsResources = useCallback(async () => {
-    try {
-      const res = await api.get('/hague-contacts/us-resources');
-      if (mountedRef.current) setUsResources(res.data?.resources);
-    } catch { /* non-critical */ }
-  }, []);
 
   const lookupAuthority = useCallback(async (code: string) => {
     if (mountedRef.current) setLoadingAuth(true);
@@ -110,7 +102,7 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
     } finally {
       if (mountedRef.current) setLoadingAuth(false);
     }
-  }, []);
+  }, [showToast]);
 
   const onSelectCountry = useCallback((code: string) => {
     if (mountedRef.current) setSelectedCountry(code);
@@ -123,14 +115,14 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
     Linking.openURL(url).catch(() =>
       showToast('Please copy this URL manually.', 'warning')
     );
-  }, []);
+  }, [showToast]);
 
   const callNumber = useCallback((phone: string) => {
     hapticCall();
     Linking.openURL(`tel:${phone.replace(/[^0-9+]/g, '')}`).catch(() =>
       Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Could not open dialer.', 'error'))
     );
-  }, []);
+  }, [showToast]);
 
   const submitIntake = useCallback(async () => {
     if (!caseId) {
@@ -160,7 +152,7 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
     } finally {
       if (mountedRef.current) setSubmitting(false);
     }
-  }, [caseId, childName, selectedCountry, abductionDate, childAge, intakeNotes]);
+  }, [caseId, childName, selectedCountry, abductionDate, childAge, intakeNotes, showToast]);
 
   const s = styles(colors);
 

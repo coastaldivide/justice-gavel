@@ -1,17 +1,12 @@
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { GradientHeader } from '../components/GradientHeader';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
-import ScreenHeader from '../components/ScreenHeader';
-import SkeletonLoader from '../components/SkeletonLoader';
-import React, { useState, useEffect, useRef, useCallback, useMemo} from 'react';
-import {View, Text, RefreshControl, TouchableOpacity, TextInput, Linking, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, LayoutAnimation} from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, RefreshControl, TouchableOpacity, TextInput, Linking, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, LayoutAnimation } from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
-import { api, cachedGet }           from '../services/api';
+import { cachedGet }           from '../services/api';
 import { cacheResources, getCachedResources } from '../services/offlineCache';
 import {  useTheme, COLORS }      from '../constants/theme';
-import { t } from '../i18n';
 
 
 const CATEGORIES = [
@@ -48,23 +43,11 @@ const CAT_COLORS: Record<string, { bg: string; border: string; text: string }> =
   ATTORNEY_COMPLAINT: { bg: COLORS.emergencyBg, border: COLORS.emergencyDark, text: COLORS.emergencyDark },
 };
 
-const CAT_PRIORITY: Record<string, number> = {
-  CRISIS_LINE: 10, PUBLIC_DEFENDER: 9, LEGAL_AID: 8,
-  DV_SHELTER: 7, INMATE_LOOKUP: 6,
-};
 
 
-const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
-  <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 32 }}>
-    <Text style={{ fontSize: 48, marginBottom: 16 }}>{icon}</Text>
-    <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.navy, textAlign: 'center', marginBottom: 8 }}>{title}</Text>
-    <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 }}>{subtitle}</Text>
-  </View>
-);
 
 function ResourcesScreen(): React.JSX.Element {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -83,9 +66,15 @@ function ResourcesScreen(): React.JSX.Element {
     if (!silent) setLoading(true);
     try {
       const res = await cachedGet('/resources?limit=500');
-      const items = res.data || [];
+      // Rows carry either title/body/url or name/description/website; normalise once.
+      const items = (Array.isArray(res.data) ? res.data : []).map((r: any) => ({
+        ...r,
+        title: r.title || r.name || '',
+        body:  r.body  || r.description || '',
+        url:   r.url   || r.website || '',
+      }));
       if (mountedRef.current) { setAllItems(items); cacheResources(items); }
-    } catch (e: unknown) {
+    } catch {
       const cached = await getCachedResources().catch(() => []);
       if (mountedRef.current && cached?.length) setAllItems(cached);
       else if (mountedRef.current) setError('Could not load resources');
@@ -115,7 +104,6 @@ function ResourcesScreen(): React.JSX.Element {
   const card = isDark ? colors.surface : colors.bgCard;
   const text = colors.textPrimary;
   const sub  = colors.textMuted;
-  const catColors = CAT_COLORS[category] || CAT_COLORS.textMuted;
 
   if (loading && !allItems.length) return (
     <View style={{ flex:1, justifyContent:'center', alignItems:'center', backgroundColor:bg }}>
@@ -311,5 +299,4 @@ function ResourcesScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({});
 export default React.memo(ResourcesScreen);

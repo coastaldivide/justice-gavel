@@ -15,10 +15,16 @@ export * from './common';
 
 export const paymentsEnabled = STRIPE_PUBLISHABLE_KEY.length > 0;
 
+type StripeModule = typeof import('@stripe/stripe-react-native');
+/** Loaded lazily so the Stripe native module is only touched when Stripe is configured. */
+function loadStripe(): StripeModule {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- synchronous lazy load: importing @stripe/stripe-react-native eagerly would initialise its native module even with payments disabled
+  return require('@stripe/stripe-react-native');
+}
+
 export function PaymentsProvider({ children }: { children: React.ReactNode }) {
   if (!paymentsEnabled) return <>{children}</>;
-  // Lazy require so the native module is only touched when Stripe is configured.
-  const { StripeProvider } = require('@stripe/stripe-react-native');
+  const { StripeProvider } = loadStripe();
   return (
     <StripeProvider
       publishableKey={STRIPE_PUBLISHABLE_KEY}
@@ -31,7 +37,7 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
 }
 
 function useStripePaymentSheet(): PaymentSheetApi {
-  const { useStripe } = require('@stripe/stripe-react-native');
+  const { useStripe } = loadStripe();
   const stripe = useStripe();
   return {
     available: true,

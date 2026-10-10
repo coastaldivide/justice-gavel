@@ -1,12 +1,7 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
-import { useNetworkError } from '../hooks/useNetworkError';
 import { useToast } from '../components/ToastProvider';
 import { useConfirm } from '../hooks/useConfirm';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * ChatScreen — Full conversation UI wired to Claude backend
  *
@@ -39,15 +34,21 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
  *   T2-F  Removed unused offlineQAMap useMemo (getOfflineAnswer uses OFFLINE_QA directly)
  */
 
-import React, {
-  useCallback, useEffect, useMemo, useRef, useState,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView,
-  Platform, Pressable, Share, StyleSheet, Text, TextInput,
-  TouchableOpacity, View, AccessibilityInfo, LayoutAnimation, InteractionManager} from 'react-native';
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  LayoutAnimation,
+  InteractionManager,
+} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { useFocusEffect } from '@react-navigation/native';
 import { track } from '../services/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -65,16 +66,6 @@ import { hapticImpact, RNShare } from '../utils/webCompat';
 
 // ── Static colour palette used in module-scope constants and StyleSheet ────────
 // (useTheme() is hook-only; these mirror the dark-navy design system values)
-const CHAT_COLORS = {
-  bg:          COLORS.bg,
-  bgCard:      COLORS.surface,
-  bgSubtle:    COLORS.border,
-  navy:        COLORS.navy,
-  gold:        COLORS.gold,
-  textSecond:  COLORS.steel,
-  textFaint:   COLORS.textMuted,
-  textMuted:   COLORS.textMuted,
-};
 
 // ── Message shape ──────────────────────────────────────────────────────────────
 interface Message {
@@ -107,7 +98,7 @@ async function getSessionId(): Promise<string> {
       await AsyncStorage.setItem('chat_session_id', id).catch(() => {}); // non-fatal if storage full
     }
     return id;
-  } catch (_) {
+  } catch {
     // AsyncStorage unavailable — use in-memory session ID (resets on restart)
     return randomId();
   }
@@ -337,11 +328,10 @@ function getOfflineAnswer(query: string): string | null {
 
 // ── ChatScreen ─────────────────────────────────────────────────────────────────
 // T1-J: function signature is on one line; all hooks are inside the function body
-const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
 function ChatScreen({ navigation, route }: ScreenProps) {
   const { confirm } = useConfirm();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
 
   // ── Route params ─────────────────────────────────────────────────────────────
@@ -363,11 +353,6 @@ function ChatScreen({ navigation, route }: ScreenProps) {
   const [messages,      setMessages]      = useState<Message[]>([]);
   const [input,         setInput]         = useState('');
 
-  // Retry logic: exponential backoff on API failures
-  const [retryCount, setRetryCount] = React.useState(0);
-  const handleRetry = React.useCallback(() => {
-    setRetryCount(c => c + 1);
-  }, []);
   const [loading,       setLoading]       = useState(false);
   const [sessionId,     setSessionId]     = useState('');
   const [showDisclaimer,setShowDisclaimer] = useState(true); // T2-E: unified disclaimer state
@@ -381,24 +366,15 @@ function ChatScreen({ navigation, route }: ScreenProps) {
   // ── Effects ───────────────────────────────────────────────────────────────────
   useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    return () => { mountedRef.current = false; };
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     });
-    return () => _task.cancel();
+    return () => { mountedRef.current = false; _task.cancel(); };
   }, []);
 
   useEffect(() => {
     getUserState().then(s => { userStateRef.current = s; }).catch(() => {});
   }, []);
 
-  // T1-L: session load moved into useEffect (was floating outside any hook)
-  useEffect(() => {
-    getSessionId().then(id => {
-      setSessionId(id);
-      loadHistory(id);
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     if (initialQuery) setInput(initialQuery);
@@ -428,6 +404,14 @@ function ChatScreen({ navigation, route }: ScreenProps) {
       if (mountedRef.current) setMessages(msgs);
     } catch (e: any) { __DEV__ && console.warn((e as Error)?.message); }
   }, []);
+
+  // T1-L: session load on mount (declared after loadHistory, which it calls)
+  useEffect(() => {
+    getSessionId().then(id => {
+      setSessionId(id);
+      loadHistory(id);
+    });
+  }, [loadHistory]);
 
   const onRefresh = useCallback(async () => {
     if (!sessionId) return;
@@ -467,13 +451,12 @@ function ChatScreen({ navigation, route }: ScreenProps) {
         message: header + '\n\n' + body + '\n\n' + footer,
         title: 'AI Legal Conversation',
       });
-    } catch (_e: any) { /* share cancelled by user — not an error */ }
+    } catch { /* share cancelled by user — not an error */ }
   }, [messages, caseTitle]);
 
   const clearChat = useCallback(() => {
 confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
       { confirmLabel: 'Clear', destructive: true }).then(async ok => { if (!ok) return;
-      const isFirstMsg = messages.length === 0;
   const sid = sessionId || await getSessionId();
     try { await api.delete(`/chat/history/${sid}`); } catch (e: any) { __DEV__ && console.warn((e as Error)?.message); }
     const newId = randomId();
@@ -481,7 +464,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
     setSessionId(newId);
     setMessages([]);
     })
-  }, [sessionId]);
+  }, [sessionId, confirm]);
 
   // ── Send ──────────────────────────────────────────────────────────────────────
   const send = useCallback(async (text: string) => {
@@ -726,26 +709,12 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
       setLoading(false);
       scrollToBottom();
     }
-  }, [sessionId, loading, scrollToBottom, caseContext, caseId, caseTitle, mode]);
+  }, [sessionId, loading, scrollToBottom, caseContext, caseId, caseTitle, mode, messages.length]);
 
   // ── Navigation helpers ────────────────────────────────────────────────────────
   const onFindLawyer = () => navigation.navigate('Match');
   const onUpgrade    = () => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' });
 
-  const onCivilRoute = (msg: string) => {
-    const m = msg.toLowerCase();
-    if (/ice|detain|immigr|deportat|visa|daca/.test(m))
-      return navigation.navigate('MoreTab', { screen: 'IceDetention' });
-    if (/evict|landlord|tenant|rent|housin/.test(m))
-      return navigation.navigate('MoreTab', { screen: 'TenantRights' });
-    if (/injur|accident|slip|fall|malpractice|car crash/.test(m))
-      return navigation.navigate('MoreTab', { screen: 'PILead', params: { caseType: 'Personal Injury' } });
-    if (/civil rights|police brutality|wrongful arrest|excessive force/.test(m))
-      return navigation.navigate('MoreTab', { screen: 'PILead', params: { caseType: 'Civil Rights' } });
-    if (/fired|terminat|discriminat|wage|harass.*work/.test(m))
-      return navigation.navigate('MoreTab', { screen: 'PILead', params: { caseType: 'Employment' } });
-    return onFindLawyer();
-  };
 
   const isEmpty = messages.length === 0 && !loading;
 
@@ -763,13 +732,23 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
           <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>AI-powered rights guide</Text>
         </View>
         {messages.length > 0 && (
-          <TouchableOpacity
-            accessibilityRole="button"
-            onPress={clearChat}
-            style={styles.clearBtn}
-           accessibilityLabel="Clear">
-            <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>Clear</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={exportConversation}
+              style={styles.clearBtn}
+              testID="chat-export-button"
+             accessibilityLabel="Share conversation">
+              <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>Share</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={clearChat}
+              style={styles.clearBtn}
+             accessibilityLabel="Clear">
+              <Text maxFontSizeMultiplier={1.4} style={styles.clearBtnText}>Clear</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 

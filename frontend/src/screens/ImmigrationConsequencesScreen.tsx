@@ -1,5 +1,5 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
 /**
  * ImmigrationConsequencesScreen -- Criminal Record & Immigration Consequences
@@ -16,14 +16,12 @@ import { AppIcon } from '../components/AppIcon';
  * Fully static. Works offline.
  * Note: immigration law is extremely complex -- strong attorney referral throughout.
  */
-import { api } from '../services/api';
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 
-import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, LayoutAnimation} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
-import { t } from '../i18n';
+import { InfoTabs } from '../components/InfoTabs';
 
-type Tab = 'consequences' | 'status';
 
 const CONSEQUENCE_GROUPS = [
   {
@@ -114,13 +112,9 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [tab, setTab] = React.useState(0);
-
-  const sections = CONSEQUENCE_GROUPS;
-  const section  = Array.isArray(sections) ? sections[tab] : null;
-  const allSections = Array.isArray(sections) ? sections : [];
+  const [tab, setTab] = React.useState<'consequences' | 'status'>('consequences');
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
@@ -135,25 +129,35 @@ function ImmigrationConsequencesScreen(): React.JSX.Element {
         <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>Consequences of convictions</Text>
       </View>
 
-      {/* Section cards */}
-      {allSections?.length === 0 ? (
+      <InfoTabs
+        testID="immigration-tabs"
+        tabs={[{ key: 'consequences', label: 'Criminal Consequences' }, { key: 'status', label: 'By Immigration Status' }]}
+        active={tab}
+        onChange={k => setTab(k as 'consequences' | 'status')}
+      />
 
-        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            Nothing here yet
-          </Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
-            Results will appear here when available
-          </Text>
+      {tab === 'consequences' && CONSEQUENCE_GROUPS.map(group => (
+        <View key={group.severity} style={{ marginBottom: 10 }}>
+          <View style={[styles.groupHeader, { backgroundColor: group.bg, borderLeftColor: group.color }]}>
+            <Text style={[styles.groupTitle, { color: group.color }]} maxFontSizeMultiplier={1.4}>{group.severity}</Text>
+          </View>
+          {group.offenses.map(o => (
+            <View key={o.offense} style={[styles.offenseCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+              <Text style={[styles.offenseTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{o.offense}</Text>
+              <Text style={[styles.offenseDetail, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{o.detail}</Text>
+            </View>
+          ))}
         </View>
-        ) : allSections.map((sec: any, idx: number) => (
-        <View key={`allSecti-${idx}`} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          {sec.title ? <Text style={[styles.cardTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{sec.title}</Text> : null}
-          {sec.body  ? <Text style={[styles.cardBody,  { color: colors.textMuted  }]} maxFontSizeMultiplier={1.4}>{sec.body}</Text>  : null}
-          {sec.steps ? sec.steps.map((step: string, si: number) => (
-            <Text key={si} style={[styles.cardBody, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>• {step}</Text>
-          )) : null}
+      ))}
+
+      {tab === 'status' && STATUS_SECTIONS.map(sec => (
+        <View key={sec.title} style={[styles.statusCard, { backgroundColor: colors.bgCard,
+          borderColor: sec.critical ? COLORS.emergency : colors.border }]}>
+          <View style={styles.statusHeader}>
+            <Text style={styles.statusIcon} maxFontSizeMultiplier={1.4}>{sec.icon}</Text>
+            <Text style={[styles.statusTitle, { color: colors.textPrimary }]} maxFontSizeMultiplier={1.4}>{sec.title}</Text>
+          </View>
+          <Text style={[styles.statusBody, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{sec.body}</Text>
         </View>
       ))}
 

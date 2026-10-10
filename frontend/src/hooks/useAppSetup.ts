@@ -8,7 +8,7 @@
  *   usePushTokenRefresh() — re-registers push token when app comes to foreground
  */
 import React, { useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 // Sentry is initialised once in App.tsx (no-op when EXPO_PUBLIC_SENTRY_DSN is empty).
@@ -54,8 +54,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 // Re-register when app returns to foreground (handles token rotation)
 export function usePushTokenRefresh() {
   useEffect(() => {
-    const { AppState } = require('react-native');
-    const sub = AppState.addEventListener('change', (nextState: string) => {
+    const sub = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         registerForPushNotificationsAsync();
       }
@@ -86,7 +85,6 @@ export function useOTAUpdates() {
 
 /** Hook that navigates to relevant screen when user taps a push notification */
 export function usePushNotificationTap(navigationRef: React.RefObject<any>) {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     let sub: { remove: () => void } | null = null;
     import('expo-notifications').then(Notifications => {

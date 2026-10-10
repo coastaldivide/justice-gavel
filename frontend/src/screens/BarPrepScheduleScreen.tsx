@@ -69,8 +69,9 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
       const url = date ? `/bar-prep/schedule?exam_date=${date}` : '/bar-prep/schedule';
       const res = await api.get(url);
       setSchedule(res.data);
-      if (res.data.exam_date && !examDate) {
-        setExamDate(res.data.exam_date);
+      if (res.data.exam_date) {
+        // Keep whatever the user has typed; only fill an empty field.
+        setExamDate(prev => prev || res.data.exam_date);
       }
     } catch {
       /* silently handle */
@@ -78,9 +79,9 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
       setLoading(false);
       setRefreshing(false);
     }
-  }, [examDate]);
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
 
@@ -187,7 +188,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
             </Text>
             {(schedule?.total_overdue || 0) > 0 && (
               <Text style={styles.overdueText}>
-                ⚠️ {schedule!.total_overdue} overdue
+                ⚠️ {schedule?.total_overdue} overdue
               </Text>
             )}
           </View>

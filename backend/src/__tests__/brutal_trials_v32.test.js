@@ -354,7 +354,7 @@ describe('S11. Error Handling — Screen Catch Pattern', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(src).toContain('catch');
-    expect(src).toContain('/messages/unread/count');
+    expect(src).toContain('/cases');
   });
   test('S11-03: LawyersScreen uses catch-based error handling for saved lawyers', async () => {
     const fs = await import('fs');

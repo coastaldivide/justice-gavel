@@ -60,7 +60,7 @@ describe('NAV2. All components in use', () => {
   test('N2-02: LawyerSkeletonCard in LawyersScreen loading state', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/LawyersScreen.tsx','utf8');
-    expect(src).toContain('LawyerSkeletonCard');
+    expect(src).toContain('SkeletonCard'); // LawyersScreen's own animated shimmer skeleton
   });
 });
 

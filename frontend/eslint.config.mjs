@@ -8,6 +8,10 @@ export default [
     ignores: ["node_modules/**", "dist/**", "web-build/**", "*.config.js"]
   },
   {
+    // An eslint-disable comment that no longer suppresses anything is an error.
+    linterOptions: { reportUnusedDisableDirectives: "error" }
+  },
+  {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {
       parser: tsParser,
@@ -43,17 +47,22 @@ export default [
       "react/prop-types": "off",
       "react/display-name": "off",
       "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/exhaustive-deps": "error",
 
       // TypeScript
       "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": ["warn", {
-        "argsIgnorePattern": "^_", "varsIgnorePattern": "^_"
+      "@typescript-eslint/no-unused-vars": ["error", {
+        "args": "after-used", "argsIgnorePattern": "^_",
+        "vars": "all", "varsIgnorePattern": "^_",
+        "caughtErrors": "all", "ignoreRestSiblings": false
       }],
-      "@typescript-eslint/no-var-requires": "warn",
+      // Replaces the deprecated no-var-requires: every require() is an error
+      // except static assets (fonts / images), which Metro needs as require().
+      "@typescript-eslint/no-require-imports": ["error", {
+        "allow": ["\\.(ttf|otf|png|jpe?g|gif|webp|svg|mp3|wav)$"]
+      }],
       "@typescript-eslint/ban-ts-comment": "off",
-      "@typescript-eslint/no-non-null-assertion": "warn",
-      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/no-non-null-assertion": "error",
 
       // Logic safety — these can hide real bugs
       "no-unreachable": "error",
@@ -65,9 +74,9 @@ export default [
       "use-isnan": "error",
       "valid-typeof": "error",
       "no-loss-of-precision": "error",
-      "no-promise-executor-return": "warn",
-      "no-template-curly-in-string": "warn",
-      "no-console": ["warn", { "allow": ["warn", "error"] }],
+      "no-promise-executor-return": "error",
+      "no-template-curly-in-string": "error",
+      "no-console": ["error", { "allow": ["warn", "error"] }],
 
       // Turn off rules that conflict with RN / our patterns
       "no-undef": "off",

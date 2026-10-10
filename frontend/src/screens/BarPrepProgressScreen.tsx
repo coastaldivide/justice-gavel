@@ -84,7 +84,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
     }
   }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
 

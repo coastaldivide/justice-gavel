@@ -1,9 +1,6 @@
 import { COLORS } from '../constants/theme';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { HapticButton } from '../components/HapticButton';
-import { AppIcon } from '../components/AppIcon';
 /**
  * PrivacyPolicyScreen
  *
@@ -17,14 +14,10 @@ import { AppIcon } from '../components/AppIcon';
  *  • Apple App Store requirements
  *  • Google Play requirements
  */
-import React, { useRef, useState, useCallback} from 'react';
-import type { ScreenProps } from '../types/navigation';
-import {
-  View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Linking, Alert, LayoutAnimation} from 'react-native';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import React, { useRef, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { hapticImpact } from '../utils/webCompat';
 import {useTheme} from '../constants/theme';
-import { t } from '../i18n';
 
 const EFFECTIVE_DATE  = 'May 1, 2026';
 const COMPANY         = 'Justice Gavel LLC';
@@ -242,10 +235,9 @@ const SECTIONS: Section[] = [
   },
 ];
 
-function PrivacyPolicyScreen({ navigation }: ScreenProps): React.JSX.Element {
+function PrivacyPolicyScreen(): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
   const [tableExpanded, setTableExpanded] = useState(false);

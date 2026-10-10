@@ -1,4 +1,3 @@
-import { useHaptics } from '../hooks/useHaptics';
 /**
  * DocumentScannerScreen.web.tsx -- Web platform replacement
  *
@@ -6,23 +5,18 @@ import { useHaptics } from '../hooks/useHaptics';
  * (drag-and-drop or "Browse"). The user selects a photo of
  * the document from their file system.
  */
-import React, { useState, useCallback} from 'react';
-import {
-  View, Text, TouchableOpacity, ScrollView,
-  ActivityIndicator, Platform, LayoutAnimation} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
 import { api, apiErrorMessage } from '../services/api';
-import { t } from '../i18n';
 
 function DocumentScannerScreen(): React.JSX.Element {
-  const { impact, success, error: hapticError } = useHaptics();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const caseId: number | undefined = route?.params?.caseId;
   const { colors }  = useTheme();
   const [scanning,  setScanning]  = useState(false);
-  const [loading, setLoading] = React.useState(false);
   const [result,    setResult]    = useState<string>('');
   const [error,     setError]     = useState('');
 
@@ -31,7 +25,6 @@ function DocumentScannerScreen(): React.JSX.Element {
     if (!file) return;
     setScanning(true);
     setError('');
-    setLoading(true);
     try {
           const formData = new FormData();
       formData.append('document', file);
@@ -46,7 +39,6 @@ function DocumentScannerScreen(): React.JSX.Element {
       setError(apiErrorMessage(err, 'Could not upload the document. Please try again.'));
     } finally {
       setScanning(false);
-      setLoading(false);
     }
   };
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Animated, ActivityIndicator, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { COLORS } from '../constants/theme';
+import { hapticImpact } from '../utils/webCompat';
 
 function FloatingSOSButton({ onPress, sending }: { onPress: () => void; sending?: boolean }) {
   const pulse = useRef(new Animated.Value(1)).current;
@@ -24,10 +24,8 @@ function FloatingSOSButton({ onPress, sending }: { onPress: () => void; sending?
     );
     pAnim.start();
     rAnim.start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => { pAnim.stop(); rAnim.stop(); };
-  }, []);
+  }, [pulse, ring]);
 
   return (
     <View style={styles.wrap}>
@@ -38,7 +36,7 @@ function FloatingSOSButton({ onPress, sending }: { onPress: () => void; sending?
       ]} />
       {/* Button */}
       <Animated.View style={{ transform: [{ scale: pulse }] }}>
-        <TouchableOpacity style={styles.btn} onPress={onPress}
+        <TouchableOpacity style={styles.btn} onPress={() => { hapticImpact('Heavy').catch(() => {}); onPress(); }}
       accessibilityLabel="Emergency — call for help"
       accessibilityRole="button"
       accessibilityHint="Activates emergency mode" activeOpacity={0.85} disabled={sending}>

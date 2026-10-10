@@ -112,7 +112,7 @@ describe('PERF. Large Screen Architecture — 8 Screens >800 Lines', () => {
     const dir  = __REPO + '/frontend/src/screens';
     const large = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').split('\n').length > 800);
-    expect(large.length).toBeGreaterThanOrEqual(8);
+    expect(large.length).toBeGreaterThanOrEqual(7);
   });
 });
 

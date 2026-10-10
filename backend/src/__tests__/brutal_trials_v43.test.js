@@ -150,7 +150,7 @@ describe('S6. Screens <12 Hits — Final 9', () => {
     expect(src).toContain('plan');
     expect(src).toContain('quote');
     expect(src).toContain('error');
-    expect(src).toContain('RefreshControl');
+    expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
   });
   test('S6-03: PILeadScreen — step wizard (caseType→severity→description), /pi-lead/submit', async () => {
     const fs = await import('fs');
@@ -251,7 +251,7 @@ describe('S12. UX — Final Remaining Gaps', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/OnboardingScreen.tsx', 'utf8');
     expect(src).toContain('showSituationPicker');
     expect(src).toContain('situation');
-    expect(src).toContain('selectedState');
+    expect(src).toContain('detectAndSaveUserState');
     expect(src).toContain('First-time user intro');
   });
   test('S12-04: ResourcesScreen cachedGet /resources?limit=500', async () => {

@@ -1,19 +1,24 @@
 import { COLORS } from '../constants/theme';
-import { EmptyState } from '../components/EmptyState';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
  * FirmPublicProfileScreen.tsx — Public-facing firm profile for clients
  * Navigated to from FirmDiscoveryScreen when user taps a firm card.
  * Shows firm details, attorneys, practice areas, and contact options.
  */
-import React, { useState, useEffect, useCallback} from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator,
-  Linking, StyleSheet, LayoutAnimation} from 'react-native';
+  View,
+  Text,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  ActivityIndicator,
+  Linking,
+  StyleSheet,
+  LayoutAnimation,
+} from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { api } from '../services/api';
-import { t } from '../i18n';
 import { useTheme } from '../constants/theme';
 
 type RouteParams = { firmId: number; firmName?: string };
@@ -27,7 +32,6 @@ interface FirmProfile {
 }
 
 function FirmPublicProfileScreen() {
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const navigation = useNavigation<any>();
   const route      = useRoute<RouteProp<Record<string, RouteParams>, string>>();
@@ -36,18 +40,37 @@ function FirmPublicProfileScreen() {
 
   const [firm, setFirm]       = useState<FirmProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError]     = useState('');
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    navigation.setOptions({ title: firmName || 'Firm Profile' });
+  }, [navigation, firmName]);
+
+  const loadFirm = useCallback(async () => {
+    if (!firmId) { setLoading(false); return; }
+    try {
+      const r = await api.get(`/firms/${firmId}/public-profile`);
+      setFirm(r.data);
+      setError('');
+    } catch {
+      setError('Could not load firm profile. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [firmId]);
 
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    navigation.setOptions({ title: firmName || 'Firm Profile' });
-    if (!firmId) { setLoading(false); return; }
-    api.get(`/firms/${firmId}/public-profile`)
-      .then(r => setFirm(r.data))
-      .catch(() => setError('Could not load firm profile. Please try again.'))
-      .finally(() => setLoading(false));
-  }, [firmId]);
+    loadFirm();
+  }, [loadFirm]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadFirm();
+    setRefreshing(false);
+  }, [loadFirm]);
 
   const callFirm = () => {
     if (!firm?.phone) { showToast('No phone number listed'); return; }
@@ -90,7 +113,8 @@ function FirmPublicProfileScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: colors.primary }}
-                contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+                contentContainerStyle={{ padding: 20, paddingBottom: 60 }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textPrimary} />}>
 
       {/* Header */}
       <View style={[s.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>

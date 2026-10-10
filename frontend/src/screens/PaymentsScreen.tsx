@@ -1,9 +1,4 @@
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**
  * PaymentsScreen -- Seamless, context-aware payment flow
@@ -21,11 +16,10 @@ import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView,
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
-import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { ScreenCapture } from '../utils/webCompat';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 import { usePaymentSheet, PAYMENTS_COMING_SOON } from '../payments';
 import { useAuthGate } from '../components/AuthGate';
-import { t } from '../i18n';
 
 // ── Payment purposes ──────────────────────────────────────────────────────────
 
@@ -58,9 +52,6 @@ const MORE_METHODS = [
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function PurposeCard({ p, selected, onSelect }: any) {
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
   return (
     <TouchableOpacity
           accessibilityRole="button"
@@ -166,7 +157,7 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     } finally {
       setGeneratingReceipt(false);
     }
-  }, []);
+  }, [showToast]);
 
   const { gated, unlocking, unlock } = useBiometricGate('payments');
 
@@ -176,7 +167,7 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     return () => { ScreenCapture.allowScreenCaptureAsync().catch(() => {}); };
   }, []);
 
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [purpose, setPurpose]     = useState(PURPOSES[0]);
   // Pre-select payment purpose from navigation params

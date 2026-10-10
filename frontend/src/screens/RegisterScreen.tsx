@@ -1,26 +1,18 @@
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { useForm, Controller } from 'react-hook-form';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import TermsAcceptanceModal from './TermsAcceptanceModal';
 
-import React, { useState, useRef, useCallback} from 'react';
+import React, { useState, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
 import { setAppAuth } from '../services/auth';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 import JTBLogo from '../components/JTBLogo';
-import { t } from '../i18n';
 
 function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [showTerms, setShowTerms] = React.useState(false);
   const [identifier, setIdentifier]   = useState('');
@@ -298,5 +290,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
 export default React.memo(RegisterScreen);

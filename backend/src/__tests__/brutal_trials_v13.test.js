@@ -521,7 +521,10 @@ describe('7. DocumentScannerScreen — Camera Flow', () => {
   test('7-04: DocumentScannerScreen handles Platform differences', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/DocumentScannerScreen.tsx', 'utf8');
-    expect(src).toContain('Platform');
+    // Platform split is done by file: the native screen imports expo-camera and
+    // the web build resolves DocumentScannerScreen.web.tsx (file input).
+    expect(src).toContain("from 'expo-camera'");
+    expect(fs.existsSync(__REPO + '/frontend/src/screens/DocumentScannerScreen.web.tsx')).toBe(true);
   });
 });
 

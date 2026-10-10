@@ -1,16 +1,12 @@
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { SkeletonLoader } from '../components/SkeletonLoader';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
-import ScreenHeader from '../components/ScreenHeader';
 import type {} from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, RefreshControl, Linking, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, LayoutAnimation} from 'react-native';
+import { View, Text, TouchableOpacity, RefreshControl, Linking, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, LayoutAnimation } from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
-import { api, cachedGet } from '../services/api';
+import { cachedGet } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
-import { t } from '../i18n';
 
 type SpecialtyCourt = {
   id: number; name: string; court_type: string;
@@ -28,7 +24,6 @@ const COURT_TYPES = [
 
 function SpecialtyCourtsScreen(): React.JSX.Element {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -64,7 +59,6 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
   useEffect(() => { load(); }, [load]);
 
   const filtered = type === 'ALL' ? all : all.filter(c => c.court_type === type);
-  const typeConfig = COURT_TYPES.find(t => t.key === type) || COURT_TYPES[0];
 
   const openMaps = (addr: string, lat?: number, lng?: number) => {
     const q = lat && lng ? `${lat},${lng}` : encodeURIComponent(addr);
@@ -268,5 +262,4 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({});
 export default React.memo(SpecialtyCourtsScreen);

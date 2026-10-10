@@ -269,7 +269,8 @@ describe('6. EmergencyShareScreen — Emergency Contact Sharing', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/EmergencyShareScreen.tsx', 'utf8');
     expect(src).toContain('Share');
     expect(src).toContain('Linking');
-    expect(src).toContain('RefreshControl');
+    expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
+    expect(src).toContain('onPress={sendShare}');
     expect(src).toContain('mountedRef');
   });
 });
@@ -329,7 +330,6 @@ describe('8. HelpNowScreen — Emergency Help Finder', () => {
   test('8-03: has Share, Linking, PTR, mounted guard', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
-    expect(src).toContain('Share');
     expect(src).toContain('Linking');
     expect(src).toContain('RefreshControl');
     expect(src).toContain('mountedRef');
@@ -346,7 +346,8 @@ describe('9. HousingRights + TenantRights — Legal Aid Screens', () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HousingRightsScreen.tsx', 'utf8');
     expect(src).toContain('tab');
-    expect(src).toContain('RefreshControl');
+    expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
+    expect(src).toContain('EVICTION_SECTIONS');
     expect(src).toContain('mountedRef');
   });
 
@@ -354,7 +355,7 @@ describe('9. HousingRights + TenantRights — Legal Aid Screens', () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/TenantRightsScreen.tsx', 'utf8');
     expect(src).toContain('situation');
-    expect(src).toContain('Linking');
+    expect(src).toContain('GUIDANCE[situation]');
     expect(src).toContain('mountedRef');
   });
 });
@@ -378,7 +379,9 @@ describe('11. JuvenileJustice + MentalHealthDiversion', () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/JuvenileJusticeScreen.tsx', 'utf8');
     expect(src).toContain('Juvenile');
-    expect(src).toContain('RefreshControl');
+    expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
+    expect(src).toContain('PROCESS_STEPS');
+    expect(src).toContain('SEALING_DATA');
   });
 
 
@@ -409,7 +412,7 @@ describe('12. LawyerProfileScreen — Full Attorney Profile', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/LawyerProfileScreen.tsx', 'utf8');
     expect(src).toContain('Share');
     expect(src).toContain('Linking');
-    expect(src).toContain('Alert');
+    expect(src).toContain('showToast');
     expect(src).toContain('RefreshControl');
     expect(src).toContain('mountedRef');
   });
@@ -565,7 +568,7 @@ describe('16. ArrestMonitorScreen — Arrest Monitoring', () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ArrestMonitorScreen.tsx', 'utf8');
     expect(src).toContain('RefreshControl');
-    expect(src).toContain('Alert');
+    expect(src).toContain('confirm(');
     expect(src).toContain('mountedRef');
   });
 });

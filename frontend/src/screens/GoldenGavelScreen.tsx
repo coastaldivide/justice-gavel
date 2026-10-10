@@ -1,10 +1,6 @@
-import { useNetworkError } from '../hooks/useNetworkError';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { AppIcon } from '../components/AppIcon';
 import { SkeletonLoader } from '../components/SkeletonLoader';
-import type { ScreenProps } from '../types/navigation';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
 import { api } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
@@ -79,8 +75,6 @@ interface HallEntry {
 
 // ── Criterion row ─────────────────────────────────────────────────────────────
 function CritRow({ label, met }: { label: string; met: boolean }) {
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   return (
@@ -122,7 +116,6 @@ function JourneyBar({ level }: { level: GavelLevel }) {
 // ── Criteria section for one level ───────────────────────────────────────────
 function CriteriaSection({ title, progress, criteria, earned }:
   { title: string; progress: Progress; criteria: Record<string, unknown>; earned: boolean }) {
-  const { colors } = useTheme();
   if (!criteria) return null;
   const { user_type: ut } = progress;
 
@@ -173,7 +166,7 @@ function CriteriaSection({ title, progress, criteria, earned }:
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
+function GoldenGavelScreen(): React.JSX.Element {
   const { showToast } = useToast();
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
@@ -181,16 +174,11 @@ function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
 
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [status,    setStatus]    = useState<Status | null>(null);
   const [elig,      setElig]      = useState<EligResult | null>(null);
   const [hall,      setHall]      = useState<HallEntry[]>([]);
 
-  // Retry logic: exponential backoff on API failures
-  const [retryCount, setRetryCount] = React.useState(0);
-  const handleRetry = React.useCallback(() => {
-    setRetryCount(c => c + 1);
-  }, []);
   const [loading,   setLoading]   = useState(true);
   const [fetchError, setFetchError] = React.useState<string | null>(null);
   const [refreshing,setRefreshing]= useState(false);

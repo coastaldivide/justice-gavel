@@ -20,6 +20,7 @@
 
 import { API_BASE_URL } from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken } from '../utils/secureStorage';
 
 // ── Event schema ───────────────────────────────────────────────────────────────
 type EventName =  'sign_up'
@@ -73,7 +74,6 @@ export async function track(event: EventName, props: EventProps = {}): Promise<v
     };
 
     if (__DEV__) {
-      // eslint-disable-next-line no-console
       console.warn('[analytics]', event, payload);
       return;
     }
@@ -81,19 +81,20 @@ export async function track(event: EventName, props: EventProps = {}): Promise<v
     // ── Mixpanel (SDK installed: mixpanel-react-native) ──────────────────────
     const token = process.env.EXPO_PUBLIC_MIXPANEL_TOKEN;
     if (token) {
-      const { Mixpanel } = require('mixpanel-react-native');
+      const { Mixpanel } = await import('mixpanel-react-native');
       const mp = new Mixpanel(token, /* trackAutomaticEvents */ true);
       mp.init().then(() => mp.track(event, payload)).catch(() => {});
     }
 
     // ── Fallback: send to own backend for basic event logging ─────────────────
-    const _eventToken = await AsyncStorage.getItem('token').catch(() => null);
+    // The user's session token (not the Mixpanel project token) authenticates the event.
+    const authToken = await getToken().catch(() => null);
     const _ac = new AbortController(); setTimeout(() => _ac.abort(), 5000);
     fetch(API_BASE_URL + '/analytics/event', { signal: _ac.signal,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
       body: JSON.stringify(payload),
     }).catch(() => {}); // fire-and-forget, never crash on analytics failure
@@ -155,8 +156,6 @@ export default Analytics;
 
 /** Call on logout to reset analytics user identity */
 export async function reset(): Promise<void> {
-  try {
-    const { AsyncStorage } = require('@react-native-async-storage/async-storage');
-    await AsyncStorage.removeItem('analytics_id').catch(() => {});
-  } catch { /* non-fatal */ }
+  _distinctId = null;
+  await AsyncStorage.removeItem('analytics_id').catch(() => { /* non-fatal */ });
 }

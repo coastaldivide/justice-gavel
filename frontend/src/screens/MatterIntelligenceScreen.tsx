@@ -1,10 +1,6 @@
-import { AIDisclaimer } from '../components/AIDisclaimer';
-import { useHaptics } from '../hooks/useHaptics';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
-import { SkeletonLoader } from '../components/SkeletonLoader';
 import { AppIcon } from '../components/AppIcon';
-import UPLDisclaimer from '../components/UPLDisclaimer';
 /**
  * MatterIntelligenceScreen — All 40 simulation signals surfaced as live matter intelligence
  *
@@ -16,14 +12,13 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
  *   4. Escalation — emergency level, SLA timer, escalation triggers
  */
 
-import React, { useState, useEffect, useCallback, useMemo} from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   StyleSheet, RefreshControl, LayoutAnimation} from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
 import { api } from '../services/api';
 import type {} from '../types/navigation';
-import { t } from '../i18n';
 
 type Tab = 'outcome' | 'motions' | 'diversion' | 'escalation' | 'analytics';
 
@@ -45,8 +40,7 @@ const PRIORITY_COLORS: Record<string, string> = {
   high: COLORS.emergency, normal: COLORS.blue, low: COLORS.textMuted,
 };
 
-function MatterIntelligenceScreen({ route, navigation }: any) {
-  const { impact, success, error: hapticError } = useHaptics();
+function MatterIntelligenceScreen({ route }: any) {
   const { showToast } = useToast();
   const { matterId, matterTitle } = route.params || {};
   const { colors } = useTheme();
@@ -102,10 +96,10 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
       } else if (failures.length === 6) {
         showToast('Could not load matter intelligence.');
       }
-    } catch (e: any) {
+    } catch {
       if (isMounted.current) setErrorMsg('Could not load data. Pull to retry.');
     } finally { if (isMounted.current) setLoading(false); }
-  }, [matterId]);
+  }, [matterId, showToast]);
 
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -143,6 +137,16 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={s.header}>
         <Text maxFontSizeMultiplier={1.4} style={s.headerTitle} numberOfLines={1}>{matterTitle || 'Matter Intelligence'}</Text>
+        {!!errorMsg && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={errorMsg}
+            onPress={() => { setErrorMsg(null); load(); }}
+            style={[s.metaPill, { backgroundColor: colors.errorBg }]}
+          >
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: TYPE.xs }}>⚠️ {errorMsg}</Text>
+          </TouchableOpacity>
+        )}
         {partialLoad && (
           <TouchableOpacity
   accessibilityRole="button"
@@ -352,7 +356,7 @@ function MatterIntelligenceScreen({ route, navigation }: any) {
             {escalation.triggers?.length > 0 && (
               <>
                 <Text maxFontSizeMultiplier={1.4} style={s.sectionTitle}>Escalation triggers</Text>
-                {escalation.triggers.map((t: string, i: number) => (
+                {escalation.triggers.map((t: string) => (
                   <View key={`trigger-${t}`} style={s.triggerRow}>
                     <Text maxFontSizeMultiplier={1.4} style={{ color: ESCALATION_COLORS[escalation.level], marginRight: 8 }}>⚡</Text>
                     <Text maxFontSizeMultiplier={1.4} style={s.triggerText}>{t.replace(/_/g, ' ')}</Text>

@@ -9,7 +9,7 @@ import OfflineBanner from './src/components/OfflineBanner';
  *   browsing  → full app, no account
  *   authed    → full app with account
  */
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AppState, Platform, StatusBar, Text, TouchableOpacity, View,
 } from 'react-native';
@@ -32,7 +32,7 @@ import { processSyncQueue } from './src/services/offlineSync';
 import { initLang } from './src/i18n';
 import { registerAuthSetter, AuthState, canBrowse } from './src/services/auth';
 import { getToken } from './src/utils/secureStorage';
-import { COLORS, ThemeProvider, useTheme } from './src/constants/theme';
+import { ThemeProvider, useTheme } from './src/constants/theme';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { Analytics } from './src/services/analytics';
 import { MainTabs, GuestNavigator, SplashScreen } from './src/navigation/AppNavigator';

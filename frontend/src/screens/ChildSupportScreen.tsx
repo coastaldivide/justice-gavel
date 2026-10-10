@@ -1,16 +1,11 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 import React, { useState, useCallback } from 'react';
-import { KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
   StyleSheet, Switch } from 'react-native';
 import { COLORS } from '../constants/theme';
-import { t } from '../i18n';
 
 // Income shares model — the majority US approach
 // Guideline figures approximate mean combined obligation tables (simplified)
@@ -19,9 +14,6 @@ function calculateSupport(
   parent2Income: number,
   numChildren: number,
   custodySplit: number,     // 0–100: parent1 custody percentage
-  state: string,
-  monthsAlimony: number,
-  alimonyAmount: number,
 ) {
   const combined = parent1Income + parent2Income;
   if (combined <= 0 || numChildren <= 0) return null;
@@ -56,7 +48,6 @@ function calculateSupport(
 
   // Shared custody adjustment (when custody approaches 50/50, obligation decreases)
   const p1Custody = custodySplit / 100;
-  const p2Custody = 1 - p1Custody;
   if (p1Custody >= 0.35 && p1Custody <= 0.65) {
     // Offset model for near-shared custody
     const reduction = 1 - Math.abs(0.5 - p1Custody) * 2;
@@ -86,9 +77,8 @@ function fmt(n: number) {
   return '$' + n.toLocaleString('en-US');
 }
 
-function ChildSupportScreen({ navigation }: any) {
+function ChildSupportScreen() {
   const { showToast } = useToast();
-  const colors = COLORS;
   const [p1Income, setP1Income] = useState('');
   const [p2Income, setP2Income] = useState('');
   const [children, setChildren] = useState('1');
@@ -118,9 +108,9 @@ function ChildSupportScreen({ navigation }: any) {
     const p2 = parseFloat(p2Income.replace(/[^0-9.]/g, '')) || 0;
     const n  = parseInt(children) || 1;
     const c  = parseFloat(custody) || 70;
-    const aa = parseFloat(alimonyAmt) || 0;
-    setResult(calculateSupport(p1, p2, n, c, '', 0, aa));
-  }, [p1Income, p2Income, children, custody, alimonyAmt]);
+    // Spousal support is shown separately in the result; it does not change the child-support estimate.
+    setResult(calculateSupport(p1, p2, n, c));
+  }, [p1Income, p2Income, children, custody, showToast]);
 
   const inputStyle = [s.input, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border, color: COLORS.textPrimary }];
   const labelStyle = [s.label, { color: COLORS.textSecond }];

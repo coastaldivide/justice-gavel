@@ -23,7 +23,7 @@ describe('S1. Registration & Onboarding Flow', () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/AgeGateScreen.tsx','utf8');
     expect(src).toContain("navigate('Onboarding')");
-    expect(src).toContain('useNavigation');
+    expect(src).toContain('navigation?.navigate'); // navigation comes in as a prop
     expect(src).toContain('18'); // age check
   });
   test('S1-02: RegisterScreen has secure password + Terms + POST /register', async () => {
@@ -86,7 +86,7 @@ describe('S2. Emergency → Find Lawyer → Book Flow', () => {
   test('S2-05: BookingScreen loads availability + confirms appointment', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/BookingScreen.tsx','utf8');
-    expect(src).toContain('/attorney/profile/availability');
+    expect(src).toContain('/consultations/slots/');
     expect(src).toContain('/consultations/book');
     expect(src.toLowerCase()).toContain('confirm');
   });
@@ -275,7 +275,7 @@ describe('S8. Immigration & Emergency Flows', () => {
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
     expect(src).toContain('KeyboardAvoidingView');
     expect(src).toContain('keyboardShouldPersistTaps');
-    expect(src).toContain('/hague-contacts/us-resources');
+    expect(src).toContain('/hague-contacts/central-authority/');
     expect(src).toContain('/hague-contacts/report-intake');
   });
   test('S8-03: Emergency: 911 + POST /alerts + contacts', async () => {

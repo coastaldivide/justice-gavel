@@ -1,7 +1,4 @@
-import { useHaptics } from '../hooks/useHaptics';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
-import React, { useEffect, useState, useCallback} from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, LayoutAnimation} from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
@@ -18,7 +15,6 @@ interface Stats {
 }
 
 function StatCard({ icon, value, label, color }: { icon: string; value: string | number; label: string; color: string }) {
-  const { impact, success, error: hapticError } = useHaptics();
   return (
     <View style={[styles.statCard, { borderTopColor: color, borderTopWidth: 3 }]}>
       <Text maxFontSizeMultiplier={1.4} style={styles.statIcon}>{icon}</Text>
@@ -36,7 +32,7 @@ function AdvocacyScreen(): React.JSX.Element {
     return () => { mountedRef.current = false; };
   }, []);
 
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [stats, setStats]       = useState<Stats | null>(null);
   const [loading, setLoading]   = useState(true);

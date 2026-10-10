@@ -1,10 +1,4 @@
-import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 /**
  * TranslatorScreen -- Live attorney-client translation
  *
@@ -32,16 +26,13 @@ import { AppIcon } from '../components/AppIcon';
  * Cost per session: ~$0.015 (50 messages × $0.0003)
  * Included in paid tier -- no per-session charge
  */
-import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
-import React, {
-  useState, useEffect, useCallback, useRef
-, useMemo} from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, Share, RefreshControl, InteractionManager} from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Animated, KeyboardAvoidingView, Platform } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
-import { hapticImpact, hapticNotification, hapticSelection, RNShare, Clipboard } from '../utils/webCompat';
-import { t } from '../i18n';
+import { hapticSelection, RNShare, Clipboard } from '../utils/webCompat';
 
 // ── Language config ────────────────────────────────────────────────────────
 const LANGUAGES = [
@@ -71,12 +62,12 @@ function getLang(code: string) {
 
 // ── Animated message bubble ────────────────────────────────────────────────
 function TurnBubble({
-  msg, isA, langA, langB,
+  msg, isA,
 }: {
-  msg: TurnMessage; isA: boolean; langA: string; langB: string;
+  msg: TurnMessage; isA: boolean;
 }) {
-  const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
+  const { isDark } = useTheme();
+  const styles = makeStyles();
 
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(isA ? -12 : 12)).current;
@@ -85,11 +76,9 @@ function TurnBubble({
     Animated.parallel([
       Animated.timing(fade,  { toValue: 1, duration: 220, useNativeDriver: true }),
       Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: true }),
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
     ]).start();
     return () => slide.stopAnimation();
-  }, []);
+  }, [fade, slide]);
 
   const srcLang = getLang(msg.src_lang);
   const tgtLang = getLang(msg.tgt_lang);
@@ -149,10 +138,10 @@ function TurnBubble({
 
 // ── Language picker ────────────────────────────────────────────────────────
 function LangPicker({
-  value, onChange, exclude, colors,
+  value, onChange, exclude,
 }: {
   value: string; onChange: (code: string) => void;
-  exclude?: string; colors: ThemeColors;
+  exclude?: string;
 }) {
   return (
     <View style={styles.langPickerRow}
@@ -182,7 +171,6 @@ function LangPicker({
 // ── Main screen ────────────────────────────────────────────────────────────
 function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
-  const [submitting, setSubmitting] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
@@ -192,13 +180,11 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   const { initialSide } = (route?.params as import('../types/api').RouteParams) ?? {}; // 'b' for client join flow
 
-  const abortRef = useRef<AbortController | null>(null);
   const [phase,     setPhase]     = useState<Phase>(initialSide === 'b' ? 'join' : 'setup');
   const [langA,     setLangA]     = useState('en');  // defender
   const [langB,     setLangB]     = useState('es');  // client
   const [sessionCode, setCode]    = useState('');
   const [joinCode,  setJoinCode]  = useState('');
-  const [loading, setLoading] = useState(false);
   const [joiningAs, setJoiningAs] = useState<'a'|'b'>('b');
   const [messages,  setMessages]  = useState<TurnMessage[]>([]);
   const [inputA,    setInputA]    = useState('');
@@ -207,18 +193,15 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
   const [sendingB,  setSendingB]  = useState(false);
   const [creating,  setCreating]  = useState(false);
   const [joinError, setJoinError] = useState('');
-  const [lastMsgId, setLastMsgId] = useState(0);
   const lastMsgIdRef = useRef(0); // ref avoids poll restart on every message
   const [mode,      setMode]      = useState<'solo'|'split'>('solo');
 
   const scrollRef = useRef<ScrollView>(null);
   const pollRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     navigation.setOptions({ title: '🗣 Interpreter' });
-  }, []);
+  }, [navigation]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -244,7 +227,6 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
           });
           const newId = newMsgs[newMsgs.length - 1].id || lastMsgIdRef.current;
           lastMsgIdRef.current = newId;
-          setLastMsgId(newId);
         }
       } catch (e: any) {
       __DEV__ && console.warn(e?.message); }
@@ -266,11 +248,11 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
       } catch (e: any) {
 showToast(apiErrorMessage(e, 'Translation session failed.'), 'error');
         setCreating(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
       }
     };
-    run();
-  }, [langA, langB, requireAuth]);
+    // POST /translate/session requires an account: prompt guests to sign in first.
+    requireAuth(run);
+  }, [langA, langB, requireAuth, showToast]);
 
   // ── Join session (client side) ────────────────────────────────────────────
   const joinSession = useCallback(async () => {
@@ -295,11 +277,10 @@ showToast(apiErrorMessage(e, 'Translation session failed.'), 'error');
       if (msgs.data?.length) {
         const id = msgs.data[msgs.data.length - 1].id;
         lastMsgIdRef.current = id;
-        setLastMsgId(id);
       }
 
       setPhase('session');
-    } catch (e: any) {
+    } catch {
       setJoinError('Session not found. Check the code and try again.');
     }
   }, [joinCode]);
@@ -343,7 +324,7 @@ showToast(apiErrorMessage(e, 'Translation session failed.'), 'error');
         id: res.data?.id || Date.now() + 1,
       };
       setMessages(prev => prev.map(m => m._pending && m.id === optimistic.id ? confirmed : m));
-      if (res.data?.id) { lastMsgIdRef.current = res.data?.id; setLastMsgId(res.data?.id); }
+      if (res.data?.id) { lastMsgIdRef.current = res.data?.id; }
     } catch (e: any) {
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
       if (side === 'a') setInputA(text);
@@ -352,7 +333,7 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
       if (side === 'a') setSendingA(false);
       else              setSendingB(false);
     }
-  }, [inputA, inputB, langA, langB, sessionCode, mode]);
+  }, [inputA, inputB, langA, langB, sessionCode, mode, showToast]);
 
   const shareCode = useCallback(() => {
     try {
@@ -360,7 +341,7 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
       message: `Join my translation session on Justice Gavel.\n\nCode: ${sessionCode}\n\nDownload the app and tap "Interpreter" → "Join with code".`,
       title: 'Join Translation Session',
     });
-    } catch (shareErr: any) {
+    } catch {
       // Share API unavailable on this browser/device — fail silently
     }
   }, [sessionCode]);
@@ -470,13 +451,13 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
         <Text maxFontSizeMultiplier={1.4} style={[styles.langLabel, { color: colors.textMuted }]}>
           Attorney's language
         </Text>
-        <LangPicker value={langA} onChange={setLangA} exclude={langB} colors={colors} />
+        <LangPicker value={langA} onChange={setLangA} exclude={langB} />
 
         {/* Client language */}
         <Text maxFontSizeMultiplier={1.4} style={[styles.langLabel, { color: colors.textMuted }]}>
           Client's language
         </Text>
-        <LangPicker value={langB} onChange={setLangB} exclude={langA} colors={colors} />
+        <LangPicker value={langB} onChange={setLangB} exclude={langA} />
 
         {/* Join existing */}
         <View style={[styles.dividerRow, { borderColor: colors.border }]}>
@@ -563,8 +544,6 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
             key={msg.id ?? i}
             msg={msg}
             isA={msg.side === 'a'}
-            langA={langA}
-            langB={langB}
           />
         ))}
       </ScrollView>
@@ -667,7 +646,7 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   screen: { flex: 1 },
 
   // Setup
@@ -762,5 +741,5 @@ const makeStyles = (colors: any) => StyleSheet.create({
 });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
+const styles = makeStyles();
 export default React.memo(TranslatorScreen);

@@ -1,32 +1,24 @@
 import { useConfirm } from '../hooks/useConfirm';
 import JTBLogo from '../components/JTBLogo';
 import { useToast } from '../components/ToastProvider';
-import { useForm, Controller } from 'react-hook-form';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 /**
  * LoginScreen -- Redesigned with JTB logo, dark brand aesthetic
  */
-import React, { useState, useRef, useCallback} from 'react';
+import React, { useState, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import {  } from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { setAppAuth } from '../services/auth';
 import { registerForPush } from '../services/push';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
-import { track, identify } from '../services/analytics';
-import { t } from '../i18n';
 
 function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword]     = useState('');

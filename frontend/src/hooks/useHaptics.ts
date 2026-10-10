@@ -18,43 +18,40 @@
 
 import { useCallback } from 'react';
 import { Platform } from 'react-native';
-
-// Lazy import — won't crash if expo-haptics not installed in bare workflow
-let Haptics: typeof import('expo-haptics') | null = null;
-try {
-  Haptics = require('expo-haptics');
-} catch {
-  // expo-haptics not available (web, CI, etc.) — degrade silently
-}
+import * as Haptics from 'expo-haptics';
 
 export function useHaptics() {
   const trigger = useCallback((fn: () => Promise<void>) => {
-    // No haptics on web or when not supported
-    if (Platform.OS === 'web' || !Haptics) return;
-    fn().catch(() => {}); // never crash for haptics failure
+    // No haptics on web (expo-haptics is a no-op there anyway)
+    if (Platform.OS === 'web') return;
+    try {
+      fn().catch(() => {}); // never crash for haptics failure
+    } catch {
+      // native module unavailable (simulator / bare workflow) — degrade silently
+    }
   }, []);
 
   const impact  = useCallback((style: 'light' | 'medium' | 'heavy' = 'light') => trigger(() =>
-    Haptics!.impactAsync(
-      style === 'heavy'  ? Haptics!.ImpactFeedbackStyle.Heavy
-      : style === 'medium' ? Haptics!.ImpactFeedbackStyle.Medium
-      : Haptics!.ImpactFeedbackStyle.Light)
+    Haptics.impactAsync(
+      style === 'heavy'  ? Haptics.ImpactFeedbackStyle.Heavy
+      : style === 'medium' ? Haptics.ImpactFeedbackStyle.Medium
+      : Haptics.ImpactFeedbackStyle.Light)
   ), [trigger]);
 
   const heavy   = useCallback(() => trigger(() =>
-    Haptics!.impactAsync(Haptics!.ImpactFeedbackStyle.Heavy)
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
   ), [trigger]);
 
   const success = useCallback(() => trigger(() =>
-    Haptics!.notificationAsync(Haptics!.NotificationFeedbackType.Success)
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
   ), [trigger]);
 
   const error   = useCallback(() => trigger(() =>
-    Haptics!.notificationAsync(Haptics!.NotificationFeedbackType.Error)
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
   ), [trigger]);
 
   const warning = useCallback(() => trigger(() =>
-    Haptics!.notificationAsync(Haptics!.NotificationFeedbackType.Warning)
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
   ), [trigger]);
 
   return { impact, heavy, success, error, warning };

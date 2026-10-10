@@ -20,7 +20,12 @@
  *
  * A screen "fails" on: uncaught page error, the ErrorBoundary text
  * ("Something went wrong"), or an (almost) empty page.
- * Exit code 1 when any screen fails.
+ * Request storms: any screen that issues more than STORM_MAX (default 4)
+ * identical API requests (same method + URL incl. query) within STORM_WINDOW_MS
+ * (default 3000) fails the run — that is the signature of an effect/dependency
+ * loop refetching on every render.
+ * Exit code 1 when any screen fails, on any uncaught page error, on any console
+ * error (network-level 4xx/5xx/connection noise excluded), or on a storm.
  */
 const http = require('http');
 const fs = require('fs');
@@ -70,6 +75,30 @@ function moreStackScreens() {
   return [...new Set([...src.matchAll(/<MoreStack\.Screen\s+name="(\w+)"/g)].map(m => m[1]))];
 }
 
+const STORM_MAX = Number(process.env.STORM_MAX || 4);
+const STORM_WINDOW_MS = Number(process.env.STORM_WINDOW_MS || 3000);
+/** Groups requests by (screen, method+url) and returns every group with more than
+ *  STORM_MAX requests inside any STORM_WINDOW_MS sliding window. */
+function findStorms(reqs) {
+  const groups = new Map();
+  for (const r of reqs) {
+    const k = r.at + '\u0000' + r.key;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r.t);
+  }
+  const storms = [];
+  for (const [k, ts] of groups) {
+    ts.sort((a, b) => a - b);
+    let worst = 0;
+    for (let i = 0, j = 0; j < ts.length; j++) {
+      while (ts[j] - ts[i] > STORM_WINDOW_MS) i++;
+      worst = Math.max(worst, j - i + 1);
+    }
+    if (worst > STORM_MAX) { const [at, key] = k.split('\u0000'); storms.push({ at, request: key, inWindow: worst, total: ts.length }); }
+  }
+  return storms;
+}
+
 const FILTER_CONSOLE = /Failed to load resource|net::ERR_|ERR_CONNECTION_REFUSED|status of (4|5)\d\d/;
 
 (async () => {
@@ -78,11 +107,15 @@ const FILTER_CONSOLE = /Failed to load resource|net::ERR_|ERR_CONNECTION_REFUSED
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 420, height: 860 }, serviceWorkers: 'block' });
   const page = await ctx.newPage();
-  const consoleErrors = []; const pageErrors = []; const apiCalls = []; const payloads = {};
+  const consoleErrors = []; const pageErrors = []; const apiCalls = []; const payloads = {}; const timedRequests = [];
   let current = 'boot';
   page.on('console', m => { if (m.type() === 'error' && !FILTER_CONSOLE.test(m.text())) consoleErrors.push({ at: current, text: m.text().slice(0, 300) }); });
   page.on('pageerror', e => pageErrors.push({ at: current, text: String((e && e.stack) || e).slice(0, 600) }));
-  page.on('request', r => { if (r.url().startsWith(API)) apiCalls.push(r.method() + ' ' + r.url().slice(API.length).split('?')[0]); });
+  page.on('request', r => {
+    if (!r.url().startsWith(API)) return;
+    apiCalls.push(r.method() + ' ' + r.url().slice(API.length).split('?')[0]);
+    timedRequests.push({ at: current, key: r.method() + ' ' + r.url().slice(API.length), t: Date.now() });
+  });
 
   const results = [];
   const shot = async (name) => { await page.screenshot({ path: path.join(OUT, name + '.png') }); };
@@ -256,7 +289,9 @@ const FILTER_CONSOLE = /Failed to load resource|net::ERR_|ERR_CONNECTION_REFUSED
 
   // ── Report ───────────────────────────────────────────────────────────────
   const failed = results.filter(r => !r.ok);
-  const report = { api: API, checked: results.length, failed, payloads, pageErrors,
+  const storms = findStorms(timedRequests);
+  const report = { api: API, checked: results.length, failed, payloads, pageErrors, storms,
+    apiRequestCount: timedRequests.length,
     consoleErrors: [...new Map(consoleErrors.map(e => [e.text, e])).values()],
     apiCalls: [...new Set(apiCalls)] };
   fs.writeFileSync(path.join(OUT, 'web-smoke-report.json'), JSON.stringify(report, null, 2));
@@ -266,8 +301,11 @@ const FILTER_CONSOLE = /Failed to load resource|net::ERR_|ERR_CONNECTION_REFUSED
   pageErrors.slice(0, 20).forEach(e => console.log('  -', e.at, '::', e.text.split('\n')[0]));
   console.log('CONSOLE ERRORS (unique, non-network):', report.consoleErrors.length);
   report.consoleErrors.slice(0, 30).forEach(e => console.log('  -', e.at, '::', e.text.split('\n')[0]));
+  console.log(`REQUEST STORMS (> ${STORM_MAX} identical requests in ${STORM_WINDOW_MS} ms on one screen):`, storms.length,
+    `(${timedRequests.length} API requests total)`);
+  storms.slice(0, 30).forEach(s => console.log('  -', s.at, '::', s.request, `x${s.inWindow} in window, x${s.total} total`));
   console.log('PAYLOADS:', JSON.stringify(payloads));
   await browser.close();
   server.close();
-  process.exit(failed.length || pageErrors.length ? 1 : 0);
+  process.exit(failed.length || pageErrors.length || report.consoleErrors.length || storms.length ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

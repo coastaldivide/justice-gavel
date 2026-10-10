@@ -65,7 +65,7 @@ describe('NULL_GUARDS. FE Null Access Fixed on API Responses', () => {
   test('NULL-05: HomeScreen (res.data || []).slice', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx','utf8');
-    expect(src).toContain('(res.data || []).slice');
+    expect(src).toContain('(Array.isArray(res.data) ? res.data : [])');
   });
   test('NULL-06: CheckInManager res.data?.message', async () => {
     const fs=await import('fs');

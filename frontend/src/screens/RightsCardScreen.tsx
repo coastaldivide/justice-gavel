@@ -1,10 +1,4 @@
-import { useNetworkError } from '../hooks/useNetworkError';
-import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 /**
  * RightsCardScreen -- "Know Your Rights" wallet card generator
  *
@@ -20,13 +14,13 @@ import { AppIcon } from '../components/AppIcon';
  */
 import { Linking, LayoutAnimation, InteractionManager } from 'react-native';
 import EmergencyStrip from '../components/EmergencyStrip';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Share, ActivityIndicator, Alert, RefreshControl} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { api } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
+import { RNShare } from '../utils/webCompat';
 import { getUserState, setUserState} from '../utils/userState';
 import { detectAndSaveUserState } from '../services/location';
 import * as secureStorage from '../utils/secureStorage';
@@ -52,43 +46,63 @@ const _HEX_RIGHTSCARD = {
   _c1: C_DC2626,
 } as const;
 
+// ── Full static rights card -- complete constitutional rights, no network needed ──
+// This renders immediately from the app bundle. fetchCard() overlays API content
+// when available but this is always the baseline -- jail lobby, no signal, no problem.
+function buildFallbackCard(st: string): CardData {
+  return {
+  state: st,
+  title: t('rc_title'),
+  subtitle: t('rc_subtitle'),
+  brandLine: t('rc_brand'),
+  rights: [
+    { heading: t('rc_h1'), body: t('rc_b1') },
+    { heading: t('rc_h2'), body: t('rc_b2') },
+    { heading: t('rc_h3'), body: t('rc_b3') },
+    { heading: t('rc_h4'), body: t('rc_b4') },
+    { heading: t('rc_h5'), body: t('rc_b5') },
+    { heading: t('rc_h6'), body: t('rc_b6') },
+    { heading: t('rc_h7'), body: t('rc_b7') },
+    { heading: t('rc_h8'), body: t('rc_b8') },
+  ],
+  emergency: [t('rc_emergency_1'), t('rc_emergency_2')],
+  footer: t('rc_footer'),
+  generatedAt: new Date().toISOString().split('T')[0] };
+}
+
 function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [cardError, setCardError] = React.useState<string|null>(null);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(async () => {
-    setRefreshing(true);
-    try { await fetchCard(''); } catch {}
-    setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const mountedRef = useRef(true);
   useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  return () => { mountedRef.current = false; };
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     });
-    return () => _task.cancel();
+    return () => { mountedRef.current = false; _task.cancel(); };
   }, []);
 
   const [state, setState]       = useState('');
   const [card, setCard]         = useState<CardData | null>(null);
 
-  // Retry logic: exponential backoff on API failures
-  const [retryCount, setRetryCount] = React.useState(0);
-  const handleRetry = React.useCallback(() => {
-    setRetryCount(c => c + 1);
-  }, []);
-  const [loading, setLoading]   = useState(false);
   const [sharing, setSharing]   = useState(false);
   const [isSubscriber, setIsSubscriber] = useState(false);
   const [showPicker, setShowPicker]     = useState(false);
 
-  // Check subscription status
+  // Show the bundled card for `st` immediately, then upgrade to the API version
+  // when it is richer. Offline / API errors keep the static card.
+  const loadCard = useCallback(async (st: string) => {
+    setState(st);
+    setCard(buildFallbackCard(st));
+    try {
+      const res = await api.get('/lessons/rights-card', { params: { state: st } });
+      if (mountedRef.current && res.data?.rights?.length > 0) setCard(res.data);
+    } catch {
+      // Offline or API unavailable -- static card already displayed
+    }
+  }, []);
+
+  // Check subscription status, then load the card for the saved (or detected) state -- once.
   useEffect(() => {
     secureStorage.getToken().then(async token => {
       if (!token) return;
@@ -111,52 +125,19 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           const detected = await detectAndSaveUserState().catch(() => null);
           code = detected || '';
         }
-        setCard(buildFallbackCard(code));
-        setState(code);
-        fetchCard(code);
+        loadCard(code);
       }).catch(() => {
-        setCard(buildFallbackCard(''));
-        fetchCard('');
+        loadCard('');
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadCard]);
 
-  const fetchCard = async (st: string) => {
-    // Do not show loading spinner -- static card already showing
-    setState(st);
-    try {
-      const res = await api.get('/lessons/rights-card', { params: { state: st } });
-      if (res.data?.rights?.length > 0) {
-        setCard(res.data || null); // upgrade to API version only if richer
-      }
-    } catch {
-      // Offline or API unavailable -- static card already displayed, no action needed
-      if (!card) setCard(buildFallbackCard(st));
-    }
-  };
+  const [refreshing, setRefreshing] = React.useState(false);
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await loadCard(state);
+    if (mountedRef.current) setRefreshing(false);
+  }, [loadCard, state]);
 
-  // ── Full static rights card -- complete constitutional rights, no network needed ──
-  // This renders immediately from the app bundle. fetchCard() overlays API content
-  // when available but this is always the baseline -- jail lobby, no signal, no problem.
-  const buildFallbackCard = (st: string): CardData => ({
-    state: st,
-    title: t('rc_title'),
-    subtitle: t('rc_subtitle'),
-    brandLine: t('rc_brand'),
-    rights: [
-      { heading: t('rc_h1'), body: t('rc_b1') },
-      { heading: t('rc_h2'), body: t('rc_b2') },
-      { heading: t('rc_h3'), body: t('rc_b3') },
-      { heading: t('rc_h4'), body: t('rc_b4') },
-      { heading: t('rc_h5'), body: t('rc_b5') },
-      { heading: t('rc_h6'), body: t('rc_b6') },
-      { heading: t('rc_h7'), body: t('rc_b7') },
-      { heading: t('rc_h8'), body: t('rc_b8') },
-    ],
-    emergency: [t('rc_emergency_1'), t('rc_emergency_2')],
-    footer: t('rc_footer'),
-    generatedAt: new Date().toISOString().split('T')[0] });
 
   const shareCard = async () => {
     if (!card) return;
@@ -171,7 +152,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
       );
     } catch (e: any) {
       if (e.message !== 'User did not share') {
-        showToast(e.message, 'error'); setRetryCount(0);
+        showToast(e.message, 'error');
       }
     } finally {
       setSharing(false);
@@ -201,12 +182,6 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-    {cardError && (
-      <View style={{margin:16,padding:14,backgroundColor:colors.surface,
-        borderRadius:10,borderWidth:1,borderColor:colors.border}}>
-        <Text style={{color:colors.danger,fontWeight:'700',fontSize:14}}>⚠ {cardError}</Text>
-      </View>
-    )}
       <EmergencyStrip compact={true} />
 
       {/* ── Not legal advice disclaimer ──────────────────────── */}
@@ -246,7 +221,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityHint="Double-tap to activate"
                   key={st}
                   style={[styles.stateDropdownRow, state === st && styles.stateDropdownRowActive]}
-                  onPress={() => { setState(st); setUserState(st).catch(()=>{}); setShowPicker(false); fetchCard(st); }}
+                  onPress={() => { setUserState(st).catch(()=>{}); setShowPicker(false); loadCard(st); }}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={[styles.stateDropdownText, state === st && styles.stateDropdownTextActive]}>
                     {st}
@@ -278,9 +253,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
       )}
 
       {/* The card itself */}
-      {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.navy} size="large" />
-      ) : card ? (
+      {card ? (
         <View style={[styles.card, !isSubscriber && styles.cardBlurred]}>
 
           {/* Card header */}

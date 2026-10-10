@@ -37,7 +37,7 @@ describe('QC. QuickConnect File Integrity', () => {
     // Before fix: `const { colors` was on its own line — incomplete statement
     // Followed by `, isDark } = useTheme(); navigation }: ScreenProps) {` as orphan
     expect(src).not.toMatch(/^\s+const \{ colors\s*$/m);
-    expect(src).toContain('const { colors, isDark } = useTheme();');
+    expect(src).toMatch(/const \{ colors(, isDark)? \} = useTheme\(\);/);
     expect(src).not.toContain(', isDark } = useTheme(); navigation }');
   });
   test('QC-03: onRefresh correctly reloads subscription data', async () => {

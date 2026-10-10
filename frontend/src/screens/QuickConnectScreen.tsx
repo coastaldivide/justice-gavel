@@ -1,13 +1,8 @@
-import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 import { t } from '../i18n';
-import { haptic, hapticSelect, hapticSuccess, hapticWarn } from '../services/haptics';
+import { hapticSuccess, hapticWarn } from '../services/haptics';
 /**
  * QuickConnectScreen -- $19.99 one-time package
  *
@@ -21,10 +16,9 @@ import { haptic, hapticSelect, hapticSuccess, hapticWarn } from '../services/hap
  *   3. Result: bondsman card + lawyer card, both with direct Call buttons
  */
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
+import { ActivityIndicator, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
 import { getLocation } from '../services/location';
 import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
-import PracticeAreaSelector from '../components/PracticeAreaSelector';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 
@@ -131,7 +125,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
   const [credit, setCredit] = React.useState<number>(0);
 
@@ -142,7 +136,7 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
     return () => { mountedRef.current = false; };
   }, []);
 
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
@@ -158,8 +152,6 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
   const [paying, setPaying]       = useState(false);
   const [result, setResult]       = useState<any>(null);
   const [error, setError]         = useState('');
-  const [showDemoHelp, setShowDemoHelp] = useState(false);
-  const [practiceArea, setPracticeArea] = useState('');
 
   const { requireAuth, AuthGateModal } = useAuthGate(navigation, true); // quick phone+PIN mode
 
@@ -191,7 +183,7 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
         lat:          (coords as any)?.lat,
         lng:          (coords as any)?.lng,
         state:        (coords as any)?.state || '',  // derived from GPS reverse-geocode in backend
-        practice_area: practiceArea || undefined });
+      });
       setResult(res.data || null);
       hapticSuccess();
       // Fire post-purchase retention trigger (48hr arrest monitoring upsell)
@@ -356,23 +348,6 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
             )}
           </TouchableOpacity>
 
-          {showDemoHelp && (
-            <View style={styles.demoHelpCard}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.demoHelpTitle}>💡 How to enable payments</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.demoHelpBody}>
-                {'1. Open backend/.env\n2. Add STRIPE_SECRET=sk_test_...\n3. Restart the backend\n4. Get key at stripe.com/dashboard'}
-              </Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.demoHelpOr}>-- or --</Text>
-              <TouchableOpacity
-                accessibilityRole="button"
-                style={styles.demoHelpBtn}
-                onPress={() => navigation.navigate('MoreTab', { screen: 'Bail' })}
-          activeOpacity={0.85}
-              >
-                <Text maxFontSizeMultiplier={1.4} style={styles.demoHelpBtnText}>🔓 Find a Bail Agent Free Instead →</Text>
-              </TouchableOpacity>
-            </View>
-          )}
           <Text maxFontSizeMultiplier={1.4} style={styles.footerNote}>
             Payments processed securely by Stripe.{'\n'}
             Justice Gavel does not store your card information.

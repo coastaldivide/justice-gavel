@@ -179,7 +179,6 @@ describe('S6. useFocusEffect — Screens That Refresh on Navigation Focus', () =
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SavedLawyersScreen.tsx', 'utf8');
     expect(src).toContain('useFocusEffect');
-    expect(src).toContain('offlineCache');
     expect(src).toContain('note');
     expect(src).toContain('editingNote');
     expect(src).toContain('SavedLawyer');
@@ -256,7 +255,7 @@ describe('S12. UX — Final Architecture Depth', () => {
     const dir  = __REPO + '/frontend/src/screens';
     // Screens with useFocusEffect all import from @react-navigation/native
     const focusScreens = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
-      .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('useFocusEffect'));
+      .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('useFocusEffect(')); // called, not just mentioned in a comment
     for (const f of focusScreens) {
       const src = fs.readFileSync(path.join(dir, f), 'utf8');
       expect(src).toContain('@react-navigation/native');

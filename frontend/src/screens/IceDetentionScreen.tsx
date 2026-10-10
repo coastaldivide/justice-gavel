@@ -1,8 +1,5 @@
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { AppIcon } from '../components/AppIcon';
-import { GradientHeader } from '../components/GradientHeader';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 /**
  * IceDetentionScreen — ICE Detention Emergency Guide
  *
@@ -23,12 +20,9 @@ import { GradientHeader } from '../components/GradientHeader';
  *     to ALL persons in the US regardless of immigration status
  */
 import React, { useState, useCallback } from 'react';
-import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Linking, Alert, Share, LayoutAnimation} from 'react-native';
-import { useTheme, COLORS, FONTS, RADIUS } from '../constants/theme';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { useTheme, COLORS, RADIUS } from '../constants/theme';
 import { hapticImpact, hapticSelection, RNShare } from '../utils/webCompat';
-import { t } from '../i18n';
 const C_059669 = ('\x23' + '059669') as string; // hex color
 const C_1D4ED8 = ('\x23' + '1d4ed8') as string; // hex color
 const C_7C3AED = ('\x23' + '7c3aed') as string; // hex color
@@ -44,9 +38,6 @@ const C_FFFBEB = ('\x23' + 'fffbeb') as string; // hex color
 
 // ── Content ────────────────────────────────────────────────────────────────────
 
-// Key arrays for test verification
-const RIGHTS_KEYS = ['right_silence', 'right_attorney', 'right_refuse_entry', 'right_refuse_search', 'right_remain_calm'];
-const STEP_KEYS   = ['step_stay_calm', 'step_dont_sign', 'step_memorize_number', 'step_contact_lawyer', 'step_locator', 'step_document'];
 
 const CONTENT = {
   en: {
@@ -306,11 +297,10 @@ const _HEX_ICEDETENTION = {
 
 function IceDetentionScreen(): React.JSX.Element {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const [lang, setLang] = useState<Lang>('en');
   const L = CONTENT[lang];
-  const s = makeStyles(colors, isDark);
+  const s = makeStyles(colors);
 
   const toggleLang = useCallback(() => {
     hapticSelection();
@@ -322,14 +312,14 @@ function IceDetentionScreen(): React.JSX.Element {
     Linking.openURL(url).catch(() =>
       showToast('Please visit the URL directly.', 'warning')
     );
-  }, []);
+  }, [showToast]);
 
   const callNumber = useCallback((phone: string) => {
     hapticImpact();
     Linking.openURL('tel:' + phone.replace(/[^\d+]/g, '')).catch(() =>
       Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Could not open dialer.', 'error'))
     );
-  }, []);
+  }, [showToast]);
 
   const shareInfo = useCallback(() => {
     hapticImpact();
@@ -450,7 +440,7 @@ function IceDetentionScreen(): React.JSX.Element {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const makeStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   screen:   { flex: 1 },
 
   langRow:    { flexDirection: 'row', justifyContent: 'flex-end', padding: 12, paddingBottom: 0 },

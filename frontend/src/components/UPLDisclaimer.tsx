@@ -7,7 +7,6 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS } from '../constants/theme';
 
 interface Props {
   compact?: boolean;   // one-line version for tight spaces

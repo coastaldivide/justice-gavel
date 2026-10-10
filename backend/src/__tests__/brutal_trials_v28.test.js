@@ -94,7 +94,7 @@ describe('2. InsuranceScreen + PILeadScreen + AdvocacyScreen + DrugPenaltiesScre
     expect(src).toContain('plan');
     expect(src).toContain('quote');
     expect(src).toContain('error');
-    expect(src).toContain('RefreshControl');
+    expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
   });
   test('2-02: PILeadScreen submits to /billing/pi-lead/submit', async () => {
     const fs = await import('fs');

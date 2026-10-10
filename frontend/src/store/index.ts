@@ -1,4 +1,3 @@
-import * as SecureStore from 'expo-secure-store';
 /**
  * store/index.ts — Zustand global store
  *

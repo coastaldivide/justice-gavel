@@ -5,7 +5,7 @@
  * Brand:      navy #042C53 · gold #F9A825 · steel #85B7EB
  * Modes:      dark (default) + light (user-switchable via Settings)
  */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─────────────────────────────────────────────────────────────────────────────

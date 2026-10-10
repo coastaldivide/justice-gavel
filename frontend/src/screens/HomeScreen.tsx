@@ -1,15 +1,11 @@
-import { useNetworkError } from '../hooks/useNetworkError';
 import JTBLogo from '../components/JTBLogo';
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { HapticButton } from '../components/HapticButton';
-import { AppIcon, ICONS } from '../components/AppIcon';
-import { GradientHeader } from '../components/GradientHeader';
+import { AppIcon } from '../components/AppIcon';
 import EmergencyStrip from '../components/EmergencyStrip';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, AccessibilityInfo, LayoutAnimation, InteractionManager} from 'react-native';
+import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 import { getContacts } from '../services/storage';
@@ -17,10 +13,8 @@ import { getLocation } from '../services/location';
 import FloatingSOSButton from '../components/FloatingSOSButton';
 import { t, initLang } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import NetInfo from '@react-native-community/netinfo';
 import * as secureStorage from '../utils/secureStorage';
-import { useFocusEffect } from '@react-navigation/native';
 
 // Tiles ordered by most urgent / most used first
 // Bail Bond Help and Find Lawyer are top-left -- zero ambiguity
@@ -66,11 +60,8 @@ const TILES = [
   { key: 'BarPrep',       icon: '📖', label: 'Bar Exam\nPrep',           nav: 'More:BarPrepHome',           bg: COLORS.legalBg, color: COLORS.legal, primary: false },
 ];
 
-const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
-
-function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { confirm } = useConfirm();
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -83,7 +74,6 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
   // Subscription tier for analytics preview
   const [isPro, setIsPro] = useState(false);
-  const [barPrepStreak, setBarPrepStreak] = useState(0);
   useEffect(() => {
     AsyncStorage.getItem('user_subscription')
       .then(tier => setIsPro(!!tier && tier !== 'free'))
@@ -98,9 +88,8 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   }, []);
 
   const [refreshing, setRefreshing] = React.useState(false);
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [recentCases, setRecentCases] = React.useState<Record<string, unknown>[]>([]);
   const [displayName, setDisplayName] = useState('');
   const [sosSending, setSosSending]   = useState(false);
   const [legalTip, setLegalTip]       = useState('');
@@ -110,52 +99,73 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
   const [nearbyCounts, setNearbyCounts] = useState<{bail?: number; lawyers?: number}>({});
   const [upcomingCase, setUpcomingCase] = useState<{title:string; date:string; daysLeft:number} | null>(null);
-  const [unreadMessages, setUnreadMessages] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-    initLang();
-    loadAll();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-    });
-    return () => _task.cancel();
-  }, []);
 
   // Pull-to-refresh and mount loader
   const loadAll = React.useCallback(async () => {
     // Load all home data; show skeleton until primary data arrives
     const primaryFetches: Promise<unknown>[] = [];
 
-    // Load recent cases for quick re-entry
+    // Court date countdown -- soonest upcoming court date across the user's cases
     primaryFetches.push(
-      api.get('/cases').then(res => {
-        if (Array.isArray(res.data)) setRecentCases((res.data || []).slice(0, 2));
+      secureStorage.getToken().then(token => {
+        if (!token) return;
+        return api.get('/cases').then(res => {
+          const withDate = (Array.isArray(res.data) ? res.data : [])
+            .filter((ca: Record<string, unknown>) => ca.next_court_date)
+            .map((ca: Record<string, unknown>) => ({
+              title: String(ca.title ?? 'Your case'),
+              date: String(ca.next_court_date),
+              daysLeft: Math.ceil((new Date(String(ca.next_court_date)).getTime() - Date.now()) / 86400000),
+            }))
+            .filter(c => !isNaN(c.daysLeft) && c.daysLeft >= 0 && c.daysLeft <= 30)
+            .sort((a, b) => a.daysLeft - b.daysLeft);
+          if (mountedRef.current) setUpcomingCase(withDate[0] ?? null);
+        });
       }).catch(() => {})
     );
 
-    // Load bar prep streak for home screen motivational banner
-    primaryFetches.push(
-      api.get('/bar-prep/progress').then(res => {
-        if (res.data?.streak_days) setBarPrepStreak(res.data.streak_days);
-      }).catch(() => {})
-    );
     AsyncStorage.getItem('user').then(u => {
-      if (u) { const user = (() => { try { return JSON.parse(u); } catch { return null; } })(); setDisplayName(user.displayName || user.name || ''); }
+      if (u) { const user = (() => { try { return JSON.parse(u); } catch { return null; } })(); setDisplayName(user?.displayName || user?.name || ''); }
     }).catch(() => {});
-    // Unread message badge
-    secureStorage.getToken().then(t => {
-      if (!t) return;
-      api.get('/messages/unread/count')
-        .then(r => setUnreadMessages(r.data?.count || 0))
-        .catch(() => { showToast('Action failed. Please try again.', 'error'); });
+
+    // Track visits for the personalised greeting (UI-only, non-critical)
+    AsyncStorage.getItem('home_visit_count').then(v => {
+      const n = parseInt(v || '0', 10) + 1;
+      if (mountedRef.current) setVisitCount(n);
+      return AsyncStorage.setItem('home_visit_count', String(n));
+    }).catch(() => {});
+
+    // Legal tip of the day
+    api.get('/push/tip').then(r => {
+      if (!mountedRef.current) return;
+      setLegalTip(r.data?.tip || '');
+      setTipCategory(r.data?.category || '');
+      setTipQuery(r.data?.lesson_query || '');
+    }).catch(() => {});
+
+    // Nearby counts on the Bail / Lawyer tiles (non-blocking; skipped without a location)
+    getLocation().then(({ lat, lng }) => {
+      api.get('/providers/bail', { params: { lat, lng, radiusKm: 80 } })
+        .then(r => { if (mountedRef.current) setNearbyCounts(prev => ({ ...prev, bail: Array.isArray(r.data) ? r.data.length : 0 })); })
+        .catch(() => {});
+      api.get('/providers/lawyers', { params: { lat, lng, limit: 20 } })
+        .then(r => { if (mountedRef.current) setNearbyCounts(prev => ({ ...prev, lawyers: Array.isArray(r.data) ? r.data.length : 0 })); })
+        .catch(() => {});
     }).catch(() => {});
 
     // Resolve loading state once primary data arrives
     Promise.allSettled(primaryFetches).finally(() => {
-      if (mountedRef.current) { setIsLoading(false); setRefreshing(false); }
+      if (mountedRef.current) setRefreshing(false);
     });
   }, []);
+
+  useEffect(() => {
+    const _task = InteractionManager.runAfterInteractions(() => {
+      initLang();
+      loadAll();
+    });
+    return () => _task.cancel();
+  }, [loadAll]);
 
   const sendQuickSOS = async () => {
     const contacts = await getContacts();

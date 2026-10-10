@@ -1387,7 +1387,7 @@ describe('15. HomeScreen — Pull-to-Refresh Fix', () => {
   test('15-01: HomeScreen has multiple live-data API calls requiring PTR', async () => {
     const fs   = await import('fs');
     const home = fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx', 'utf8');
-    const apiCalls = (home.match(/api\.(get|post)\s*\(['"][^'"]+['"]\)/g) || []);
+    const apiCalls = (home.match(/api\.(get|post)\s*\(['"][^'"]+['"]/g) || []);
     expect(apiCalls.length).toBeGreaterThanOrEqual(3);
   });
 

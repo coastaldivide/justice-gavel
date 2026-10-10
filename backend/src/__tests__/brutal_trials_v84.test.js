@@ -67,8 +67,10 @@ describe('HGF. HagueContactScreen — All 15 TouchableOpacity Now Have accessibi
   test('HGF-03: loadUsResources fetches /hague-contacts/us-resources on mount', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(src).toContain('loadUsResources');
-    expect(src).toContain('/hague-contacts/us-resources');
+    // The US resources fetch duplicated the hard-coded OCI/NCMEC/FBI contacts and its
+    // result was never rendered; removed in step 2.
+    expect(src).not.toContain('loadUsResources');
+    expect(src).toContain('/hague-contacts/central-authority/');
     expect(src).toContain('useEffect');
   });
   test('HGF-04: HagueContactScreen now accessible — all 15 buttons have role', async () => {
@@ -93,10 +95,8 @@ describe('S6-FIX. S6 Gap Screens — openUrl + loadUsResources', () => {
   test('S6-FX-02: loadUsResources populates US resources on component mount', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
-    expect(src).toContain('loadUsResources');
-    expect(src).toContain('setUsResources');
-    expect(src).toContain('useEffect(() => {');
-    expect(src).toContain('loadUsResources()');
+    expect(src).not.toContain('setUsResources'); // fetched-but-never-rendered state removed (step 2)
+    expect(src).toContain("callNumber('+18884074747')"); // OCI 24/7 line stays on the home view
   });
 });
 

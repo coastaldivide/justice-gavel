@@ -127,9 +127,9 @@ describe('S6A. ChatScreen — Bubble Props + onCivilRoute Pattern', () => {
   test('S6A-02: onCivilRoute detects ICE/immigration/civil terms for routing suggestions', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
-    expect(src).toContain('onCivilRoute');
-    expect(src).toContain('ice|');
-    expect(src).toContain('msg.toLowerCase');
+    // onCivilRoute was dead code with a misrouting regex (/ice/ matches "police"); removed in step 2.
+    expect(src).not.toContain('onCivilRoute');
+    expect(src).toContain('onFindLawyer');
   });
 });
 
@@ -339,7 +339,8 @@ describe('S12. UX — Internal Logic Depth', () => {
   test('S12-01: ChatScreen onCivilRoute AI routing for ICE/immigration queries', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
-    expect(src).toContain('onCivilRoute');
+    // onCivilRoute was never wired (and its /ice/ regex matched "police"/"notice"); removed in step 2.
+    expect(src).not.toContain('onCivilRoute');
     expect(src).toContain('ConsumerSubscription');
   });
   test('S12-02: MotionLibrary copyToClipboard enables offline workflow (copy + paste elsewhere)', async () => {

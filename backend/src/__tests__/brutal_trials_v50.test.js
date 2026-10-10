@@ -167,7 +167,7 @@ describe('S6b. HomeScreen — SOS + Alert Patterns', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(src).toContain('mountedRef');
     expect(src).toContain('.finally(');
-    expect(src).toContain('setIsLoading(false)');
+    expect(src).toContain('setRefreshing(false)');
   });
 });
 
@@ -215,7 +215,6 @@ describe('S12. UX — Business Rules + Pattern Coverage', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx', 'utf8');
     expect(src).toContain('.finally(');
-    expect(src).toContain('setIsLoading(false)');
     expect(src).toContain('setRefreshing(false)');
   });
   test('S12-05: LegalNotice component imported in components — AI screens use it selectively', async () => {

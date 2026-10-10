@@ -1,5 +1,4 @@
 import { COLORS } from '../constants/theme';
-import { useHaptics } from '../hooks/useHaptics';
 /**
  * LegalPenaltiesScreen.tsx — Legal penalties reference (merged)
  *
@@ -10,14 +9,13 @@ import { useHaptics } from '../hooks/useHaptics';
  * Tabs: Drug Offenses | DUI / Traffic | Other Offenses
  */
 
-import React, { useState, useCallback} from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../constants/theme';
-import { t } from '../i18n';
 
 const TABS = [
   { key: 'drug', label: 'Drug Offenses' },
@@ -47,10 +45,9 @@ const DUI_FACTS = [
 ];
 
 function LegalPenaltiesScreen({ navigation }: any) {
-  const { impact, success, error: hapticError } = useHaptics();
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>('drug');
-  const styles = makeStyles(colors);
+  const styles = makeStyles();
 
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -218,7 +215,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
   );
 }
 
-function makeStyles(colors: any) {
+function makeStyles() {
   return StyleSheet.create({
     container:    { flex: 1 },
     header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },

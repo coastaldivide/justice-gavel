@@ -46,7 +46,7 @@ const SEVERITIES = [
 function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles();
   const [refreshing, setRefreshing] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -103,6 +103,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
+          accessibilityLabel="Browse lawyers now" onPress={() => navigation.navigate('LawyersTab')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>⚖️  Browse Lawyers Now</Text>
         </TouchableOpacity>
@@ -272,7 +273,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 16, paddingBottom: 60 },
 
@@ -339,5 +340,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
 export default React.memo(PILeadScreen);

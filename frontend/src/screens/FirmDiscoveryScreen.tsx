@@ -1,5 +1,4 @@
 import { COLORS } from '../constants/theme';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
  * FirmDiscoveryScreen.tsx — Public firm directory for defendants and clients
@@ -7,7 +6,7 @@ import { useToast } from '../components/ToastProvider';
  * and tap through to a firm's public profile before contacting them.
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { KeyboardAvoidingView, Platform, LayoutAnimation} from 'react-native';
+import { LayoutAnimation } from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
 import {
   View, Text, TextInput, TouchableOpacity,
@@ -15,7 +14,6 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { api } from '../services/api';
-import { t } from '../i18n';
 import { useTheme } from '../constants/theme';
 
 interface Firm {
@@ -30,7 +28,6 @@ interface Firm {
 }
 
 function FirmDiscoveryScreen() {
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const navigation = useNavigation<any>();
   const { colors }  = useTheme();

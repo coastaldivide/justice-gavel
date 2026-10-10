@@ -1,4 +1,3 @@
-import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
 /**
  * JuvenileJusticeScreen -- Juvenile Justice Rights & Navigation
@@ -15,14 +14,13 @@ import { AppIcon } from '../components/AppIcon';
  *   - Miranda applies but with extra protections for juveniles
  *   - Automatic sealing timelines by state
  */
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import type {} from '../types/navigation';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl , ActivityIndicator, LayoutAnimation} from 'react-native';
-import { t }      from '../i18n';
+import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
+import { InfoTabs } from '../components/InfoTabs';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type Tab = 'rights' | 'process' | 'sealing';
 
 type ProcessStep = {
   title: string;
@@ -188,21 +186,15 @@ const SEALING_DATA: SealingEntry[] = [
 // ── Component ─────────────────────────────────────────────────────────────────
 // Loading state
 function JuvenileJusticeScreen(): React.JSX.Element {
-  const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
       return () => { mountedRef.current = false; };
   }, []);
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [loading, setLoading] = useState(false);
-  const [tab, setTab] = React.useState(0);
-
-  const sections = RIGHTS_SECTIONS;
-  const _section  = Array.isArray(sections) ? sections[tab] : null;
-  const allSections = Array.isArray(sections) ? sections : [];
+  const [tab, setTab] = React.useState<'rights' | 'process' | 'sealing'>('rights');
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
@@ -224,27 +216,67 @@ function JuvenileJusticeScreen(): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>Rights in the juvenile system</Text>
       </View>
 
-      {/* Section cards */}
-      {allSections?.length === 0 ? (
+      <View style={{ paddingHorizontal: 12 }}>
+      <InfoTabs
+        testID="juvenile-tabs"
+        tabs={[{ key: 'rights', label: 'Rights' }, { key: 'process', label: 'The Process' }, { key: 'sealing', label: 'Record Sealing' }]}
+        active={tab}
+        onChange={k => setTab(k as 'rights' | 'process' | 'sealing')}
+      />
 
-        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            Nothing here yet
-          </Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
-            Results will appear here when available
-          </Text>
-        </View>
-        ) : allSections.map((sec: any, idx: number) => (
-        <View key={`allSecti-${idx}`} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          {sec.title ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardTitle, { color: colors.textPrimary }]}>{sec.title}</Text> : null}
-          {sec.body  ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardBody,  { color: colors.textMuted  }]}>{sec.body}</Text>  : null}
-          {sec.steps ? sec.steps.map((step: string, si: number) => (
-            <Text maxFontSizeMultiplier={1.4} key={si} style={[styles.cardBody, { color: colors.textMuted }]}>• {step}</Text>
-          )) : null}
+      {tab === 'rights' && RIGHTS_SECTIONS.map(sec => (
+        <View key={sec.heading} style={[styles.rightCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <View style={styles.rightCardHeader}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.rightCardIcon}>{sec.icon}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.rightCardTitle, { color: colors.textPrimary }]}>{sec.heading}</Text>
+          </View>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.rightCardBody, { color: colors.textMuted }]}>{sec.body}</Text>
         </View>
       ))}
+
+      {tab === 'process' && PROCESS_STEPS.map((step, i) => (
+        <View key={step.title} style={[styles.stepCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <View style={styles.stepCardHeader}>
+            <View style={[styles.stepNumBadge, { backgroundColor: colors.navy }]}>
+              <Text maxFontSizeMultiplier={1.2} style={styles.stepNumBadgeText}>{i + 1}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.stepCardTitle, { color: colors.textPrimary }]}>{step.title}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.stepTimeline, { color: colors.textMuted }]}>{step.timeline}</Text>
+            </View>
+          </View>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.stepSectionLabel, { color: colors.textMuted }]}>What happens</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.stepBody, { color: colors.textSecond }]}>{step.what}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.stepSectionLabel, { color: colors.textMuted }]}>Your rights</Text>
+          <View style={[styles.rightsBlock, { borderColor: colors.border }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.stepBody, { color: colors.textSecond }]}>{step.rights}</Text>
+          </View>
+          <View style={[styles.tipBlock, { borderColor: colors.border }]}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.tipLabel}>TIP</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.stepBody, { color: colors.textSecond }]}>{step.tip}</Text>
+          </View>
+        </View>
+      ))}
+
+      {tab === 'sealing' && SEALING_DATA.map(row => (
+        <View key={row.state} style={[styles.sealingRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <View style={[styles.stateBadge, { backgroundColor: colors.bgSubtle }]}>
+            <Text maxFontSizeMultiplier={1.2} style={[styles.stateBadgeText, { color: colors.navy }]}>{row.state}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={styles.sealingRowTop}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.sealingWhen, { color: colors.textPrimary }]}>{row.when}</Text>
+              <View style={[styles.autoChip, { backgroundColor: row.automatic ? colors.legalBg : colors.bgSubtle }]}>
+                <Text maxFontSizeMultiplier={1.2} style={[styles.autoChipText, { color: row.automatic ? colors.legalDark : colors.textMuted }]}>
+                  {row.automatic ? 'AUTOMATIC' : 'PETITION'}
+                </Text>
+              </View>
+            </View>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.sealingNotes, { color: colors.textMuted }]}>{row.notes}</Text>
+          </View>
+        </View>
+      ))}
+      </View>
 
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>

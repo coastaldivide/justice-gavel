@@ -1,21 +1,16 @@
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 // T4-05: wrap heavy useEffect bodies with InteractionManager.runAfterInteractions
-import { CONTENT_MAX_WIDTH } from '../utils/responsive';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import { EmptyState } from '../components/EmptyState';
 
-import React, { useState, useEffect, useCallback, useMemo} from 'react';
-import { FileSystem, ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { ScreenCapture, RNShare } from '../utils/webCompat';
 import type {} from '../types/navigation';
-import {View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Modal, ScrollView, Linking, ActivityIndicator, RefreshControl, Share, KeyboardAvoidingView, Platform, AccessibilityInfo, LayoutAnimation} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ScrollView, Linking, ActivityIndicator, RefreshControl, KeyboardAvoidingView, Platform, LayoutAnimation } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { api, apiErrorMessage } from '../services/api';
-import { cacheAgeLabel, cacheCases, cacheSavedLawyers, getCachedLawyers } from '../services/offlineCache';
+import { cacheAgeLabel, cacheSavedLawyers, getCachedLawyers } from '../services/offlineCache';
 import { t }   from '../i18n';
 import * as Calendar      from 'expo-calendar';
 import * as ImagePicker   from 'expo-image-picker';
@@ -24,7 +19,6 @@ import * as secureStorage from '../utils/secureStorage';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 import { saveCaseOffline, getOfflineCases, startSyncListener } from '../services/offlineSync';
 import Markdown from 'react-native-markdown-display';
-import { useFocusEffect } from '@react-navigation/native';
 import { daysUntil, formatDate, parseLocalDate, toLocalISODate } from '../utils/dateUtils';
 const C_0A1929 = ('\x23' + '0A1929') as string; // hex color
 
@@ -40,8 +34,6 @@ interface Case {
 }
 
 const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCalendar, onShare, onInvite, onExport }: any) {
-  const { confirm } = useConfirm();
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const color = STATUS_COLORS[item.status] || COLORS.textMuted;
   const hasDate = !!item.next_court_date;
@@ -223,7 +215,43 @@ const _HEX_CASE = {
   _c0: C_0A1929,
 } as const;
 
-const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
+
+// ── Parse AI scan response into case fields ─────────────────────────────────
+function parseScanResult(raw: string, data: Record<string,unknown>): {
+  title: string; state: string; courtDate: string; notes: string;
+} {
+  // Try structured JSON first (if AI returned JSON)
+  // Check for structured _intake from case_intake branch
+  if (data._intake) {
+    const i = (data as any)._intake as import('../types/api').CaseIntake;
+    return {
+      title:     i.title || i.charge || '',
+      state:     (i.state || '').toUpperCase().slice(0, 2),
+      courtDate: i.court_date || '',
+      notes:     [(i as any).defendant_name ? `Defendant: ${(i as any).defendant_name}` : '', (i as any).notes].filter(Boolean).join('')};
+  }
+  try {
+    const json = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    return {
+      title:     json.title || json.case_title || json.charge || '',
+      state:     (json.state || json.jurisdiction || '').toUpperCase().slice(0, 2),
+      courtDate: json.court_date || json.hearing_date || '',
+      notes:     json.notes || json.summary || raw};
+  } catch (e: any) { __DEV__ && console.warn(e?.message); }
+
+  // Fallback: pull key fields from free text
+  const title     = (raw.match(/charge[d]?\s*(?:with|:)?\s*([^.]+)/i)?.[1] || '').slice(0, 80).trim();
+  const stateMatch = raw.match(/(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC)/);
+  const dateMatch  = raw.match(/(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4})/);
+  let courtDate   = dateMatch?.[1] || '';
+  if (courtDate && courtDate.includes('/')) {
+    const [m, d, y] = courtDate.split('/');
+    courtDate = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+  // Use summary as notes if no structured data
+  const notes = String((data as any).summary || raw.slice(0, 400));
+  return { title, state: stateMatch?.[1] || '', courtDate, notes };
+}
 
 function CaseScreen({ route, navigation }: any) {
   const { showToast } = useToast();
@@ -292,7 +320,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
   React.useEffect(() => {
     let reloadTimer: ReturnType<typeof setTimeout> | null = null;
     getOfflineCases().then(setOfflineCases).catch(() => {});
-    const unsub = startSyncListener((tempId, serverId) => {
+    const unsub = startSyncListener((tempId) => {
       // Replace offline case with synced server case
       setOfflineCases(prev => prev.filter(c => c.id !== tempId));
       // Trigger a reload after brief delay (debounced to avoid rapid re-fires)
@@ -348,8 +376,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
       setIsGuest(false);
       const res = await api.get('/saved/lawyers');
       setSavedLawyers(res.data || []);
-      cacheCases(res.data).catch(() => showToast('Action failed. Please try again.', 'error'));  // write-through cache for offline use
-      cacheSavedLawyers(res.data); // save to offline cache
+      cacheSavedLawyers(res.data).catch(() => {}); // write-through offline cache of saved lawyers
     } catch (e: any) {
       const status = e.response?.status;
       if (status === 401 || status === 403) {
@@ -397,7 +424,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
   }, []);
 
   loadRef.current = load;
-  useEffect(() => { load(); }, [load]);
+  // Load on focus: keeps cases fresh when returning from the timeline / other screens.
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   // Unread message badge
   useEffect(() => {
@@ -424,7 +452,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
     setError('');
     try {
       const payload = {
-        title: editCase.title!.trim(),
+        title: (editCase.title ?? '').trim(),
         status: editCase.status || 'Open',
         next_court_date: editCase.next_court_date?.trim() || null,
         notes: editCase.notes?.trim() || ''};
@@ -441,7 +469,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
       // this is a new case (edits need the server copy).
       if (!e?.response && !editCase.id) {
         try {
-          const offlinePayload = { title: editCase.title!.trim(), status: editCase.status || 'Open',
+          const offlinePayload = { title: (editCase.title ?? '').trim(), status: editCase.status || 'Open',
             notes: editCase.notes?.trim() || null, state: editCase.state || null };
           const tempId = await saveCaseOffline(offlinePayload);
           const offlineCase = { id: tempId, title: offlinePayload.title,
@@ -459,59 +487,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
   }, [editCase, load]);
 
   // ── Document scanner ──────────────────────────────────────────────────────
-  const scanDocument = useCallback(async () => {
-    try {
-      // Ask: camera or library
-      confirm('Scan Document','Take a photo or choose from your library to scan this document.',
-      { confirmLabel:'Take Photo', cancelLabel:'Choose Library' }).then(ok=>{
-        if(ok) pickScanSource('camera'); else pickScanSource('library');
-      });
-    } catch (e: any) { __DEV__ && console.warn(e?.message); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const pickScanSource = useCallback(async (source: 'camera' | 'library') => {
-    try {
-      let result;
-      if (source === 'camera') {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-          confirm('Camera Access Needed', 'To scan documents, go to Settings and turn on Camera for Justice Gavel.',
-      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
-          return;
-        }
-        result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          quality: 0.85,
-          allowsEditing: false});
-      } else {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          confirm('Photo Access Needed', 'To attach photos, go to Settings and turn on Photos for Justice Gavel.',
-      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
-          return;
-        }
-        result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          quality: 0.85,
-          allowsEditing: false});
-      }
-      if (result.canceled || !result.assets?.length) return;
-      const asset = result.assets[0];
-      setScanning(true);
-      await runDocumentScan(asset.uri);
-    } catch (e: any) {
-      __DEV__ && console.warn(e?.message);
-      setScanning(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const runDocumentScan = useCallback(async (uri: string) => {
     try {
-      // Read image as base64
-      const base64 = Platform.OS !== 'web' ? (await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64 })) : null;
       // Send to /discovery/analyze -- reuse existing endpoint
       // Use FormData so it hits the same multer pipeline
       const formData = new FormData();
@@ -554,44 +531,53 @@ showToast('Document read — specific fields could not be extracted. Check Notes
     } finally {
       setScanning(false);
     }
-  }, []);
+  }, [showToast]);
 
-  // ── Parse AI scan response into case fields ─────────────────────────────────
-  const parseScanResult = (raw: string, data: Record<string,unknown>): {
-    title: string; state: string; courtDate: string; notes: string;
-  } => {
-    // Try structured JSON first (if AI returned JSON)
-    // Check for structured _intake from case_intake branch
-    if (data._intake) {
-      const i = (data as any)._intake as import('../types/api').CaseIntake;
-      return {
-        title:     i.title || i.charge || '',
-        state:     (i.state || '').toUpperCase().slice(0, 2),
-        courtDate: i.court_date || '',
-        notes:     [(i as any).defendant_name ? `Defendant: ${(i as any).defendant_name}` : '', (i as any).notes].filter(Boolean).join('')};
-    }
+  const pickScanSource = useCallback(async (source: 'camera' | 'library') => {
     try {
-      const json = JSON.parse(raw.replace(/```json|```/g, '').trim());
-      return {
-        title:     json.title || json.case_title || json.charge || '',
-        state:     (json.state || json.jurisdiction || '').toUpperCase().slice(0, 2),
-        courtDate: json.court_date || json.hearing_date || '',
-        notes:     json.notes || json.summary || raw};
-    } catch (e: any) { __DEV__ && console.warn(e?.message); }
-
-    // Fallback: pull key fields from free text
-    const title     = (raw.match(/charge[d]?\s*(?:with|:)?\s*([^.]+)/i)?.[1] || '').slice(0, 80).trim();
-    const stateMatch = raw.match(/(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC)/);
-    const dateMatch  = raw.match(/(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4})/);
-    let courtDate   = dateMatch?.[1] || '';
-    if (courtDate && courtDate.includes('/')) {
-      const [m, d, y] = courtDate.split('/');
-      courtDate = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      let result;
+      if (source === 'camera') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          confirm('Camera Access Needed', 'To scan documents, go to Settings and turn on Camera for Justice Gavel.',
+      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.85,
+          allowsEditing: false});
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          confirm('Photo Access Needed', 'To attach photos, go to Settings and turn on Photos for Justice Gavel.',
+      { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.85,
+          allowsEditing: false});
+      }
+      if (result.canceled || !result.assets?.length) return;
+      const asset = result.assets[0];
+      setScanning(true);
+      await runDocumentScan(asset.uri);
+    } catch (e: any) {
+      __DEV__ && console.warn(e?.message);
+      setScanning(false);
     }
-    // Use summary as notes if no structured data
-    const notes = String((data as any).summary || raw.slice(0, 400));
-    return { title, state: stateMatch?.[1] || '', courtDate, notes };
-  };
+  }, [confirm, showToast, runDocumentScan]);
+
+  const scanDocument = useCallback(async () => {
+    try {
+      // Ask: camera or library
+      confirm('Scan Document','Take a photo or choose from your library to scan this document.',
+      { confirmLabel:'Take Photo', cancelLabel:'Choose Library' }).then(ok=>{
+        if(ok) pickScanSource('camera'); else pickScanSource('library');
+      });
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
+  }, [confirm, pickScanSource]);
 
   // ── Case sharing ─────────────────────────────────────────────────────────
   const shareCase = useCallback(async (cas: Case) => {
@@ -605,7 +591,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
     } catch (e: any) {
       showToast(apiErrorMessage(e, 'Check your connection and try again.'), 'info');
     }
-  }, []);
+  }, [showToast]);
 
   // ── Family invite ────────────────────────────────────────────────────────
   const openInvite = (cas: Case) => {
@@ -624,10 +610,9 @@ showToast('Document read — specific fields could not be extracted. Check Notes
       setInviteModal(false);
       showToast(res.data?.message || 'Family member can now see this case.', 'info');
     } catch (e: any) {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
       setInviteError(apiErrorMessage(e, 'Could not invite. Check the email address.'));
     } finally { setInviting(false); }
-  }, [inviteEmail, invitingCase]);
+  }, [inviteEmail, invitingCase, showToast]);
 
   // ── Calendar sync ──────────────────────────────────────────────────────────
   const addToCalendar = useCallback(async (cas: Case) => {
@@ -662,11 +647,10 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         location: ''});
       showToast(`"${cas.title}" court date added with reminders.`, 'success');
     } catch (e: any) {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       __DEV__ && console.warn(e?.message);
       showToast('Check your calendar permissions in Settings.');
     }
-  }, []);
+  }, [showToast]);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
@@ -748,7 +732,53 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         </View>
       )}
 
-      {loading
+      {activeTab === 'lawyers'
+        ? (
+          <ScrollView testID="case-saved-lawyers" style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+            refreshControl={<RefreshControl refreshing={lawyersLoading && savedLawyers.length > 0} onRefresh={loadSavedLawyers} tintColor={colors.textSecond} />}>
+            {isOffline && (
+              <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { marginBottom: 10 }]}>
+                📴 Offline: showing your saved lawyers from this device ({cacheAge}).
+              </Text>
+            )}
+            {lawyersLoading && savedLawyers.length === 0
+              ? <ActivityIndicator style={{ marginTop: 40 }} color={colors.navy} />
+              : isGuest
+                ? (
+                  <View style={styles.empty}>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>Sign in to see saved lawyers</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>Lawyers you save (☆) are kept in your account.</Text>
+                  </View>
+                )
+                : savedLawyers.length === 0
+                  ? (
+                    <View style={styles.empty}>
+                      <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>No saved lawyers yet</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>Tap ☆ on a lawyer in Find a Lawyer to save them here.</Text>
+                    </View>
+                  )
+                  : savedLawyers.map((l: any) => (
+                    <TouchableOpacity
+                      key={String(l.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open profile of ${l.name || 'saved lawyer'}`}
+                      style={[styles.familyCaseRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
+                      onPress={() => navigation.navigate('LawyerProfile', { lawyerId: l.provider_id ?? l.id })}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text maxFontSizeMultiplier={1.4} style={[styles.familyCaseTitle, { color: colors.textPrimary }]} numberOfLines={1}>{l.name || 'Saved lawyer'}</Text>
+                        {!!(l.address || l.specialties?.length) && (
+                          <Text maxFontSizeMultiplier={1.4} style={[styles.familyCaseSub, { color: colors.textMuted }]} numberOfLines={1}>
+                            {[l.address, Array.isArray(l.specialties) ? l.specialties.slice(0, 2).join(', ') : null].filter(Boolean).join(' · ')}
+                          </Text>
+                        )}
+                      </View>
+                      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 18 }}>›</Text>
+                    </TouchableOpacity>
+                  ))}
+          </ScrollView>
+        )
+        : loading
         ? <ActivityIndicator style={{ marginTop: 40 }} color={colors.navy} />
         : cases.length === 0
           ? (

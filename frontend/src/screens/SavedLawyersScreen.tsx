@@ -1,9 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import type {} from '../types/navigation';
 /**
@@ -24,15 +20,13 @@ import type {} from '../types/navigation';
  *   2. SettingsScreen → "My Saved Lawyers"
  *   3. LawyersScreen header → bookmark icon
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, Linking, RefreshControl, Platform, KeyboardAvoidingView, LayoutAnimation} from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Linking, RefreshControl, Platform, KeyboardAvoidingView, LayoutAnimation } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { api, apiErrorMessage } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
-import { getCachedSearch } from '../services/offlineCache';
-import { useFocusEffect } from '@react-navigation/native';
 
 interface SavedLawyer {
   id:          number;
@@ -67,8 +61,7 @@ function SavedCard({
 }) {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
-  const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles();
   const [note,        setNote]        = useState(lawyer.notes || '');
   const [editingNote, setEditingNote] = useState(false);
   const [saving,      setSaving]      = useState(false);
@@ -88,7 +81,7 @@ function SavedCard({
     } finally {
       setSaving(false);
     }
-  }, [lawyer.id, note, onNoteChange]);
+  }, [lawyer.id, note, onNoteChange, showToast]);
 
   const submitReview = async () => {
     if (rating === 0) { showToast('Tap a star to rate before submitting.'); return; }
@@ -165,7 +158,7 @@ function SavedCard({
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.actionBtn, { backgroundColor: COLORS.legal }]}
-            accessibilityLabel={"\ud83d\udcde {t('saved_call')}"} onPress={() => callPhone(lawyer.phone!, () => showToast('Calling is unavailable on this device.', 'error'))}
+            accessibilityLabel={"\ud83d\udcde {t('saved_call')}"} onPress={() => callPhone(String(lawyer.phone), () => showToast('Calling is unavailable on this device.', 'error'))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📞 {t('saved_call')}</Text>
           </TouchableOpacity>
@@ -174,7 +167,7 @@ function SavedCard({
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.actionBtn, { backgroundColor: COLORS.blue }]}
-            accessibilityLabel={"\ud83d\udcac Text"} onPress={() => sendSMS(lawyer.phone!, () => showToast('Texting is unavailable on this device.', 'error'))}
+            accessibilityLabel={"\ud83d\udcac Text"} onPress={() => sendSMS(String(lawyer.phone), () => showToast('Texting is unavailable on this device.', 'error'))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>💬 Text</Text>
           </TouchableOpacity>
@@ -191,6 +184,7 @@ function SavedCard({
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.actionBtn, { backgroundColor: COLORS.warnDark }]}
+          accessibilityLabel="Write a review" onPress={() => setReviewing(r => !r)}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>⭐ Review</Text>
         </TouchableOpacity>
@@ -303,7 +297,7 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
 
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [lawyers,   setLawyers]   = useState<SavedLawyer[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [refreshing,setRefreshing]= useState(false);
@@ -323,7 +317,8 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // Load on focus: picks up lawyers saved from other screens when returning here.
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const handleRemove = useCallback((id: number) => {
 confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
@@ -335,7 +330,7 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
               showToast('Check your connection and try again.');
             }
     })
-  }, []);
+  }, [confirm, showToast]);
 
   const handleNoteChange = useCallback((id: number, note: string) => {
     setLawyers(prev => prev.map(l => l.id === id ? { ...l, notes: note } : l));
@@ -410,7 +405,7 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   screen:         { flex: 1 },
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   list:           { padding: 16, gap: 12, paddingBottom: 40 },
@@ -457,5 +452,5 @@ const makeStyles = (colors: any) => StyleSheet.create({
   retryBtnText:   { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700' } });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
+const styles = makeStyles();
 export default React.memo(SavedLawyersScreen);

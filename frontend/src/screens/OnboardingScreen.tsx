@@ -1,6 +1,3 @@
-import { useHaptics } from '../hooks/useHaptics';
-import { HapticButton } from '../components/HapticButton';
-import { AppIcon } from '../components/AppIcon';
 /**
  * OnboardingScreen -- First-time user intro
  *
@@ -9,15 +6,13 @@ import { AppIcon } from '../components/AppIcon';
  *  - "Browse Without Account" visible on EVERY slide (not just last)
  *  - Simple 3rd-grade language
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import {View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutAnimation, FlatList} from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutAnimation, FlatList, NativeModules, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
-import { t, initLang } from '../i18n';
+import { t, initLang, setLang } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { setUserState} from '../utils/userState';
 import { detectAndSaveUserState } from '../services/location';
 import JTBLogo from '../components/JTBLogo';
 
@@ -63,14 +58,13 @@ const SLIDES = [
   { key: 'free',    icon: '✅', titleKey: 'onboard_slide4_title', bodyKey: 'onboard_slide4_body', accent: COLORS.legal },
 ];
 
-function OnboardingScreen({ route, navigation }: ScreenProps) {
-  const { impact, success, error: hapticError } = useHaptics();
+function OnboardingScreen({ navigation }: ScreenProps) {
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     detectAndSaveUserState().catch(() => {});
   }, []);
 
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -86,8 +80,6 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
       : SLIDES,
     [situation]
   );
-  const [selectedState, setSelectedOnboardState] = React.useState('');
-  const [showStatePicker, setShowStatePicker] = React.useState(false);
 
       {/* Situation picker -- shown on first open */}
       {showSituationPicker && (
@@ -163,23 +155,19 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
     Promise.resolve(initLang()).then(() => {
       // Auto-detect system language and offer Spanish if not already set
       try {
-        const { NativeModules, Platform } = require('react-native');
         const locale = Platform.OS === 'ios'
           ? NativeModules.SettingsManager?.settings?.AppleLocale ||
             NativeModules.SettingsManager?.settings?.AppleLanguages?.[0] || 'en'
           : NativeModules.I18nManager?.localeIdentifier || 'en';
         if (locale.startsWith('es') || locale.startsWith('ES')) {
-          const { setLang } = require('../i18n');
                     AsyncStorage.getItem('lang').then((stored: string | null) => {
             if (!stored) { setLang('es'); }
           });
         } else if (locale.startsWith('pt') || locale.startsWith('PT')) {
-          const { setLang } = require('../i18n');
                     AsyncStorage.getItem('lang').then((stored: string | null) => {
             if (!stored) { setLang('pt'); }
           });
         } else if (locale.startsWith('vi') || locale.startsWith('VI')) {
-          const { setLang } = require('../i18n');
                     AsyncStorage.getItem('lang').then((stored: string | null) => {
             if (!stored) { setLang('vi'); }
           });
@@ -190,8 +178,8 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
   }, []);
 
   const browseNow = async () => {
-    if (selectedState) { await setUserState(selectedState).catch(()=>{}); }
-      AsyncStorage.setItem('onboarding_done', 'true').catch(() => {});
+    // The user's state is auto-detected on mount (detectAndSaveUserState).
+    AsyncStorage.setItem('onboarding_done', 'true').catch(() => {});
     await AsyncStorage.setItem('has_browsed', 'true').catch(() => {});
     setAppAuth('browsing');
   };

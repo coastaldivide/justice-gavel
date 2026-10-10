@@ -979,7 +979,7 @@ describe('16. HomeScreen — PTR Gap & Fix Model', () => {
     const fs   = await import('fs');
     const home = fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx', 'utf8');
     // These endpoints should be called on refresh
-    const REFRESH_ENDPOINTS = ['/cases', '/messages/unread', '/bar-prep/progress'];
+    const REFRESH_ENDPOINTS = ['/cases', '/push/tip', '/providers/bail', '/providers/lawyers'];
     for (const ep of REFRESH_ENDPOINTS) {
       expect(home).toContain(ep);
     }

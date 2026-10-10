@@ -1,5 +1,4 @@
 import { COLORS } from '../constants/theme';
-import { useHaptics } from '../hooks/useHaptics';
 /**
  * DiversionScreen.tsx — Diversion program eligibility (merged)
  *
@@ -10,7 +9,7 @@ import { useHaptics } from '../hooks/useHaptics';
  * Tabs: Drug/Alcohol | Mental Health | Veterans Court
  */
 
-import React, { useState, useCallback} from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Switch,
   StyleSheet, LayoutAnimation,
@@ -56,7 +55,6 @@ const VETERAN_CRITERIA = [
 ];
 
 function DiversionScreen({ navigation }: any) {
-  const { impact, success, error: hapticError } = useHaptics();
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>('drug');
   const [answers, setAnswers] = useState<Record<string, boolean>>({});

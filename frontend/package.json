@@ -23,7 +23,7 @@
     "build:check": "bash ../scripts/build-check.sh web",
     "ci": "bash ../scripts/check-all.sh",
     "test:render": "jest --config jest.render.config.js",
-    "lint": "eslint src App.tsx",
+    "lint": "eslint src App.tsx --max-warnings 0",
     "check:nav": "node scripts/check-nav-targets.mjs",
     "test:logic": "jest --config jest.frontend.config.js --no-coverage",
     "smoke:web": "node scripts/web-smoke.cjs dist web-smoke-out",

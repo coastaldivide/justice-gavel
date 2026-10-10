@@ -1,6 +1,4 @@
-import { useConfirm } from '../hooks/useConfirm';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { AppIcon } from '../components/AppIcon';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 /**
  * TenantRightsScreen -- Eviction emergency + tenant rights
  *
@@ -21,17 +19,16 @@ import { AppIcon } from '../components/AppIcon';
  *   2. ChatScreen after tenant rights AI response
  *   3. HomeScreen (future tile)
  */
-import { api } from '../services/api';
-import React, { useState, useCallback} from 'react';
+import React from 'react';
 
-import { View, Text, StyleSheet, ScrollView, Linking , ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, LayoutAnimation, TouchableOpacity } from 'react-native';
+import type { ScreenProps } from '../types/navigation';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
-import { t } from '../i18n';
 
-type Situation = 'eviction_notice' | 'lockout' | 'utility_shutoff' | 'harassment' | 'mold_habitability' | '';
 
-const SITUATIONS = [
+type Situation = 'eviction_notice' | 'lockout' | 'utility_shutoff' | 'harassment' | 'mold_habitability';
+
+const SITUATIONS: { key: Situation; label: string; icon: string; color: string; bg: string }[] = [
   { key: 'eviction_notice',    label: 'I got an eviction notice',        icon: '📄', color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
   { key: 'lockout',            label: 'My landlord locked me out',       icon: '🔒', color: COLORS.warnDark, bg: COLORS.warnBg },
   { key: 'utility_shutoff',    label: 'Utilities were shut off',         icon: '💡', color: COLORS.gold, bg: COLORS.warnBg },
@@ -39,7 +36,7 @@ const SITUATIONS = [
   { key: 'mold_habitability',  label: 'Unsafe / uninhabitable unit',     icon: '🏚️', color: COLORS.textSecond, bg: COLORS.bgSubtle },
 ];
 
-const GUIDANCE: Record<string, { urgent: string[]; rights: string[]; deadline?: string }> = {
+const GUIDANCE: Record<Situation, { urgent: string[]; rights: string[]; deadline?: string }> = {
   eviction_notice: {
     deadline: 'You typically have 3-30 days depending on your state and the reason. DO NOT ignore this.',
     urgent: [
@@ -112,20 +109,19 @@ const GUIDANCE: Record<string, { urgent: string[]; rights: string[]; deadline?: 
   },
 };
 
-function TenantRightsScreen(): React.JSX.Element {
+function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [tab, setTab] = React.useState(0);
-
-  const sections = SITUATIONS;
-  const _section  = Array.isArray(sections) ? sections[tab] : null;
-  const allSections = Array.isArray(sections) ? sections : [];
+  // 1. What's happening?  2. Immediate steps + rights for that situation.
+  const [situation, setSituation] = React.useState<Situation | ''>('');
+  const guidance = situation ? GUIDANCE[situation] : null;
+  const selected = SITUATIONS.find(x => x.key === situation);
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
@@ -140,27 +136,64 @@ function TenantRightsScreen(): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>Housing & landlord-tenant law</Text>
       </View>
 
-      {/* Section cards */}
-      {allSections?.length === 0 ? (
+      <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>What's happening?</Text>
+      {SITUATIONS.map(sit => {
+        const active = sit.key === situation;
+        return (
+          <TouchableOpacity
+            key={sit.key}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={sit.label}
+            testID={`tenant-situation-${sit.key}`}
+            onPress={() => setSituation(active ? '' : sit.key)}
+            style={[styles.sitCard, { backgroundColor: sit.bg, borderWidth: active ? 2 : 0, borderColor: sit.color }]}
+          >
+            <Text maxFontSizeMultiplier={1.4} style={styles.sitIcon}>{sit.icon}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.sitLabel, { color: sit.color }]}>{sit.label}</Text>
+            {active && <Text maxFontSizeMultiplier={1.4} style={[styles.sitCheck, { color: sit.color }]}>✓</Text>}
+          </TouchableOpacity>
+        );
+      })}
 
-        <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-          <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 6 }}>
-            Nothing here yet
-          </Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
-            Results will appear here when available
-          </Text>
+      {guidance && selected && (
+        <View testID="tenant-guidance">
+          {!!guidance.deadline && (
+            <View style={[styles.deadlineBanner, { borderColor: COLORS.emergency, backgroundColor: colors.bgCard }]}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.deadlineIcon}>⏰</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.deadlineText}>{guidance.deadline}</Text>
+            </View>
+          )}
+          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>Do this now</Text>
+          {guidance.urgent.map((step, i) => (
+            <View key={step} style={[styles.stepRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+              <View style={[styles.stepNum, { backgroundColor: selected.color }]}>
+                <Text maxFontSizeMultiplier={1.2} style={styles.stepNumText}>{i + 1}</Text>
+              </View>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.stepText, { color: colors.textPrimary }]}>{step}</Text>
+            </View>
+          ))}
+          <Text maxFontSizeMultiplier={1.4} style={[styles.sectionLabel, { color: colors.textMuted }]}>Your rights</Text>
+          <View style={[styles.rightsCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+            {guidance.rights.map(r => (
+              <View key={r} style={styles.rightsRow}>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.rightsBullet, { color: COLORS.legal }]}>✓</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.rightsText, { color: colors.textSecond }]}>{r}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.ctaBlock}>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Find a housing attorney"
+              onPress={() => navigation.navigate('LawyersTab')}
+              style={[styles.ctaBtn, { backgroundColor: colors.navy }]}
+            >
+              <Text maxFontSizeMultiplier={1.4} style={styles.ctaBtnText}>⚖️  Find a housing attorney</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        ) : allSections.map((sec: any, idx: number) => (
-        <View key={`allSecti-${idx}`} style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          {sec.title ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardTitle, { color: colors.textPrimary }]}>{sec.title}</Text> : null}
-          {sec.body  ? <Text maxFontSizeMultiplier={1.4} style={[styles.cardBody,  { color: colors.textMuted  }]}>{sec.body}</Text>  : null}
-          {sec.steps ? sec.steps.map((step: string, si: number) => (
-            <Text maxFontSizeMultiplier={1.4} key={si} style={[styles.cardBody, { color: colors.textMuted }]}>• {step}</Text>
-          )) : null}
-        </View>
-      ))}
+      )}
 
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
@@ -214,6 +247,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   cardBody: { fontSize: 14, lineHeight: 20, color: colors.textSecond },
 });
 
-// Module-level fallback for helper components
-const styles = makeStyles(COLORS);
 export default React.memo(TenantRightsScreen);

@@ -1,22 +1,13 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
-import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
-import { EmptyState } from '../components/EmptyState';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { AppIcon } from '../components/AppIcon';
-import { GradientHeader } from '../components/GradientHeader';
 import {} from '../components/LegalCharts';
 import UPLDisclaimer from '../components/UPLDisclaimer';
-import EmergencyStrip from '../components/EmergencyStrip';
 import type { ScreenProps } from '../types/navigation';
-import React, { useState, useEffect, useCallback} from 'react';
-import {View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, LayoutAnimation} from 'react-native';
+import EmergencyStrip from '../components/EmergencyStrip';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, LayoutAnimation, RefreshControl } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { api, cachedGet } from '../services/api';
+import { cachedGet } from '../services/api';
 import { useTheme } from '../constants/theme';
-import ErrorState from '../components/ErrorState';
-import { t } from '../i18n';
 
 const STATES = [
   'ALL','AL','AK','AZ','AR','CA','CO','CT','DC','DE','FL','GA','HI',
@@ -30,8 +21,7 @@ type Schedule = {
   severity: string; bail_min: number; bail_max: number | null; bail_note?: string;
 };
 
-function BailCalculatorScreen({ route, navigation }: ScreenProps) {
-  const { impact, success, error: hapticError } = useHaptics();
+function BailCalculatorScreen({ navigation }: ScreenProps) {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -43,7 +33,6 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
   const [refreshTick, setRefreshTick] = React.useState(0);
   const [state, setState] = useState('TN');
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -60,9 +49,9 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
     let cancel = false;
     setLoading(true);
     cachedGet(`/legaldata/bail?state=${state}&limit=200`)
-      .then(r => { if (!cancel) setSchedules(r.data || []); })
+      .then(r => { if (!cancel) { setSchedules(r.data || []); setFetchError(false); } })
       .catch(() => { if (!cancel) { setSchedules([]); setFetchError(true); } })
-      .finally(() => { if (!cancel) setLoading(false); });
+      .finally(() => { if (!cancel) { setLoading(false); setRefreshing(false); } });
     return () => { cancel = true; };
   }, [state, refreshTick]);
 
@@ -79,7 +68,8 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
       testID="bail-calculator-screen"
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}>
-        <ScrollView style={{ flex: 1, backgroundColor: bg }} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1, backgroundColor: bg }} keyboardShouldPersistTaps="handled"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
       <UPLDisclaimer compact />
       <View style={{ padding: 16 }}>
         {/* Header card */}
@@ -132,6 +122,18 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
         />
 
         {loading && <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} />}
+        {fetchError && !loading && !schedules.length && (
+          <View style={{ alignItems:'center', padding:24 }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: sub, marginBottom: 8, textAlign: 'center' }}>
+              Could not load bail schedules.
+            </Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityHint="Double-tap to activate" accessibilityLabel="Tap to retry" onPress={() => { setFetchError(false); setRefreshTick(t => t+1); }}>
+              <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary }}>Tap to retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {/* Charge list */}
         {filtered.map(s => {
           const isSel = selected?.id === s.id;
@@ -139,15 +141,6 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
             ? { bg: colors.emergencyBg, border: colors.emergencyDark, text: colors.emergencyDark }
             : { bg: colors.legalBg, border: colors.legalDark, text: colors.legalDark };
 
-  if (fetchError && !schedules.length) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel="Tap to retry" onPress={() => { setFetchError(false); setRefreshTick(t => t+1); }}>
-        <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary }}>Tap to retry</Text>
-      </TouchableOpacity>
-    </View>
-  );
           return (
             <TouchableOpacity
               accessibilityRole="button"
@@ -328,5 +321,4 @@ function Row({ label, value, text, sub, highlight }:
   );
 }
 
-const styles = StyleSheet.create({});
 export default React.memo(BailCalculatorScreen);

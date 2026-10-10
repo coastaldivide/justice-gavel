@@ -1,19 +1,13 @@
-import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import {View, Text, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, LayoutAnimation} from 'react-native';
+import { View, Text, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, LayoutAnimation } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, cachedGet, apiErrorMessage } from '../services/api';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
 import { COLORS, RADIUS, useTheme } from '../constants/theme';
 import * as Haptics from 'expo-haptics';
-import { t } from '../i18n';
 
 interface Lesson { id: number; title: string; category: string; content: string; points: number; }
 
@@ -23,7 +17,6 @@ const CAT_COLORS: Record<string, string> = {
 
 function LessonsScreen({ navigation, route }: ScreenProps) {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
@@ -32,8 +25,8 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
     return () => { mountedRef.current = false; };
   }, []);
 
-  const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
+  const { colors } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors), [colors]);
   const incomingCategory = (route?.params as import('../types/api').RouteParams)?.category || null;
   const incomingQuery    = (route?.params as import('../types/api').RouteParams)?.query    || null;
   const [lessons, setLessons]   = useState<Lesson[]>([]);
@@ -42,7 +35,6 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
   const [expanded, setExpanded]   = useState<number | null>(null);
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [loading, setLoading]   = useState(true);
-  const [streak,  setStreak]    = useState(0);
   const [userId, setUserId]     = useState(1);
 
   useEffect(() => {
@@ -52,27 +44,36 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       const done = await AsyncStorage.getItem('completed_lessons');
       if (done) { try { setCompleted(new Set(JSON.parse(done))); } catch {} }
       if (incomingCategory) setFilterCat(incomingCategory as string);
-      await loadLessons();
+      const loaded = await loadLessons();
+      // Deep link from the Home "tip of the day": open the first matching lesson.
+      if (incomingQuery && mountedRef.current) {
+        const q = String(incomingQuery).toLowerCase();
+        const match = loaded.find(l => `${l.title} ${l.content ?? ''}`.toLowerCase().includes(q));
+        if (match) setExpanded(match.id);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(()=>{});
       if (mountedRef.current) setLoading(false);
     })();
-  }, [incomingCategory]);
+  }, [incomingCategory, incomingQuery]);
 
-  const loadLessons = async (fresh = false) => {
+  const loadLessons = async (fresh = false): Promise<Lesson[]> => {
       try {
         const r = fresh ? await api.get('/lessons') : await cachedGet('/lessons');
         setLessons(r.data || []);
         cacheLessons(r.data); // save for offline
+        return Array.isArray(r.data) ? r.data : [];
       } catch {
         // Offline -- load from cache
-        const { lessons: cached, cachedAt, isCache } = (await getCachedLessons()) as any;
+        const { lessons: cached, isCache } = (await getCachedLessons()) as any;
         if (isCache) {
           setLessons(cached);
+          return Array.isArray(cached) ? cached : [];
         }
+        return [];
       }
   };
 
-  const markComplete = async (id: number, pts: number) => {
+  const markComplete = useCallback(async (id: number, pts: number) => {
     if (completed.has(id)) return;
     try {
       await api.post(`/lessons/${id}/complete`, { user_id: userId });
@@ -87,7 +88,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
     } catch (e: any) {
       showToast(apiErrorMessage(e, 'Could not mark complete.'), 'info');
     }
-  };
+  }, [completed, userId, showToast]);
 
   const displayLessons = filterCat
     ? (lessons ?? []).filter(l => l.category === filterCat)
@@ -142,10 +143,8 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
                   </View>
                 )}
               </TouchableOpacity>
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
             );
-  }, [colors, completed, expanded]);
+  }, [colors, completed, expanded, markComplete, styles]);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}
@@ -277,5 +276,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
 export default React.memo(LessonsScreen);

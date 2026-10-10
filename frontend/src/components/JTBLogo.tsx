@@ -19,9 +19,6 @@ interface Props {
 
 function JTBLogo({ size = 80 }: Props) {
   const s = size;
-  // Scale all coordinates from the 680×680 master viewBox
-  const sc = (v: number) => (v / 680) * s;
-
   // Octagon points from the 680×680 master
   const oct = '448,141 579,211 579,469 448,539 232,539 101,469 101,211 232,141';
   const octInner = '448,141 579,211 579,469 448,539 232,539 101,469 101,211 232,141';

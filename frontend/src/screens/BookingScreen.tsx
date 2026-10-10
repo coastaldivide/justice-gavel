@@ -1,24 +1,19 @@
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 /**
  * BookingScreen -- Lawyer video consultation booking
  * 3-step booking flow: duration → date/time → confirm
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Linking, LayoutAnimation} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Linking, LayoutAnimation } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { track } from '../services/analytics';
 import { useAuthGate } from '../components/AuthGate';
-import { usePaymentSheet, PAYMENTS_COMING_SOON } from '../payments';
+import { usePaymentSheet } from '../payments';
 import { toLocalISODate } from '../utils/dateUtils';
 
 
@@ -56,9 +51,6 @@ function buildDays(): { date: string; label: string; times: { time: string; avai
 
 function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
-  const [submitting, setSubmitting] = React.useState(false);
-
-  // Load attorney's weekly availability so users know best times to expect responses
   const { lawyerName, lawyerId } = (route?.params as import('../types/api').RouteParams) ?? {};
   const [prefillLoaded, setPrefillLoaded] = React.useState(false);
   const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
@@ -75,14 +67,10 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (!lawyerId) return;
-    api.get('/attorney/profile/availability', { params: { lawyerId } })
-      .then(r => setLawyerAvail(r.data || []))
-      .catch(() => {});
-  }, [lawyerId]);
+  }, []);
 
   const { colors, isDark } = useTheme();
-  const styles = makeStyles(colors);
+  const styles = makeStyles();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
 
   const mountedRef = useRef(true);
@@ -92,28 +80,31 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [duration, setDuration]   = useState(DURATIONS[1]);
   const [days, setDays]            = useState(buildDays);
 
-  // Refresh slots from server when lawyerId is known
-  useEffect(() => {
+  // Refresh slots from server when lawyerId is known (and on pull-to-refresh)
+  const [refreshing, setRefreshing] = useState(false);
+  const loadSlots = useCallback(async () => {
     if (!lawyerId) return;
-    api.get(`/consultations/slots/${lawyerId}`)
-      .then(r => {
-        const serverSlots = r.data?.slots;
-        if (serverSlots?.length) setDays(serverSlots);
-      })
-      .catch((e) => { __DEV__ && console.warn(e?.message); }); // keep random fallback on failure
+    try {
+      const r = await api.get(`/consultations/slots/${lawyerId}`);
+      const serverSlots = r.data?.slots;
+      if (serverSlots?.length && mountedRef.current) setDays(serverSlots);
+    } catch (e: any) {
+      if (__DEV__) console.warn(e?.message); // keep the generated fallback on failure
+    }
   }, [lawyerId]);
+  useEffect(() => { loadSlots(); }, [loadSlots]);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadSlots();
+    if (mountedRef.current) setRefreshing(false);
+  }, [loadSlots]);
   const [selDay, setSelDay]       = useState(days[0]);
   const [selTime, setSelTime]     = useState('');
   const [notes, setNotes]         = useState('');
   const [booking, setBooking]     = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [confirmed, setConfirmed] = useState<any>(null);
   const [callbackPhone, setCallbackPhone] = useState('');
   const [sendingCallback, setSendingCallback] = useState(false);
-  const [lawyerAvail, setLawyerAvail] = React.useState<{
-    schedule: Record<string,string[]>; note: string;
-  } | null>(null);
 
   // Auth check at mount
   useEffect(() => {
@@ -230,11 +221,6 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   // ── Confirmed ────────────────────────────────────────────────────────────
   if (step === 'confirmed') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      {loading && (
-        <View style={{ flex:1, alignItems:'center', justifyContent:'center' }}>
-          <ActivityIndicator size="large" color={COLORS.navy} />
-        </View>
-      )}
       <View style={styles.confirmedWrap}>
         <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>Consultation booked!</Text>
@@ -244,7 +230,13 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         </Text>
         <View style={[styles.receiptCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>Duration   <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{duration.label}</Text></Text>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>Platform fee  <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{duration.fee}</Text></Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>Platform fee  <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{confirmed?.fee_charged || duration.fee}</Text></Text>
+          {!!confirmed?.booking?.id && (
+            <Text maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>Booking #  <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>{String(confirmed.booking.id)}</Text></Text>
+          )}
+          {!!confirmed?.message && (
+            <Text testID="booking-confirmation-message" maxFontSizeMultiplier={1.4} style={[styles.receiptRow, { color: colors.textSecond }]}>{confirmed.message}</Text>
+          )}
         </View>
         <TouchableOpacity
           accessibilityRole="button"
@@ -290,7 +282,8 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}>
         <ScrollView testID="booking-screen" style={[styles.screen, { backgroundColor: colors.bg }]}
-      contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.navy} />}>
       <AuthGateModal />
 
       {/* Progress dots */}
@@ -478,7 +471,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   );
 }
 
-const makeStyles = (colors: any) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 16 },
 
@@ -542,5 +535,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 });
 
 // Module-level fallback for helper components
-const styles = makeStyles(COLORS);
 export default React.memo(BookingScreen);

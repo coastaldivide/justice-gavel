@@ -1,23 +1,17 @@
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation} from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation } from 'react-native';
 import type { ScreenProps } from '../types/navigation';
-import { useNavigation } from '@react-navigation/native';
 /**
  * ArrestMonitorScreen -- Pro tier feature
  * Lets users watch for arrest records on up to 5 names/counties.
  * When the nightly scraper finds a match, they get a push notification.
  * Accessible from: HomeScreen tile "My Plan" → upsell, or direct nav from Pro plan
  */
-import React, { useState, useEffect, useCallback, useMemo} from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { t } from '../i18n';
 
 const MAX_WATCHES = 5;
 
@@ -31,10 +25,9 @@ interface Watch {
   active: number;
 }
 
-function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function ArrestMonitorScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -43,36 +36,10 @@ function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   }, []);
 
 
-  // Deduplicate arrest results -- same person + charge + date = one entry
-  const deduplicateArrests = (arrests: Record<string, unknown>[]): Record<string, unknown>[] => {
-    const seen = new Map<string, any>();
-    for (const arrest of arrests) {
-      const key = [
-        ((arrest as import('../types/api').ArrestRecord).name || '').toLowerCase().trim(),
-        ((arrest as import('../types/api').ArrestRecord).charge || (arrest as import('../types/api').ArrestRecord).charges || '').toLowerCase().slice(0, 30),
-        ((arrest as any).booking_date || (arrest as any).date || '').slice(0, 10),
-      ].join('|');
-      if (!seen.has(key)) {
-        seen.set(key, arrest);
-      } else {
-        // Merge sources into the first entry
-        const existing = seen.get(key);
-        if (arrest.source && !existing.sources) {
-          existing.sources = [existing.source, arrest.source].filter(Boolean);
-        }
-      }
-    }
-    return [...seen.values()];
-  };
 
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const [watches,   setWatches]   = useState<Watch[]>([]);
   const [loading,   setLoading]   = useState(true);
@@ -99,6 +66,12 @@ function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Pull-to-refresh: one reload (the old handler called load() twice).
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    load().finally(() => setRefreshing(false));
+  }, [load]);
 
   const addWatch = async () => {
     if (!name.trim()) { showToast('Enter the full name to start monitoring.', 'error'); return; }

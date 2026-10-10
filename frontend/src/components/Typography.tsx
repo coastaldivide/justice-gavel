@@ -12,7 +12,7 @@
  *   <Caption>Last updated March 2026</Caption>
  */
 
-import React, { memo } from 'react';
+import React from 'react';
 import { Text, TextStyle, StyleSheet } from 'react-native';
 import { COLORS } from '../constants/theme';
 

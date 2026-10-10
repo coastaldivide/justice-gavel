@@ -1,8 +1,5 @@
-import { useNetworkError } from '../hooks/useNetworkError';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
 import { AppIcon } from '../components/AppIcon';
-import { GradientHeader } from '../components/GradientHeader';
 /**
  * CrisisResourcesScreen -- Mental health & crisis resources
  *
@@ -17,9 +14,9 @@ import { GradientHeader } from '../components/GradientHeader';
  *   4. ResourcesScreen "Crisis Support" category
  */
 import { api } from '../services/api';
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshControl, LayoutAnimation} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshControl, LayoutAnimation, ActivityIndicator } from 'react-native';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
@@ -97,15 +94,8 @@ function callLine(number: string, onError?: (number: string) => void) {
 }
 
 
-const FALLBACK_CRISIS_RESOURCES = [
-  { id: 'f1', name: '988 Suicide & Crisis Lifeline', phone: '988', url: 'https://988lifeline.org', category: 'CRISIS_LINE', description: 'Call or text 988 — free, confidential, 24/7' },
-  { id: 'f2', name: 'Crisis Text Line', phone: 'Text HOME to 741741', url: 'https://www.crisistextline.org', category: 'CRISIS_LINE', description: 'Text-based crisis support, 24/7' },
-  { id: 'f3', name: 'National Domestic Violence Hotline', phone: '1-800-799-7233', url: 'https://www.thehotline.org', category: 'CRISIS_LINE', description: 'Free, confidential, 24/7' },
-  { id: 'f4', name: 'SAMHSA National Helpline', phone: '1-800-662-4357', url: 'https://www.samhsa.gov/find-help/national-helpline', category: 'CRISIS_LINE', description: 'Mental health & substance use, free, 24/7' },
-  { id: 'f5', name: 'National Alliance on Eating Disorders', phone: '1-866-662-1235', url: 'https://www.allianceforeatingdisorders.com', category: 'CRISIS_LINE', description: 'Mon-Fri 9am-9pm ET' },
-];
 
-function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
   const onDialError = (number: string) => showToast(`Please dial ${number} manually.`, 'warning');
   const mountedRef = React.useRef(true);
@@ -117,13 +107,18 @@ function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.El
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [dbLines, setDbLines] = React.useState<any[]>([]);
-  const [fetchError, setFetchError] = useState<string>('');
   React.useEffect(() => {
     api.get('/resources?category=CRISIS_LINE&limit=20')
       .then(r => { if (r.data?.length) setDbLines(r.data || []); })
       .catch(() => {}).finally(() => setIsLoading(false));
   }, []);
-  const { colors, isDark } = useTheme();
+  // Crisis lines from the resources directory that are not already listed above.
+  const directoryLines = useMemo(() => {
+    const digits = (v: unknown) => String(v ?? '').replace(/[^0-9]/g, '');
+    const known = new Set(CRISIS_LINES.map(l => digits(l.number)));
+    return dbLines.filter(r => r?.name && digits(r.phone) && !known.has(digits(r.phone)));
+  }, [dbLines]);
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
@@ -195,20 +190,46 @@ function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.El
       {CRISIS_LINES.filter(l => !l.primary).map(line => (
         <TouchableOpacity
           accessibilityRole="button"
-          key={line.key}
+          key={line.key ?? line.name}
           style={[styles.lineCard, { backgroundColor: colors.bgCard }]}
           onPress={() => callLine(line.number, onDialError)}
           activeOpacity={0.85}
           accessibilityLabel={`Call ${line.name}`}
-          accessibilityHint={line.forWhom}
+          accessibilityHint={line.forWhom ?? line.desc}
         >
-          <View style={[styles.lineDot, { backgroundColor: line.bg }]}>
+          <View style={[styles.lineDot, { backgroundColor: line.bg ?? COLORS.bgSubtle }]}>
             <AppIcon name="call-outline" size={20} color="#1B5E20" />
           </View>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.lineName, { color: colors.textPrimary }]}>{line.name}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.lineNumber, { color: line.color }]}>{line.number}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.lineFor, { color: colors.textMuted }]}>{line.forWhom}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.lineNumber, { color: line.color ?? COLORS.blue }]}>{line.number}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.lineFor, { color: colors.textMuted }]}>{line.forWhom ?? line.desc}</Text>
+          </View>
+        </TouchableOpacity>
+      ))}
+
+      {/* ── Additional lines from the resources directory ─────────────── */}
+      {isLoading && <ActivityIndicator style={{ marginVertical: 8 }} color={colors.textMuted} />}
+      {directoryLines.map(r => (
+        <TouchableOpacity
+          accessibilityRole="button"
+          key={`db-${r.id ?? r.name}`}
+          testID="crisis-directory-line"
+          style={[styles.lineCard, { backgroundColor: colors.bgCard }]}
+          onPress={() => callLine(String(r.phone), onDialError)}
+          activeOpacity={0.85}
+          accessibilityLabel={`Call ${r.name}`}
+          accessibilityHint={r.description || undefined}
+        >
+          <View style={[styles.lineDot, { backgroundColor: COLORS.bgSubtle }]}>
+            <AppIcon name="call-outline" size={20} color="#1B5E20" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.lineName, { color: colors.textPrimary }]}>{r.name}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.lineNumber, { color: COLORS.blue }]}>{r.phone}</Text>
+            {!!r.description && (
+              <Text maxFontSizeMultiplier={1.4} style={[styles.lineFor, { color: colors.textMuted }]}>{r.description}</Text>
+            )}
           </View>
         </TouchableOpacity>
       ))}
@@ -224,6 +245,8 @@ function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.El
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.legalBtn, { backgroundColor: COLORS.navy }]}
+          onPress={() => navigation.navigate('LawyersTab')}
+          accessibilityLabel="Find a lawyer"
         >
           <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.4} style={styles.legalBtnText}>Find a Lawyer</Text>

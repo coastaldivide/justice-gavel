@@ -1,11 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 /**
  * ConsumerSubscriptionScreen -- User-facing subscription plans
  *
@@ -18,14 +12,12 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
+import { ActivityIndicator, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager } from 'react-native';
 import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
 import { PAYMENTS_COMING_SOON } from '../payments';
 
 import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
-import { t } from '../i18n';
 
 // Billing period toggle data
 const MONTHLY_TIERS = [
@@ -154,10 +146,6 @@ const TIERS = [
 ];
 
 function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
-  const { confirm } = useConfirm();
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
   return (
     <View style={[styles.card, tier.highlight && styles.cardHighlight]}
       testID="consumer-subscription-screen">
@@ -227,7 +215,7 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
 function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -338,6 +326,7 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.toggleBtn, !annual && styles.toggleBtnActive]}
+          accessibilityLabel="Monthly" onPress={() => setAnnual(false)}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, !annual && styles.toggleBtnTextActive]}>Monthly</Text>
         </TouchableOpacity>

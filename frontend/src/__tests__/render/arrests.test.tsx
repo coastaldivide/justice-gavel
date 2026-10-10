@@ -7,6 +7,7 @@ import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react-native';
 import { ThemeProvider } from '../../constants/theme';
 import { ToastProvider } from '../../components/ToastProvider';
+import FamilyConnectScreen from '../../screens/FamilyConnectScreen';
 
 const mockGet = jest.fn();
 jest.mock('../../services/api', () => ({
@@ -25,7 +26,6 @@ const navigation: any = {
 };
 
 function renderFamilyConnect() {
-  const FamilyConnectScreen = require('../../screens/FamilyConnectScreen').default;
   return render(
     <ThemeProvider><ToastProvider>
       <FamilyConnectScreen navigation={navigation} route={{ params: {} }} />

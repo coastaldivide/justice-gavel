@@ -1,10 +1,6 @@
-import { useConfirm } from '../hooks/useConfirm';
 import { apiErrorMessage } from '../services/api';
 import { useToast } from '../components/ToastProvider';
-import { useHaptics } from '../hooks/useHaptics';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { HapticButton } from '../components/HapticButton';
-import { AppIcon } from '../components/AppIcon';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 /**
  * TermsAcceptanceModal
  *
@@ -31,7 +27,6 @@ import {
   StyleSheet, ActivityIndicator, Platform, Linking, LayoutAnimation} from 'react-native';
 import { useTheme, TYPE, FONT } from '../constants/theme';
 import api from '../services/api';
-import { t } from '../i18n';
 
 const TOS_VERSION = '2.1';  // Must match CURRENT_TOS_VERSION in auth.js
 
@@ -74,7 +69,6 @@ type Props = {
 
 function TermsAcceptanceModal({ visible, onAccepted }: Props) {
   const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
@@ -82,7 +76,6 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
   const s = styles(colors, TYPE, FONT);
 
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
-  const [loading, setLoading] = React.useState(false);
   const [checkToS,         setCheckToS]         = useState(false);
   const [checkNoAdvice,    setCheckNoAdvice]     = useState(false);
   const [submitting,       setSubmitting]        = useState(false);
@@ -102,7 +95,6 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
     if (!canAccept || submitting) return;
     setSubmitting(true);
     setError(null);
-    setLoading(true);
     try {
           await api.post('/auth/accept-tos', {
         tos_version:       TOS_VERSION,

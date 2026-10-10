@@ -1,9 +1,5 @@
-import { useConfirm } from '../hooks/useConfirm';
 import { SampleRecordBadge } from '../components/SampleRecordBadge';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**
  * FamilyConnectScreen -- $28.99 one-tap emergency connection
@@ -16,12 +12,10 @@ import { AppIcon } from '../components/AppIcon';
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Linking, KeyboardAvoidingView, Platform, RefreshControl, InteractionManager} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Linking, KeyboardAvoidingView, Platform } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
-import { t } from '../i18n';
 
 // Plain helper (no hooks); failures are reported through onError.
 function callPhone(phone: string, onError?: () => void) {
@@ -118,9 +112,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
 // ── Main screen ───────────────────────────────────────────────────────────────
 function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
-  const [submitting, setSubmitting] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
 
   const passedArrestId = (route?.params as import('../types/api').RouteParams)?.arrest_id;
@@ -162,7 +154,6 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       return;
     }
     setSearching(true);
-    setLoading(true);
     try {
           const res = await api.get('/arrests/search', {
         params: { name: searchName.trim(), limit: 10 }
@@ -170,12 +161,11 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       const records: any[] = Array.isArray(res.data?.records) ? res.data?.records : [];
       setSearchResults(records);
       setSearched(true);
-    } catch (e: any) {
+    } catch {
       setSearchResults([]);
       showToast('Could not search right now. Check your connection and try again.');
     } finally {
       setSearching(false);
-      setLoading(false);
     }
   };
 
@@ -197,8 +187,8 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   };
 
   const handleConnect = async () => {
-if (submitting) return;
-        setPaying(true);
+    if (paying) return; // double-tap guard
+    setPaying(true);
     setStep(3);
     try {
       const res = await api.post('/billing/family/connect', {

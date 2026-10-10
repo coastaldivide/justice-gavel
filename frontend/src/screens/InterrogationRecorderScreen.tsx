@@ -1,9 +1,7 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { AppIcon } from '../components/AppIcon';
+import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 /**
  * InterrogationRecorderScreen
  *
@@ -15,19 +13,27 @@ import { AppIcon } from '../components/AppIcon';
  * Built for use during or immediately after a police encounter.
  */
 import React, { useState, useRef, useEffect } from 'react';
-import type { ScreenProps } from '../types/navigation';
 import {
-  View, Text, TouchableOpacity, ScrollView, Alert,
-  ActivityIndicator, StyleSheet, Linking, Share, RefreshControl, Platform, LayoutAnimation, InteractionManager} from 'react-native';
-// Audio -- native only. Web uses MediaRecorder API (see handleWebRecord below)
-const Audio = Platform.OS === 'web' ? null : require('expo-av').Audio;
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+  Linking,
+  RefreshControl,
+  Platform,
+  LayoutAnimation,
+  InteractionManager,
+} from 'react-native';
+// Audio -- native only (web uses InterrogationRecorderScreen.web.tsx).
+import { Audio } from 'expo-av';
 import * as Location from 'expo-location';
-import { FileSystem, hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
+import { FileSystem, hapticImpact, hapticNotification, RNShare } from '../utils/webCompat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, API_BASE_URL } from '../services/api';
 import { useTheme, COLORS } from '../constants/theme';
 import { getToken } from '../utils/secureStorage';
-import { t } from '../i18n';
 
 type Phase = 'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'error';
 
@@ -64,17 +70,14 @@ const TWO_PARTY_STATES = {
   },
 };
 
-function InterrogationRecorderScreen({ navigation }: ScreenProps): React.JSX.Element {
+function InterrogationRecorderScreen(): React.JSX.Element {
   const { confirm } = useConfirm();
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    setLoading(true);
     try {
     await fetchLaw(''); } catch {}
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
@@ -209,8 +212,6 @@ showToast('Allow microphone access in Settings.', 'warning');
 
     } catch (e: any) {
       showToast(e.message || 'Check microphone permissions.', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -224,10 +225,6 @@ showToast('Allow microphone access in Settings.', 'warning');
       const uri = recordingRef.current?.getURI();
       if (!uri) throw new Error('No recording found');
 
-      // Read file as base64
-      const base64 = Platform.OS !== 'web' ? (await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      })) : null;
 
       let userData: any = {}; try { const _u = await AsyncStorage.getItem('user'); if (_u) userData = JSON.parse(_u); } catch {}
 
@@ -264,7 +261,7 @@ showToast('Allow microphone access in Settings.', 'warning');
       setDocId(data.doc_id || '');
       setPhase('done');
 
-    } catch (e: any) {
+    } catch {
       if (!mountedRef.current) return;
       setError('Could not process recording. Make sure you have internet access and try again.');
       setPhase('error');
@@ -331,6 +328,7 @@ showToast('Allow microphone access in Settings.', 'warning');
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.emergencyBtn, { backgroundColor: colors.emergency }]}
+          accessibilityLabel="Call 911" onPress={() => Linking.openURL('tel:911').catch(() => showToast('Please dial 911.', 'error'))}
         >
           <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>🚨 CALL 911</Text>
         </TouchableOpacity>

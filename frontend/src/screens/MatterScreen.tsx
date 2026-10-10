@@ -1,14 +1,11 @@
 import { COLORS } from '../constants/theme';
-import { EmptyState } from '../components/EmptyState';
-import { useHaptics } from '../hooks/useHaptics';
 /**
  * MatterScreen.tsx — Law firm matter detail view
  * Shows matter details, assigned attorney, court dates, linked cases, billing.
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, StyleSheet, Alert, LayoutAnimation} from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, StyleSheet, LayoutAnimation } from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
-import { t } from '../i18n';
 import { formatDate } from '../utils/dateUtils';
 
 interface Props {
@@ -17,16 +14,16 @@ interface Props {
 }
 
 function MatterScreen({ route, navigation }: Props) {
-  const { impact, success, error: hapticError } = useHaptics();
   const matterId = route.params?.matterId;
   const [matter, setMatter]   = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError]     = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isRefresh = false) => {
     if (!matterId) { setLoading(false); return; }
-    setLoading(true); setError(null);
+    if (!isRefresh) setLoading(true);
+    setError(null);
     try {
       const { data } = await api.get(`/matters/${matterId}`);
       setMatter(data.matter ?? data);
@@ -34,8 +31,10 @@ function MatterScreen({ route, navigation }: Props) {
       setError(apiErrorMessage(e, 'Failed to load matter'));
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [matterId]);
+  const onRefresh = useCallback(() => { setRefreshing(true); load(true); }, [load]);
 
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); load(); }, [load]);
@@ -45,7 +44,8 @@ function MatterScreen({ route, navigation }: Props) {
   if (!matter) return <View style={styles.center}><Text>Matter not found</Text></View>;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <Text maxFontSizeMultiplier={1.3} style={styles.title}>{matter.title}</Text>
       <Text maxFontSizeMultiplier={1.3} style={styles.subtitle}>{matter.client_name}</Text>
 

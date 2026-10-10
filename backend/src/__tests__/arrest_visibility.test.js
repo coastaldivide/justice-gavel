@@ -190,7 +190,7 @@ describePg('sample arrests on Postgres (real routes)', () => {
       expect(r.body.leads.map(x => Number(x.id))).toEqual([ids.real]);
       expect(r.body.leads[0].lead_fee_cents).toBe(10000);
       expect(r.body.leads[0].lead_fee_display).toBe('$100');
-      expect(r.body.lead_fee).toMatchObject({ cents: 7500, model: 'flat' });
+      expect(r.body.lead_fee).toMatchObject({ cents: 10000, model: 'flat' });
     });
   });
 
@@ -258,9 +258,9 @@ describePg('sample arrests on Postgres (real routes)', () => {
   it('a real lead is quoted the flat fee whatever the bail amount', async () => {
     // bail on this row is $250,000 — the old bail-scaled table charged $300 for it.
     const res = await outbound.sendPaymentLink({ phone: '+16155550101', arrestId: ids.real, recipientType: 'bail_agent', recipientId: null });
-    expect(res).toMatchObject({ success: true, feeCents: 7500, mock: true });   // mock link: no Stripe, nothing charged
+    expect(res).toMatchObject({ success: true, feeCents: 10000, mock: true });   // mock link: no Stripe, nothing charged
     const msg = await db.get(
       "SELECT body FROM outbound_messages WHERE arrest_id = ? AND message_type = 'payment_link' ORDER BY id DESC LIMIT 1", [ids.real]);
-    expect(msg?.body).toMatch(/Pay \$75 to unlock/);
+    expect(msg?.body).toMatch(/Pay \$100 to unlock/);
   });
 });

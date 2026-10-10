@@ -1,12 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
-import { AppIcon } from '../components/AppIcon';
 /**
  * CheckInManagerScreen -- Bondsman check-in management
  *
@@ -19,17 +12,15 @@ import { AppIcon } from '../components/AppIcon';
  *
  * $9.99/month per active defendant. Shown as monthly total.
  */
-import React, { useState, useEffect, useCallback, useMemo} from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, Modal, ActivityIndicator, Alert, RefreshControl, KeyboardAvoidingView, InteractionManager} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, Modal, ActivityIndicator, RefreshControl, KeyboardAvoidingView, InteractionManager } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';
-import { daysUntil, formatDate} from '../utils/dateUtils';
+import { daysUntil } from '../utils/dateUtils';
 import { useAuthGate } from '../components/AuthGate';
-import ErrorState from '../components/ErrorState';
-import { t } from '../i18n';
 
 type DefendantRow = {
   id: number; defendant_name: string; defendant_phone: string;
@@ -50,7 +41,6 @@ function statusColor(row: DefendantRow): { color: string; bg: string; label: str
 // ── Enroll Modal ──────────────────────────────────────────────────────────────
 function EnrollModal({ visible, onClose, onEnrolled }: any) {
   const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
   React.useEffect(() => {
     const t = InteractionManager.runAfterInteractions(() => {});
     return () => t.cancel();
@@ -68,6 +58,7 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
   const save = async () => {
     if (!name.trim()) { showToast('Enter defendant name.'); return; }
     setSaving(true);
+    setMgmtError(null);
     try {
       const res = await api.post('/checkins/enroll', {
         defendant_name: name.trim(),
@@ -80,7 +71,8 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
       reset();
       onEnrolled();
     } catch (e: any) {
-      showToast('Check your internet and try again. Your information is not lost.', 'info');
+      // Shown inline at the top of the form; the entered details are kept.
+      setMgmtError(apiErrorMessage(e, 'Check your internet and try again. Your information is not lost.'));
     } finally {
       setSaving(false);
     }
@@ -263,13 +255,13 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
 }
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
-function CheckInManagerScreen({ route, navigation }: ScreenProps) {
+function CheckInManagerScreen({ navigation }: ScreenProps) {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [data, setData]             = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);

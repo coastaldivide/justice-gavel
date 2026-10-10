@@ -69,5 +69,5 @@ export async function unregisterPush(): Promise<void> {
     if (tokenData?.data) {
       await api.delete(`/push/token/${encodeURIComponent(tokenData.data)}`).catch(() => {});
     }
-  } catch (_e) { /* silent — logout should always succeed */ }
+  } catch { /* silent — logout should always succeed */ }
 }

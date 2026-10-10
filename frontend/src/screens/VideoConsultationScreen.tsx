@@ -1,6 +1,4 @@
 import { COLORS } from '../constants/theme';
-import { useConfirm } from '../hooks/useConfirm';
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
  * VideoConsultationScreen.tsx
@@ -9,15 +7,12 @@ import { useToast } from '../components/ToastProvider';
  */
 
 import React, { useState, useCallback } from 'react';
-import {
-  View, Text, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Platform, LayoutAnimation} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, LayoutAnimation } from 'react-native';
 import { Linking } from 'react-native'; // open Daily.co session in system browser
 const openBrowserAsync = (url: string) => Linking.openURL(url);
 // TODO: import useThemeColors after adding to userState.ts
 const useThemeColors = () => ({ bg: '#f9fafb', textPrimary: '#111', textSecondary: '#666', navy: COLORS.navy });
 import { api, apiErrorMessage } from '../services/api';
-import { t } from '../i18n';
 
 interface Props {
   route: { params?: { matterId?: string; attorneyId?: string; topic?: string } };
@@ -25,7 +20,6 @@ interface Props {
 }
 
 function VideoConsultationScreen({ route, navigation }: Props) {
-  const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
@@ -60,7 +54,7 @@ function VideoConsultationScreen({ route, navigation }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [matterId, attorneyId, topic]);
+  }, [matterId, attorneyId, topic, showToast]);
 
   const endSession = useCallback(async () => {
     if (roomName) {
@@ -70,7 +64,7 @@ function VideoConsultationScreen({ route, navigation }: Props) {
     setSessionUrl(null);
     setRoomName(null);
     navigation.goBack();
-  }, [roomName, navigation]);
+  }, [roomName, navigation, showToast]);
 
   // ── Active session view ────────────────────────────────────────────────
   if (inSession && sessionUrl) {

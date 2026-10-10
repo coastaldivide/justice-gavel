@@ -24,8 +24,7 @@ describe('RENDER. Shell Screen Render Presence', () => {
   test('RENDER-02: IceDetentionScreen has header + content (bilingual guide)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/IceDetentionScreen.tsx','utf8');
-    expect(src).toContain('RIGHTS_KEYS');
-    expect(src).toContain('STEP_KEYS');
+    expect(src).toContain('CONTENT'); // bilingual (en/es) guide content
     expect(src).toContain('return (');
     expect(src).toContain('<ScrollView');
   });
