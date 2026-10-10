@@ -4,7 +4,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // DEEPEST BEHAVIORAL LAYER: auth flow, API headers, logout, date safety,
 // keyboard UX, pagination, rate limits, deep links, push, body size.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -41,7 +40,6 @@ describe('UX. User Experience Quality', () => {
     const fs   = await import('fs');
     const path = await import('path');
     const scr  = __REPO + '/frontend/src/screens';
-    const bad  = [];
     for(const f of ['HagueContactScreen.tsx','FirmVerticalScreen.tsx']){
       const src = fs.readFileSync(path.join(scr,f),'utf8');
       expect(src).toContain('returnKeyType');
@@ -92,7 +90,6 @@ describe('BE. Backend Production Quality', () => {
   });
   test('BE-02: all write routes rate-limited (8 routes now protected)', async () => {
     const fs = await import('fs');
-    const path = await import('path');
     const mustHave = [
       'routes/forum.js', 'routes/analytics.js', 'routes/firm_acquisition.js',
       'routes/hague_contacts.js', 'routes/attorney/profile.js',
@@ -184,8 +181,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
     expect(dead).toBe(0); expect(noPw).toBe(0);
   });
   test('GATE-03: all screens reachable + providers fields correct', async () => {
-    const fs=await import('fs'); const path=await import('path');
-    // (frontend screen-reachability check removed: frontend navigation is verified by frontend/scripts/check-nav-targets.mjs)
+     // (frontend screen-reachability check removed: frontend navigation is verified by frontend/scripts/check-nav-targets.mjs)
   });
   test('GATE-04: AI timeout + proactive token refresh + referrals gone', async () => {
     const fs=await import('fs');
@@ -201,7 +197,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

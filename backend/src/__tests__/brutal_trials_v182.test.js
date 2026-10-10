@@ -7,7 +7,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 6 deep runtime flows verified: Stripe webhook, JWT refresh,
 // foreground refresh, file upload, push→screen, network errors.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -23,12 +22,12 @@ const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
 describe('IMPORT. All Route Files Import Existing Modules', () => {
   test('IMPORT-02: discovery.js uses perUserAiLimit from sharedAiLimiter (not deleted rateLimiter)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/routes/discovery.js','utf8');
+    const src = ['index','analyze','history','_helpers'].map(f=>fs.readFileSync(__REPO + '/backend/src/routes/discovery/'+f+'.js','utf8')).join('\n');
     // Before fix: imported aiLimiter from '../middleware/rateLimiters.js' which doesn't exist
     expect(src).toContain('sharedAiLimiter.js');
     expect(src).toContain('perUserAiLimit');
     expect(src).not.toContain('rateLimiter.js');
-    expect(src).not.toContain('aiLimiter');
+    expect(src).not.toMatch(/import\s*\{[^}]*aiLimiter/);
   });
   test('IMPORT-03: motions/generate.js uses perUserAiLimit from sharedAiLimiter', async () => {
     const fs = await import('fs');
@@ -36,7 +35,7 @@ describe('IMPORT. All Route Files Import Existing Modules', () => {
     expect(src).toContain('sharedAiLimiter.js');
     expect(src).toContain('perUserAiLimit');
     expect(src).not.toContain('rateLimiter.js');
-    expect(src).not.toContain('aiLimiter');
+    expect(src).not.toMatch(/import\s*\{[^}]*aiLimiter/);
   });
   test('IMPORT-04: expungement/index.js has no reference to deleted referrals.js', async () => {
     const fs = await import('fs');
@@ -141,7 +140,6 @@ describe('RUNTIME. Deep Flow Simulation', () => {
   });
   test('RT-07: Migration gaps — all 44 migrations present, no sequence gaps', async () => {
     const fs   = await import('fs');
-    const path = await import('path');
     const migDir = __REPO + '/backend/src/migrations';
     const files = fs.readdirSync(migDir).filter(f=>f.endsWith('.sql'));
     expect(files.length).toBeGreaterThanOrEqual(44);
@@ -214,7 +212,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

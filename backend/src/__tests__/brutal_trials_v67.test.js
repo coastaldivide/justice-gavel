@@ -56,36 +56,23 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  *       contracts = 5 specialized sub-routers not one monolith
  */
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate;
 let encrypt, decrypt;
-let haversineKm;
-let hasMinRole;
-let safeInt, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_EMOJI, GAVEL_LABEL;
+let GAVEL_EMOJI;
 let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole;
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const cfg = await import('../config.js');
+   const gg = await import('../routes/golden_gavel.js');
+  GAVEL_EMOJI = gg.GAVEL_EMOJI;   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
 
@@ -162,30 +149,8 @@ describe('OFS. offlineSync.ts — Offline-First Write Queue', () => {
   });
 });
 
-// ── SEN. sentry.js Middleware ─────────────────────────────────────────────
-describe('SEN. sentry.js — Graceful Error Tracking', () => {
-  test("SEN-01: initSentry is a noop when SENTRY_DSN absent (no crash)", async () => {
-    const { sentryErrorHandler, initSentry } = await import('../middleware/sentry.js');
-    const saved = process.env.SENTRY_DSN; delete process.env.SENTRY_DSN;
-    try {
-      expect(() => initSentry()).not.toThrow();
-      const mw = sentryErrorHandler();
-      let called = false;
-      mw({}, {}, () => { called = true; });
-      expect(called).toBe(true);
-    } finally { if (saved !== undefined) process.env.SENTRY_DSN = saved; }
-  });
-  test("SEN-02: sentryErrorHandler returns passthrough middleware when DSN absent", async () => {
-    const { sentryErrorHandler, initSentry } = await import('../middleware/sentry.js');
-    const saved = process.env.SENTRY_DSN; delete process.env.SENTRY_DSN;
-    try {
-      expect(() => initSentry()).not.toThrow();
-      const mw = sentryErrorHandler();
-      let called = false;
-      mw({}, {}, () => { called = true; });
-      expect(called).toBe(true);
-    } finally { if (saved !== undefined) process.env.SENTRY_DSN = saved; }
-  });
+// ── SEN. Sentry (instrument.js) ─────────────────────────────────────────────
+describe('SEN. Sentry — Graceful Error Tracking', () => {
   test("SEN-03: Sentry tracesSampleRate=0.1 (10% sample \u2014 cost control)", async () => {
     const fs = await import('fs');
     // Sentry is initialised once in src/instrument.js; middleware/sentry.js only keeps helpers
@@ -339,17 +304,6 @@ describe('S12. UX — Final Deep Patterns', () => {
     expect(src).toContain('expo-sqlite');
     expect(src).toContain('NetInfo');
     expect(src).toContain('processSyncQueue');
-  });
-  test("S12-03: sentry graceful degradation = no SENTRY_DSN means no crash", async () => {
-    const { sentryErrorHandler, initSentry } = await import('../middleware/sentry.js');
-    const saved = process.env.SENTRY_DSN; delete process.env.SENTRY_DSN;
-    try {
-      expect(() => initSentry()).not.toThrow();
-      const mw = sentryErrorHandler();
-      let called = false;
-      mw({}, {}, () => { called = true; });
-      expect(called).toBe(true);
-    } finally { if (saved !== undefined) process.env.SENTRY_DSN = saved; }
   });
   test('S12-04: contracts = 5 specialized sub-routers (not one monolith)', async () => {
     const fs = await import('fs');

@@ -29,11 +29,9 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Imports ─────────────────────────────────────────────────────────────────
-let computeAllSignals, evidenceBucket, computeMotionRecommendations,
-    computeDiversionRecommendations;
+let computeAllSignals, evidenceBucket, computeDiversionRecommendations;
 let computeOutcomeEstimate;
 let getEligibility, classifyCharge, STATE_RULES;
 let checkStaleness, runBiasAudit;
@@ -43,7 +41,6 @@ beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals             = mi.computeAllSignals;
   evidenceBucket                = mi.evidenceBucket;
-  computeMotionRecommendations  = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
 
   const est = await import('../analytics/outcomeEstimator.js');
@@ -64,7 +61,6 @@ beforeAll(async () => {
 });
 
 // ─── Builders ────────────────────────────────────────────────────────────────
-const TODAY    = new Date().toISOString().slice(0,10);
 const daysFrom = (n) => { const d = new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
 const daysAgo  = (n) => daysFrom(-n);
 
@@ -333,7 +329,7 @@ describe('S. Expungement Rules — All 51 States', () => {
 
   test('S-02: every state has misdemeanor and felony fields', () => {
     const REQUIRED = ['misdemeanor','felony'];
-    for (const [state, rules] of Object.entries(STATE_RULES)) {
+    for (const [, rules] of Object.entries(STATE_RULES)) {
       for (const field of REQUIRED) {
         expect(rules[field]).toBeDefined();
         expect(typeof rules[field].eligible).not.toBe(undefined);
@@ -343,7 +339,7 @@ describe('S. Expungement Rules — All 51 States', () => {
   });
 
   test('S-03: all waitYears are non-negative numbers', () => {
-    for (const [state, rules] of Object.entries(STATE_RULES)) {
+    for (const [, rules] of Object.entries(STATE_RULES)) {
       for (const category of ['misdemeanor','felony','dui','dismissed','domestic']) {
         if (rules[category]?.waitYears !== undefined) {
           expect(typeof rules[category].waitYears).toBe('number');
@@ -384,12 +380,6 @@ describe('S. Expungement Rules — All 51 States', () => {
 
   test('S-08: classifyCharge — DUI/DWI → dui category', () => {
     // These must match the exact regex: dui|dwi|\bowi\b|drunk.driv|impaired driv|...
-    const dui_charges = [
-      'DUI',                          // direct match
-      'DWI impaired driving',          // DWI
-      'drunk driving offense',         // drunk.driv
-      'driving under the influence',   // depends on regex
-    ];
     // Verify DUI/DWI at minimum
     expect(classifyCharge('DUI')).toBe('dui');
     expect(classifyCharge('DWI arrest')).toBe('dui');
@@ -447,8 +437,8 @@ describe('S. Expungement Rules — All 51 States', () => {
   });
 
   test('S-14: note field in every rule is a non-empty string', () => {
-    for (const [state, rules] of Object.entries(STATE_RULES)) {
-      for (const [category, rule] of Object.entries(rules)) {
+    for (const [, rules] of Object.entries(STATE_RULES)) {
+      for (const [, rule] of Object.entries(rules)) {
         if (rule && typeof rule === 'object' && rule.note !== undefined) {
           expect(typeof rule.note).toBe('string');
           expect(rule.note.length).toBeGreaterThan(10);
@@ -474,9 +464,8 @@ describe('T. Docket Deadlines — Court Calendar Logic', () => {
   test('T-01: docket module importable', async () => {
     // docket.js uses getDb() — may fail in test env
     // Verify it's a valid module by importing and checking export shape
-    let dock;
-    try { dock = await import('../routes/docket.js'); } catch { dock = null; }
-    expect(true).toBe(true); // module existence verified via source read
+    const dock = await import('../routes/docket.js');
+    expect(typeof dock.default).toBe('function');   // an Express router
   });
 
   test('T-02: deadline types are valid', () => {
@@ -596,7 +585,7 @@ describe('U. Conflict Search — Batch Query Logic', () => {
       { party_name_norm: 'john smith',  matter_id: 2, party_role: 'plaintiff' },
       { party_name_norm: 'acme corp',   matter_id: 3, party_role: 'client' },
     ];
-    for (const { orig, norm } of normedNames) {
+    for (const { norm } of normedNames) {
       const rows = allCiRows.filter(r =>
         r.party_name_norm === norm || r.party_name_norm?.includes(norm)
       );
@@ -620,7 +609,6 @@ describe('U. Conflict Search — Batch Query Logic', () => {
   });
 
   test('U-06: conflict sources — conflict_index and matter_parties combined', () => {
-    const sources = ['conflict_index', 'matter_parties'];
     const allMatches = [
       { source: 'conflict_index', matched_name: 'John Smith', role: 'defendant' },
       { source: 'matter_parties', matched_name: 'John Smith', role: 'plaintiff' },
@@ -637,7 +625,6 @@ describe('U. Conflict Search — Batch Query Logic', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('V. Outcome Estimator — computeOutcomeEstimate', () => {
 
-  const signals = (v, o = {}) => computeAllSignals(base(v, o)).vertical_signals;
 
   test('V-01: computeOutcomeEstimate is callable without crash', () => {
     const m = crim({ evidence_score: 70 });
@@ -655,12 +642,8 @@ describe('V. Outcome Estimator — computeOutcomeEstimate', () => {
   });
 
   test('V-03: PERMITTED_FACTORS never includes demographic fields', async () => {
-    const est = await import('../analytics/outcomeEstimator.js');
-    const src = est.toString?.() || JSON.stringify(est);
     // The actual PERMITTED_FACTORS is read at import time
     // Verify it doesn't include any demographic terms
-    const DEMOGRAPHIC = ['race','gender','sex','nationality','religion',
-                         'ethnicity','sexual_orientation','disability_status'];
     const estModule = await import('../analytics/outcomeEstimator.js');
     // If we can't inspect directly, verify through behavior
     expect(estModule.computeOutcomeEstimate).toBeDefined();
@@ -721,10 +704,7 @@ describe('V. Outcome Estimator — computeOutcomeEstimate', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('W. Precedent Registry — All 19 Entries', () => {
 
-  let registry;
   beforeAll(async () => {
-    const reg = await import('../analytics/precedentRegistry.js');
-    registry = reg.default || reg.REGISTRY || reg;
   });
 
   test('W-01: precedentRegistry imports without crash', async () => {
@@ -804,7 +784,7 @@ describe('X. Precedent Monitor — checkStaleness & runBiasAudit', () => {
   });
 
   test('X-05: runBiasAudit is callable without crash', async () => {
-    const result = await Promise.resolve().then(() => {
+    await Promise.resolve().then(() => {
       try { return runBiasAudit(); } catch { return null; }
     });
     // Either returns a result or null — should not throw
@@ -1340,7 +1320,6 @@ describe('GG. Rewards & Referrals — Points Lifecycle', () => {
 describe('HH. Frontend UX Contracts — API Shape Validation', () => {
 
   test('HH-01: computeAllSignals output matches frontend expectation shape', () => {
-    const EXPECTED_SHAPE = ['escalation','vertical_signals','taxonomy','evidence_bucket'];
     const s = computeAllSignals(crim({ evidence_score: 70 }));
     for (const key of ['escalation','vertical_signals']) {
       expect(s[key]).toBeDefined();
@@ -1439,7 +1418,7 @@ describe('HH. Frontend UX Contracts — API Shape Validation', () => {
     expect(Array.isArray(s.escalation.triggers)).toBe(true);
     expect(typeof s.vertical_signals).toBe('object');
     // All boolean signals are actually boolean or undefined
-    for (const [key, val] of Object.entries(s.vertical_signals)) {
+    for (const [, val] of Object.entries(s.vertical_signals)) {
       if (typeof val === 'boolean') expect([true,false]).toContain(val);
     }
   });
@@ -1591,7 +1570,7 @@ describe('JJ. Complete System Integrity — Cross-Module Chain', () => {
       try {
         const m = crim({ evidence_score: i % 100, title: ['murder violent','petty theft misdemeanor','drug possession','DUI first','assault'][i%5] });
         const s = computeAllSignals(m);
-        const o = computeOutcomeEstimate(s, m);
+        computeOutcomeEstimate(s, m);
 
         const state = STATES[i % STATES.length];
         const chargeType = classifyCharge(m.title);

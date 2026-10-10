@@ -8,7 +8,6 @@ import { resolve, join } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const CONFIG    = resolve(__dirname, '../config.js');
-const PUSH_DIR  = resolve(__dirname, '../');
 
 function validatePayload(payload) {
   const errors = [];

@@ -6,58 +6,32 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * Targeting every remaining gap after 18 suites / 22,402 tests.
  */
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
-let computeOutcomeEstimate;
+let computeAllSignals, computeDiversionRecommendations;
 let encrypt, decrypt;
-let normalizePhone;
-let haversineKm, googleMapsLink;
-let hasMinRole;
-let safeInt, stripHtml, truncateStr, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_LEVELS, GAVEL_EMOJI, GAVEL_LABEL;
-let MOTION_TYPES;
-let CONFIG;
+let BUSINESS_CONSTANTS;
+let GAVEL_EMOJI, GAVEL_LABEL;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals              = mi.computeAllSignals;
-  computeMotionRecommendations   = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
 
-  const oe  = await import('../analytics/outcomeEstimator.js');
-  computeOutcomeEstimate = oe.computeOutcomeEstimate;
 
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
 
-  const tw = await import('../utils/sanitize.js');
-  normalizePhone = tw.normalizePhone;
 
-  const geo = await import('../services/geolink.js');
-  haversineKm    = geo.haversineKm;
-  googleMapsLink = geo.googleMapsLink;
 
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole;
 
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt            = rh.safeInt;
-  stripHtml          = rh.stripHtml;
-  truncateStr        = rh.truncateStr;
-  validCoords        = rh.validCoords;
   BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
 
   const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_LEVELS = gg.GAVEL_LEVELS;
   GAVEL_EMOJI  = gg.GAVEL_EMOJI;
   GAVEL_LABEL  = gg.GAVEL_LABEL;
 
-  const motT = await import('../routes/motions/_motion_types.js');
-  MOTION_TYPES = motT.MOTION_TYPES;
 
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o = {}) => ({
@@ -88,7 +62,7 @@ describe('1. computeCivilRightsSignals', () => {
   });
 
   test('1-04: classAction signal exists in return', () => {
-    const s = computeAllSignals(mkMatter('civil_rights'));
+    computeAllSignals(mkMatter('civil_rights'));
   });
 
   test('1-05: damages_type field read by civil_rights compute', async () => {
@@ -125,7 +99,7 @@ describe('2. computeWhiteCollarSignals', () => {
   });
 
   test('2-03: recCoop signal present', () => {
-    const s = computeAllSignals(mkMatter('white_collar', { evidence_score: 80, cooperation_level: 'no_cooperation' }));
+    computeAllSignals(mkMatter('white_collar', { evidence_score: 80, cooperation_level: 'no_cooperation' }));
   });
 
   test('2-04: cooperation_level field is read', async () => {

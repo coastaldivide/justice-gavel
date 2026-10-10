@@ -6,7 +6,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // missing api.get('/billing/subscription') causing credit to always show 0,
 // incomplete useTheme destructure, orphaned import.then fragments.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -195,8 +194,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     expect(pkg.scripts.prestart).toBeUndefined();   // no SQLite migrate on start (schema = supabase/migrations)
     expect(fs.readFileSync(__REPO + '/backend/src/routes/admin.js','utf8')).toContain('scan_id');
     expect(fs.readFileSync(__REPO + '/backend/src/routes/analytics.js','utf8')).toContain('matter_taxonomy');
-    for(const f of ['analyze.js','history.js'])
-      expect(fs.readFileSync(__REPO + '/backend/src/routes/discovery/'+f,'utf8')).toContain('fileSize');
+    // analyze.js is the only discovery route that accepts uploads (history.js had an unused multer)
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/discovery/analyze.js','utf8')).toContain('fileSize');
     for(const f of ['bondsman.js','connections.js','pi_leads.js']){
       const src=fs.readFileSync(__REPO + '/backend/src/routes/billing/'+f,'utf8');
       if(src.includes('paymentIntents.create')) expect(src).toContain('metadata');
@@ -208,7 +207,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

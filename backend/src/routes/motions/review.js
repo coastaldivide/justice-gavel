@@ -1,31 +1,15 @@
-import { requireAi } from '../../utils/ai.js';
-import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
-import { validate, schemas } from '../../validation/schemas.js';
+import { requireAi, CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
 /**
  * motions/review.js — Motion status updates and AI quality review
  */
-import { err400, err401, err403, err404, err409, err422, err500, err502,
-         safeInt, sanitizeStr } from '../../utils/routeHelpers.js';
+import { err400, safeInt } from '../../utils/routeHelpers.js';
 import { Router }         from 'express';
 import { authRequired }   from '../../middleware/auth.js';
 import { getDb }          from '../../db/index.js';
 import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
-import { enqueueAIJob as enqueue }        from '../../services/aiQueue.js';
 import logger             from '../../utils/logger.js';
-import rateLimit          from 'express-rate-limit';
-import { MOTION_TYPES }   from './_motion_types.js';
-import { ensureTables, generateMotion } from './_helpers.js';
 
-const aiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id?.toString() || req.ip,
-  message: { error: 'AI rate limit reached — please wait before sending another request.' },
-});
 
-const STRIPE_SECRET = process.env.STRIPE_SECRET;
 
 const router = Router();
 

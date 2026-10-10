@@ -5,7 +5,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 5 runtime flow traces, input validation coverage, render logic,
 // attorney bar number maxLength, expungement/rules.js data module.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -40,7 +39,6 @@ describe('CONTRACT. FE→BE API Contract Verification', () => {
       }
     };
     wd(__REPO + '/backend/src/routes');
-    const beRouteCorpus = routeFiles.join('\n');
     // All 133 FE endpoints verified against BE in Python scan
     // All have matching routes — verified independently
     expect(feEndpoints.size).toBeGreaterThan(100);
@@ -68,8 +66,9 @@ describe('FLOW. 5 Runtime Flow Traces', () => {
   test('FLOW-02: Motion generation uses AI queue via generateMotion() helper', async () => {
     const fs = await import('fs');
     const helpers = fs.readFileSync(__REPO + '/backend/src/routes/motions/_helpers.js','utf8');
-    // generateMotion in helpers.js uses enqueue + callClaude
-    expect(helpers).toContain('enqueue');
+    // POST /motions/generate enqueues the job; generateMotion() in _helpers.js makes the AI call
+    const generate = fs.readFileSync(__REPO + '/backend/src/routes/motions/generate.js','utf8');
+    expect(generate).toContain('enqueue');
     // callClaude or direct anthropic call pattern
     const hasAiCall = helpers.includes('callClaude') || helpers.includes('anthropic') || helpers.includes('claude');
     expect(hasAiCall).toBe(true);
@@ -170,7 +169,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

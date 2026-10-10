@@ -1,4 +1,3 @@
-import { legalAccuracyMiddleware } from '../middleware/legalAccuracy.js';
 /**
  * routes/barPrep.js — Bar Exam Prep MBE Drilling
  *
@@ -42,10 +41,6 @@ import logger                       from '../utils/logger.js';
  * This is a study supplement, NOT a bar exam course, NOT Barbri/Themis/Adaptibar.
  * Questions are for practice only and may not reflect current law in all jurisdictions.
  */
-const BAR_PREP_DISCLAIMER =
-  'MBE study supplement. Not a substitute for a comprehensive bar prep course ' +
-  '(Barbri, Themis, Kaplan, Adaptibar). Always verify with your jurisdiction. ' +
-  'Past MBE question formats may vary. 548 practice questions — not an exhaustive bank.';
 
 const router = Router();
 router.use(authRequired);
@@ -97,15 +92,6 @@ async function checkSampleLimit(req, res, next) {
 }
 
 // ── 1. GET /subjects ──────────────────────────────────────────────────────────
-const VALID_SUBJECTS = new Set([
-  'crim-law-001',
-  'con-law-001',
-  'contracts-001',
-  'civ-pro-001',
-  'evidence-001',
-  'real-prop-001',
-  'torts-001',
-]);
 
 router.get('/subjects', quizLimiter, async (req, res) => {
   try {

@@ -77,7 +77,7 @@ function buildApp(db) {
       );
       const lead = await db.get('SELECT id, case_type, severity, lead_fee_cents, status FROM pi_leads WHERE id=?', [r.lastID]);
       res.status(201).json({ ok: true, lead_id: r.lastID, lead });
-    } catch (e) { res.status(500).json({ error: 'Could not submit lead' }); }
+    } catch { res.status(500).json({ error: 'Could not submit lead' }); }
   });
 
   // GET /pi-leads
@@ -93,7 +93,7 @@ function buildApp(db) {
       params.push(Number(limit));
       const leads = await db.all(sql, params);
       res.json(leads);
-    } catch (e) { res.status(500).json({ error: 'Could not load leads' }); }
+    } catch { res.status(500).json({ error: 'Could not load leads' }); }
   });
 
   // POST /pi-lead/accept/:id (mock — no Stripe in tests)
@@ -104,7 +104,7 @@ function buildApp(db) {
       await db.run('UPDATE pi_leads SET status=\'accepted\', accepted_by=?, accepted_at=datetime(\'now\') WHERE id=?', [req.user.id, lead.id]);
       const full = await db.get('SELECT id, case_type, severity, status, accepted_by FROM pi_leads WHERE id=?', [lead.id]);
       res.json({ ok: true, lead: full });
-    } catch (e) { res.status(500).json({ error: 'Could not accept lead' }); }
+    } catch { res.status(500).json({ error: 'Could not accept lead' }); }
   });
 
   app.use('/billing', router);

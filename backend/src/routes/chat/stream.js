@@ -1,23 +1,16 @@
-import { requireAi } from '../../utils/ai.js';
-import { safeJson } from '../../utils/routeHelpers.js';
-import { CLAUDE_MODEL } from '../../utils/ai.js';
-import { validate, schemas } from '../../validation/schemas.js';
-import { withApiRetry } from '../../utils/retry.js';
+import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
+import { safeJson, err400, API_URLS, BUSINESS_CONSTANTS } from '../../utils/routeHelpers.js';
 import { requireDisclaimer } from '../../middleware/disclaimer.js';
-import { withBreaker } from '../../middleware/circuitBreaker.js';
-import { anthropicBreaker } from '../../utils/circuitBreaker.js';
 /**
  * chat/stream.js — POST /stream — Server-Sent Events streaming
  */
-import { err400, API_URLS, BUSINESS_CONSTANTS } from '../../utils/routeHelpers.js';
 import { Router }         from 'express';
 import { authRequired }   from '../../middleware/auth.js';
 import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
 import { getDb }          from '../../db/index.js';
 import logger             from '../../utils/logger.js';
 import rateLimit          from 'express-rate-limit';
-import {
-  SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION, sanitizeUserMessage} from './_prompts.js';
+import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION } from './_prompts.js';
 import {
   getHistory, saveMessage, detectLawyerHandoff, classifyIntent,
   buildCaseNote, buildJurisdictionNote,
@@ -144,7 +137,7 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, pe
     const _ctrl    = new AbortController();
     const _stTimer = setTimeout(() => {
       _ctrl.abort();
-      try { res.write('data: ' + JSON.stringify({ type: 'error', error: 'Response timed out. Please try again.' }) + '\n\n'); res.end(); } catch {}
+      try { res.write('data: ' + JSON.stringify({ type: 'error', error: 'Response timed out. Please try again.' }) + '\n\n'); res.end(); } catch { /* client already disconnected */ }
     }, 120_000);
 
     const response = await fetch(API_URLS.ANTHROPIC, {

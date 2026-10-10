@@ -58,8 +58,6 @@ async function buildApp() {
     next();
   });
 
-  const ALLOWED = new Set(['lawyers','bail_agents']);
-  function safe(t) { return ALLOWED.has(t) ? t : null; }
 
   async function getDb() { return buildProvidersDb(); }
 

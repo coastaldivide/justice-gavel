@@ -471,5 +471,3 @@ export async function checkConflicts(db, firmId, partyNames = []) {
 // Backward-compat alias — tests and old routes use requireRole
 export { requireFirmRole as requireRole };
 
-// Alias for backward compatibility
-export const loadMatterRole = requireMatterAccess;

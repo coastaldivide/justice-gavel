@@ -5,31 +5,17 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // + expungement/rules.js (46K state rules) + integrations/dms.js
 // + search.js + expungement/petition.js
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeDiversionRecommendations, computeOutcomeEstimate;
-let encrypt, decrypt, haversineKm;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
-let calcLeadFee;
+let computeAllSignals, computeOutcomeEstimate;
+let encrypt, decrypt;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe  = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const bs  = await import('../routes/billing/_shared.js');
-  calcLeadFee = bs.calcLeadFee;
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o={}) => ({

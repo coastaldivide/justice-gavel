@@ -3,7 +3,6 @@
  * Tests route logic directly without HTTP layer (matches project test pattern)
  */
 
-import { fileURLToPath } from 'url';
 
 // ── Immigration logic tests ──────────────────────────────────────────────────
 
@@ -57,7 +56,6 @@ describe('Immigration — Asylum Clock Calculator', () => {
   });
 
   it('calculates ead_eligible_date correctly', () => {
-    const filing = new Date('2025-01-01');
     const result = calcAsylumClock('2025-01-01');
     expect(result.ead_eligible_date).toBe('2025-06-30');
   });

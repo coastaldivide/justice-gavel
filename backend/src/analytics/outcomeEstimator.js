@@ -92,7 +92,6 @@ function applyFactors(baseRate, entryFactors, matterFactors) {
   const eb = matterFactors.evidence_bucket;
   const coop = matterFactors.cooperation_level || 'unknown';
   const country = matterFactors.country_condition || 'stable';
-  const track = matterFactors.case_track || 'delinquency';
 
   // Map entry factor keys to matter factor values
   const factorMatches = {

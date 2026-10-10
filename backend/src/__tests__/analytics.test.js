@@ -3,7 +3,6 @@
  * Tests for: precedentRegistry, outcomeEstimator, precedentMonitor, bias audit
  */
 
-import { jest } from '@jest/globals';
 import { PRECEDENT_REGISTRY, getRelevantEntries, getEntry, getApproachingStale, getCircuitSplitEntries } from '../analytics/precedentRegistry.js';
 import { computeOutcomeEstimate } from '../analytics/outcomeEstimator.js';
 import { checkStaleness, runBiasAudit } from '../analytics/precedentMonitor.js';

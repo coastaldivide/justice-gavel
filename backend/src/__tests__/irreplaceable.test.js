@@ -83,7 +83,6 @@ function tok(id, role = 'user', extra = {}) {
 const T_ADMIN   = tok(1, 'firm_admin', { firm_role: 'firm_admin' });
 const T_PARTNER = tok(2, 'partner',    { firm_role: 'partner'    });
 const T_ASSOC   = tok(3, 'associate',  { firm_role: 'associate'  });
-const T_OTHER   = tok(9, 'user',       { firm_role: null         });
 
 // ── Build test app ─────────────────────────────────────────────────────────────
 async function buildApp(db) {
@@ -307,7 +306,6 @@ async function buildApp(db) {
   });
 
   // ── Docket ─────────────────────────────────────────────────────────────────
-  const RULE_SETS_KEYS = ['frcp_complaint_served','frcp_judgment_entered','criminal_arrest','criminal_conviction','transactional_loi'];
   function addDays(d, n) { const dt=new Date(d+'T12:00:00Z'); dt.setUTCDate(dt.getUTCDate()+n); return dt.toISOString().slice(0,10); }
   function addBiz(d, n) { const dt=new Date(d+'T12:00:00Z'); let a=0; while(a<n){dt.setUTCDate(dt.getUTCDate()+1);const w=dt.getUTCDay();if(w!==0&&w!==6)a++;}return dt.toISOString().slice(0,10); }
   function diffDays(a,b){return Math.ceil((new Date(b+'T12:00:00Z')-new Date(a+'T12:00:00Z'))/86400000);}
@@ -464,11 +462,11 @@ async function buildApp(db) {
   });
 
   app.post('/api/privilege/generate', auth, async (req,res) => {
-    const { documents=[], privilege_basis, matter_id, save=false } = req.body || {};
+    const { documents=[], privilege_basis } = req.body || {};
     if (!Array.isArray(documents)||!documents.length) return res.status(400).json({ error: 'documents array required.' });
     if (documents.length > 50) return res.status(400).json({ error: 'Maximum 50 documents.' });
     // Demo mode fallback
-    const generated = documents.map((d,i) => ({
+    documents.map((d,i) => ({
       doc_number_suffix: String(i+1), doc_type: d.doc_type||'other', privilege_basis: privilege_basis||'attorney_client',
       withheld: true, description: `[DEMO] ${d.description||'Document'}`, privilege_assertion: 'Confidential attorney-client communication.', doc_date: d.date||null
     }));

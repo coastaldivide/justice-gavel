@@ -4,18 +4,13 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // TARGET: conflicts.js(7) + firm_acquisition(5) + privilege(5)
 //         + recap(5) + matter_intelligence(4) + analytics(4)
 
-import { jest } from '@jest/globals';
-let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt, BUSINESS_CONSTANTS;
+let computeAllSignals, encrypt, decrypt;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  const oe = await import('../analytics/outcomeEstimator.js');
-  computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const rh = await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
 });
 
 const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,

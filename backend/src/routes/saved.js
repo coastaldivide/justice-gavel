@@ -1,12 +1,10 @@
-import { safeJson } from '../utils/routeHelpers.js';
-import { validate, schemas } from '../validation/schemas.js';
+import { safeJson, err400, truncateStr, safeInt } from '../utils/routeHelpers.js';
 /**
  * saved.js — Saved lawyers (personal attorney contact list)
  * GET  /api/saved/lawyers          — list user's saved lawyers
  * POST /api/saved/lawyers          — save a lawyer
  * DELETE /api/saved/lawyers/:id    — unsave a lawyer
  */
-import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
 import { Router } from 'express';

@@ -13,8 +13,6 @@ import { z } from 'zod';
 
 // ── Reusable field types ─────────────────────────────────────────────────
 const nonEmptyStr  = (max=500) => z.string().trim().min(1).max(max);
-const emailField   = z.string().email().toLowerCase().trim();
-const phoneField   = z.string().regex(/^[+\d\s\-().]{7,20}$/).optional();
 const stateCode    = z.string().length(2).toUpperCase();
 const tierEnum     = z.enum(['free','legal_radar','advisor','legal_pro','esquire']);
 const bailAmount   = z.number().positive().max(10_000_000);
@@ -230,12 +228,7 @@ export const createReviewSchema = z.object({
   comment: z.string().max(2000).optional(),
 }).passthrough();
 
-export const ratingSchema = z.object({ rating: z.number().min(1).max(5), comment: z.string().max(500).optional() });
 
-export const matterUpdateSchema = z.object({ status: z.enum(["active","pending","closed"]).optional(), note: z.string().max(1000).optional() });
 
-export const messageSchema = z.object({ message_type: z.enum(["text","system","media"]).default("text") });
 
-export const docketEntrySchema = z.object({ due_date: z.string().datetime().optional() });
 
-export const alertSchema = z.object({ category: z.enum(["arrest","warrant","court","general"]) });

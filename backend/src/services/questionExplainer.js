@@ -1,4 +1,4 @@
-import { CLAUDE_MODEL } from '../utils/ai.js';
+import { CLAUDE_MODEL, aiConfigured } from '../utils/ai.js';
 /**
  * services/questionExplainer.js — AI explanation pipeline via BullMQ
  * [I-04]
@@ -16,7 +16,6 @@ import { Queue, Worker } from 'bullmq';
 import Redis        from 'ioredis';
 import { db }       from '../db/index.js';
 import logger       from '../utils/logger.js';
-import { aiConfigured } from '../utils/ai.js';
 
 let _anthropic = null;
 const anthropicClient = () => (_anthropic ||= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }));

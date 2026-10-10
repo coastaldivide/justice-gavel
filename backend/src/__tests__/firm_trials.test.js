@@ -19,13 +19,11 @@
  *            military, juvenile
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Shared imports ───────────────────────────────────────────────────────────
 let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
-let writeMatterVersion, checkLegalHold, applyLegalHold, releaseLegalHold, getFirmRetentionStatus;
+let writeMatterVersion;
 
-const today      = () => new Date().toISOString().slice(0, 10);
 const daysFromNow = (n) => { const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
 const daysAgo    = (n) => daysFromNow(-n);
 
@@ -37,10 +35,6 @@ beforeAll(async () => {
 
   const ret = await import('../services/retention.js');
   writeMatterVersion   = ret.writeMatterVersion;
-  checkLegalHold       = ret.checkLegalHold;
-  applyLegalHold       = ret.applyLegalHold;
-  releaseLegalHold     = ret.releaseLegalHold;
-  getFirmRetentionStatus = ret.getFirmRetentionStatus;
 });
 
 // ─── Matter builder ───────────────────────────────────────────────────────────
@@ -313,7 +307,7 @@ describe('FIRM TRIAL 4 — White Collar (DPA negotiation / cooperation)', () => 
   });
 
   test('F4-5: No cooperation benefit on strong-evidence white collar matter', () => {
-    const s = computeAllSignals(wc({ evidence_score: 90 }));
+    computeAllSignals(wc({ evidence_score: 90 }));
     // evidence_score=90→strong, coop='unknown'→recCoop=true. Test full coop instead.
     const s2 = computeAllSignals(wc({ evidence_score: 90, cooperation_level: 'full_cooperation' }));
     expect(!!s2.vertical_signals.recCoop).toBe(false);

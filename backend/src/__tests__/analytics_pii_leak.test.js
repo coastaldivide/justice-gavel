@@ -19,7 +19,7 @@ const PII_PATTERNS = [
 ];
 
 describe('Analytics — no PII in events', () => {
-  test.each(PII_PATTERNS)('no $name in frontend analytics', ({ name, pattern }) => {
+  test.each(PII_PATTERNS)('no $name in frontend analytics', ({ pattern }) => {
     const violations = [];
     if (!existsSync(FE_SCREENS)) return;
     for (const fname of readdirSync(FE_SCREENS).filter(f => f.endsWith('.tsx'))) {

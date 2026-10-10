@@ -5,33 +5,17 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // + sharedAiLimiter + auth.js middleware + weak route hardening
 // + 152/152 source coverage MILESTONE + final quality gates
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
-let computeOutcomeEstimate, encrypt, decrypt, haversineKm;
-let safeInt, safeFloat, validCoords, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
-let calcLeadFee;
+let computeAllSignals;
+let computeOutcomeEstimate, encrypt, decrypt;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
-  computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe  = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; safeFloat = rh.safeFloat; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const bs  = await import('../routes/billing/_shared.js');
-  calcLeadFee = bs.calcLeadFee;
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o={}) => ({
@@ -156,15 +140,15 @@ describe('WKRT. Weak Routes — 159 Routes at 5-9 Hits Being Hardened', () => {
     const walkDir=(d)=>{
       for (const f of fs.readdirSync(d)) {
         const fp=path.join(d,f);
-        if (fs.statSync(fp).isDirectory()){ walkDir(fp); return; }
-        if (!f.endsWith('.js')) return;
+        if (fs.statSync(fp).isDirectory()){ walkDir(fp); continue; }
+        if (!f.endsWith('.js')) continue;
         const src=fs.readFileSync(fp,'utf8');
         if (src.includes('asylum') || src.includes('asylum-clock')) found=true;
       }
     };
     walkDir(__REPO + '/backend/src/routes');
     // asylum-clocks is in the 159 routes at 5-9 hits — confirmed in source scan
-    expect(true).toBe(true); // route verified via corpus scan
+    expect(found).toBe(true); // route verified via corpus scan
     // Asylum clock: tracks time in the US for voluntary departure calculation
   });
   test('WKRT-03: ethics-wall DELETE + DPA DELETE — conflict management routes', async () => {

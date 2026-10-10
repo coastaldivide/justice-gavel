@@ -31,7 +31,8 @@ These were generated and are pre-filled in `setup-railway.sh`:
     - `SUPABASE_SERVICE_KEY` (service_role / secret)
 [ ] Settings → Database → Connection string → **Transaction** mode
     - Copy into `DATABASE_URL`
-[ ] Run migrations: `node src/db/migrate.js` (or push to Railway and it auto-runs)
+[ ] Run migrations: apply every `supabase/migrations/*.sql` file in filename order
+    (`psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f <file>`); the API never runs DDL itself
 
 ---
 

@@ -14,7 +14,7 @@
  * Returns: { cases, messages, lawyers, lessons, total }
  */
 
-import { err400, escapeLike, safeInt } from '../utils/routeHelpers.js';
+import { escapeLike, safeInt } from '../utils/routeHelpers.js';
 import { Router }      from 'express';
 import { getDb }       from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';

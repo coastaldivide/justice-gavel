@@ -2,7 +2,6 @@
 // which prevents injection, but parameterized queries are the correct pattern.
 // TODO: refactor whereClauses to use $N bind parameters and push values to an array.
 // Current code is safe (safeInt enforces integer type) but fragile.
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/time.js — Time Tracking & Invoice Generation
  *
@@ -78,7 +77,7 @@ router.get('/aba-codes', authRequired, async (req, res) => {
       type ? [type] : []
     ).catch(() => []);
     res.json({ codes: rows, count: rows.length });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load ABA codes.' });
   }
 });
@@ -225,7 +224,7 @@ router.get('/entries/:id', authRequired, async (req, res) => {
       if (!ctx || ctx.firm_id !== entry.firm_id) return err403(res);
     }
     res.json({ ...entry, amount_cents: Math.round((entry.hours||0) * (entry.rate_cents||0)) });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load time entry.' });
   }
 });
@@ -263,7 +262,7 @@ router.put('/entries/:id', authRequired, async (req, res) => {
     const updated = await db.get('SELECT id, firm_id, matter_id, matter_table, user_id, entry_date, hours, rate_cents, narrative, task_code, activity_code, billing_status, invoice_id, created_at, updated_at FROM time_entries WHERE id=?', [safeInt(req.params.id)]);
     if (!updated) return res.status(404).json({error: 'Not found'});
     res.json({ ...updated, amount_cents: Math.round((updated.hours||0)*(updated.rate_cents||0)) });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not update time entry.' });
   }
 });
@@ -280,24 +279,32 @@ router.delete('/entries/:id', authRequired, async (req, res) => {
     }
     await db.run('DELETE FROM time_entries WHERE id=?', [safeInt(req.params.id)]);
     res.json({ deleted: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not delete time entry.' });
   }
 });
 
 // GET /api/time/matter/:matterId — all entries for a matter with totals
+// Time entries are visible to the caller's firm (firm members) or, for a user
+// with no firm, only the caller's own entries — never another firm's.
+function timeScope(ctx, req, alias = '') {
+  const a = alias ? `${alias}.` : '';
+  return ctx?.firm_id ? { sql: `${a}firm_id=?`, val: ctx.firm_id } : { sql: `${a}user_id=?`, val: req.user.id };
+}
+
 router.get('/matter/:matterId', authRequired, async (req, res) => {
   try {
     const db       = await getDb();
     const matterId = safeInt(req.params.matterId);
+    const scope    = timeScope(await loadFirmContext(req), req, 'te');
 
     const entries = await db.all(
       `SELECT te.*, u.display_name AS attorney_name
        FROM time_entries te
        LEFT JOIN users u ON u.id = te.user_id
-       WHERE te.matter_id=?
+       WHERE te.matter_id=? AND ${scope.sql}
        ORDER BY te.entry_date DESC, te.created_at DESC`,
-      [matterId]
+      [matterId, scope.val]
     );
 
     const withAmounts = entries.map(e => ({
@@ -333,7 +340,7 @@ router.get('/matter/:matterId', authRequired, async (req, res) => {
       },
       by_esquire: Object.entries(byAttorney).map(([name, v]) => ({ name, ...v })),
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load matter time.' });
   }
 });
@@ -345,7 +352,7 @@ router.get('/summary', authRequired, async (req, res) => {
     const ctx = await loadFirmContext(req);
     const { date_from, date_to } = req.query;
 
-    let whereFirm = ctx?.firm_id ? `AND firm_id = ${safeInt(ctx.firm_id)}` /* parameterize: move to bind array */ : `AND user_id=${req.user.id}`;
+    const whereFirm = ctx?.firm_id ? `AND firm_id = ${safeInt(ctx.firm_id)}` /* parameterize: move to bind array */ : `AND user_id=${req.user.id}`;
     const dateFilter = [
       // strict YYYY-MM-DD only — these values are interpolated into SQL
       /^\d{4}-\d{2}-\d{2}$/.test(String(date_from || '')) ? `AND entry_date >= '${date_from}'` : '',
@@ -359,7 +366,7 @@ router.get('/summary', authRequired, async (req, res) => {
     ]);
 
     res.json({ by_status: byStatus, by_user: byUser, by_month: byMonth });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load time summary.' });
   }
 });
@@ -479,7 +486,7 @@ router.get('/invoices', authRequired, async (req, res) => {
     const rows  = await db.all(sql, params);
     const total = await db.get('SELECT COUNT(*) as n FROM invoices WHERE firm_id=?', [ctx.firm_id]);
     res.json({ invoices: rows, total: total?.n || 0 });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load invoices.' });
   }
 });
@@ -501,7 +508,7 @@ router.get('/invoices/:id', authRequired, async (req, res) => {
       [invoice.id]
     );
     res.json({ ...invoice, entries: entries.map(e => ({ ...e, amount_cents: Math.round((e.hours||0)*(e.rate_cents||0)) })) });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load invoice.' });
   }
 });
@@ -541,7 +548,7 @@ router.put('/invoices/:id', authRequired, requireFirmRole('partner'), async (req
     await db.run(`UPDATE invoices SET ${updates.join(',')} WHERE id=?`, params);
     const updated = await db.get('SELECT id, firm_id, matter_id, matter_table, invoice_number, client_name, client_email, billing_period_start, billing_period_end, subtotal_cents, tax_rate, tax_cents, total_cents, status, due_date, paid_date, notes, pdf_generated, created_by, created_at, updated_at FROM invoices WHERE id=?', [safeInt(req.params.id)]);
     res.json(updated);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not update invoice.' });
   }
 });
@@ -669,12 +676,10 @@ function generateInvoicePDF(invoice, entries, firm) {
     doc.moveDown(0.3);
 
     // Table rows
-    let rowTotal = 0;
     entries.forEach((e, idx) => {
       const rowH   = 32;
       const rowY   = doc.y;
       const amount = Math.round((e.hours||0) * (e.rate_cents||0));
-      rowTotal    += amount;
 
       if (idx % 2 === 0) {
         doc.rect(72, rowY, PAGE_W, rowH).fill(LIGHT);
@@ -748,21 +753,28 @@ router.get('/matter/:matterId/billing-summary', authRequired, async (req, res) =
     const db       = await getDb();
     const matterId = safeInt(req.params.matterId);
     const ctx      = await loadFirmContext(req);
+    const scope    = timeScope(ctx, req);
+    const firmId   = ctx?.firm_id ?? null;
 
+    // Scoped to the caller's firm (or, with no firm, the caller's own rows):
+    // previously any signed-in user could read any matter's billing summary.
     const [timeRows, invoiceRows, matter] = await Promise.all([
       db.all(
         `SELECT billing_status, SUM(hours) as hours, SUM(hours * rate_cents) as amount
-         FROM time_entries WHERE matter_id=? GROUP BY billing_status`,
-        [matterId]
+         FROM time_entries WHERE matter_id=? AND ${scope.sql} GROUP BY billing_status`,
+        [matterId, scope.val]
       ),
-      db.all(
-        `SELECT status, SUM(total_cents) as total, COUNT(*) as count
-         FROM invoices WHERE matter_id=? GROUP BY status`,
-        [matterId]
-      ),
+      firmId
+        ? db.all(
+            `SELECT status, SUM(total_cents) as total, COUNT(*) as count
+             FROM invoices WHERE matter_id=? AND firm_id=? GROUP BY status`,
+            [matterId, firmId]
+          )
+        : Promise.resolve([]),
       db.get(
-        'SELECT id, title, client_name, billing_rate, status FROM matters WHERE id=?',
-        [matterId]
+        `SELECT id, title, client_name, billing_rate, status FROM matters
+          WHERE id=? AND (created_by=? OR (firm_id IS NOT NULL AND firm_id=?))`,
+        [matterId, req.user.id, firmId]
       ).catch(() => null),
     ]);
 

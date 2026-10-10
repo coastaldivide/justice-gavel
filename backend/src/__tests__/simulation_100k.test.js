@@ -59,7 +59,6 @@ const clientCount = (key) => Math.round(TOTAL_CLIENTS * ARCHETYPE_DISTRIBUTION[k
 function randomChoice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function randomBool(p = 0.5) { return Math.random() < p; }
-function randomState() { return randomChoice(STATES); }
 
 // Simulate a user journey step — returns { ok, data, error }
 function step(label, fn) {
@@ -94,7 +93,7 @@ function runA1_DUI(seed) {
   const bac   = 0.08 + (rng % 20) * 0.01;           // 0.08–0.27
   const prior = rng % 5 === 0 ? 'minor' : 'none';    // 20% have prior
   const injury= randomBool(0.08);                     // 8% injury involved
-  const steps = [], errors = [];
+  const steps = [];
 
   // STEP 1: Registration & disclaimer
   steps.push(step('register', () => { return { userId: rng, email: 'u' + rng + '@test.com' }; }));
@@ -347,7 +346,6 @@ function runA4_WhiteCollar(seed) {
   }));
 
   steps.push(step('bail_calculate', () => {
-    const severity = 'high';
     const bail = randomInt(50000, 250000);
     const fee  = calcLeadFee(bail);
     return { bail, bondsman_cost: Math.round(bail * 0.10), lead_fee: fee };
@@ -467,7 +465,6 @@ function runA6_PublicDefender(seed) {
   }));
 
   steps.push(step('bail_calculate', () => {
-    const severity = 'high';
     const bail     = randomInt(5000, 75000);
     const fee      = calcLeadFee(bail);
     if (fee < 0) throw new Error('Negative lead fee');
@@ -847,7 +844,6 @@ describe('100,000 Client Simulation', () => {
 
     test('Revenue model is internally consistent', () => {
       let totalMRR = 0;
-      let totalLeads = 0;
       const breakdown = {};
 
       for (const [archetype, runner] of Object.entries(RUNNERS)) {
@@ -911,7 +907,7 @@ describe('100,000 Client Simulation', () => {
         [Math.max(0,-100), 0],  // negative bail guard (handled by calcLeadFee internally)
         [0,       0],        // zero bail → $0 (same as OR release)
       ];
-      for (const [bail, expectedFee] of testCases) {
+      for (const [bail] of testCases) {
         const fee = calcLeadFee(bail);
         if (fee < 0) throw new Error(`calcLeadFee(${bail}) returned negative: ${fee}`);
         if (bail === 0 && fee !== 0) throw new Error(`OR release fee must be 0, got ${fee}`);
@@ -961,7 +957,7 @@ describe('100,000 Client Simulation', () => {
 
     test('Full 100k projection: all archetypes produce results', () => {
       let totalProjected = 0;
-      for (const [key, dist] of Object.entries(ARCHETYPE_DISTRIBUTION)) {
+      for (const [, dist] of Object.entries(ARCHETYPE_DISTRIBUTION)) {
         totalProjected += Math.round(TOTAL_CLIENTS * dist);
       }
       expect(totalProjected).toBeGreaterThanOrEqual(99_000);

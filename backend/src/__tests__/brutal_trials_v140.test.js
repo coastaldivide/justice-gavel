@@ -10,10 +10,9 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // L12: 3 payment providers at 3 hits | L13: AppNavigator 0 hits
 // L14: 20 tables without DB indexes (documented) | L15: security headers
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG, calcLeadFee;
+let CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -22,12 +21,6 @@ beforeAll(async () => {
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const bs  = await import('../routes/billing/_shared.js');
-  calcLeadFee = bs.calcLeadFee;
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
@@ -156,7 +149,6 @@ describe('L14: DB Index Architecture — 36/56 Tables Have Indexes', () => {
     // 132 indexes across 36 tables — high-traffic FK columns indexed
   });
   test('DB-IDX-02: 20 tables without explicit indexes — append-only/small tables', async () => {
-    const fs = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     // Tables without indexes are typically:
     // 1. Audit/log tables (append-only, no reads by FK)

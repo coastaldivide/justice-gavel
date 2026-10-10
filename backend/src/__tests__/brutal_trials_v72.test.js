@@ -54,36 +54,23 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  *       Used by nightly scheduler (job 2)
  */
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate;
 let encrypt, decrypt;
-let haversineKm;
-let hasMinRole;
-let safeInt, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_EMOJI, GAVEL_LABEL;
+let GAVEL_EMOJI;
 let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole;
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const cfg = await import('../config.js');
+   const gg = await import('../routes/golden_gavel.js');
+  GAVEL_EMOJI = gg.GAVEL_EMOJI;   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
 
@@ -128,15 +115,6 @@ describe('DISC7. Discrepancy Fixes — chat/stream + reviews + saved', () => {
 });
 
 // ── MGR. scripts/migrate.js ────────────────────────────────────────────────
-describe('MGR. scripts/migrate.js — Idempotent SQL Migrations', () => {
-  test('MGR-01: migrate.js runs each SQL statement individually (no transaction)', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/migrate.js', 'utf8');
-    expect(src).toContain('Runs all SQL migrations idempotently');
-    expect(src).toContain('ALTER TABLE');
-    expect(src).toContain('individually');
-  });
-});
 
 // ── I18N. scripts/validate-i18n.js ────────────────────────────────────────
 describe('I18N. scripts/validate-i18n.js — Translation Key Parity', () => {
@@ -280,11 +258,6 @@ describe('S12. UX — Final Route Depth (Never-Read Files)', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/routes/transcribe.js', 'utf8');
     expect(src).toContain('/note');
     expect(src).toContain('/text');
-  });
-  test('S12-03: migrate.js idempotent = safe to re-run without rolling back', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/migrate.js', 'utf8');
-    expect(src).toContain('idempotently');
   });
   test('S12-04: validate-i18n.js ensures all 4 languages stay in sync', async () => {
     const fs = await import('fs');

@@ -55,7 +55,7 @@ async function buildApp(db) {
         db.get('SELECT COUNT(*) as n FROM users'),
       ]);
       // providers DB stats — gracefully degrade if unavailable
-      let lawyerCount = 0, bailCount = 0, citiesCovered = 0;
+      const lawyerCount = 0, bailCount = 0, citiesCovered = 0;
       res.setHeader('Cache-Control', 'private, max-age=300');
       res.json({
         lawyerCount, bailCount,

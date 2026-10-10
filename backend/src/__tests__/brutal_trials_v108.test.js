@@ -4,7 +4,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 108th pass: 4 S0 fixes + MILESTONE — 434/434 routes ALL ≥5 hits (100%)
 // Final comprehensive verification of every section
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeDiversionRecommendations, computeOutcomeEstimate;
 let encrypt, decrypt, haversineKm;

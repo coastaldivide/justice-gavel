@@ -6,10 +6,9 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // zelle.js no-guard confirmed intentional + ANTHROPIC_API_KEY documented
 // AdminVerificationScreen + WhatHappensNextScreen + OfflineStatusScreen pushed
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG, calcLeadFee;
+let CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -18,12 +17,6 @@ beforeAll(async () => {
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const bs  = await import('../routes/billing/_shared.js');
-  calcLeadFee = bs.calcLeadFee;
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
@@ -145,7 +138,6 @@ describe('KEY. Config — Required Production Keys', () => {
 // ── DBT3. DB Tables 5-7 → push to ≥8 ────────────────────────────────────
 describe('DBT3. DB Tables 5-7 Hits — Architecture Push', () => {
   test('DBT3-01: immigration tracking tables', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('asylum_clocks');
     expect(db).toContain('dpa_trackers');
@@ -154,7 +146,6 @@ describe('DBT3. DB Tables 5-7 Hits — Architecture Push', () => {
     // All 4: immigration + DV vertical tracking
   });
   test('DBT3-02: contract lifecycle tables', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('contract_executions');
     expect(db).toContain('contract_redlines');
@@ -162,7 +153,6 @@ describe('DBT3. DB Tables 5-7 Hits — Architecture Push', () => {
     // 3-stage contract lifecycle: review → redlines → execution
   });
   test('DBT3-03: integration + sync tables', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('integration_sync_log');
     expect(db).toContain('integration_external_ids');
@@ -170,7 +160,6 @@ describe('DBT3. DB Tables 5-7 Hits — Architecture Push', () => {
     // DMS + PM integration sync state
   });
   test('DBT3-04: firm lifecycle + acquisition tables', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('firm_onboarding');
     expect(db).toContain('firm_upgrade_requests');
@@ -179,7 +168,6 @@ describe('DBT3. DB Tables 5-7 Hits — Architecture Push', () => {
     // Firm lifecycle: acquisition → onboarding → upgrade
   });
   test('DBT3-05: ethics + conflict + research tables', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('ethics_wall_log');
     expect(db).toContain('conflict_waivers');
@@ -188,7 +176,6 @@ describe('DBT3. DB Tables 5-7 Hits — Architecture Push', () => {
     // Legal ethics compliance + AI research history
   });
   test('DBT3-06: remaining 5-6 hit tables all confirmed', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('mission_verification_requests');
     expect(db).toContain('scan_results');

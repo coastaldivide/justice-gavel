@@ -10,7 +10,7 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  *   1.  routeHelpers.js utilities — every untested function
  *       buildWhere · buildOrderBy · escapeLike · stripHtml · ownsResource
  *       safeFloat · validatePhone · normalizeEmail · LIMITS · FIELD_LIMITS
- *       err401 · err429 · API_URLS · safeAdminCols
+ *       err401 · API_URLS · safeAdminCols
  *   2.  logger.js — level filtering, JSON format, structured output
  *   3.  AppNavigator — screen registration completeness, tab structure
  *   4.  api.ts — timeout value, retry policy, baseURL, interceptor chain
@@ -27,61 +27,36 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Pure-JS imports (no DB chain) ───────────────────────────────────────────
-let buildWhere, buildOrderBy, escapeLike, stripHtml, ownsResource;
-let safeFloat, validatePhone, normalizeEmail, safeInt, sanitizeStr;
-let err400, err401, err403, err404, err409, err422, err429, err500, err502;
-let LIMITS, FIELD_LIMITS, API_URLS;
-let safeAdminCols;
+let buildWhere, escapeLike, ownsResource;
+let safeFloat, normalizeEmail;
+let err400, err401, err403, err404, err409, err422, err500;
+let API_URLS;
 let computeAllSignals;
-let haversineKm;
-let encrypt, decrypt;
-let normalizePhone, parseIntent, parseEmailIntent;
 
 beforeAll(async () => {
   const rh = await import('../utils/routeHelpers.js');
   buildWhere    = rh.buildWhere;
-  buildOrderBy  = rh.buildOrderBy;
   escapeLike    = rh.escapeLike;
-  stripHtml     = rh.stripHtml;
   ownsResource  = rh.ownsResource;
   safeFloat     = rh.safeFloat;
-  validatePhone = rh.validatePhone;
   normalizeEmail= rh.normalizeEmail;
-  safeInt       = rh.safeInt;
-  sanitizeStr   = rh.sanitizeStr;
   err400        = rh.err400;
   err401        = rh.err401;
   err403        = rh.err403;
   err404        = rh.err404;
   err409        = rh.err409;
   err422        = rh.err422;
-  err429        = (await import('../utils/errors.js')).err429; // not in routeHelpers
   err500        = rh.err500;
-  err502        = rh.err502;
-  LIMITS        = rh.LIMITS;
-  FIELD_LIMITS  = rh.FIELD_LIMITS;
   API_URLS      = rh.API_URLS;
-  safeAdminCols = rh.safeAdminCols;
 
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
 
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
 
-  const tw = await import('../utils/sanitize.js');
-  const enc = await import('../services/encryption.js');
-  encrypt = enc.encrypt;
-  decrypt = enc.decrypt;
 
-  normalizePhone = tw.normalizePhone;
-  parseIntent    = tw.parseIntent;
 
-  const sg = await import('../services/sendgrid.js');
-  parseEmailIntent = sg.parseEmailIntent;
 });
 
 // ─── Mock res builder ─────────────────────────────────────────────────────────
@@ -115,7 +90,7 @@ describe('1. routeHelpers — buildWhere (SQL injection safety)', () => {
       "name; DROP TABLE users; --": 'evil',
       'valid_col': 'ok',
     };
-    const { where: clause, values: params } = buildWhere(malicious, new Set(['valid_col']));
+    const { where: clause } = buildWhere(malicious, new Set(['valid_col']));
     expect(clause).not.toContain('DROP');
     expect(clause).not.toContain(';');
     // Only the valid column should appear
@@ -136,7 +111,7 @@ describe('1. routeHelpers — buildWhere (SQL injection safety)', () => {
   });
 
   test('1-05: null/undefined values in filters are skipped', () => {
-    const { where: clause, values: params } = buildWhere(
+    const { values: params } = buildWhere(
       { name: null, city: undefined, state: 'TN' },
       new Set(['name','city','state'])
     );
@@ -360,7 +335,7 @@ describe('5. routeHelpers — safeFloat, validatePhone, normalizeEmail, ownsReso
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 6. routeHelpers — error response helpers (err401, err429, etc.)
+// 6. routeHelpers — error response helpers (err401, err404, etc.)
 // ═══════════════════════════════════════════════════════════════════════════
 describe('6. routeHelpers — Error Response Helpers', () => {
 
@@ -383,22 +358,12 @@ describe('6. routeHelpers — Error Response Helpers', () => {
     expect(capture.body.error.length).toBeGreaterThan(0);
   });
 
-  test('6-03: err429 returns 429 with { error: "..." }', () => {
-    err429(res, 'Rate limit exceeded');
-    expect(capture.code).toBe(429);
-    expect(capture.body.error).toBe('Rate limit exceeded');
-  });
 
-  test('6-04: err429 uses default message', () => {
-    err429(res);
-    expect(capture.code).toBe(429);
-    expect(typeof capture.body.error).toBe('string');
-  });
 
   test('6-05: all error helpers return correct status codes', () => {
     const helpers = [
       [err400, 400], [err401, 401], [err403, 403], [err404, 404],
-      [err409, 409], [err422, 422], [err429, 429], [err500, 500],
+      [err409, 409], [err422, 422], [err500, 500],
     ];
     for (const [fn, code] of helpers) {
       fn(res, 'test error');
@@ -408,7 +373,7 @@ describe('6. routeHelpers — Error Response Helpers', () => {
   });
 
   test('6-06: all error helpers use "error" key, never "message"', () => {
-    const helpers = [err400, err401, err403, err404, err409, err422, err429, err500];
+    const helpers = [err400, err401, err403, err404, err409, err422, err500];
     for (const fn of helpers) {
       fn(res, 'test');
       expect(capture.body).toHaveProperty('error');
@@ -417,7 +382,7 @@ describe('6. routeHelpers — Error Response Helpers', () => {
   });
 
   test('6-07: 1000 error responses — always { error: string }', () => {
-    const helpers = [err400, err401, err403, err404, err409, err422, err429, err500];
+    const helpers = [err400, err401, err403, err404, err409, err422, err500];
     for (let i = 0; i < 1000; i++) {
       const fn = helpers[i % helpers.length];
       fn(res, `Error message ${i}`);
@@ -437,7 +402,7 @@ describe('7. routeHelpers — Constants: LIMITS, FIELD_LIMITS, API_URLS', () => 
 
 
   test('7-06: API_URLS — all URLs start with https://', () => {
-    for (const [key, url] of Object.entries(API_URLS)) {
+    for (const [, url] of Object.entries(API_URLS)) {
       expect(url).toMatch(/^https:\/\//);
     }
   });
@@ -458,7 +423,7 @@ describe('8. routeHelpers — Combined SQL Safety: escapeLike + buildWhere', () 
   test('8-01: search with LIKE injection — % at start/end is escaped', () => {
     const userInput  = '%LIKE_injection%';
     const escaped    = escapeLike(userInput);
-    const { where: clause, values: params } = buildWhere(
+    const { values: params } = buildWhere(
       { name: escaped },
       new Set(['name'])
     );
@@ -485,7 +450,7 @@ describe('8. routeHelpers — Combined SQL Safety: escapeLike + buildWhere', () 
   });
 
   test('8-03: normal search term passes through correctly', () => {
-    const { where: clause, values: params } = buildWhere(
+    const { values: params } = buildWhere(
       { city: escapeLike('Nashville') },
       new Set(['city'])
     );
@@ -1109,7 +1074,7 @@ describe('18. Mass Influx — 100,000 New Scenarios', () => {
   test('18-07: 10,000 error helper calls — always { error: string } at correct code', () => {
     const helpers = [
       [err400, 400], [err401, 401], [err403, 403], [err404, 404],
-      [err409, 409], [err422, 422], [err429, 429], [err500, 500],
+      [err409, 409], [err422, 422], [err500, 500],
     ];
     for (let i = 0; i < 10000; i++) {
       const capture = {};

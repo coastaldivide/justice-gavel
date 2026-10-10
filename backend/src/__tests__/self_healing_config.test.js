@@ -1,15 +1,13 @@
 /**
  * self_healing_config.test.js
  * Verifies the self-healing infrastructure is correctly configured:
- * watchdog, circuit breakers, retry logic, and health checks.
+ * watchdog and health checks.
  */
 import { readFileSync, existsSync } from 'fs';
-import { resolve, join } from 'path';
+import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const HEALING   = resolve(__dirname, '../monitoring/selfHealing.js');
-const CIRCUIT   = resolve(__dirname, '../utils/circuitBreaker.js');
-const RETRY     = resolve(__dirname, '../utils/retry.js');
 const SERVER    = resolve(__dirname, '../server.js');
 
 describe('Self-healing — watchdog', () => {
@@ -36,47 +34,7 @@ describe('Self-healing — watchdog', () => {
   });
 });
 
-describe('Self-healing — circuit breaker', () => {
-  test('circuit breaker file exists', () => expect(existsSync(CIRCUIT)).toBe(true));
 
-  test('has CLOSED, OPEN, HALF_OPEN states', () => {
-    const c = readFileSync(CIRCUIT, 'utf-8');
-    expect(c).toMatch(/CLOSED|closed/);
-    expect(c).toMatch(/OPEN|open/);
-    expect(c).toMatch(/HALF.OPEN|halfOpen/i);
-  });
-
-  test('has failure threshold', () => {
-    const c = readFileSync(CIRCUIT, 'utf-8');
-    expect(c).toMatch(/threshold|failureCount|failures/i);
-  });
-
-  test('has cooldown/recovery period', () => {
-    const c = readFileSync(CIRCUIT, 'utf-8');
-    expect(c).toMatch(/cooldown|timeout|recovery|resetTimeout/i);
-  });
-
-  test('circuit breaker is used in AI routes', () => {
-    const askPath = resolve(__dirname, '../routes/chat/ask.js');
-    if (!existsSync(askPath)) return;
-    const c = readFileSync(askPath, 'utf-8');
-    expect(c).toMatch(/circuit|breaker|withBreaker/i);
-  });
-});
-
-describe('Self-healing — retry logic', () => {
-  test('retry utility exists', () => expect(existsSync(RETRY)).toBe(true));
-
-  test('retry has exponential backoff', () => {
-    const c = readFileSync(RETRY, 'utf-8');
-    expect(c).toMatch(/exponential|backoff|Math\.pow|2\s*\*\*|delay.*attempt/i);
-  });
-
-  test('retry has maximum attempt limit', () => {
-    const c = readFileSync(RETRY, 'utf-8');
-    expect(c).toMatch(/maxAttempts|maxRetries|MAX_ATTEMPTS|\battempts\b/i);
-  });
-});
 
 describe('Self-healing — health endpoint', () => {
   test('server has /health endpoint', () => {

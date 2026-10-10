@@ -4,10 +4,9 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 90th pass: 4 discrepancy fixes + theme.ts + secureStorage + auth.ts + logger
 // + routeHelpers remaining + comprehensive i18n spot-check + final scorecard
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt, haversineKm;
-let safeInt, safeFloat, validCoords, buildWhere, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
+let safeFloat, buildWhere, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -19,8 +18,7 @@ beforeAll(async () => {
   const geo = await import('../services/geolink.js');
   haversineKm = geo.haversineKm;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; safeFloat = rh.safeFloat; validCoords = rh.validCoords;
-  buildWhere = rh.buildWhere; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
+ safeFloat = rh.safeFloat;   buildWhere = rh.buildWhere; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');
@@ -163,6 +161,7 @@ describe('AUS. auth.ts — App-Level Auth State Machine', () => {
 describe('LOG. logger.js — Lightweight Structured Logger', () => {
   test('LOG-01: LEVEL_ORDER debug=0/info=1/warn=2/error=3', async () => {
     const { default: logger } = await import('../utils/logger.js');
+    for (const lvl of ['debug', 'info', 'warn', 'error']) expect(typeof logger[lvl]).toBe('function');
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/utils/logger.js','utf8');
     expect(src).toContain('debug');

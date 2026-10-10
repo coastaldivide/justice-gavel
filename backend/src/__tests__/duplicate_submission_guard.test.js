@@ -4,7 +4,7 @@
  * prevention in critical write operations.
  */
 import { readFileSync, existsSync } from 'fs';
-import { resolve, join } from 'path';
+import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -12,7 +12,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 function validateIdempotencyKey(key) {
   if (!key || typeof key !== 'string') return false;
   if (key.length < 8 || key.length > 128) return false;
-  if (!/^[a-zA-Z0-9_\-]+$/.test(key)) return false;
+  if (!/^[a-zA-Z0-9_-]+$/.test(key)) return false;
   return true;
 }
 
@@ -85,7 +85,6 @@ describe('Duplicate submission detection', () => {
 
 describe('Critical routes — idempotency', () => {
   test('payment routes reference idempotency or INSERT OR IGNORE', () => {
-    const { readdirSync: rds, readFileSync: rfs, existsSync: ex } = { readdirSync: (d) => [], readFileSync: (f) => '', existsSync: (f) => false };
     // Verified: billing webhooks.js uses constructEvent for idempotency
     console.log('  ℹ️  Payment idempotency verified via webhook signature test');
     expect(true).toBe(true);

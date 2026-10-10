@@ -46,38 +46,22 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  *       join codes; web variants use MediaRecorder/file-input platform APIs
  */
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate;
 let encrypt, decrypt;
-let haversineKm;
-let hasMinRole;
-let safeInt, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_EMOJI, GAVEL_LABEL;
-let CONFIG;
+let GAVEL_EMOJI;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole;
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
-});
+   const gg = await import('../routes/golden_gavel.js');
+  GAVEL_EMOJI = gg.GAVEL_EMOJI;   });
 
 const mkMatter = (v, o = {}) => ({
   id: 1, vertical: v, title: `Test ${v}`, evidence_score: 60,

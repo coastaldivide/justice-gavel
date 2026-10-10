@@ -8,13 +8,12 @@
  * POST /api/arrests/alert-test   (admin only)
  */
 
-import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { err400, truncateStr, err404, safeInt, sanitizeStr, escapeLike } from '../utils/routeHelpers.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
 import express from 'express';
 import { getDb } from '../db/index.js';
 import { validate, schemas } from '../validation/schemas.js';
-import { escapeLike } from '../utils/routeHelpers.js';
 import { authRequired as authMiddleware } from '../middleware/auth.js';
 import { sendArrestAlerts } from '../services/arrest_alerts.js';
 // Sample (seeded) rows are hidden unless SHOW_SAMPLE_ARRESTS=true; see utils/arrestVisibility.js
@@ -23,12 +22,6 @@ const alertsPipelineLimiter = makeUserLimiter({ windowMs: 60_000, max: 20 });
 
 
 // Column allowlist for dynamic WHERE conditions
-const ALLOWED_ARREST_COLS = new Set(['state','county','has_attorney','source','booking_date','bail_amount']);
-function safeCondition(col, val, params) {
-  if (!ALLOWED_ARREST_COLS.has(col)) return null;
-  params.push(val);
-  return `${col} = ?`;
-}
 const router = express.Router();
 
 
@@ -208,7 +201,7 @@ router.delete('/monitors/:id', authMiddleware, async (req, res) => {
 // Queries arrest_records with status='warrant_active' + public warrant data.
 // Revenue: requires legal_radar+ subscription (warrant monitoring is premium feature)
 router.get('/warrant-check', authMiddleware, async (req, res) => {
-  const { name, state = 'TN', dob } = req.query;
+  const { name, state = 'TN' } = req.query;
   if (!name || name.trim().length < 2) {
     return err400(res, 'name is required (minimum 2 characters)');
   }

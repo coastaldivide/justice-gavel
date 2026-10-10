@@ -16,7 +16,6 @@
 
 import { Router }           from 'express';
 import { authRequired }     from '../../middleware/auth.js';
-import { getDb }            from '../../db/index.js';
 import { err403, safeInt }  from '../../utils/routeHelpers.js';
 import { makeUserLimiter }   from '../../middleware/sharedAiLimiter.js';
 import logger               from '../../utils/logger.js';

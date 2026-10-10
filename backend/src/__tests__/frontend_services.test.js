@@ -58,7 +58,7 @@ describe('Services — auth.ts', () => {
   test('auth.ts stores token securely (not AsyncStorage for tokens)', () => {
     const c = readFileSync(join(SVC_DIR, 'auth.ts'), 'utf-8');
     // Tokens should use SecureStore, not plain AsyncStorage
-    const usesSecureStore = c.includes('SecureStore') || c.includes('Keychain') ||
+    c.includes('SecureStore') || c.includes('Keychain') ||
       c.includes('secureStorage') || c.includes('expo-secure-store');
     const usesPlainStorage = c.includes('AsyncStorage.setItem') &&
       c.match(/AsyncStorage\.setItem\s*\([^,]+token/i);

@@ -1,5 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
-import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { err400, truncateStr } from '../utils/routeHelpers.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
@@ -17,7 +16,7 @@ const pushLimiter = makeUserLimiter({ windowMs: 60000, max: 20, message: 'Push n
 
 // POST /token — register Expo push token (also handles refresh on foreground)
 router.post('/token', authRequired, async (req, res) => {
-  const { token, expoPushToken, platform } = req.body || {};
+  const { token, expoPushToken } = req.body || {};
   const pushToken = expoPushToken || token;
   if (!pushToken) return err400(res, 'token required');
   try {
@@ -78,7 +77,7 @@ const LEGAL_TIPS = [
   { tip: "Possession of marijuana may be a misdemeanor or felony depending on weight — know your state's law.",        category: "Criminal",      lesson_query: "drug" },
 ];
 
-router.get('/tip', async (req, res) =>{
+router.get('/tip', (req, res) =>{
   try {
   const dayIndex = Math.floor(Date.now() / 86400000) % LEGAL_TIPS.length;
   const entry = LEGAL_TIPS[dayIndex];
@@ -119,7 +118,7 @@ router.post('/retention/post-purchase', authRequired, async (req, res) => {
       [req.user.id, msg.title, msg.body, msg.data, deliverAt, req.user.id]
     ).catch(() => {}); // graceful — table may not exist yet in demo
     return res.json({ scheduled: true, deliver_at: deliverAt, message: msg });
-  } catch (e) {
+  } catch {
     return res.json({ scheduled: false, error: 'Could not schedule push. Please try again.' });
   }
 });
@@ -192,7 +191,7 @@ router.get('/preferences', authRequired, async (req, res) => {
       notif_marketing:        1,
       notif_checkin_reminders:1,
     });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not load preferences' });
   }
 });
@@ -220,7 +219,7 @@ router.post('/preferences', authRequired, async (req, res) => {
       ]
     );
     return res.json({ ok: true });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not save preferences' });
   }
 });
@@ -249,7 +248,7 @@ router.post('/d7-reengage', authRequired, async (req, res) => {
        deliverAt]
     );
     return res.json({ sent: true, deliver_at: deliverAt });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not schedule D7 push' });
   }
 });

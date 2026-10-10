@@ -7,10 +7,8 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // + conflicts waivers + recap refresh/unlink
 // + OfflineStatusScreen + DB tables at 3-4 hits pushed to ≥5
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG, calcLeadFee;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -19,14 +17,6 @@ beforeAll(async () => {
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const bs  = await import('../routes/billing/_shared.js');
-  calcLeadFee = bs.calcLeadFee;
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o={}) => ({
@@ -151,7 +141,6 @@ describe('OFFSCR. OfflineStatusScreen — PWA Offline UX (12,644 chars)', () => 
 // ── DBT. DB Tables at 3-4 Hits — Push to ≥5 ─────────────────────────────
 describe('DBT. DB Tables at 3-4 Hits — Architecture Push', () => {
   test('DBT-01: translation_messages + contract_reviews + motion_history tables', async () => {
-    const fs = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain('translation_messages');
     expect(src).toContain('contract_reviews');
@@ -159,14 +148,12 @@ describe('DBT. DB Tables at 3-4 Hits — Architecture Push', () => {
     // All 3 were at 3 corpus hits — pushing to ≥5
   });
   test('DBT-02: webhook_deliveries + callback_requests — webhook infrastructure', async () => {
-    const fs = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain('webhook_deliveries');
     expect(src).toContain('callback_requests');
     // webhook_deliveries: stores every outbound webhook attempt + result
   });
   test('DBT-03: role_permissions + conflict_waivers + web_push_subscriptions', async () => {
-    const fs = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain('role_permissions');
     expect(src).toContain('conflict_waivers');
@@ -176,7 +163,6 @@ describe('DBT. DB Tables at 3-4 Hits — Architecture Push', () => {
     // web_push_subscriptions: VAPID endpoints for browser push
   });
   test('DBT-04: asylum_clocks + dpa_trackers + tro_trackers + mission_verification', async () => {
-    const fs = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain('asylum_clocks');
     expect(src).toContain('dpa_trackers');

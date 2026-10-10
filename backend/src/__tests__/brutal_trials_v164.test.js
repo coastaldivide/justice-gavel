@@ -4,15 +4,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // COMPLETE NAVIGATION & UX SCAN — ALL ISSUES FIXED
 // 22-section audit across every screen, link, route, and component
 
-import { jest } from '@jest/globals';
-let computeAllSignals, encrypt, decrypt, CONFIG;
+let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi=await import('../routes/matter_intelligence.js');
   computeAllSignals=mi.computeAllSignals;
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const cfg=await import('../config.js');
-  CONFIG=cfg.CONFIG;
 });
 const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
   vulnerability_level:'moderate',time_pressure:'standard',
@@ -110,7 +107,8 @@ describe('ROUTES1. 439/439 Routes All Tiers', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

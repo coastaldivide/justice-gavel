@@ -1,4 +1,4 @@
-import { CLAUDE_MODEL } from '../utils/ai.js';
+import { CLAUDE_MODEL, aiConfigured } from '../utils/ai.js';
 /**
  * services/aiQueue.js — BullMQ job queue for AI (Claude) calls
  *
@@ -22,7 +22,6 @@ import Anthropic from '@anthropic-ai/sdk';
 import { randomUUID } from 'crypto';
 import logger from '../utils/logger.js';
 import { db } from '../db/index.js';
-import { aiConfigured } from '../utils/ai.js';
 
 // ── Redis connection for BullMQ ─────────────────────────────────────────────
 // BullMQ requires an ioredis instance with maxRetriesPerRequest: null (blocking
@@ -126,9 +125,9 @@ function enqueueLocal(type, fn, userId) {
 export async function enqueue(typeOrJob, fn, userId) {
   if (typeOrJob && typeof typeOrJob === 'object') {
     const { type = 'job', userId: uid = null, payload = null, handler } = typeOrJob;
-    return enqueueLocal(type, typeof handler === 'function' ? handler : async () => payload, uid);
+    return await enqueueLocal(type, typeof handler === 'function' ? handler : () => Promise.resolve(payload), uid);
   }
-  return enqueueLocal(String(typeOrJob || 'job'), typeof fn === 'function' ? fn : async () => fn ?? null, userId);
+  return await enqueueLocal(String(typeOrJob || 'job'), typeof fn === 'function' ? fn : () => Promise.resolve(fn ?? null), userId);
 }
 
 /**
@@ -219,7 +218,7 @@ export function startAIWorkers() {
     ['ai-motion-gen', 'motion',   2],
   ];
   for (const [queueName, type, concurrency] of specs) {
-    const w = new Worker(queueName, async (job) => executeAIJob(type, job.data, job.data.userId),
+    const w = new Worker(queueName, async (job) => await executeAIJob(type, job.data, job.data.userId),
       { ...workerOpts, concurrency });
     w.on('failed', (job, err) => logger.error({ msg: '[ai_queue] job failed', id: job?.id, error: err.message }));
     w.on('error',  (err) => logger.error({ msg: '[ai_queue] worker error', error: err.message }));

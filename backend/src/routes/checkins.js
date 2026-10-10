@@ -15,13 +15,12 @@ import { validate, schemas } from '../validation/schemas.js';
  *   GET  /api/checkins/my                  — defendant sees their own check-ins
  *   GET  /api/checkins/status              — defendant gets today's check-in status
  */
-import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { err400, truncateStr, err404, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { Router } from 'express';
 import { sendPushToUser as sendPushNotification } from '../services/pushDelivery.js';
 import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
-import Stripe from 'stripe';
 import logger from '../utils/logger.js';
 
 const router = Router();
@@ -40,13 +39,12 @@ router.get('/status', authRequired, async (req, res) => {
       [req.user.id]
     );
     res.json({ checked_in_today: !!checked_in, streak: streak?.n || 0 });
-  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });
 
 const checkinsLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 30, message: 'Check-in limit reached. Try again later.' });
 
 const stripeKey = process.env.STRIPE_SECRET || '';
-const stripe    = stripeKey ? new Stripe(stripeKey) : null;
 const LIVE      = !!stripeKey;
 
 const FEE_PER_DEFENDANT = 999; // $9.99/month
@@ -134,7 +132,7 @@ router.get('/enrollments', authRequired, async (req, res) => {
       total_active: totalActive,
       monthly_cost: `$${((totalActive * FEE_PER_DEFENDANT) / 100).toFixed(2)}/month`,
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -155,7 +153,7 @@ router.put('/enrollments/:id', authRequired, async (req, res) => {
       [active ? 1 : 0, safeInt(req.params.id)]
     );
     res.json({ success: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -195,17 +193,18 @@ router.get('/history/:enrollmentId', authRequired, async (req, res) => {
         last_checkin: records[0]?.checked_in_at || null,
       },
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
 
 // ── Defendant: submit a check-in ──────────────────────────────────────────────
 router.post('/submit', validate(schemas.checkins.submit), authRequired, checkinsLimiter, async (req, res) => {
-  // No auth required — defendants may not have accounts
-  // They identify by enrollment_id + name match
+  // Requires a signed-in user. NOTE: enrollments carry no user link, so the
+  // caller is not matched to the enrollment's defendant (the old comment claimed
+  // a name match that never existed) — see docs/fix-notes (step 3).
   const {
-    enrollment_id, defendant_name = null,
+    enrollment_id,
     lat = null, lng = null, location_label = '',
     selfie_url = '', notes = '',
     device_info = '',
@@ -304,7 +303,7 @@ router.get('/status/:enrollmentId', async (req, res) => {
         } catch (e) { logger.warn('[checkins/streak]', e?.message); return 0; }
       })()
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -319,7 +318,7 @@ router.get('/my/:enrollmentId', async (req, res) => {
       [req.params.enrollmentId]
     );
     res.json(records);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -343,7 +342,7 @@ router.post('/remind-all', async (req, res) => {
 
     let sent = 0;
     await Promise.allSettled(
-      dueToday.map(async ({ user_id, token }) => {
+      dueToday.map(async ({ token }) => {
         await sendPushNotification(token, {
           title: 'Check-In Reminder',
           body:  'Your scheduled check-in is due today. Open Justice Gavel to check in.',
@@ -353,7 +352,7 @@ router.post('/remind-all', async (req, res) => {
       })
     );
     return res.json({ reminded: sent, total_due: dueToday.length });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Reminder dispatch failed' });
   }
 });
@@ -392,7 +391,7 @@ router.get('/compliance-report/:enrollmentId', authRequired, async (req, res) =>
       status: compliance_pct >= 90 ? 'good' : compliance_pct >= 70 ? 'warning' : 'critical',
       records: records.slice(-30),  // last 30 records
     });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not generate report' });
   }
 });
@@ -409,7 +408,7 @@ router.patch('/enrollments/:id/note', authRequired, async (req, res) => {
       [note, eid]
     );
     return res.json({ updated: true, enrollment_id: eid });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not save note' });
   }
 });
@@ -425,5 +424,5 @@ router.get('/family-contacts', authRequired, async (req, res) => {
       [req.user.id]
     ).catch(() => []);
     res.json({ contacts });
-  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });

@@ -46,7 +46,7 @@ const argv = yargs(hideBin(process.argv))
   .argv;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const sleep = ms => new Promise(r => { setTimeout(r, ms); });
 
 async function httpGet(url, params = {}, headers = {}) {
   const qs = Object.keys(params).length ? '?' + new URLSearchParams(params) : '';
@@ -90,12 +90,12 @@ function parseHTML(html, county, state, limit = 500) {
     const name = nameM[1].trim();
     if (name.length < 4 || /BOOKING|INMATE|ARREST|NAME|DATE|CHARGE|SEARCH|RESULT/i.test(name)) continue;
 
-    const dateM  = clean.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?)?)/i);
+    const dateM  = clean.match(/(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?)?)/i);
     const chargeM = clean.match(/(?:charge[sd]?|offense|violation)[:\s]+([^;\n<]{5,300})/i);
     const bailM  = clean.match(/(?:bail|bond)[:\s]*\$?([\d,]+(?:\.\d{2})?)/i);
-    const courtM = clean.match(/(?:court|hearing|trial)[:\s]+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+    const courtM = clean.match(/(?:court|hearing|trial)[:\s]+(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
     const attyM  = clean.match(/(?:attorney|counsel|lawyer)[:\s]+([A-Z][a-zA-Z\s.]{3,60})/i);
-    const caseM  = clean.match(/(?:case|booking|docket)[:\s#]*([A-Z0-9\-]{4,20})/i);
+    const caseM  = clean.match(/(?:case|booking|docket)[:\s#]*([A-Z0-9-]{4,20})/i);
 
     if (name && (dateM || chargeM)) {
       arrests.push({
@@ -716,24 +716,6 @@ const SOURCES = {
 };
 
 // ── STATE DOC SOURCES (fallback + supplement) ─────────────────────────────────
-const STATE_DOC = {
-  TN: 'https://foil.app.tn.gov/foil/search.jsp',
-  TX: 'https://offender.tdcj.texas.gov/OffenderSearch/',
-  CA: 'https://ciris.mt.cdcr.ca.gov/',
-  FL: 'https://www.dc.state.fl.us/InmateInfo/InmateSearch.aspx',
-  NY: 'https://doccs.ny.gov/incarcerated-lookup',
-  GA: 'https://gdc.georgia.gov/find-offender',
-  OH: 'https://appgateway.drc.ohio.gov/OffenderSearch',
-  IL: 'https://www2.illinois.gov/idoc/Offender/Pages/inmateSearch.aspx',
-  NC: 'https://webapps.doc.state.nc.us/opi/offendersearch.do',
-  PA: 'https://inmatelocator.cor.pa.gov/',
-  MI: 'https://mdocweb.state.mi.us/OTIS2/otis2profile.aspx',
-  AZ: 'https://corrections.az.gov/public-resources/inmate-datasearch',
-  IN: 'https://www.in.gov/apps/indcorrection/ofs/',
-  WA: 'https://www.doc.wa.gov/information/inmate-search.htm',
-  CO: 'https://doc.colorado.gov/offender-search',
-  MN: 'https://coms.doc.mn.gov/PublicViewer/',
-};
 
 // ── Universal fetcher ─────────────────────────────────────────────────────────
 async function fetchSource(key, config, since, limit) {
@@ -803,7 +785,7 @@ async function upsertArrest(db, arrest, dryRun) {
 (async () => {
   if (argv.list) {
     const byState = {};
-    for (const [k, v] of Object.entries(SOURCES)) {
+    for (const [, v] of Object.entries(SOURCES)) {
       if (!byState[v.state]) byState[v.state] = [];
       byState[v.state].push(`    Tier${v.tier} ${v.city} (${v.county} County) — ${v.note}`);
     }
@@ -863,7 +845,7 @@ async function upsertArrest(db, arrest, dryRun) {
 
   // Dedupe counties (multiple cities in same county = one fetch)
   const seenCounties = new Set();
-  const deduped = targets.filter(([k, v]) => {
+  const deduped = targets.filter(([, v]) => {
     const key = `${v.county}-${v.state}`;
     if (seenCounties.has(key)) return false;
     seenCounties.add(key);

@@ -1,5 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
-import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
 import logger from '../utils/logger.js';
 import { Router }    from 'express';
 import rateLimit from 'express-rate-limit';
@@ -14,7 +12,7 @@ const PLANS = {
   family: { monthly: 24.99, annual: 249.99, name: 'Family', features: ['Everything in Pro', 'Covers spouse + dependents', 'Priority support'] },
 };
 
-router.post('/quote', insuranceLimiter, authRequired, async (req, res) => {
+router.post('/quote', insuranceLimiter, authRequired, (req, res) => {
   try {
     const { plan = 'basic', city = 'your area' } = req.body || {};
     const p = PLANS[plan] || PLANS.basic;
@@ -34,7 +32,7 @@ router.post('/quote', insuranceLimiter, authRequired, async (req, res) => {
   }
 });
 
-router.get('/plans', async (req, res) => {
+router.get('/plans', (req, res) => {
   try {
     res.json(Object.entries(PLANS).map(([key, p]) => ({ key, ...p })));
   } catch (e) {

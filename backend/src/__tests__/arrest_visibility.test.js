@@ -84,7 +84,7 @@ const describePg = PG_URL ? describe : describe.skip;
 describePg('sample arrests on Postgres (real routes)', () => {
   const TAG = `ZZVisTest${Date.now()}`;
   const tok = (id = 990001, role = 'user') => jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  let db; let app; let ids = {};
+  let db; let app; const ids = {};
   let outbound; let alerts;
 
   beforeAll(async () => {

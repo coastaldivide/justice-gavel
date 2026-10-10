@@ -15,8 +15,7 @@
  * All routes return 410 Gone until reinstated.
  */
 
-import logger from '../utils/logger.js';
-import { asyncRoute } from '../utils/routeHelpers.js';
+import { asyncRoute, err400, err404, err500, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 /**
  * recovery_agents.js — Fugitive Recovery Agent directory
  *
@@ -32,10 +31,7 @@ import { asyncRoute } from '../utils/routeHelpers.js';
 
 import express from 'express';
 import { authRequired } from '../middleware/auth.js';
-import {
-  err400, err404, err500, safeInt, sanitizeStr, buildWhere
-} from '../utils/routeHelpers.js';
-import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.js';
+import { apiLimiter } from '../middleware/rateLimiters.js';
 
 const router = express.Router();
 
@@ -106,9 +102,15 @@ async function getDb() {
   return _db;
 }
 
+// The directory and per-state law lookup are suspended pending legal review and
+// license verification: every request gets 410 before the handler runs. Remove
+// `directorySuspended` from a route to re-enable it.
+function directorySuspended(req, res) {
+  return res.status(410).json({ error: 'Recovery agent directory suspended pending legal review and license verification.', code: 'FEATURE_SUSPENDED' });
+}
+
 // ── GET /api/recovery-agents — search recovery agents ────────────────────────
-router.get('/', authRequired, apiLimiter, async (req, res) => {
-    return res.status(410).json({ error: 'Recovery agent directory suspended pending legal review and license verification.', code: 'FEATURE_SUSPENDED' });
+router.get('/', authRequired, apiLimiter, directorySuspended, async (req, res) => {
   try {
     const { state, city, armed, lat, lng, limit = 20, offset = 0 } = req.query;
 
@@ -175,8 +177,7 @@ router.get('/', authRequired, apiLimiter, async (req, res) => {
 });
 
 // ── GET /api/recovery-agents/laws/:state ─────────────────────────────────────
-router.get('/laws/:state', authRequired, apiLimiter, async (req, res) => {
-    return res.status(410).json({ error: 'Recovery agent directory suspended pending legal review and license verification.', code: 'FEATURE_SUSPENDED' });
+router.get('/laws/:state', authRequired, apiLimiter, directorySuspended, (req, res) => {
   try {
     const state = (req.params.state || '').toUpperCase().slice(0, 2);
     const law   = RECOVERY_LAWS[state];
@@ -192,7 +193,7 @@ router.get('/laws/:state', authRequired, apiLimiter, async (req, res) => {
 });
 
 // ── GET /api/recovery-agents/laws — all states summary ───────────────────────
-router.get('/laws', authRequired, apiLimiter, asyncRoute(async (req, res) => {
+router.get('/laws', authRequired, apiLimiter, asyncRoute((req, res) => {
   res.json({
     laws: RECOVERY_LAWS,
     summary: {

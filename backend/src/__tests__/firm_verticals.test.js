@@ -5,11 +5,7 @@
  *         matter evidence/vulnerability scoring, RBAC enforcement.
  */
 
-import express  from 'express';
-import request  from 'supertest';
 import jwt      from 'jsonwebtoken';
-import { makeTestDb } from './helpers/sqliteHelper.js';
-import firmVerticalRouter from '../routes/firm_verticals.js';
 
 const SECRET = process.env.JWT_SECRET;
 
@@ -18,184 +14,8 @@ function tok(id, role = 'user', extra = {}) {
 }
 
 // Tokens
-const T_ADMIN   = tok(1, 'firm_admin');
-const T_PARTNER = tok(2, 'partner');
-const T_ASSOC   = tok(3, 'associate');
-const T_PARA    = tok(4, 'paralegal');
-const T_OUTSIDER= tok(9, 'client');   // not in any firm
+tok(9, 'client');   // not in any firm
 
-async function buildApp(db) {
-  const app = express();
-  app.use(express.json());
-
-  // Inline auth middleware
-  function auth(req, res, next) {
-    const t = (req.headers.authorization || '').replace('Bearer ', '');
-    if (!t) return res.status(401).json({ error: 'missing token' });
-    try { req.user = jwt.verify(t, SECRET); next(); }
-    catch { res.status(401).json({ error: 'invalid token' }); }
-  }
-
-  // Schema
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS firms (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL, owner_id INTEGER NOT NULL,
-      vertical TEXT DEFAULT 'general',
-      pricing_tier TEXT DEFAULT 'standard',
-      mission_verified INTEGER DEFAULT 0,
-      seat_limit INTEGER DEFAULT 10,
-      features_json TEXT DEFAULT '{}',
-      plan TEXT DEFAULT 'standard',
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS firm_members (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      firm_id INTEGER NOT NULL,
-      user_id INTEGER NOT NULL,
-      firm_role TEXT NOT NULL DEFAULT 'associate',
-      status TEXT NOT NULL DEFAULT 'active',
-      joined_at TEXT DEFAULT (datetime('now')),
-      UNIQUE(firm_id, user_id)
-    );
-    CREATE TABLE IF NOT EXISTS firm_vertical_config (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      firm_id INTEGER NOT NULL UNIQUE,
-      vertical TEXT NOT NULL DEFAULT 'general',
-      bail_calc_enabled INTEGER DEFAULT 0, expunge_pipeline INTEGER DEFAULT 0,
-      class_action_track INTEGER DEFAULT 0, sol_calendar INTEGER DEFAULT 0,
-      dpa_tracker INTEGER DEFAULT 0, coop_credit_model INTEGER DEFAULT 0,
-      tro_alerts INTEGER DEFAULT 0, qdro_matching INTEGER DEFAULT 0,
-      asylum_clock INTEGER DEFAULT 0, detention_alerts INTEGER DEFAULT 0,
-      expert_matching INTEGER DEFAULT 0, damages_model INTEGER DEFAULT 0,
-      caseload_dashboard INTEGER DEFAULT 0, diversion_tracker INTEGER DEFAULT 0,
-      aedpa_tracker INTEGER DEFAULT 0, capital_flag INTEGER DEFAULT 0,
-      ucmj_taxonomy INTEGER DEFAULT 0, clearance_workflow INTEGER DEFAULT 0,
-      juvenile_expunge INTEGER DEFAULT 0, transfer_monitor INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS firm_pricing_configs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      tier_key TEXT NOT NULL UNIQUE,
-      display_name TEXT NOT NULL,
-      monthly_cents INTEGER NOT NULL,
-      annual_cents INTEGER NOT NULL,
-      seat_limit INTEGER DEFAULT 10,
-      matter_limit INTEGER DEFAULT 500,
-      ai_calls_daily INTEGER DEFAULT 100,
-      description TEXT,
-      active INTEGER DEFAULT 1,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-    INSERT OR IGNORE INTO firm_pricing_configs
-      (tier_key, display_name, monthly_cents, annual_cents, seat_limit, matter_limit, ai_calls_daily, description)
-    VALUES
-      ('standard',   'Standard',   19900,  199000, 25,   2000, 200, 'Full platform'),
-      ('mission',    'Mission',     4900,   49000,  15,   999,  100, 'Nonprofit pricing'),
-      ('government', 'Government',  9900,   99000,  50,   9999, 300, 'Government pricing'),
-      ('enterprise', 'Enterprise',  49900,  499000, 999, 99999, 999, 'Enterprise pricing');
-    CREATE TABLE IF NOT EXISTS vertical_deadline_presets (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      vertical TEXT NOT NULL, rule_key TEXT NOT NULL,
-      label TEXT NOT NULL, days INTEGER NOT NULL,
-      business_days INTEGER DEFAULT 0, priority TEXT DEFAULT 'high',
-      description TEXT, UNIQUE(vertical, rule_key)
-    );
-    INSERT OR IGNORE INTO vertical_deadline_presets
-      (vertical,rule_key,label,days,business_days,priority,description) VALUES
-      ('criminal_defense','bail','Bail Hearing',1,0,'critical','First appearance'),
-      ('criminal_defense','arraignment','Arraignment',3,1,'critical','Formal charges'),
-      ('criminal_defense','speedy','Speedy Trial',70,0,'high','70-day window'),
-      ('criminal_defense','indictment','Indictment',30,0,'high','Grand jury'),
-      ('immigration','bia_appeal','BIA Appeal',30,0,'critical','BIA 30-day deadline'),
-      ('family','tro','TRO Hearing',3,1,'critical','Emergency TRO'),
-      ('family','answer','Answer Due',30,0,'high','Response to petition'),
-      ('white_collar','wells','Wells Notice',30,0,'critical','SEC Wells Notice');
-    CREATE TABLE IF NOT EXISTS asylum_clocks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      firm_id INTEGER NOT NULL, matter_id INTEGER,
-      client_name TEXT NOT NULL, a_number TEXT,
-      clock_start TEXT NOT NULL, clock_paused INTEGER DEFAULT 0,
-      paused_days INTEGER DEFAULT 0, relief_type TEXT DEFAULT 'asylum',
-      country TEXT, detained INTEGER DEFAULT 0, notes TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS dpa_trackers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      firm_id INTEGER NOT NULL, matter_id INTEGER,
-      client_name TEXT NOT NULL, agency TEXT, investigation_type TEXT,
-      cooperation_level TEXT DEFAULT 'unknown',
-      dpa_status TEXT DEFAULT 'evaluating',
-      base_fine_cents INTEGER DEFAULT 0,
-      coop_discount_pct REAL DEFAULT 0,
-      dpa_credit_pct REAL DEFAULT 0,
-      effective_fine_cents INTEGER DEFAULT 0,
-      wells_due TEXT, subpoena_due TEXT, dpa_sign_due TEXT, notes TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS tro_trackers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      firm_id INTEGER NOT NULL, matter_id INTEGER,
-      client_name TEXT NOT NULL, dv_flag INTEGER DEFAULT 0,
-      tro_filed TEXT, tro_hearing_due TEXT,
-      tro_granted INTEGER DEFAULT 0, tro_served INTEGER DEFAULT 0,
-      protective_order_due TEXT,
-      asset_tier TEXT DEFAULT 'under_100k', notes TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS mission_verification_requests (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      firm_id INTEGER NOT NULL, submitted_by INTEGER NOT NULL,
-      org_type TEXT NOT NULL, ein TEXT, website TEXT, documentation TEXT,
-      status TEXT DEFAULT 'pending', reviewed_by INTEGER, reviewed_at TEXT, notes TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS matters (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      firm_id INTEGER, created_by INTEGER NOT NULL,
-      title TEXT NOT NULL,
-      vulnerability_level TEXT DEFAULT 'moderate',
-      evidence_score INTEGER DEFAULT 50,
-      evidence_bucket TEXT DEFAULT 'moderate',
-      vertical TEXT DEFAULT 'general',
-      time_pressure TEXT DEFAULT 'standard',
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS audit_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER, firm_id INTEGER, action TEXT, resource TEXT,
-      record_id INTEGER, old_value TEXT, new_value TEXT, ip TEXT, ua TEXT,
-      request_id TEXT, created_at TEXT DEFAULT (datetime('now'))
-    );
-  `);
-
-  // Seed firm + members
-  await db.run(`INSERT INTO firms (id,name,owner_id,vertical) VALUES (1,'Test Firm',1,'general')`);
-  await db.run(`INSERT INTO firm_members (firm_id,user_id,firm_role) VALUES (1,1,'firm_admin')`);
-  await db.run(`INSERT INTO firm_members (firm_id,user_id,firm_role) VALUES (1,2,'partner')`);
-  await db.run(`INSERT INTO firm_members (firm_id,user_id,firm_role) VALUES (1,3,'associate')`);
-  await db.run(`INSERT INTO firm_members (firm_id,user_id,firm_role) VALUES (1,4,'paralegal')`);
-  await db.run(`INSERT INTO matters (id,firm_id,created_by,title) VALUES (1,1,1,'Test Matter')`);
-
-  // Patch auth into the route
-  app.use((req, res, next) => { req._testDb = db; next(); });
-  // Override authRequired to use our mock
-  app.use('/api/firm-verticals', (req, res, next) => { req._useTestAuth = true; next(); });
-  // Mock auth
-  app.use('/api/firm-verticals', (req, res, next) => {
-    const t = (req.headers.authorization || '').replace('Bearer ', '');
-    if (!t) return res.status(401).json({ error: 'missing token' });
-    try { req.user = jwt.verify(t, SECRET); next(); }
-    catch { res.status(401).json({ error: 'invalid token' }); }
-  });
-
-  return { app, db };
-}
 
 // ─── TEST BUILD PATTERN ───────────────────────────────────────────────────────
 // Because firm_verticals uses getDb() internally, we need to test via
@@ -765,8 +585,8 @@ describe('Third-pass validation fixes', () => {
     // 3. Write audit log with old + new values
     const sequence = [];
     const mockDb = {
-      get:  (...args) => { sequence.push('READ'); return Promise.resolve({}); },
-      run:  (...args) => { sequence.push('WRITE'); return Promise.resolve({ lastID: 1 }); },
+      get:  () => { sequence.push('READ'); return Promise.resolve({}); },
+      run:  () => { sequence.push('WRITE'); return Promise.resolve({ lastID: 1 }); },
     };
     // Simulate the corrected sequence
     async function simulateCorrectOrder() {
@@ -1144,7 +964,8 @@ describe('evidence_score numeric validation', () => {
   });
   test('null rejected (not treated as 0)', () => {
     // evidence_score !== null guard catches this before Number() call
-    expect(null !== undefined && null !== null).toBe(false);
+    const score = null;
+    expect(score !== undefined && score !== null).toBe(false);
   });
   test('float evidence_score rounded correctly', () => {
     const score = Math.max(0, Math.min(100, Math.round(Number('74.6'))));

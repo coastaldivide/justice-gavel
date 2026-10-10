@@ -1,17 +1,15 @@
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * attorney/verification.js — Bar verification submit + admin approve
  */
-import { err400, err401, err403, err404, err409, err422, err500, err502,
-         safeInt, sanitizeStr, validateEmail, withTransaction} from '../../utils/routeHelpers.js';
+import { err400, err404 } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger           from '../../utils/logger.js';
-import { sanitiseField, sanitiseProfileFields, STATE_BAR_LOOKUP, requireAttorney } from './_helpers.js';
+import { STATE_BAR_LOOKUP, requireAttorney } from './_helpers.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 
-const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
+const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
 
 const router = Router();
 
@@ -84,7 +82,7 @@ router.post('/verify-bar', authRequired, routeLimiter, async (req, res) => {
         'SELECT bar_verified, pending_bar_verification FROM users WHERE id=?',
         [req.user.id]
       );
-    } catch (e) { await db.exec('ROLLBACK').catch(() => {}); throw new Error('DB read failed'); }
+    } catch { await db.exec('ROLLBACK').catch(() => {}); throw new Error('DB read failed'); }
 
     if (current?.bar_verified) {
       await db.exec('ROLLBACK').catch(() => {});
@@ -278,5 +276,5 @@ router.get('/pending-verification', authRequired, async (req, res) => {
        ORDER BY u.created_at DESC LIMIT 50`
     ).catch(() => []);
     res.json({ pending });
-  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });

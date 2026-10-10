@@ -5,7 +5,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // file upload safety (multer size+type limits), race conditions,
 // orphaned routes, discovery routes file upload security.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -31,11 +30,11 @@ describe('UPLOAD. File Upload Security', () => {
     // Type whitelist includes expected document types
     expect(src).toContain('application/pdf');
   });
-  test('UPLOAD-02: discovery/history.js multer has size + type protection', async () => {
+  test('UPLOAD-02: discovery/history.js accepts no uploads (its unused multer was removed)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/discovery/history.js','utf8');
-    expect(src).toContain('fileSize');
-    expect(src).toMatch(/fileFilter|ALLOWED/);
+    expect(src).not.toMatch(/multer|upload\.single/);
+    expect(src).not.toMatch(/router\.(post|put|patch)\(/);
   });
   test('UPLOAD-03: messages.js attachment upload also has file protection', async () => {
     const fs = await import('fs');
@@ -170,8 +169,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     expect(pkg.scripts.prestart).toBeUndefined();   // no SQLite migrate on start (schema = supabase/migrations)
     expect(fs.readFileSync(__REPO + '/backend/src/routes/admin.js','utf8')).toContain('scan_id');
     expect(fs.readFileSync(__REPO + '/backend/src/routes/analytics.js','utf8')).toContain('matter_taxonomy');
-    for(const f of ['analyze.js','history.js'])
-      expect(fs.readFileSync(__REPO + '/backend/src/routes/discovery/'+f,'utf8')).toContain('fileSize');
+    // analyze.js is the only discovery route that accepts uploads (history.js had an unused multer)
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/discovery/analyze.js','utf8')).toContain('fileSize');
     for(const f of ['bondsman.js','connections.js','pi_leads.js']){
       const src=fs.readFileSync(__REPO + '/backend/src/routes/billing/'+f,'utf8');
       if(src.includes('paymentIntents.create')) expect(src).toContain('metadata');
@@ -183,7 +182,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

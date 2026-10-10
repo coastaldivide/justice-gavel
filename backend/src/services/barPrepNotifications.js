@@ -67,9 +67,9 @@ export function startNotificationWorker() {
 
   const worker = new Worker('bar-notifications', async (job) => {
     switch (job.name) {
-      case 'daily-reminder':  return sendDailyReminders();
-      case 'streak-warning':  return sendStreakWarnings();
-      case 'exam-countdown':  return sendExamCountdowns();
+      case 'daily-reminder':  return await sendDailyReminders();
+      case 'streak-warning':  return await sendStreakWarnings();
+      case 'exam-countdown':  return await sendExamCountdowns();
     }
   }, { connection, concurrency: 1 });
 

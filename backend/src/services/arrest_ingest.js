@@ -31,7 +31,7 @@ const SOURCES = [
     county: 'Davidson',
     // Free tier: scrape the public HTML booking report
     // Paid tier: use Mugshots.com API or Judyrecords.com API
-    fetch: async () => {
+    fetch: () => {
       // TODO: Replace with real API call or HTML scrape
       // Example: Davidson County Sheriff posts daily booking log at
       // https://www.nashville.gov/departments/sheriff/daily-booking-logs
@@ -44,7 +44,7 @@ const SOURCES = [
     name:   'Shelby County, TN (Open Data)',
     state:  'TN',
     county: 'Shelby',
-    fetch: async () => {
+    fetch: () => {
       // Shelby County posts JSON at:
       // https://data.shelbycountytn.gov/resource/arrest_records.json
       // Replace with real endpoint after API key is obtained
@@ -105,7 +105,7 @@ function normalizeRecord(raw, sourceId) {
 }
 
 // ── Main ingestion runner ──────────────────────────────────────────────────
-export async function runIngestion(options = {}) {
+export async function runIngestion() {
   const db      = await getDb();
   const results = { inserted: 0, skipped: 0, errors: 0, sources: [] };
 
@@ -138,7 +138,7 @@ export async function runIngestion(options = {}) {
            norm.has_attorney, norm.case_number, norm.source, norm.alert_sent]
         );
         sourceInserted++;
-      } catch (e) {
+      } catch {
         results.errors++;
       }
     }

@@ -4,7 +4,7 @@
  * Replaces SendGrid. API is cleaner, deliverability is better,
  * Superior deliverability, cleaner API.
  *
- * All functions are drop-in replacements for the old sendgrid.js exports.
+ * Transactional email via Resend.
  */
 
 import logger from '../utils/logger.js';
@@ -56,7 +56,7 @@ async function send({ to, subject, html, text }) {
 // ── Transactional emails ───────────────────────────────────────────────────────
 
 export async function sendPasswordReset(to, resetUrl) {
-  return send({
+  return await send({
     to, subject: 'Reset your Justice Gavel password',
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
@@ -74,7 +74,7 @@ export async function sendPasswordReset(to, resetUrl) {
 }
 
 export async function sendWelcome(to, displayName) {
-  return send({
+  return await send({
     to, subject: 'Welcome to Justice Gavel',
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
@@ -98,7 +98,7 @@ export async function sendWelcome(to, displayName) {
 }
 
 export async function sendSubscriptionConfirm(to, plan, amount) {
-  return send({
+  return await send({
     to, subject: `You're subscribed to Justice Gavel ${plan}`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
@@ -114,7 +114,7 @@ export async function sendSubscriptionConfirm(to, plan, amount) {
 }
 
 export async function sendPaymentFailed(to, plan, retryDate) {
-  return send({
+  return await send({
     to, subject: 'Action required — Justice Gavel payment failed',
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
@@ -130,24 +130,24 @@ export async function sendPaymentFailed(to, plan, retryDate) {
 }
 
 export async function sendCriticalAlert(subject, body) {
-  return send({
+  return await send({
     to:      process.env.ALERT_EMAIL || 'engineering@justicegavel.app',
     subject: `🚨 ${subject}`,
     html:    `<pre style="font-family:monospace;font-size:13px">${body}</pre>`,
   });
 }
 
-// Backward-compat alias (old code imported from sendgrid.js)
+// Generic send helper
 
 /**
  * sendEmail — generic low-level email dispatcher.
- * Used by outbound_bot, healthScan, retention, dunning, etc.
+ * Used by outbound_bot, healthScan, retention, etc.
  * Accepts { to, subject, html?, text? }
  */
 export async function sendEmail(arg, subjectArg, textArg) {
   // Accepts sendEmail({ to, subject, html?, text? }) or legacy sendEmail(to, subject, text)
   const o = (arg && typeof arg === 'object' && !Array.isArray(arg)) ? arg : { to: arg, subject: subjectArg, text: textArg };
-  return send({ to: o.to, subject: o.subject, html: o.html, text: o.text });
+  return await send({ to: o.to, subject: o.subject, html: o.html, text: o.text });
 }
 
 export default { sendPasswordReset, sendWelcome, sendSubscriptionConfirm, sendPaymentFailed, sendCriticalAlert, sendEmail };
@@ -158,7 +158,7 @@ export async function sendBookingConfirmation({ to, clientName, attorneyName,
   const dateLabel = new Date(dateSlot + 'T12:00:00').toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   });
-  return send({
+  return await send({
     to,
     subject: `Consultation confirmed — ${attorneyName} on ${dateLabel}`,
     html: `
@@ -199,7 +199,7 @@ export async function sendAttorneyBookingAlert({ to, attorneyName, clientName,
   const dateLabel = new Date(dateSlot + 'T12:00:00').toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   });
-  return send({
+  return await send({
     to,
     subject: `New consultation booked — ${clientName} on ${dateLabel}`,
     html: `

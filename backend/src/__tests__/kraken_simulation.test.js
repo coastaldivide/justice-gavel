@@ -118,7 +118,6 @@ const safeJson = (str, fallback = null) => {
 const safeInt = (val, fb = 0) => { const n = parseInt(String(val), 10); return isNaN(n) ? fb : n; };
 const safeFloat = (val, fb = 0) => { const n = parseFloat(String(val)); return isNaN(n) || !isFinite(n) ? fb : n; };
 const TIERS = ['free', 'legal_radar', 'advisor', 'legal_pro', 'esquire'];
-const TIER_RANK = { free: 0, legal_radar: 1, advisor: 2, legal_pro: 3, esquire: 4 };
 
 // ── K-01: AUTH BOUNDARY ATTACKS ───────────────────────────────────────────────
 describe('K-01 Auth Boundary — JWT manipulation & token attacks', () => {
@@ -816,7 +815,7 @@ describe('K-08 Court Date Math — DST ambiguity, leap year, federal holidays', 
   });
 
   test('30 business days from a Monday is deterministic', () => {
-    let d = new Date('2025-01-06T12:00:00Z');  // Monday Jan 6
+    const d = new Date('2025-01-06T12:00:00Z');  // Monday Jan 6
     let bizDays = 0;
     while (bizDays < 30) {
       d.setUTCDate(d.getUTCDate() + 1);

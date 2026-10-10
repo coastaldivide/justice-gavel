@@ -4,7 +4,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // BACKEND SERVICES DEEP AUDIT: aiQueue, pushDelivery, encryption,
 // Every backend service file read for the first time in any pass.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -135,23 +134,16 @@ describe('BOT. Outbound Lead Bot', () => {
 });
 
 // ── EMAIL SERVICE ─────────────────────────────────────────────────────────
-describe('EMAIL. SendGrid Email Service', () => {
-  test("EMAIL-01: sendgrid mock mode when no API key set", async () => {
-    const { sendEmail, SENDGRID_LIVE } = await import('../services/sendgrid.js');
-    expect(SENDGRID_LIVE).toBe(false);                      // SendGrid retired; shim → services/email.js (Resend)
+describe('EMAIL. Email Service (Resend)', () => {
+  test("EMAIL-01: email log-only mode when no API key set", async () => {
+    const { sendEmail, emailLive } = await import('../services/email.js');   // Resend (SendGrid retired)
     const saved = process.env.RESEND_API_KEY; delete process.env.RESEND_API_KEY;
     try {
+      expect(emailLive()).toBe(false);
+      expect(emailLive()).toBe(false);
       const r = await sendEmail({ to: 'test@example.com', subject: 'Hello', text: 'Hi' });
       expect(r.mock).toBe(true);                            // logged, not sent, without RESEND_API_KEY
     } finally { if (saved !== undefined) process.env.RESEND_API_KEY = saved; }
-  });
-  test('EMAIL-02: all email builders create HTML email', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js','utf8');
-    expect(src).toContain('buildPasswordResetEmail');
-    expect(src).toContain('buildWelcomeEmail');
-    expect(src).toContain('buildReceiptEmail');
-    expect(src).toContain('html');
   });
 });
 
@@ -217,7 +209,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

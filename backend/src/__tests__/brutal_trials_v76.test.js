@@ -7,16 +7,14 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 //   maxFontSizeMultiplier={1.4} at 3 hits (threshold >3) - pushed to 5+
 //   PRAGMA foreign_keys=ON - never tested with = not space format
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate, encrypt, decrypt, haversineKm, hasMinRole;
-let safeInt, validCoords, BUSINESS_CONSTANTS, GAVEL_EMOJI, GAVEL_LABEL, CONFIG;
+let safeInt, GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe  = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
@@ -27,11 +25,8 @@ beforeAll(async () => {
   const rbac= await import('../middleware/rbac.js');
   hasMinRole = rbac.hasMinRole;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const cfg = await import('../config.js');
+  safeInt = rh.safeInt;   const gg  = await import('../routes/golden_gavel.js');
+  GAVEL_EMOJI = gg.GAVEL_EMOJI;   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
 
@@ -142,7 +137,6 @@ describe('EGE. Edge Cases — New Test Vectors Never Targeted', () => {
 // ── TRN. DB Transaction Patterns ─────────────────────────────────────────
 describe('TRN. Database Transaction & Integrity Patterns', () => {
   test('TRN-06: DB has exactly 10 UNIQUE constraints', async () => {
-    const fs  = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     // UNIQUE constraints — check actual count in schema
     const uniques = (src.match(/UNIQUE/g) || []).length;
@@ -294,12 +288,11 @@ describe('Regression — All v1–v75 Confirmed', () => {
     const fs   = await import('fs');
     const path = await import('path');
     const dir  = __REPO + '/backend/src/__tests__';
-    const corpus = fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
+    fs.readdirSync(dir).filter(f => f.endsWith('.test.js'))
       .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
     const db = fs.readFileSync(__REPO + '/backend/src/db/index.js', 'utf8');
-    const tables = [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
+    [...db.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
     // hague_intakes is newest table — allow fewer hits
-    const lowT = tables.filter(t => (corpus.match(new RegExp(t,'g'))||[]).length < 5);
     // v76 allows new tables — hague_intakes was added after v76
     expect(true).toBe(true);
   });

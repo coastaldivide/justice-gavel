@@ -1,4 +1,3 @@
-import { getAvailableSlots, createSchedulingLink } from '../services/calendly.js';
 /**
  * consultations.js — Lawyer video consultation booking
  *
@@ -11,14 +10,13 @@ import { getAvailableSlots, createSchedulingLink } from '../services/calendly.js
  * Platform fee: $10–$25 depending on consultation duration
  *   30 min → $15   |   60 min → $25   |   15 min (intro) → $10
  */
-import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { err400, truncateStr, err404, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
 import Stripe from 'stripe';
 import logger from '../utils/logger.js';
-import { trackFunnel } from '../services/funnelTracking.js';
 import { sendPushToUser } from '../services/pushDelivery.js';
 import { sendBookingConfirmation, sendAttorneyBookingAlert } from '../services/email.js';
 // Added: these names were used at module scope but never imported --
@@ -148,7 +146,7 @@ router.get('/prefill', authRequired, async (req, res) => {
         ? `Case: ${cas.title}${cas.charge_description ? '. Charge: ' + cas.charge_description : ''}${cas.next_court_date ? '. Next court date: ' + cas.next_court_date : ''}.`
         : null,
     });
-  } catch (e) {
+  } catch {
     res.json({ case_id: null, suggested_notes: null });
   }
 });
@@ -175,7 +173,7 @@ router.get('/slots/:lawyerId', slotsLimiter, async (req, res) => {
     ).catch(() => null);
     let attySchedule = null;
     if (attyProfile?.availability_schedule) {
-      try { attySchedule = JSON.parse(attyProfile.availability_schedule); } catch {}
+      try { attySchedule = JSON.parse(attyProfile.availability_schedule); } catch { /* malformed schedule → default slots */ }
     }
 
     // Generate slots using attorney's actual schedule (not deterministic defaults)
@@ -189,7 +187,7 @@ router.get('/slots/:lawyerId', slotsLimiter, async (req, res) => {
     }));
 
     res.json({ lawyer_id: lawyerId, slots, source: 'generated' });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -206,7 +204,7 @@ router.get('/', authRequired, listLimiter, async (req, res) => {
       [req.user.id, pgSize, page * pgSize]
     );
     res.json({ consultations: rows, page, pageSize: pgSize, hasMore: rows.length === pgSize });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -480,7 +478,7 @@ router.post('/callback-request', authRequired, consultationsLimiter, async (req,
     } catch { /* push is best-effort */ }
 
     res.json({ ok: true, message: 'Message sent. The attorney will contact you shortly.' });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not submit message. Try again.' });
   }
 });

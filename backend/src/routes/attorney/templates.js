@@ -1,17 +1,14 @@
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * attorney/templates.js — Motion templates — list, create, approve
  */
-import { err400, err401, err403, err404, err409, err422, err500, err502,
-         safeInt, sanitizeStr, validateEmail } from '../../utils/routeHelpers.js';
+import { err400, safeInt } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
-import { getDb }        from '../../db/index.js';
 import logger           from '../../utils/logger.js';
-import { sanitiseField, sanitiseProfileFields, STATE_BAR_LOOKUP, requireAttorney } from './_helpers.js';
+import { requireAttorney } from './_helpers.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 
-const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
+const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
 
 const router = Router();
 

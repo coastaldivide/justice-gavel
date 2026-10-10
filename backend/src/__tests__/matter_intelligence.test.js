@@ -2541,7 +2541,7 @@ describe('computePDSignals — bradyApplicable tightened regex', () => {
     expect(s.vertical_signals.bradyApplicable).toBe(false);
   });
   test('bradyApplicable: "evidence of guilt" does NOT trigger', () => {
-    const s = computeAllSignals(pd({ title:'Robbery — strong evidence of guilt' }));
+    computeAllSignals(pd({ title:'Robbery — strong evidence of guilt' }));
     // evidence_score=80 → ev='strong' → bradyApplicable requires ev=weak
     const sStrong = computeAllSignals(pd({ title:'Robbery — strong evidence of guilt', evidence_score:80 }));
     expect(sStrong.vertical_signals.bradyApplicable).toBe(false);
@@ -2836,7 +2836,7 @@ describe('outcome indicators — confidence field completeness', () => {
              clock_days:380, relief_type:'asylum', detained:0, years_us:3,
              country_condition:'crisis', ...overrides };
   }
-  function military(overrides = {}) {
+  function military() {
     return { id:1, firm_id:1, vertical:'military', title:'Art. 128b domestic violence UCMJ',
              evidence_score:80, vulnerability_level:'moderate', time_pressure:'standard',
              court_type:'general', rank_e:5, service_years:5, prior_njp:0 };
@@ -3512,7 +3512,7 @@ describe('computeAppellateSignals — certMonitor early watch signal', () => {
     vulnerability_level:'moderate', jurisdiction:'federal', ...o });
 
   test('certMonitor: revScore 40-49 + capital → true', () => {
-    const s = computeAllSignals(app({ evidence_score: 30, is_capital: 1, prior_appeals: 0 }));
+    computeAllSignals(app({ evidence_score: 30, is_capital: 1, prior_appeals: 0 }));
     // score 30 → stdRevBase=25, evBoost=0, priorPenalty=0 → revScore=25 (too low)
     // Try score that gives revScore ~45: contested(30)+0-0=30... need moderate(40)+evBoost(20)=60 minus priors
     // Use contested+no boost+0 prior = 30 (still too low); moderate+no boost+prior=1 → 40+0-5=35

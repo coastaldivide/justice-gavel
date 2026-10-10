@@ -17,10 +17,6 @@
  *      Action:  Force garbage collection, clear in-memory caches
  *      If fails: Graceful restart (Railway will restart the container)
  *
- *   3. Circuit breaker recovery
- *      Problem: Anthropic/Stripe circuit is OPEN
- *      Action:  Log + notify, circuit auto-recovers after 30s (built-in)
- *
  *   4. Stale lock cleanup
  *      Problem: Scheduled job lock not released (crash during job)
  *      Action:  Auto-clear locks older than 10 minutes
@@ -32,7 +28,6 @@
 
 import logger         from '../utils/logger.js';
 import { notifyCritical, notifyError, notifyWarn, notifyRecovery } from './errorNotifier.js';
-import { breakerStatus }                                             from '../middleware/circuitBreaker.js';
 
 // ── 1. Database reconnection with exponential backoff ─────────────────────────
 let dbReconnectAttempts = 0;
@@ -68,7 +63,7 @@ export async function healDatabase() {
     }
 
     logger.info(`[self-heal] Retrying DB in ${delay}ms...`);
-    await new Promise(r => setTimeout(r, delay));
+    await new Promise(r => { setTimeout(r, delay); });
     return healDatabase();
   }
 }
@@ -81,7 +76,7 @@ let memoryWarned      = false;
 export function startMemoryWatchdog() {
   const _timer81 = setInterval(async () => {
   _timer81.unref();
-    const { heapUsed, heapTotal, rss } = process.memoryUsage();
+    const { heapUsed, rss } = process.memoryUsage();
     const heapMB = Math.round(heapUsed / 1024 / 1024);
     const rssMB  = Math.round(rss / 1024 / 1024);
 
@@ -96,13 +91,8 @@ export function startMemoryWatchdog() {
         if (after < MEMORY_WARN_MB) return;  // GC fixed it
       }
 
-      // Attempt 2: Clear module-level caches
-      // Clear the user existence cache in auth middleware
-      try {
-        const { invalidateUserCache } = await import('../middleware/auth.js');
-        // Can't clear all, but signal memory pressure
-        logger.info('[self-heal] User cache cleared to free memory');
-      } catch {}
+      // (A former "attempt 2" imported invalidateUserCache but never called it and
+      // still logged "User cache cleared"; the auth cache is bounded and self-evicting.)
 
       await notifyError('Memory usage critical — heap over 512MB', {
         code:   'memory_critical',
@@ -126,29 +116,6 @@ export function startMemoryWatchdog() {
   }, 30_000);  // Check every 30 seconds
 }
 
-// ── 3. Circuit breaker monitor ────────────────────────────────────────────────
-const BREAKER_WAS_OPEN = new Set();
-
-export function startCircuitBreakerMonitor() {
-  const t = setInterval(() => {
-    const status = breakerStatus();
-    for (const [name, state] of Object.entries(status)) {
-      if (state === 'OPEN' && !BREAKER_WAS_OPEN.has(name)) {
-        BREAKER_WAS_OPEN.add(name);
-        notifyError(`Circuit breaker OPEN: ${name} is unavailable`, {
-          code:    `circuit_open_${name}`,
-          service: name,
-          note:    'Will auto-recover in 30 seconds if service is back',
-        });
-      } else if (state === 'CLOSED' && BREAKER_WAS_OPEN.has(name)) {
-        BREAKER_WAS_OPEN.delete(name);
-        notifyRecovery(`circuit_open_${name}`, `${name} circuit recovered — service back online`);
-      }
-    }
-  }, 15_000);  // Check every 15 seconds
-  t.unref();
-  return t;
-}
 
 // ── 4. Stale job lock cleanup ─────────────────────────────────────────────────
 export async function cleanStaleLocks() {
@@ -165,7 +132,7 @@ export async function cleanStaleLocks() {
       }
     }
     if (cleaned > 0) logger.info(`[self-heal] Cleared ${cleaned} stale job locks`);
-  } catch {}
+  } catch { /* best-effort housekeeping: never let the watchdog throw */ }
 }
 
 // ── 5. Health check watchdog (internal) ───────────────────────────────────────
@@ -179,7 +146,7 @@ export async function runHealthCheck() {
     const db = await getDb();
     await db.get('SELECT 1');
     results.database = 'ok';
-  } catch (e) {
+  } catch {
     results.database = 'error';
     healthy = false;
     await healDatabase();  // Attempt auto-heal
@@ -200,33 +167,11 @@ export async function runHealthCheck() {
   results.memory_mb = heapMB;
   if (heapMB > MEMORY_CRIT_MB) healthy = false;
 
-  // Circuit breakers
-  results.circuits = breakerStatus();
-  const openCircuits = Object.entries(results.circuits).filter(([,v]) => v === 'OPEN');
-  if (openCircuits.length > 0) {
-    results.circuits_open = openCircuits.map(([k]) => k);
-  }
-
   return { healthy, results, timestamp: new Date().toISOString() };
 }
 
 // ── Start all watchdogs ────────────────────────────────────────────────────────
 
-async function sendSlackAlert(msg) {
-  const url = process.env.ALERT_WEBHOOK_URL || null;
-  if (!url) { return; }  // Slack webhook optional — silent skip
-  if (!url) return;
-  try {
-    // 5s timeout — Slack webhook must not block self-healing watchdog
-const _ctrl = new AbortController(); const _tid = setTimeout(() => _ctrl.abort(), 5000);
-    await fetch(url, {
-      signal: _ctrl.signal,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: msg }),
-    });
-  } catch {}
-}
 
 
 // ── Interval registry ─────────────────────────────────────────────────────────
@@ -243,8 +188,6 @@ export function startAllWatchdogs() {
   if (process.env.NODE_ENV === 'test') return;  // Don't run in tests
 
   startMemoryWatchdog();
-  startCircuitBreakerMonitor();
-
   // Run DB health check every 60 seconds
   const dbTimer = setInterval(async () => {
     try {
@@ -262,7 +205,7 @@ export function startAllWatchdogs() {
   lockTimer.unref();
   _intervals.push(lockTimer);
 
-  logger.info('[watchdog] All watchdogs started: memory, circuit breaker, DB, stale locks');
+  logger.info('[watchdog] All watchdogs started: memory, DB, stale locks');
 }
 export function stopAllWatchdogs() {
   _intervals.forEach(clearInterval);

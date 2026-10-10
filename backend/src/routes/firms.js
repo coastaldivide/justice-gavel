@@ -1,4 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/firms.js — Firm management and member RBAC
  *
@@ -24,9 +23,8 @@ import { makeUserLimiter }                    from '../middleware/sharedAiLimite
 import logger                                 from '../utils/logger.js';
 import rateLimit                              from 'express-rate-limit';
 import { apiLimiter }                         from '../middleware/rateLimiters.js';
-import { hasMinRole, ROLES }                  from '../middleware/rbac.js';
-import { auditLog, writeAuditLog,
-         getAuditLog }                        from '../middleware/audit.js';
+import { hasMinRole } from '../middleware/rbac.js';
+import { writeAuditLog, getAuditLog } from '../middleware/audit.js';
 
 const router      = Router();
 const firmLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 10, message: 'Too many firm operations.' });
@@ -37,7 +35,7 @@ const directoryLimiter = rateLimit({ windowMs: 60_000, max: 60, standardHeaders:
 
 // ── Helper: get user's firm membership ───────────────────────────────────────
 async function getMembership(db, userId) {
-  return db.get(
+  return await db.get(
     `SELECT fm.*, f.name as firm_name, f.owner_id, f.plan
      FROM firm_members fm
      JOIN firms f ON f.id = fm.firm_id
@@ -434,7 +432,7 @@ router.get('/:id/invoice-summary', authRequired, async (req, res) => {
     }
     summary.outstanding = summary.billed - summary.paid;
     return res.json({ firm_id: fid, summary, currency: 'USD' });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not fetch invoice summary' });
   }
 });
@@ -466,7 +464,7 @@ router.get('/:id/time-entries', authRequired, async (req, res) => {
         billable_dollars: Math.round(e.billable_cents / 100),
       })),
     });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not fetch time entries' });
   }
 });
@@ -491,7 +489,7 @@ router.get('/trial-status', authRequired, async (req, res) => {
       plan:            trial.plan,
       trial_ends:      trial.trial_end_at,
     });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not fetch trial status' });
   }
 });
@@ -530,7 +528,7 @@ router.get('/directory', directoryLimiter, async (req, res) => {
       total_count: parseInt(countRow?.n ?? 0, 10),
       total_pages: Math.ceil((countRow?.n ?? 0) / 20),
     });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not load firm directory' });
   }
 });
@@ -554,7 +552,7 @@ router.get('/:id/public-profile', apiLimiter, async (req, res) => {
       [id]
     ).catch(() => []);
     return res.json({ ...firm, attorneys: members });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not load firm profile' });
   }
 });
@@ -599,7 +597,7 @@ Justice Gavel: https://justicegavel.com`,
     }
 
     return res.status(201).json({ invited: true, email, firm_name: firm.name });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not send invitation' });
   }
 });
@@ -617,7 +615,7 @@ router.get('/referral/:code', apiLimiter, async (req, res) => {
     ).catch(() => null);
     if (!firm) return res.status(404).json({ error: 'Firm not found. Check your code and try again.' });
     return res.json({ found: true, firm });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not look up referral code' });
   }
 });

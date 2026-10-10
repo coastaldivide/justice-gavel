@@ -49,7 +49,6 @@ describe('Webhook signature — valid signatures', () => {
     try { verifyStripeSignature(PAYLOAD, sig, SECRET); } catch {}
     const t2  = Date.now();
     try { verifyStripeSignature(PAYLOAD, 't=1,v1=bad', SECRET); } catch {}
-    const t3  = Date.now();
     // Both should complete (no assertion on timing — just shouldn't throw on valid)
     expect(t2 - t1).toBeLessThan(100);
   });

@@ -1,4 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/firm_acquisition.js — Self-serve firm onboarding funnel
  *
@@ -27,7 +26,7 @@ import {
   safeInt, sanitizeStr, truncateStr,
 } from '../utils/routeHelpers.js';
 
-const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
+const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
 
 const router = Router();
 

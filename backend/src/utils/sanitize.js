@@ -12,7 +12,7 @@ export function sanitizeStr(input) {
   const str = String(input);
   return str
     .trim()
-    .replace(/\x00/g, '')           // null bytes
+    .replaceAll('\0', '')           // null bytes
     .replace(/\u202E/g, '')          // RTL override
     .replace(/\u200B/g, '')          // zero-width space
     .replace(/\u2028|\u2029/g, '')   // line/paragraph separators
@@ -65,13 +65,6 @@ export function normalizePhone(input) {
   return null;
 }
 
-/**
- * Strip all HTML tags from a string (for plain text contexts).
- */
-export function sanitizeHtml(input) {
-  if (!input || typeof input !== 'string') return '';
-  return input.replace(/<[^>]*>/g, '').trim();
-}
 
 /**
  * parseIntent — lightweight keyword-to-intent classifier for outbound bot

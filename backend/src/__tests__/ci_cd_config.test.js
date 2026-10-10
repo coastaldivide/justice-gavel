@@ -65,7 +65,6 @@ describe('CI — ci.yml workflow', () => {
 });
 
 describe('CI — Dependabot', () => {
-  const DEP = resolve(ROOT, '.github/dependabot.yml');
 
 
 

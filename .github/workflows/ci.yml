@@ -16,12 +16,12 @@ concurrency:
 
 jobs:
   # ───────────────────────────────────────────────────────────────────────────
-  # Backend: migrations on a real Postgres 16, boot in production mode,
+  # Backend: lint, migrations on a real Postgres 16, boot in production mode,
   # end-to-end smoke test, then the full jest suite (in-memory store).
   # Every step is blocking.
   # ───────────────────────────────────────────────────────────────────────────
   backend:
-    name: Backend (Postgres + smoke + jest)
+    name: Backend (lint + Postgres + smoke + jest)
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -65,6 +65,9 @@ jobs:
 
       - name: Audit production dependencies (high+)
         run: npm audit --omit=dev --audit-level=high
+
+      - name: ESLint (0 errors, 0 warnings)
+        run: npm run lint
 
       - name: Import smoke (app module loads)
         env:
@@ -125,14 +128,16 @@ jobs:
           DATABASE_URL: ${{ env.CI_DATABASE_URL }}
         run: node scripts/smoke-test.mjs "http://localhost:${API_PORT}" --anthropic-mock "${ANTHROPIC_MOCK_PORT}"
 
-      - name: Sample-arrest filter + flat lead fee on real Postgres (jest)
-        # Runs the real arrests / billing routers and outbound-bot / alert services
-        # against the migrated database (600 seed_v1 rows): seeds never come back
-        # by default, come back flagged with SHOW_SAMPLE_ARRESTS=true, and are never
-        # alerted on, messaged about or sold. Skipped in the in-memory jest run below.
+      - name: Sample-arrest filter, flat lead fee, takedown review on real Postgres (jest)
+        # Runs the real arrests / billing / alerts routers and outbound-bot / alert
+        # services against the migrated database (600 seed_v1 rows): seeds never come
+        # back by default, come back flagged with SHOW_SAMPLE_ARRESTS=true, and are never
+        # alerted on, messaged about or sold; a user's takedown request stays pending
+        # until staff approve it, and only staff record dispositions.
+        # Skipped in the in-memory jest run below.
         env:
           TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}
-        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci src/__tests__/arrest_visibility.test.js
+        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci src/__tests__/arrest_visibility.test.js src/__tests__/alerts_takedown_pg.test.js
 
       - name: Stop API server
         if: always()

@@ -4,7 +4,6 @@
  * Tests: round-trip encryption/decryption, empty string handling,
  *        wrong-key rejection, isEncrypted detection
  */
-import { jest } from '@jest/globals';
 
 // Import the real encryption service
 const { encrypt, decrypt, isEncrypted } =

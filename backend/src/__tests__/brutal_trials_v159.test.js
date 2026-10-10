@@ -10,17 +10,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // - HelpNow → BailCalculator dead end navigation
 // - VAPID guard in pushDelivery.js
 
-import { jest } from '@jest/globals';
-let computeAllSignals, encrypt, decrypt, BUSINESS_CONSTANTS, CONFIG;
+let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi=await import('../routes/matter_intelligence.js');
   computeAllSignals=mi.computeAllSignals;
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const rh=await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS=rh.BUSINESS_CONSTANTS;
-  const cfg=await import('../config.js');
-  CONFIG=cfg.CONFIG;
 });
 const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
   vulnerability_level:'moderate',time_pressure:'standard',
@@ -194,7 +189,8 @@ describe('FINAL_159. Zero-Defect Quality Gate', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0},total=0;
+    const counts={5:0,10:0,15:0,20:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

@@ -3,12 +3,11 @@
  * Validates the OpenAPI spec is complete, well-formed,
  * and consistent with the actual route implementation.
  */
-import { readFileSync, existsSync, readdirSync } from 'fs';
-import { resolve, join } from 'path';
+import { readFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname   = fileURLToPath(new URL('.', import.meta.url));
 const SPEC_PATH   = resolve(__dirname, '../../../openapi.json');
-const ROUTES_DIR  = resolve(__dirname, '../routes');
 
 let spec;
 describe('OpenAPI spec — structure', () => {
@@ -58,7 +57,7 @@ describe('OpenAPI spec — security definitions', () => {
     spec = spec || JSON.parse(readFileSync(SPEC_PATH, 'utf-8'));
     const sensitivePaths = Object.entries(spec.paths)
       .filter(([path]) => /\/cases|\/matters|\/subscriptions|\/profile/.test(path));
-    const unsecured = sensitivePaths.filter(([path, ops]) =>
+    const unsecured = sensitivePaths.filter(([, ops]) =>
       Object.values(ops).some(op => op.security === undefined && !op.deprecated)
     );
     if (unsecured.length > 0) console.warn('Unsecured sensitive paths in spec:', unsecured.map(u => u[0]).slice(0,3));

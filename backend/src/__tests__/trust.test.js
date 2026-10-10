@@ -892,7 +892,6 @@ describe('Conflict Waivers', () => {
 
 // ── Ethics Walls ──────────────────────────────────────────────────────────────
 describe('Ethics Walls', () => {
-  const MATTER_ID = 101;
 
   beforeAll(async () => {
     // Set up matter team members for testing

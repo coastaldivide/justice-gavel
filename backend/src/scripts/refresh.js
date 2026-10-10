@@ -47,7 +47,7 @@ const CITIES = [
 
 // ── HTTP helpers ──────────────────────────────────────────────────────────────
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) { return new Promise(r => { setTimeout(r, ms); }); }
 
 async function httpGet(url, params = {}, headers = {}) {
   const qs = new URLSearchParams(params).toString();
@@ -179,7 +179,7 @@ function dedupeKey(name, city) {
 // ── DB upsert with audit log ──────────────────────────────────────────────────
 
 async function getExistingByDedupeKey(db, table, name, city) {
-  return db.get(
+  return await db.get(
     `SELECT * FROM ${table} WHERE LOWER(REPLACE(name,' ','')) = LOWER(REPLACE(?,' ','')) AND city = ?`,
     [name, city]
   );
@@ -274,7 +274,7 @@ async function upsertRecord(db, record, source) {
   const useGoogle = argv.source === 'all' || argv.source === 'google';
   const useYelp   = argv.source === 'all' || argv.source === 'yelp';
 
-  let totalInserted = 0, totalUpdated = 0, totalSkipped = 0;
+  let totalInserted = 0, totalSkipped = 0;
 
   console.log(`\n🔄 Justice Gavel Legal Provider Refresh`);
   console.log(`   Cities: ${cities.join(', ')}`);

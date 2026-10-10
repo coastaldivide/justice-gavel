@@ -1,7 +1,6 @@
 // PUBLIC ROUTE: Stripe webhook — authenticated by signature, not by JWT
 // Do NOT add authRequired here.
 
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * webhooks/stripe.js — Stripe payment event handler
  *
@@ -18,14 +17,14 @@ import { validate, schemas } from '../../validation/schemas.js';
 
 import logger from '../../utils/logger.js';
 import { Router } from 'express';
-import { constructWebhookEvent, calcStripeFee } from '../../payments/stripe.js';
+import { constructWebhookEvent } from '../../payments/stripe.js';
 import { deliverLead } from '../../services/outbound_bot.js';
 import { getDb } from '../../db/index.js';
 
 const router = Router();
 
 // Raw body needed for signature verification
-router.post('/', async (req, res) => {
+router.post('/', (req, res) => {
   const sig = req.headers['stripe-signature'];
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
     logger.warn('[webhook:stripe] STRIPE_WEBHOOK_SECRET not set — rejecting unverifiable webhook');
@@ -145,7 +144,6 @@ async function handlePaymentIntentSucceeded(pi) {
 
 // ── invoice.payment_succeeded ────────────────────────────────────────────────
 async function handleInvoiceSucceeded(invoice) {
-  const stripeCusId = invoice.customer;
   const subId       = invoice.subscription;
   if (!subId) return;
 

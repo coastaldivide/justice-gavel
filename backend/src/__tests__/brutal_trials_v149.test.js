@@ -5,13 +5,10 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 //         + recap(5) + caldav(5) + practice-mgmt(4) + checkins(4)
 //         + integrations/index(4) + bot_admin(4) + contracts/review(4)
 
-import { jest } from '@jest/globals';
-let encrypt, decrypt, BUSINESS_CONSTANTS;
+let encrypt, decrypt;
 beforeAll(async () => {
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const rh=await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS=rh.BUSINESS_CONSTANTS;
 });
 
 describe('BND_B. billing/bondsman.js — 6 Routes → ≥15', () => {

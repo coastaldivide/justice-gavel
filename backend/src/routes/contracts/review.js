@@ -1,6 +1,5 @@
 import { requireAi } from '../../utils/ai.js';
-import { safeJson } from '../../utils/routeHelpers.js';
-import { validate, schemas } from '../../validation/schemas.js';
+import { safeJson, err400, err404, safeInt, sanitizeStr, truncateStr } from '../../utils/routeHelpers.js';
 /**
  * contracts/review.js — Contract review and redline
  *
@@ -12,19 +11,14 @@ import { validate, schemas } from '../../validation/schemas.js';
  * POST /api/contracts/:id/negotiate — generate negotiation strategy
  */
 
-import { err400, err404, err500, safeInt,
-         sanitizeStr, truncateStr }          from '../../utils/routeHelpers.js';
 import { Router }                             from 'express';
 import { authRequired }                       from '../../middleware/auth.js';
 import { getDb }                              from '../../db/index.js';
-import { perUserAiLimit }                     from '../../middleware/sharedAiLimiter.js';
-import { makeUserLimiter }                    from '../../middleware/sharedAiLimiter.js';
+import { perUserAiLimit, makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 import { enqueueAIJob as enqueue }                            from '../../services/aiQueue.js';
 import logger                                 from '../../utils/logger.js';
 import multer                                 from 'multer';
-import { ensureTables, reviewContract,
-         redlineContracts, negotiationPoints,
-         hasContractPro }                     from './_helpers.js';
+import { reviewContract, redlineContracts, negotiationPoints } from './_helpers.js';
 
 const router = Router();
 
@@ -48,7 +42,6 @@ const upload = multer({
 router.post('/review', authRequired, requireAi, reviewLimiter, perUserAiLimit,
   upload.single('contract'), async (req, res) => {
   try {
-    const db = await getDb();
     // Accept file upload OR raw text body
     let contractText = '';
     let filename     = null;
@@ -144,7 +137,6 @@ router.post('/redline', authRequired, requireAi, redlineLimiter, perUserAiLimit,
   upload.fields([{ name: 'original', maxCount: 1 }, { name: 'revised', maxCount: 1 }]),
   async (req, res) => {
   try {
-    const db = await getDb();
     // Accept files OR text bodies
     let originalText = '';
     let revisedText  = '';
@@ -210,7 +202,7 @@ router.get('/redline/:id', authRequired, async (req, res) => {
     if (!row) return err404(res, 'Redline not found.');
     try { row.changes = safeJson(row.changes); } catch { row.changes = []; }
     res.json(row);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load redline.' });
   }
 });
@@ -233,7 +225,7 @@ router.post('/:id/negotiate', authRequired, requireAi, negotiateLimiter, perUser
     const _prios  = Array.isArray(priorities) ? priorities.slice(0,10).map(p => sanitizeStr(String(p),100)) : [];
 
     const jobId = await enqueue('contract_negotiate', async () => {
-      return negotiationPoints(_draft, _party, _prios);
+      return await negotiationPoints(_draft, _party, _prios);
     });
 
     res.json({ jobId, status: 'pending', async: true,

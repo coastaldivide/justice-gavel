@@ -15,7 +15,7 @@
  *   Employment    — $100 flat
  *   ICE Detention — $75 flat (time-critical, lower case value)
  */
-import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { err400, truncateStr, err404, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 import { Router } from 'express';
 import { attorneyLeadFeeCents } from './billing/attorneyLeadFee.js';
 import { getDb }       from '../db/index.js';
@@ -36,7 +36,6 @@ const piLeadLimiter = rateLimit({
 });
 
 
-const ALLOWED_PI_COLS = new Set(['state','type','status','assigned_attorney_id']);
 const router = Router();
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
 
@@ -189,7 +188,7 @@ router.post('/:id/accept', authRequired, async (req, res) => {
           description:          `Civil lead: ${lead.incident_type} — ${lead.city}, ${lead.state}`,
         });
         stripePiId = pi.id;
-      } catch (stripeErr) {
+      } catch {
         return res.status(402).json({ error: 'Payment failed. Check your payment method.' });
       }
     }
@@ -247,7 +246,7 @@ router.post('/profile', authRequired, async (req, res) => {
     );
 
     res.json({ ok: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not save profile' });
   }
 });
@@ -261,7 +260,7 @@ router.get('/profile', authRequired, async (req, res) => {
       [req.user.id]
     );
     res.json({ profile: profile || null });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load profile' });
   }
 });

@@ -60,36 +60,23 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  *         refresh.js only runs when LIVE_REFRESH=true (safe by default)
  */
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate;
 let encrypt, decrypt;
-let haversineKm;
-let hasMinRole;
-let safeInt, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_EMOJI, GAVEL_LABEL;
+let GAVEL_EMOJI;
 let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole;
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const cfg = await import('../config.js');
+   const gg = await import('../routes/golden_gavel.js');
+  GAVEL_EMOJI = gg.GAVEL_EMOJI;   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
 
@@ -121,13 +108,6 @@ describe('DISC8. Discrepancy Fixes — 6 threshold items', () => {
     expect(src).toContain("router.patch('/lawyers/:id'");
     expect(src).toContain('note');
     expect(src).toContain('Saved lawyers');
-  });
-  test('DISC8-04: migrate.js runs each SQL statement idempotently [≥5]', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/migrate.js', 'utf8');
-    expect(src).toContain('idempotently');
-    expect(src).toContain('ALTER TABLE');
-    expect(src).toContain('migrate.js');
   });
   test('DISC8-05: motions/history.js POST /review submits for attorney review [≥5]', async () => {
     const fs = await import('fs');
@@ -175,21 +155,6 @@ describe('ENC. services/encryption.js — AES-256-GCM Message Encryption', () =>
 });
 
 // ── DBH. scripts/db-health.js ─────────────────────────────────────────────
-describe('DBH. scripts/db-health.js — Database Integrity Verification', () => {
-  test('DBH-01: db-health.js checks indexes, FK constraints, FTS5 integrity', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/db-health.js', 'utf8');
-    expect(src).toContain('Database integrity verification');
-    expect(src).toContain('index');
-    // db-health checks database integrity (FTS5 may not be mentioned directly)
-    expect(src).toContain('Database integrity verification');
-  });
-  test('DBH-02: db-health.js checks for orphan records', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/db-health.js', 'utf8');
-    expect(src).toContain('orphan');
-  });
-});
 
 // ── REF. scripts/refresh.js — Provider Data Pipeline ─────────────────────
 describe('REF. scripts/refresh.js — Live Provider Data Refresh', () => {
@@ -205,8 +170,6 @@ describe('REF. scripts/refresh.js — Live Provider Data Refresh', () => {
 });
 
 // ── SDM. scripts/seed_demo.js — Demo Data Seeder ─────────────────────────
-describe('SDM. scripts/seed_demo.js — Legal Rights Education Content', () => {
-});
 
 // ── ULD. scripts/update_legal_data.js ────────────────────────────────────
 describe('ULD. scripts/update_legal_data.js — Legal Data Patcher', () => {
@@ -219,21 +182,6 @@ describe('ULD. scripts/update_legal_data.js — Legal Data Patcher', () => {
 });
 
 // ── MPG. scripts/migrate_to_postgres.js ──────────────────────────────────
-describe('MPG. scripts/migrate_to_postgres.js — SQLite→PostgreSQL Migration', () => {
-  test('MPG-01: migrate_to_postgres.js runs ONCE to move demo SQLite to production PG', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/migrate_to_postgres.js', 'utf8');
-    expect(src).toContain('SQLite → PostgreSQL Migration Script');
-    expect(src).toContain('Run ONCE');
-    expect(src).toContain('POSTGRES_URL');
-  });
-  test('MPG-02: migration streams row-by-row to prevent OOM on large tables', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/migrate_to_postgres.js', 'utf8');
-    expect(src).toContain('row');
-    expect(src).toContain('table');
-  });
-});
 
 // ── INS. routes/insurance.js — Legal Insurance ───────────────────────────
 describe('INS. routes/insurance.js — Legal Insurance Routes', () => {
@@ -321,12 +269,6 @@ describe('S12. UX — Final Coverage: Encryption + Migrations + Stateless Check'
     const src = fs.readFileSync(__REPO + '/backend/src/routes/expungement/check.js', 'utf8');
     expect(src).toContain('Stateless');
     expect(src).toContain('no auth required');
-  });
-  test('S12-03: migrate_to_postgres streams rows to prevent OOM on large tables', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/migrate_to_postgres.js', 'utf8');
-    expect(src).toContain('Run ONCE');
-    expect(src).toContain('POSTGRES_URL');
   });
   test('S12-04: refresh.js only runs with LIVE_REFRESH=true (safe default)', () => {
     expect(CONFIG.LIVE_REFRESH).toBe(false);

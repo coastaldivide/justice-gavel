@@ -22,26 +22,23 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 //   SEC10:   Security edge cases × 10 (100K random inputs)
 //   ENHANCEMENTS: Documented suggestions for improvement
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
-let computeOutcomeEstimate, encrypt, decrypt, haversineKm, haversineMiles, bboxFromLatLng;
-let safeInt, safeFloat, validCoords, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
+let computeAllSignals, computeDiversionRecommendations;
+let computeOutcomeEstimate, encrypt, decrypt, haversineKm, bboxFromLatLng;
+let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe  = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
   const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm; haversineMiles = geo.haversineMiles; bboxFromLatLng = geo.bboxFromLatLng;
+  haversineKm = geo.haversineKm;  bboxFromLatLng = geo.bboxFromLatLng;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; safeFloat = rh.safeFloat; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
+  safeInt = rh.safeInt;    BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');
@@ -437,7 +434,6 @@ describe('ENH. Enhancement Findings — Documented Improvements', () => {
     // SUGGESTION: Add EmptyState to LawyersScreen, CasesScreen, MotionLibraryScreen
     // when no results returned — prevents confusing blank screens
     const fs = await import('fs');
-    const corpus_path = __REPO + '/backend/src/__tests__';
     // Document finding — test verifies the screens that DO have empty states
     const chatSrc = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx','utf8');
     expect(chatSrc).toContain('empty') || expect(chatSrc.length).toBeGreaterThan(1000);
@@ -459,7 +455,6 @@ describe('ENH. Enhancement Findings — Documented Improvements', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/HagueContactScreen.tsx','utf8');
     const withRole = (src.match(/accessibilityRole="button"/g) || []).length;
-    const total    = (src.match(/<TouchableOpacity/g) || []).length;
     // Currently 50%+ have role — documenting for improvement
     expect(withRole).toBeGreaterThanOrEqual(5);
     // Known finding: some TouchableOpacity lack accessibilityRole

@@ -3,7 +3,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // JUSTICE GAVEL — BRUTAL TRIALS v148
 // TARGET: firm_verticals (43 routes <15) — push all to ≥15
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');

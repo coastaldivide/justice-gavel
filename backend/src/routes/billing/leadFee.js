@@ -24,7 +24,7 @@ export const BONDSMAN_LEAD_FEE_CENTS = 10000;
  * Lead fee for an arrest record. Accepts (and ignores) the arrest/bail amount
  * so call sites cannot accidentally reintroduce bail-scaled pricing.
  */
-// eslint-disable-next-line no-unused-vars
+ 
 export function bondsmanLeadFeeCents(_arrestOrBail) {
   return BONDSMAN_LEAD_FEE_CENTS;
 }

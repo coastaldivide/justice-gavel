@@ -18,14 +18,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * Plus gap checks, endpoint verification, regression, and 100,000 scenarios.
  */
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeDiversionRecommendations, computeOutcomeEstimate;
 let encrypt, decrypt;
 let haversineKm;
-let validCoords, BUSINESS_CONSTANTS;
+let BUSINESS_CONSTANTS;
 let GAVEL_EMOJI, GAVEL_LABEL;
-let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
@@ -38,11 +36,9 @@ beforeAll(async () => {
   const geo = await import('../services/geolink.js');
   haversineKm = geo.haversineKm;
   const rh = await import('../utils/routeHelpers.js');
-  validCoords = rh.validCoords; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
+ BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const gg = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o = {}) => ({

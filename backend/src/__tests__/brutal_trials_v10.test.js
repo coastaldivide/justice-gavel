@@ -34,30 +34,24 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Backend pure-JS imports ──────────────────────────────────────────────────
-let computeAllSignals, computeMotionRecommendations;
-let computeOutcomeEstimate;
+let computeAllSignals;
 let encrypt, decrypt;
 let normalizePhone, parseIntent;
-let haversineKm, bboxFromLatLng, googleMapsLink;
-let hasMinRole, roleLevel, ROLE_HIERARCHY, PERMISSIONS;
-let safeInt, safeFloat, sanitizeStr, ownsResource, escapeLike, stripHtml, buildWhere, buildOrderBy;
+let haversineKm;
+let hasMinRole, ROLE_HIERARCHY;
+let buildWhere;
 let GAVEL_LEVELS;
 let MOTION_TYPES;
-let CONTRACT_TYPES, getContractsByCategory;
+let CONTRACT_TYPES;
 let PRECEDENT_REGISTRY, REGISTRY_VERSION, REGISTRY_DATE;
-let checkStaleness, getRelevantEntries;
 let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals            = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
 
-  const est = await import('../analytics/outcomeEstimator.js');
-  computeOutcomeEstimate = est.computeOutcomeEstimate;
 
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt;
@@ -69,24 +63,13 @@ beforeAll(async () => {
 
   const geo = await import('../services/geolink.js');
   haversineKm    = geo.haversineKm;
-  bboxFromLatLng = geo.bboxFromLatLng;
-  googleMapsLink = geo.googleMapsLink;
 
   const rbac = await import('../middleware/rbac.js');
   hasMinRole     = rbac.hasMinRole;
-  roleLevel      = rbac.roleLevel;
   ROLE_HIERARCHY = rbac.ROLE_HIERARCHY;
-  PERMISSIONS    = rbac.PERMISSIONS;
 
   const rh = await import('../utils/routeHelpers.js');
-  safeInt     = rh.safeInt;
-  safeFloat   = rh.safeFloat;
-  sanitizeStr = rh.sanitizeStr;
-  ownsResource= rh.ownsResource;
-  escapeLike  = rh.escapeLike;
-  stripHtml   = rh.stripHtml;
   buildWhere  = rh.buildWhere;
-  buildOrderBy= rh.buildOrderBy;
 
   const gg = await import('../routes/golden_gavel.js');
   GAVEL_LEVELS = gg.GAVEL_LEVELS;
@@ -96,16 +79,12 @@ beforeAll(async () => {
 
   const ctypes = await import('../routes/contracts/_contract_types.js');
   CONTRACT_TYPES       = ctypes.CONTRACT_TYPES;
-  getContractsByCategory = ctypes.getContractsByCategory;
 
   const reg = await import('../analytics/precedentRegistry.js');
   PRECEDENT_REGISTRY = reg.PRECEDENT_REGISTRY;
   REGISTRY_VERSION   = reg.REGISTRY_VERSION;
   REGISTRY_DATE      = reg.REGISTRY_DATE;
 
-  const mon = await import('../analytics/precedentMonitor.js');
-  checkStaleness      = mon.checkStaleness;
-  getRelevantEntries  = mon.getRelevantEntries;
 
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
@@ -503,7 +482,7 @@ describe('6. Integration PROVIDERS — OAuth Catalog', () => {
       imanage: { features: ['document_sync', 'matter_sync', 'search'] },
       clio:    { features: ['matter_sync', 'time_entry', 'billing'] },
     };
-    for (const [name, p] of Object.entries(PROVIDERS)) {
+    for (const [, p] of Object.entries(PROVIDERS)) {
       expect(Array.isArray(p.features)).toBe(true);
       expect(p.features.length).toBeGreaterThan(0);
       for (const f of p.features) {
@@ -814,7 +793,7 @@ describe('11. Signal Engine — White Collar & PI Deep Cases', () => {
 
   test('11-03: white collar — all signals are boolean', () => {
     const s = computeAllSignals(wc({ evidence_score: 60 }));
-    for (const [key, val] of Object.entries(s.vertical_signals)) {
+    for (const [, val] of Object.entries(s.vertical_signals)) {
       expect(typeof val).toBe('boolean');
     }
   });

@@ -1,4 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/matters.js — Matter management (multi-user, RBAC, audit-logged)
  *
@@ -25,19 +24,13 @@ import { validate, schemas } from '../validation/schemas.js';
  * GET    /api/matters/workload         — per-attorney open matter count (firm_admin+)
  */
 
-import { err400, err403, err404, err500, safeInt,
-         sanitizeStr, truncateStr }          from '../utils/routeHelpers.js';
+import { err400, err403, err404, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
 import { Router }                             from 'express';
-import { createCourtDateEvent, updateCourtDateEvent } from '../services/googleCalendar.js';
 import { authRequired }                       from '../middleware/auth.js';
 import { getDb }                              from '../db/index.js';
 import { makeUserLimiter }                    from '../middleware/sharedAiLimiter.js';
 import logger                                 from '../utils/logger.js';
-import {
-  requirePermission, requireMatterAccess,
-  loadMatterRole, hasMinRole, ROLES,
-  loadFirmContext
-}                                             from '../middleware/rbac.js';
+import { requireMatterAccess, hasMinRole, loadFirmContext } from '../middleware/rbac.js';
 import { auditLog, writeAuditLog }            from '../middleware/audit.js';
 import { dispatchWebhookEvent }               from './webhooks/outbound.js';
 import {
@@ -95,7 +88,6 @@ router.post('/', authRequired, matterLimiter, auditLog('matter', 'create'), asyn
     if (!title?.trim()) return err400(res, 'title is required');
 
     const firm_id = await getUserFirmId(db, req.user.id);
-    const firmRole = firm_id ? await getUserFirmRole(db, req.user.id, firm_id) : null;
 
     // Anyone authenticated can create a matter; firm role gates team features
     const r = await db.run(
@@ -223,10 +215,10 @@ router.get('/', authRequired, async (req, res) => {
     const db = await getDb();
     const { status, practice_group, priority, limit = 20, offset = 0 } = req.query;
     const firm_id = await getUserFirmId(db, req.user.id);
+    const firmRole = firm_id ? await getUserFirmRole(db, req.user.id, firm_id) : null;
 
     // Build conditions: user sees matters they're on the team of, OR all firm matters if admin
     let sql, params;
-    const firmRole = firm_id ? await getUserFirmRole(db, req.user.id, firm_id) : null;
     const isAdmin  = ['super_admin', 'firm_admin'].includes(req.user?.role) ||
                      ['firm_admin', 'partner'].includes(firmRole);
 
@@ -794,12 +786,10 @@ router.delete('/:id/events/:eid', authRequired, requireMatterAccess('id', 'assoc
 
 // ─── MATTER VERSION HISTORY ────────────────────────────────────────────────
 // GET /api/matters/:id/history — full audit trail of field changes
-router.get('/:id/history', authRequired, async (req, res) => {
+router.get('/:id/history', authRequired, requireMatterAccess('id', 'viewer'), async (req, res) => {
     const idVal = safeInt(req.params.id);
     if (!idVal) return res.status(400).json({ error: 'Invalid id' });
   try {
-    const db      = await getDb();
-    const firmId  = await getFirmId(db, req.user.id);
     const limit   = Math.min(safeInt(req.query.limit, 50), 200);
     const offset  = safeInt(req.query.offset, 0);
     const history = await getMatterVersionHistory(safeInt(req.params.id), { limit, offset });
@@ -869,7 +859,7 @@ router.patch('/:id/status', authRequired, async (req, res) => {
     ).catch(() => {});
 
     return res.json({ id, old_status: matter.status, new_status, updated: true });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not update status' });
   }
 });

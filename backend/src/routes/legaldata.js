@@ -1,10 +1,9 @@
-import { safeJson } from '../utils/routeHelpers.js';
+import { safeJson, safeInt } from '../utils/routeHelpers.js';
 /**
  * GET /api/legaldata/:type
  * Serves structured legal reference data by state.
  * Types: bail, dui, drugs, sol, federal-courts, victim-comp, clinics, bar-complaints
  */
-import { err400, escapeLike, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, parsePagination} from '../utils/routeHelpers.js';
 import { Router } from "express";
 import { getDb }   from "../db/index.js";
 import { authRequired } from '../middleware/auth.js';
@@ -30,7 +29,6 @@ router.get("/:type", authRequired, async (req, res) => {
   try {
     const { type } = req.params;
     const { state, q } = req.query;
-    const qSafe = q ? escapeLike(String(q).trim(), 100) : null;
     const cfg = TABLE_MAP[type];
     if (!cfg) return res.status(404).json({ error: "Unknown data type" });
 
@@ -58,9 +56,7 @@ router.get("/:type", authRequired, async (req, res) => {
 
     // Parse JSON columns
     const parsed = rows.map(r => {
-      if (r.covers) {
-        try { r.covers = safeJson(r.covers); } catch {}
-      }
+      if (r.covers) r.covers = safeJson(r.covers);
       return r;
     });
 

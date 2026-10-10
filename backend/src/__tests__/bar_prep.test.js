@@ -21,8 +21,7 @@ import jwt            from 'jsonwebtoken';
 import { sm2Next, predictRetention } from '../utils/sm2.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CRIM_LAW  = path.resolve(__dirname, '../../../../criminal_law_qs.json');  // /tmp/criminal_law_qs.json
-const CON_LAW   = path.resolve(__dirname, '../../../../con_law_qs.json');
+path.resolve(__dirname, '../../../../criminal_law_qs.json');  // /tmp/criminal_law_qs.json
 
 const SECRET    = process.env.JWT_SECRET || 'test-secret-bar-prep';
 const VALID_TIERS = new Set(['legal_radar','advisor','legal_pro','esquire']);
@@ -102,7 +101,7 @@ describe('Question Bank — Seed Integrity', () => {
 
     test('all required fields present', () => {
       const required = ['category','difficulty','stem','option_a','option_b','option_c','option_d','correct_answer','explanation','rule'];
-      for (const [i, q] of crimLaw.entries()) {
+      for (const [, q] of crimLaw.entries()) {
         for (const field of required) {
           expect(q[field]).toBeTruthy();
         }
@@ -114,7 +113,7 @@ describe('Question Bank — Seed Integrity', () => {
     test('answer distribution is balanced (no letter > 40%)', () => {
       const counts = { A:0, B:0, C:0, D:0 };
       for (const q of crimLaw) counts[q.correct_answer]++;
-      for (const [letter, n] of Object.entries(counts)) {
+      for (const [, n] of Object.entries(counts)) {
         expect(n).toBeGreaterThanOrEqual(25);
         expect(n).toBeLessThanOrEqual(40);
       }

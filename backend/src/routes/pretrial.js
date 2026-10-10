@@ -1,5 +1,4 @@
 // Input size guard — applied globally to all POST handlers in this file
-const MAX_BODY = 50000;
 /**
  * routes/pretrial.js — Pretrial Services Agency (B2G) API
  *
@@ -109,7 +108,7 @@ router.get('/compliance-report/:defendant_id', authRequired, staffOnly, asyncRou
  * Court officer dashboard: all defendants under monitoring
  */
 router.get('/dashboard', authRequired, staffOnly, asyncRoute(async (req, res) => {
-  const { agency_id, risk_level, date } = req.query;
+  const { agency_id, date } = req.query;
 
   const defendants = await req.db.all(`
     SELECT

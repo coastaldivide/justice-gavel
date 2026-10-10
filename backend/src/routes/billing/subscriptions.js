@@ -1,13 +1,10 @@
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * billing/subscriptions.js — Attorney & general subscriptions — subscribe, view, cancel, refund
  * Part of the billing module. Mounted at /api/billing by billing/index.js
  */
 import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer }
   from './_shared.js';
-import { err400, BUSINESS_CONSTANTS, err401, err403, err404, err409,
-         err422, err500, err502,
-         safeInt, safeFloat, sanitizeStr, validateEmail, withTransaction} from '../../utils/routeHelpers.js';
+import { err400, err404 } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
@@ -107,7 +104,7 @@ router.get('/subscription', authRequired, async (req, res) => {
 
     const tiers = Object.entries(TIERS).map(([key, val]) => ({ key, ...val }));
     res.json({ subscription: sub || null, tiers, mock: !LIVE });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -132,7 +129,7 @@ router.post('/cancel', billingLimiter, authRequired, async (req, res) => {
     );
 
     res.json({ success: true, message: 'Subscription cancelled.' });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });

@@ -27,7 +27,6 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Shared utilities ─────────────────────────────────────────────────────────
 const today     = () => new Date().toISOString().slice(0, 10);
@@ -40,15 +39,8 @@ const nextMonth = () => {
 // Customer trials test business logic, data structures, and lifecycle rules
 // using the same utilities the routes use — without HTTP overhead.
 
-let writeMatterVersion, checkLegalHold, applyLegalHold, releaseLegalHold;
-let computeAllSignals;
 
 beforeAll(async () => {
-  const ret = await import('../services/retention.js');
-  writeMatterVersion = ret.writeMatterVersion;
-  checkLegalHold     = ret.checkLegalHold;
-  applyLegalHold     = ret.applyLegalHold;
-  releaseLegalHold   = ret.releaseLegalHold;
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -264,7 +256,6 @@ describe('CUSTOMER TRIAL B — Priya (family member, shared case access)', () =>
   });
 
   test('B-4: Invalid share token returns no data', () => {
-    const invalidToken = 'INVALID_TOKEN_XXXX';
     // Should resolve to null — no case data returned
     const result = null; // what the route returns for bad token
     expect(result).toBeNull();
@@ -663,7 +654,7 @@ describe('CROSS-CUSTOMER: Bail and Legal Education (free-tier access)', () => {
       appointed_counsel: 'If you cannot afford an attorney, one will be appointed for you.',
       waiver_warning: 'Anything you say can and will be used against you in a court of law.',
     };
-    for (const [key, text] of Object.entries(rights)) {
+    for (const [, text] of Object.entries(rights)) {
       expect(text.length).toBeGreaterThan(20);
       expect(text.endsWith('.')).toBe(true);
     }
@@ -706,12 +697,6 @@ describe('INTEGRATION: Consumer case fields drive platform signals', () => {
   test('INT-1: Consumer case fields map to attorney matter signal inputs', () => {
     // When a consumer links their case to an attorney matter, the consumer
     // case fields should inform the signal engine
-    const consumerCase = {
-      status:          'Open',
-      state:           'TN',
-      next_court_date: nextMonth(),
-      notes:           'Non-citizen client, plea offer pending',
-    };
     // The attorney creates a matter from this case:
     const matter = {
       vertical:          'criminal_defense',

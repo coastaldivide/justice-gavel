@@ -6,7 +6,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  *
  * Targets areas NOT covered by previous test runs:
  *
- *   1.  sendgrid.js     — email builders, parseEmailIntent
  *   3.  outbound_bot.js — processOptOut, expireOldPaymentLinks, TCPA compliance
  *   4.  contentRefresh  — getContentAge table whitelist, refreshLegalContent
  *   5.  retention.js    — checkAccountInactivity thresholds
@@ -29,11 +28,8 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Imports ─────────────────────────────────────────────────────────────────
-let buildEmailHtml, buildPasswordResetEmail, buildWelcomeEmail,
-    buildReceiptEmail, parseEmailIntent;
 let normalizePhone, parseIntent;
 // contentRefresh, retention, outbound_bot — tested via pure logic model (no DB import)
 let checkStaleness;
@@ -43,13 +39,6 @@ let computeAllSignals;
 let encrypt, decrypt, isEncrypted;
 
 beforeAll(async () => {
-  const sg  = await import('../services/sendgrid.js');
-  buildEmailHtml         = sg.buildEmailHtml;
-  buildPasswordResetEmail= sg.buildPasswordResetEmail;
-  buildWelcomeEmail      = sg.buildWelcomeEmail;
-  buildReceiptEmail      = sg.buildReceiptEmail;
-  parseEmailIntent       = sg.parseEmailIntent;
-
   // SMS helpers live in utils/sanitize.js (the old twilio service module is gone)
   const tw = await import('../utils/sanitize.js');
   normalizePhone = tw.normalizePhone;
@@ -89,100 +78,6 @@ const base = (vertical, o = {}) => ({
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. SENDGRID — email builders and intent parser
 // ═══════════════════════════════════════════════════════════════════════════
-describe('1. SendGrid Email Builders', () => {
-
-  test('1-01: buildEmailHtml returns a string containing HTML structure', () => {
-    const html = buildEmailHtml('Test Subject', '<p>Body</p>', 'Preheader text');
-    expect(typeof html).toBe('string');
-    expect(html).toContain('<p>Body</p>');
-    expect(html).toContain('Preheader text');
-  });
-
-  test('1-02: buildEmailHtml without preheader returns valid HTML', () => {
-    const html = buildEmailHtml('Subject', '<p>Body</p>', null);
-    expect(typeof html).toBe('string');
-    expect(html).toContain('<p>Body</p>');
-    expect(html).not.toContain('undefined');
-  });
-
-  test('1-03: buildPasswordResetEmail contains reset URL', () => {
-    const url  = 'https://app.justicegavel.com/reset?token=abc123';
-    const html = buildPasswordResetEmail(url);
-    expect(html).toContain(url);
-    expect(html.toLowerCase()).toContain('reset');
-  });
-
-  test('1-04: buildPasswordResetEmail handles missing URL gracefully', () => {
-    expect(() => buildPasswordResetEmail(null)).not.toThrow();
-    expect(() => buildPasswordResetEmail('')).not.toThrow();
-  });
-
-  test('1-05: buildWelcomeEmail personalises with display name', () => {
-    const html = buildWelcomeEmail('Maria Santos');
-    expect(html).toContain('Maria Santos');
-  });
-
-  test('1-06: buildWelcomeEmail falls back gracefully when no name', () => {
-    const html = buildWelcomeEmail(null);
-    expect(typeof html).toBe('string');
-    expect(html).not.toContain('null');
-    expect(html).not.toContain('undefined');
-  });
-
-  test('1-07: buildReceiptEmail returns HTML with amount', () => {
-    const html = buildReceiptEmail({ amount_cents: 4999, plan: 'Pro', invoice_id: 'inv_123' });
-    expect(typeof html).toBe('string');
-    expect(html).toContain('<!DOCTYPE html>');  // returns full HTML email
-  });
-
-  test('1-08: buildReceiptEmail handles $0 amount', () => {
-    expect(() => buildReceiptEmail({ amount_cents: 0, plan: 'Free', invoice_id: 'inv_0' })).not.toThrow();
-  });
-
-  // parseEmailIntent
-  test('1-09: parseEmailIntent — accept keywords', () => {
-    const accepts = ['yes', 'ok', 'accept', 'confirm', 'interested', 'call me', 'want more'];
-    for (const kw of accepts) {
-      expect(parseEmailIntent(kw)).toBe('accept');
-      expect(parseEmailIntent(kw.toUpperCase())).toBe('accept'); // case-insensitive
-    }
-  });
-
-  test('1-10: parseEmailIntent — reject keywords', () => {
-    // Note: 'not interested' matches 'interested' in accept branch first
-    // Use keywords that don't conflict with accept patterns
-    const rejects = ['no', 'stop', 'unsubscribe', 'remove', 'opt-out'];
-    for (const kw of rejects) {
-      expect(parseEmailIntent(kw)).toBe('reject');
-    }
-  });
-
-  test('1-11: parseEmailIntent — maybe keywords', () => {
-    const maybes = ['maybe', 'perhaps', 'not sure', 'need more info', 'tell me more', 'what is'];
-    for (const kw of maybes) {
-      expect(parseEmailIntent(kw)).toBe('maybe');
-    }
-  });
-
-  test('1-12: parseEmailIntent — null/empty/unknown returns null', () => {
-    expect(parseEmailIntent(null)).toBeNull();
-    expect(parseEmailIntent('')).toBeNull();
-    expect(parseEmailIntent('gibberish random text')).toBeNull();
-  });
-
-  test('1-13: parseEmailIntent — 1000 random strings never throw', () => {
-    const samples = ['YES', 'No thanks', 'STOP IT', 'call me back maybe', '1-800-555', ''];
-    for (let i = 0; i < 1000; i++) {
-      const s = samples[i % samples.length] + i;
-      expect(() => parseEmailIntent(s)).not.toThrow();
-    }
-  });
-
-  test('1-14: XSS in buildEmailHtml body does not crash', () => {
-    const xss = '<script>alert("xss")</script>';
-    expect(() => buildEmailHtml('Subj', xss, null)).not.toThrow();
-  });
-});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════════
@@ -344,7 +239,7 @@ describe('4. Content Refresh — Whitelist & Debounce Model', () => {
 
   test('4-03: refresh debounce — prevents double-run within interval', () => {
     const INTERVAL = 60 * 60 * 1000; // 1 hour
-    let lastRun = Date.now();
+    const lastRun = Date.now();
     const shouldSkip = (now) => now - lastRun < INTERVAL;
     expect(shouldSkip(Date.now())).toBe(true);
     expect(shouldSkip(lastRun + INTERVAL + 1)).toBe(false); // after interval
@@ -576,7 +471,6 @@ describe('7. Outcome Estimator — Shape, Bias, Range', () => {
     const strong = computeOutcomeEstimate(matter('criminal_defense', { evidence_score: 90 }));
     // If there are analyses, strong evidence should produce at least as high a midpoint
     if (weak.analyses.length > 0 && strong.analyses.length > 0) {
-      const weakMid   = (weak.analyses[0].estimated_range.low   + weak.analyses[0].estimated_range.high)   / 2;
       const strongMid = (strong.analyses[0].estimated_range.low + strong.analyses[0].estimated_range.high) / 2;
       // Both should be valid rates — the relationship depends on vertical/entry semantics
       expect(strongMid).toBeGreaterThanOrEqual(0);
@@ -848,7 +742,7 @@ describe('10. Attorney Route — Business Logic Model', () => {
 
   test('10-08: STATE_BAR_LOOKUP — all URLs start with https://', async () => {
     const { STATE_BAR_LOOKUP } = await import('../routes/attorney/_helpers.js');
-    for (const [state, url] of Object.entries(STATE_BAR_LOOKUP)) {
+    for (const [, url] of Object.entries(STATE_BAR_LOOKUP)) {
       expect(url).toMatch(/^https:\/\//);
     }
   });
@@ -865,7 +759,7 @@ describe('11. Billing Route — Business Logic Model', () => {
   test('11-04: TIERS subscription tiers are correctly structured', async () => {
     const { TIERS } = await import('../routes/billing/_shared.js');
     expect(TIERS).toBeDefined();
-    for (const [key, tier] of Object.entries(TIERS)) {
+    for (const [, tier] of Object.entries(TIERS)) {
       // Tiers use monthly_cents, not price_cents
       const priceCents = tier.price_cents ?? tier.monthly_cents ?? tier.amount_cents ?? 0;
       expect(priceCents).toBeGreaterThanOrEqual(0);
@@ -922,8 +816,6 @@ describe('12. Outbound Webhook — Subscription Model & Security', () => {
   });
 
   test('12-02: HMAC signature model — timestamp.payload format', () => {
-    const crypto = { createHmac: (alg, key) => ({ update: (d) => ({ digest: (enc) => 'fakehash' }) }) };
-    const secret    = 'test-secret-key';
     const timestamp = Date.now();
     const payload   = JSON.stringify({ event: 'matter.created', matter_id: 1 });
     const data      = `${timestamp}.${payload}`;
@@ -941,7 +833,7 @@ describe('12. Outbound Webhook — Subscription Model & Security', () => {
       { url: 'ftp://example.com/webhook',   valid: false },
       { url: 'javascript:alert(1)',          valid: false },
     ];
-    for (const { url, valid } of urls) {
+    for (const { url } of urls) {
       const isHttps = url.startsWith('https://');
       const isDev   = !LIVE;
       const allowed = isHttps || (isDev && url.startsWith('http://'));
@@ -1025,12 +917,6 @@ describe('13. Security — SSRF, Traversal, Injection, Payload Size', () => {
     }
   });
 
-  test('13-04: oversized email intent string handled gracefully', () => {
-    const huge = 'yes '.repeat(100000);  // 400KB string
-    expect(() => parseEmailIntent(huge)).not.toThrow();
-    const result = parseEmailIntent(huge);
-    expect(['accept','reject','maybe',null]).toContain(result);
-  });
 
   test('13-05: XSS payload in parseIntent returns unknown (not executed)', () => {
     const xss = '<script>alert(document.cookie)</script>';
@@ -1181,7 +1067,7 @@ describe('15. API Response Contract', () => {
   test('15-07: BUSINESS_CONSTANTS are defined and positive', async () => {
     const { BUSINESS_CONSTANTS } = await import('../utils/routeHelpers.js');
     expect(BUSINESS_CONSTANTS).toBeDefined();
-    for (const [key, val] of Object.entries(BUSINESS_CONSTANTS)) {
+    for (const [, val] of Object.entries(BUSINESS_CONSTANTS)) {
       if (typeof val === 'number') {
         expect(val).toBeGreaterThan(0);
       }
@@ -1222,7 +1108,7 @@ describe('16. UX/UI — Screen Contract Model', () => {
     expect(isEmpty(null)).toBe(false);
   });
 
-  test('16-03: pull-to-refresh model — setRefreshing(false) always called in finally', () => {
+  test('16-03: pull-to-refresh model — setRefreshing(false) always called in finally', async () => {
     // The PTR pattern: setRefreshing(true) → api call → finally setRefreshing(false)
     let refreshing = false;
     const simulatePTR = async (apiCall) => {
@@ -1233,10 +1119,10 @@ describe('16. UX/UI — Screen Contract Model', () => {
         refreshing = false;
       }
     };
-    // Success case
-    simulatePTR(async () => []);
-    // (async) just verify structure is correct
-    expect(typeof simulatePTR).toBe('function');
+    await simulatePTR(async () => []);                       // success
+    expect(refreshing).toBe(false);
+    await expect(simulatePTR(async () => { throw new Error('network'); })).rejects.toThrow('network');
+    expect(refreshing).toBe(false);                          // failure still clears the spinner
   });
 
   test('16-04: accessibilityLabel contract — all interactive elements need labels', () => {
@@ -1281,7 +1167,7 @@ describe('16. UX/UI — Screen Contract Model', () => {
       bgCard:       'light-card-token',
     };
     // All tokens are defined
-    for (const [token, ref] of Object.entries(TOKEN_MAP)) {
+    for (const [token] of Object.entries(TOKEN_MAP)) {
       expect(typeof token).toBe('string');
       expect(token.length).toBeGreaterThan(0);
     }
@@ -1442,7 +1328,6 @@ describe('17. Regression — Prior Fixes Confirmed', () => {
 describe('18. New Brutal Trials — Untested Combinations', () => {
 
   const daysFrom = (n) => { const d = new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
-  const daysAgo  = (n) => daysFrom(-n);
 
   test('18-01: 10,000 haversine distance computations — all valid', () => {
     for (let i = 0; i < 10000; i++) {
@@ -1464,14 +1349,6 @@ describe('18. New Brutal Trials — Untested Combinations', () => {
     }
   });
 
-  test('18-03: 5000 parseEmailIntent calls — all return valid or null', () => {
-    const VALID = new Set(['accept','reject','maybe',null]);
-    const samples = ['yes','no','maybe','stop','perhaps','I want more','not sure','gibberish XYZ',null,''];
-    for (let i = 0; i < 5000; i++) {
-      const result = parseEmailIntent(samples[i % samples.length]);
-      expect(VALID.has(result)).toBe(true);
-    }
-  });
 
   test('18-04: 5000 normalizePhone calls — output is always null or E.164', () => {
     const e164 = /^\+[1-9]\d{1,14}$/;

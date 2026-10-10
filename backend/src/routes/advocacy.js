@@ -22,12 +22,12 @@ const statsLimiter = makeUserLimiter({ windowMs: 60_000, max: 10, message: 'Stat
 
 // Provider data lives in the main Postgres database.
 async function getProvidersDb() {
-  return getDb();
+  return await getDb();
 }
 
 // ── GET /api/advocacy/stats ───────────────────────────────────────────────────
-router.get('/', async (req, res, next) => next());
-router.get('/', async (req, res) => res.json({
+router.get('/', (req, res, next) => next());
+router.get('/', (req, res) => res.json({
               stats: {
                 laws_tracked: 1247,
                 states_covered: 50,

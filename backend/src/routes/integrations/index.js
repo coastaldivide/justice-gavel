@@ -1,4 +1,3 @@
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * routes/integrations/index.js — Integration Connection Management Hub
  *
@@ -19,14 +18,13 @@ import { validate, schemas } from '../../validation/schemas.js';
 import { Router }          from 'express';
 import { getDb }           from '../../db/index.js';
 import { authRequired }    from '../../middleware/auth.js';
-import { requireFirmRole, loadFirmContext } from '../../middleware/rbac.js';
+import { requireFirmRole } from '../../middleware/rbac.js';
 import { writeAuditLog }   from '../../middleware/audit.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
-import { err400, err403, err404, safeInt,
-         sanitizeStr, truncateStr }         from '../../utils/routeHelpers.js';
+import { err400, err404, safeInt, sanitizeStr } from '../../utils/routeHelpers.js';
 import logger              from '../../utils/logger.js';
 import { CONFIG }           from '../../config.js';
-import { createHmac, randomBytes }          from 'crypto';
+import { randomBytes } from 'crypto';
 
 const router     = Router();
 const connLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 60, message: 'Integration limit reached.' });
@@ -121,9 +119,6 @@ function maskToken(token) {
 }
 
 /** Generate a webhook signing secret */
-function generateSecret() {
-  return randomBytes(32).toString('hex');
-}
 
 /** Check if OAuth token needs refresh (within 5 min of expiry) */
 function tokenNeedsRefresh(expiresAt) {
@@ -305,7 +300,7 @@ router.get('/:provider', authRequired, requireFirmRole('partner'), async (req, r
       features:          PROVIDERS[provider].features,
       recent_syncs:      recentSync,
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load integration.' });
   }
 });
@@ -571,7 +566,7 @@ router.delete('/:provider', authRequired, requireFirmRole('firm_admin'), async (
     });
 
     res.json({ ok: true, provider, status: 'revoked' });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not revoke integration.' });
   }
 });
@@ -663,7 +658,7 @@ router.get('/:provider/sync/log', authRequired, requireFirmRole('partner'), asyn
     );
 
     res.json({ provider, log, count: log.length });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load sync log.' });
   }
 });

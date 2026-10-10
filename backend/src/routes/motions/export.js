@@ -1,7 +1,5 @@
-import { requireAi } from '../../utils/ai.js';
-import { safeJson } from '../../utils/routeHelpers.js';
-import { CLAUDE_MODEL } from '../../utils/ai.js';
-import { validate, schemas } from '../../validation/schemas.js';
+import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
+import { safeJson, err400, err404, safeInt, sanitizeStr, truncateStr, API_URLS } from '../../utils/routeHelpers.js';
 /**
  * routes/motions/export.js — PDF Motion Export
  *
@@ -26,9 +24,6 @@ import { authRequired }    from '../../middleware/auth.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 import { enqueueAIJob as enqueue }         from '../../services/aiQueue.js';
 import { MOTION_PDF_SYSTEM_PROMPT } from '../chat/_prompts.js';
-import { err400, err403, err404, safeInt,
-         sanitizeStr, truncateStr }         from '../../utils/routeHelpers.js';
-import { API_URLS }        from '../../utils/routeHelpers.js';
 import logger              from '../../utils/logger.js';
 
 const router      = Router();
@@ -82,8 +77,7 @@ router.get('/:id/pdf', authRequired, pdfLimiter, async (req, res) => {
     );
     if (!motion) return err404(res, 'Motion not found.');
 
-    let fields = {};
-    try { fields = safeJson(motion.case_fields, {}); } catch {}
+    const fields = safeJson(motion.case_fields, {});
 
     const meta = {
       motion_type:    motion.motion_type,
@@ -154,8 +148,7 @@ OUTPUT ONLY the cleaned motion text. No explanatory notes. No markdown.`;
       const data    = await resp.json();
       const refined = data.content?.[0]?.text || motion.draft;
 
-      let fields = {};
-      try { fields = safeJson(motion.case_fields, {}); } catch {}
+      const fields = safeJson(motion.case_fields, {});
 
       const meta = {
         motion_type:    motion.motion_type,
@@ -257,7 +250,6 @@ function generateMotionPDF(motionText, meta = {}) {
     // ── Body Text ─────────────────────────────────────────────────────────────
     // Parse the motion text into sections
     const lines = (motionText || '').split('\n');
-    let inSection = false;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -281,7 +273,6 @@ function generateMotionPDF(motionText, meta = {}) {
         doc.font(BOLD_FONT).fontSize(BODY_SIZE).fillColor('#000000')
            .text(trimmed, LEFT, doc.y, { width: WIDTH, lineGap: LINE_GAP });
         doc.moveDown(0.3);
-        inSection = true;
       } else if (trimmed.startsWith('[') && (trimmed.includes('ATTORNEY TO VERIFY') || trimmed.includes('CITATION NEEDED'))) {
         // Highlight verification flags
         doc.font('Helvetica-Oblique').fontSize(10).fillColor('#B71C1C')

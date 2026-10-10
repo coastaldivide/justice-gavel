@@ -7,12 +7,10 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * Any regression will fail the build before it reaches production.
  */
 
-import fs                from 'fs';
-import path              from 'path';
-import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
+import path, { dirname } from 'path';
+import { readFileSync, readdirSync, existsSync } from 'fs';
 
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = dirname(__filename);
 

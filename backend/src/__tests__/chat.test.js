@@ -61,7 +61,7 @@ async function buildApp(db) {
     const isDefender = req.body?.mode === 'defender'; // Bug fix: early declaration
     try {
       // Validation
-      const { message='', sessionId, mode='consumer', user_state=null } = req.body||{};
+      const { message='', sessionId } = req.body||{};
       if (!message.trim()) return res.status(400).json({ error:'message is required' });
       if (!sessionId)       return res.status(400).json({ error:'sessionId is required' });
       if (message.length > 4000) return res.status(400).json({ error:'Message too long.' });

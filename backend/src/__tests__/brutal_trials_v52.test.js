@@ -45,36 +45,21 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  *       show cached data immediately, then fetch fresh in background
  */
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate;
 let encrypt, decrypt;
-let haversineKm;
-let hasMinRole;
-let safeInt, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_EMOJI, GAVEL_LABEL;
 let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole;
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const cfg = await import('../config.js');
+   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
 
@@ -151,7 +136,6 @@ describe('SEC. Security Patterns — Verified', () => {
 // ── DB. ON DELETE Cascade Patterns ────────────────────────────────────────
 describe('DB. ON DELETE CASCADE + SET NULL Patterns', () => {
   test('DB-03: users table is the root — most other tables cascade from it', async () => {
-    const fs = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     // users table is referenced most
     const userRefs = [...src.matchAll(/REFERENCES users\(id\)/g)].length;
@@ -192,7 +176,6 @@ describe('TRAN. Phase Transitions — All Documented', () => {
     expect(src).toContain("'law_check' | 'ready' | 'recording' | 'processing' | 'done' | 'error'");
     expect(src).toContain("/interrogation/recording-law");
     // law_check is initial phase — checks consent law before recording
-    const typeDecl = src.includes("Phase = 'law_check' | 'ready'");
     expect(src).toContain("Phase");
     expect(src).toContain("'law_check'");
   });

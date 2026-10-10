@@ -7,17 +7,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 3G: BailCalculatorScreen | 3H: probation | 3I: HelpNow
 // 3J: forum seed | 3K: specialty courts | 3L: arrest seed
 
-import { jest } from '@jest/globals';
-let computeAllSignals, encrypt, decrypt, BUSINESS_CONSTANTS, CONFIG;
+let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi=await import('../routes/matter_intelligence.js');
   computeAllSignals=mi.computeAllSignals;
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const rh=await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS=rh.BUSINESS_CONSTANTS;
-  const cfg=await import('../config.js');
-  CONFIG=cfg.CONFIG;
 });
 const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
   vulnerability_level:'moderate',time_pressure:'standard',
@@ -134,7 +129,6 @@ describe('TODO_3J. Forum Seed Posts', () => {
 // ── 3K: Specialty courts ────────────────────────────────────────────────
 describe('TODO_3K. Specialty Courts — Veterans, Drug, Mental Health', () => {
   test('3K-02: specialty_courts table exists in db schema', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('specialty_courts');
     expect(db).toContain('veteran');

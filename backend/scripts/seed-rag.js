@@ -189,7 +189,7 @@ async function seedDocuments() {
       failed++;
     }
     // Rate limit: Supabase embedding endpoint has limits
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => { setTimeout(resolve, 500); });
   }
   
   console.log(`\nSeeding complete: ${success} indexed, ${failed} failed`);

@@ -1,4 +1,3 @@
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * routes/integrations/practice-mgmt.js — Practice Management System Integration
  *
@@ -20,8 +19,7 @@ import { getDb }      from '../../db/index.js';
 import { authRequired } from '../../middleware/auth.js';
 import { requireFirmRole, loadFirmContext } from '../../middleware/rbac.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
-import { err400, err403, err404, safeInt,
-         sanitizeStr, truncateStr }         from '../../utils/routeHelpers.js';
+import { err404, safeInt } from '../../utils/routeHelpers.js';
 import logger         from '../../utils/logger.js';
 import { refreshTokenIfNeeded } from './index.js';
 
@@ -238,7 +236,7 @@ async function pushInvoice(conn, invoice, entries = []) {
 
 // ── Main sync dispatcher ──────────────────────────────────────────────────────
 
-export async function syncPracticeMgmt({ db, conn, ctx, entity_type, direction, matter_id, user }) {
+export async function syncPracticeMgmt({ db, conn, ctx, entity_type, direction, matter_id }) {
   try {
     conn = await refreshTokenIfNeeded(db, conn);
     let matter = null, sent = 0, received = 0;
@@ -344,7 +342,7 @@ router.get('/matters', authRequired, requireFirmRole('associate'), pmLimiter, as
     const limit  = Math.min(safeInt(req.query.limit || '20'), 100);
     const result = await pullMatters(conn, limit);
     res.json({ provider: conn.provider, ...result });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not pull matters.' });
   }
 });
@@ -368,7 +366,7 @@ router.post('/matters/:matterId/push', authRequired, requireFirmRole('associate'
     const externalId = req.body?.external_id || null;
     const result = await pushMatter(conn, matter, externalId);
     res.json({ provider: conn.provider, matter_id: matterId, ...result });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not push matter.' });
   }
 });
@@ -387,7 +385,7 @@ router.get('/contacts', authRequired, requireFirmRole('associate'), pmLimiter, a
 
     const result = await pullContacts(conn, Math.min(safeInt(req.query.limit || '50'), 100));
     res.json({ provider: conn.provider, ...result });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not pull contacts.' });
   }
 });
@@ -419,7 +417,7 @@ router.post('/time/:matterId/push', authRequired, requireFirmRole('associate'), 
     }
 
     res.json({ provider: conn.provider, matter_id: matterId, pushed: results.length, results });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not push time entries.' });
   }
 });
@@ -443,7 +441,7 @@ router.post('/invoices/:invoiceId/push', authRequired, requireFirmRole('partner'
     const entries = await db.all('SELECT id, matter_id, user_id, aba_code, description, minutes, rate_cents, date, created_at FROM time_entries WHERE invoice_id=?', [invoiceId]).catch(() => []);
     const result  = await pushInvoice(conn, invoice, entries);
     res.json({ provider: conn.provider, invoice_id: invoiceId, ...result });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not push invoice.' });
   }
 });

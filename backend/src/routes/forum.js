@@ -1,4 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/forum.js — Community Forum (basic CRUD)
  *
@@ -15,7 +14,7 @@ import { safeInt, sanitizeStr, LIMITS } from '../utils/routeHelpers.js';
 import logger          from '../utils/logger.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 
-const routeLimiter = makeUserLimiter(20, 60_000);
+const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 20 });
 const router = Router();
 
 // GET /api/forum — list posts

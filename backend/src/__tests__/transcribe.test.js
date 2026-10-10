@@ -133,7 +133,7 @@ describe('POST /transcribe/note — auth enforcement', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 describe('POST /transcribe/note — subscription gate', () => {
   const noSubApp  = buildApp({ hasSub: false });
-  const hasSubApp = buildApp({ hasSub: true });
+  buildApp({ hasSub: true });
 
   test('402 when user has no subscription', async () => {
     const r = await request(noSubApp)

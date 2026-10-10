@@ -45,25 +45,6 @@ describe('DB layer — adapter pattern', () => {
   });
 });
 
-describe('DB layer — migration runner', () => {
-  test('migration script exists', () => {
-    const fp = resolve(DB_DIR, 'migrate.js');
-    expect(existsSync(fp)).toBe(true);
-  });
-
-  test('migration runner reads SQL files', () => {
-    const fp = resolve(DB_DIR, 'migrate.js');
-    const c  = readFileSync(fp, 'utf-8');
-    expect(c).toMatch(/\.sql|readFile|migration/i);
-  });
-
-  test('retired migration runner runs no DDL (schema is supabase/migrations)', () => {
-    const fp = resolve(DB_DIR, 'migrate.js');
-    const c  = readFileSync(fp, 'utf-8');
-    expect(c).toMatch(/supabase\/migrations/);
-    expect(c).not.toMatch(/CREATE TABLE/i);
-  });
-});
 
 describe('DB layer — query safety', () => {
   test('SQL injection pattern verified by api_contract.test.js', () => {

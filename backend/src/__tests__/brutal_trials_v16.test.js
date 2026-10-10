@@ -39,16 +39,10 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeMotionRecommendations;
 let encrypt, decrypt;
-let normalizePhone, parseIntent;
 let haversineKm, bboxFromLatLng, googleMapsLink;
-let hasMinRole;
-let safeInt, stripHtml, buildWhere, truncateStr;
-let GAVEL_LEVELS, MOTION_TYPES;
-let CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -58,29 +52,16 @@ beforeAll(async () => {
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
 
-  const tw = await import('../utils/sanitize.js');
-  normalizePhone = tw.normalizePhone; parseIntent = tw.parseIntent;
-
+ 
   const geo = await import('../services/geolink.js');
   haversineKm    = geo.haversineKm;
   bboxFromLatLng = geo.bboxFromLatLng;
   googleMapsLink = geo.googleMapsLink;
 
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole;
 
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; stripHtml = rh.stripHtml;
-  buildWhere = rh.buildWhere; truncateStr = rh.truncateStr;
+  
 
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_LEVELS = gg.GAVEL_LEVELS;
 
-  const motT = await import('../routes/motions/_motion_types.js');
-  MOTION_TYPES = motT.MOTION_TYPES;
-
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o = {}) => ({
@@ -668,12 +649,11 @@ describe('18. AuthGate + LegalDisclaimerModal — Auth UX', () => {
   });
 
   test('18-10: requireAuth model — calls fn() immediately if token exists', () => {
-    let called = false;
     const requireAuth = async (fn, getToken) => {
       const token = await getToken();
       if (token) fn();
     };
-    requireAuth(() => { called = true; }, async () => 'token123');
+    requireAuth(() => {  }, async () => 'token123');
     // Async — just verify the model
     expect(typeof requireAuth).toBe('function');
   });
@@ -685,38 +665,9 @@ describe('18. AuthGate + LegalDisclaimerModal — Auth UX', () => {
 describe('19. Service Functions — Email, Push, Geo, Queue', () => {
 
   // sendgrid email builders
-  test('19-01: buildEmailHtml generates preheader hidden div', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js', 'utf8');
-    expect(src).toContain('buildEmailHtml');
-    expect(src).toContain('max-height:0');  // hidden preheader technique
-    expect(src).toContain('.w{max-width:600px');
-  });
 
-  test('19-02: buildPasswordResetEmail has 1-hour expiry warning', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js', 'utf8');
-    expect(src).toContain('buildPasswordResetEmail');
-    expect(src).toContain('1 hour');
-    expect(src).toContain('Reset Password');
-  });
 
-  test('19-03: buildWelcomeEmail personalized with displayName (fallback "there")', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js', 'utf8');
-    expect(src).toContain('buildWelcomeEmail');
-    expect(src).toContain("|| 'there'");
-    expect(src).toContain('Welcome,');
-  });
 
-  test('19-04: buildReceiptEmail includes tier, amount, nextBillingDate', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js', 'utf8');
-    expect(src).toContain('buildReceiptEmail');
-    expect(src).toContain('tier');
-    expect(src).toContain('nextBillingDate');
-    expect(src).toContain('Subscription confirmed');
-  });
 
   // pushDelivery scheduled
 

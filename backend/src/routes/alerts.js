@@ -11,7 +11,8 @@
  *     That is an identified gap that will be addressed before public launch.
  *
  * RETENTION LIMIT: 90 days from booking date (configurable per jurisdiction).
- * TAKEDOWN PATH: DELETE /alerts/record/:recordId (see below).
+ * TAKEDOWN PATH: DELETE /alerts/record/:recordId files a request that staff
+ *                review (GET/POST /alerts/takedown-requests…); see below.
  * JURISDICTION BLOCKLIST: CA, IL, GA, OR (commercial republication restrictions).
  *
  * States restricting commercial mugshot/arrest-record republication:
@@ -34,20 +35,20 @@
 Mitigations implemented:
  *   1. Alerts are delivered ONLY to the defendant or their authorized contacts
  *   2. No public display of arrest records — user-scoped only
- *   3. Immediate removal on request (see DELETE /alerts/record route)
+ *   3. Removal on request after staff review (see DELETE /alerts/record route)
  *   4. Alerts contain court-record data only, not mugshot images
  *
  * Remaining risk: Some CA/IL provisions may apply regardless of display scope.
  * Get legal opinion before enabling public-facing arrest alerts.
  */
-import { validate, schemas } from '../validation/schemas.js';
-import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { err400, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
+import { isStaff, requireStaff } from '../utils/staff.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { Router }       from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
 import { googleMapsLink } from '../services/geolink.js';
-const sendSms = async () => null;
+const sendSms = () => Promise.resolve(null);
 import { sendEmail } from '../services/email.js';
 import logger from '../utils/logger.js';
 
@@ -154,76 +155,197 @@ router.get('/history', authRequired, async (req, res) => {
       [req.user.id]
     ).catch(() => []);
     return res.json({ alerts, count: alerts.length });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not fetch alert history' });
   }
 });
 
 
-// ── DELETE /alerts/record/:recordId — arrest record takedown request ────────
+// ── Arrest-record takedowns and dispositions ─────────────────────────────────
 // Required by: CA Civil Code §1798.91.1, and general privacy best practice.
-// A named individual can request removal of their arrest record from our systems.
-// This route logs the request for manual review and suppresses the record from
-// future alerts. The source booking data is public record; we manage our copy.
-router.delete('/record/:recordId', authRequired, async (req, res) => {
+//
+// Who may do what (arrest records have no link to a user account, so a
+// signed-in user cannot be verified as the person named in a record):
+//   • Any signed-in user may REQUEST a takedown. The request is stored in
+//     arrest_takedown_log as 'pending' with the reason and a contact; the record
+//     stays as it is until staff review it.
+//   • Staff (users.role admin / super_admin / staff, or users.is_admin = 1 —
+//     read from the database, not the token) approve or reject requests, may
+//     suppress a record directly, and record case dispositions.
+// Previously any signed-in user could suppress, or set the disposition of, any
+// arrest record by id with no check at all.
+//
+// Suppressed rows are hidden from every user view and automated job by
+// utils/arrestVisibility.js. The source booking data is public record kept by
+// county courts; we manage only our copy.
+const TAKEDOWN_RELATIONSHIPS = ['self', 'family', 'attorney', 'other'];
+const takedownLimiter = makeUserLimiter({ windowMs: 60 * 60 * 1000, max: 5, message: 'Too many takedown requests. Please try again later.' });
+const staffOnly = requireStaff(getDb);
+
+async function suppressRecord(db, recordId, reason) {
+  return await db.run(
+    `UPDATE arrest_records SET suppressed = 1, suppressed_at = NOW(), suppressed_reason = ?
+      WHERE id = ?`,
+    [reason, recordId]
+  );
+}
+
+// ── DELETE /alerts/record/:recordId — takedown request (staff: immediate) ──────
+router.delete('/record/:recordId', authRequired, takedownLimiter, async (req, res) => {
+  const recordId = safeInt(req.params.recordId);
+  if (!recordId) return err400(res, 'Invalid record id');
+  const body         = req.body || {};
+  const reason       = sanitizeStr(String(body.reason || ''), 2000);
+  const contact      = sanitizeStr(String(body.contact || req.user.email || req.user.phone || ''), 200) || null;
+  const relationship = TAKEDOWN_RELATIONSHIPS.includes(body.relationship) ? body.relationship : 'self';
+
   try {
     const db = await getDb();
-    const recordId = safeInt(req.params.recordId);
-
-    // Verify the requestor matches the record or is an admin
-    const record = await db.get(
-      `SELECT id, full_name, booking_date, charges FROM arrests WHERE id = ?`,
-      [recordId]
-    );
+    const record = await db.get('SELECT id FROM arrest_records WHERE id = ?', [recordId]);
     if (!record) return res.status(404).json({ error: 'Record not found' });
 
-    // Suppress from future alerts and API responses
-    await db.run(
-      `UPDATE arrests SET suppressed = 1, suppressed_at = NOW(),
-                          suppressed_reason = 'takedown_request'
-         WHERE id = ?`,
-      [recordId]
-    );
+    if (await isStaff(db, req.user)) {
+      await suppressRecord(db, recordId, 'takedown_request');
+      await db.run(
+        `INSERT INTO arrest_takedown_log
+           (arrest_id, record_id, requested_by, requested_at, status, reason, requestor, relationship,
+            reviewed_by, reviewed_at, taken_down_by, taken_down_at)
+         VALUES (?, ?, ?, NOW(), 'approved', ?, ?, ?, ?, NOW(), ?, NOW())`,
+        [recordId, recordId, req.user.id, reason || 'staff takedown', contact, relationship, req.user.id, req.user.id]
+      );
+      logger.info({ msg: '[alerts/takedown] record suppressed by staff', recordId, userId: req.user.id });
+      return res.json({
+        success: true,
+        status:  'suppressed',
+        message: 'Record suppressed from Justice Gavel systems. Source booking records are maintained by county courts and are outside our control.',
+      });
+    }
 
-    // Log for compliance audit trail
-    await db.run(
-      `INSERT INTO arrest_takedown_log
-         (arrest_id, requested_by, requested_at, status)
-       VALUES (?, ?, NOW(), 'suppressed')`,
+    if (!reason.trim()) {
+      return err400(res, 'Please tell us why this record should be removed (reason).');
+    }
+
+    const existing = await db.get(
+      `SELECT id FROM arrest_takedown_log WHERE arrest_id = ? AND requested_by = ? AND status = 'pending'`,
       [recordId, req.user.id]
-    ).catch(() => {}); // Non-fatal if table doesn't exist yet
+    );
+    if (existing) {
+      return res.status(202).json({ success: true, status: 'pending', request_id: existing.id, duplicate: true,
+        message: 'Your takedown request is already pending review.' });
+    }
 
-    logger.info({ msg: '[arrests] takedown request processed', recordId, userId: req.user.id });
-    res.json({
-      success: true,
-      message: 'Record suppressed from Justice Gavel systems. Source booking records are maintained by county courts and are outside our control.',
+    const r = await db.run(
+      `INSERT INTO arrest_takedown_log
+         (arrest_id, record_id, requested_by, requested_at, status, reason, requestor, relationship)
+       VALUES (?, ?, ?, NOW(), 'pending', ?, ?, ?)`,
+      [recordId, recordId, req.user.id, reason, contact, relationship]
+    );
+    logger.info({ msg: '[alerts/takedown] request filed for review', recordId, userId: req.user.id });
+    return res.status(202).json({
+      success:    true,
+      status:     'pending',
+      request_id: r.lastID || null,
+      message:    'Takedown request received. Our team reviews requests and will contact you; the record stays visible until the request is approved.',
     });
   } catch (e) {
     logger.error('[alerts/takedown]', e?.message);
-    res.status(500).json({ error: 'Could not process takedown request' });
+    return res.status(500).json({ error: 'Could not process takedown request' });
   }
 });
 
-// ── GET /alerts/record/:recordId/disposition — check for case updates ───────
-// Arrest data without disposition = false-light defamation risk.
-// This route allows users to add a disposition update to their own record.
-router.post('/record/:recordId/disposition', authRequired, async (req, res) => {
+// ── GET /alerts/takedown-requests — staff review queue ─────────────────────────
+router.get('/takedown-requests', authRequired, staffOnly, async (req, res) => {
+  const status = ['pending', 'approved', 'rejected'].includes(req.query.status) ? req.query.status : 'pending';
+  try {
+    const db = await getDb();
+    const rows = await db.all(
+      `SELECT t.id, t.arrest_id, t.requested_by, t.requested_at, t.status, t.reason, t.requestor,
+              t.relationship, t.reviewed_by, t.reviewed_at, t.review_note,
+              a.name AS record_name, a.county, a.state, a.booking_date, a.suppressed
+         FROM arrest_takedown_log t
+         LEFT JOIN arrest_records a ON a.id = t.arrest_id
+        WHERE t.status = ?
+        ORDER BY t.requested_at ASC
+        LIMIT 200`,
+      [status]
+    );
+    return res.json({ status, requests: rows, count: rows.length });
+  } catch (e) {
+    logger.error('[alerts/takedown-requests]', e?.message);
+    return res.status(500).json({ error: 'Could not load takedown requests' });
+  }
+});
+
+// ── POST /alerts/takedown-requests/:id/approve | /reject — staff decision ──────
+async function decideTakedown(req, res, decision) {
+  const id = safeInt(req.params.id);
+  if (!id) return err400(res, 'Invalid request id');
+  const note = sanitizeStr(String(req.body?.note || ''), 1000) || null;
+  try {
+    const db  = await getDb();
+    const row = await db.get('SELECT id, arrest_id, status FROM arrest_takedown_log WHERE id = ?', [id]);
+    if (!row) return res.status(404).json({ error: 'Takedown request not found' });
+    if (row.status !== 'pending') return res.status(409).json({ error: `Request already ${row.status}`, status: row.status });
+
+    // Claim the request first so two reviewers cannot both act on it.
+    const claim = await db.run(
+      `UPDATE arrest_takedown_log
+          SET status = ?, reviewed_by = ?, reviewed_at = NOW(), review_note = ?,
+              taken_down_by = ?, taken_down_at = CASE WHEN ? = 'approved' THEN NOW() ELSE NULL END
+        WHERE id = ? AND status = 'pending'`,
+      [decision, req.user.id, note, decision === 'approved' ? req.user.id : null, decision, id]
+    );
+    if (!claim?.changes) return res.status(409).json({ error: 'Request was already reviewed' });
+
+    if (decision === 'approved') {
+      try {
+        await suppressRecord(db, row.arrest_id, 'takedown_request');
+      } catch (e) {
+        await db.run(
+          `UPDATE arrest_takedown_log SET status = 'pending', reviewed_by = NULL, reviewed_at = NULL,
+                  taken_down_by = NULL, taken_down_at = NULL WHERE id = ?`, [id]
+        ).catch(() => {});   // best effort: the original error is reported below
+        throw e;
+      }
+    }
+    logger.info({ msg: `[alerts/takedown] request ${decision}`, requestId: id, arrestId: row.arrest_id, reviewer: req.user.id });
+    return res.json({ success: true, request_id: id, arrest_id: row.arrest_id, status: decision });
+  } catch (e) {
+    logger.error('[alerts/takedown-decide]', e?.message);
+    return res.status(500).json({ error: 'Could not record the decision' });
+  }
+}
+router.post('/takedown-requests/:id/approve', authRequired, staffOnly, (req, res) => decideTakedown(req, res, 'approved'));
+router.post('/takedown-requests/:id/reject',  authRequired, staffOnly, (req, res) => decideTakedown(req, res, 'rejected'));
+
+// ── POST /alerts/record/:recordId/disposition — staff record the case outcome ──
+// Arrest data without disposition = false-light defamation risk. Users who want
+// a disposition corrected file a takedown/correction request (reason) above.
+router.post('/record/:recordId/disposition', authRequired, staffOnly, async (req, res) => {
   const { disposition, disposition_date, court } = req.body || {};
   const VALID = ['dismissed','acquitted','not_guilty','expunged','sealed','charges_reduced','convicted','pending'];
   if (!VALID.includes(disposition)) {
     return res.status(400).json({ error: 'Invalid disposition', valid: VALID });
   }
+  if (disposition_date != null && disposition_date !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(String(disposition_date))) {
+    return err400(res, 'disposition_date must be YYYY-MM-DD');
+  }
+  const recordId = safeInt(req.params.recordId);
+  if (!recordId) return err400(res, 'Invalid record id');
   try {
     const db = await getDb();
-    await db.run(
-      `UPDATE arrests SET disposition = ?, disposition_date = ?, disposition_court = ?,
-                          disposition_added_at = NOW()
+    const r = await db.run(
+      `UPDATE arrest_records SET disposition = ?, disposition_date = ?, disposition_court = ?,
+                                 disposition_added_at = NOW()
          WHERE id = ?`,
-      [disposition, disposition_date, court, safeInt(req.params.recordId)]
+      [disposition, disposition_date || null, court ? sanitizeStr(String(court), 200) : null, recordId]
     );
-    res.json({ success: true, message: 'Disposition recorded. This will appear alongside your arrest record.' });
+    if (!r?.changes) return res.status(404).json({ error: 'Record not found' });
+    logger.info({ msg: '[alerts/disposition] recorded', recordId, disposition, userId: req.user.id });
+    return res.json({ success: true, message: 'Disposition recorded. This will appear alongside the arrest record.' });
   } catch (e) {
-    res.status(500).json({ error: 'Could not record disposition' });
+    logger.error('[alerts/disposition]', e?.message);
+    return res.status(500).json({ error: 'Could not record disposition' });
   }
 });
 

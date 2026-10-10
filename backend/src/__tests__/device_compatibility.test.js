@@ -54,7 +54,7 @@ describe('Date handling — timezone-safe', () => {
 describe('String safety — special characters in legal names', () => {
   const normalize = (s) => s.toLowerCase()
     .replace(/\s*&\s*/g, ' and ')
-    .replace(/[.,\-\'"/#!$%^*;:{}=`~()]/g, ' ')
+    .replace(/[.,\-'"/#!$%^*;:{}=`~()]/g, ' ')
     .replace(/\s+/g, ' ').trim();
 
   test("O'Brien & Associates normalizes correctly", () => {

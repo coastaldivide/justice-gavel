@@ -28,21 +28,15 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * 14.  Mass influx — 100,000 new scenarios
  */
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate;
 let encrypt, decrypt;
 let haversineKm;
-let hasMinRole;
-let safeInt, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_LEVELS, GAVEL_EMOJI, GAVEL_LABEL;
-let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
@@ -50,15 +44,6 @@ beforeAll(async () => {
   encrypt = enc.encrypt; decrypt = enc.decrypt;
   const geo = await import('../services/geolink.js');
   haversineKm = geo.haversineKm;
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole;
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg = await import('../routes/golden_gavel.js');
-  GAVEL_LEVELS = gg.GAVEL_LEVELS; GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o = {}) => ({
@@ -201,10 +186,12 @@ describe('4. bail.js — GPS Bail Agent Search', () => {
     const h = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
     expect(h.length).toBeGreaterThanOrEqual(1);
   });
-  test('4-03: bail.js uses authRequired middleware', async () => {
+  test('4-03: bail.js calculators are public but rate-limited', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/bail.js', 'utf8');
-    expect(src).toContain('authRequired');
+    // authRequired was imported but never applied; the public calculators rely on apiLimiter
+    expect(src).not.toContain('authRequired');
+    expect(src).toMatch(/router\.get\('\/estimate-total', apiLimiter/);
   });
   test('4-04: haversine radius constant = 6371 km', () => {
     const R = 6371;
@@ -220,29 +207,13 @@ describe('4. bail.js — GPS Bail Agent Search', () => {
   });
 });
 
-// ── 5. sendgrid parseEmailIntent ──────────────────────────────────────────
-describe('5. sendgrid.js — parseEmailIntent (6th export)', () => {
-  test('5-01: sendgrid exports parseEmailIntent', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js', 'utf8');
-    expect(src).toContain('parseEmailIntent');
-  });
-  test('5-02: sendgrid has exactly 6 exported functions', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js', 'utf8');
-    const fns = src.match(/export\s+(?:async\s+)?function\s+\w+/g) || [];
-    expect(fns.length).toBe(6);
-  });
-  test('5-03: sendgrid SENDGRID_FROM is alerts@justicegavel.app', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js', 'utf8');
-    expect(src).toContain('alerts@justicegavel.app');
-  });
-  test("5-04: sendgrid mock mode returns { mock: true }", async () => {
-    const { sendEmail, SENDGRID_LIVE } = await import('../services/sendgrid.js');
-    expect(SENDGRID_LIVE).toBe(false);                      // SendGrid retired; shim → services/email.js (Resend)
+// ── 5. email service log-only mode ──────────────────────────────────────────
+describe('5. email.js — log-only mode', () => {
+  test("5-04: email log-only mode returns { mock: true }", async () => {
+    const { sendEmail, emailLive } = await import('../services/email.js');   // Resend (SendGrid retired)
     const saved = process.env.RESEND_API_KEY; delete process.env.RESEND_API_KEY;
     try {
+      expect(emailLive()).toBe(false);
       const r = await sendEmail({ to: 'test@example.com', subject: 'Hello', text: 'Hi' });
       expect(r.mock).toBe(true);                            // logged, not sent, without RESEND_API_KEY
     } finally { if (saved !== undefined) process.env.RESEND_API_KEY = saved; }

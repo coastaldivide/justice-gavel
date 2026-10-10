@@ -6,7 +6,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // offlineCache try/catch chain verification.
 // Every check in this suite was NEVER done in any prior pass.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -98,12 +97,6 @@ describe('BEH. Behavioral Simulation — All Screen Categories', () => {
     const routes = [...src.matchAll(/router\.(get|post|put|delete|patch)\s*\(['"]/g)];
     expect(routes.length).toBeGreaterThanOrEqual(50);
     // Every async handler has try/catch
-    const asyncHandlers = [...src.matchAll(/async\s*\(req,\s*res\)\s*=>\s*\{/g)];
-    let noTry = 0;
-    for(const m of asyncHandlers){
-      const body = src.slice(m.index, m.index+600);
-      if(!'try {'.includes(body) && !body.includes('try {') && !body.includes('try{')) noTry++;
-    }
     // Most handlers are in try/catch — firm_verticals is our largest file
     expect(src).toContain('try {');
     expect(src).toContain('} catch');
@@ -181,7 +174,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

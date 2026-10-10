@@ -1,4 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
 import { cacheFor } from '../utils/cache.js';
 import { asyncRoute } from '../utils/routeHelpers.js';
 /**
@@ -9,7 +8,6 @@ import { asyncRoute } from '../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { apiLimiter }   from '../middleware/rateLimiters.js';
-import { getDb }        from '../db/index.js';
 
 const router = Router();
 
@@ -50,7 +48,7 @@ router.get('/rights', cacheFor(24 * 60), apiLimiter, (req, res) => {
 });
 
 // ── POST /immigration/asylum-clock — calculate days on asylum clock ────────
-router.post('/asylum-clock', authRequired, asyncRoute(async (req, res) => {
+router.post('/asylum-clock', authRequired, asyncRoute((req, res) => {
   const { filing_date, case_type = 'defensive' } = req.body;
   if (!filing_date) return res.status(400).json({ error: 'filing_date required (YYYY-MM-DD)' });
 
@@ -72,6 +70,7 @@ router.post('/asylum-clock', authRequired, asyncRoute(async (req, res) => {
     note: 'The asylum clock may be paused by delays caused by the applicant. Verify status with your attorney.',
     disclaimer: 'Not legal advice. Consult an immigration attorney.',
   });
+}));
 
 // ── POST /immigration/voluntary-departure — deadline calculator ───────────
 router.post('/voluntary-departure', authRequired, (req, res) => {
@@ -114,5 +113,4 @@ router.get('/relief-options', cacheFor(60), apiLimiter, (req, res) => {
   });
 });
 
-}));
 export default router;

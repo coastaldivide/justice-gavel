@@ -5,8 +5,7 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 //              conflicts(7) + analytics(6) + push(6) + billing/bondsman(6)
 // Routes → ≥20 hits
 
-import { jest } from '@jest/globals';
-let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt, BUSINESS_CONSTANTS;
+let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
 beforeAll(async () => {
   const mi=await import('../routes/matter_intelligence.js');
   computeAllSignals=mi.computeAllSignals;
@@ -14,8 +13,6 @@ beforeAll(async () => {
   computeOutcomeEstimate=oe.computeOutcomeEstimate;
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const rh=await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS=rh.BUSINESS_CONSTANTS;
 });
 const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
   vulnerability_level:'moderate',time_pressure:'standard',

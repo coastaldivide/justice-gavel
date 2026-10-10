@@ -239,7 +239,7 @@ function titleCase(str) {
       relax_column_count: true,
       trim:             true,
     });
-  } catch (e) {
+  } catch {
     // Try pipe-delimited if comma fails
     try {
       rows = parse(raw, { delimiter: '|', columns: true, skip_empty_lines: true, trim: true });

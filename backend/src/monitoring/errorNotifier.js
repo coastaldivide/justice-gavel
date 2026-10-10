@@ -56,25 +56,10 @@ async function sendAlertEmail({ subject, body, to }) {
   }
 }
 
-// ── SEV-1 Slack alert ───────────────────────────────────────────────────────
-async function sendSlackAlert(message) {
-  const url = process.env.ALERT_WEBHOOK_URL || null;
-  if (!url) { return; }  // Slack webhook optional — silent skip
-  if (!url) return;
-  try {
-    await fetchNotify(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: `🚨 JG SEV-1: ${message}` }),
-    });
-  } catch (e) { /* never throw from notifier */ }
-}
-
 // ── Webhook ping (BetterUptime, PagerDuty, Slack) ────────────────────────────
 async function pingWebhook(payload) {
   const url = process.env.ALERT_WEBHOOK_URL || null;
-  if (!url) { return; }  // Slack webhook optional — silent skip  // Slack/Discord/PagerDuty webhook
-  if (!url) return;
+  if (!url) return;  // Slack/Discord/PagerDuty webhook is optional
   try {
     await fetchNotify(url, {
       method:  'POST',
@@ -114,7 +99,7 @@ RUNBOOK: https://github.com/coastaldivide/justice-gavel/blob/main/RUNBOOK.md
 
   await Promise.allSettled([
     sendAlertEmail({
-      subject: `🚨 SEV-1: \${message}`,
+      subject: `🚨 SEV-1: ${message}`,
       body,
       to: [
         process.env.ONCALL_EMAIL  || 'aa.n.hart@gmail.com',
@@ -143,7 +128,7 @@ export async function notifyError(message, extras = {}) {
         process.env.ONCALL_EMAIL  || 'aa.n.hart@gmail.com',
         process.env.ONCALL_EMAIL_2 || 'russelltallen@gmail.com',
       ],
-      subject: `⚠️ SEV-2 Error: \${message}`,
+      subject: `⚠️ SEV-2 Error: ${message}`,
       body: `${message}\n\n${JSON.stringify(extras, null, 2)}\n\nTime: ${new Date().toISOString()}`,
     }),
     pingWebhook({ text: `⚠️ *SEV-2 Error* — ${message}`, color: '#E65100' }),

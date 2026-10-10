@@ -30,9 +30,9 @@ import { normalizePhone } from '../utils/sanitize.js';
 // SMS is not wired up (push notifications and Resend email handle delivery).
 // The stub reports a non-delivery instead of returning null, which made every
 // `result.error` read throw a TypeError.
-const sendSms = async () => ({ error: 'sms_not_configured', skipped: true });
+const sendSms = () => Promise.resolve({ error: 'sms_not_configured', skipped: true });
 import { sendEmail } from './email.js';
-import { createPaymentLink, calcStripeFee, STRIPE_LIVE } from '../payments/stripe.js';
+import { createPaymentLink, calcStripeFee } from '../payments/stripe.js';
 import { bondsmanLeadFeeCents, formatLeadFee } from '../routes/billing/leadFee.js';
 import { realArrestSql } from '../utils/arrestVisibility.js';
 
@@ -42,7 +42,7 @@ const ARREST_COLS = 'id, name, booking_date, charges, bail_amount, county, state
 
 /** Unsent, real arrests from the last 24h with bail set and no attorney. */
 export async function selectActionableArrests(db) {
-  return db.all(
+  return await db.all(
     `SELECT ${ARREST_COLS}
        FROM arrest_records
       WHERE alert_sent = 0
@@ -57,7 +57,7 @@ export async function selectActionableArrests(db) {
 
 /** One real (non-sample, non-suppressed) arrest by id, or undefined. */
 export async function getRealArrest(db, arrestId) {
-  return db.get(`SELECT ${ARREST_COLS} FROM arrest_records WHERE id = ? AND ${realArrestSql()}`, [arrestId]);
+  return await db.get(`SELECT ${ARREST_COLS} FROM arrest_records WHERE id = ? AND ${realArrestSql()}`, [arrestId]);
 }
 
 
@@ -73,8 +73,7 @@ function isQuietHours() {
 // ── DB helpers ────────────────────────────────────────────────────────────────
 // All provider, arrest and outbound tables live in the main Postgres database.
 // (The adapter is a shared singleton; its close() is a no-op.)
-async function getDb()     { return getAppDb(); }
-async function getMainDb() { return getAppDb(); }
+async function getDb()     { return await getAppDb(); }
 
 // Check if phone/email is opted out
 async function isOptedOut(db, phone, email) {
@@ -392,7 +391,6 @@ export async function runOutboundBot(options = {}) {
     logger.error('[bot] Fatal error:', err.message);
     await logBotRun(db, 'nightly', stats, errors, startTime);
     return { ...stats, errors };
-  } finally {
   }
 }
 
@@ -481,7 +479,6 @@ export async function sendPaymentLink({ phone, arrestId, recipientType, recipien
   } catch (err) {
     logger.error('[bot] sendPaymentLink error:', err.message);
     return { error: err.message };
-  } finally {
   }
 }
 
@@ -553,7 +550,6 @@ export async function deliverLead({ phone, arrestId, stripeLinkId, stripePayment
   } catch (err) {
     logger.error('[bot] deliverLead error:', err.message);
     return { error: err.message };
-  } finally {
   }
 }
 
@@ -580,7 +576,6 @@ export async function processOptOut({ phone, email, reason = 'STOP' }) {
   } catch (err) {
     logger.error('[bot] processOptOut error:', err.message);
     return { error: err.message };
-  } finally {
   }
 }
 
@@ -627,6 +622,5 @@ export async function expireOldPaymentLinks() {
   } catch (err) {
     logger.error('[bot] expireOldPaymentLinks error:', err.message);
     return { error: err.message };
-  } finally {
   }
 }

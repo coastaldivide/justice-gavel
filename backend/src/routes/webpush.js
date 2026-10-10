@@ -1,4 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/webpush.js — VAPID Web Push for browser/PWA/desktop
  *
@@ -20,7 +19,7 @@ import { Router }       from 'express';
 import { getDb }        from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
 import { requireFirmRole } from '../middleware/rbac.js';
-import { err400, err403, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
+import { err400, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 import { makeUserLimiter }    from '../middleware/sharedAiLimiter.js';
 import logger           from '../utils/logger.js';
 

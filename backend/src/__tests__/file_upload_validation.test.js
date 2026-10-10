@@ -18,7 +18,7 @@ function validateUpload(file) {
     errors.push(`File too large: ${file.size} bytes (max ${MAX_SIZE_B})`);
   if (!file.originalname) { errors.push('No filename'); return errors; }
   // Path traversal
-  if (/[/\\<>:"|?*\x00-\x1f]/.test(file.originalname))
+  if (/[/\\<>:"|?*\p{Cc}]/u.test(file.originalname))
     errors.push('Filename contains invalid characters');
   // Double extension attacks: file.jpg.exe
   const parts = file.originalname.split('.');
@@ -31,7 +31,7 @@ function validateUpload(file) {
 
 function sanitizeFilename(name) {
   return name
-    .replace(/[/\\<>:"|?*\x00-\x1f]/g, '_')
+    .replace(/[/\\<>:"|?*\p{Cc}]/gu, '_')
     .replace(/\.{2,}/g, '.')
     .replace(/^\.+|\.+$/g, '')
     .slice(0, 255);

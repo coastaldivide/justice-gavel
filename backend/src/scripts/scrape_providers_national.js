@@ -121,7 +121,7 @@ const argv = yargs(hideBin(process.argv))
 
 const GOOGLE_KEY = process.env.GOOGLE_PLACES_KEY;
 const YELP_KEY   = process.env.YELP_API_KEY;
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const sleep = ms => new Promise(r => { setTimeout(r, ms); });
 
 // ── ALL 97 CITIES — state bar URLs + major cities ─────────────────────────────
 const ALL_CITIES = [
@@ -477,8 +477,8 @@ async function fetchStateBar(city, state, barUrl, type) {
       const name = nameM[1].trim();
       if (name.length < 5 || /search|filter|result|attorney/i.test(name)) continue;
 
-      const phoneM = text.match(/\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}/);
-      const emailM = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+      const phoneM = text.match(/\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/);
+      const emailM = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
       const webM   = text.match(/href="(https?:\/\/[^"]{8,80})"/i);
       const barM   = text.match(/bar\s*(?:no|num|number|#)\.?\s*(\d{4,8})/i);
 

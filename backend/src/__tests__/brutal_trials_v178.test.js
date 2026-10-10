@@ -4,7 +4,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // DEEPEST LAYER: app entry, OTA, push, biometric, ToS, tiles, journey simulation
 // Everything that runs before the user sees a single screen
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -170,8 +169,7 @@ describe('JOURNEY. All 12 User Journeys', () => {
     expect(chat).toContain('keyExtractor');
   });
   test('JOURNEY-06: Bail Calculator — fetches schedules via /legaldata/bail', async () => {
-    const fs=await import('fs'); const path=await import('path');
-    const bail=fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx','utf8');
+    const fs=await import('fs');     const bail=fs.readFileSync(__REPO + '/frontend/src/screens/BailCalculatorScreen.tsx','utf8');
     // Uses cachedGet('/legaldata/bail?state=...')
     expect(bail).toContain('/legaldata/bail');
     expect(bail).toContain('bondCost');
@@ -181,15 +179,13 @@ describe('JOURNEY. All 12 User Journeys', () => {
     expect(ld).toContain('bail');
   });
   test('JOURNEY-07: Expungement → petition generation', async () => {
-    const fs=await import('fs'); const path=await import('path');
-    const exp=fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx','utf8');
+    const fs=await import('fs');     const exp=fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx','utf8');
     expect(exp).toContain('/expungement/check');
     expect(exp).toContain('/expungement/petition');
     expect(exp).toMatch(/eligibl/i);
   });
   test('JOURNEY-09: HomeScreen — all 30 tiles navigate to real screens', async () => {
-    const fs=await import('fs'); const path=await import('path');
-    const home=fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx','utf8');
+    const fs=await import('fs');     const home=fs.readFileSync(__REPO + '/frontend/src/screens/HomeScreen.tsx','utf8');
     const nav =fs.readFileSync(__REPO + '/frontend/src/navigation/AppNavigator.tsx','utf8');
     const reg =new Set([...nav.matchAll(/name="([^"]+)"/g)].map(m=>m[1]));
     const tiles=home.match(/nav:\s*['"]([^'"]+)['"]/g)||[];
@@ -205,8 +201,7 @@ describe('JOURNEY. All 12 User Journeys', () => {
     expect(bad).toBe(0);
   });
   test('JOURNEY-11: Attorney Dashboard — profile + cases + bar validation', async () => {
-    const fs=await import('fs'); const path=await import('path');
-    const atty=fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx','utf8');
+    const fs=await import('fs');     const atty=fs.readFileSync(__REPO + '/frontend/src/screens/AttorneyDashboardScreen.tsx','utf8');
     expect(atty).toContain('/attorney/profile');
     expect(atty).toContain('/attorney/cases');
     expect(atty).toContain('saveProfile');
@@ -242,7 +237,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
   });
   test('GATE-02: 0 SQL injection + 0 bare SELECT * + all screens reachable', async () => {
     const fs=await import('fs'); const path=await import('path');
-    let inj=0,bare=0;
+    let inj=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);
@@ -250,8 +245,6 @@ describe('GATE. Zero-Defect Production Gates', () => {
         if(!f.endsWith('.js')||f.startsWith('_'))continue;
         const src=fs.readFileSync(fp,'utf8');
         inj+=[...src.matchAll(/db\.(get|all|run)\s*\(`[^`]*\$\{(?:req\.params|req\.body|req\.query)/g)].length;
-        for(const m of src.matchAll(/SELECT \*[^\n]*/g))
-          if(!m[0].includes('intentional')&&m[0].includes('FROM')&&!m[0].includes('safeTable'))bare++;
       }
     };
     wd(__REPO + '/backend/src/routes');
@@ -298,7 +291,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

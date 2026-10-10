@@ -22,8 +22,6 @@ import { makeTestDb } from './helpers/sqliteHelper.js';
 const SECRET = process.env.JWT_SECRET;
 const tok  = (id = 1, role = 'user')  => jwt.sign({ id, role }, SECRET, { expiresIn: '1h' });
 const def_ = (id = 3)                  => jwt.sign({ id, role: 'defender' }, SECRET, { expiresIn: '1h' });
-const atty = (id = 4)                  => jwt.sign({ id, role: 'attorney' }, SECRET, { expiresIn: '1h' });
-const exp  = ()                         => jwt.sign({ id: 1 }, SECRET, { expiresIn: '-1s' });
 
 const LANG_NAMES = { en: 'English', es: 'Spanish', pt: 'Brazilian Portuguese', vi: 'Vietnamese' };
 const CODE_CHARS  = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -104,7 +102,7 @@ function buildApp(db, { hasSub = false } = {}) {
         lang_a_name: LANG_NAMES[lang_a],
         lang_b_name: LANG_NAMES[lang_b],
       });
-    } catch (e) { res.status(500).json({ error: 'Could not create session' }); }
+    } catch { res.status(500).json({ error: 'Could not create session' }); }
   });
 
   // GET /session/:code — join existing session
@@ -116,7 +114,7 @@ function buildApp(db, { hasSub = false } = {}) {
       );
       if (!sess) return res.status(404).json({ error: 'Session not found. Check the code.' });
       res.json({ ...sess, lang_a_name: LANG_NAMES[sess.lang_a], lang_b_name: LANG_NAMES[sess.lang_b] });
-    } catch (e) { res.status(500).json({ error: 'Could not load session' }); }
+    } catch { res.status(500).json({ error: 'Could not load session' }); }
   });
 
   // POST /session/:code/message — add message
@@ -142,7 +140,7 @@ function buildApp(db, { hasSub = false } = {}) {
       await db.run('UPDATE translation_sessions SET last_active=datetime(\'now\') WHERE code=?', [code]);
 
       res.json({ ok: true, original: text.trim(), translated, src_lang: srcLang, tgt_lang: tgtLang });
-    } catch (e) { res.status(500).json({ error: 'Could not send message' }); }
+    } catch { res.status(500).json({ error: 'Could not send message' }); }
   });
 
   // GET /session/:code/messages — poll
@@ -155,12 +153,12 @@ function buildApp(db, { hasSub = false } = {}) {
         [code, since]
       );
       res.json(msgs);
-    } catch (e) { res.status(500).json({ error: 'Could not load messages' }); }
+    } catch { res.status(500).json({ error: 'Could not load messages' }); }
   });
 
   // POST /message — standalone translation (auth + sub gated)
   router.post('/message', auth, subCheck, (req, res) => {
-    const { text, src_lang = 'en', tgt_lang = 'es' } = req.body || {};
+    const { text } = req.body || {};
     if (!text?.trim()) return res.status(400).json({ error: 'text required' });
     // Async job response (no live API)
     res.json({ jobId: 'job_translate_test', status: 'pending', async: true });

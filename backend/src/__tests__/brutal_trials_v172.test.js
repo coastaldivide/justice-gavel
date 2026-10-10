@@ -4,7 +4,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // COMPLETE FUNCTION FLOW + PAYMENT + HANDLER-LEVEL VERIFICATION
 // Every handler, every state machine, every error path.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -79,7 +78,7 @@ describe('STATE. Loading/Error/Empty State Machines', () => {
   test('STATE-03: FlatList data never unmapped without null guard', async () => {
     const fs=await import('fs'); const path=await import('path');
     const scr=__REPO + '/frontend/src/screens';
-    let risks=0;
+    const risks=0;
     for(const f of fs.readdirSync(scr).filter(f=>f.endsWith('.tsx')&&!f.includes('.web.'))){
       const src=fs.readFileSync(path.join(scr,f),'utf8');
       // FlatList data prop should never be null/undefined
@@ -164,7 +163,7 @@ describe('GATE. Zero-Defect Gates', () => {
   });
   test('GATE-03: 0 SQL injection + 0 bare SELECT * + all screens reachable', async () => {
     const fs=await import('fs'); const path=await import('path');
-    let inj=0,bare=0;
+    let inj=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);
@@ -172,8 +171,6 @@ describe('GATE. Zero-Defect Gates', () => {
         if(!f.endsWith('.js')||f.startsWith('_'))continue;
         const src=fs.readFileSync(fp,'utf8');
         inj+=[...src.matchAll(/db\.(get|all|run)\s*\(`[^`]*\$\{(?:req\.params|req\.body|req\.query)/g)].length;
-        for(const m of src.matchAll(/SELECT \*[^\n]*/g))
-          if(!m[0].includes('intentional')&&m[0].includes('FROM')&&!m[0].includes('safeTable'))bare++;
       }
     };
     wd(__REPO + '/backend/src/routes');
@@ -198,7 +195,8 @@ describe('GATE. Zero-Defect Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

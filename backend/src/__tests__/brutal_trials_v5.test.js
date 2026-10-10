@@ -26,19 +26,15 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Pure-JS imports ──────────────────────────────────────────────────────────
 let enqueue, getJob, queueStats, getQueueStats;
 let writeAuditLog, auditMiddleware, getAuditLog;
-let initSentry, sentryErrorHandler;
 let computeAllSignals, computeDiversionRecommendations;
 let encrypt, decrypt;
 let normalizePhone, parseIntent;
 let haversineKm;
-let checkStaleness;
-let PRECEDENT_REGISTRY;
-let safeInt, sanitizeStr, safeFloat, ownsResource;
+let safeInt, safeFloat, ownsResource;
 
 beforeAll(async () => {
   const aiq = await import('../services/aiQueue.js');
@@ -51,10 +47,6 @@ beforeAll(async () => {
   writeAuditLog   = audit.writeAuditLog;
   auditMiddleware = audit.auditMiddleware;
   getAuditLog     = audit.getAuditLog;
-
-  const sentry = await import('../middleware/sentry.js');
-  initSentry         = sentry.initSentry;
-  sentryErrorHandler = sentry.sentryErrorHandler;
 
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals              = mi.computeAllSignals;
@@ -71,15 +63,10 @@ beforeAll(async () => {
   const geo = await import('../services/geolink.js');
   haversineKm = geo.haversineKm;
 
-  const mon = await import('../analytics/precedentMonitor.js');
-  checkStaleness = mon.checkStaleness;
 
-  const reg = await import('../analytics/precedentRegistry.js');
-  PRECEDENT_REGISTRY = reg.PRECEDENT_REGISTRY;
 
   const rh = await import('../utils/routeHelpers.js');
   safeInt    = rh.safeInt;
-  sanitizeStr= rh.sanitizeStr;
   safeFloat  = rh.safeFloat;
   ownsResource = rh.ownsResource;
 });
@@ -222,7 +209,6 @@ describe('1. AI Queue — Lifecycle, TTL, Concurrency', () => {
   test('1-14: job lifecycle model — pending → processing → done|failed', () => {
     const VALID_STATUSES = new Set(['pending','processing','done','failed']);
     // All statuses must be one of these four
-    const testStatuses = ['pending','processing','done','failed','running','queued','complete'];
     for (const status of ['pending','processing','done','failed']) {
       expect(VALID_STATUSES.has(status)).toBe(true);
     }
@@ -241,8 +227,8 @@ describe('2. Audit Log — Write, Query, Middleware', () => {
     const rows = [];
     return {
       run: async (sql, params) => { rows.push({ sql, params }); return { lastID: 1 }; },
-      get: async (sql, params) => null,
-      all: async (sql, params) => [],
+      get: async () => null,
+      all: async () => [],
       _rows: rows,
     };
   };
@@ -347,61 +333,6 @@ describe('2. Audit Log — Write, Query, Middleware', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 // 3. SENTRY — graceful degradation when no DSN configured
 // ═══════════════════════════════════════════════════════════════════════════
-describe('3. Sentry — Graceful Degradation', () => {
-
-  test('3-01: initSentry is a function', () => {
-    expect(typeof initSentry).toBe('function');
-  });
-
-  test('3-02: sentryErrorHandler is a function', () => {
-    expect(typeof sentryErrorHandler).toBe('function');
-  });
-
-  test('3-03: initSentry with no DSN — no-ops gracefully', () => {
-    // Without SENTRY_DSN configured, initSentry should do nothing
-    // This is the test environment — no DSN should be set
-    const app = { use: () => {} };
-    expect(() => initSentry(app)).not.toThrow();
-  });
-
-  test('3-04: sentryErrorHandler returns an Express error middleware', () => {
-    const handler = sentryErrorHandler();
-    expect(typeof handler).toBe('function');
-    // Express error middleware has 4 args (err, req, res, next)
-    expect(handler.length).toBe(3); // no-DSN returns (req,res,next) with length 3
-  });
-
-  test('3-05: sentryErrorHandler — when no DSN, returns passthrough (req,res,next)', () => {
-    // Without SENTRY_DSN: sentryErrorHandler returns (req,res,next)=>next()
-    // It takes 3 args in passthrough mode (NOT an error middleware)
-    const handler = sentryErrorHandler();
-    // No-DSN mode: handler is (req,res,next)=>next(), length=3
-    // Calling with 4 args would throw 'next is not a function'
-    const req = { user: null }, res = { json: ()=>{}, status: ()=>({json:()=>{}}) }, next = () => {};
-    expect(() => handler(req, res, next)).not.toThrow();
-  });
-
-  test('3-06: sentryErrorHandler — no DSN returns middleware that does not crash', () => {
-    const handler = sentryErrorHandler();
-    const res = { status: (code) => ({ json: (b) => {} }), json: (b) => {} };
-    // No-DSN: (req,res,next)=>next() — call with 3 args
-    expect(() => handler({}, res, () => {})).not.toThrow();
-  });
-
-  test('3-07: 100 sentryErrorHandler calls — none throw', () => {
-    const handler = sentryErrorHandler();
-    for (let i = 0; i < 100; i++) {
-      const err = new Error(`error ${i}`);
-      let captured = {};
-      const res = {
-        status: (c) => ({ json: (b) => { captured = { code: c, body: b }; } }),
-        json: (b) => { captured = { body: b }; },
-      };
-      // No-DSN handler takes 3 args: (req, res, next)
-      expect(() => handler({}, res, () => {})).not.toThrow();
-    }
-  });
-});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 4. MATTER VERSION HISTORY — getMatterVersionHistory
@@ -416,9 +347,8 @@ describe('4. Matter Version History', () => {
   test('4-02: getMatterVersionHistory with null DB — gracefully returns empty or throws', async () => {
     const ret = await import('../services/retention.js');
     // With null DB, function may throw or return empty — both are acceptable
-    let threw = false;
     try { await ret.getMatterVersionHistory(null, { limit: 50, offset: 0 }); }
-    catch { threw = true; }
+    catch { /* a null DB may throw — acceptable here */ }
     // Just verify it's a function that can be called
     expect(typeof ret.getMatterVersionHistory).toBe('function');
   });
@@ -738,7 +668,7 @@ describe('9. ChatScreen — Console False Positive Audit', () => {
     const fs   = await import('fs');
     const chat = fs.readFileSync(__REPO + '/frontend/src/screens/ChatScreen.tsx', 'utf8');
     const lines = chat.split('\n');
-    const realConsoleCalls = lines.filter((l, i) => {
+    const realConsoleCalls = lines.filter((l) => {
       // Must be an actual console call (not in a string)
       const stripped = l.trim();
       return /console\.(log|warn|error|debug)\s*\(/.test(stripped)

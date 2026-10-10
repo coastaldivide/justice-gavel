@@ -24,7 +24,7 @@ function calcTotalCostOfBail(bailAmount, bondPremium, additionalFees = 0) {
   return bondPremium + additionalFees;
 }
 
-function isEligibleForOR(priorConvictions, chargeClass, employmentStatus) {
+function isEligibleForOR(priorConvictions, chargeClass) {
   // Own recognizance (no bail) — simplified eligibility
   if (priorConvictions > 2) return false;
   if (chargeClass === 'felony-a' || chargeClass === 'felony-b') return false;

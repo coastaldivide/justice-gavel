@@ -6,15 +6,10 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 //         webhooks/outbound(3) + contracts/review(3) + research(2)
 //         audit(2) + firms(2) + messages(2) + lessons(2)
 
-import { jest } from '@jest/globals';
-let encrypt, decrypt, BUSINESS_CONSTANTS, CONFIG;
+let encrypt, decrypt;
 beforeAll(async () => {
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const rh = await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 describe('HAG_A. hague_contacts.js — 4 Routes PUSH ≥10', () => {

@@ -7,13 +7,10 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // auth(1) + admin(1) + motions/export(1) + billing/consumer(1) + billing/pi_leads(1)
 // attorney/cle(1) + attorney/templates(1) + webhooks/bot_admin(1)
 
-import { jest } from '@jest/globals';
-let encrypt, decrypt, BUSINESS_CONSTANTS, CONFIG;
+let encrypt, decrypt, CONFIG;
 beforeAll(async () => {
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const rh = await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });

@@ -19,7 +19,6 @@
  *         written as if from a real beta tester.
  */
 
-import { fileURLToPath } from 'url';
 
 // ── Business logic imports (same as production) ────────────────────────────
 import {
@@ -35,12 +34,6 @@ const bench = (label, fn) => {
   return { label, ms: parseFloat(ms.toFixed(2)), result };
 };
 
-const benchAsync = async (label, fn) => {
-  const t0 = performance.now();
-  const result = await fn();
-  const ms = performance.now() - t0;
-  return { label, ms: parseFloat(ms.toFixed(2)), result };
-};
 
 // ── Bail calculator (mirrors backend/src/routes/bail.js logic) ────────────
 const calcBail = ({ bailAmount, chargeType = 'other', state = 'TN' }) => {
@@ -459,7 +452,7 @@ describe('PERSONA 5 — Meridian Law LLC (firm onboarding, 4 attorneys)', () => 
   it('billing tier upgrade path is sequential (no skipping)', () => {
     const tiers = ['free','legal_radar','advisor','legal_pro','esquire'];
     for (let i = 0; i < tiers.length - 1; i++) {
-      const current = tiers[i], next = tiers[i+1];
+      const current = tiers[i];
       // Each tier should have more access than the previous
       const freeFeatures = ['bail_calculator','know_your_rights','emergency_contacts'];
       const paidFeatures = ['ai_legal_chat','attorney_matching','petition_drafting'];

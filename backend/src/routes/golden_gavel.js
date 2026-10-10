@@ -1,8 +1,7 @@
-import { validate, schemas } from '../validation/schemas.js';
 // Replacement for golden_gavel.js — full three-tier system
 // Bronze (level 1) → Silver (level 2) → Golden (level 3)
 
-import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { truncateStr, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 import logger from '../utils/logger.js';
 import { Router } from 'express';
 import { getDb }   from '../db/index.js';
@@ -139,10 +138,6 @@ export async function evaluateGavelLevel(userId) {
   }
 
   if (!isAttorney && !isBondsman) {
-    const refs = await db.get(
-      `SELECT SUM(credits) as total FROM referrals WHERE owner_user_id = ?`, [userId]
-    ).catch(() => ({ total: 0 }));
-
     const lessons = await db.get(`SELECT COUNT(*) as total FROM lessons`, []).catch(() => ({ total: 0 }));
     const completed = await db.get(
       `SELECT COUNT(DISTINCT lesson_id) as done FROM lesson_progress
@@ -153,7 +148,7 @@ export async function evaluateGavelLevel(userId) {
        WHERE user_id = ?`, [userId]
     ).catch(() => ({ started: 0 }));
     progress.lessons_completed = lessons.total > 0 && completed.done >= lessons.total;
-    progress.lessons_started   = started?.started ?? 0 > 0;
+    progress.lessons_started   = (started?.started ?? 0) > 0;   // was `?? 0 > 0`, which returned the count
   }
 
   if (isBondsman) {
@@ -254,8 +249,6 @@ export async function evaluateGavelLevel(userId) {
   };
 }
 
-// Backward compat wrapper
-export async function evaluateGoldenGavel(userId) { return evaluateGavelLevel(userId); }
 
 // ── Award / update gavel level ────────────────────────────────────────────────
 export async function processGoldenGavelAward(userId) {

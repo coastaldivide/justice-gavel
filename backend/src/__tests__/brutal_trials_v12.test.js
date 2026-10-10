@@ -42,18 +42,11 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeMotionRecommendations;
-let computeOutcomeEstimate;
 let encrypt, decrypt;
-let normalizePhone, parseIntent;
-let haversineKm;
-let hasMinRole, roleLevel, ROLE_HIERARCHY;
-let safeInt, safeFloat, sanitizeStr, ownsResource, escapeLike, stripHtml;
-let buildWhere, buildOrderBy, safeTable, truncateStr, FIELD_LIMITS;
+let safeTable, truncateStr;
 let GAVEL_LEVELS, MOTION_TYPES, CONTRACT_TYPES;
-let PRECEDENT_REGISTRY;
 let CONFIG;
 
 beforeAll(async () => {
@@ -61,29 +54,15 @@ beforeAll(async () => {
   computeAllSignals            = mi.computeAllSignals;
   computeMotionRecommendations = mi.computeMotionRecommendations;
 
-  const oe = await import('../analytics/outcomeEstimator.js');
-  computeOutcomeEstimate = oe.computeOutcomeEstimate;
 
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
 
-  const tw = await import('../utils/sanitize.js');
-  normalizePhone = tw.normalizePhone; parseIntent = tw.parseIntent;
+ 
 
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole; roleLevel = rbac.roleLevel;
-  ROLE_HIERARCHY = rbac.ROLE_HIERARCHY;
-
+ 
   const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; safeFloat = rh.safeFloat;
-  sanitizeStr = rh.sanitizeStr; ownsResource = rh.ownsResource;
-  escapeLike = rh.escapeLike; stripHtml = rh.stripHtml;
-  buildWhere = rh.buildWhere; buildOrderBy = rh.buildOrderBy;
-  safeTable = rh.safeTable; truncateStr = rh.truncateStr;
-  FIELD_LIMITS = rh.FIELD_LIMITS;
+      safeTable = rh.safeTable; truncateStr = rh.truncateStr;
 
   const gg = await import('../routes/golden_gavel.js');
   GAVEL_LEVELS = gg.GAVEL_LEVELS;
@@ -94,8 +73,6 @@ beforeAll(async () => {
   const ctypes = await import('../routes/contracts/_contract_types.js');
   CONTRACT_TYPES = ctypes.CONTRACT_TYPES;
 
-  const reg = await import('../analytics/precedentRegistry.js');
-  PRECEDENT_REGISTRY = reg.PRECEDENT_REGISTRY;
 
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;

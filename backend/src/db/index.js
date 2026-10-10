@@ -182,7 +182,7 @@ async function initPostgres(url) {
       engine: 'postgres',
       get: async (sql, params = []) => (await q(sql, params)).rows[0],
       all: async (sql, params = []) => (await q(sql, params)).rows,
-      query: async (sql, params = []) => q(sql, params),
+      query: async (sql, params = []) => await q(sql, params),
       run: async (sql, params = []) => {
         if (PRAGMA_RE.test(sql)) return { lastID: 0, changes: 0, rows: [] };
         if (TX_CONTROL_RE.test(sql)) {
@@ -253,16 +253,22 @@ async function initSqlite() {
   const bind = (params) => normParams(params).map(p =>
     typeof p === 'boolean' ? (p ? 1 : 0) : (p instanceof Date ? p.toISOString() : p));
 
+  // sql.js is synchronous; expose the same Promise API as the pg adapter
+  // (a throw becomes a rejection, exactly as an async function would).
+  const asPromise = (fn) => (...args) => {
+    try { return Promise.resolve(fn(...args)); } catch (e) { return Promise.reject(e); }
+  };
+
   const adapter = {
     engine: 'sqlite',
-    get: async (sql, params = []) => {
+    get: asPromise((sql, params = []) => {
       const stmt = sqlDb.prepare(sql);
       try {
         stmt.bind(bind(params));
         return stmt.step() ? stmt.getAsObject() : undefined;
       } finally { stmt.free(); }
-    },
-    all: async (sql, params = []) => {
+    }),
+    all: asPromise((sql, params = []) => {
       const rows = [];
       const stmt = sqlDb.prepare(sql);
       try {
@@ -270,19 +276,19 @@ async function initSqlite() {
         while (stmt.step()) rows.push(stmt.getAsObject());
       } finally { stmt.free(); }
       return rows;
-    },
-    run: async (sql, params = []) => {
+    }),
+    run: asPromise((sql, params = []) => {
       sqlDb.run(sql, bind(params));
       const changes = sqlDb.getRowsModified();
       let lastID = 0;
       try { const r = sqlDb.exec('SELECT last_insert_rowid()'); if (r[0]) lastID = r[0].values[0][0]; } catch { /* ignore */ }
       return { lastID, changes, rows: [] };
-    },
+    }),
     query: async (sql, params = []) => {
       const rows = await adapter.all(sql, params);
       return { rows, rowCount: rows.length };
     },
-    exec: async (sql) => { sqlDb.exec(sql); },
+    exec: asPromise((sql) => { sqlDb.exec(sql); }),
     transaction: async (fn) => {
       sqlDb.exec('BEGIN');
       try { const out = await fn(adapter); sqlDb.exec('COMMIT'); return out; }
@@ -294,7 +300,7 @@ async function initSqlite() {
     close: async () => {},   // singleton — see closeDb()
   };
   adapter._close = adapter.close;
-  adapter._shutdown = async () => { adapter.persist(); sqlDb.close(); };
+  adapter._shutdown = asPromise(() => { adapter.persist(); sqlDb.close(); });
   const t = setInterval(() => adapter.persist(), 30_000);
   t.unref();
   logger.warn({ path: DB_PATH },
@@ -305,11 +311,11 @@ async function initSqlite() {
 
 async function connect() {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-  if (url) return initPostgres(url);
+  if (url) return await initPostgres(url);
   if (process.env.NODE_ENV === 'production') {
     throw new Error('DATABASE_URL is required when NODE_ENV=production');
   }
-  return initSqlite();
+  return await initSqlite();
 }
 
 export async function getDb() {
@@ -319,25 +325,16 @@ export async function getDb() {
       .then(db => { _db = db; return db; })
       .catch(e => { _initPromise = null; throw e; });
   }
-  return _initPromise;
+  return await _initPromise;
 }
 
-export async function initDb() { return getDb(); }
+export async function initDb() { return await getDb(); }
 
 export async function closeDb() {
   if (_db?._shutdown) { try { await _db._shutdown(); } catch { /* ignore */ } }
   _db = null; _initPromise = null;
 }
 
-export async function dbHealthCheck() {
-  try {
-    const db = await getDb();
-    await db.get('SELECT 1 AS ok');
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: err.message };
-  }
-}
 
 // ── Compatibility export: `db` proxy for modules that import { db } ──────────
 // Real connection is established lazily via getDb().

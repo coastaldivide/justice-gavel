@@ -3,10 +3,9 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // JUSTICE GAVEL - BRUTAL TRIALS v87
 // 87th pass: 4 discrepancy fixes + auth.js deep + chat/_helpers + checkins + i18n spot-check + attorney/cases
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
+let BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -16,7 +15,7 @@ beforeAll(async () => {
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
+ BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');

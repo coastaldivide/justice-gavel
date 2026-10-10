@@ -1,10 +1,10 @@
-import { transcribeLimiter } from '../utils/rateLimiters.js';
 /**
  * routes/transcribe.js — Audio transcription via OpenAI Whisper
  * POST /api/transcribe/audio
  */
 import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
+import { transcribeLimiter } from '../utils/rateLimiters.js';
 import multer from 'multer';
 import logger from '../utils/logger.js';
 import { aiConfigured, CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL, ANTHROPIC_VERSION } from '../utils/ai.js';
@@ -15,7 +15,7 @@ const upload = multer({
   storage: multer.memoryStorage()
 });
 
-router.post('/audio', authRequired, upload.single('audio'), async (req, res) => {
+router.post('/audio', authRequired, transcribeLimiter, upload.single('audio'), async (req, res) => {
   // Input validation guard
   if (req.body && JSON.stringify(req.body).length > 50000) {
     return res.status(413).json({ error: 'Request body too large' });
@@ -128,7 +128,7 @@ router.post('/text', authRequired, async (req, res) => {
 });
 
 // POST /api/transcribe/note (multipart "audio") → { note }
-router.post('/note', authRequired, upload.single('audio'), async (req, res) => {
+router.post('/note', authRequired, transcribeLimiter, upload.single('audio'), async (req, res) => {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) {
     return res.status(503).json({ error: 'transcription_unavailable', message: 'Voice transcription is not available right now. You can type your note instead.' });

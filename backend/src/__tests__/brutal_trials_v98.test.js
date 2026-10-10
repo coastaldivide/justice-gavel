@@ -4,17 +4,15 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 98th pass: 4 S0 threshold fixes + comprehensive final coverage push
 // + route distribution confirmed + performance × 10 final
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate, encrypt, decrypt, haversineKm, haversineMiles, bboxFromLatLng;
-let safeInt, safeFloat, validCoords, buildWhere, sanitizeStr, FIELD_LIMITS;
+let buildWhere, sanitizeStr;
 let BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe  = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
@@ -24,9 +22,8 @@ beforeAll(async () => {
   haversineKm = geo.haversineKm; haversineMiles = geo.haversineMiles;
   bboxFromLatLng = geo.bboxFromLatLng;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; safeFloat = rh.safeFloat; validCoords = rh.validCoords;
-  buildWhere = rh.buildWhere; sanitizeStr = rh.sanitizeStr;
-  FIELD_LIMITS = rh.FIELD_LIMITS; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
+    buildWhere = rh.buildWhere; sanitizeStr = rh.sanitizeStr;
+ BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');

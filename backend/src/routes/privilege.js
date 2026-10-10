@@ -1,6 +1,4 @@
-import { requireAi } from '../utils/ai.js';
-import { CLAUDE_MODEL } from '../utils/ai.js';
-import { validate, schemas } from '../validation/schemas.js';
+import { requireAi, CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * routes/privilege.js — Privilege Log Generator
  *
@@ -30,9 +28,7 @@ import { authRequired }    from '../middleware/auth.js';
 import { loadFirmContext, requireFirmRole } from '../middleware/rbac.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { enqueueAIJob as enqueue }         from '../services/aiQueue.js';
-import { err400, err403, err404, safeInt,
-         sanitizeStr, truncateStr }         from '../utils/routeHelpers.js';
-import { API_URLS }        from '../utils/routeHelpers.js';
+import { err400, err403, err404, safeInt, sanitizeStr, truncateStr, API_URLS } from '../utils/routeHelpers.js';
 import logger              from '../utils/logger.js';
 
 const router     = Router();
@@ -75,8 +71,9 @@ const PRIVILEGE_BASES = {
 };
 
 // ── Auto-number doc numbers ───────────────────────────────────────────────────
-// nextDocNumber: counter is passed to avoid N+1 per entry
-async function nextDocNumber(counter) {
+// nextDocNumber: counter is passed to avoid N+1 per entry. Synchronous: it was
+// `async`, so the bulk path stored a Promise ("[object Promise]") as doc_number.
+function nextDocNumber(counter) {
   counter.n += 1;
   return `PRIV-${String(counter.n).padStart(4, '0')}`;
 }
@@ -194,7 +191,7 @@ CRITICAL: The description must NOT reveal privileged content. It must only descr
           'SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=? AND firm_id=?',
           [matterId, ctx.firm_id]
         ).catch(() => ({ n: 0 }));
-        const docCounter = { n: existingPriv?.n || 0 };
+        const docCounter = { n: Number(existingPriv?.n) || 0 };   // pg COUNT() is a string
 
         for (const e of entries) {
           const docNum = nextDocNumber(docCounter); // uses pre-fetched counter
@@ -273,7 +270,16 @@ router.post('/entries', authRequired, privLimiter, async (req, res) => {
 
     const matterId = matter_id ? safeInt(matter_id) : null;
     const firmId   = ctx?.firm_id || null;
-    const docNum   = matterId && firmId ? await nextDocNumber(db, matterId, firmId) : `PRIV-${Date.now()}`;
+    // Next number in this matter's log (was called as nextDocNumber(db, matterId, firmId),
+    // which treated `db` as the counter and produced "PRIV-0NaN").
+    let docNum = `PRIV-${Date.now()}`;
+    if (matterId && firmId) {
+      const existing = await db.get(
+        'SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=? AND firm_id=?',
+        [matterId, firmId]
+      ).catch(() => ({ n: 0 }));
+      docNum = nextDocNumber({ n: Number(existing?.n) || 0 });
+    }
 
     const DOC_TYPES = ['email','memo','letter','draft','notes','report','contract','other'];
 
@@ -327,7 +333,7 @@ router.get('/entries', authRequired, async (req, res) => {
 
     const rows = await db.all(sql, params);
     res.json({ entries: rows, count: rows.length });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load privilege log.' });
   }
 });
@@ -339,7 +345,7 @@ router.get('/entries/:id', authRequired, async (req, res) => {
     const entry = await db.get('SELECT id, firm_id, matter_id, matter_table, doc_number, doc_date, doc_type, author, recipients, description, privilege_basis, withheld, page_count, ai_generated, reviewed_by, created_by, created_at, updated_at FROM privilege_log WHERE id=?', [safeInt(req.params.id)]);
     if (!entry) return err404(res, 'Entry not found.');
     res.json(entry);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load entry.' });
   }
 });
@@ -367,7 +373,7 @@ router.put('/entries/:id', authRequired, async (req, res) => {
     await db.run(`UPDATE privilege_log SET ${updates.join(',')} WHERE id=?`, params);
     const updated = await db.get('SELECT id, firm_id, matter_id, matter_table, doc_number, doc_date, doc_type, author, recipients, description, privilege_basis, withheld, page_count, ai_generated, reviewed_by, created_by, created_at, updated_at FROM privilege_log WHERE id=?', [safeInt(req.params.id)]);
     res.json(updated);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not update entry.' });
   }
 });
@@ -380,7 +386,7 @@ router.delete('/entries/:id', authRequired, async (req, res) => {
     if (!entry) return err404(res, 'Entry not found.');
     await db.run('DELETE FROM privilege_log WHERE id=?', [safeInt(req.params.id)]);
     res.json({ deleted: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not delete entry.' });
   }
 });
@@ -410,7 +416,7 @@ router.get('/matter/:matterId', authRequired, async (req, res) => {
     }
 
     res.json({ matter_id: matterId, entries, summary });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load privilege log.' });
   }
 });
@@ -470,7 +476,7 @@ router.get('/matter/:matterId/csv', authRequired, async (req, res) => {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="privilege-log-${matterId}.csv"`);
     res.send(csv);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not export privilege log.' });
   }
 });
@@ -611,7 +617,6 @@ router.get('/matter/:matterId/review-status', authRequired, requireFirmRole('par
   try {
     const db       = await getDb();
     const matterId = safeInt(req.params.matterId);
-    const ctx      = await loadFirmContext(req);
 
     const [total, reviewed, aiGenerated] = await Promise.all([
       db.get('SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=?', [matterId]),
@@ -631,7 +636,7 @@ router.get('/matter/:matterId/review-status', authRequired, requireFirmRole('par
       review_complete:  totalN > 0 && reviewedN === totalN,
       review_pct:       totalN > 0 ? Math.round(reviewedN / totalN * 100) : 100,
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load review status.' });
   }
 });

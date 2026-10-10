@@ -1,9 +1,7 @@
-import { requireAi } from '../utils/ai.js';
-import { CLAUDE_MODEL } from '../utils/ai.js';
-import { validate, schemas } from '../validation/schemas.js';
-import { researchLimiter } from '../utils/rateLimiters.js';
+import { isStaff } from '../utils/staff.js';
+import { requireAi, CLAUDE_MODEL } from '../utils/ai.js';
 import { requireDisclaimer } from '../middleware/disclaimer.js';
-import { asyncRoute } from '../utils/routeHelpers.js';
+import { asyncRoute, err400, err404, safeInt, API_URLS } from '../utils/routeHelpers.js';
 /**
  * research.js — AI Legal Research ($49/mo add-on)
  *
@@ -27,7 +25,6 @@ import { asyncRoute } from '../utils/routeHelpers.js';
  */
 
 import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
-import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, API_URLS } from '../utils/routeHelpers.js';
 import express         from 'express';
 import { enqueueAIJob as enqueue }     from '../services/aiQueue.js';
 import { getDb } from '../db/index.js';
@@ -48,7 +45,6 @@ const aiLimiter = rateLimit({
 
 const router = express.Router();
 const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
-const STRIPE_SECRET  = process.env.STRIPE_SECRET;
 
 // Tables are defined in db/index.js Year 2 block — no per-request DDL needed.
 
@@ -204,7 +200,6 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
     );
 
     // Call Claude
-    let answer;
     try {
       const _q = query.trim(); const _h = [...history]; const _sid = sessionId;
       const jobId = await enqueue('research', async () => {
@@ -219,7 +214,7 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
         };
       });
       return res.json({ jobId, session_id: sessionId, status: 'pending', async: true });
-    } catch (e) {
+    } catch {
       return res.status(502).json({ error: 'Upstream service error. Please try again.' });
     }
   } catch (e) {
@@ -239,7 +234,7 @@ router.get('/history', authRequired, async (req, res) => {
       [req.user.id, Math.max(0, safeInt(req.query.page || '0')) * 20]
     );
     res.json(sessions);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load history' });
   }
 });
@@ -258,7 +253,7 @@ router.get('/session/:id', authRequired, async (req, res) => {
       [safeInt(req.params.id)]
     );
     res.json({ ...sess, messages });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load session' });
   }
 });
@@ -272,7 +267,7 @@ router.delete('/session/:id', authRequired, async (req, res) => {
     await db.run('DELETE FROM research_messages WHERE session_id=?', [safeInt(req.params.id)]);
     await db.run('DELETE FROM research_sessions WHERE id=? AND user_id=?', [safeInt(req.params.id), req.user.id]);
     res.json({ ok: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not delete session' });
   }
 });
@@ -289,7 +284,7 @@ router.get('/status', authRequired, async (req, res) => {
       [req.user.id]
     ).catch(() => null);
     res.json({ has_access: hasAccess, subscription: sub || null });
-  } catch (e) {
+  } catch {
     res.json({ has_access: false, subscription: null, demo: false });
   }
 });
@@ -325,7 +320,8 @@ router.post('/rag', authRequired, async (req, res) => {
 
 // ── Index a legal document (admin only) ────────────────────────────────────
 router.post('/index', authRequired, asyncRoute(async (req, res) => {
-  if (!req.user?.is_admin) return res.status(403).json({ error: 'Admin only' });
+  // The JWT carries no is_admin claim, so this check always failed; read the role from the DB.
+  if (!(await isStaff(await getDb(), req.user))) return res.status(403).json({ error: 'Admin only' });
   const { doc_type, citation, title, content, jurisdiction, practice_area, year, source_url } = req.body;
   if (!citation || !content || !title) return res.status(400).json({ error: 'citation, title, content required' });
   try {
@@ -335,7 +331,7 @@ router.post('/index', authRequired, asyncRoute(async (req, res) => {
   } catch (e) {
     return res.status(500).json({ error: e?.message });
   }
-
+}));
 
 // ── GET /research/topics — discovery entry point ──────────────────────────
 router.get('/topics', (req, res) => {
@@ -354,5 +350,4 @@ router.get('/topics', (req, res) => {
   });
 });
 
-}));
 export default router;

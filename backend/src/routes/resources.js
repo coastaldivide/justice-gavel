@@ -1,9 +1,9 @@
-import { err400, escapeLike, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { escapeLike, err404, safeInt } from '../utils/routeHelpers.js';
 import { Router } from 'express';
 import { getDb }   from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
-import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.js';
+import { apiLimiter } from '../middleware/rateLimiters.js';
 const router = Router();
 
 // GET /api/resources
@@ -57,7 +57,7 @@ router.get('/:id', authRequired, apiLimiter, async (req, res) => {
     const db  = await getDb();
     const row = await db.get('SELECT id, title, body, url, name, category, description, phone, website, address, city, state, email, hours, free, eligibility, languages, updated_at FROM resources WHERE id=?', [safeInt(req.params.id)]);
     if (!row) return err404(res, 'Not found');
-    const languages = (() => { try { return JSON.parse(row?.languages || '["English"]'); } catch { return ['English']; } })();
+    (() => { try { return JSON.parse(row?.languages || '["English"]'); } catch { return ['English']; } })();
     res.json(row);
   } catch (e) { logger.error('[resources/:id]', e.message); res.status(500).json({ error: 'Could not load resource' }); }
 });

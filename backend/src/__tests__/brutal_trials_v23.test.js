@@ -21,7 +21,7 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  *  7.  referrals.js /credit — GET referral credit balance (credit_cents)
  *  8.  providers.js /coverage — seed-only states, Cache-Control 1hr
  *  9.  resources.js /categories — DISTINCT category COUNT query
- * 10.  sendgrid.js sendEmail — missing-fields guard, mock mode, SENDGRID_FROM
+ * 10.  email.js sendEmail — missing-fields guard, log-only mode
  * 11.  db pool config — connectionTimeoutMillis=5000, idleTimeoutMillis=30000, max=10
  * 12.  config.js PORT=4000 + AI_CONCURRENCY=8
  * 13.  rbac.js auditLog + ROLE_HIERARCHY doc
@@ -31,41 +31,20 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * 16.  Mass influx — 100,000 new scenarios
  */
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
-let computeOutcomeEstimate;
+let computeAllSignals, computeDiversionRecommendations;
 let encrypt, decrypt;
-let haversineKm;
-let hasMinRole, ROLE_HIERARCHY;
-let safeInt, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_LEVELS, GAVEL_EMOJI, GAVEL_LABEL;
-let MOTION_TYPES;
+let hasMinRole;
 let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
-  const oe = await import('../analytics/outcomeEstimator.js');
-  computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
   const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole; ROLE_HIERARCHY = rbac.ROLE_HIERARCHY;
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg = await import('../routes/golden_gavel.js');
-  GAVEL_LEVELS = gg.GAVEL_LEVELS;
-  GAVEL_EMOJI = gg.GAVEL_EMOJI;
-  GAVEL_LABEL = gg.GAVEL_LABEL;
-  const motT = await import('../routes/motions/_motion_types.js');
-  MOTION_TYPES = motT.MOTION_TYPES;
-  const cfg = await import('../config.js');
+  hasMinRole = rbac.hasMinRole;     const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
 
@@ -331,26 +310,20 @@ describe('7. referrals/coverage/categories endpoints', () => {
   });
 });
 
-// ── 8. sendgrid sendEmail + db pool + config ──────────────────────────────
-describe('8. sendgrid sendEmail + db pool + config.js', () => {
+// ── 8. email sendEmail + db pool + config ──────────────────────────────
+describe('8. email sendEmail + db pool + config.js', () => {
   test("8-01: sendEmail returns error on missing to/subject", async () => {
-    const { sendEmail } = await import('../services/sendgrid.js');
+    const { sendEmail } = await import('../services/email.js');
     expect(await sendEmail({ to: '', subject: '' })).toEqual({ error: 'missing_fields' });
   });
   test("8-02: sendEmail in mock mode returns { mock: true, messageId: mock_... }", async () => {
-    const { sendEmail, SENDGRID_LIVE } = await import('../services/sendgrid.js');
-    expect(SENDGRID_LIVE).toBe(false);                      // SendGrid retired; shim → services/email.js (Resend)
+    const { sendEmail, emailLive } = await import('../services/email.js');   // Resend (SendGrid retired)
     const saved = process.env.RESEND_API_KEY; delete process.env.RESEND_API_KEY;
     try {
+      expect(emailLive()).toBe(false);
       const r = await sendEmail({ to: 'test@example.com', subject: 'Hello', text: 'Hi' });
       expect(r.mock).toBe(true);                            // logged, not sent, without RESEND_API_KEY
     } finally { if (saved !== undefined) process.env.RESEND_API_KEY = saved; }
-  });
-  test('8-03: SENDGRID_FROM is alerts@justicegavel.app', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js', 'utf8');
-    expect(src).toContain('SENDGRID_FROM');
-    expect(src).toContain('alerts@justicegavel.app');
   });
   test('8-05: config.js PORT defaults to 4000', async () => {
     const fs = await import('fs');

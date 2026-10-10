@@ -1,46 +1,15 @@
 /**
  * discovery/history.js — Analysis history and status
  */
-import { err400, err401, err403, err404, err409, err422, err500, err502,
-         safeInt, sanitizeStr } from '../../utils/routeHelpers.js';
+import { err404, safeInt } from '../../utils/routeHelpers.js';
 import { Router }         from 'express';
 import { authRequired }   from '../../middleware/auth.js';
 import { getDb }          from '../../db/index.js';
-import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
-import { enqueueAIJob as enqueue }        from '../../services/aiQueue.js';
 import logger             from '../../utils/logger.js';
-import rateLimit          from 'express-rate-limit';
-import multer             from 'multer';
 
-const upload = multer({
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB max
-  fileFilter: (_req, file, cb) => {
-    const ALLOWED = [
-      'application/pdf', 'text/plain', 'text/csv',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'image/jpeg', 'image/png', 'image/webp',
-    ];
-    cb(null, ALLOWED.includes(file.mimetype));
-  },
-});
-import {
-  safeJsonParse, isAccepted, isPdf, isImage, isDocx, isText,
-  imageMediaType, getFileExt, ACCEPTED_MIME, ACCEPTED_EXT,
-  ensureTables, hasDiscoveryPro, analyzeDocument
-} from './_helpers.js';
+import { safeJsonParse, hasDiscoveryPro } from './_helpers.js';
 
-const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
-const STRIPE_SECRET  = process.env.STRIPE_SECRET;
 
-const aiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id?.toString() || req.ip,
-  message: { error: 'AI rate limit reached — please wait.' },
-});
 
 const router = Router();
 
@@ -55,7 +24,7 @@ router.get('/history', authRequired, async (req, res) => {
       [req.user.id]
     );
     res.json(rows);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load history' });
   }
 });
@@ -75,7 +44,7 @@ router.get('/analysis/:id', authRequired, async (req, res) => {
       inconsistencies: safeJsonParse(row.inconsistencies, []),
       questions:       safeJsonParse(row.questions, []),
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load analysis' });
   }
 });
@@ -88,7 +57,7 @@ router.delete('/analysis/:id', authRequired, async (req, res) => {
     const db = await getDb();
     await db.run('DELETE FROM discovery_analyses WHERE id=? AND user_id=?', [safeInt(req.params.id), req.user.id]);
     res.json({ ok: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not delete' });
   }
 });

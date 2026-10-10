@@ -24,7 +24,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { PRECEDENT_REGISTRY, getApproachingStale } from './precedentRegistry.js';
+import { PRECEDENT_REGISTRY } from './precedentRegistry.js';
 
 const MONITOR_VERSION = '1.0.0';
 

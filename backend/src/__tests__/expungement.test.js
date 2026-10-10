@@ -130,7 +130,7 @@ async function buildApp(db) {
         ).catch(() => {});
       }
       return res.json({ success: true, referral_id: result.lastID, redirect_url: 'https://justicegavel.app/expunge' });
-    } catch (e) {
+    } catch {
       return res.status(500).json({ error: 'Server error.' });
     }
   });
@@ -143,7 +143,7 @@ async function buildApp(db) {
         [req.user.id]
       );
       return res.json(rows);
-    } catch (e) {
+    } catch {
       return res.status(500).json({ error: 'Server error.' });
     }
   });
@@ -166,7 +166,7 @@ async function buildApp(db) {
         [state.toLowerCase(), parseInt(limit, 10)]
       );
       return res.json({ attorneys: rows, state, matched: rows.length > 0, count: rows.length });
-    } catch (e) {
+    } catch {
       return res.status(500).json({ error: 'Server error.' });
     }
   });

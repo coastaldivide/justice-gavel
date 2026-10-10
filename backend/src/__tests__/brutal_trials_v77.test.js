@@ -3,18 +3,16 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // JUSTICE GAVEL - BRUTAL TRIALS v77
 // 77th pass: 2 discrepancy fixes + logger + geolink + RBAC PERMISSIONS + retention + pushDelivery
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate, encrypt, decrypt, haversineKm, haversineMiles, bboxFromLatLng;
-let hasMinRole, requirePermission, ROLE_HIERARCHY, PERMISSIONS;
-let safeInt, safeFloat, validCoords, BUSINESS_CONSTANTS, buildWhere, bboxFromLatLng2;
-let GAVEL_EMOJI, CONFIG;
+let hasMinRole, ROLE_HIERARCHY, PERMISSIONS;
+let safeInt, safeFloat;
+let GAVEL_EMOJI;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe  = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
@@ -29,13 +27,8 @@ beforeAll(async () => {
   ROLE_HIERARCHY = rbac.ROLE_HIERARCHY;
   PERMISSIONS = rbac.PERMISSIONS;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; safeFloat = rh.safeFloat; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  buildWhere = rh.buildWhere;
-  const gg  = await import('../routes/golden_gavel.js');
+  safeInt = rh.safeInt; safeFloat = rh.safeFloat;   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o={}) => ({

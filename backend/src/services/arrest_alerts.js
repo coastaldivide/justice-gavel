@@ -16,8 +16,6 @@ import logger from '../utils/logger.js';
 
 import { getDb } from '../db/index.js';
 import { realArrestSql } from '../utils/arrestVisibility.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 
 // Charge keywords mapped to practice areas
@@ -170,16 +168,12 @@ export async function sendArrestAlerts(options = {}) {
       try { return JSON.parse(attorney.specialties || '[]'); } catch { return []; }
     })();
 
-    const attorneyCity = (attorney.city || '').split(',')[0].trim();
-
     // Find arrests in attorney's county matching their specialties
-    for (const [county, arrests] of Object.entries(byCounty)) {
+    for (const [, arrests] of Object.entries(byCounty)) {
       // Geography match — attorney's city should be in this county's cities
       // Geographic match: attorney is notified if their city is in the same state as the arrests,
       // OR if county name matches. Expanded from TN-only to nationwide.
       const arrestState    = (arrests[0]?.state || '').toUpperCase();
-      const arrestCounty   = (county || '').toLowerCase();
-      const attyStateLower = (attorney.state || '').toLowerCase();
 
       // Skip if attorney is in a completely different state
       // (allow through if neither has state data — legacy records)

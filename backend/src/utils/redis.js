@@ -61,54 +61,5 @@ export async function cache(key, ttlSeconds, fetchFn) {
   }
 }
 
-/**
- * Session store helper (for JWT refresh token blacklisting)
- */
-export async function blacklistToken(jti, ttlSeconds) {
-  const client = getRedis();
-  if (!client) return false;
-  try {
-    await client.setex(`blacklist:${jti}`, ttlSeconds, '1');
-    return true;
-  } catch { return false; }
-}
 
-export async function isTokenBlacklisted(jti) {
-  const client = getRedis();
-  if (!client) return false;
-  try {
-    return await client.exists(`blacklist:${jti}`) === 1;
-  } catch { return false; }
-}
 
-/**
- * Distributed rate limiter (replaces in-memory rate limiting under load)
- * Sliding window using Redis sorted sets.
- */
-export async function rateLimitCheck(key, limit, windowSeconds) {
-  const client = getRedis();
-  if (!client) return { allowed: true, remaining: limit }; // degrade gracefully
-
-  const now   = Date.now();
-  const floor = now - windowSeconds * 1000;
-
-  try {
-    const pipeline = client.pipeline();
-    pipeline.zremrangebyscore(key, 0, floor);         // remove old entries
-    pipeline.zadd(key, now, now.toString());           // add current request
-    pipeline.zcard(key);                               // count total in window
-    pipeline.expire(key, windowSeconds + 1);           // cleanup
-
-    const results = await pipeline.exec();
-    const count   = results[2][1];
-
-    return {
-      allowed:   count <= limit,
-      remaining: Math.max(0, limit - count),
-      count,
-    };
-  } catch (err) {
-    logger.warn({ msg: '[redis] rate limit check failed', error: err.message });
-    return { allowed: true, remaining: limit }; // degrade gracefully
-  }
-}

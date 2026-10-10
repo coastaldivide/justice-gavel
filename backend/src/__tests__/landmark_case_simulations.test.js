@@ -27,9 +27,6 @@ function routeHas(file, pattern) {
     return new RegExp(pattern, 'is').test(c);
   } catch { return false; }
 }
-function anyRouteHas(files, pattern) {
-  return files.some(f => routeHas(f, pattern));
-}
 function schemaHas(pattern) {
   const migDir = resolve(ROOT, 'supabase/migrations');
   // every migration in supabase/migrations (the old dated file names were consolidated)
@@ -45,8 +42,6 @@ function schemaHas(pattern) {
 // Firm: O'Melveny & Myers / Vinson & Elkins
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Case 1 — Enron / Skilling (2001-2006)', () => {
-  const PARTIES = 2847;
-  const BAIL    = 5_000_000;
 
   test('conflict check supports 2,847 parties without per-party queries', () => {
     const c = readFileSync(resolve(ROUTES, 'conflicts.js'), 'utf-8');
@@ -130,7 +125,7 @@ describe('Case 3 — Boumediene v. Bush / Guantanamo (2004-2008)', () => {
   });
 
   test('check-in system handles indefinite detention (no release date)', () => {
-    const ci = readFileSync(resolve(ROUTES, 'checkins.js'), 'utf-8');
+    readFileSync(resolve(ROUTES, 'checkins.js'), 'utf-8');
     // Checkins must work without a fixed end date
     expect(existsSync(resolve(ROUTES, 'checkins.js'))).toBe(true);
   });
@@ -478,7 +473,6 @@ describe('Case 15 — People v. Kyle Rittenhouse (2021)', () => {
 
   test('bail reduced from $2M: system handles bail modification', () => {
     // Bail was initially set higher, reduced — system must support updates
-    const originalBail = 2_000_000;
     const reducedBail  = 2_000_000; // ended up same amount
     expect(reducedBail).toBeGreaterThan(0);
     const premium = Math.ceil(reducedBail * 0.10 * 100) / 100;

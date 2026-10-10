@@ -154,7 +154,7 @@ describe(`STRESS — ${N.toLocaleString()} iterations across all systems`, () =>
 
   // ── BAIL CALCULATOR ───────────────────────────────────────────────────
   describe('Bail calculator', () => {
-    let failures = [], drifts = [], timings = [];
+    const failures = [], drifts = [], timings = [];
 
     it(`runs ${N.toLocaleString()} bail calculations`, () => {
       const t0 = performance.now();
@@ -215,7 +215,7 @@ describe(`STRESS — ${N.toLocaleString()} iterations across all systems`, () =>
 
   // ── CHILD SUPPORT CALCULATOR ──────────────────────────────────────────
   describe('Child support calculator', () => {
-    let failures = [], drifts = [];
+    const failures = [], drifts = [];
 
     it(`runs ${N.toLocaleString()} child support calculations`, () => {
       const t0 = performance.now();
@@ -269,7 +269,8 @@ describe(`STRESS — ${N.toLocaleString()} iterations across all systems`, () =>
 
   // ── EXPUNGEMENT CHECKER ───────────────────────────────────────────────
   describe('Expungement eligibility checker', () => {
-    let failures = [], unsupported_ok = 0, eligible = 0, ineligible = 0;
+    const failures = [];
+    let unsupported_ok = 0, eligible = 0, ineligible = 0;
 
     it(`runs ${N.toLocaleString()} expungement checks across all 50 states`, () => {
       const t0 = performance.now();
@@ -324,7 +325,7 @@ describe(`STRESS — ${N.toLocaleString()} iterations across all systems`, () =>
 
   // ── SUBSCRIPTION STATE MACHINE ────────────────────────────────────────
   describe('Subscription state machine', () => {
-    let errors = [], wrong_type = [], unexpected_true = [], unexpected_false = [];
+    const errors = [], wrong_type = [], unexpected_true = [], unexpected_false = [];
 
     it(`runs ${N.toLocaleString()} canAccessFeature calls`, () => {
       const t0 = performance.now();
@@ -333,7 +334,6 @@ describe(`STRESS — ${N.toLocaleString()} iterations across all systems`, () =>
       const MUST_FREE = ['bail_calculator','know_your_rights','emergency_contacts',
                          'crisis_resources','immigration_rights','expungement_checker'];
       const MUST_NOT_FREE = ['firm_management','video_consultation','ai_legal_chat'];
-      const MUST_ESQUIRE  = ['firm_management','white_glove'];
 
       for (let i = 0; i < N; i++) {
         const tier    = pick(TIERS);
@@ -398,7 +398,7 @@ describe(`STRESS — ${N.toLocaleString()} iterations across all systems`, () =>
 
   // ── ASYLUM CLOCK ──────────────────────────────────────────────────────
   describe('Asylum clock', () => {
-    let failures = [];
+    const failures = [];
 
     it(`runs ${N.toLocaleString()} asylum clock calculations`, () => {
       const t0 = performance.now();

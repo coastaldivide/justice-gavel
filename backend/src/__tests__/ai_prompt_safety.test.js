@@ -9,7 +9,6 @@ import { fileURLToPath } from 'url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const PROMPTS   = resolve(__dirname, '../routes/chat/_prompts.js');
 const ASK_ROUTE = resolve(__dirname, '../routes/chat/ask.js');
-const CHAT_DIR  = resolve(__dirname, '../routes/chat');
 
 describe('AI prompts — UPL compliance', () => {
   let prompts;

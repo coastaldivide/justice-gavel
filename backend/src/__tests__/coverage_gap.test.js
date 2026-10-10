@@ -9,7 +9,6 @@ import { fileURLToPath }           from 'url';
 
 const __dirname  = fileURLToPath(new URL('.', import.meta.url));
 const ROUTES_DIR = resolve(__dirname, '../routes');
-const SVC_DIR    = resolve(__dirname, '../services');
 
 // ── barPrep.js ────────────────────────────────────────────────────────────────
 describe('barPrep route — structure', () => {
@@ -92,10 +91,6 @@ describe('caseLifecycle route — structure', () => {
 // ── Integration model tests ───────────────────────────────────────────────────
 describe('Bar prep data model', () => {
   test('subject list covers MBE subjects', () => {
-    const MBE_SUBJECTS = [
-      'civil_procedure', 'constitutional_law', 'contracts',
-      'criminal_law', 'evidence', 'real_property', 'torts'
-    ];
     const src = readFileSync(join(ROUTES_DIR, 'barPrep.js'), 'utf-8');
     // At least one MBE subject should appear in the route
     // MBE subjects are in the database, not hard-coded in the route

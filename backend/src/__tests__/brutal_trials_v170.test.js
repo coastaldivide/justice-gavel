@@ -5,7 +5,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // Every user session. Every payment flow. Every basic function.
 // Standard: flawless execution from first install to subscription charge.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -173,11 +172,11 @@ describe('S4. Case Management Complete Flow', () => {
   test('S4-03: Discovery: analyze + status poll + demo mode on backend', async () => {
     const fs=await import('fs');
     const fe=fs.readFileSync(__REPO + '/frontend/src/screens/DiscoveryScreen.tsx','utf8');
-    const be=fs.readFileSync(__REPO + '/backend/src/routes/discovery.js','utf8');
+    const be=['index','analyze','history','_helpers'].map(f=>fs.readFileSync(__REPO + '/backend/src/routes/discovery/'+f+'.js','utf8')).join('\n');
     expect(fe).toContain('/discovery/analyze');
     expect(fe).toContain('/discovery/status');
-    expect(be).toContain('ANTHROPIC_API_KEY');
-    expect(be).toContain('_demo');
+    expect(be).toContain('requireAi');          // no key → 503 ai_unavailable, never fake output
+    expect(be).not.toContain('_demo');
   });
   test('S4-05: Anthropic fetch has 45s AbortController timeout', async () => {
     const fs=await import('fs');
@@ -343,7 +342,8 @@ describe('FINAL. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

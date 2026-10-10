@@ -1,6 +1,4 @@
-import { requireAi } from '../utils/ai.js';
-import { CLAUDE_MODEL } from '../utils/ai.js';
-import { validate, schemas } from '../validation/schemas.js';
+import { requireAi, CLAUDE_MODEL } from '../utils/ai.js';
 import { translateLimiter } from '../utils/rateLimiters.js';
 // AI route — general guidance only, not legal advice
 /**
@@ -28,7 +26,7 @@ import { translateLimiter } from '../utils/rateLimiters.js';
  */
 
 import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
-import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, API_URLS } from '../utils/routeHelpers.js';
+import { err400, err404, safeInt, API_URLS } from '../utils/routeHelpers.js';
 import express from 'express';
 import { getDb } from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
@@ -132,7 +130,7 @@ router.post('/message', authRequired, requireAi, perUserAiLimit, async (req, res
       return { original: _txt, translated: t, src_lang: _src, tgt_lang: _tgt };
     });
     return res.json({ jobId, status: 'pending', async: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Translation service unavailable. Please try again.' });
   }
 });
@@ -233,12 +231,6 @@ router.post('/session/:code/message', async (req, res) => {
 // Short-poll endpoint — called every 2 seconds by both sides
 
 // Supported live translation languages (matches i18n locales + common immigrant languages)
-const SUPPORTED_LANGUAGES = {
-  es: 'Spanish', pt: 'Portuguese', vi: 'Vietnamese',
-  zh: 'Chinese (Simplified)', fr: 'French', de: 'German',
-  ar: 'Arabic', ko: 'Korean', ja: 'Japanese', it: 'Italian',
-  ru: 'Russian', hi: 'Hindi', tl: 'Tagalog', uk: 'Ukrainian',
-};
 
 router.get('/session/:code/messages', async (req, res) => {
   try {

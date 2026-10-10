@@ -17,7 +17,6 @@
 
 import Database from 'better-sqlite3';
 import path     from 'path';
-import readline from 'readline';
 
 const DEMO_DB = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../demo.db');
 const db      = new Database(DEMO_DB);
@@ -67,7 +66,7 @@ function updateDUI(state) {
   console.log(' NHTSA: https://www.nhtsa.gov/risky-driving/drunk-driving');
   console.log(' State DMV: search "' + state + ' DUI DMV laws"');
   console.log('\nTo update a field:');
-  console.log('  db.prepare("UPDATE dui_laws SET field=?, updated_at=datetime(\"now\"), source_url=? WHERE state=? AND year=?").run(newValue, sourceUrl, state, year)');
+  console.log('  db.prepare("UPDATE dui_laws SET field=?, updated_at=datetime("now"), source_url=? WHERE state=? AND year=?").run(newValue, sourceUrl, state, year)');
 }
 
 // ── Guided update for victim compensation ──────────────────────────────────
@@ -141,5 +140,5 @@ if (db) {
     if (fixed.changes > 0) {
       console.log(`  ✓ SOL null fix: ${fixed.changes} records updated`);
     }
-  } catch(e) { /* table may not exist in test env */ }
+  } catch { /* table may not exist in test env */ }
 }

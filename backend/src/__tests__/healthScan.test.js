@@ -5,7 +5,7 @@
  */
 
 import { jest } from '@jest/globals';
-import { runHealthScan, startHealthScanScheduler, stopHealthScanScheduler } from '../services/healthScan.js';
+import { startHealthScanScheduler, stopHealthScanScheduler } from '../services/healthScan.js';
 
 // ─── MOCKS ───────────────────────────────────────────────────────────────────
 jest.mock('../db/index.js', () => ({
@@ -15,7 +15,6 @@ jest.mock('../db/index.js', () => ({
     run:  jest.fn().mockResolvedValue({ changes: 0 }),
   }),
 }));
-jest.mock('../services/sendgrid.js', () => ({ sendEmail: jest.fn().mockResolvedValue({ ok: true }) }));
 jest.mock('../services/pushDelivery.js', () => ({ sendPushToUser: jest.fn().mockResolvedValue({ sent: 1 }) }));
 
 // ─── SECTION TESTS ───────────────────────────────────────────────────────────
@@ -172,7 +171,8 @@ describe('Health Scan — Signal Engine Invariants', () => {
   test('MANDATORY_MIN_SAFETY_VALVE_EXCLUSIVE: mutually exclusive in outcomes', () => {
     // mandatoryMin only fires when !safetyValveEligible
     for (const sv of [true, false]) {
-      const mm = true && !sv;
+      const mandatoryMinApplies = true;
+      const mm = mandatoryMinApplies && !sv;
       expect(mm && sv).toBe(false);
     }
   });
@@ -391,7 +391,7 @@ describe('Health Scan — Schedule Configuration', () => {
     // '0 6,18 * * *' = at 06:00 and 18:00, every day — two executions per day
     const expr = '0 6,18 * * *';
     expect(expr.split(' ')).toHaveLength(5);
-    const [min, hr, dom, mon, dow] = expr.split(' ');
+    const [min, hr, dom, mon] = expr.split(' ');
     expect(min).toBe('0');
     expect(hr).toBe('6,18');   // two fire times: 6 AM and 6 PM
     expect(dom).toBe('*');

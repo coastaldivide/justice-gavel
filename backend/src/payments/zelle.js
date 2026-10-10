@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto';
 
-export async function createZelleInstructions({ amount, currency='USD', user, meta }) {
+export function createZelleInstructions({ amount, currency='USD' }) {
   const email = process.env.ALERT_EMAIL_FROM || 'billing@justice-gavel.local';
   // Cryptographically secure reference code — consistent with codebase standard
   const code  = randomBytes(4).toString('hex').toUpperCase();

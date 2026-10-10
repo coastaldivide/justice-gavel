@@ -18,7 +18,6 @@ import responseTime from 'response-time';
 import compression from 'compression';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import { CONFIG } from './config.js';
 import authRouter       from './routes/auth.js';
 import alertsRouter     from './routes/alerts.js';
 import arrestsRouter    from './routes/arrests.js';
@@ -346,7 +345,7 @@ app.get('/metrics', async (req, res) => {
     }
 
     res.json(metrics);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not collect metrics' });
   }
 });
@@ -451,7 +450,7 @@ app.use((req, res) => {
 });
 
 // ── Global error handler ─────────────────────────────────────────────────────
-// eslint-disable-next-line no-unused-vars
+ 
 app.use((err, req, res, _next) => {
   let status = err.status || err.statusCode || 500;
   if (err.type === 'entity.parse.failed') status = 400;

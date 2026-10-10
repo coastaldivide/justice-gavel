@@ -4,14 +4,12 @@
  */
 import express from 'express';
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import { makeTestDb, createSchema } from './helpers/sqliteHelper.js';
 
-const SECRET = process.env.JWT_SECRET;
 
 function buildSecureApp() {
   const app = express();

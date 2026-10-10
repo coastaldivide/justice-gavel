@@ -29,7 +29,7 @@ async function buildApp(db) {
 
   // POST /generate — AI motion generation (mocked in tests)
   router.post('/generate', auth, async (req, res) => {
-    const { motion_type, fields, case_id } = req.body || {};
+    const { motion_type, fields } = req.body || {};
     if (!motion_type) return res.status(400).json({ error:'motion_type required' });
     if (!VALID_TYPES.includes(motion_type)) {
       return res.status(400).json({ error:`Invalid motion_type. Must be one of: ${VALID_TYPES.join(', ')}` });
@@ -102,7 +102,6 @@ let db, app;
 const U1 = 1, U2 = 2;
 const T1 = tok(U1,'user','pro');
 const T2 = tok(U2,'user','pro');
-const STARTER_TOKEN = tok(50,'user','starter');
 
 beforeAll(async () => {
   db = await makeTestDb();

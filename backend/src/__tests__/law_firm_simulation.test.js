@@ -123,25 +123,6 @@ function topMatch(rng, st, uLat, uLng) {
 }
 
 // ─── SHARED ASSERTIONS ────────────────────────────────────────────────────────
-function assertSorted(dl) {
-  for (let i=1;i<dl.length;i++) {
-    const pd=dl[i-1].due||'', cd=dl[i].due||'';
-    if (pd===cd) expect(PR[dl[i-1].priority]||0).toBeGreaterThanOrEqual(PR[dl[i].priority]||0);
-    else expect(pd.localeCompare(cd)).toBeLessThanOrEqual(0);
-  }
-}
-function assertScore(top) {
-  expect(Number.isFinite(top.matchScore)).toBe(true);
-  expect(top.matchScore).toBeGreaterThanOrEqual(-50);
-  expect(top.matchScore).toBeLessThanOrEqual(300);
-}
-function assertVarCD(t) {
-  expect(VAR_C).toContain(t.vulnerability);
-  expect(t.evidenceScore).toBeGreaterThanOrEqual(0);
-  expect(t.evidenceScore).toBeLessThanOrEqual(100);
-  expect(['weak','contested','moderate','strong']).toContain(t.evidence);
-  expect(t.evidence).toBe(evidenceBucket(t.evidenceScore));
-}
 
 // ═════════════════════════════════════════════════════════════════════════════
 //  FIRM DATA

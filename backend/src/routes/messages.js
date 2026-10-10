@@ -287,11 +287,10 @@ function sniffMime(buf) {
   return null;
 }
 const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif' };
-export const ATTACHMENT_TYPES = Object.keys(EXT);
 
 function safeFileName(name, mime) {
   let base = String(name || '').split(/[\\/]/).pop() || '';
-  base = base.replace(/[\u0000-\u001f\u007f"<>|:*?]/g, '').replace(/\s+/g, ' ').trim();
+  base = base.replace(/[\p{Cc}"<>|:*?]/gu, '').replace(/\s+/g, ' ').trim();
   base = base.replace(/\.[A-Za-z0-9]{1,5}$/, '');       // extension comes from the sniffed type
   base = base.replace(/[^A-Za-z0-9 ._()-]/g, '_').slice(0, 100) || 'document';
   return `${base}.${EXT[mime]}`;

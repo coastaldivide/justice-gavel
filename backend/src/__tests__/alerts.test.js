@@ -57,7 +57,7 @@ async function buildApp(db, smsCalls, emailCalls) {
         }
       }
       res.json({ ok:true, results });
-    } catch (e) { res.status(500).json({ error:'Alert failed' }); }
+    } catch { res.status(500).json({ error:'Alert failed' }); }
   });
 
   app.use('/alerts', router);

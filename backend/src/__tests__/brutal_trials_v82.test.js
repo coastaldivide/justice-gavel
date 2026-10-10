@@ -3,7 +3,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // JUSTICE GAVEL - BRUTAL TRIALS v82
 // 82nd pass: Hague Convention Feature + all discrepancy fixes confirmed
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
 let BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;

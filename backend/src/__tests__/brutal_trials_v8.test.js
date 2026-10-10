@@ -43,19 +43,14 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Backend pure-JS imports ──────────────────────────────────────────────────
-let detectLawyerHandoff, buildCaseNote, buildJurisdictionNote;
+let detectLawyerHandoff, buildCaseNote;
 let RESPONSE_FOOTER_INSTRUCTION, DEFENDER_SYSTEM_PROMPT, SYSTEM_PROMPT;
 let MOTION_TYPES;
-let CONTRACT_TYPES, getContractsByCategory;
 let sanitiseField;
 let computeAllSignals;
 let encrypt, decrypt;
-let normalizePhone, parseIntent;
-let haversineKm;
-let safeInt, safeFloat, buildWhere, buildOrderBy, escapeLike, stripHtml;
 let GAVEL_LEVELS;
 let PRECEDENT_REGISTRY;
 
@@ -63,7 +58,6 @@ beforeAll(async () => {
   const chatH = await import('../routes/chat/_helpers.js');
   detectLawyerHandoff   = chatH.detectLawyerHandoff;
   buildCaseNote         = chatH.buildCaseNote;
-  buildJurisdictionNote = chatH.buildJurisdictionNote;
 
   const chatP = await import('../routes/chat/_prompts.js');
   RESPONSE_FOOTER_INSTRUCTION = chatP.RESPONSE_FOOTER_INSTRUCTION;
@@ -73,9 +67,6 @@ beforeAll(async () => {
   const motT = await import('../routes/motions/_motion_types.js');
   MOTION_TYPES = motT.MOTION_TYPES;
 
-  const ctypes = await import('../routes/contracts/_contract_types.js');
-  CONTRACT_TYPES       = ctypes.CONTRACT_TYPES;
-  getContractsByCategory = ctypes.getContractsByCategory;
 
   const attyH = await import('../routes/attorney/_helpers.js');
   sanitiseField = attyH.sanitiseField;
@@ -93,20 +84,8 @@ beforeAll(async () => {
   encrypt = enc.encrypt;
   decrypt = enc.decrypt;
 
-  const tw = await import('../utils/sanitize.js');
-  normalizePhone = tw.normalizePhone;
-  parseIntent    = tw.parseIntent;
 
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
 
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt    = rh.safeInt;
-  safeFloat  = rh.safeFloat;
-  buildWhere = rh.buildWhere;
-  buildOrderBy = rh.buildOrderBy;
-  escapeLike = rh.escapeLike;
-  stripHtml  = rh.stripHtml;
 });
 
 const mk = (v, o = {}) => ({
@@ -832,7 +811,7 @@ describe('12. checkConflicts — RBAC Conflict Detection', () => {
 describe('13. DB Tables — Previously Untested Schema', () => {
 
   test("13-01: password_resets has user_id FK + token PK + expires_at", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
     const cols = tableColumns('password_resets');
     expect(cols.has('user_id')).toBe(true);
     expect(cols.has('token')).toBe(true);
@@ -841,7 +820,7 @@ describe('13. DB Tables — Previously Untested Schema', () => {
   });
 
   test("13-02: acquisition_leads captures email, firm_name, vertical, org_size", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
     const cols = tableColumns('acquisition_leads');
     expect(cols.has('email')).toBe(true);
     expect(cols.has('firm_name')).toBe(true);
@@ -851,7 +830,7 @@ describe('13. DB Tables — Previously Untested Schema', () => {
   });
 
   test("13-03: firm_trials links firm_id + user_id to firms and users", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
     const cols = tableColumns('firm_trials');
     expect(cols.has('firm_id')).toBe(true);
     expect(cols.has('user_id')).toBe(true);
@@ -859,7 +838,7 @@ describe('13. DB Tables — Previously Untested Schema', () => {
   });
 
   test("13-04: firm_onboarding has checklist_key for tracking onboarding steps", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
     const cols = tableColumns('firm_onboarding');
     expect(cols.has('checklist_key')).toBe(true);
     expect(cols.has('completed_at')).toBe(true);
@@ -867,7 +846,7 @@ describe('13. DB Tables — Previously Untested Schema', () => {
   });
 
   test("13-05: firm_upgrade_requests tracks who requested upgrade", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
     const cols = tableColumns('firm_upgrade_requests');
     expect(cols.has('firm_id')).toBe(true);
     expect(cols.has('requested_by')).toBe(true);
@@ -875,7 +854,6 @@ describe('13. DB Tables — Previously Untested Schema', () => {
   });
 
   test('13-06: all 5 previously untested tables are in the schema', async () => {
-    const fs  = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     const TABLES = ['password_resets', 'acquisition_leads', 'firm_trials',
                     'firm_upgrade_requests', 'firm_onboarding'];

@@ -1,4 +1,3 @@
-import { validate, schemas } from '../../validation/schemas.js';
 import { notifyError } from '../../monitoring/errorNotifier.js';
 import { audit, AUDIT_ACTIONS } from '../../utils/audit.js';
 /**
@@ -13,10 +12,8 @@ import { audit, AUDIT_ACTIONS } from '../../utils/audit.js';
  *
  * Local testing: stripe listen --forward-to localhost:4000/api/billing/webhook
  */
-import { stripe, LIVE, TIERS }                       from './_shared.js';
-import { err400, err500, safeInt }                   from '../../utils/routeHelpers.js';
-import express from 'express';
-import { Router }                                    from 'express';
+import { err400 } from '../../utils/routeHelpers.js';
+import express, { Router } from 'express';
 import { getDb }                                     from '../../db/index.js';
 import logger                                        from '../../utils/logger.js';
 
@@ -56,22 +53,20 @@ const router = Router();
 // Register: stripe listen --forward-to localhost:4000/api/billing/webhook
 
 
-// ── Stripe webhook handler — extracted for readability ───────────────────────
-async function handleStripeWebhook(event, db) {
-  const type = event.type;
-
-  if (type === 'customer.subscription.updated' || type === 'customer.subscription.deleted') {
-    const sub = event.data.object;
-    const status = sub.status; // 'active' | 'canceled' | 'past_due' | 'unpaid'
-    const userId = sub.metadata?.user_id;
-    if (userId) {
-      const active = ['active','trialing'].includes(status);
-      await db.run(
-        `UPDATE subscriptions SET status=?, stripe_status=?, updated_at=NOW() WHERE stripe_sub_id=?`,
-        [active ? 'active' : 'canceled', status, sub.id]
-      ).catch(() => {});
-    }
-  }
+// ── Bondsman tier subscription sync (customer.subscription.updated / .deleted) ──
+async function syncBondsmanTier(db, sub) {
+  const priceId = sub.items?.data?.[0]?.price?.id;
+  const { bondsTierFromPriceId } = await import('./_shared.js');
+  const tier    = bondsTierFromPriceId(priceId);
+  if (!tier) return;
+  await db.run(
+    `UPDATE bondsman_subscriptions
+       SET status=?, tier=?, cancel_at_period_end=?, renews_at=?, updated_at=NOW()
+     WHERE stripe_sub_id=?`,
+    [sub.cancel_at_period_end ? 'active' : sub.status,
+     tier, sub.cancel_at_period_end ? 1 : 0,
+     sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null, sub.id]
+  ).catch(e => logger.warn('[webhook] bondsman_sub update:', e?.message));
 }
 
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -143,9 +138,17 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     switch (event.type) {
       case 'customer.subscription.deleted':
       await audit(AUDIT_ACTIONS.SUBSCRIPTION_CANCELLED, { userId: event?.data?.object?.metadata?.user_id });
+      // falls through — a deleted subscription is synced like an update (status 'canceled')
       case 'customer.subscription.updated': {
         const sub = event.data.object;
         const status = sub.status; // 'active' | 'canceled' | 'past_due' | 'unpaid'
+        if (sub.metadata?.type === 'bondsman_tier') {
+          // Bondsman tier subscriptions live in bondsman_subscriptions. This branch was
+          // previously a second, unreachable `case 'customer.subscription.updated'`
+          // further down, so bondsman tier changes and cancellations were never synced.
+          await syncBondsmanTier(db, sub);
+          break;
+        }
         if (sub.metadata?.user_id) {
           await db.run(
             `UPDATE subscriptions SET status=?, updated_at=NOW()
@@ -368,32 +371,11 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       break;
     }
 
-    // ── Bondsman tier subscription events ───────────────────────────────────────
-    case 'customer.subscription.updated': {
-      const sub     = event.data.object;
-      if (sub.metadata?.type !== 'bondsman_tier') break; // consumer subs handled separately
-      const priceId = sub.items?.data?.[0]?.price?.id;
-      const { bondsTierFromPriceId } = await import('./_shared.js');
-      const tier    = bondsTierFromPriceId(priceId);
-      if (tier) {
-        const db = await getDb();
-        await db.run(
-          `UPDATE bondsman_subscriptions
-             SET status=?, tier=?, cancel_at_period_end=?, renews_at=?, updated_at=NOW()
-           WHERE stripe_sub_id=?`,
-          [sub.cancel_at_period_end ? 'active' : sub.status,
-           tier, sub.cancel_at_period_end ? 1 : 0,
-           new Date(sub.current_period_end * 1000).toISOString(), sub.id]
-        ).catch(e => logger.warn('[webhook] bondsman_sub update:', e?.message));
-      }
-      break;
-    }
-
     default:
         // unhandled event type — ignored (expected for new Stripe events)
     }
     res.json({ received: true, type: event.type });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Webhook handler error. Please try again.' });
   }
 });

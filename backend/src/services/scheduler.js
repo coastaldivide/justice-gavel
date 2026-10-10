@@ -32,36 +32,8 @@ import { sendArrestAlerts }                    from './arrest_alerts.js';
 import { runOutboundBot, expireOldPaymentLinks } from './outbound_bot.js';
 import { processGoldenGavelAward }              from '../routes/golden_gavel.js';
 import logger                                   from '../utils/logger.js';
-import { startHealthScanScheduler, stopHealthScanScheduler, runHealthScan } from './healthScan.js';
+import { startHealthScanScheduler, stopHealthScanScheduler } from './healthScan.js';
 import { archiveCompletedDocketEntries, checkAccountInactivity } from './retention.js';
-
-// ── Refresh token cleanup — runs daily at 3am ──────────────────────────────────
-// Removes tokens that are expired or have already been used.
-// Without this the refresh_tokens table grows unbounded.
-async function cleanupRefreshTokens() {
-  const db = await getDb();
-  const result = await db.run(
-    `DELETE FROM refresh_tokens
-     WHERE expires_at < NOW()
-        OR (used = 1 AND created_at < (NOW() - INTERVAL '7 days'))`,
-  ).catch(() => ({ changes: 0 }));
-  if (result.changes > 0) {
-    logger.info('[scheduler] cleaned up refresh tokens:', result.changes);
-  }
-}
-
-// ── Audit log archival — move entries >90 days to cold storage summary ─────────
-// Keeps audit_log table performant for active queries
-async function archiveOldAuditLogs() {
-  const db = await getDb();
-  const result = await db.run(
-    `DELETE FROM audit_log WHERE created_at < (NOW() - INTERVAL '90 days')`,
-  ).catch(() => ({ changes: 0 }));
-  if (result.changes > 0) {
-    logger.info('[scheduler] archived old audit entries:', result.changes);
-  }
-}
-
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -300,7 +272,6 @@ async function runConsultationReminderSweep(db) {
     const expo = await getSchedExpo();
     const { Expo } = await import('expo-server-sdk');
     const { sendEmail } = await import('./email.js');
-    const { getDb } = await import('../db/index.js');
     let sent = 0;
 
     for (const row of upcoming) {

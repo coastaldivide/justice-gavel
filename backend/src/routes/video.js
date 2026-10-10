@@ -1,5 +1,3 @@
-import { apiLimiter } from '../utils/rateLimiters.js';
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/video.js — Attorney-client video consultations via Daily.co
  *
@@ -21,7 +19,6 @@ import { validate, schemas } from '../validation/schemas.js';
 import { Router }       from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getDb }        from '../db/index.js';
-import { err400, err403 } from '../utils/routeHelpers.js';
 import { sanitizeStr }  from '../utils/sanitize.js';
 import { canAccessFeature } from '../utils/subscriptionStateMachine.js';
 import { auditLog }     from '../utils/auditLog.js';
@@ -165,7 +162,7 @@ router.delete('/session/:name', authRequired, async (req, res) => {
     await auditLog({ userId: req.user.id, action: 'VIDEO_SESSION_ENDED',
       entityType: 'video', entityId: req.params.name, req });
     return res.json({ ended: true });
-  } catch (e) {
+  } catch {
     return res.json({ ended: true, note: 'Room may have already expired' });
   }
 });
@@ -185,7 +182,7 @@ router.get('/sessions/me', authRequired, async (req, res) => {
       [req.user.id]
     ).catch(() => []);
     return res.json({ sessions, count: sessions.length });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not fetch session history' });
   }
 });

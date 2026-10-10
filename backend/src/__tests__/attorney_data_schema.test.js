@@ -3,7 +3,7 @@
  * Validates the attorney data schema: required fields, format
  * constraints, and geographic data integrity.
  */
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));

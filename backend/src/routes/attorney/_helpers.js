@@ -1,10 +1,7 @@
 /**
  * attorney/_helpers.js — Shared utilities for the attorney platform
  */
-import { Router }       from 'express';
-import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
-import logger           from '../../utils/logger.js';
 import { err401 }       from '../../utils/routeHelpers.js';
 
 // ── Profile field sanitiser — strip HTML tags and control characters ───────────
@@ -15,7 +12,7 @@ export function sanitiseField(value, maxLen = 500) {
   if (typeof value !== 'string') return value;
   return value
     .replace(/<[^>]*>/g, '')          // strip HTML tags
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '') // strip control chars
+    .replace(/[^\P{Cc}\t\n\r]/gu, '') // strip control chars (keeps tab / newline / CR)
     .trim()
     .slice(0, maxLen);
 }
@@ -29,7 +26,6 @@ export function sanitiseProfileFields(obj) {
   return safe;
 }
 
-const router = Router();
 
 // ── Access helpers ───────────────────────────────────────────────────────────
 // Both return { db, user } when allowed. When NOT allowed they send the 401/403
@@ -37,7 +33,7 @@ const router = Router();
 const ATTORNEY_ROLES = new Set(['attorney', 'defender', 'admin', 'super_admin']);
 
 async function loadUser(db, id) {
-  return db.get(
+  return await db.get(
     `SELECT id, display_name, email, role, bar_number, bar_state, bar_verified, jtb_verified,
             is_admin, is_defender, office_id
        FROM users WHERE id = ?`, [id]);

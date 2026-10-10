@@ -12,9 +12,8 @@
 import { cache, getRedis } from '../utils/redis.js';
 import { seededShuffle }   from '../utils/sm2.js';
 import { db }              from '../db/index.js';
-import logger              from '../utils/logger.js';
 
-const Q_CACHE_TTL     = 3600;  // 1 hour — questions don't change often
+  // 1 hour — questions don't change often
 const USER_CACHE_TTL  = 600;   // 10 min — user-specific due cards
 
 /**
@@ -113,7 +112,7 @@ export async function fetchQuestionsForSession(opts) {
  */
 export async function getSubjectsWithProgress(userId) {
   const key = `bar:subjects:${userId}`;
-  return cache(key, USER_CACHE_TTL, async () => {
+  return await cache(key, USER_CACHE_TTL, async () => {
     const subjects = await db.all(`
       SELECT bs.*,
              ubp.total_answered,

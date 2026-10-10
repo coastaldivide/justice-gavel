@@ -1,4 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * hague_contacts.js — Hague Convention Central Authority + Reporting Links
  *
@@ -36,15 +35,14 @@ import { validate, schemas } from '../validation/schemas.js';
  * relevant Central Authority. We do not file on behalf of clients.
  */
 
-import { err400, err401, err403, err404, err422, err500, safeInt, sanitizeStr }
-  from '../utils/routeHelpers.js';
+import { err400, err403, err404, err422, err500, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 import { Router }        from 'express';
 import { getDb }         from '../db/index.js';
 import { authRequired }  from '../middleware/auth.js';
 import logger            from '../utils/logger.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 
-const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
+const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
 
 const router = Router();
 
@@ -115,7 +113,7 @@ const MEMBER_STATES = [
 ];
 
 // ── Route: GET /us-resources ───────────────────────────────────────────────
-router.get('/us-resources', authRequired, async (req, res) => {
+router.get('/us-resources', authRequired, (req, res) => {
   try {
     res.json({
       resources: US_RESOURCES,
@@ -129,7 +127,7 @@ router.get('/us-resources', authRequired, async (req, res) => {
 });
 
 // ── Route: GET /member-states ──────────────────────────────────────────────
-router.get('/member-states', authRequired, async (req, res) => {
+router.get('/member-states', authRequired, (req, res) => {
   try {
     res.json({
       member_states: MEMBER_STATES,
@@ -144,7 +142,7 @@ router.get('/member-states', authRequired, async (req, res) => {
 });
 
 // ── Route: GET /central-authority/:countryCode ─────────────────────────────
-router.get('/central-authority/:countryCode', authRequired, async (req, res) => {
+router.get('/central-authority/:countryCode', authRequired, (req, res) => {
   try {
     const code = (req.params.countryCode || '').toUpperCase().trim();
     if (!code || code.length !== 2) return err400(res, 'Invalid country code (use ISO 3166-1 alpha-2)');

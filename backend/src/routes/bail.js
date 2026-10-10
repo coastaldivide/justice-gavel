@@ -1,71 +1,24 @@
-import { cacheFor } from '../utils/cache.js';
-import { asyncRoute } from '../utils/routeHelpers.js';
+import { asyncRoute, err400 } from '../utils/routeHelpers.js';
 import { validate, schemas } from '../validation/schemas.js';
-import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
 import logger from '../utils/logger.js';
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
-import { authRequired } from '../middleware/auth.js';
-import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.js';
+import { apiLimiter } from '../middleware/rateLimiters.js';
 
 const router = Router();
 
 // ── Build share-ready summary for bail result ─────────────────────────────
-function buildShareSummary({ state, charge_type, bail_amount, premium, notes, plan, mandatory_minimum } = {}) {
-  if (!bail_amount) return null;
-  let txt = `Justice Gavel Bail Summary\n`;
-  txt += `State: ${state} | Charge: ${charge_type}\n`;
-  txt += `Bail Set: $${bail_amount.toLocaleString()}\n`;
-  if (premium) txt += `Bond Premium (10%): $${premium.toLocaleString()}\n`;
-  if (plan)    txt += `Payment Option: $${plan.monthly}/mo for ${plan.months} months\n`;
-  if (mandatory_minimum?.years) txt += `Mandatory Minimum: ${mandatory_minimum.years} years\n`;
-  txt += `\nGet help at: https://justicegavel.com`;
-  return txt;
-}
 
 
 
 // ── Installment Plan — Integer Cents (IEEE 754 safe) ─────────────────────
-function calcInstallmentPlan(premiumDollars, months = 3) {
-  if (!premiumDollars || premiumDollars <= 0 || months <= 0) return null;
-  if (!Number.isSafeInteger(Math.round(premiumDollars * 100))) return null;
-  const premiumCents = Math.round(premiumDollars * 100);
-  const monthlyCents = Math.ceil(premiumCents / months);
-  return {
-    monthly:  monthlyCents / 100,
-    total:    (monthlyCents * months) / 100,
-    months,
-    note: `${months} equal payments of $${(monthlyCents/100).toFixed(2)}`,
-  };
-}
 
 
 
 // ── Mandatory Minimum Flags ──────────────────────────────────────────────────
 // Federal charges with mandatory consecutive sentences that courts cannot waive.
 // Source: USSC 2023 guidelines + 18 USC 924(c), 21 USC 841(b)(1)
-const MANDATORY_MINIMUMS = {
-  // 18 USC 924(c) — drug + firearm offense
-  '924(c)':       { years: 5,  note: '18 USC 924(c): mandatory 5yr consecutive for drug+firearm. 2nd offense = 25yr.' },
-  '924(c)(1)(A)': { years: 5,  note: '18 USC 924(c): firearm brandished adds 7yr mandatory minimum.' },
-  // Drug trafficking — 21 USC 841(b)(1)
-  '841(b)(1)(A)': { years: 10, note: '21 USC 841(b)(1)(A): 10yr mandatory for large drug quantities. Life if death results.' },
-  '841(b)(1)(B)': { years: 5,  note: '21 USC 841(b)(1)(B): 5yr mandatory for medium drug quantities.' },
-  // Armed career criminal — 18 USC 924(e)
-  '924(e)':       { years: 15, note: '18 USC 924(e) ACCA: 15yr mandatory for felon with 3+ violent/drug priors.' },
-  // Sex offenses — 18 USC 2252
-  '2252':         { years: 5,  note: '18 USC 2252: 5yr mandatory for child exploitation material.' },
-  // Human trafficking — 18 USC 1591
-  '1591':         { years: 15, note: '18 USC 1591: 15yr mandatory for sex trafficking of a minor.' },
-};
 
-function checkMandatoryMinimum(charge) {
-  if (!charge) return null;
-  for (const [pattern, info] of Object.entries(MANDATORY_MINIMUMS)) {
-    if (charge.includes(pattern)) return { statute: pattern, ...info };
-  }
-  return null;
-}
 
 
 
@@ -81,7 +34,7 @@ router.get('/', async (req, res) => {
       state ? [state] : []
     ).catch(() => []);
     res.json({ data: rows });
-  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });
 
 
@@ -117,7 +70,7 @@ router.get('/nearby', async (req, res) => {
 
 
 // POST /api/bail/calculate — compute bail recommendation from case factors
-router.post('/calculate', apiLimiter, validate(schemas.bail.calculate), async (req, res) => {
+router.post('/calculate', apiLimiter, validate(schemas.bail.calculate), (req, res) => {
   const {
     state,
     charge_type,      // 'felony' | 'misdemeanor' | 'dui' | 'domestic' | 'sexual' | 'dismissed'
@@ -160,7 +113,7 @@ router.post('/calculate', apiLimiter, validate(schemas.bail.calculate), async (r
 
   const sev = severity || 'medium';
   const ct  = charge_type in BASE ? charge_type : 'felony';
-  let base  = BASE[ct][sev] || BASE['felony'][sev];
+  const base  = BASE[ct][sev] || BASE['felony'][sev];
 
   // ── Risk factor multipliers ───────────────────────────────────────────────
   const PRIOR_MULT   = { none: 1.0, minor: 1.25, significant: 1.75, extensive: 2.5 };
@@ -236,9 +189,8 @@ router.get('/immigration', apiLimiter, (req, res) => {
 
 
 // ── GET /bail/estimate-total — full cost estimate including fees ──────────
-router.get('/estimate-total', apiLimiter, asyncRoute(async (req, res) => {
+router.get('/estimate-total', apiLimiter, asyncRoute((req, res) => {
   const bail     = parseFloat(req.query.bail_amount || '0');
-  const months   = Math.min(parseInt(req.query.months || '3'), 60);
   const rate     = parseFloat(req.query.rate || '0.10');
 
   if (!bail || bail <= 0) return res.status(400).json({ error: 'bail_amount required' });

@@ -4,7 +4,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // COMPLETE CONTENT + NAMING + FUNCTIONAL FLOW + PAYMENT VERIFICATION
 // Every screen, every function, every payment route. Zero nonsense.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');

@@ -35,14 +35,12 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 import { makeTestDb, createSchema } from './helpers/sqliteHelper.js';
 
 // ─── Imports ─────────────────────────────────────────────────────────────────
 let encrypt, decrypt, isEncrypted;
-let sendPushToUser, deliverScheduledPushes, checkPushReceipts;
 let enqueue, getJob, queueStats;
-let writeMatterVersion, applyLegalHold, releaseLegalHold, checkLegalHold,
+let writeMatterVersion, checkLegalHold,
     getMatterVersionHistory, archiveCompletedDocketEntries,
     onSubscriptionLapse, isSubscriptionWriteable, getFirmRetentionStatus;
 let computeAllSignals, evidenceBucket;
@@ -60,8 +58,6 @@ beforeAll(async () => {
 
   const ret  = await import('../services/retention.js');
   writeMatterVersion           = ret.writeMatterVersion;
-  applyLegalHold               = ret.applyLegalHold;
-  releaseLegalHold             = ret.releaseLegalHold;
   checkLegalHold               = ret.checkLegalHold;
   getMatterVersionHistory      = ret.getMatterVersionHistory;
   archiveCompletedDocketEntries= ret.archiveCompletedDocketEntries;
@@ -75,7 +71,6 @@ beforeAll(async () => {
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const randomEmail = () => `test_${Math.random().toString(36).slice(2)}@example.com`;
 const base = (vertical, o = {}) => ({
   id: Math.floor(Math.random() * 1e9), vertical,
   title: `Test ${vertical}`, status: 'active',
@@ -559,9 +554,7 @@ describe('6. Auth Flows — Business Logic', () => {
   });
 
   test('6-05: password reset token — minimum 32 chars entropy', () => {
-    const generateResetToken = () => require('crypto').randomBytes(32).toString('hex');
     // Just verify our expectation of what the token should look like
-    const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
     // The real token in auth.js uses crypto.randomBytes(32).toString('hex') = 64 chars
     // This is a logical contract test
     expect(64).toBeGreaterThanOrEqual(32);
@@ -794,7 +787,7 @@ describe('9. Security — Gap Coverage', () => {
 
   test('9-04: path traversal — sanitizeStr removes path separators', () => {
     const sanitize = (s, maxLen = 500) =>
-      String(s || '').replace(/[<>\"\'\\\/\x00-\x1f]/g, '').slice(0, maxLen);
+      String(s || '').replace(/[<>"'\\/\p{Cc}]/gu, '').slice(0, maxLen);
     
     expect(sanitize('../../../etc/passwd')).not.toContain('../');
     expect(sanitize('<script>alert()</script>')).not.toContain('<');
@@ -829,7 +822,6 @@ describe('9. Security — Gap Coverage', () => {
     // All POST/PUT/DELETE routes require authRequired middleware
     // This is a contract test — verified by reading middleware chain
     const PROTECTED_METHODS = ['POST','PUT','PATCH','DELETE'];
-    const PUBLIC_METHODS    = ['GET'];
     // GET endpoints can be public (some); writes always require auth
     for (const method of PROTECTED_METHODS) {
       expect(PROTECTED_METHODS.includes(method)).toBe(true);
@@ -1089,7 +1081,7 @@ describe('13. Webhook Processing — Business Logic', () => {
       'canceled':  'cancelled',
       'unpaid':    'lapsed',
     };
-    for (const [stripe, app] of Object.entries(STRIPE_TO_APP)) {
+    for (const [, app] of Object.entries(STRIPE_TO_APP)) {
       expect(typeof app).toBe('string');
       expect(app.length).toBeGreaterThan(0);
     }
@@ -1817,7 +1809,8 @@ describe('24. Final System Stress — All Areas Combined', () => {
 
     // Step 7: Dismissed + expungeable
     c.status = 'Dismissed';
-    const expungeable = !false && c.status === 'Dismissed'; // no conviction
+    const hasConviction = false;
+    const expungeable = !hasConviction && c.status === 'Dismissed'; // no conviction
     expect(expungeable).toBe(true);
 
     // Step 8: Status → Expunged

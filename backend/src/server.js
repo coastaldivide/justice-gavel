@@ -29,7 +29,7 @@ try {
   logger.info({ engine: db.engine }, '[server] database ready');
 } catch (e) {
   logger.fatal?.({ err: e.message }, '[server] database connection failed — refusing to start');
-  console.error('[server] FATAL: database connection failed:', e.message);
+  logger.error('[server] FATAL: database connection failed:', e.message);
   process.exit(1);
 }
 
@@ -200,9 +200,9 @@ server.on('listening', () => {
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`[server] FATAL: port ${PORT} is already in use`);
+    logger.error(`[server] FATAL: port ${PORT} is already in use`);
   } else {
-    console.error('[server] FATAL server error:', err.message);
+    logger.error('[server] FATAL server error:', err.message);
   }
   process.exit(1);
 });
@@ -215,13 +215,13 @@ async function shutdown(signal, exitCode = 0) {
   logger.info(`[server] ${signal} received — starting graceful shutdown`);
 
   const force = setTimeout(() => {
-    console.error('[server] Graceful shutdown timed out — forcing exit');
+    logger.error('[server] Graceful shutdown timed out — forcing exit');
     process.exit(exitCode || 1);
   }, 25_000);
   force.unref();
 
   try {
-    await new Promise(resolve => server.close(() => resolve()));
+    await new Promise(resolve => { server.close(() => resolve()); });
     server.closeAllConnections?.();
   } catch { /* ignore */ }
   timers.forEach(t => { clearInterval(t); clearTimeout(t); });
@@ -245,7 +245,7 @@ process.on('SIGINT',  () => shutdown('SIGINT', 0));
 // A thrown exception leaves the process in an unknown state: report it and
 // exit non-zero so the platform (Railway/PM2/Docker) restarts us.
 process.on('uncaughtException', (err) => {
-  console.error('[server] Uncaught exception:', err?.stack || err);
+  logger.error('[server] Uncaught exception:', err?.stack || err);
   try {
     import('./monitoring/errorNotifier.js')
       .then(({ notifyCritical }) => notifyCritical?.('Uncaught exception — process restarting', {

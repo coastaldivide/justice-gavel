@@ -30,36 +30,24 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * S12 UX        — firm_verticals PATCH pattern (getFirmMembership + associate+)
  */
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate;
 let encrypt, decrypt;
-let haversineKm;
 let hasMinRole;
-let safeInt, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_EMOJI, GAVEL_LABEL;
 let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
   const rbac = await import('../middleware/rbac.js');
   hasMinRole = rbac.hasMinRole;
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const cfg = await import('../config.js');
+   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
 
@@ -291,13 +279,11 @@ describe('S8. FE Services — Remaining Gaps', () => {
 // ── S9. DB — UNIQUE constraints + low-hit tables ─────────────────────────
 describe('S9. DB — UNIQUE Constraints + Low-Hit Tables', () => {
   test('S9-01: 10 UNIQUE constraints enforce data integrity', async () => {
-    const fs = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     const uniques = (src.match(/UNIQUE\s*\(/g) || []).length;
     expect(uniques).toBeGreaterThanOrEqual(8);
   });
   test('S9-04: UNIQUE(matter_id, user_id) prevents duplicate matter team assignments', async () => {
-    const fs = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain('UNIQUE(matter_id, user_id)');
   });
@@ -307,13 +293,11 @@ describe('S9. DB — UNIQUE Constraints + Low-Hit Tables', () => {
     expect(src).toContain('asylum_clocks');
   });
   test('S9-06: dpa_trackers + tro_trackers tables for domestic violence tracker system', async () => {
-    const fs = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain('dpa_trackers');
     expect(src).toContain('tro_trackers');
   });
   test('S9-07: contract_redlines table stores version-diff comparisons', async () => {
-    const fs = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain('contract_redlines');
   });

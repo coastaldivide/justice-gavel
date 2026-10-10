@@ -33,20 +33,6 @@ const onLimitReached = (label) => (req, res, options) => {
   });
 };
 
-/**
- * AI Chat — 60 messages per user per 10 minutes
- * Prevents conversation spam that drains Claude budget
- */
-export const chatLimiter = rateLimit({
-  windowMs:         10 * 60 * 1000,
-  max:              60,
-  keyGenerator:     userOrIpKey,
-  handler:          onLimitReached('chat'),
-  message:          'Too many messages. Please wait a moment before sending more.',
-  standardHeaders:  true,
-  legacyHeaders:    false,
-  skipSuccessfulRequests: false,
-});
 
 /**
  * Translation — 20 translation requests per user per 10 minutes
@@ -62,45 +48,8 @@ export const translateLimiter = rateLimit({
   legacyHeaders:    false,
 });
 
-/**
- * Motion generation — 5 per user per hour ($9.99 each)
- * Hard cap: generating 100 motions would cost $50 in Claude calls + $50 fraud
- */
-export const motionGenerateLimiter = rateLimit({
-  windowMs:         60 * 60 * 1000,
-  max:              5,
-  keyGenerator:     userOrIpKey,
-  handler:          onLimitReached('motion_generate'),
-  message:          'Motion generation limit reached (5/hour). Upgrade to Esquire for higher limits.',
-  standardHeaders:  true,
-  legacyHeaders:    false,
-});
 
-/**
- * Legal research — 30 per user per hour
- */
-export const researchLimiter = rateLimit({
-  windowMs:         60 * 60 * 1000,
-  max:              30,
-  keyGenerator:     userOrIpKey,
-  handler:          onLimitReached('legal_research'),
-  message:          'Research limit reached. Please try again in an hour.',
-  standardHeaders:  true,
-  legacyHeaders:    false,
-});
 
-/**
- * Document analysis ($19.99 each) — 3 per user per hour
- */
-export const documentAnalysisLimiter = rateLimit({
-  windowMs:         60 * 60 * 1000,
-  max:              3,
-  keyGenerator:     userOrIpKey,
-  handler:          onLimitReached('document_analysis'),
-  message:          'Document analysis limit reached (3/hour). Upgrade for more analyses.',
-  standardHeaders:  true,
-  legacyHeaders:    false,
-});
 
 /**
  * Voice transcription — 10 per user per hour
@@ -115,18 +64,6 @@ export const transcribeLimiter = rateLimit({
   legacyHeaders:    false,
 });
 
-/**
- * Matter intelligence — 20 per user per hour (AI-powered case analysis)
- */
-export const matterIntelLimiter = rateLimit({
-  windowMs:         60 * 60 * 1000,
-  max:              20,
-  keyGenerator:     userOrIpKey,
-  handler:          onLimitReached('matter_intelligence'),
-  message:          'Case analysis limit reached (20/hour).',
-  standardHeaders:  true,
-  legacyHeaders:    false,
-});
 
 /**
  * Auth endpoints — prevent brute force

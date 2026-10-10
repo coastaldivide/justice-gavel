@@ -1,7 +1,7 @@
 /**
  * backend_utils_complete.test.js
  * Tests all 9 backend utilities: logger, errors, retry,
- * routeHelpers, audit, circuitBreaker, sanitize, stateMachine.
+ * routeHelpers, audit, sanitize, stateMachine.
  */
 import { readFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
@@ -22,36 +22,7 @@ describe('Utils — logger.js', () => {
   });
 });
 
-describe('Utils — errors.js', () => {
-  test('errors file exists', () => expect(existsSync(join(UTILS_DIR,'errors.js'))).toBe(true));
-  test('defines custom error classes', () => {
-    const c = readFileSync(join(UTILS_DIR,'errors.js'),'utf-8');
-    // errors.js uses sendError function pattern (not class-based)
-    expect(c).toMatch(/class\s+\w+Error|AppError|HttpError|sendError|function.*Error/i);
-  });
-  test('custom errors extend Error or include statusCode', () => {
-    const c = readFileSync(join(UTILS_DIR,'errors.js'),'utf-8');
-    expect(c).toMatch(/extends\s+Error|statusCode|status\s*=/i);
-  });
-});
 
-describe('Utils — retry.js', () => {
-  test('retry file exists', () => expect(existsSync(join(UTILS_DIR,'retry.js'))).toBe(true));
-  test('has exponential backoff', () => {
-    const c = readFileSync(join(UTILS_DIR,'retry.js'),'utf-8');
-    expect(c).toMatch(/exponential|Math\.pow|2\s*\*\*|backoff|delay.*attempt/i);
-  });
-  test('has max retry limit', () => {
-    const c = readFileSync(join(UTILS_DIR,'retry.js'),'utf-8');
-    expect(c).toMatch(/maxAttempts|maxRetries|MAX_RETRIES|attempts/i);
-  });
-  test('does not retry on 4xx errors (client errors are not transient)', () => {
-    const c = readFileSync(join(UTILS_DIR,'retry.js'),'utf-8');
-    const handles4xx = c.match(/4\d\d|status.*<.*500|clientError|notRetryable/i);
-    if (!handles4xx) console.warn('retry.js: may retry on 4xx — consider filtering');
-    expect(true).toBe(true);
-  });
-});
 
 describe('Utils — routeHelpers.js', () => {
   test('routeHelpers file exists', () => expect(existsSync(join(UTILS_DIR,'routeHelpers.js'))).toBe(true));

@@ -4,17 +4,14 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 124th pass: 5 S0 fixes + outcomeEstimator internals + billing/connections
 // + DB indexes verified + final breadth sweep
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeDiversionRecommendations, computeOutcomeEstimate;
+let computeAllSignals, computeOutcomeEstimate;
 let encrypt, decrypt, haversineKm;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
-let calcLeadFee;
+let safeInt, GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe  = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
@@ -22,10 +19,7 @@ beforeAll(async () => {
   const geo = await import('../services/geolink.js');
   haversineKm = geo.haversineKm;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const bs  = await import('../routes/billing/_shared.js');
-  calcLeadFee = bs.calcLeadFee;
-  const gg  = await import('../routes/golden_gavel.js');
+  safeInt = rh.safeInt;     const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;

@@ -6,27 +6,14 @@ import { safeJson } from '../../utils/routeHelpers.js';
  * Isolates the document analysis logic from route handlers.
  * analyzeDocument() is the core AI function — supports PDF, image, DOCX, and text.
  */
-import { getDb }        from '../../db/index.js';
-import { enqueueAIJob as enqueue }      from '../../services/aiQueue.js';
 import logger             from '../../utils/logger.js';
-import { Router }         from 'express';
 import multer             from 'multer';
-import rateLimit          from 'express-rate-limit';
 
 export function safeJsonParse(str, fallback = null) {
   try { return str ? safeJson(str) : fallback; } catch { return fallback; }
 }
 
-const aiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many AI requests — please wait before trying again.' },
-  keyGenerator: (req) => req.user?.id ? `user_${req.user.id}` : req.ip,
-});
 
-const router = Router();
 
 // ── Accepted file types ───────────────────────────────────────────────────────
 export const ACCEPTED_MIME = new Set([
@@ -108,7 +95,6 @@ export const upload = multer({
   },
 });
 
-const STRIPE_SECRET  = process.env.STRIPE_SECRET;
 
 // discovery_analyses managed by db/index.js Year 2 block.
 // ensureTables kept as a no-op export to avoid import-side errors in legacy callers.
@@ -181,7 +167,7 @@ export async function docxToText(buffer) {
 
 // ── Build Claude content block(s) for the uploaded file ──────────────────────
 export async function buildContentBlocks(file) {
-  const { buffer, mimetype, originalname } = file;
+  const { buffer, originalname } = file;
   const b64 = buffer.toString('base64');
 
   if (isPdf(file)) {

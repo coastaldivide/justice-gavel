@@ -37,7 +37,7 @@ async function buildApp(db) {
       const { amount_cents, currency='usd', description='' } = req.body||{};
       if (!amount_cents||amount_cents<50) return res.status(400).json({error:'amount_cents must be >= 50'});
       const pi_id = MOCK_MODE ? `pi_mock_${Date.now()}` : 'pi_real';
-      const result = await db.run('INSERT INTO payments (user_id,amount_cents,currency,description,stripe_pi_id,status) VALUES (?,?,?,?,?,?)',[req.user.id,amount_cents,currency,description,pi_id,'pending']);
+      await db.run('INSERT INTO payments (user_id,amount_cents,currency,description,stripe_pi_id,status) VALUES (?,?,?,?,?,?)',[req.user.id,amount_cents,currency,description,pi_id,'pending']);
       res.json({ok:true,payment_intent_id:pi_id,mock:MOCK_MODE,amount_cents});
     } catch { res.status(500).json({error:'Server error.'}); }
   });

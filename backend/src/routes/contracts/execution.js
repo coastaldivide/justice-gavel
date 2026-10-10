@@ -1,4 +1,3 @@
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * contracts/execution.js — Contract execution and lifecycle tracking
  *
@@ -15,7 +14,6 @@ import { authRequired }               from '../../middleware/auth.js';
 import { getDb }                      from '../../db/index.js';
 import { makeUserLimiter }            from '../../middleware/sharedAiLimiter.js';
 import logger                         from '../../utils/logger.js';
-import { ensureTables }               from './_helpers.js';
 
 const router = Router();
 
@@ -90,7 +88,7 @@ router.get('/:id/signers', authRequired, async (req, res) => {
       [contract.id]
     );
     res.json(signers);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load signers.' });
   }
 });

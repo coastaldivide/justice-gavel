@@ -170,7 +170,7 @@ async function buildApp(db) {
       res.setHeader('Cache-Control', 'no-store');
       return res.json({ cases, messages, lawyers, lessons,
         total: cases.length + messages.length + lawyers.length + lessons.length });
-    } catch (e) {
+    } catch {
       return res.status(500).json({ error: 'Search unavailable.' });
     }
   });

@@ -1,4 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * JUSTICE GAVEL — ANALYTICS ROUTES v1.0.0
  * GET  /:matterId/estimate   — Full outcome estimate with factor analysis
@@ -20,7 +19,7 @@ import { hasMinRole }         from '../middleware/rbac.js';
 import logger                 from '../utils/logger.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 
-const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
+const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
 
 
 // ── Firm membership helper ────────────────────────────────────────────────────
@@ -102,7 +101,7 @@ router.get('/monitor/status', authRequired, async (req, res) => {
   try {
     const db=await getDb();
     let memb = null;
-    try { memb = await getFirmMembership(db,req.user.id); } catch(dbE) { /* demo mode — no firm tables */ }
+    try { memb = await getFirmMembership(db,req.user.id); } catch { /* demo mode — no firm tables */ }
     if (memb && !hasMinRole(memb.role,'firm_admin')) return err403(res,'Requires firm_admin+.');
     return res.json({ ...checkStaleness(), demo: !memb });
   } catch(e) { logger.warn('[analytics/monitor/status]',e.message); res.json({ status:'unavailable', demo:true }); }

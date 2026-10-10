@@ -23,36 +23,21 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  *               DUILawsScreen no error state defect flagged
  */
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate;
 let encrypt, decrypt;
-let haversineKm;
-let hasMinRole;
-let safeInt, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_EMOJI, GAVEL_LABEL;
 let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole;
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const cfg = await import('../config.js');
+   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
 
@@ -322,7 +307,7 @@ describe('S11. Error Handling — Full Pattern Coverage', () => {
     expect(EXPRESS_MAJOR).toBeGreaterThanOrEqual(5);
     const path = await import('path');
     const rtDir = __REPO + '/backend/src/routes';
-    let errors = [];
+    const errors = [];
     const scanDir = (dir) => {
       for (const f of fs.readdirSync(dir)) {
         const full = path.join(dir, f);
@@ -358,9 +343,10 @@ describe('S11. Error Handling — Full Pattern Coverage', () => {
     const fs = await import('fs');
     const path = await import('path');
     const rtDir = __REPO + '/backend/src/routes';
-    let noValidation = [];
+    const noValidation = [];
     const ADMIN_ONLY = new Set(['analytics.js', 'barVerification.js']); // admin-only, no user input to validate
     const WEBHOOK_RECEIVERS = new Set(['webhooks.js']); // signed provider callbacks (was referenced but never defined)
+    const WHITELIST_LOOKUP = new Set(['insurance.js']);  // /quote: unknown plan falls back to an allow-listed plan
     const scanDir = (dir) => {
       for (const f of fs.readdirSync(dir)) {
         const full = path.join(dir, f);
@@ -370,7 +356,10 @@ describe('S11. Error Handling — Full Pattern Coverage', () => {
         if (WEBHOOK_RECEIVERS.has(f) || ADMIN_ONLY.has(f)) continue;
         const src = fs.readFileSync(full, 'utf8');
         const hasMutation = /router\.(post|put|patch)\s*\(/.test(src);
-        if (hasMutation && !src.includes('err400') && !src.includes('status(400)')) {
+        // validation = an explicit 400, or input coerced/whitelisted (safeInt / sanitizeStr /
+        // validate() schema). Counting a merely-imported err400 (unused) no longer passes.
+        const validates = /err400\(|status\(400\)|validate\(|safeInt\(|sanitizeStr\(/.test(src);
+        if (hasMutation && !validates && !WHITELIST_LOOKUP.has(f)) {
           noValidation.push(f);
         }
       }

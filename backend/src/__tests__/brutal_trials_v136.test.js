@@ -6,10 +6,8 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // billing/ submodule: subscriptions + webhooks + pi_leads
 // webhooks/bot_admin + consultations + push + pay + saved + referrals
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG, calcLeadFee;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -18,14 +16,6 @@ beforeAll(async () => {
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const bs  = await import('../routes/billing/_shared.js');
-  calcLeadFee = bs.calcLeadFee;
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o={}) => ({

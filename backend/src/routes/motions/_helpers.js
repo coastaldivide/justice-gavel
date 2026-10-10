@@ -1,15 +1,7 @@
 import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
 
 // UPL compliance: all AI responses include disclaimer metadata
-const UPL_DISCLAIMER = {
-  upl_disclaimer: true,
-  disclaimer_text: "This is legal information only, not legal advice. " +
-    "Laws vary by state and individual circumstances differ. " +
-    "Consult a licensed attorney for advice specific to your situation.",
-  disclaimer_version: "v1.0",
-};
-import { requireDisclaimer } from '../../middleware/disclaimer.js';
-const MAX_MOTION_LENGTH = 50000; // ~12,500 words — covers any motion
+ // ~12,500 words — covers any motion
 
 /**
  * motions/_helpers.js — ensureTables() and generateMotion() AI function
@@ -18,9 +10,6 @@ const MAX_MOTION_LENGTH = 50000; // ~12,500 words — covers any motion
  * calls Claude, applies the hallucination guard, and returns the result.
  * Isolated here so it can be tested and updated independently of route logic.
  */
-import { getDb }        from '../../db/index.js';
-import { enqueueAIJob as enqueue }      from '../../services/aiQueue.js';
-import logger             from '../../utils/logger.js';
 import { MOTION_TYPES } from './_motion_types.js';
 
 const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
@@ -66,7 +55,7 @@ Date: ${new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', ye
   }
 
   const fieldSummary = Object.entries(fields)
-    .filter(([k, v]) => v && String(v).trim())
+    .filter(([, v]) => v && String(v).trim())
     .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
     .join('\n');
 

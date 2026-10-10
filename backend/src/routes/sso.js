@@ -1,4 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/sso.js — SSO / SAML 2.0 Integration
  *
@@ -30,21 +29,18 @@ import { validate, schemas } from '../validation/schemas.js';
  */
 
 import { Router }          from 'express';
-import { asyncRoute } from '../utils/routeHelpers.js';
-import { randomUUID }      from 'crypto';
-import { createVerify }    from 'crypto';
+import { asyncRoute, err400, err403, err404, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
+import { randomUUID, createVerify } from 'crypto';
 import { getDb }           from '../db/index.js';
 import { authRequired }    from '../middleware/auth.js';
-import { requireFirmRole, loadFirmContext } from '../middleware/rbac.js';
+import { requireFirmRole } from '../middleware/rbac.js';
 import { writeAuditLog }   from '../middleware/audit.js';
-import { err400, err403, err404, safeInt,
-         sanitizeStr, truncateStr }         from '../utils/routeHelpers.js';
 import { CONFIG }          from '../config.js';
 import jwt                 from 'jsonwebtoken';
 import logger              from '../utils/logger.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 
-const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
+const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
 
 const router = Router();
 
@@ -57,9 +53,6 @@ const APP_REDIRECT = process.env.APP_SSO_REDIRECT || `${BASE_URL}/auth/sso-callb
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Normalize party name for conflict index lookups */
-function normalizeName(name) {
-  return String(name || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
-}
 
 /** Build a minimal SAML AuthnRequest XML */
 function buildAuthnRequest(idpSsoUrl, issuer, acsUrl) {

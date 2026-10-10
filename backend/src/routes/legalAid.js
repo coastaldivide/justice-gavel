@@ -1,6 +1,5 @@
 import { requireAi } from '../utils/ai.js';
 // Input size guard — applied globally to all POST handlers in this file
-const MAX_BODY = 50000;
 /**
  * routes/legalAid.js — Legal Aid B2B tier
  *
@@ -96,7 +95,7 @@ Always include the required verification language and proper legal formatting.`,
 
 /** POST /api/legal-aid/intake — client intake automation */
 router.post('/intake', authRequired, asyncRoute(async (req, res) => {
-  const { client_id, case_type, interview_notes } = req.body || {};
+  const { interview_notes } = req.body || {};
   if (!interview_notes || typeof interview_notes !== 'string' || !interview_notes.trim()) {
     return res.status(400).json({ error: 'interview_notes is required' });
   }

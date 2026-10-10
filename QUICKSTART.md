@@ -31,13 +31,9 @@ Then upload the zip here for final packaging.
 
 ## 🌱 Seed Data (run once after deploy)
 
-```bash
-# Full seed — attorneys, bondsmen, courts, resources, lessons, bail schedules, forum
-node backend/src/scripts/seed_providers.js
-
-# Demo data — synthetic users, arrests, forum posts, specialty courts
-node backend/src/scripts/seed_demo.js
-```
+Reference and seed data ship as SQL in `supabase/migrations/` and are loaded when the
+migrations are applied (in filename order, e.g. `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f <file>`).
+There is no separate seed script to run.
 
 **What gets seeded:**
 - 2,020 attorneys + 808 bondsmen (seed; replace with scrapers after deploy)

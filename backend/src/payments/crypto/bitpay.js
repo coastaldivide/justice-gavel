@@ -1,4 +1,4 @@
-export async function createBitPayInvoice({ amount, currency='USD', user, meta }){
+export function createBitPayInvoice() {
   if(!process.env.BITPAY_TOKEN){
     return { provider:'bitpay-mock', url:'https://test.bitpay.com/invoice?id=MOCK', mock:true };
   }

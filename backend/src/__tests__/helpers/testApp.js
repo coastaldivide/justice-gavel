@@ -4,8 +4,6 @@
  *
  * Each test file imports createApp() and gets a fresh app instance.
  */
-import express from 'express';
-import cors from 'cors';
 import jwt from 'jsonwebtoken';
 
 const TEST_SECRET = process.env.JWT_SECRET || 'test_jwt_secret_for_testing_only';

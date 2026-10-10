@@ -38,7 +38,7 @@ const INACTIVE_STATUSES = new Set([
  * Verify a single attorney's license status.
  * Returns { status, verified_at, source, raw } or null if verification unavailable.
  */
-export async function verifyAttorneyLicense({ bar_number, bar_state, name }) {
+export async function verifyAttorneyLicense({ bar_number, bar_state }) {
   if (!bar_number || !bar_state) return null;
 
   const state = bar_state.toUpperCase();
@@ -122,7 +122,7 @@ async function verifyFlorida(barNumber) {
   };
 }
 
-async function verifyABADatabase(barNumber, state) {
+function verifyABADatabase(barNumber, state) {
   // Fallback: mark as "needs_manual_review" for states without API
   return {
     status:      'needs_manual_review',
@@ -158,7 +158,7 @@ export async function runNightlyVerification() {
   for (const attorney of attorneys) {
     try {
       // Rate limit: 1 req/sec per state bar
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => { setTimeout(r, 1000); });
 
       const result = await verifyAttorneyLicense({
         bar_number: attorney.bar_number,

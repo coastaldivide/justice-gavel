@@ -1,4 +1,4 @@
-import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { safeInt } from '../utils/routeHelpers.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
 import { Router } from 'express';
@@ -267,17 +267,6 @@ const STATE_RIGHTS = {
 const router = Router();
 
 // ── Filtering helper ─────────────────────────────────────────────────────
-async function getLessons(db, filters = {}) {
-  const { category, difficulty } = filters;
-  let sql    = 'SELECT id, title, category, body as content, difficulty, duration_min, ';
-  sql       += "CASE difficulty WHEN 'beginner' THEN 10 WHEN 'intermediate' THEN 20 WHEN 'advanced' THEN 30 ELSE 10 END as points ";
-  sql       += 'FROM lessons WHERE 1=1 ';
-  const params = [];
-  if (category)   { sql += 'AND category = ? '; params.push(category); }
-  if (difficulty) { sql += 'AND difficulty = ? '; params.push(difficulty); }
-  sql += 'ORDER BY difficulty ASC, id ASC LIMIT 200';
-  return db.all(sql, params).catch(() => []);
-}
 
 
 const lessonsLimiter = makeUserLimiter({ windowMs: 3600000, max: 100, message: 'Lesson completion limit reached. Try again later.' });
@@ -335,7 +324,7 @@ router.get('/progress/:userId', authRequired, async (req, res, next) => {
 // ── GET /api/lessons/rights-card?state=XX ─────────────────────────────────────
 // Returns structured rights card data for any US state.
 // Used by the frontend to render + share a wallet-sized card.
-router.get('/rights-card', async (req, res) => {
+router.get('/rights-card', (req, res) => {
   try {
   const stateCode = (req.query.state || 'US').toString().toUpperCase().slice(0, 2);
 
@@ -489,7 +478,7 @@ router.get('/streak/:userId', authRequired, async (req, res) => {
       total_points:     totalCompleted?.total_points || 0,
       last_7_days:      progress.slice(0, 7),
     });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not fetch streak' });
   }
 });

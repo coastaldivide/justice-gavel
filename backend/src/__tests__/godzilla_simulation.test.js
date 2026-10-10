@@ -9,7 +9,6 @@ import { canAccessFeature } from '../utils/subscriptionStateMachine.js';
 
 let _s = 0xDEADBEEF;
 const rng = () => { _s = (_s * 1664525 + 1013904223) & 0xFFFFFFFF; return (_s >>> 0) / 0xFFFFFFFF; };
-const pick  = a  => a[Math.floor(rng() * a.length)];
 const pickW = ws => { const total=ws.reduce((s,w)=>s+w.w,0); let r=rng()*total; for(const w of ws){r-=w.w;if(r<=0)return w.v;} return ws[ws.length-1].v; };
 const rand  = (lo,hi) => lo + rng()*(hi-lo);
 const randI = (lo,hi) => Math.floor(rand(lo,hi+1));
@@ -635,7 +634,9 @@ function runSession(city,userIdx,path){
                             pickW([{v:'free',w:55},{v:'legal_radar',w:28},{v:'advisor',w:10},{v:'legal_pro',w:5},{v:'esquire',w:2}]);
   const bail=Math.round(Math.max(500,rand(500,city.cr*50))/500)*500;
   const i1=Math.round(rand(800,20000)),i2=Math.round(rand(800,20000));
-  const ch=randI(1,6),cu=randI(10,90),years=randI(0,15);
+  const ch=randI(1,6);
+  randI(10,90); // custody-% draw: unused, but kept so the seeded random sequence is unchanged
+  const years=randI(0,15);
   const isIce=city.ice==='high'&&rng()<0.35||city.ice==='med'&&rng()<0.15;
   const fails=[];
   try{
@@ -814,19 +815,19 @@ function runSession(city,userIdx,path){
         }
         break;
       }
-      case 'video_fee_15min':{ if(1000!==1000)fails.push('15min_fee'); break; }
-      case 'video_fee_30min':{ if(1500!==1500)fails.push('30min_fee'); break; }
-      case 'video_fee_60min':{ if(2500!==2500)fails.push('60min_fee'); break; }
+      case 'video_fee_15min':{ break; }
+      case 'video_fee_30min':{ break; }
+      case 'video_fee_60min':{ break; }
       case 'video_no_stripe_fallback':{
         const can=canAccessFeature(tier,'video_consultation');
         if(typeof can!=='boolean')fails.push('video_gate_type');
         break;
       }
-      case 'pi_lead_minor_50':{ if(5000!==5000)fails.push('minor_fee'); break; }
-      case 'pi_lead_catastrophic_500':{ if(50000!==50000)fails.push('cat_fee'); break; }
-      case 'pi_lead_civil_rights':{ if(20000!==20000)fails.push('civil_fee'); break; }
-      case 'pi_lead_ice_detention':{ if(7500!==7500)fails.push('ice_det_fee'); break; }
-      case 'pi_lead_employment':{ if(10000!==10000)fails.push('emp_fee'); break; }
+      case 'pi_lead_minor_50':{ break; }
+      case 'pi_lead_catastrophic_500':{ break; }
+      case 'pi_lead_civil_rights':{ break; }
+      case 'pi_lead_ice_detention':{ break; }
+      case 'pi_lead_employment':{ break; }
       case 'bondsman_lead_fee_small':{
         const fee=calcLeadFee(750);
         if(fee!==1500)fails.push('small_bail_fee:'+fee);
@@ -837,7 +838,7 @@ function runSession(city,userIdx,path){
         if(fee!==40000)fails.push('250k_fee:'+fee);
         break;
       }
-      case 'bondsman_verified_badge':{ if(4900!==4900)fails.push('badge_fee'); break; }
+      case 'bondsman_verified_badge':{ break; }
       case 'conflict_name_apostrophe':{
         const raw="O'Brien & Associates";
         const norm=raw.toLowerCase().replace(/\s*&\s*/g,' and ').replace(/[.,\-'"/#!$%^*;:{}=`~()]/g,' ').replace(/\s+/g,' ').trim();
@@ -890,8 +891,6 @@ function runSession(city,userIdx,path){
         break;
       }
       case 'gavel_streak_reward':{
-        if((7>=7?50:0) !== 50)fails.push('streak7_reward');
-        if((30>=30?200:0) !== 200)fails.push('streak30_reward');
         break;
       }
       case 'crisis_free_always':{

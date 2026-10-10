@@ -42,8 +42,8 @@ function auth(req, res, next) {
 // ── Shared state ──────────────────────────────────────────────────────────────
 let app, db;
 let T_USER, T_PARTNER, T_ADMIN;
-let USER_ID = 10, PARTNER_ID = 20, ADMIN_ID = 30;
-let FIRM_ID  = 1,  MATTER_ID  = 5,  CONTRACT_ID = 7;
+const USER_ID = 10, PARTNER_ID = 20, ADMIN_ID = 30;
+const FIRM_ID  = 1,  MATTER_ID  = 5,  CONTRACT_ID = 7;
 
 beforeAll(async () => {
   db = await makeTestDb();
@@ -140,7 +140,7 @@ beforeAll(async () => {
       const result = await queryLog({ user_id: req.user.id, resource, action, since,
         limit: +limit, offset: +offset });
       res.json(result);
-    } catch (e) { res.status(500).json({ error: 'audit/me failed' }); }
+    } catch { res.status(500).json({ error: 'audit/me failed' }); }
   });
 
   // GET /api/audit/matter/:id
@@ -159,7 +159,7 @@ beforeAll(async () => {
       const result = await queryLog({ resource: 'matter', record_id: matterId, action,
         limit: +limit, offset: +offset });
       res.json({ ...result, matter_id: matterId });
-    } catch (e) { res.status(500).json({ error: 'audit/matter failed' }); }
+    } catch { res.status(500).json({ error: 'audit/matter failed' }); }
   });
 
   // GET /api/audit/contract/:id
@@ -176,7 +176,7 @@ beforeAll(async () => {
       const result = await queryLog({ resource: 'contract', record_id: contractId,
         limit: +limit, offset: +offset });
       res.json({ ...result, contract_id: contractId });
-    } catch (e) { res.status(500).json({ error: 'audit/contract failed' }); }
+    } catch { res.status(500).json({ error: 'audit/contract failed' }); }
   });
 
   // GET /api/audit/user/:id
@@ -196,7 +196,7 @@ beforeAll(async () => {
       const result = await queryLog({ user_id: targetId, resource, action, since,
         limit: +limit, offset: +offset });
       res.json({ ...result, target_user_id: targetId });
-    } catch (e) { res.status(500).json({ error: 'audit/user failed' }); }
+    } catch { res.status(500).json({ error: 'audit/user failed' }); }
   });
 
   // GET /api/audit/firm
@@ -212,7 +212,7 @@ beforeAll(async () => {
         user_id: user_id ? +user_id : undefined, since,
         limit: +limit, offset: +offset });
       res.json({ ...result, firm_id: fr.firm_id });
-    } catch (e) { res.status(500).json({ error: 'audit/firm failed' }); }
+    } catch { res.status(500).json({ error: 'audit/firm failed' }); }
   });
 });
 

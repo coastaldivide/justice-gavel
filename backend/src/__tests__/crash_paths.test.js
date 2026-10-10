@@ -7,7 +7,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { safeJson, safeInt, safeFloat, err400, err403 } from '../utils/routeHelpers.js';
+import { safeJson, safeInt, safeFloat } from '../utils/routeHelpers.js';
 
 // ── Safe parsing — never throws ───────────────────────────────────────────
 describe('safeJson — never throws on malformed input', () => {

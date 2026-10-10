@@ -4,12 +4,11 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 111th pass: 1 S0 fix + comprehensive final quality sweep
 // All sections clean. Finding absolute last details.
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeDiversionRecommendations, computeOutcomeEstimate;
 let encrypt, decrypt, haversineKm, haversineMiles, bboxFromLatLng;
-let safeInt, safeFloat, validCoords, buildWhere, sanitizeStr, FIELD_LIMITS;
-let BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
+let safeInt, safeFloat, buildWhere, sanitizeStr;
+let GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -24,10 +23,8 @@ beforeAll(async () => {
   haversineMiles = geo.haversineMiles;
   bboxFromLatLng = geo.bboxFromLatLng;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; safeFloat = rh.safeFloat; validCoords = rh.validCoords;
-  buildWhere = rh.buildWhere; sanitizeStr = rh.sanitizeStr;
-  FIELD_LIMITS = rh.FIELD_LIMITS; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg  = await import('../routes/golden_gavel.js');
+  safeInt = rh.safeInt; safeFloat = rh.safeFloat;   buildWhere = rh.buildWhere; sanitizeStr = rh.sanitizeStr;
+   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;

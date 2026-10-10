@@ -1,5 +1,4 @@
-import { safeJson } from '../utils/routeHelpers.js';
-import { validate, schemas } from '../validation/schemas.js';
+import { safeJson, err400, err404, safeInt } from '../utils/routeHelpers.js';
 /**
  * /api/providers — GPS-first lawyer and bail agent search
  *
@@ -19,21 +18,18 @@ import { validate, schemas } from '../validation/schemas.js';
  *   Returns: { city, distanceKm } — nearest city in our dataset
  */
 
-import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, parsePagination} from '../utils/routeHelpers.js';
 import { Router } from 'express';
 import { haversineKm, bboxFromLatLng } from '../services/geolink.js';
 import { authRequired, optionalAuth } from '../middleware/auth.js';
-import path from 'path';
 import logger              from '../utils/logger.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
-import rateLimit           from 'express-rate-limit';
 import { apiLimiter }      from '../middleware/rateLimiters.js';
 import { getDb }           from '../db/index.js';
 
 const router = Router();
 
 // Alias: /list → /lawyers
-router.get('/list', async (req, res, next) =>{
+router.get('/list', (req, res, next) =>{
   try {
   req.url = '/lawyers' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '');
   router.handle(req, res, next);
@@ -115,7 +111,6 @@ function applyFilters(rows, { caseType, language, proBonoOnly, slidingScaleOnly 
       if (!langs.some(lg => lg.toLowerCase().includes(language.toLowerCase()))) return false;
     }
     if (caseType) {
-      const specs = safeParseJson(l.specialties, []);
       // Also check bio and any practice area aliases
       const ALIASES = {
         'DUI':               ['dui', 'dwi', 'drunk driving', 'traffic'],
@@ -425,7 +420,7 @@ router.get('/bail', optionalAuth, searchLimiter, async (req, res) => {
 const SEED_ONLY_STATES = new Set(['NH', 'DE', 'ND', 'ME', 'SD', 'VT', 'MT', 'WV', 'RI', 'DC', 'WY']);
 
 // GET /api/providers/coverage — returns state coverage for UI display
-router.get('/coverage', async (req, res) =>{
+router.get('/coverage', (req, res) =>{
   try {
   res.set('Cache-Control', 'public, max-age=3600');
   res.json({
@@ -454,7 +449,7 @@ router.get('/:id/reviews', apiLimiter, async (req, res) => {
       ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10
       : null;
     return res.json({ provider_id: id, avg_rating: avg, count: reviews.length, reviews });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not fetch reviews' });
   }
 });
@@ -476,7 +471,7 @@ router.post('/:id/reviews', authRequired, async (req, res) => {
       [id, req.user.id, rating, comment, rating, comment]
     );
     return res.status(201).json({ submitted: true });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not submit review' });
   }
 });
@@ -493,12 +488,12 @@ router.get('/lawyers/:id', async (req, res) => {
     const lawyer = await db.get('SELECT * FROM lawyers WHERE id = ?', [id]);
     if (!lawyer) return res.status(404).json({ error: 'Attorney not found' });
     // Parse specialties if stored as JSON string
-    try { lawyer.specialties = safeJson(lawyer.specialties); } catch {}
+    lawyer.specialties = safeJson(lawyer.specialties);
     // Fetch reviews
     const reviews = await db.all(
       'SELECT id, rating, comment, created_at FROM reviews_app WHERE provider_id = ? ORDER BY created_at DESC LIMIT 20',
       [id]
     ).catch(() => []);
     res.json({ ...lawyer, reviews });
-  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });

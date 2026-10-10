@@ -12,14 +12,12 @@
  * (typically <500 rows — no pagination needed, but LIMIT added as defence).
  */
 
-import { err400, err404, safeInt,
-         sanitizeStr }                from '../../utils/routeHelpers.js';
+import { err404, safeInt, sanitizeStr } from '../../utils/routeHelpers.js';
 import { makeUserLimiter }            from '../../middleware/sharedAiLimiter.js';
 import { Router }                     from 'express';
 import { authRequired }               from '../../middleware/auth.js';
-import { getDb }                      from '../../db/index.js';
 import logger                         from '../../utils/logger.js';
-import { requireDefender, requireAttorney }            from './_helpers.js';
+import { requireAttorney } from './_helpers.js';
 
 const router       = Router();
 const cleLimiter   = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'CLE request limit reached.' });

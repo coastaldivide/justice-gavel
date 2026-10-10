@@ -7,6 +7,7 @@
  */
 import 'dotenv/config';
 import * as Sentry from '@sentry/node';
+import logger from './utils/logger.js';
 
 const FLAG = Symbol.for('justicegavel.sentry.initialised');
 
@@ -18,7 +19,7 @@ if (process.env.SENTRY_DSN && !globalThis[FLAG]) {
       const { nodeProfilingIntegration } = await import('@sentry/profiling-node');
       integrations.push(nodeProfilingIntegration());
     } catch (e) {
-      console.warn('[sentry] profiling unavailable:', e.message);
+      logger.warn('[sentry] profiling unavailable:', e.message);
     }
   }
   try {
@@ -46,11 +47,10 @@ if (process.env.SENTRY_DSN && !globalThis[FLAG]) {
         return event;
       },
     });
-    console.info('[sentry] initialised');
+    logger.info('[sentry] initialised');
   } catch (e) {
-    console.error('[sentry] init failed — continuing without error tracking:', e.message);
+    logger.error('[sentry] init failed — continuing without error tracking:', e.message);
   }
 }
 
-export const sentryEnabled = () => !!globalThis[FLAG];
 export { Sentry };

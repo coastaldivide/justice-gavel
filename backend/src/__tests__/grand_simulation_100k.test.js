@@ -68,11 +68,9 @@ const RANKS = {super_admin:7,managing_partner:6,firm_admin:6,partner:5,lead_esqu
   senior_associate:4,associate:4,paralegal:3,law_clerk:3,investigator:3,
   compliance_analyst:3,forensic_accountant:3,guardian_ad_litem:3,case_manager:3,
   mitigation_specialist:3,interpreter:2,junior_associate:2,expert_witness:2,client:2,viewer:1};
-function hasRank(role,min){return(RANKS[role]||0)>=(RANKS[min]||0);}
 
 function addCal(d,n){const dt=new Date(d+'T12:00:00Z');dt.setUTCDate(dt.getUTCDate()+n);return dt.toISOString().slice(0,10);}
 function addBus(d,n){const dt=new Date(d+'T12:00:00Z');let a=0;while(a<n){dt.setUTCDate(dt.getUTCDate()+1);if(dt.getUTCDay()%6)a++;}return dt.toISOString().slice(0,10);}
-function daysBetween(a,b){return Math.ceil((new Date(b+'T12:00:00Z')-new Date(a+'T12:00:00Z'))/86400000);}
 const PR={critical:4,high:3,normal:2,low:1};
 function prioSort(a,b){const ad=a.due||'',bd=b.due||'';if(ad!==bd)return ad.localeCompare(bd);return(PR[b.priority]||0)-(PR[a.priority]||0);}
 
@@ -86,7 +84,6 @@ function topM(rng,st,uLat,uLng){return Array.from({length:6},()=>genL(rng,st)).m
 // ═══════════════════════════════════════════════════════════════════════════
 function assertSorted(dl){for(let i=1;i<dl.length;i++){const pd=dl[i-1].due||'',cd=dl[i].due||'';if(pd===cd)expect(PR[dl[i-1].priority]||0).toBeGreaterThanOrEqual(PR[dl[i].priority]||0);else expect(pd.localeCompare(cd)).toBeLessThanOrEqual(0);}}
 function assertScore(top){expect(Number.isFinite(top.matchScore)).toBe(true);expect(top.matchScore).toBeGreaterThanOrEqual(-50);expect(top.matchScore).toBeLessThanOrEqual(300);}
-function assertVarC(v){expect(VAR_C).toContain(v.vulnerability);expect(v.evidenceScore).toBeGreaterThanOrEqual(0);expect(v.evidenceScore).toBeLessThanOrEqual(100);expect(['weak','contested','moderate','strong']).toContain(v.evidence);expect(v.evidence).toBe(eb(v.evidenceScore));}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  FIRM CHARGE / MATTER POOLS (all 10 verticals)
@@ -189,8 +186,7 @@ function indTrial(profileId, trialN, rng) {
 //  ASSERTION ENGINE
 // ═══════════════════════════════════════════════════════════════════════════
 
-function assertFirmTrial(t,n) {
-  const L=`F${t.firmId} trial ${n}`;
+function assertFirmTrial(t) {
 
   // VAR-C: evidence consistency
   expect(eb(t.v.evidenceScore)).toBe(t.v.evidence);
@@ -225,8 +221,7 @@ function assertFirmTrial(t,n) {
   expect(t.elig).toBeDefined(); expect(['boolean','string']).toContain(typeof t.elig.eligible);
 }
 
-function assertIndTrial(t,n) {
-  const L=`I${t.profileId} trial ${n}`;
+function assertIndTrial(t) {
 
   // VAR-C consistency
   expect(eb(t.v.evidenceScore)).toBe(t.v.evidence);

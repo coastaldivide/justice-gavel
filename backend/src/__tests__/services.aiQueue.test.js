@@ -4,7 +4,6 @@
  * Tests: enqueue, job status lifecycle, TTL cleanup,
  *        concurrency limiting, stats reporting
  */
-import { jest } from '@jest/globals';
 
 const { enqueue, getJob, getQueueStats } =
   await import('../services/aiQueue.js');
@@ -24,12 +23,11 @@ describe('aiQueue service', () => {
     });
 
     it('accepts an async handler and resolves it', async () => {
-      let ran = false;
       const id = await enqueue({
         type: 'test_handler',
         userId: 1,
         payload: {},
-        handler: async () => { ran = true; return { result: 'done' }; },
+        handler: async () => {  return { result: 'done' }; },
       });
       // Give the queue a tick to process
       await new Promise(r => setTimeout(r, 100));

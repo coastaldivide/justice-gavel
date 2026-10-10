@@ -1,5 +1,4 @@
-import { safeJson } from '../utils/routeHelpers.js';
-import { validate, schemas } from '../validation/schemas.js';
+import { safeJson, asyncRoute, err400, escapeLike, err401, err404, safeInt, safeTable, safeAdminCols } from '../utils/routeHelpers.js';
 /**
  * /api/admin — Provider database management
  *
@@ -30,12 +29,8 @@ import { validate, schemas } from '../validation/schemas.js';
  */
 
 import { runHealthScan }       from '../services/healthScan.js';
-import { asyncRoute } from '../utils/routeHelpers.js';
 import { hasMinRole }         from '../middleware/rbac.js';
 import { makeUserLimiter }    from '../middleware/sharedAiLimiter.js';
-import { err400, escapeLike, err401, err403, err404, err409, err422, err500, err502,
-         safeInt, safeTable, safeAdminCols,
-         sanitizeStr, validateEmail } from '../utils/routeHelpers.js';
 import logger from '../utils/logger.js';
 import { Router }        from 'express';
 import { authRequired }  from '../middleware/auth.js';
@@ -94,18 +89,7 @@ router.use((req, res, next) => {
 });
 
 // Allowlist of tables the admin API is permitted to touch
-const ALLOWED_TABLES = new Set([
-  'lawyers', 'bail_agents', 'users', 'subscriptions', 'reviews',
-  'motions', 'feedback', 'arrest_records', 'consultation_bookings',
-]);
 
-function validateTable(table, res) {
-  if (!ALLOWED_TABLES.has(table)) {
-    res.status(400).json({ error: `Invalid table: ${safeTable(table)}` });
-    return false;
-  }
-  return true;
-}
 
 // ── Auth middleware ───────────────────────────────────────────────────────────
 
@@ -117,7 +101,7 @@ function validateTable(table, res) {
 // Calling open() on every request leaks file descriptors under load.
 // Provider data (lawyers, bail_agents, provider_update_log) lives in Postgres.
 async function openDb() {
-  return getDb();
+  return await getDb();
 }
 
 function safeParseJson(v, fallback) {
@@ -385,7 +369,7 @@ router.get('/stats', async (req, res) => {
 
 // ── Trigger refresh ───────────────────────────────────────────────────────────
 
-router.post('/refresh', authRequired, async (req, res) => {
+router.post('/refresh', authRequired, (req, res) => {
   const { city, type = 'all', source = 'all', dryRun = false } = req.body || {};
   const scriptPath = path.resolve(__dirname, '../scripts/refresh.js');
 
@@ -519,7 +503,7 @@ router.get('/attorney/pending-verification', authRequired, asyncRoute(async (req
        ORDER BY u.created_at DESC LIMIT 50`
     ).catch(() => []);
     res.json({ pending });
-  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 
 }));
 export default router;

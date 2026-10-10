@@ -14,11 +14,6 @@ import { getDb } from '../db/index.js';
 let lastRefreshRun = 0;
 const REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
-const THRESHOLDS = {
-  expungement_rules: 30,
-  rights_cards:      60,
-  crisis_resources:  30,
-};
 
 export async function refreshLegalContent() {
   const now = Date.now();

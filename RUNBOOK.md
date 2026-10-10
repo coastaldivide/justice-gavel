@@ -325,18 +325,10 @@ All endpoints return a consistent envelope:
 
 ## Calendly Integration
 
-```env
-# Calendly API (real attorney availability)
-CALENDLY_PERSONAL_TOKEN=   # Get from: https://calendly.com/integrations/api_webhooks
-CALENDLY_WEBHOOK_SIGNING_KEY=  # For webhook verification
-```
-
-### Setup per attorney:
-1. Attorney goes to Settings → Connect Calendar
-2. OAuth redirects to Calendly: `GET /api/calendly/connect?attorney_id=X`
-3. We store their `calendly_uri` in `lawyer_profiles.calendly_uri`
-4. Slot queries automatically use Calendly when `calendly_uri` is set
-5. Register webhook at https://calendly.com/integrations/webhooks pointing to `/api/webhooks/calendly`
+Not integrated. There is no `/api/calendly/*` route and no Calendly service in
+the backend (the unused `services/calendly.js` stub was removed in step 3);
+consultation slots come from each attorney's in-app availability schedule
+(`/api/consultations/slots/:lawyerId`).
 
 ## Attorney Bar Verification
 

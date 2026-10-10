@@ -7,21 +7,16 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // M-21: Service exports → ≥20 (35 exports)
 // M-24: routeHelpers → ≥20 (12 exports)
 
-import { jest } from '@jest/globals';
-let encrypt, decrypt, BUSINESS_CONSTANTS, CONFIG;
-let safeInt, safeFloat, validCoords, buildWhere, sanitizeStr, ownsResource;
+let encrypt, decrypt;
+let buildWhere, ownsResource;
 let validateEmail, normalizeEmail;
 
 beforeAll(async () => {
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
   const rh=await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS=rh.BUSINESS_CONSTANTS;
-  safeInt=rh.safeInt; safeFloat=rh.safeFloat; validCoords=rh.validCoords;
-  buildWhere=rh.buildWhere; sanitizeStr=rh.sanitizeStr; ownsResource=rh.ownsResource;
+    buildWhere=rh.buildWhere;  ownsResource=rh.ownsResource;
   validateEmail=rh.validateEmail; normalizeEmail=rh.normalizeEmail;
-  const cfg=await import('../config.js');
-  CONFIG=cfg.CONFIG;
 });
 
 // ── M-12 PASS 2: All remaining 48 files ──────────────────────────────────
@@ -87,7 +82,6 @@ describe('M12B. Remaining 48 Files → ≥20 Hits', () => {
 // ── M-16: DB Tables → ≥15 (42 tables) ────────────────────────────────────
 describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
   test('M16-01: immigration + DV + mission tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     const targets=['asylum_clocks','dpa_trackers','tro_trackers',
                    'mission_verification_requests','vertical_deadline_presets'];
@@ -95,7 +89,6 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
     // immigration: asylum clock tracking, voluntary departure, Hague proceedings
   });
   test('M16-02: contract + motion + discovery tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('contract_reviews');
     expect(db).toContain('contract_redlines');
@@ -105,7 +98,6 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
     // discovery_analyses: AI document analysis results
   });
   test('M16-03: integration sync + webhook tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('integration_sync_log');
     expect(db).toContain('integration_external_ids');
@@ -114,7 +106,6 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
     expect(db).toContain('callback_requests');
   });
   test('M16-04: communications + alert tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('case_messages');
     expect(db).toContain('attorney_alerts');
@@ -123,7 +114,6 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
     expect(db).toContain('scan_results');
   });
   test('M16-05: ethics + compliance + config tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('ethics_wall_log');
     expect(db).toContain('conflict_waivers');
@@ -133,7 +123,6 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
     expect(db).toContain('firm_vertical_config');
   });
   test('M16-06: firm lifecycle + acquisition + research + translation tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('firm_onboarding');
     expect(db).toContain('firm_upgrade_requests');
@@ -146,7 +135,6 @@ describe('M16. DB Tables → ≥15 Hits (42 tables)', () => {
     expect(db).toContain('translation_messages');
   });
   test('M16-07: matter + party + team + calendar + scan tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('matter_events');
     expect(db).toContain('matter_parties');
@@ -193,17 +181,6 @@ describe('M21. Service Exports → ≥20 Hits (35 exports)', () => {
     expect(s).toContain('runRefresh');
     expect(s.length).toBeGreaterThan(13000);
     // Scheduler orchestrates: refresh + health scan + content refresh + bot
-  });
-  test('M21-02: sendgrid — sendEmail + buildReceiptEmail + buildWelcomeEmail', async () => {
-    const fs=await import('fs');
-    const s=fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js','utf8');
-    expect(s).toContain('sendEmail');
-    expect(s).toContain('buildReceiptEmail');
-    expect(s).toContain('buildWelcomeEmail');
-    expect(s).toContain('buildEmailHtml');
-    expect(s).toContain('buildPasswordResetEmail');
-    expect(s).toContain('SENDGRID_LIVE');
-    expect(s).toContain('SENDGRID_FROM');
   });
   test('M21-03: outbound_bot — runOutboundBot + sendPaymentLink + deliverLead + processOptOut + expireOldPaymentLinks', async () => {
     const fs=await import('fs');
@@ -266,12 +243,10 @@ describe('M24. routeHelpers Exports → ≥20 Hits (12 exports)', () => {
     expect(normalizeEmail('  TEST@EXAMPLE.COM  ')).toBe('test@example.com');
     // validateEmail: RFC 5322 compliant; normalizeEmail: trim + lowercase
   });
-  test("M24-02: error helpers \u2014 err404 + err502 + err409 + err422 + err429 + err403 + err401 + err400", async () => {
-    const FNS=['err400','err401','err403','err404','err409','err422','err429','err502'];
+  test("M24-02: error helpers \u2014 err404 + err502 + err409 + err422 + err403 + err401 + err400", async () => {
+    const FNS=['err400','err401','err403','err404','err409','err422','err502'];
     const rh=await import('../utils/routeHelpers.js');
-    const er=await import('../utils/errors.js');   // err429 lives in utils/errors.js
-    for (const fn of FNS) expect(typeof (rh[fn] ?? er[fn])).toBe('function');
-    expect(typeof er.err429).toBe('function');
+    for (const fn of FNS) expect(typeof rh[fn]).toBe('function');
   });
   test('M24-05: buildWhere + sanitizeStr + ownsResource runtime', () => {
     expect(typeof buildWhere).toBe('function');

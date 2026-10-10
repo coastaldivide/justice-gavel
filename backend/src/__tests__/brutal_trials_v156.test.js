@@ -9,17 +9,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // ENVIRONMENT_VARS.md created
 // Final quality gate: all issues resolved
 
-import { jest } from '@jest/globals';
-let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt, BUSINESS_CONSTANTS, CONFIG;
+let computeAllSignals, encrypt, decrypt, CONFIG;
 beforeAll(async () => {
   const mi=await import('../routes/matter_intelligence.js');
   computeAllSignals=mi.computeAllSignals;
-  const oe=await import('../analytics/outcomeEstimator.js');
-  computeOutcomeEstimate=oe.computeOutcomeEstimate;
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const rh=await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS=rh.BUSINESS_CONSTANTS;
   const cfg=await import('../config.js');
   CONFIG=cfg.CONFIG;
 });
@@ -82,12 +77,6 @@ describe('I2. app.js — CSP unsafe-inline Documented', () => {
 
 // ── I-5: Logger in recovery_agents.js ────────────────────────────────────
 describe('I5. recovery_agents.js — Logger Added', () => {
-  test('I5-01: recovery_agents.js has logger import', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/recovery_agents.js','utf8');
-    expect(src).toContain('logger');
-    // Previously silent on external API errors — now logs to structured output
-  });
 });
 
 // ── I-7: sw.js orphaned brace fixed ──────────────────────────────────────

@@ -4,11 +4,10 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 107th pass: 5 S0 fixes + DB integrity audit + alerts.js async safety
 // + final 2 routes pushed + deep quality verification
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeDiversionRecommendations, computeOutcomeEstimate;
 let encrypt, decrypt, haversineKm;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
+let BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -21,7 +20,7 @@ beforeAll(async () => {
   const geo = await import('../services/geolink.js');
   haversineKm = geo.haversineKm;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
+ BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');

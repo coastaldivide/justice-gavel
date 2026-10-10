@@ -28,10 +28,6 @@ const pick  = arr => arr[Math.floor(rng() * arr.length)];
 const randI = (lo, hi) => Math.floor(lo + rng() * (hi - lo + 1));
 const rand  = (lo, hi) => lo + rng() * (hi - lo);
 
-const STATES = ['TN','TX','CA','GA','FL','NY','IL','OH','PA','AZ','NC','WA',
-                'CO','VA','MA','MD','MI','MN','OR','NV','WI','MO','IN','KY',
-                'NE','OK','CT','IA','AR','SC','AL','LA','MS','KS','UT','ID',
-                'NM','WV','ND','SD','MT','VT','NH','ME','RI','DE','AK','HI','WY','DC'];
 const N = 100_000;
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -54,7 +50,6 @@ const addBusinessDays = (dateStr, days) => {
 };
 const daysBetween = (a, b) =>
   Math.ceil((new Date(b + 'T12:00:00Z') - new Date(a + 'T12:00:00Z')) / 86400000);
-const isPast = date => new Date(date + 'T23:59:59Z') < new Date();
 
 describe('A — Docket / deadline calculator', () => {
   it(`${N.toLocaleString()} date arithmetic operations`, () => {
@@ -116,7 +111,7 @@ describe('A — Docket / deadline calculator', () => {
       ['2024-02-28', 1,  '2024-02-29'],  // leap year
       ['2023-02-28', 1,  '2023-03-01'],  // non-leap year
     ];
-    cases.forEach(([start, days, expected]) => {
+    cases.forEach(([start, days]) => {
       const result = addBusinessDays(start, days);
       // Verify it's a weekday at minimum
       const dow = new Date(result + 'T12:00:00Z').getUTCDay();
@@ -155,8 +150,6 @@ describe('B — Conflict checker (name normalization + fuzzy match)', () => {
                  'Davis','Rodriguez','Wilson','Lee','Thomas','Taylor','Moore','Jackson',
                  "O'Brien","St. Claire","Van Dyke","De La Cruz","McAllister"];
   const SUFFIXES = ['', '', '', ' Jr.', ' Sr.', ' III', ' LLC', ', Esq.'];
-  const ORGS   = ['ACME Corp','First National Bank','City Hospital LLC',
-                  'State Farm Insurance','Johnson & Johnson Inc.'];
 
   it(`${N.toLocaleString()} name normalization invariants`, () => {
     const failures = [];
@@ -295,7 +288,7 @@ describe('C — Golden Gavel scoring system', () => {
     const DIFFS  = ['easy', 'medium', 'advanced'];
 
     for (let i = 0; i < N; i++) {
-      let pts    = randI(0, 15000);
+      const pts    = randI(0, 15000);
       const evt  = pick(EVENTS);
       const diff = pick(DIFFS);
       const before = gavelLevel(pts);
@@ -337,7 +330,7 @@ describe('C — Golden Gavel scoring system', () => {
   });
 
   it('exact threshold boundary transitions are correct', () => {
-    GAVEL_LEVELS.forEach((lvl, i) => {
+    GAVEL_LEVELS.forEach((lvl) => {
       expect(gavelLevel(lvl.minPoints).level).toBe(lvl.level);
       if (lvl.minPoints > 0)
         expect(gavelLevel(lvl.minPoints - 1).level).toBe(lvl.level - 1);

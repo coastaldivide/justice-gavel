@@ -3,13 +3,12 @@
  * Tests: no-token user, invalid token, due pushes processed, invalid tokens → error
  * Uses sql.js (pure JS) to avoid native sqlite3 binaries
  */
-import { jest } from '@jest/globals';
 import { makeTestDb, createSchema } from './helpers/sqliteHelper.js';
 
 let testDb;
 
 // ── Inline push delivery logic (mirrors real service, uses injected DB) ───────
-async function sendPushToUser(db, userId, { title, body, badge=1 }) {
+async function sendPushToUser(db, userId) {
   const rows = await db.all('SELECT token FROM push_tokens WHERE user_id=?', [userId]);
   if (!rows.length) return { sent:0, reason:'no_token' };
 

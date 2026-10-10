@@ -1,28 +1,12 @@
 /**
  * chat/history.js — GET + DELETE /history/:sessionId
  */
-import { err400, BUSINESS_CONSTANTS, err401, err403, err404, err409,
-         err422, err500, err502, safeInt } from '../../utils/routeHelpers.js';
 import { Router }         from 'express';
 import { authRequired }   from '../../middleware/auth.js';
 import { getDb }          from '../../db/index.js';
-import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
-import { enqueueAIJob as enqueue }        from '../../services/aiQueue.js';
 import logger             from '../../utils/logger.js';
-import rateLimit          from 'express-rate-limit';
-import {
-  SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION,
-} from './_prompts.js';
-import {
-  getHistory, saveMessage, detectLawyerHandoff, callClaude, classifyIntent,
-} from './_helpers.js';
+import { getHistory } from './_helpers.js';
 
-const aiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 50,
-  standardHeaders: true, legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id?.toString() || req.ip,
-  message: { error: 'AI rate limit reached — please wait.' },
-});
 
 const router = Router();
 

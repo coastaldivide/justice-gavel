@@ -1,6 +1,5 @@
 import { validate, schemas } from '../validation/schemas.js';
 import { audit, AUDIT_ACTIONS } from '../utils/audit.js';
-import { auditLog } from '../utils/auditLog.js';
 /**
  * routes/cases.js — User case management
  *
@@ -25,8 +24,7 @@ import { auditLog } from '../utils/auditLog.js';
  * GET    /api/cases/family                    — cases shared with me
  */
 
-import { err400, truncateStr, err401, err403,
-         err404, safeInt, sanitizeStr }    from '../utils/routeHelpers.js';
+import { err400, truncateStr, err404, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 import { makeUserLimiter }                 from '../middleware/sharedAiLimiter.js';
 import { Router }                          from 'express';
 import { getDb }                           from '../db/index.js';
@@ -331,7 +329,7 @@ router.get('/:id/status-history', authRequired, async (req, res) => {
       [caseId]
     );
     res.json({ history });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load status history.' });
   }
 });
@@ -358,7 +356,7 @@ router.get('/:id/events', authRequired, async (req, res) => {
     );
     res.setHeader('Cache-Control', 'no-store');
     res.json({ events });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load case timeline.' });
   }
 });
@@ -417,7 +415,7 @@ router.delete('/:id/events/:eventId', authRequired, async (req, res) => {
     if (!cas) return err404(res, 'Case not found.');
     await db.run('DELETE FROM case_events WHERE id=? AND case_id=? AND user_id=?', [eventId, caseId, req.user.id]);
     res.json({ ok: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not delete event.' });
   }
 });
@@ -438,7 +436,7 @@ router.post('/:id/share', authRequired, casesLimiter, async (req, res) => {
       [token, expires, safeInt(req.params.id)]
     );
     res.json({ token, expires_at: expires, share_url: `justicegavel.app/case/${token}` });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not generate share link.' });
   }
 });
@@ -455,7 +453,7 @@ router.get('/shared/:token', async (req, res) => {
     );
     if (!row) return err404(res, 'Share link expired or invalid.');
     res.json(row);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load shared case.' });
   }
 });
@@ -468,7 +466,7 @@ router.delete('/:id/share', authRequired, async (req, res) => {
       [safeInt(req.params.id), req.user.id]
     );
     res.json({ ok: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not revoke share link.' });
   }
 });
@@ -502,7 +500,7 @@ router.post('/:id/invite', authRequired, casesLimiter, async (req, res) => {
       [safeInt(req.params.id), invitee.id, req.user.id, 'family']
     );
     res.json({ ok: true, invitee_name: invitee.display_name || email, message: 'Invite sent.' });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not send invite.' });
   }
 });
@@ -522,7 +520,7 @@ router.get('/:id/family-access', authRequired, async (req, res) => {
       [safeInt(req.params.id)]
     ).catch(() => []);
     res.json(members);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load family access.' });
   }
 });
@@ -537,7 +535,7 @@ router.delete('/:id/family-access/:memberId', authRequired, async (req, res) => 
       [safeInt(req.params.memberId), safeInt(req.params.id)]
     );
     res.json({ ok: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not revoke access.' });
   }
 });
@@ -558,7 +556,7 @@ router.get('/family', authRequired, async (req, res) => {
       [req.user.id]
     ).catch(() => []);
     res.json(rows);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load shared cases.' });
   }
 });

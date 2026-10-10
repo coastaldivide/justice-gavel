@@ -3,7 +3,7 @@
  * Tests the monitoring layer: Sentry config, self-healing,
  * health scan, and alert thresholds.
  */
-import { readFileSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname  = fileURLToPath(new URL('.', import.meta.url));

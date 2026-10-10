@@ -40,36 +40,24 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  *      CONSULTATION_BASE_CENTS=1500 ($15 platform fee)
  */
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate;
 let encrypt, decrypt;
-let haversineKm;
-let hasMinRole;
-let safeInt, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_EMOJI, GAVEL_LABEL;
+let BUSINESS_CONSTANTS;
 let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole;
   const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const cfg = await import('../config.js');
+   BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
+   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
 
@@ -89,8 +77,8 @@ describe('BIZ. BUSINESS_CONSTANTS — Complete Business Rule Coverage', () => {
   });
   test('BIZ-05: numeric BUSINESS_CONSTANTS are positive; JWT_EXPIRY is a string', () => {
     // Most values are numbers; JWT_EXPIRY is '24h'
-    const numericKeys = Object.entries(BUSINESS_CONSTANTS).filter(([k,v]) => typeof v === 'number');
-    for (const [key, val] of numericKeys) {
+    const numericKeys = Object.entries(BUSINESS_CONSTANTS).filter(([,v]) => typeof v === 'number');
+    for (const [, val] of numericKeys) {
       expect(val).toBeGreaterThan(0);
     }
     /* removed: BUSINESS_CONSTANTS.MAX_CASES does not exist */

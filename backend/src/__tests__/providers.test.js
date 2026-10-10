@@ -67,7 +67,7 @@ async function buildApp(db) {
   const router = express.Router();
   function optAuth(req,res,next) {
     const t=(req.headers.authorization||'').replace('Bearer ','');
-    if(t){try{req.user=jwt.verify(t,SECRET);}catch{}}
+    if(t){try{req.user=jwt.verify(t,SECRET);}catch {}}
     next();
   }
 
@@ -104,7 +104,7 @@ async function buildApp(db) {
       const total = rows.length;
       const paginated = rows.slice(offset, offset+limit);
       res.json({ data: paginated, pagination:{ page, limit, total, pages:Math.ceil(total/limit), hasMore:offset+paginated.length<total } });
-    } catch(e) { res.status(500).json({ error:'Could not search lawyers. Please try again.' }); }
+    } catch { res.status(500).json({ error:'Could not search lawyers. Please try again.' }); }
   });
 
   // GET /bail

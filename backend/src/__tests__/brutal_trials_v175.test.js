@@ -3,7 +3,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // JUSTICE GAVEL — BRUTAL TRIALS v175
 // DB SCHEMA INTEGRITY + IMPORT CHAINS + REFERRAL SYSTEM REMOVAL
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -22,7 +21,6 @@ describe('DB. Schema Integrity', () => {
     expect(threw).toBe(false);
   });
   test('DB-02: ai_jobs has status+output+completed_at', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     const m  = db.match(/CREATE TABLE IF NOT EXISTS ai_jobs\s*\(([^;]+)\)/s);
     expect(m).toBeTruthy();
@@ -31,7 +29,7 @@ describe('DB. Schema Integrity', () => {
     expect(m[1]).toContain('completed_at');
   });
   test("DB-03: motion_history has case_id+content+status+jurisdiction", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
     const cols = tableColumns('motion_history');
     expect(cols.has('case_id')).toBe(true);
     expect(cols.has('content')).toBe(true);
@@ -40,27 +38,25 @@ describe('DB. Schema Integrity', () => {
 
   });
   test('DB-04: firms has owner_id+vertical+pricing_tier', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     const m  = db.match(/CREATE TABLE IF NOT EXISTS firms\s*\(([^;]+)\)/s);
     expect(m).toBeTruthy();
     for(const col of ['owner_id','vertical','pricing_tier']) expect(m[1]).toContain(col);
   });
   test("DB-05: firm_invites has invited_by+expires_at", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
     const cols = tableColumns('firm_invites');
     expect(cols.has('invited_by')).toBe(true);
     expect(cols.has('expires_at')).toBe(true);
 
   });
   test("DB-06: docket_entries has notes", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
     const cols = tableColumns('docket_entries');
     expect(cols.has('notes')).toBe(true);
 
   });
   test('DB-07: feedback has rating+comment', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     const m  = db.match(/CREATE TABLE IF NOT EXISTS feedback\s*\(([^;]+)\)/s);
     expect(m).toBeTruthy();
@@ -213,7 +209,8 @@ describe('GATE. Zero-Defect Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

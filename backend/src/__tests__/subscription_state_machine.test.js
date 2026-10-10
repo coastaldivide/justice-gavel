@@ -12,14 +12,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const SM_PATH = resolve(__dirname, '../utils/subscriptionStateMachine.js');
 const SHARED_PATH = resolve(__dirname, '../routes/billing/_shared.js');
 
-const TIERS = ['free', 'legal_radar', 'advisor', 'legal_pro', 'esquire'];
 
-const MONTHLY_PRICES = {
-  legal_radar: 19.99,
-  advisor:     29.99,
-  legal_pro:   29.99,
-  esquire:     49.99,
-};
 
 describe('Subscription tiers — configuration', () => {
   test('billing shared file exists', () => {

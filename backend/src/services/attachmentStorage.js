@@ -49,7 +49,7 @@ function localBackend(dir) {
       await fs.promises.mkdir(path.dirname(p), { recursive: true });
       await fs.promises.writeFile(p, buf, { flag: 'wx', mode: 0o600 });
     },
-    async get(key) { return fs.promises.readFile(resolveKey(key)); },
+    async get(key) { return await fs.promises.readFile(resolveKey(key)); },
     async remove(key) { await fs.promises.rm(resolveKey(key), { force: true }); },
   };
 }

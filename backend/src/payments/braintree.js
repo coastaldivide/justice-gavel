@@ -1,4 +1,4 @@
-export async function createBraintreePayment({ amount, currency='USD', user, meta }){
+export function createBraintreePayment() {
   if(!process.env.BRAINTREE_MERCHANT_ID){
     return { provider:'braintree-mock', url:'https://example.com/checkout/braintree-mock', mock:true, note:'Venmo supported via Braintree in production.' };
   }

@@ -43,7 +43,6 @@ describe('i18n completeness', () => {
       .filter(f => f.endsWith('.json'))
       .map(f => ({ name: f, keys: Object.keys(JSON.parse(readFileSync(join(I18N_DIR, f), 'utf-8'))) }));
     if (jsonFiles.length < 2) return; // Only one locale — skip
-    const baseKeys = new Set(jsonFiles[0].keys);
     for (const { name, keys } of jsonFiles.slice(1)) {
       const missing = jsonFiles[0].keys.filter(k => !keys.includes(k));
       if (missing.length > 0) {

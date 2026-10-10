@@ -33,17 +33,13 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Backend pure-JS imports ──────────────────────────────────────────────────
 let hasMinRole, roleLevel, PERMISSIONS, ROLE_HIERARCHY;
-let computeAllSignals;
 let encrypt, decrypt;
-let normalizePhone, parseIntent;
 let haversineKm, bboxFromLatLng;
 let PRECEDENT_REGISTRY, REGISTRY_VERSION, REGISTRY_DATE;
 let checkStaleness;
-let safeInt, safeFloat, sanitizeStr, ownsResource, escapeLike, stripHtml, buildWhere, buildOrderBy;
 
 beforeAll(async () => {
   const rbac = await import('../middleware/rbac.js');
@@ -52,16 +48,11 @@ beforeAll(async () => {
   PERMISSIONS    = rbac.PERMISSIONS;
   ROLE_HIERARCHY = rbac.ROLE_HIERARCHY;
 
-  const mi = await import('../routes/matter_intelligence.js');
-  computeAllSignals = mi.computeAllSignals;
 
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt;
   decrypt = enc.decrypt;
 
-  const tw = await import('../utils/sanitize.js');
-  normalizePhone = tw.normalizePhone;
-  parseIntent    = tw.parseIntent;
 
   const geo = await import('../services/geolink.js');
   haversineKm    = geo.haversineKm;
@@ -75,25 +66,9 @@ beforeAll(async () => {
   const mon = await import('../analytics/precedentMonitor.js');
   checkStaleness = mon.checkStaleness;
 
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt     = rh.safeInt;
-  safeFloat   = rh.safeFloat;
-  sanitizeStr = rh.sanitizeStr;
-  ownsResource= rh.ownsResource;
-  escapeLike  = rh.escapeLike;
-  stripHtml   = rh.stripHtml;
-  buildWhere  = rh.buildWhere;
-  buildOrderBy= rh.buildOrderBy;
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const mk = (vertical, o = {}) => ({
-  id: Math.floor(Math.random() * 1e9), vertical,
-  title: `Test ${vertical}`, evidence_score: 60,
-  vulnerability_level: 'moderate', time_pressure: 'standard',
-  supervised_release: 0, plea_offer_pending: 0, ...o,
-});
-const TODAY = new Date().toISOString().slice(0, 10);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. FE auth.ts — AuthState machine
@@ -132,7 +107,7 @@ describe('1. FE auth.ts — AuthState Machine', () => {
       browsing: ['authed', 'guest'],
       authed:   ['guest', 'loading'],
     };
-    for (const [from, tos] of Object.entries(TRANSITIONS)) {
+    for (const [, tos] of Object.entries(TRANSITIONS)) {
       for (const to of tos) {
         expect(VALID_STATES.has(to)).toBe(true);
       }
@@ -142,21 +117,19 @@ describe('1. FE auth.ts — AuthState Machine', () => {
   test('1-05: protected features require "authed" only', () => {
     const PROTECTED = ['case_create', 'payment', 'sos_with_contacts', 'case_history'];
     const isAuthenticated = (s) => s === 'authed';
-    for (const feature of PROTECTED) {
-      // Only authed can access
-      expect(isAuthenticated('authed')).toBe(true);
-      expect(isAuthenticated('browsing')).toBe(false);
-    }
+    expect(PROTECTED.length).toBeGreaterThan(0);
+    // Only authed can access
+    expect(isAuthenticated('authed')).toBe(true);
+    expect(isAuthenticated('browsing')).toBe(false);
   });
 
   test('1-06: public features accessible by "browsing" and "authed"', () => {
     const PUBLIC = ['find_lawyers', 'bail_search', 'chat', 'emergency'];
     const canBrowse = (s) => s === 'authed' || s === 'browsing';
-    for (const feature of PUBLIC) {
-      expect(canBrowse('browsing')).toBe(true);
-      expect(canBrowse('authed')).toBe(true);
-      expect(canBrowse('guest')).toBe(false);
-    }
+    expect(PUBLIC.length).toBeGreaterThan(0);
+    expect(canBrowse('browsing')).toBe(true);
+    expect(canBrowse('authed')).toBe(true);
+    expect(canBrowse('guest')).toBe(false);
   });
 
   test('1-07: registerAuthSetter / setAppAuth model', async () => {
@@ -295,7 +268,7 @@ describe('2. jobPoller.ts — Polling Model', () => {
 describe('3. useRefresh Hook — PTR Contract', () => {
 
   test('3-01: useRefresh starts with refreshing=false', () => {
-    let refreshing = false; // initial state
+    const refreshing = false; // initial state
     expect(refreshing).toBe(false);
   });
 
@@ -378,7 +351,7 @@ describe('4. haptics.ts — Never-Throw Guarantee', () => {
       hapticMedium:  'confirm',
     };
     expect(Object.keys(HAPTIC_CONTEXTS)).toHaveLength(5);
-    for (const [fn, ctx] of Object.entries(HAPTIC_CONTEXTS)) {
+    for (const [, ctx] of Object.entries(HAPTIC_CONTEXTS)) {
       expect(typeof ctx).toBe('string');
     }
   });
@@ -969,7 +942,7 @@ describe('13. Precedent Monitor — External Data Sources', () => {
 describe('14. DB Untested Tables — Schema Integrity', () => {
 
   test("14-01: case_messages table exists for chat threading", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
     const cols = tableColumns('case_messages');
     expect(cols.has('case_id')).toBe(true);
     expect(cols.has('sender_id')).toBe(true);
@@ -978,7 +951,7 @@ describe('14. DB Untested Tables — Schema Integrity', () => {
   });
 
   test("14-02: scan_results table exists for document scanning", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
     const cols = tableColumns('scan_results');
     expect(cols.has('scan_id')).toBe(true);
     expect(cols.has('overall')).toBe(true);
@@ -993,7 +966,6 @@ describe('14. DB Untested Tables — Schema Integrity', () => {
   });
 
   test('14-04: attorney_alerts table exists for arrest notifications', async () => {
-    const fs  = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain('attorney_alerts');
     expect(src).toContain('recipient_id');
@@ -1007,7 +979,6 @@ describe('14. DB Untested Tables — Schema Integrity', () => {
   });
 
   test('14-06: integration_external_ids table enables CRM sync', async () => {
-    const fs  = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain('integration_external_ids');
     expect(src).toContain('firm_id');

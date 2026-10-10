@@ -1,4 +1,3 @@
-import { aiLimiter } from '../../middleware/rateLimiters.js';
 /**
  * chat/index.js — AI Chat module entry point
  *

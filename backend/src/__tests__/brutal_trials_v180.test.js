@@ -4,7 +4,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // STARTUP INTEGRITY: migration system, column bootstrap, users table schema,
 // fresh deployment safety. The deepest layer: what happens on first boot.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -24,14 +23,6 @@ describe('STARTUP. Fresh Deployment Safety', () => {
     // schema is applied from supabase/migrations; the old SQLite prestart migrate hook is gone
     expect(pkg.scripts.prestart).toBeUndefined();
     expect(pkg.scripts.start).toContain('server.js');
-  });
-  test('STARTUP-02: migrate.js exists and is idempotent', async () => {
-    const fs = await import('fs');
-    expect(fs.existsSync(__REPO + '/backend/src/scripts/migrate.js')).toBe(true);
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/migrate.js','utf8');
-    // Idempotent: handles "column already exists" errors gracefully
-    expect(src).toContain('migration');
-    expect(src).toMatch(/IF NOT EXISTS|catch|error/i);
   });
   test('STARTUP-05: db/index.js parses clean after bootstrap addition', async () => {
     let ok = true;
@@ -145,7 +136,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

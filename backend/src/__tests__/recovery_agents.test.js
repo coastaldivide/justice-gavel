@@ -117,7 +117,7 @@ async function buildApp(db) {
 
       res.json({ agents, total: total.cnt, state_law: stateLaw,
         disclaimer: 'Recovery agent laws vary by state. Verify licensing before engaging.' });
-    } catch (e) {
+    } catch {
       res.status(500).json({ error: 'Server error.' });
     }
   });

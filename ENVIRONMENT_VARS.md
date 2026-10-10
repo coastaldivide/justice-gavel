@@ -152,7 +152,6 @@ configured in Railway (or your deployment environment) as needed.
 |----------|----------|-------------|
 | `GOOGLE_CALENDAR_CLIENT_ID` | Optional | Google Calendar OAuth client ID |
 | `GOOGLE_CALENDAR_CLIENT_SECRET` | Optional | Google Calendar OAuth client secret |
-| `CALENDLY_PERSONAL_TOKEN` | Optional | Calendly personal API token |
 
 ### AI & Transcription
 | Variable | Required | Description |

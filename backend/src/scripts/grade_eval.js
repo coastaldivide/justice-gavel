@@ -254,7 +254,7 @@ async function gradeResponse(response, dimensionKeys) {
   console.log(`${'═'.repeat(60)}\n`);
   console.log(`  OVERALL COMPOSITE SCORE: ${overallMean}/10\n`);
   console.log(`  By dimension:`);
-  for (const [k, s] of Object.entries(stats)) {
+  for (const [, s] of Object.entries(stats)) {
     const bar = '█'.repeat(Math.round(parseFloat(s.mean))).padEnd(10, '░');
     console.log(`    ${s.name.padEnd(22)} ${bar} ${s.mean}/10  (${s.below5} below 5)`);
   }

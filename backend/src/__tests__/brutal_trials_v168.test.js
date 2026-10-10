@@ -4,7 +4,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // COMPLETE BEHAVIORAL FUNCTIONAL SCAN
 // Reads actual code as user behavior. Zero issues means app performs flawlessly.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -186,7 +185,7 @@ describe('ALL. 75-Screen Zero-Defect Verification', () => {
   });
   test('ALL-08: discovery + motions/generate + /family/contacts all exist', async () => {
     const fs=await import('fs');
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/discovery.js','utf8')).toContain("'/analyze'");
+    expect(['index','analyze','history','_helpers'].map(f=>fs.readFileSync(__REPO + '/backend/src/routes/discovery/'+f+'.js','utf8')).join('\n')).toContain("'/analyze'");
     expect(fs.readFileSync(__REPO + '/backend/src/routes/motions/generate.js','utf8')).toContain("'/generate'");
     expect(fs.readFileSync(__REPO + '/backend/src/routes/cases.js','utf8')).toContain("'/family/contacts'");
   });
@@ -224,7 +223,8 @@ describe('MASS. 2M Influx', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

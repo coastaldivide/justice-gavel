@@ -5,25 +5,19 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // + api.ts retry/cache/dedup + haptics.ts + secureStorage + theme.ts
 // + Design System v2 + PWA manifest + service worker
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeDiversionRecommendations, computeOutcomeEstimate;
-let encrypt, decrypt, haversineKm;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
+let computeAllSignals, computeOutcomeEstimate;
+let encrypt, decrypt;
+let GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe  = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg  = await import('../routes/golden_gavel.js');
+   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
@@ -98,8 +92,9 @@ describe('SCHED. scheduler.js — Full Automated Pipeline', () => {
   test('SCHED-04: health scan scheduler integration', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/scheduler.js','utf8');
-    expect(src).toContain('startHealthScanScheduler');
-    expect(src).toContain('runHealthScan');
+    expect(src).toContain('startHealthScanScheduler();');   // the health-scan cron owns runHealthScan()
+    const hs = fs.readFileSync(__REPO + '/backend/src/services/healthScan.js','utf8');
+    expect(hs).toMatch(/export function startHealthScanScheduler[\s\S]*?await runHealthScan\(\)/);
     // Automated health monitoring runs on schedule
   });
   test('SCHED-05: docket reminder job covers COURT_REMINDER_DAYS=[14,7,3,1]', async () => {

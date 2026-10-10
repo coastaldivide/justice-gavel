@@ -15,7 +15,7 @@ import { getDb }                                 from '../db/index.js';
 import logger                                    from '../utils/logger.js';
 import { getAuditLog, ensureAuditTable }         from '../middleware/audit.js';
 import { hasMinRole }                            from '../middleware/rbac.js';
-import { apiLimiter, writeLimiter, aiLimiter } from '../middleware/rateLimiters.js';
+import { apiLimiter } from '../middleware/rateLimiters.js';
 
 const router = Router();
 

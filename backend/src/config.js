@@ -12,6 +12,7 @@
 
 import 'dotenv/config';
 import crypto from 'crypto';
+import logger from './utils/logger.js';
 
 const IS_PROD = process.env.NODE_ENV === 'production';
 
@@ -32,7 +33,7 @@ if (!IS_PROD) {
   for (const [k, bytes] of [['JWT_SECRET', 48], ['JWT_REFRESH_SECRET', 48], ['ENCRYPTION_KEY', 32]]) {
     if (!process.env[k]) {
       process.env[k] = crypto.randomBytes(bytes).toString('hex');
-      if (process.env.NODE_ENV !== 'test') console.warn(`[config] ${k} not set — generated a random dev-only value`);
+      if (process.env.NODE_ENV !== 'test') logger.warn(`[config] ${k} not set — generated a random dev-only value`);
     }
   }
 }
@@ -77,17 +78,17 @@ const OPTIONAL_FEATURES = {
 export function validateEnv({ exit = true } = {}) {
   const missing = IS_PROD ? REQUIRED_IN_PROD.filter(k => !process.env[k]) : [];
   if (missing.length) {
-    console.error('[config] ❌ Missing required env vars for production:', missing.join(', '));
+    logger.error('[config] ❌ Missing required env vars for production:', missing.join(', '));
     if (exit) process.exit(1);
   }
   for (const [key, msg] of Object.entries(OPTIONAL_FEATURES)) {
     const present = key === 'STRIPE_SECRET_KEY' ? stripeConfigured()
       : key === 'SHOW_SAMPLE_ARRESTS' ? String(process.env[key] || '').trim().toLowerCase() === 'true'
       : !!process.env[key];
-    if (!present) console.warn(`[config] ${key} not set — ${msg}`);
+    if (!present) logger.warn(`[config] ${key} not set — ${msg}`);
   }
   if (IS_PROD && String(process.env.SHOW_SAMPLE_ARRESTS || '').trim().toLowerCase() === 'true') {
-    console.warn('[config] ⚠️  SHOW_SAMPLE_ARRESTS=true in production — generated sample arrest records are visible to users (labelled "Sample record"). Use for demos only.');
+    logger.warn('[config] ⚠️  SHOW_SAMPLE_ARRESTS=true in production — generated sample arrest records are visible to users (labelled "Sample record"). Use for demos only.');
   }
   return { missing };
 }
@@ -188,13 +189,13 @@ export const ALL_ENV_VARS = {
   STRIPE_SUCCESS_URL:       process.env.STRIPE_SUCCESS_URL         || 'https://justicegavel.app/payment/success',
   STRIPE_CANCEL_URL:        process.env.STRIPE_CANCEL_URL          || 'https://justicegavel.app/payment/cancel',
   // Subscription price IDs (create in Stripe dashboard)
-  STRIPE_LEGAL_PRO_PRICE_ID:      (process.env.STRIPE_LEGAL_PRO_PRICE_ID || 'price_1Tb1jc2XUfNqC3X4Iqzcz6lC')        || '',
-  STRIPE_LEGAL_PRO_ANNUAL_ID:     (process.env.STRIPE_LEGAL_PRO_ANNUAL_ID || 'price_1Tb1iJ2XUfNqC3X49Ycr9lti')       || '',
-  STRIPE_ADVISOR_PRICE_ID:  (process.env.STRIPE_ADVISOR_PRICE_ID || 'price_1Tb1hV2XUfNqC3X4QLiRdT22')    || '',
-  STRIPE_ADVISOR_ANNUAL_ID: (process.env.STRIPE_ADVISOR_ANNUAL_ID || 'price_1Tb1hV2XUfNqC3X4iMSFj1e1')   || '',
-  STRIPE_ESQUIRE_PRICE_ID: (process.env.STRIPE_ESQUIRE_PRICE_ID || 'price_1Tb1kY2XUfNqC3X4JMquJ8hX')   || '',
-  STRIPE_ESQUIRE_ANNUAL_ID:(process.env.STRIPE_ESQUIRE_ANNUAL_ID || 'price_1Tb1l32XUfNqC3X4BRSRCuQa')  || '',
-  STRIPE_LEGAL_RADAR_ID: (process.env.STRIPE_LEGAL_RADAR_ID || 'price_1Tb1vn2XUfNqC3X4U1jojSNW')   || '',
+  STRIPE_LEGAL_PRO_PRICE_ID:      (process.env.STRIPE_LEGAL_PRO_PRICE_ID || 'price_1Tb1jc2XUfNqC3X4Iqzcz6lC'),
+  STRIPE_LEGAL_PRO_ANNUAL_ID:     (process.env.STRIPE_LEGAL_PRO_ANNUAL_ID || 'price_1Tb1iJ2XUfNqC3X49Ycr9lti'),
+  STRIPE_ADVISOR_PRICE_ID:  (process.env.STRIPE_ADVISOR_PRICE_ID || 'price_1Tb1hV2XUfNqC3X4QLiRdT22'),
+  STRIPE_ADVISOR_ANNUAL_ID: (process.env.STRIPE_ADVISOR_ANNUAL_ID || 'price_1Tb1hV2XUfNqC3X4iMSFj1e1'),
+  STRIPE_ESQUIRE_PRICE_ID: (process.env.STRIPE_ESQUIRE_PRICE_ID || 'price_1Tb1kY2XUfNqC3X4JMquJ8hX'),
+  STRIPE_ESQUIRE_ANNUAL_ID:(process.env.STRIPE_ESQUIRE_ANNUAL_ID || 'price_1Tb1l32XUfNqC3X4BRSRCuQa'),
+  STRIPE_LEGAL_RADAR_ID: (process.env.STRIPE_LEGAL_RADAR_ID || 'price_1Tb1vn2XUfNqC3X4U1jojSNW'),
 
         
   // ── SendGrid ─────────────────────────────────────────────────────────────

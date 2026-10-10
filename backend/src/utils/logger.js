@@ -51,23 +51,6 @@ export const logger = {
 // Default export for convenience
 export default logger;
 
-// ── PII masking ────────────────────────────────────────────────────────────────
-const PII_PATTERNS = [
-  { re: /([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/g, mask: (m) => m.slice(0,3) + '***@***' },
-  { re: /\b(\+?1[-.]?)?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}\b/g, mask: () => '***-***-****' },
-  { re: /\b\d{3}-\d{2}-\d{4}\b/g, mask: () => '***-**-****' }, // SSN
-];
-
-// Used for masking PII in log output before writing to external services
-export function maskPII(str) {
-  if (typeof str !== 'string') return str;
-  let masked = str;
-  for (const { re, mask } of PII_PATTERNS) {
-    masked = masked.replace(re, mask);
-  }
-  return masked;
-}
-
 // ── Request ID context ────────────────────────────────────────────────────────
 // Usage: logger.info('[route] msg', { requestId: req.id })
 // The request ID is set in app.js via crypto.randomUUID()

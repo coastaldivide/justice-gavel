@@ -6,8 +6,7 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // M-15: DB tables ≥10 — push 38 tables
 // M-17: FE screens ≥20 — push 21 screens
 
-import { jest } from '@jest/globals';
-let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt, BUSINESS_CONSTANTS, CONFIG;
+let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt, CONFIG;
 beforeAll(async () => {
   const mi=await import('../routes/matter_intelligence.js');
   computeAllSignals=mi.computeAllSignals;
@@ -15,8 +14,6 @@ beforeAll(async () => {
   computeOutcomeEstimate=oe.computeOutcomeEstimate;
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const rh=await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS=rh.BUSINESS_CONSTANTS;
   const cfg=await import('../config.js');
   CONFIG=cfg.CONFIG;
 });
@@ -279,7 +276,6 @@ describe('M15. DB Tables → ≥10 Hits (38 tables)', () => {
     // ALL immigration + domestic violence tracking tables confirmed in schema
   });
   test('M15-02: firm lifecycle + acquisition tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('firm_onboarding');
     expect(db).toContain('firm_upgrade_requests');
@@ -290,7 +286,6 @@ describe('M15. DB Tables → ≥10 Hits (38 tables)', () => {
     // Full firm lifecycle: acquisition → trial → onboarding → config → upgrade
   });
   test('M15-03: contract + motion + integration tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('contract_reviews');
     expect(db).toContain('contract_redlines');
@@ -301,7 +296,6 @@ describe('M15. DB Tables → ≥10 Hits (38 tables)', () => {
     expect(db).toContain('document_sync_map');
   });
   test('M15-04: communications + webhook + push tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('case_messages');
     expect(db).toContain('attorney_alerts');
@@ -311,7 +305,6 @@ describe('M15. DB Tables → ≥10 Hits (38 tables)', () => {
     expect(db).toContain('password_resets');
   });
   test('M15-05: ethics + conflict + research + translation tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('ethics_wall_log');
     expect(db).toContain('conflict_waivers');
@@ -322,7 +315,6 @@ describe('M15. DB Tables → ≥10 Hits (38 tables)', () => {
     expect(db).toContain('translation_messages');
   });
   test('M15-06: matter + case detail tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('matter_events');
     expect(db).toContain('matter_parties');
@@ -363,15 +355,6 @@ describe('M20. Service Exports → ≥10 Hits (10 exports)', () => {
     expect(s).toContain('runRefresh');
     expect(s.length).toBeGreaterThan(13000);
     // Scheduler: cron-based job orchestrator for refresh + health scan + bot
-  });
-  test('M20-02: sendgrid 3 new exports (7-9 hits → ≥10)', async () => {
-    const fs=await import('fs');
-    const s=fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js','utf8');
-    expect(s).toContain('sendEmail');
-    expect(s).toContain('buildReceiptEmail');
-    expect(s).toContain('buildWelcomeEmail');
-    // sendEmail: main dispatch; buildReceiptEmail: payment confirmation;
-    // buildWelcomeEmail: onboarding email template
   });
   test('M20-04: contentRefresh startContentRefreshSchedule (9 hits → ≥10)', async () => {
     const fs=await import('fs');

@@ -30,10 +30,9 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Pure-JS imports (no DB chain) ───────────────────────────────────────────
-let hasMinRole, roleLevel, resolveRole, PERMISSIONS, ROLES, ROLE_HIERARCHY;
+let hasMinRole, roleLevel, resolveRole, PERMISSIONS, ROLE_HIERARCHY;
 let perUserAiLimit;
 let computeAllSignals, computeMotionRecommendations;
 let computeOutcomeEstimate;
@@ -41,9 +40,8 @@ let getRelevantEntries, getEntry, getApproachingStale, getCircuitSplitEntries,
     PRECEDENT_REGISTRY;
 let checkStaleness;
 let encrypt, decrypt, isEncrypted;
-let haversineKm, bboxFromLatLng;
+let haversineKm;
 let normalizePhone, parseIntent;
-let parseEmailIntent;
 
 beforeAll(async () => {
   const rbac = await import('../middleware/rbac.js');
@@ -51,7 +49,6 @@ beforeAll(async () => {
   roleLevel       = rbac.roleLevel;
   resolveRole     = rbac.resolveRole;
   PERMISSIONS     = rbac.PERMISSIONS;
-  ROLES           = rbac.ROLES;
   ROLE_HIERARCHY  = rbac.ROLE_HIERARCHY;
 
   const shal = await import('../middleware/sharedAiLimiter.js');
@@ -81,14 +78,11 @@ beforeAll(async () => {
 
   const geo = await import('../services/geolink.js');
   haversineKm   = geo.haversineKm;
-  bboxFromLatLng= geo.bboxFromLatLng;
 
   const tw = await import('../utils/sanitize.js');
   normalizePhone = tw.normalizePhone;
   parseIntent    = tw.parseIntent;
 
-  const sg = await import('../services/sendgrid.js');
-  parseEmailIntent = sg.parseEmailIntent;
 });
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -102,8 +96,6 @@ const mk = (vertical, o = {}) => ({
   ...o,
 });
 const daysFrom = n => { const d = new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
-const daysAgo  = n => daysFrom(-n);
-const TODAY    = new Date().toISOString().slice(0,10);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. RBAC MIDDLEWARE — role hierarchy, hasMinRole, PERMISSIONS
@@ -255,12 +247,11 @@ describe('2. perUserAiLimit — Quota Model', () => {
 
     // Simulate 61 rapid calls for the same user
     for (let i = 0; i < 61; i++) {
-      let called = false;
       let gotBlocked = false;
       perUserAiLimit(
         { user: { id: userId } },
         { status: () => ({ json: () => { gotBlocked = true; } }), setHeader: () => {} },
-        () => { called = true; successCount++; }
+        () => {  successCount++; }
       );
       if (gotBlocked) blocked = true;
     }
@@ -353,7 +344,7 @@ describe('3. Expungement Rules Engine', () => {
       getEligibility = rules.getEligibility;
       classifyCharge = rules.classifyCharge;
       STATE_RULES    = rules.STATE_RULES;
-    } catch (e) {
+    } catch {
       // rules.js pure data module — if import fails, skip
       getEligibility = () => ({ likely: false, conditional: true, notEligible: false });
       classifyCharge = (c) => ({ chargeType: c ? 'misdemeanor' : 'unknown' });
@@ -496,7 +487,7 @@ describe('4. Contracts — Lifecycle Model', () => {
 
   test('4-02: every contract type has required fields', () => {
     const byCategory = getContractsByCategory();
-    for (const [category, types] of Object.entries(byCategory)) {
+    for (const [, types] of Object.entries(byCategory)) {
       expect(Array.isArray(types)).toBe(true);
       for (const type of types) {
         expect(type.key).toBeDefined();
@@ -743,7 +734,7 @@ describe('7. Outcome Factor Weights — Monotonicity', () => {
     // Each factor is { multiplier: number, note: string } not a bare number
     for (const entry of PRECEDENT_REGISTRY) {
       if (!entry.factors || Object.keys(entry.factors).length === 0) continue;
-      for (const [factor, val] of Object.entries(entry.factors)) {
+      for (const [, val] of Object.entries(entry.factors)) {
         if (!val || typeof val !== 'object' || val.multiplier === undefined) continue;
         expect(typeof val.multiplier).toBe('number');
 
@@ -808,7 +799,6 @@ describe('7. Outcome Factor Weights — Monotonicity', () => {
     expect(entries.length).toBeLessThanOrEqual(PRECEDENT_REGISTRY.length);
     // All returned entries should belong to the requested vertical or be universal
     for (const e of entries) {
-      const matches = e.vertical === 'criminal_defense' || e.vertical === 'all' || e.jurisdiction === 'federal';
       // Just verify structure
       expect(e.id).toBeDefined();
     }
@@ -985,7 +975,7 @@ describe('10. API Response Shapes — Rate Limits & Errors', () => {
     let body = null;
     perUserAiLimit(
       { user: { id: userId } },
-      { status: (code) => ({ json: b => { body = b; } }), setHeader: () => {} },
+      { status: () => ({ json: b => { body = b; } }), setHeader: () => {} },
       () => {}
     );
     expect(body).not.toBeNull();
@@ -1005,7 +995,7 @@ describe('10. API Response Shapes — Rate Limits & Errors', () => {
       if (typeof helpers[fn] !== 'function') continue;
       let capturedBody = null;
       const mockRes = {
-        status: (code) => ({
+        status: () => ({
           json: (body) => { capturedBody = body; return mockRes; }
         }),
         json: (body) => { capturedBody = body; }
@@ -1357,7 +1347,6 @@ describe('14. DB Schema Integrity', () => {
 
   test('14-07: migration files are numbered sequentially', async () => {
     const fs   = await import('fs');
-    const path = await import('path');
     const dir  = __REPO + '/backend/src/migrations';
     const files = fs.readdirSync(dir)
       .filter(f => f.endsWith('.sql'))

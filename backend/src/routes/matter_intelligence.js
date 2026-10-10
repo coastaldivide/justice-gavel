@@ -1,4 +1,3 @@
-import { matterIntelLimiter } from '../utils/rateLimiters.js';
 /**
  * matter_intelligence.js — Outcome prediction, motion/diversion recommendations,
  *                           emergency escalation, and vertical-specific intelligence
@@ -18,19 +17,19 @@ import { Router }       from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getDb }        from '../db/index.js';
 import logger           from '../utils/logger.js';
-import { err400, err403, err404, safeInt } from '../utils/routeHelpers.js';
+import { err403, err404, safeInt } from '../utils/routeHelpers.js';
 import { writeAuditLog }                   from '../middleware/audit.js';
 import { hasMinRole }                      from '../middleware/rbac.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 
-const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
+const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
 
 const router = Router();
 
 // ─── RBAC — reuses hasMinRole from middleware/rbac.js ───────────────────────
 // Local getFirmCtx is a lightweight DB query wrapper (loadFirmContext takes full req)
 async function getFirmCtx(db, userId) {
-  return db.get(
+  return await db.get(
     `SELECT fm.firm_id, fm.firm_role FROM firm_members fm
      WHERE fm.user_id=? AND fm.status='active' LIMIT 1`,
     [userId]
@@ -124,8 +123,6 @@ function computeCriminalSignals(m) {
 
 // F2 — Civil Rights
 function computeCivilRightsSignals(m) {
-  const matter   = (m.title || '').toLowerCase();
-  const medical  = /medical|cancer|suicide|solitary|mental/.test(matter);
   const crisis   = m.vulnerability_level === 'crisis';
   const ev       = evidenceBucket(m.evidence_score);
   const damages  = m.damages_type || 'compensatory_only';
@@ -492,7 +489,7 @@ function computeJuvenileSignals(m) {
 // ── TAXONOMY — 300-type matter classifier ─────────────────────────────────────
 const MATTER_KEYWORDS = {
   // Military (checked first — UCMJ matters contain 'sexual assault' too)
-  court_martial:   [/court[\-\s]?martial|court-martial|ucmj|article \d+|art\. \d+/],
+  court_martial:   [/court[-\s]?martial|court-martial|ucmj|article \d+|art\. \d+/],
   admin_sep:       [/admin sep|separation board|military discharge|discharge.*service|oth discharge/],
   clearance:       [/security clearance/],
   // Criminal
@@ -833,7 +830,6 @@ function computeDiversionRecommendations(matter) {
   const charge  = (matter.title || '').toLowerCase();
   const vuln    = matter.vulnerability_level || 'moderate';
   const prior   = safeInt(matter.prior_adjudications, 0);
-  const age     = safeInt(matter.client_age, 30);
   const recs    = [];
 
   if (prior > 2) return recs; // ineligible
@@ -1371,6 +1367,6 @@ router.get('/:id/analytics', authRequired, async (req, res) => {
         days_active: 0,
       }
     });
-  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });
 

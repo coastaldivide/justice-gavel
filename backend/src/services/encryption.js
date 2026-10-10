@@ -16,7 +16,7 @@ import crypto from 'crypto';
 
 // Require explicit key — never silently fall back to a predictable value
 if (!process.env.ENCRYPTION_KEY && process.env.NODE_ENV === 'production') {
-  throw new Error('[encryption] ENCRYPTION_KEY env var required in production. Generate: node -e "logger.info(require(\"crypto\").randomBytes(32).toString(\"hex\"))"');
+  throw new Error('[encryption] ENCRYPTION_KEY env var required in production. Generate: node -e "logger.info(require("crypto").randomBytes(32).toString("hex"))"');
 }
 const RAW_KEY = process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || 'jtb-fallback-key-change-in-production';
 

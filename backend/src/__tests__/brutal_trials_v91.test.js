@@ -4,11 +4,10 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 91st pass: config doc groups + SkeletonLoader components + final route
 // coverage stats + comprehensive security/perf/UX final audit
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
 let computeOutcomeEstimate, encrypt, decrypt, haversineKm, haversineMiles, bboxFromLatLng;
-let safeInt, safeFloat, validCoords, buildWhere, sanitizeStr, FIELD_LIMITS;
+let safeInt, safeFloat, buildWhere, sanitizeStr;
 let BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
@@ -25,9 +24,8 @@ beforeAll(async () => {
   haversineMiles = geo.haversineMiles;
   bboxFromLatLng = geo.bboxFromLatLng;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; safeFloat = rh.safeFloat; validCoords = rh.validCoords;
-  buildWhere = rh.buildWhere; sanitizeStr = rh.sanitizeStr;
-  FIELD_LIMITS = rh.FIELD_LIMITS; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
+  safeInt = rh.safeInt; safeFloat = rh.safeFloat;   buildWhere = rh.buildWhere; sanitizeStr = rh.sanitizeStr;
+ BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');

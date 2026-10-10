@@ -43,16 +43,6 @@ export function cacheFor(ttlMinutes = 5) {
   };
 }
 
-/** Invalidate all cached routes matching a prefix. */
-export function invalidateCache(prefix = '') {
-  const keys = cache.keys().filter(k => k.includes(prefix));
-  cache.del(keys);
-  return keys.length;
-}
 
-/** Cache stats for the /health endpoint. */
-export function cacheStats() {
-  return cache.getStats();
-}
 
 export default cache;

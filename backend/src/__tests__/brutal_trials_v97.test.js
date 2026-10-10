@@ -4,16 +4,14 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 97th pass: S0 threshold fixes + motions/export deep + contracts/execution
 // + billing/connections + legaldata + rights-card push + comprehensive final
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
+let computeAllSignals, computeDiversionRecommendations;
 let computeOutcomeEstimate, encrypt, decrypt, haversineKm;
 let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe  = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;

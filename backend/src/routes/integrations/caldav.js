@@ -1,4 +1,4 @@
-import { safeJson } from '../../utils/routeHelpers.js';
+import { safeJson, err403, err404, safeInt, sanitizeStr } from '../../utils/routeHelpers.js';
 /**
  * routes/integrations/caldav.js — CalDAV Calendar Push Integration
  *
@@ -25,7 +25,6 @@ import { getDb }      from '../../db/index.js';
 import { authRequired } from '../../middleware/auth.js';
 import { requireFirmRole, loadFirmContext } from '../../middleware/rbac.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
-import { err400, err403, err404, safeInt, sanitizeStr } from '../../utils/routeHelpers.js';
 import logger         from '../../utils/logger.js';
 import { refreshTokenIfNeeded } from './index.js';
 
@@ -214,7 +213,7 @@ async function caldavDelete(conn, href) {
 
 // ── Main sync dispatcher ──────────────────────────────────────────────────────
 
-export async function syncCalendar({ db, conn: _conn, ctx, entity_type, direction, matter_id, user }) {
+export async function syncCalendar({ db, conn: _conn, ctx, entity_type, matter_id }) {
   const conn = await refreshTokenIfNeeded(db, _conn);
   try {
     if (entity_type !== 'event') {
@@ -367,7 +366,7 @@ router.post('/push/matter/:matterId', authRequired, calLimiter, async (req, res)
 
     const result = await syncCalendar({ db, conn, ctx, entity_type: 'event', direction: 'push', matter_id: matterId, user: req.user });
     res.json({ provider: conn.provider, matter_id: matterId, ...result });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Bulk calendar push failed.' });
   }
 });
@@ -392,7 +391,7 @@ router.delete('/events/:uid', authRequired, calLimiter, async (req, res) => {
     await db.run("UPDATE calendar_push_events SET sync_status='deleted', last_sync_at=NOW() WHERE id=?", [evt.id]);
 
     res.json({ ok: true, uid, deleted: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not delete calendar event.' });
   }
 });
@@ -415,7 +414,7 @@ router.get('/events', authRequired, requireFirmRole('partner'), async (req, res)
     ).catch(() => []);
 
     res.json({ events, count: events.length });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load calendar events.' });
   }
 });
@@ -458,13 +457,13 @@ router.get('/ical/:firmId', async (req, res) => {
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="deadlines-firm-${firmId}.ics"`);
     res.send(ical);
-  } catch (e) {
+  } catch {
     res.status(500).send('Could not generate ICS feed.');
   }
 });
 
 // GET /api/integrations/caldav/ical-token/:firmId — get the ICS feed token (authenticated)
-router.get('/ical-token/:firmId', authRequired, requireFirmRole('partner'), async (req, res) => {
+router.get('/ical-token/:firmId', authRequired, requireFirmRole('partner'), (req, res) => {
   try {
     const ctx    = req.firmCtx;
     const firmId = safeInt(req.params.firmId);
@@ -479,7 +478,7 @@ router.get('/ical-token/:firmId', authRequired, requireFirmRole('partner'), asyn
       ics_url:      `${baseUrl}/api/integrations/caldav/ical/${firmId}?token=${token}`,
       instructions: 'Subscribe to this URL in Apple Calendar, Google Calendar, or Outlook to receive all firm deadlines.',
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not generate ICS token.' });
   }
 });

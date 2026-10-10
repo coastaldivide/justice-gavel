@@ -16,7 +16,7 @@ async function buildSchema(db) {
   await db.run("INSERT INTO users (id,email,state) VALUES (1,'u@test.com','TN')");
 }
 
-async function buildApp(db) {
+async function buildApp() {
   const app = express();
   app.use(express.json());
   const router = express.Router();

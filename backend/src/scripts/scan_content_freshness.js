@@ -29,7 +29,7 @@ import fs   from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getDb } from '../db/index.js';
-import { scanAllContent, REVIEW_THRESHOLD_DAYS, stalenessScore } from '../services/contentStaleness.js';
+import { REVIEW_THRESHOLD_DAYS, stalenessScore } from '../services/contentStaleness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCAN_DIR  = path.resolve(__dirname, '../../../data/freshness');

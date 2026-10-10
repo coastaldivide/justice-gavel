@@ -46,53 +46,26 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeMotionRecommendations;
-let computeOutcomeEstimate;
 let encrypt, decrypt;
-let normalizePhone, parseIntent;
-let haversineKm;
-let hasMinRole, ROLE_HIERARCHY;
-let safeInt, stripHtml, buildWhere, truncateStr;
-let GAVEL_LEVELS, MOTION_TYPES, CONTRACT_TYPES;
-let CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals            = mi.computeAllSignals;
   computeMotionRecommendations = mi.computeMotionRecommendations;
 
-  const oe = await import('../analytics/outcomeEstimator.js');
-  computeOutcomeEstimate = oe.computeOutcomeEstimate;
 
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
 
-  const tw = await import('../utils/sanitize.js');
-  normalizePhone = tw.normalizePhone; parseIntent = tw.parseIntent;
+ 
 
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
+ 
+  
 
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole; ROLE_HIERARCHY = rbac.ROLE_HIERARCHY;
 
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; stripHtml = rh.stripHtml;
-  buildWhere = rh.buildWhere; truncateStr = rh.truncateStr;
 
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_LEVELS = gg.GAVEL_LEVELS;
-
-  const motT = await import('../routes/motions/_motion_types.js');
-  MOTION_TYPES = motT.MOTION_TYPES;
-
-  const ctypes = await import('../routes/contracts/_contract_types.js');
-  CONTRACT_TYPES = ctypes.CONTRACT_TYPES;
-
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o = {}) => ({

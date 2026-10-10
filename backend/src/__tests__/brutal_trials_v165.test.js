@@ -5,15 +5,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // Every core user journey. Every route. Every screen state.
 // Zero gaps. Zero dead ends. Zero crashes on basic functions.
 
-import { jest } from '@jest/globals';
-let computeAllSignals, encrypt, decrypt, CONFIG;
+let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi=await import('../routes/matter_intelligence.js');
   computeAllSignals=mi.computeAllSignals;
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const cfg=await import('../config.js');
-  CONFIG=cfg.CONFIG;
 });
 const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
   vulnerability_level:'moderate',time_pressure:'standard',
@@ -176,12 +173,12 @@ describe('F5. Case Management Flow', () => {
   });
   test('F5-05: discovery.js has all 3 routes + demo mode + AI queue', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/discovery.js','utf8');
+    const src=['index','analyze','history','_helpers'].map(f=>fs.readFileSync(__REPO + '/backend/src/routes/discovery/'+f+'.js','utf8')).join('\n');
     expect(src).toContain("'/status'");
     expect(src).toContain("'/history'");
     expect(src).toContain("'/analyze'");
-    expect(src).toContain('ANTHROPIC_API_KEY'); // demo mode when key not set
-    expect(src).toContain('ai_jobs');           // uses proper job queue
+    expect(src).toContain('requireAi');         // 503 ai_unavailable when no key (no demo mode)
+    expect(src).toContain('enqueueAIJob');      // uses the AI job queue
   });
   test('F5-06: VoiceNoteScreen records + transcribes', async () => {
     const fs=await import('fs');
@@ -346,7 +343,8 @@ describe('FINAL. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f); if(fs.statSync(fp).isDirectory()){wd(fp);continue;}

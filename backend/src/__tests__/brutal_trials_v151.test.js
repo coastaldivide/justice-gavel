@@ -4,19 +4,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // TARGET: Push ALL 170 remaining routes to ≥15
 // Systematic double-coverage of every route still below threshold
 
-import { jest } from '@jest/globals';
-let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt, BUSINESS_CONSTANTS, CONFIG;
+let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi=await import('../routes/matter_intelligence.js');
   computeAllSignals=mi.computeAllSignals;
-  const oe=await import('../analytics/outcomeEstimator.js');
-  computeOutcomeEstimate=oe.computeOutcomeEstimate;
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const rh=await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS=rh.BUSINESS_CONSTANTS;
-  const cfg=await import('../config.js');
-  CONFIG=cfg.CONFIG;
 });
 const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
   vulnerability_level:'moderate',time_pressure:'standard',supervised_release:0,plea_offer_pending:0,...o});

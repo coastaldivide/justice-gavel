@@ -14,8 +14,6 @@
  *   "We disclosed the limitations of AI legal information on every response."
  */
 
-import { stalenessScore, stalenessDisclaimer, SUPPRESS_THRESHOLD_DAYS } from '../services/contentStaleness.js';
-import logger from '../utils/logger.js';
 
 // ── Standard disclaimer layers ────────────────────────────────────────────────
 // Layer 1: Always shown. Every response, no exceptions.
@@ -38,7 +36,7 @@ export const STALE_DISCLAIMER =
  * Usage: router.get('/check', legalAccuracyMiddleware('expungement'), handler)
  */
 export function legalAccuracyMiddleware(contentType = 'legal_information') {
-  return async (req, res, next) => {
+  return (req, res, next) => {
     // Intercept res.json to inject _meta block
     const originalJson = res.json.bind(res);
     res.json = function (body) {
@@ -89,24 +87,3 @@ export function chatAccuracyMiddleware(req, res, next) {
   next();
 }
 
-/**
- * Validate that a legal response contains required liability elements.
- * Call this from the AI route before sending to the client.
- * Returns { valid: bool, missing: string[] }
- */
-export function validateLegalResponse(responseText) {
-  const missing = [];
-  const text = (responseText || '').toLowerCase();
-
-  if (!text.includes('attorney') && !text.includes('lawyer') && !text.includes('counsel')) {
-    missing.push('No attorney referral in response');
-  }
-  if (!text.includes('state') && !text.includes('jurisdiction')) {
-    missing.push('No jurisdiction acknowledgment');
-  }
-  if (text.includes('definitely') || text.includes('guaranteed') || text.includes('will definitely')) {
-    missing.push('Overconfident language ("definitely", "guaranteed") — should hedge');
-  }
-
-  return { valid: missing.length === 0, missing };
-}

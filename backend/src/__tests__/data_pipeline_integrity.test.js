@@ -94,7 +94,7 @@ describe('Data pipeline — output integrity', () => {
       const c = readFileSync(join(SCRIPTS_DIR, fname), 'utf-8');
       if (c.includes('places') || c.includes('Maps')) {
         expect(c).toMatch(/GOOGLE_PLACES_KEY|PLACES_API_KEY|process\.env/);
-        expect(c).not.toMatch(/AIza[a-zA-Z0-9_\-]{35}/); // No hardcoded key
+        expect(c).not.toMatch(/AIza[a-zA-Z0-9_-]{35}/); // No hardcoded key
       }
     }
   });

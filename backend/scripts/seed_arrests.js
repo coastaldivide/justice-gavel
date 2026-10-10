@@ -124,7 +124,7 @@ async function seed() {
     const rows   = [];
 
     for (let i = 0; i < TOTAL; i++) {
-      const [state, county, city, jail] = pick(COUNTIES);
+      const [state, county, , jail] = pick(COUNTIES);
       const [charge, bailMin, bailMax]  = pick(CHARGES);
       const hasAtty    = Math.random() < 0.30 ? 1 : 0;  // 70% no attorney
       const hasBail    = Math.random() > 0.18;           // 82% have bail set

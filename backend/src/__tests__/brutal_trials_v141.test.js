@@ -5,10 +5,9 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // precedentRegistry 2 new exports: getApproachingStale + getCircuitSplitEntries
 // stripeAch guard correct + billing/index.js + 2 S0 fixes
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG, calcLeadFee;
+let CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -17,12 +16,6 @@ beforeAll(async () => {
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const bs  = await import('../routes/billing/_shared.js');
-  calcLeadFee = bs.calcLeadFee;
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
@@ -136,23 +129,6 @@ describe('OBT. outbound_bot.js — Outbound Bot (24,208 chars)', () => {
 });
 
 // ── SGR. sendgrid.js — Email Service ──────────────────────────────────────
-describe('SGR. sendgrid.js — SendGrid Email Service (6,912 chars)', () => {
-  test('SGR-01: SENDGRID_LIVE + SENDGRID_FROM — email sender config', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js','utf8');
-    expect(src).toContain('SENDGRID_LIVE');
-    expect(src).toContain('SENDGRID_FROM');
-    expect(src.length).toBeGreaterThan(5000);
-    // SENDGRID_LIVE: initialized client; no-op when RESEND_API_KEY absent
-  });
-  test('SGR-02: buildEmailHtml + buildPasswordResetEmail', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js','utf8');
-    expect(src).toContain('buildEmailHtml');
-    expect(src).toContain('buildPasswordResetEmail');
-    // buildPasswordResetEmail: branded HTML email with reset link + expiry notice
-  });
-});
 
 
 // ── PREG. precedentRegistry — 2 New Exports ──────────────────────────────

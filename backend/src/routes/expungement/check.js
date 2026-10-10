@@ -45,7 +45,7 @@ const DISCLAIMER =
 const VALID_STATUSES = new Set(['Closed', 'Dismissed', 'Convicted', 'Pending', 'Open', 'Expunged', 'Transferred']);
 
 // ── GET /check ────────────────────────────────────────────────────────────────
-router.get('/check', checkLimiter, async (req, res) => {
+router.get('/check', checkLimiter, (req, res) => {
   try {
     const rawState = sanitizeStr(String(req.query.state || 'TN'), 2).toUpperCase();
     // Validate state is exactly 2 alpha chars — otherwise fall back to TN defaults

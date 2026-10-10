@@ -5,11 +5,10 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // + new_brutal_trials + gap_and_error_discovery_v2 + irreplaceable
 // + promptInjection — documenting 15 undercovered feature test suites
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeDiversionRecommendations, computeOutcomeEstimate;
-let encrypt, decrypt, haversineKm;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
+let encrypt, decrypt;
+let GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -19,11 +18,7 @@ beforeAll(async () => {
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg  = await import('../routes/golden_gavel.js');
+   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
@@ -159,12 +154,6 @@ describe('NBT. new_brutal_trials.test.js — 133 Extended Signal Tests', () => {
 
 // ── GED. gap_and_error_discovery_v2 — 162 Gap Tests ──────────────────────
 describe('GED. gap_and_error_discovery_v2.test.js — 162 Gap + Error Tests', () => {
-  test('GED-01: SendGrid email builder tests', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/__tests__/gap_and_error_discovery_v2.test.js','utf8');
-    expect(src).toContain('SendGrid Email Builders');
-    expect(src).toContain('email');
-  });
   test('GED-03: outbound bot TCPA + opt-out model validation', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/__tests__/gap_and_error_discovery_v2.test.js','utf8');

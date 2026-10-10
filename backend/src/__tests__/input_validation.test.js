@@ -5,8 +5,7 @@
  * without needing a live database.
  */
 
-import { sanitizeStr, truncateStr, validateEmail,
-         normalizePhone, sanitizeHtml } from '../utils/sanitize.js';
+import { sanitizeStr, truncateStr, validateEmail, normalizePhone } from '../utils/sanitize.js';
 
 const XSS_VECTORS = [
   '<script>alert("xss")</script>',

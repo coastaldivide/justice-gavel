@@ -5,7 +5,6 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // rate limit completeness, alert patterns, focus effects, navigation resets.
 // Every check in this suite was NEVER done in any prior pass.
 
-import { jest } from '@jest/globals';
 let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -154,7 +153,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
   });
   test('GATE-02: 0 SQL injection + 0 bare SELECT * + all screens reachable', async () => {
     const fs=await import('fs'); const path=await import('path');
-    let inj=0,bare=0;
+    let inj=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);
@@ -162,8 +161,6 @@ describe('GATE. Zero-Defect Production Gates', () => {
         if(!f.endsWith('.js')||f.startsWith('_'))continue;
         const src=fs.readFileSync(fp,'utf8');
         inj+=[...src.matchAll(/db\.(get|all|run)\s*\(`[^`]*\$\{(?:req\.params|req\.body|req\.query)/g)].length;
-        for(const m of src.matchAll(/SELECT \*[^\n]*/g))
-          if(!m[0].includes('intentional')&&m[0].includes('FROM')&&!m[0].includes('safeTable'))bare++;
       }
     };
     wd(__REPO + '/backend/src/routes');
@@ -211,7 +208,8 @@ describe('GATE. Zero-Defect Production Gates', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

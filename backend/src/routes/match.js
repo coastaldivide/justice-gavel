@@ -1,4 +1,4 @@
-import { safeJson } from '../utils/routeHelpers.js';
+import { safeJson, err400, safeInt, sanitizeStr, truncateStr, API_URLS } from '../utils/routeHelpers.js';
 import { CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * /api/match — Two-stage Claude-powered lawyer matching
@@ -19,7 +19,6 @@ import { CLAUDE_MODEL } from '../utils/ai.js';
  *               years_experience, matchScore, matchReport }]
  */
 
-import { err400, safeInt, sanitizeStr, truncateStr, API_URLS, parsePagination} from '../utils/routeHelpers.js';
 import { Router }      from 'express';
 import { enqueueAIJob as enqueue }     from '../services/aiQueue.js';
 import { getDb } from '../db/index.js';
@@ -38,7 +37,7 @@ const router = Router();
 
 // Provider data (lawyers / bail_agents) lives in the main Postgres database.
 async function openProvidersDb() {
-  return getDb();
+  return await getDb();
 }
 
 // ── geo distance (haversine) ──────────────────────────────────────────────────
@@ -58,7 +57,6 @@ function haversineKm(aLat, aLng, bLat, bLng) {
 
 async function fetchAndFilterLawyers(db, { city, caseType, language, lat, lng, proBonoOnly, user_state = null }) {
   // Guard: coerce all string params to safe strings to prevent crashes
-  const safeStr = (v) => (v == null ? '' : String(v).trim());
 
   // Pull a broad candidate pool for the city
   const rows = await db.all(
@@ -388,7 +386,7 @@ function formatLawyer(l, rank, matchReport, distanceKm) {
   };
 }
 
-function buildFallbackReport(l, caseType, language) {
+function buildFallbackReport(l) {
   const specs = safeParseJson(l.specialties, []);
   const langs = safeParseJson(l.languages, ['English']);
   const parts = [];
@@ -426,7 +424,6 @@ function safeParseJson(val, fallback) {
 // Returns platform rating, outcome record, available slots (next 3 days).
 router.get('/profile/:lawyerId', async (req, res) => {
   try {
-    const db = await openProvidersDb();
     const lawyerId = req.params.lawyerId;
 
     // Check if this attorney is JTB-registered
@@ -459,10 +456,9 @@ router.get('/profile/:lawyerId', async (req, res) => {
 
     const bookedSet = new Set(booked.map(b => `${b.date_slot}|${b.time_slot}`));
     let schedule = null;
-    try { if (profile.availability_schedule) schedule = JSON.parse(profile.availability_schedule); } catch {}
+    try { if (profile.availability_schedule) schedule = JSON.parse(profile.availability_schedule); } catch { /* malformed schedule → default slots */ }
 
     // Generate next few slots (first 3 available)
-    const { generateSlots } = await import('./match.js').catch(() => ({ generateSlots: null }));
     const SLOT_TIMES = { morning:['9:00 AM','10:00 AM'], afternoon:['1:00 PM','2:00 PM','3:00 PM'], evening:['5:00 PM'] };
     const DAY_MAP   = { 0:'sun',1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat' };
     const defaultSched = { mon:['morning','afternoon'],tue:['morning','afternoon'],wed:['morning','afternoon'],thu:['morning','afternoon'],fri:['morning','afternoon'] };
@@ -499,7 +495,7 @@ router.get('/profile/:lawyerId', async (req, res) => {
       bar_verified:          profile.bar_verification_status === 'approved',
       next_slots:            nextSlots,
     });
-  } catch (e) {
+  } catch {
     res.json({ is_jtb_registered: false });
   }
 });

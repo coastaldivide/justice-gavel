@@ -42,13 +42,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Backend pure-JS imports ──────────────────────────────────────────────────
-let detectLawyerHandoff, buildCaseNote, buildJurisdictionNote, saveMessage;
+let detectLawyerHandoff, buildCaseNote, buildJurisdictionNote;
 let RESPONSE_FOOTER_INSTRUCTION, DEFENDER_SYSTEM_PROMPT, SYSTEM_PROMPT;
 let safeJsonParse, ACCEPTED_MIME, ACCEPTED_EXT, getFileExt, isAccepted,
-    isPdf, isImage, isDocx, isText;
+    isPdf, isImage, isDocx;
 let GAVEL_LEVELS;
 let MOTION_TYPES;
 let CONTRACT_TYPES, CONTRACT_CATEGORIES, getContractsByCategory;
@@ -57,18 +56,12 @@ let CONFIG;
 
 // BE signal engine (for mass influx)
 let computeAllSignals;
-let encrypt, decrypt;
-let normalizePhone, parseIntent;
-let haversineKm;
-let safeInt, safeFloat, sanitizeStr, ownsResource, escapeLike, stripHtml;
-let buildWhere, buildOrderBy;
 
 beforeAll(async () => {
   const chatH = await import('../routes/chat/_helpers.js');
   detectLawyerHandoff   = chatH.detectLawyerHandoff;
   buildCaseNote         = chatH.buildCaseNote;
   buildJurisdictionNote = chatH.buildJurisdictionNote;
-  saveMessage           = chatH.saveMessage;
 
   const chatP = await import('../routes/chat/_prompts.js');
   RESPONSE_FOOTER_INSTRUCTION = chatP.RESPONSE_FOOTER_INSTRUCTION;
@@ -104,7 +97,6 @@ beforeAll(async () => {
   isDocx  = (file) => ['application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ].includes(file.mimetype);
-  isText  = (file) => file.mimetype === 'text/plain';
 
   const gg = await import('../routes/golden_gavel.js');
   GAVEL_LEVELS = gg.GAVEL_LEVELS;
@@ -127,26 +119,9 @@ beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
 
-  const enc = await import('../services/encryption.js');
-  encrypt = enc.encrypt;
-  decrypt = enc.decrypt;
 
-  const tw = await import('../utils/sanitize.js');
-  normalizePhone = tw.normalizePhone;
-  parseIntent    = tw.parseIntent;
 
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
 
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt     = rh.safeInt;
-  safeFloat   = rh.safeFloat;
-  sanitizeStr = rh.sanitizeStr;
-  ownsResource= rh.ownsResource;
-  escapeLike  = rh.escapeLike;
-  stripHtml   = rh.stripHtml;
-  buildWhere  = rh.buildWhere;
-  buildOrderBy= rh.buildOrderBy;
 });
 
 const mk = (v, o = {}) => ({
@@ -514,7 +489,7 @@ describe('5. MOTION_TYPES — All 12 Motion Definitions', () => {
   });
 
   test('5-03: every motion type has label, description, icon, fields', () => {
-    for (const [key, motion] of Object.entries(MOTION_TYPES)) {
+    for (const [, motion] of Object.entries(MOTION_TYPES)) {
       expect(typeof motion.label).toBe('string');
       expect(motion.label.length).toBeGreaterThan(0);
       expect(typeof motion.description).toBe('string');
@@ -546,7 +521,7 @@ describe('5. MOTION_TYPES — All 12 Motion Definitions', () => {
   });
 
   test('5-08: all field arrays contain only strings', () => {
-    for (const [key, motion] of Object.entries(MOTION_TYPES)) {
+    for (const [, motion] of Object.entries(MOTION_TYPES)) {
       for (const field of motion.fields) {
         expect(typeof field).toBe('string');
         expect(field.length).toBeGreaterThan(0);
@@ -584,7 +559,7 @@ describe('6. CONTRACT_TYPES — All 12 Contract Definitions', () => {
   });
 
   test('6-03: every contract type has label, category, description, required, optional', () => {
-    for (const [key, ct] of Object.entries(CONTRACT_TYPES)) {
+    for (const [, ct] of Object.entries(CONTRACT_TYPES)) {
       expect(typeof ct.label).toBe('string');
       expect(typeof ct.category).toBe('string');
       expect(typeof ct.description).toBe('string');
@@ -605,7 +580,7 @@ describe('6. CONTRACT_TYPES — All 12 Contract Definitions', () => {
     const byCategory = getContractsByCategory();
     expect(typeof byCategory).toBe('object');
     expect(Object.keys(byCategory).length).toBeGreaterThan(0);
-    for (const [cat, types] of Object.entries(byCategory)) {
+    for (const [, types] of Object.entries(byCategory)) {
       expect(Array.isArray(types)).toBe(true);
       expect(types.length).toBeGreaterThan(0);
     }

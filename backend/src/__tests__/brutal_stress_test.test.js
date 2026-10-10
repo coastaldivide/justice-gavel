@@ -25,12 +25,10 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 // ─── Imports ─────────────────────────────────────────────────────────────────
 let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
-let writeMatterVersion, checkLegalHold, applyLegalHold, releaseLegalHold;
-let applyFactors, runHealthScan;
+let writeMatterVersion;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -40,9 +38,6 @@ beforeAll(async () => {
 
   const ret = await import('../services/retention.js');
   writeMatterVersion = ret.writeMatterVersion;
-  checkLegalHold     = ret.checkLegalHold;
-  applyLegalHold     = ret.applyLegalHold;
-  releaseLegalHold   = ret.releaseLegalHold;
 });
 
 // ─── Builders ────────────────────────────────────────────────────────────────
@@ -1435,11 +1430,8 @@ describe('J. Bias Firewall', () => {
 
   test('J-01: PERMITTED_FACTORS contains no demographic fields', async () => {
     const est = await import('../analytics/outcomeEstimator.js');
-    const src = est.default?.toString?.() || '';
     // Check the module source for demographic fields in PERMITTED_FACTORS
     // The bias firewall test: demographic fields must NEVER appear in the factor set
-    const DEMOGRAPHIC = ['race','gender','sex','nationality','religion','ethnicity',
-                         'sexual_orientation','age_demographic','disability_status'];
     // We import the module and look at what PERMITTED_FACTORS exports
     // If it's not directly accessible, verify via the module text
     // This test verifies the firewall is active at import time

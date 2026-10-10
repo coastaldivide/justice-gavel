@@ -1,6 +1,5 @@
 import { requireAi } from '../../utils/ai.js';
-import { safeJson } from '../../utils/routeHelpers.js';
-import { validate, schemas } from '../../validation/schemas.js';
+import { safeJson, err400, err404, safeInt, sanitizeStr, truncateStr } from '../../utils/routeHelpers.js';
 /**
  * contracts/draft.js — POST /api/contracts/draft
  *
@@ -15,17 +14,13 @@ import { validate, schemas } from '../../validation/schemas.js';
  * GET  /api/contracts/types     — list all available contract types
  */
 
-import { err400, err401, err403, err404, err500, safeInt,
-         sanitizeStr, truncateStr }          from '../../utils/routeHelpers.js';
 import { Router }                             from 'express';
 import { authRequired }                       from '../../middleware/auth.js';
 import { getDb }                              from '../../db/index.js';
-import { perUserAiLimit }                     from '../../middleware/sharedAiLimiter.js';
-import { makeUserLimiter }                    from '../../middleware/sharedAiLimiter.js';
+import { perUserAiLimit, makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 import { enqueueAIJob as enqueue }                            from '../../services/aiQueue.js';
 import logger                                 from '../../utils/logger.js';
-import { ensureTables, generateContract,
-         hasContractPro }                     from './_helpers.js';
+import { generateContract, hasContractPro } from './_helpers.js';
 import { CONTRACT_TYPES, getContractsByCategory } from './_contract_types.js';
 
 const router = Router();

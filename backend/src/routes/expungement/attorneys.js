@@ -1,14 +1,10 @@
 /**
  * expungement/attorneys.js — GET /attorneys — find expungement attorneys
  */
-import { err400, err401, err403, err404, err409, err422, err500, err502,
-         safeInt, sanitizeStr, validateEmail } from '../../utils/routeHelpers.js';
+import { safeInt } from '../../utils/routeHelpers.js';
 import { Router }         from 'express';
-import { authRequired }   from '../../middleware/auth.js';
 import { getDb }          from '../../db/index.js';
-import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
 import logger             from '../../utils/logger.js';
-import { STATE_RULES, DEFAULT_RULES, classifyCharge, getEligibility } from './rules.js';
 
 const router = Router();
 

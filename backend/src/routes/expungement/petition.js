@@ -1,22 +1,16 @@
-import { requireAi } from '../../utils/ai.js';
-import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
-import { validate, schemas } from '../../validation/schemas.js';
+import { requireAi, CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
 /**
  * expungement/petition.js — POST /petition — AI expungement petition
  */
-import { err400, err401, err403, err404, err409, err422, err500, err502,
-         safeInt, sanitizeStr, validateEmail } from '../../utils/routeHelpers.js';
+import { err400 } from '../../utils/routeHelpers.js';
 import { Router }         from 'express';
 import { authRequired }   from '../../middleware/auth.js';
-import { getDb }          from '../../db/index.js';
 import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
-import logger             from '../../utils/logger.js';
-import { STATE_RULES, DEFAULT_RULES, classifyCharge, getEligibility } from './rules.js';
 
 const router = Router();
 
 
-router.post('/petition', authRequired, requireAi, async (req, res) => {
+router.post('/petition', authRequired, requireAi, perUserAiLimit, async (req, res) => {
   if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
     return res.status(503).json({ error: 'AI petition generation temporarily unavailable.' });
   }
@@ -79,7 +73,7 @@ Note at the top in ALL CAPS: THIS IS AN AI-GENERATED DRAFT — NOT REVIEWED BY A
       draft,
       disclaimer: 'This petition is AI-generated and has NOT been reviewed by a licensed attorney. Verify all statutes, deadlines, and filing requirements with your local court before filing. Errors in expungement petitions can delay or deny your request.',
     });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Petition generation failed. Please try again.' });
   }
 });

@@ -49,7 +49,7 @@ const argv = yargs(hideBin(process.argv))
   .option('tier',    { type: 'number',  describe: 'Only run states at this tier (1, 2, or 3)' })
   .argv;
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) { return new Promise(r => { setTimeout(r, ms); }); }
 
 async function fetchJson(url, params = {}, headers = {}) {
   const qs = new URLSearchParams(params).toString();
@@ -79,7 +79,7 @@ function normalizePhone(s) {
 // ── Generic HTML attorney block parser ───────────────────────────────────────
 function parseHTML(html, state, city, limit = 200) {
   const attorneys = [];
-  const phoneRx = /\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}/g;
+  const phoneRx = /\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/g;
 
   // Split on common result-block patterns
   const splitters = [
@@ -99,7 +99,7 @@ function parseHTML(html, state, city, limit = 200) {
 
     // Name: look in headings, strong, th, or td with capitalized text
     const nameMatch = block.match(
-      /<(?:h[2-4]|strong|b|th|td)[^>]*>\s*([A-Z][a-zA-Z\s,.'"\-]{4,80}(?:Esq\.?|Jr\.?|Sr\.?|III|II|IV)?)\s*<\/(?:h[2-4]|strong|b|th|td)>/
+      /<(?:h[2-4]|strong|b|th|td)[^>]*>\s*([A-Z][a-zA-Z\s,.'"-]{4,80}(?:Esq\.?|Jr\.?|Sr\.?|III|II|IV)?)\s*<\/(?:h[2-4]|strong|b|th|td)>/
     );
     if (!nameMatch) continue;
     const name = nameMatch[1].replace(/<[^>]+>/g, '').trim();
@@ -112,7 +112,7 @@ function parseHTML(html, state, city, limit = 200) {
     const phones = block.match(phoneRx);
     const phone  = phones ? normalizePhone(phones[0]) : null;
 
-    const emailMatch = block.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+    const emailMatch = block.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     const email = emailMatch ? emailMatch[0] : null;
 
     const webMatch = block.match(/href="(https?:\/\/(?!(?:www\.)?(?:\w+bar|state\.(?:[a-z]{2})\.us|courts|judiciary))[^"]{8,80})"/i);

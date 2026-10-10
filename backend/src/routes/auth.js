@@ -1,4 +1,4 @@
-import { audit, AUDIT_ACTIONS } from '../utils/audit.js';
+import { audit } from '../utils/audit.js';
 import { validate, schemas } from '../validation/schemas.js';
 /**
  * /api/auth — Email-or-phone authentication
@@ -143,9 +143,9 @@ function isAccountLocked(user) {
 }
 
 async function findUserByIdentifier(db, type, value) {
-  return type === 'email'
+  return await (type === 'email'
     ? db.get(`SELECT * FROM users WHERE LOWER(email) = ? AND COALESCE(account_status, 'active') <> 'banned'`, [value])
-    : db.get(`SELECT * FROM users WHERE (phone = ? OR login_identifier = ?) AND COALESCE(account_status, 'active') <> 'banned'`, [value, value]);
+    : db.get(`SELECT * FROM users WHERE (phone = ? OR login_identifier = ?) AND COALESCE(account_status, 'active') <> 'banned'`, [value, value]));
 }
 
 // ── POST /register ────────────────────────────────────────────────────────────
@@ -654,7 +654,7 @@ router.post('/disclaimer/accept', authRequired, async (req, res) => {
     const { recordDisclaimerAcceptance } = await import('../middleware/disclaimer.js');
     const result = await recordDisclaimerAcceptance(req.user.id, req);
     res.json(result);
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not record acceptance.' });
   }
 });
@@ -697,7 +697,7 @@ router.get('/data/export', authRequired, async (req, res) => {
       audit_log:     auditLog,
       disclaimer:    'This export contains all personal data associated with your account. Handle securely.',
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Export failed.' });
   }
 });

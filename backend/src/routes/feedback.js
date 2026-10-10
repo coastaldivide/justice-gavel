@@ -1,5 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
-import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
+import { err400, truncateStr, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 import { Router }    from 'express';
 import rateLimit from 'express-rate-limit';
 
@@ -49,7 +48,7 @@ router.get('/summary', async (req, res) => {
     const db = await getDb();
     const avg = await db.get('SELECT AVG(rating) as avg, COUNT(*) as total FROM feedback');
     res.json({ averageRating: Math.round((avg?.avg ?? 0) * 10) / 10, totalResponses: avg?.total });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load summary' });
   }
 });
@@ -94,7 +93,7 @@ router.post('/ui', async (req, res) => {
     }
 
     return res.json({ received: true, message: 'Thank you — your feedback helps us improve Justice Gavel.' });
-  } catch (e) {
+  } catch {
     return res.status(500).json({ error: 'Could not submit feedback' });
   }
 });

@@ -37,12 +37,8 @@ export function normalizeLeadType(leadType) {
  * value) is accepted and ignored so call sites can't reintroduce tiering.
  * Unknown types default to the personal-injury fee.
  */
-// eslint-disable-next-line no-unused-vars -- severity intentionally ignored (flat fee)
+ 
 export function attorneyLeadFeeCents(leadType, _severity) {
   return FEES_BY_TYPE[normalizeLeadType(leadType)] ?? PI_LEAD_FEE_CENTS;
 }
 
-/** "$200" */
-export function formatAttorneyLeadFee(cents = PI_LEAD_FEE_CENTS) {
-  return `$${(cents / 100).toFixed(0)}`;
-}

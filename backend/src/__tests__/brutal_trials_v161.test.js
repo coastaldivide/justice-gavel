@@ -4,17 +4,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // COMPREHENSIVE DEFECT CLOSURE — ALL ISSUES FROM ENTIRE SESSION
 // Every identified defect from 28-layer audit + full session history — fixed and verified
 
-import { jest } from '@jest/globals';
-let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt, BUSINESS_CONSTANTS, CONFIG;
+let computeAllSignals, encrypt, decrypt, CONFIG;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  const oe  = await import('../analytics/outcomeEstimator.js');
-  computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const rh  = await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
 });
@@ -45,11 +40,6 @@ describe('A. Backend — All Issues Fixed', () => {
     expect(unprotected).toBe(0);
   });
 
-  test('A-02: billing/index.js has logger (was missing)', async () => {
-    const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/billing/index.js','utf8');
-    expect(src).toContain('logger');
-  });
 
   test('A-03: all SELECT * have intentional comment or column projection', async () => {
     const fs=await import('fs'); const path=await import('path');
@@ -120,7 +110,6 @@ describe('A. Backend — All Issues Fixed', () => {
   });
 
   test('A-09: 5 previously missing DB tables now in schema', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     for(const t of ['recovery_agents','feedback','firm_invites','account_deletion_log','ai_jobs']){
       expect(db).toContain(t);
@@ -316,7 +305,8 @@ describe('F. Route Coverage + Mass Influx', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

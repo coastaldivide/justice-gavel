@@ -1,4 +1,3 @@
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * routes/integrations/dms.js — Document Management System Integration
  *
@@ -21,14 +20,13 @@ import { validate, schemas } from '../../validation/schemas.js';
  */
 
 import { getDb }     from '../../db/index.js';
-import { safeInt, truncateStr, sanitizeStr } from '../../utils/routeHelpers.js';
+import { safeInt, err400, err404 } from '../../utils/routeHelpers.js';
 import logger        from '../../utils/logger.js';
 import { refreshTokenIfNeeded } from './index.js';
 import { Router }    from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { requireFirmRole, loadFirmContext } from '../../middleware/rbac.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
-import { err400, err403, err404 } from '../../utils/routeHelpers.js';
 
 const router     = Router();
 const dmsLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'DMS sync limit reached.' });
@@ -309,7 +307,7 @@ function generateDemoDocuments(matter) {
 
 // ── Main sync dispatcher ──────────────────────────────────────────────────────
 
-export async function syncDMS({ db, conn, ctx, entity_type, direction, matter_id, user }) {
+export async function syncDMS({ db, conn, entity_type, direction, matter_id }) {
   conn = await refreshTokenIfNeeded(db, conn); // ensure fresh token before API calls
   try {
     let matter = null;
@@ -418,7 +416,7 @@ router.post('/workspaces/:matterId', authRequired, requireFirmRole('associate'),
       : await pushMatterToNetdocs(db, conn, matter);
 
     res.json({ provider: conn.provider, matter_id: matterId, ...result });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not push to DMS.' });
   }
 });
@@ -444,7 +442,7 @@ router.get('/map', authRequired, requireFirmRole('partner'), async (req, res) =>
     ).catch(() => []);
 
     res.json({ provider: conn.provider, mappings, count: mappings.length });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not load DMS map.' });
   }
 });
@@ -454,7 +452,7 @@ router.post('/search', authRequired, requireFirmRole('associate'), dmsLimiter, a
   try {
     const db   = await getDb();
     const ctx  = await loadFirmContext(req);
-    const { query, matter_id, limit = 20 } = req.body || {};
+    const { query, limit = 20 } = req.body || {};
 
     if (!query?.trim()) return err400(res, 'query is required.');
 
@@ -484,7 +482,7 @@ router.post('/search', authRequired, requireFirmRole('associate'), dmsLimiter, a
     }
 
     res.json({ provider: conn.provider, query, results, count: results.length });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'DMS search failed.' });
   }
 });

@@ -4,10 +4,9 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 80th pass: 1 discrepancy fix + firm_verticals deep + matter_intelligence routes
 // + billing/bondsman + messages.js + billing/consumer
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
+let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -20,8 +19,6 @@ beforeAll(async () => {
   safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o={}) => ({

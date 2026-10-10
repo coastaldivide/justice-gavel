@@ -5,7 +5,7 @@
 
 import { db }    from '../db/index.js';
 import { cache } from '../utils/redis.js';
-import { predictRetention, calcDailyGoal } from '../utils/sm2.js';
+import { predictRetention } from '../utils/sm2.js';
 
 const ANALYTICS_TTL = 300; // 5 min cache on analytics
 
@@ -13,7 +13,7 @@ const ANALYTICS_TTL = 300; // 5 min cache on analytics
  * Full performance dashboard for a user.
  */
 export async function getUserDashboard(userId) {
-  return cache(`bar:dashboard:${userId}`, ANALYTICS_TTL, async () => {
+  return await cache(`bar:dashboard:${userId}`, ANALYTICS_TTL, async () => {
     const [subjectPerf, weakAreas, streak, recentSessions, peerPct] = await Promise.all([
       // Per-subject accuracy
       db.all(`SELECT * FROM user_bar_performance WHERE user_id = ?`, [userId]),

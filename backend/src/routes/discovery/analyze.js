@@ -1,10 +1,8 @@
 import { requireAi } from '../../utils/ai.js';
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * discovery/analyze.js — POST /analyze
  */
-import { err400, err401, err403, err404, err409, err422, err500, err502,
-         safeInt, sanitizeStr } from '../../utils/routeHelpers.js';
+import { err400 } from '../../utils/routeHelpers.js';
 import { Router }         from 'express';
 import { authRequired }   from '../../middleware/auth.js';
 import { getDb }          from '../../db/index.js';
@@ -26,13 +24,8 @@ const upload = multer({
     cb(null, ALLOWED.includes(file.mimetype));
   },
 });
-import {
-  safeJsonParse, isAccepted, isPdf, isImage, isDocx, isText,
-  imageMediaType, getFileExt, ACCEPTED_MIME, ACCEPTED_EXT,
-  ensureTables, hasDiscoveryPro, analyzeDocument,
-} from './_helpers.js';
+import { hasDiscoveryPro, analyzeDocument } from './_helpers.js';
 
-const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
 const STRIPE_SECRET  = process.env.STRIPE_SECRET;
 
 const aiLimiter = rateLimit({
@@ -92,7 +85,7 @@ router.post('/analyze', aiLimiter, authRequired, requireAi, perUserAiLimit, uplo
           return res.status(402).json({ error: 'Payment failed', status: pi.status });
         }
         stripe_pi_id = pi.id;
-      } catch (e) {
+      } catch {
         return res.status(402).json({ error: 'Payment could not be processed. Please check your card details.' });
       }
     }

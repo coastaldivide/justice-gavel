@@ -86,7 +86,7 @@ async function buildApp(db) {
           not_legal_advice: true,
         },
       });
-    } catch (e) {
+    } catch {
       res.status(500).json({ error: 'Could not load legal data' });
     }
   });

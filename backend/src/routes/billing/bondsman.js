@@ -1,20 +1,14 @@
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * billing/bondsman.js — Bondsman profiles, leads marketplace, and Verified Badge subscription
  * Part of the billing module. Mounted at /api/billing by billing/index.js
  */
-import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer,
-         BONDSMAN_TIERS, bondsTierFromPriceId, generateIdempotencyKey,
-         BONDSMAN_LEAD_FEE_CENTS, formatLeadFee, bondsmanLeadFeeInfo }
-  from './_shared.js';
+import { stripe, LIVE, billingLimiter, getOrCreateStripeCustomer, BONDSMAN_TIERS, generateIdempotencyKey, BONDSMAN_LEAD_FEE_CENTS, formatLeadFee, bondsmanLeadFeeInfo } from './_shared.js';
 import { visibleArrestSql, realArrestSql, isSampleColumnSql } from '../../utils/arrestVisibility.js';
 
 // Flat lead fee (same amount regardless of bail) — single source of truth is
 // ./leadFee.js. Bail-scaled fees implicate runner-capper statutes (TX §38.12,
 // FL §877.02).
-import { err400, BUSINESS_CONSTANTS, err401, err403, err404, err409,
-         err422, err500, err502,
-         safeInt, safeFloat, sanitizeStr, validateEmail } from '../../utils/routeHelpers.js';
+import { err400, BUSINESS_CONSTANTS, err404, safeInt } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
@@ -41,7 +35,7 @@ router.post('/bondsman/profile', billingLimiter, authRequired, async (req, res) 
       [req.user.id, company_name, license_number, license_state, JSON.stringify(counties), JSON.stringify(states), min_bail, max_bail]
     );
     res.json({ success: true, message: 'Profile saved' });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -55,7 +49,7 @@ router.get('/bondsman/profile', authRequired, async (req, res) => {
        'active, created_at ' +
        'FROM bondsman_profiles WHERE user_id = ?', [req.user.id]);
     res.json({ profile: profile || null });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -103,7 +97,7 @@ router.get('/leads', authRequired, async (req, res) => {
     }));
 
     res.json({ leads, count: leads.length, lead_fee: bondsmanLeadFeeInfo(), mock: !LIVE });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -166,7 +160,9 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
       automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
       description: `Lead: ${arrest.name} — Bail $${arrest.bail_amount?.toLocaleString()} — ${arrest.county} County`,
       metadata: { bondsman_id: String(req.user.id), arrest_id: String(arrestId) }
-    });
+    },
+      { idempotencyKey: piIdempotencyKey }   // computed above but was never passed to Stripe
+    );
 
     if (pi.status !== 'succeeded') {
       return res.status(402).json({ error: 'Payment failed', status: pi.status });
@@ -271,7 +267,7 @@ router.get('/bondsman/verified-badge/status', authRequired, async (req, res) => 
       verified_badge: !!profile?.verified_badge,
       badge_expires_at: profile?.badge_expires_at || null,
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -298,7 +294,7 @@ router.post('/bondsman/verified-badge/cancel', billingLimiter, authRequired, asy
       [req.user.id]
     );
     res.json({ success: true, message: 'Badge subscription cancelled. Badge removed from your listings.' });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
@@ -322,7 +318,7 @@ router.post('/bondsman/verified-badge/cancel', billingLimiter, authRequired, asy
 // ══════════════════════════════════════════════════════════════════════════════
 
 // GET /api/billing/bondsman/tiers — list available tiers and pricing
-router.get('/bondsman/tiers', async (req, res) => {
+router.get('/bondsman/tiers', (req, res) => {
   const tiers = Object.entries(BONDSMAN_TIERS).map(([key, t]) => ({
     key,
     name:          t.name,

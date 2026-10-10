@@ -40,19 +40,11 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeMotionRecommendations;
 let computeOutcomeEstimate;
 let encrypt, decrypt;
-let normalizePhone, parseIntent;
-let haversineKm;
-let hasMinRole, roleLevel, ROLE_HIERARCHY;
-let safeInt, safeFloat, stripHtml, escapeLike, buildWhere, buildOrderBy;
 let GAVEL_LEVELS, MOTION_TYPES, CONTRACT_TYPES;
-let PRECEDENT_REGISTRY, REGISTRY_VERSION;
-let checkStaleness;
-let CONFIG;
 
 beforeAll(async () => {
   const mi = await import('../routes/matter_intelligence.js');
@@ -65,21 +57,10 @@ beforeAll(async () => {
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
 
-  const tw = await import('../utils/sanitize.js');
-  normalizePhone = tw.normalizePhone; parseIntent = tw.parseIntent;
+ 
 
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole; roleLevel = rbac.roleLevel;
-  ROLE_HIERARCHY = rbac.ROLE_HIERARCHY;
-
-  const rh = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; safeFloat = rh.safeFloat;
-  stripHtml = rh.stripHtml; escapeLike = rh.escapeLike;
-  buildWhere = rh.buildWhere; buildOrderBy = rh.buildOrderBy;
-
+ 
+   
   const gg = await import('../routes/golden_gavel.js');
   GAVEL_LEVELS = gg.GAVEL_LEVELS;
 
@@ -89,15 +70,8 @@ beforeAll(async () => {
   const ctypes = await import('../routes/contracts/_contract_types.js');
   CONTRACT_TYPES = ctypes.CONTRACT_TYPES;
 
-  const reg = await import('../analytics/precedentRegistry.js');
-  PRECEDENT_REGISTRY = reg.PRECEDENT_REGISTRY;
-  REGISTRY_VERSION   = reg.REGISTRY_VERSION;
 
-  const mon = await import('../analytics/precedentMonitor.js');
-  checkStaleness = mon.checkStaleness;
 
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkFamily = (o = {}) => ({
@@ -228,7 +202,7 @@ describe('2. Immigration Signals — Asylum, Detention, Removal', () => {
   });
 
   test('2-04: detained flag fires detention-specific signals', () => {
-    const s = computeAllSignals(mkImm({ detained: 1 }));
+    computeAllSignals(mkImm({ detained: 1 }));
     // detUrgent = detained && high (vulnerability 'high'|'crisis')
     const s2 = computeAllSignals(mkImm({ detained: 1, vulnerability_level: 'high' }));
     expect(s2.vertical_signals.detUrgent).toBe(true);
@@ -249,7 +223,7 @@ describe('2. Immigration Signals — Asylum, Detention, Removal', () => {
       detained: 1,
       clock_days: 365,
     }));
-    for (const [key, val] of Object.entries(s.vertical_signals)) {
+    for (const [, val] of Object.entries(s.vertical_signals)) {
       expect(['boolean','number'].includes(typeof val)).toBe(true);
     }
   });
@@ -304,7 +278,7 @@ describe('3. Appellate Signals — Review Score, Cert, Capital', () => {
   });
 
   test('3-05: non-capital case does NOT have capitalCase signal', () => {
-    const s = computeAllSignals(mkApp({ is_capital: 0 }));
+    computeAllSignals(mkApp({ is_capital: 0 }));
     // No capital case with low vulnerability → prioCapital=false
     const sNoCap = computeAllSignals(mkApp({ is_capital: 0, vulnerability_level: 'moderate' }));
     expect(sNoCap.vertical_signals.prioCapital).toBe(false);
@@ -494,7 +468,7 @@ describe('6. Personal Injury Signals — Net Damages Model', () => {
 describe('7. Criminal Signals — Drug, Weapon, Federal', () => {
 
   test('7-01: drugCharge fires on federal drug keyword', () => {
-    const s = computeAllSignals(mkCrim({ title: 'Federal drug trafficking § 841 charge' }));
+    computeAllSignals(mkCrim({ title: 'Federal drug trafficking § 841 charge' }));
     // drugCharge+federal → mandatoryMin; confirm with federal jurisdiction
     const sf = computeAllSignals(mkCrim({ title: 'Federal drug trafficking § 841', jurisdiction: 'federal', evidence_score: 60 }));
     expect(sf.vertical_signals.mandatoryMin).toBe(true);
@@ -511,8 +485,6 @@ describe('7. Criminal Signals — Drug, Weapon, Federal', () => {
   test('7-03: weaponCharge fires on firearm keywords', () => {
     const s = computeAllSignals(mkCrim({ title: 'Illegal weapon firearm possession § 924' }));
     // Weapon charges elevate to dismissLikely=false or mandatoryMin flags
-    const hasWeaponSignal = s.vertical_signals.dismissLikely === false || 
-                            !!(s.vertical_signals.mandatoryMin);
     expect(typeof s.vertical_signals).toBe('object');
     expect(s.escalation.level).toBeDefined();
   });
@@ -819,12 +791,11 @@ describe('11. i18n — 707-Key Value Correctness', () => {
 describe('12. DB DEFAULT Semantics — Schema Contracts', () => {
 
   test("12-01: firms.plan defaults to \"trial\"", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { schemaSql } = await import('./helpers/schema.js');   // schema: supabase/migrations
     expect(schemaSql()).toMatch(/plan\s+TEXT DEFAULT 'trial'/);
   });
 
   test('12-02: firms.seat_limit defaults to 10', async () => {
-    const fs  = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain('DEFAULT 10');
   });
@@ -837,19 +808,18 @@ describe('12. DB DEFAULT Semantics — Schema Contracts', () => {
   });
 
   test('12-04: firm_members.status defaults to "active"', async () => {
-    const fs  = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain("DEFAULT 'active'");
   });
 
 
   test("12-06: ethics_wall defaults to 0 (no wall by default)", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { schemaSql } = await import('./helpers/schema.js');   // schema: supabase/migrations
     expect(schemaSql()).toMatch(/ADD COLUMN IF NOT EXISTS ethics_wall INTEGER DEFAULT 0/);
   });
 
   test("12-07: matters.status defaults to \"active\"", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { schemaSql } = await import('./helpers/schema.js');   // schema: supabase/migrations
     expect(schemaSql()).toMatch(/status\s+TEXT\s+DEFAULT 'active'/);
   });
 

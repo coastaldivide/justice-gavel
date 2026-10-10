@@ -1,14 +1,9 @@
-import { generateIdempotencyKey } from './_shared.js';
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * billing/connections.js — Emergency family connection and QuickConnect — $20 instant matchmaking
  * Part of the billing module. Mounted at /api/billing by billing/index.js
  */
-import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer }
-  from './_shared.js';
-import { err400, BUSINESS_CONSTANTS, err401, err403, err404, err409,
-         err422, err500, err502,
-         safeInt, safeFloat, sanitizeStr, validateEmail } from '../../utils/routeHelpers.js';
+import { stripe, LIVE, billingLimiter, getOrCreateStripeCustomer } from './_shared.js';
+import { err400, BUSINESS_CONSTANTS } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
@@ -36,24 +31,24 @@ router.post('/family/connect', billingLimiter, authRequired, async (req, res) =>
     const county = arrest?.county || 'davidson';
     const state  = arrest?.state  || 'TN';
 
-    // Find top 3 attorneys + 2 bail agents in county
-    // Try providers.sqlite via the arrests DB path
+    // Find top 3 attorneys + 2 bail agents in the arrest's county and state.
+    // (Previously `city LIKE ? OR city LIKE ? AND active = 1` ignored the state —
+    // a county name like "Washington" matched 30 states — and, by AND/OR
+    // precedence, let inactive listings through.)
     const attorneys = await db.all(
       `SELECT id, name, phone, address, rating, specialties FROM lawyers
-       WHERE city LIKE ? OR city LIKE ?
-       AND active = 1
+       WHERE active = 1 AND UPPER(state) = ? AND (city LIKE ? OR city LIKE ?)
        ORDER BY rating DESC, free_consultation DESC
        LIMIT 3`,
-      [`%${county}%`, `%Nashville%`]
+      [state.toUpperCase(), `%${county}%`, `%Nashville%`]
     ).catch(() => []);
 
     const agents = await db.all(
       `SELECT id, name, phone, address, rating FROM bail_agents
-       WHERE city LIKE ? OR city LIKE ?
-       AND active = 1
+       WHERE active = 1 AND UPPER(state) = ? AND (city LIKE ? OR city LIKE ?)
        ORDER BY rating DESC
        LIMIT 2`,
-      [`%${county}%`, `%Nashville%`]
+      [state.toUpperCase(), `%${county}%`, `%Nashville%`]
     ).catch(() => []);
 
     if (!LIVE) {
@@ -139,13 +134,18 @@ router.post('/quickconnect', billingLimiter, authRequired, async (req, res) => {
     const db = await getDb();
 
 
-    const creditCents = req.body?.credit_cents ?? 0;
-    const finalAmountCents = Math.max(0, BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS - creditCents);   // $20 minus credit, floor $0
-    const creditApplied    = Math.min(creditCents, 2000);        // never exceed the price
+    // Credit is capped by the caller's actual balance. It used to be taken from
+    // req.body.credit_cents unchecked, so any client could claim up to $20 off.
+    const price            = BUSINESS_CONSTANTS.QUICKCONNECT_PRICE_CENTS;
+    const requestedCredit  = Math.max(0, Number.parseInt(req.body?.credit_cents, 10) || 0);
+    const balanceRow       = await db.get('SELECT credit_cents FROM users WHERE id=?', [req.user.id]).catch(() => null);
+    const creditApplied    = Math.min(requestedCredit, Math.max(0, Number(balanceRow?.credit_cents) || 0), price);
+    const finalAmountCents = price - creditApplied;   // $20 minus credit, floor $0
 
-    // Find nearest bondsman
+    // Nearest by coordinates when valid; otherwise top-rated in the caller's state
+    // (the fallback used to ignore `state` and return providers from anywhere).
     let bondsmen = [];
-    if (lat && lng) {
+    if (hasCoords) {
       bondsmen = await db.all(
         `SELECT id, name, phone, address, rating, lat, lng, hours
          FROM bail_agents
@@ -158,14 +158,15 @@ router.post('/quickconnect', billingLimiter, authRequired, async (req, res) => {
     if (!bondsmen.length) {
       bondsmen = await db.all(
         `SELECT id, name, phone, address, rating, lat, lng, hours
-         FROM bail_agents WHERE active = 1 AND phone IS NOT NULL
-         ORDER BY rating DESC LIMIT 3`
+         FROM bail_agents WHERE active = 1 AND phone IS NOT NULL AND UPPER(state) = ?
+         ORDER BY rating DESC LIMIT 3`,
+        [String(state).toUpperCase()]
       ).catch(() => []);
     }
 
     // Find nearest criminal defense lawyer
     let lawyers = [];
-    if (lat && lng) {
+    if (hasCoords) {
       lawyers = await db.all(
         `SELECT id, name, phone, address, rating, specialties, free_consultation, lat, lng
          FROM lawyers
@@ -178,8 +179,9 @@ router.post('/quickconnect', billingLimiter, authRequired, async (req, res) => {
     if (!lawyers.length) {
       lawyers = await db.all(
         `SELECT id, name, phone, address, rating, specialties, free_consultation, lat, lng
-         FROM lawyers WHERE active = 1 AND phone IS NOT NULL
-         ORDER BY rating DESC LIMIT 3`
+         FROM lawyers WHERE active = 1 AND phone IS NOT NULL AND UPPER(state) = ?
+         ORDER BY rating DESC LIMIT 3`,
+        [String(state).toUpperCase()]
       ).catch(() => []);
     }
 

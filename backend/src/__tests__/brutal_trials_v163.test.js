@@ -9,15 +9,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 //           MotionTypeBadge, CaseStatusBadge, LegalNotice)
 // Issue 5: Stack screens use auto-back from RN Navigator — confirmed not a bug
 
-import { jest } from '@jest/globals';
-let computeAllSignals, encrypt, decrypt, CONFIG;
+let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi=await import('../routes/matter_intelligence.js');
   computeAllSignals=mi.computeAllSignals;
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const cfg=await import('../config.js');
-  CONFIG=cfg.CONFIG;
 });
 const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
   vulnerability_level:'moderate',time_pressure:'standard',

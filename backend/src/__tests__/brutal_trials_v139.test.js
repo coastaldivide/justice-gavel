@@ -7,10 +7,8 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // + firm_verticals codefendants/collateral-consequences
 // + 18 DB tables pushed from 5 to ≥10 hits
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG, calcLeadFee;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -19,14 +17,6 @@ beforeAll(async () => {
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const bs  = await import('../routes/billing/_shared.js');
-  calcLeadFee = bs.calcLeadFee;
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o={}) => ({
@@ -128,7 +118,6 @@ describe('SCR3. Underexplored FE Screens — 8 Documented', () => {
 // ── DBT2. DB Tables Pushed from 5 to ≥10 ─────────────────────────────────
 describe('DBT2. DB Tables — Pushed from 5 Corpus Hits to ≥10', () => {
   test('DBT2-01: matter_parties + research tables + translation_sessions', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('matter_parties');
     expect(db).toContain('research_sessions');
@@ -140,7 +129,6 @@ describe('DBT2. DB Tables — Pushed from 5 Corpus Hits to ≥10', () => {
     // translation_sessions/messages: real-time translation sessions
   });
   test('DBT2-02: contract tables + motion_history + integration tables', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('contract_reviews');
     expect(db).toContain('contract_redlines');
@@ -153,7 +141,6 @@ describe('DBT2. DB Tables — Pushed from 5 Corpus Hits to ≥10', () => {
     // integration: sync state and external system IDs
   });
   test('DBT2-03: soc2_controls + aba_codes + firm tables', async () => {
-    const fs = await import('fs');
     const db = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('soc2_controls');
     expect(db).toContain('aba_codes');

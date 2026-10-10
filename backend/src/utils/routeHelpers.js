@@ -58,18 +58,6 @@ export function asyncRoute(fn) {
   };
 }
 
-/**
- * Wraps a synchronous route handler the same way.
- */
-export function syncRoute(fn) {
-  return (req, res, next) => {
-    try {
-      fn(req, res, next);
-    } catch (err) {
-      next(err);
-    }
-  };
-}
 
 /**
  * Standard 400 / 403 / 404 helpers — keeps error format consistent.
@@ -111,19 +99,6 @@ export function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
-/**
- * Standardised success response — always { data, meta? }
- * Use instead of res.json({...}) to ensure consistent envelope
- */
-export function sendData(res, data, meta = {}) {
-  return res.json({ data, ...( Object.keys(meta).length ? { meta } : {} ) });
-}
-export function sendList(res, items, total) {
-  return res.json({ data: items, meta: { total, count: items.length } });
-}
-export function sendCreated(res, data) {
-  return res.status(201).json({ data });
-}
 
 // ── Additional helpers expected by route files ─────────────────────────────────
 
@@ -134,7 +109,7 @@ export function err502(res, msg = 'Upstream service error.')      { return res.s
 
 export function sanitizeStr(s, maxLen = 2000) {
   if (s == null || s === undefined) return '';
-  return String(s).replace(/\x00/g,'').trim().slice(0, maxLen);
+  return String(s).replaceAll('\0', '').trim().slice(0, maxLen);
 }
 
 export function truncateStr(s, maxLen = 500) {
@@ -157,11 +132,6 @@ export function escapeLike(s, maxLen = 100) {
   return String(s || '').slice(0, maxLen).replace(/[%_\\]/g, '\\$&');
 }
 
-export function parsePagination(query, defaults = { limit: 20, offset: 0 }) {
-  const limit  = Math.min(Math.max(parseInt(query?.limit  || defaults.limit,  10) || defaults.limit,  1), 200);
-  const offset = Math.max(parseInt(query?.offset || defaults.offset, 10) || defaults.offset, 0);
-  return { limit, offset };
-}
 
 export function buildWhere(conditions, allowedCols = null) {
   // Keys are interpolated into SQL, so only plain identifiers (and, when an
@@ -197,12 +167,6 @@ export async function ownsResource(dbOrRow, tableOrUserId, id, userId, idCol = '
   return !!row;
 }
 
-export async function withTransaction(db, fn) {
-  // Runs fn on a single connection inside BEGIN/COMMIT. fn receives the
-  // transaction-scoped db handle (use it for every query in the transaction).
-  if (typeof db.transaction === 'function') return db.transaction(tx => fn(tx));
-  return fn(db);
-}
 
 // ── Business constants used across billing/route files ────────────────────────
 export const BUSINESS_CONSTANTS = {

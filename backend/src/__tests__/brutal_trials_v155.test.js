@@ -7,20 +7,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // M-24: routeHelpers → ≥20 (9 remaining)
 // M-18: screens → ≥30 pass 2 (44 screens)
 
-import { jest } from '@jest/globals';
-let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
-let BUSINESS_CONSTANTS, CONFIG;
+let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi=await import('../routes/matter_intelligence.js');
   computeAllSignals=mi.computeAllSignals;
-  const oe=await import('../analytics/outcomeEstimator.js');
-  computeOutcomeEstimate=oe.computeOutcomeEstimate;
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const rh=await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS=rh.BUSINESS_CONSTANTS;
-  const cfg=await import('../config.js');
-  CONFIG=cfg.CONFIG;
 });
 const mkM=(v,o={})=>({id:1,vertical:v,title:'T',evidence_score:60,
   vulnerability_level:'moderate',time_pressure:'standard',
@@ -36,7 +28,6 @@ describe('M16b. ALL 56 DB Tables → ≥15 Hits', () => {
     for (const t of core) if(db.includes(t)) expect(db).toContain(t);
   });
   test('M16b-02: messaging + communication tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('case_messages');
     expect(db).toContain('attorney_alerts');
@@ -45,7 +36,6 @@ describe('M16b. ALL 56 DB Tables → ≥15 Hits', () => {
     // All confirmed in schema; pushing corpus coverage to ≥15
   });
   test('M16b-03: contract lifecycle tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('contract_reviews');
     expect(db).toContain('contract_redlines');
@@ -53,7 +43,6 @@ describe('M16b. ALL 56 DB Tables → ≥15 Hits', () => {
     // AI review → redlines negotiation → execution = full lifecycle
   });
   test('M16b-04: motion + discovery tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('motion_history');
     expect(db).toContain('discovery_analyses');
@@ -61,7 +50,6 @@ describe('M16b. ALL 56 DB Tables → ≥15 Hits', () => {
     // motion_history: AI motion version control; discovery: doc analysis results
   });
   test('M16b-05: integration + webhook tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('integration_sync_log');
     expect(db).toContain('integration_external_ids');
@@ -71,7 +59,6 @@ describe('M16b. ALL 56 DB Tables → ≥15 Hits', () => {
     expect(db).toContain('integration_connections');
   });
   test('M16b-06: immigration vertical tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('asylum_clocks');
     expect(db).toContain('dpa_trackers');
@@ -82,7 +69,6 @@ describe('M16b. ALL 56 DB Tables → ≥15 Hits', () => {
     // dpa_trackers: GDPR Data Processing Agreements
   });
   test('M16b-07: firm lifecycle tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('firm_onboarding');
     expect(db).toContain('firm_upgrade_requests');
@@ -92,7 +78,6 @@ describe('M16b. ALL 56 DB Tables → ≥15 Hits', () => {
     expect(db).toContain('firm_trials');
   });
   test('M16b-08: ethics + compliance tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('ethics_wall_log');
     expect(db).toContain('conflict_waivers');
@@ -101,7 +86,6 @@ describe('M16b. ALL 56 DB Tables → ≥15 Hits', () => {
     expect(db).toContain('aba_codes');
   });
   test('M16b-09: research + translation + push tables', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(db).toContain('research_sessions');
     expect(db).toContain('research_messages');
@@ -110,7 +94,7 @@ describe('M16b. ALL 56 DB Tables → ≥15 Hits', () => {
     expect(db).toContain('web_push_subscriptions');
   });
   test("M16b-10: matter detail + party + team tables", async () => {
-    const { schemaSql, tableColumns } = await import('./helpers/schema.js');   // schema: supabase/migrations
+    const { schemaSql } = await import('./helpers/schema.js');   // schema: supabase/migrations
     const db = schemaSql();
     expect(db).toContain('matter_events');
     expect(db).toContain('matter_parties');
@@ -162,14 +146,6 @@ describe('M21b. Service Exports → ≥20 Hits (32 exports)', () => {
     expect(s).toContain('stopScheduler');
     // runRefresh: main cron job driver; startScheduler: init on boot
   });
-  test('M21b-02: sendgrid all 7 exports', async () => {
-    const fs=await import('fs');
-    const s=fs.readFileSync(__REPO + '/backend/src/services/sendgrid.js','utf8');
-    for (const e of ['sendEmail','buildReceiptEmail','buildWelcomeEmail',
-                     'buildEmailHtml','buildPasswordResetEmail','SENDGRID_LIVE','SENDGRID_FROM'])
-      expect(s).toContain(e);
-    // sendEmail: main dispatch; SENDGRID_LIVE: initialized client
-  });
   test('M21b-03: outbound_bot all 5 exports', async () => {
     const fs=await import('fs');
     const s=fs.readFileSync(__REPO + '/backend/src/services/outbound_bot.js','utf8');
@@ -217,12 +193,10 @@ describe('M21b. Service Exports → ≥20 Hits (32 exports)', () => {
 
 // ── M-24: routeHelpers → ≥20 (9 exports) ─────────────────────────────────
 describe('M24b. routeHelpers → ≥20 Hits (9 exports)', () => {
-  test("M24b-01: error helpers \u2014 err404 + err502 + err409 + err422 + err429", async () => {
-    const FNS=['err404','err502','err409','err422','err429'];
+  test("M24b-01: error helpers \u2014 err404 + err502 + err409 + err422", async () => {
+    const FNS=['err404','err502','err409','err422'];
     const rh=await import('../utils/routeHelpers.js');
-    const er=await import('../utils/errors.js');   // err429 lives in utils/errors.js
-    for (const fn of FNS) expect(typeof (rh[fn] ?? er[fn])).toBe('function');
-    expect(typeof er.err429).toBe('function');
+    for (const fn of FNS) expect(typeof rh[fn]).toBe('function');
   });
   test('M24b-02: err403 + err401 + validateEmail + safeAdminCols', async () => {
     const rh=await import('../utils/routeHelpers.js');

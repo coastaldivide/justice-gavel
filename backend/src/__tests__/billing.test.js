@@ -26,11 +26,6 @@ async function buildApp(db) {
     try { req.user = jwt.verify(t, SECRET); next(); }
     catch { res.status(401).json({ error:'invalid token' }); }
   }
-  function optAuth(req, res, next) {
-    const t = (req.headers.authorization||'').replace('Bearer ','');
-    if (t) { try { req.user = jwt.verify(t, SECRET); } catch {} }
-    next();
-  }
 
   const CONSUMER_TIERS = ['legal_radar','advisor','legal_pro','esquire'];
   const TIER_PRICES = { legal_radar:19.99, advisor:24.99, legal_pro:34.99, esquire:49.00 };
@@ -131,9 +126,8 @@ async function buildApp(db) {
 }
 
 let db, app;
-const USER_ID = 1, OTHER_ID = 2;
+const USER_ID = 1;
 const TOKEN = tok(USER_ID);
-const OTHER_TOKEN = tok(OTHER_ID);
 
 beforeAll(async () => {
   db = await makeDb();

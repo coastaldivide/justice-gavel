@@ -5,15 +5,12 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // Every screen. Every flow. Every route. Every state.
 // The standard: flawless basic function performance.
 
-import { jest } from '@jest/globals';
-let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt, CONFIG;
+let computeAllSignals, encrypt, decrypt;
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals    = mi.computeAllSignals;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 const mkM = (v,o={}) => ({id:1,vertical:v,title:'T',evidence_score:60,
   vulnerability_level:'moderate',time_pressure:'standard',
@@ -97,12 +94,12 @@ describe('BE. Backend Integrity', () => {
   });
   test('BE-03: discovery.js has all 3 routes + AI queue + demo mode', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/backend/src/routes/discovery.js','utf8');
+    const src=['index','analyze','history','_helpers'].map(f=>fs.readFileSync(__REPO + '/backend/src/routes/discovery/'+f+'.js','utf8')).join('\n');
     expect(src).toContain("'/status'");
     expect(src).toContain("'/history'");
     expect(src).toContain("'/analyze'");
-    expect(src).toContain('ANTHROPIC_API_KEY');
-    expect(src).toContain('ai_jobs');
+    expect(src).toContain('requireAi');         // 503 ai_unavailable when no key (no demo mode)
+    expect(src).toContain('enqueueAIJob');
   });
   test('BE-04: motions/generate.js route exists + mounted', async () => {
     const fs=await import('fs');
@@ -118,7 +115,6 @@ describe('BE. Backend Integrity', () => {
     expect(src).toContain("'/family/contacts'");
   });
   test('BE-06: 5 migration-043 tables in db/index.js', async () => {
-    const fs=await import('fs');
     const db=(await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     for(const t of ['recovery_agents','feedback','firm_invites','account_deletion_log','ai_jobs'])
       expect(db).toContain(t);
@@ -278,7 +274,8 @@ describe('MASS. 2M Influx — Zero Errors', () => {
     const corpus=fs.readdirSync(dir).filter(f=>f.endsWith('.test.js'))
       .map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('');
     const routesDir=__REPO + '/backend/src/routes';
-    let counts={5:0,10:0,15:0,20:0,25:0},total=0;
+    const counts={5:0,10:0,15:0,20:0,25:0};
+    let total=0;
     const wd=(d)=>{
       for(const f of fs.readdirSync(d)){
         const fp=path.join(d,f);

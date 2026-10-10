@@ -1,10 +1,3 @@
-import { validate, validateQuery, schemas } from '../../validation/schemas.js';
-import { err400, BUSINESS_CONSTANTS, err401, err403, err404, err409,
-         err422, err500, err502,
-         safeInt, safeFloat, sanitizeStr, validateEmail } from '../../utils/routeHelpers.js';
-import { Router }       from 'express';
-import { authRequired } from '../../middleware/auth.js';
-import { getDb }        from '../../db/index.js';
 import rateLimit        from 'express-rate-limit';
 import Stripe           from 'stripe';
 import logger           from '../../utils/logger.js';
@@ -107,21 +100,7 @@ const TIERS = {
                      monthly_cents: 3417, annual_cents: 41000, billing: 'annual', tier_rank: 4, matches_monthly: 'esquire' },
 };
 
-// Resolve tier from Stripe price ID (used in webhooks)
-export function tierFromPriceId(priceId) {
-  for (const [key, tier] of Object.entries(TIERS)) {
-    if (tier.price_id === priceId) return key;
-  }
-  return null;
-}
 
-// Get effective monthly rate for display (annual = annual_cents/12, monthly = monthly_cents)
-export function effectiveMonthlyRate(tierKey) {
-  const tier = TIERS[tierKey];
-  if (!tier) return 0;
-  if (tier.billing === 'annual') return tier.annual_cents ? Math.round(tier.annual_cents / 12) : tier.monthly_cents;
-  return tier.monthly_cents;
-}
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 // ── Bondsman subscription tiers (flat recurring, no per-lead component) ───────────

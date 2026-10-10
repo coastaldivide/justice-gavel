@@ -1,5 +1,4 @@
 import { CLAUDE_MODEL } from '../utils/ai.js';
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * interrogation.js — Police Encounter Recorder
  *
@@ -20,8 +19,7 @@ import { validate, schemas } from '../validation/schemas.js';
  *   (also called "all-party consent")
  */
 
-import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, API_URLS } from '../utils/routeHelpers.js';
-import { asyncRoute } from '../utils/routeHelpers.js';
+import { err400, API_URLS, asyncRoute } from '../utils/routeHelpers.js';
 import express  from 'express';
 import multer   from 'multer';
 import FormData from 'form-data';
@@ -177,7 +175,7 @@ The label SUSPECT is the legal term for the person being questioned — it carri
 
   try {
     return JSON.parse(text.replace(/```json\n?|```/g, '').trim());
-  } catch (e) {
+  } catch {
     // Claude returned malformed JSON — build from raw segments
     return segments.map(s => ({
       timestamp: formatTime(s.start || 0),
@@ -372,7 +370,7 @@ function formatTime(seconds) {
 }
 
 // ── POST /api/interrogation/transcribe ────────────────────────────────────────
-router.post('/transcribe', authRequired, (req, res, next) => {
+router.post('/transcribe', authRequired, perUserAiLimit, (req, res, next) => {
   upload.single('audio')(req, res, err => {
     if (err instanceof multer.MulterError) {
       return err400(res, 'File too large. Maximum 100MB.');
@@ -384,7 +382,7 @@ router.post('/transcribe', authRequired, (req, res, next) => {
   try {
     if (!req.file) return err400(res, 'Audio file required');
 
-    const { state = 'US', userName = '', location = '', dateTime, caseId } = req.body;
+    const { state = 'US', userName = '', location = '', dateTime } = req.body;
     const law = getRecordingLaw(state);
 
     // Step 1: Whisper
@@ -395,7 +393,7 @@ router.post('/transcribe', authRequired, (req, res, next) => {
         req.file.mimetype,
         req.file.originalname || 'encounter.m4a'
       );
-    } catch (e) {
+    } catch {
       return res.status(502).json({ error: 'Transcription service unavailable. Try again.' });
     }
 
@@ -428,7 +426,7 @@ router.post('/transcribe', authRequired, (req, res, next) => {
     let pdfBuffer;
     try {
       pdfBuffer = await generatePDF(dialogue, meta);
-    } catch (e) {
+    } catch {
       // PDF failed — return transcript without PDF
       return res.json({
         transcript: text,
@@ -458,7 +456,7 @@ router.post('/transcribe', authRequired, (req, res, next) => {
 
 // ── GET /api/interrogation/recording-law ─────────────────────────────────────
 // Returns recording law for a given state (call before showing the recorder)
-router.get('/recording-law', asyncRoute(async (req, res) => {
+router.get('/recording-law', asyncRoute((req, res) => {
   const { state } = req.query;
   res.json(getRecordingLaw(state));
 

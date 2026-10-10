@@ -11,8 +11,6 @@ import { safeJson } from '../../utils/routeHelpers.js';
  *   negotiationPoints() — generate negotiation strategy from a draft
  */
 
-import { getDb }   from '../../db/index.js';
-import { enqueueAIJob as enqueue } from '../../services/aiQueue.js';
 import logger      from '../../utils/logger.js';
 import { CONTRACT_TYPES } from './_contract_types.js';
 

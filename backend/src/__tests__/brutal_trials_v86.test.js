@@ -4,10 +4,9 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 86th pass: 2 discrepancy fixes + navigation types + billing TIERS + AI prompts
 // + outbound_bot + arrest_alerts + sw.js + SW cache strategy
 
-import { jest } from '@jest/globals';
 
 let computeAllSignals, computeOutcomeEstimate, encrypt, decrypt;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
+let GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
@@ -16,9 +15,7 @@ beforeAll(async () => {
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const gg  = await import('../routes/golden_gavel.js');
+   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');
   CONFIG = cfg.CONFIG;
@@ -249,7 +246,6 @@ describe('Mass Influx — 100,000 Scenarios', () => {
     expect(e).toBe(0);
   });
   test('MI-04: 20,000 diversion scores', () => {
-    const { computeDiversionRecommendations: cdr } = { computeDiversionRecommendations: (() => []) };
     let e=0;
     // Use pattern from prior suites
     for (let i=0;i<20000;i++) {

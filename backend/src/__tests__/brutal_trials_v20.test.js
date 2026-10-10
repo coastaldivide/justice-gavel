@@ -4,40 +4,22 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
  * JUSTICE GAVEL — BRUTAL TRIALS v20
  * 18 new domains targeting every remaining function-level gap.
  */
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations, computeDiversionRecommendations;
-let computeOutcomeEstimate;
+let computeAllSignals, computeDiversionRecommendations;
 let encrypt, decrypt;
-let haversineKm, googleMapsLink;
-let hasMinRole;
-let safeInt, truncateStr, validCoords, BUSINESS_CONSTANTS;
-let GAVEL_LEVELS, GAVEL_EMOJI, GAVEL_LABEL;
-let MOTION_TYPES;
-let CONFIG;
+let BUSINESS_CONSTANTS;
+let GAVEL_EMOJI, GAVEL_LABEL;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals              = mi.computeAllSignals;
-  computeMotionRecommendations   = mi.computeMotionRecommendations;
   computeDiversionRecommendations = mi.computeDiversionRecommendations;
-  const oe  = await import('../analytics/outcomeEstimator.js');
-  computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm; googleMapsLink = geo.googleMapsLink;
-  const rbac = await import('../middleware/rbac.js');
-  hasMinRole = rbac.hasMinRole;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; truncateStr = rh.truncateStr;
-  validCoords = rh.validCoords; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
+  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_LEVELS = gg.GAVEL_LEVELS; GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
-  const motT = await import('../routes/motions/_motion_types.js');
-  MOTION_TYPES = motT.MOTION_TYPES;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
+ GAVEL_EMOJI = gg.GAVEL_EMOJI; GAVEL_LABEL = gg.GAVEL_LABEL;
 });
 
 const mkMatter = (v, o = {}) => ({
@@ -169,8 +151,9 @@ describe('4. contentRefresh.getContentAge + integrations', () => {
   test('4-03: staleness thresholds: 30d/60d/30d', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/contentRefresh.js', 'utf8');
-    expect(src).toContain('expungement_rules: 30');
-    expect(src).toContain('rights_cards:      60');
+    // thresholds are applied in the staleness queries themselves
+    expect(src).toMatch(/UPDATE expungement_rules SET needs_review=1[\s\S]*?INTERVAL '30 days'/);
+    expect(src).toMatch(/UPDATE rights_cards SET needs_review=1[\s\S]*?INTERVAL '60 days'/);
     expect(src).toContain('ABA/LawHelp');
   });
   test('4-04: syncDMS supports iManage + NetDocuments', async () => {

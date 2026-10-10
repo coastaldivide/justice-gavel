@@ -1,4 +1,3 @@
-import { validate, validateQuery, schemas } from '../../validation/schemas.js';
 /**
  * attorney/cases.js — Case assignment and office management
  *
@@ -14,14 +13,12 @@ import { validate, validateQuery, schemas } from '../../validation/schemas.js';
  * Pagination added to GET /cases (previously unbounded).
  */
 
-import { err400, err403, err404, safeInt,
-         sanitizeStr, truncateStr }           from '../../utils/routeHelpers.js';
+import { err400, err404, safeInt, sanitizeStr, truncateStr } from '../../utils/routeHelpers.js';
 import { makeUserLimiter }                    from '../../middleware/sharedAiLimiter.js';
 import { Router }                             from 'express';
 import { authRequired }                       from '../../middleware/auth.js';
-import { getDb }                              from '../../db/index.js';
 import logger                                 from '../../utils/logger.js';
-import { sanitiseField, requireDefender, requireAttorney }     from './_helpers.js';
+import { requireDefender, requireAttorney } from './_helpers.js';
 
 const router        = Router();
 const casesListLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Too many requests.' });

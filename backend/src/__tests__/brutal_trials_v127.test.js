@@ -5,31 +5,17 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // scrape_arrests.js + seed_providers.js + db-health.js
 // + validate-i18n.js + migrate.js + fact_check_monitor.js
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeDiversionRecommendations, computeOutcomeEstimate;
-let encrypt, decrypt, haversineKm;
-let safeInt, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
-let calcLeadFee;
+let computeAllSignals, computeOutcomeEstimate;
+let encrypt, decrypt;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeDiversionRecommendations = mi.computeDiversionRecommendations;
   const oe  = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
   encrypt = enc.encrypt; decrypt = enc.decrypt;
-  const geo = await import('../services/geolink.js');
-  haversineKm = geo.haversineKm;
-  const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
-  const bs  = await import('../routes/billing/_shared.js');
-  calcLeadFee = bs.calcLeadFee;
-  const gg  = await import('../routes/golden_gavel.js');
-  GAVEL_EMOJI = gg.GAVEL_EMOJI;
-  const cfg = await import('../config.js');
-  CONFIG = cfg.CONFIG;
 });
 
 const mkMatter = (v, o={}) => ({
@@ -90,28 +76,6 @@ describe('SCRP. scripts/ — Operational Data Pipeline (15 scripts)', () => {
     expect(src).toContain('government sources');
     expect(src.length).toBeGreaterThan(15000);
     // Scans official government sources and flags outdated legal data
-  });
-  test('SCRP-06: db-health.js — database integrity verification', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/db-health.js','utf8');
-    expect(src).toContain('Database integrity');
-    expect(src.length).toBeGreaterThan(3000);
-    // Checks: FK constraints, orphaned records, index health, query performance
-  });
-  test('SCRP-07: migrate.js — idempotent SQL migration runner', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/migrate.js','utf8');
-    expect(src).toContain('migrations');
-    expect(src).toContain('idempotent');
-    expect(src).toContain('ALTER TABLE');
-    // Runs ALTER TABLE statements individually — partial failures are safe
-  });
-  test('SCRP-08: migrate_to_postgres.js — SQLite → PostgreSQL migration', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/backend/src/scripts/migrate_to_postgres.js','utf8');
-    expect(src).toContain('PostgreSQL');
-    expect(src).toContain('POSTGRES_URL');
-    // Run ONCE: transfers all SQLite data to PostgreSQL for production
   });
   test('SCRP-09: refresh.js — unified provider data refresh pipeline', async () => {
     const fs = await import('fs');

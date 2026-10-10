@@ -82,7 +82,7 @@ function httpGet(urlStr, params = {}) {
   });
 }
 
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const sleep = (ms) => new Promise(r => { setTimeout(r, ms); });
 
 function normalizePhone(phone) {
   if (!phone) return null;

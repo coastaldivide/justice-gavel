@@ -11,15 +11,10 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // golden_gavel(3)
 // GRAND ≥15 VERIFICATION
 
-import { jest } from '@jest/globals';
-let encrypt, decrypt, BUSINESS_CONSTANTS, CONFIG;
+let encrypt, decrypt;
 beforeAll(async () => {
   const enc=await import('../services/encryption.js');
   encrypt=enc.encrypt; decrypt=enc.decrypt;
-  const rh=await import('../utils/routeHelpers.js');
-  BUSINESS_CONSTANTS=rh.BUSINESS_CONSTANTS;
-  const cfg=await import('../config.js');
-  CONFIG=cfg.CONFIG;
 });
 
 describe('REF_A. referrals + arrests + messages + sso + admin → ≥15', () => {

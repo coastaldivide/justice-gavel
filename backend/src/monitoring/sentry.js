@@ -19,19 +19,6 @@ export function initSentry() {
   // server.js). Kept as a no-op for backwards compatibility.
 }
 
-/**
- * Attach user context to all subsequent Sentry events in this request.
- * Call after authRequired middleware resolves.
- */
-export function setSentryUser(req) {
-  if (req?.user?.id) {
-    Sentry.setUser({
-      id:    String(req.user.id),
-      role:  req.user.role,
-      // Never set email or name — privacy
-    });
-  }
-}
 
 /**
  * Capture a critical error and escalate immediately.

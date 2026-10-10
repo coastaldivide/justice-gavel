@@ -36,7 +36,7 @@ export function sm2Next(state, isCorrect) {
   const quality  = isCorrect ? 4 : 1;
   // Guard: null / undefined state means brand-new card — use defaults
   const s = state ?? {};
-  let { easiness = INITIAL_EF, interval_days = 1, repetitions = 0 } = s;
+  const { easiness = INITIAL_EF, interval_days = 1, repetitions = 0 } = s;
 
   // Update easiness factor
   const newEF = Math.max(
@@ -85,22 +85,6 @@ export function predictRetention(accuracyPct) {
   return 'weak';
 }
 
-/**
- * Given a user's overall accuracy and exam date, calculate daily question goal.
- * More questions per day if exam is close or accuracy is low.
- */
-export function calcDailyGoal(accuracyPct, daysUntilExam) {
-  if (!daysUntilExam || daysUntilExam <= 0) return 20;  // default
-
-  const urgency = daysUntilExam <= 14 ? 3 :
-                  daysUntilExam <= 30 ? 2 :
-                  daysUntilExam <= 60 ? 1.5 : 1;
-
-  const weaknessMult = accuracyPct < 60 ? 1.5 :
-                       accuracyPct < 75 ? 1.25 : 1;
-
-  return Math.min(50, Math.round(20 * urgency * weaknessMult));
-}
 
 /**
  * Shuffle array with a deterministic seed (prevents pattern memorisation

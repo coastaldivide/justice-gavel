@@ -9,7 +9,7 @@
 import express   from 'express';
 import request   from 'supertest';
 import jwt       from 'jsonwebtoken';
-import { makeTestDb, createSchema } from './helpers/sqliteHelper.js';
+import { makeTestDb } from './helpers/sqliteHelper.js';
 
 const SECRET = process.env.JWT_SECRET;
 
@@ -614,7 +614,7 @@ describe('makeUserLimiter', () => {
     const rl_tok = jwt.sign({ id: 7777, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '1h' });
     rl_app.post('/rl', (q,s,n)=>{
       try{q.user=jwt.verify((q.headers.authorization||'').replace('Bearer ',''),process.env.JWT_SECRET);n();}
-      catch{s.status(401).json({error:'x'});}
+      catch {s.status(401).json({error:'x'});}
     }, rl_limiter, (_q,s)=>s.json({ok:true}));
     await request(rl_app).post('/rl').set('Authorization',`Bearer ${rl_tok}`).expect(200);
     await request(rl_app).post('/rl').set('Authorization',`Bearer ${rl_tok}`).expect(200);

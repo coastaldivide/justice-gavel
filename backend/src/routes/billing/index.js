@@ -1,5 +1,3 @@
-import { validate, schemas } from '../../validation/schemas.js';
-import logger from '../../utils/logger.js';
 /**
  * billing/index.js — Billing module entry point
  *
@@ -20,9 +18,8 @@ import logger from '../../utils/logger.js';
  *   3. No changes needed here unless mounting a brand-new sub-router.
  */
 
-import { Router }        from 'express';
+import express, { Router } from 'express';
 import { stripeConfigured, PAYMENTS_UNAVAILABLE } from '../../config.js';
-import express           from 'express';
 
 import subscriptionsRouter from './subscriptions.js';
 import bondsmanRouter      from './bondsman.js';

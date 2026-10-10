@@ -1,6 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
 // Disclaimer appended to all signal outputs per legal policy
-const SIGNAL_DISCLAIMER = 'AI-generated signals are informational only and do not constitute legal advice.';
 
 /**
  * routes/firm_verticals.js — Vertical configuration, pricing tiers, and
@@ -57,7 +55,7 @@ import {
 }                          from '../utils/routeHelpers.js';
 import { makeUserLimiter }   from '../middleware/sharedAiLimiter.js';
 
-const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
+const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
 
 const router = Router();
 
@@ -126,7 +124,7 @@ async function validateMatterId(db, matterId, firmId, res) {
 }
 
 async function getFirmMembership(db, userId) {
-  return db.get(
+  return await db.get(
     `SELECT fm.firm_id, fm.firm_role as role, f.vertical, f.pricing_tier,
             f.mission_verified
      FROM firm_members fm
@@ -2608,7 +2606,7 @@ router.patch('/:firmId/:trackerId/resolve', authRequired, async (req, res) => {
     let updated = false;
     for (const table of ALLOWED_TRACKER_TABLES) {
       // table comes from a hard-coded Set — never from user input, no SQLi risk
-      // eslint-disable-next-line no-await-in-loop
+       
       try {
         const r = await db.run(
           `UPDATE ${table} SET status = ?, resolution_notes = ?, updated_at = NOW()
@@ -2616,8 +2614,8 @@ router.patch('/:firmId/:trackerId/resolve', authRequired, async (req, res) => {
           [resolved ? 'resolved' : 'pending', resolution_notes || null, trackerId, firmId]
         );
         if (r.changes > 0) { updated = true; break; }
-      } catch {}
+      } catch { /* table absent for this vertical — try the next tracker table */ }
     }
     res.json({ resolved: updated, tracker_id: trackerId });
-  } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
+  } catch { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });

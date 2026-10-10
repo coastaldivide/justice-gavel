@@ -256,7 +256,7 @@ async function upsertRow(db, row, type, defaultCity, dryRun) {
       if (result === 'inserted') { inserted++; process.stdout.write(`  ✓ Added:    ${row.name}\n`); }
       else if (result === 'updated') { updated++; process.stdout.write(`  ↻ Updated:  ${row.name}\n`); }
       else if (result === 'skipped') skipped++;
-      else if (result === 'dry-run') {}
+      // result === 'dry-run': nothing to count
     } catch (e) {
       errors++;
       console.error(`  ✗ Error on "${row.name}": ${e.message}`);

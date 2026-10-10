@@ -1,4 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/docket.js — Docket / Deadline Calculation Engine
  *
@@ -227,7 +226,7 @@ router.post('/calculate', authRequired, docketLimiter, async (req, res) => {
     }).sort((a, b) => a.due_date.localeCompare(b.due_date));
 
     // Save to docket if requested
-    let savedIds = [];
+    const savedIds = [];
     if (save && matter_id) {
       const assignTo = assigned_to ? safeInt(assigned_to) : req.user.id;
       for (const d of calculated) {

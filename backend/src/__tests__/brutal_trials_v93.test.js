@@ -4,16 +4,14 @@ const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname
 // 93rd pass: S0 final fixes + i18n/index.ts deep + sentry.js + arrests.js
 // + MemoizedSkeletonLawyerList + final comprehensive verification
 
-import { jest } from '@jest/globals';
 
-let computeAllSignals, computeMotionRecommendations;
+let computeAllSignals;
 let computeOutcomeEstimate, encrypt, decrypt, haversineKm;
-let safeInt, safeFloat, validCoords, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
+let safeFloat, BUSINESS_CONSTANTS, GAVEL_EMOJI, CONFIG;
 
 beforeAll(async () => {
   const mi  = await import('../routes/matter_intelligence.js');
   computeAllSignals = mi.computeAllSignals;
-  computeMotionRecommendations = mi.computeMotionRecommendations;
   const oe  = await import('../analytics/outcomeEstimator.js');
   computeOutcomeEstimate = oe.computeOutcomeEstimate;
   const enc = await import('../services/encryption.js');
@@ -21,8 +19,7 @@ beforeAll(async () => {
   const geo = await import('../services/geolink.js');
   haversineKm = geo.haversineKm;
   const rh  = await import('../utils/routeHelpers.js');
-  safeInt = rh.safeInt; safeFloat = rh.safeFloat; validCoords = rh.validCoords;
-  BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
+ safeFloat = rh.safeFloat;   BUSINESS_CONSTANTS = rh.BUSINESS_CONSTANTS;
   const gg  = await import('../routes/golden_gavel.js');
   GAVEL_EMOJI = gg.GAVEL_EMOJI;
   const cfg = await import('../config.js');
@@ -46,8 +43,8 @@ describe('DISC26. S0 Final — All Discrepancies Resolved', () => {
   });
 });
 
-// ── SNT. middleware/sentry.js — Error Monitoring ──────────────────────────
-describe('SNT. middleware/sentry.js — Sentry Error Monitoring', () => {
+// ── SNT. Sentry (instrument.js + app.js) — Error Monitoring ──────────────────────────
+describe('SNT. Sentry Error Monitoring', () => {
   test("SNT-01: initSentry \u2014 initializes Sentry with tracesSampleRate=0.1", async () => {
     const fs = await import('fs');
     // Sentry is initialised once in src/instrument.js; middleware/sentry.js only keeps helpers
@@ -62,28 +59,6 @@ describe('SNT. middleware/sentry.js — Sentry Error Monitoring', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/app.js','utf8');
     // Sentry v10: request instrumentation is automatic; app.js installs the error handler
     expect(src).toContain('Sentry.setupExpressErrorHandler');
-  });
-  test("SNT-03: sentryErrorHandler returns no-op when DSN absent", async () => {
-    const { sentryErrorHandler, initSentry } = await import('../middleware/sentry.js');
-    const saved = process.env.SENTRY_DSN; delete process.env.SENTRY_DSN;
-    try {
-      expect(() => initSentry()).not.toThrow();
-      const mw = sentryErrorHandler();
-      let called = false;
-      mw({}, {}, () => { called = true; });
-      expect(called).toBe(true);
-    } finally { if (saved !== undefined) process.env.SENTRY_DSN = saved; }
-  });
-  test("SNT-04: sentryErrorHandler captures exception before global handler", async () => {
-    const { sentryErrorHandler } = await import('../middleware/sentry.js');
-    const saved = process.env.SENTRY_DSN; process.env.SENTRY_DSN = 'https://public@o0.ingest.sentry.io/0';
-    try {
-      const mw = sentryErrorHandler();
-      expect(mw.length).toBe(4);              // Express error middleware
-      const err = new Error('boom'); let forwarded = null;
-      mw(err, {}, {}, (e) => { forwarded = e; });
-      expect(forwarded).toBe(err);            // reported, then passed on to the global handler
-    } finally { if (saved === undefined) delete process.env.SENTRY_DSN; else process.env.SENTRY_DSN = saved; }
   });
 });
 

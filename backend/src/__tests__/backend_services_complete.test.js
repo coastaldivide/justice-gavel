@@ -60,18 +60,6 @@ describe('Services — encryption.js', () => {
   });
 });
 
-describe('Services — supabase.js', () => {
-  test('supabase service exists', () => expect(existsSync(join(SVC_DIR,'supabase.js'))).toBe(true));
-  test('uses createClient from @supabase/supabase-js', () => {
-    const c = readFileSync(join(SVC_DIR,'supabase.js'),'utf-8');
-    expect(c).toMatch(/createClient|supabase-js/i);
-  });
-  test('reads URL and key from environment', () => {
-    const c = readFileSync(join(SVC_DIR,'supabase.js'),'utf-8');
-    expect(c).toMatch(/SUPABASE_URL/);
-    expect(c).toMatch(/SUPABASE.*KEY|SERVICE_KEY/i);
-  });
-});
 
 describe('Services — scheduler.js', () => {
   test('scheduler exists', () => expect(existsSync(join(SVC_DIR,'scheduler.js'))).toBe(true));
@@ -85,17 +73,6 @@ describe('Services — scheduler.js', () => {
   });
 });
 
-describe('Services — dunning.js', () => {
-  test('dunning service exists', () => expect(existsSync(join(SVC_DIR,'dunning.js'))).toBe(true));
-  test('dunning handles past_due subscription status', () => {
-    const c = readFileSync(join(SVC_DIR,'dunning.js'),'utf-8');
-    expect(c).toMatch(/past_due|PAST_DUE|overdue/i);
-  });
-  test('dunning sends notification to user', () => {
-    const c = readFileSync(join(SVC_DIR,'dunning.js'),'utf-8');
-    expect(c).toMatch(/email|notify|alert|push/i);
-  });
-});
 
 describe('Services — aiQueue.js', () => {
   test('AI queue exists', () => expect(existsSync(join(SVC_DIR,'aiQueue.js'))).toBe(true));

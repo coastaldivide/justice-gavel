@@ -74,7 +74,6 @@ function tok(id, role = 'user', extra = {}) {
 const T_ADMIN   = tok(1, 'firm_admin', { firm_role: 'firm_admin' });
 const T_PARTNER = tok(2, 'partner',    { firm_role: 'partner'    });
 const T_ASSOC   = tok(3, 'associate',  { firm_role: 'associate'  });
-const T_OTHER   = tok(9, 'user',       { firm_role: null         });
 
 async function buildApp(db) {
   const app = express();
@@ -218,9 +217,9 @@ async function buildApp(db) {
     const ctx      = req.firmCtx;
     const conn     = await db.get("SELECT * FROM integration_connections WHERE firm_id=? AND provider=? AND status='active'", [ctx.firm_id, provider]);
     if (!conn) return res.status(404).json({ error: `No active ${provider} connection.` });
-    const { entity_type='matter', direction='push', matter_id } = req.body||{};
+    const { entity_type='matter', direction='push' } = req.body||{};
     // Simplified inline sync for tests
-    let result = { status:'success', records_sent:0, records_received:0, demo:true };
+    const result = { status:'success', records_sent:0, records_received:0, demo:true };
     if (PROVIDERS[provider]?.category === 'dms') {
       result.records_received = 5; // demo docs
     } else if (PROVIDERS[provider]?.category === 'practice_mgmt') {
@@ -463,11 +462,6 @@ async function buildApp(db) {
   // ── Outbound webhooks ──────────────────────────────────────────────────────
   const WEBHOOK_EVENTS = ['matter.created','matter.updated','matter.closed','time_entry.created','time_entry.updated','invoice.created','invoice.sent','invoice.paid','invoice.voided','docket.deadline_created','docket.deadline_completed','docket.deadline_overdue','privilege_log.entry_created','conflict.detected','conflict.waiver_recorded','member.added','member.removed'];
 
-  function signPayload(secret, timestamp, payload) {
-    const data = `${timestamp}.${typeof payload==='string'?payload:JSON.stringify(payload)}`;
-    return createHmac('sha256',secret).update(data).digest('hex');
-  }
-  function genSecret() { const { randomBytes } = require('crypto'); return 'whsec_'+randomBytes(24).toString('hex'); }
 
   app.get('/api/webhooks/outbound/events', auth, (req, res) => {
     res.json({ events:WEBHOOK_EVENTS, wildcard:'*', note:'Use "*" to subscribe to all events.' });
@@ -553,7 +547,7 @@ async function buildApp(db) {
 // ════════════════════════════════════════════════════════════════════════════
 
 let app, db;
-let subId, imanageConnId, clioConnId, caldavConnId;
+let subId, imanageConnId;
 
 beforeAll(async () => {
   db  = await makeTestDb();
@@ -626,7 +620,6 @@ describe('Integration Connections', () => {
     expect(r.status).toBe(200);
     expect(r.body.connected).toBe(true);
     expect(r.body.status).toBe('active');
-    caldavConnId = (await db.get("SELECT id FROM integration_connections WHERE firm_id=1 AND provider='caldav'"))?.id;
   });
   test('GET / lists active connections', async () => {
     const r = await request(app).get('/api/integrations').set('Authorization', `Bearer ${T_PARTNER}`);
@@ -640,7 +633,6 @@ describe('Integration Connections', () => {
     const conn = await db.get("SELECT status, access_token FROM integration_connections WHERE firm_id=1 AND provider='clio'");
     expect(conn?.status).toBe('active');
     expect(conn?.access_token).toBeTruthy();
-    clioConnId = (await db.get("SELECT id FROM integration_connections WHERE firm_id=1 AND provider='clio'"))?.id;
   });
   test('DELETE /:provider revokes connection', async () => {
     await request(app).post('/api/integrations/connect').set('Authorization', `Bearer ${T_ADMIN}`).send({ provider:'mycase', access_token:'mycase_test_token' });

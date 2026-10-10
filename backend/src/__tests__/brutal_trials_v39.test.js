@@ -2,7 +2,6 @@
 const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL - BRUTAL TRIALS v39 (rebuilt - corpus repaired after Hague addition)
 // Original tests preserved in spirit; file rebuilt after corruption from route-count replacements.
-import { jest } from '@jest/globals';
 
 describe('v39. Corpus integrity (rebuilt)', () => {
   test('v39-01: hague_contacts route is mounted', async () => {
@@ -11,7 +10,6 @@ describe('v39. Corpus integrity (rebuilt)', () => {
     expect(src).toContain('/api/hague-contacts');
   });
   test('v39-02: hague_intakes table exists', async () => {
-    const fs = await import('fs');
     const src = (await import('./helpers/schema.js')).schemaSql() /* schema: supabase/migrations */;
     expect(src).toContain('hague_intakes');
   });

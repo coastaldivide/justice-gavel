@@ -96,7 +96,7 @@ async function startMock(port) {
       }));
     });
   });
-  await new Promise((resolve, reject) => mockServer.listen(Number(port), '127.0.0.1', resolve).on('error', reject));
+  await new Promise((resolve, reject) => { mockServer.listen(Number(port), '127.0.0.1', resolve).on('error', reject); });
 }
 
 // ── main ──────────────────────────────────────────────────────────────────────
@@ -210,7 +210,7 @@ async function main() {
       assert(r.status === 200 && r.json?.jobId, `expected 200 + jobId, got ${brief(r)}`);
       let job = null;
       for (let i = 0; i < 40; i++) {
-        await new Promise(res => setTimeout(res, 250));
+        await new Promise(res => { setTimeout(res, 250); });
         const j = await call('GET', `/api/jobs/${r.json.jobId}`, { token });
         assert(j.status === 200, `job poll failed: ${brief(j)}`);
         job = j.json;

@@ -1,4 +1,3 @@
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * routes/integrations/recap.js — CourtListener RECAP Federal Docket Import
  * ─────────────────────────────────────────────────────────────────────────────
@@ -29,7 +28,7 @@ import { validate, schemas } from '../../validation/schemas.js';
 import { Router }       from 'express';
 import { getDb }        from '../../db/index.js';
 import { authRequired } from '../../middleware/auth.js';
-import { requireFirmRole, loadFirmContext } from '../../middleware/rbac.js';
+import { loadFirmContext } from '../../middleware/rbac.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 import { err400, err403, err404, safeInt,
          sanitizeStr, truncateStr }           from '../../utils/routeHelpers.js';
@@ -186,14 +185,6 @@ router.post('/link', authRequired, async (req, res) => {
     );
 
     // Log the link
-    const meta = JSON.stringify({
-      docket_id:     String(docket_id),
-      case_name:     case_name ? truncateStr(sanitizeStr(case_name, 300), 300) : null,
-      docket_number: docket_number ? sanitizeStr(docket_number, 50) : null,
-      court:         court ? sanitizeStr(court, 20) : null,
-      court_name:    court ? courtName(court) : null,
-      cl_url:        `https://www.courtlistener.com/docket/${docket_id}/`,
-    });
 
     await db.run(
       `INSERT INTO integration_sync_log
@@ -369,7 +360,7 @@ router.get('/status/:matterId', authRequired, async (req, res) => {
       imported_entries: importedCount.n,
       cl_url:        `https://www.courtlistener.com/docket/${linkRow.external_id}/`,
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not get RECAP status.' });
   }
 });
@@ -467,7 +458,7 @@ router.delete('/unlink/:matterId', authRequired, async (req, res) => {
     );
 
     res.json({ ok: true, matter_id: matterId, unlinked: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: 'Could not unlink docket.' });
   }
 });

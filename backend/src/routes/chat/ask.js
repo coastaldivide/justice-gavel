@@ -1,8 +1,5 @@
 import { requireAi } from '../../utils/ai.js';
-import { validate, schemas } from '../../validation/schemas.js';
-import { withApiRetry } from '../../utils/retry.js';
 import { requireDisclaimer } from '../../middleware/disclaimer.js';
-import { withBreaker } from '../../middleware/circuitBreaker.js';
 /**
  * chat/ask.js — POST /ask — main AI chat
  */

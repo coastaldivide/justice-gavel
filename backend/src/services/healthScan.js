@@ -45,7 +45,7 @@ import cron from 'node-cron';
 import { getDb }        from '../db/index.js';
 import { sendEmail }    from './email.js';
 // Health alerts via Slack webhook (ALERT_WEBHOOK_URL) and Resend email
-const sendSms = async () => null;
+const sendSms = () => Promise.resolve(null);
 import { sendPushToUser } from './pushDelivery.js';
 import { checkStaleness, runBiasAudit,
          run as runPrecedentMonitor }    from '../analytics/precedentMonitor.js';
@@ -147,7 +147,7 @@ class ScanReport {
 // ─── SECTION 1: LEGAL PRECEDENT CURRENCY ─────────────────────────────────────
 // The most important scan. Stale legal information can harm clients.
 
-async function scanPrecedentCurrency(report) {
+function scanPrecedentCurrency(report) {
   const section = 'precedent_currency';
   logger.info('[scan] Section 1: Legal precedent currency');
 
@@ -462,8 +462,9 @@ async function scanSignalEngine(report) {
         desc: 'asylumBarred and asylumBarRisk mutually exclusive',
         test: () => {
           // at clock=400: barred=true, barRisk=false
-          const barred  = 400 > 365;
-          const barRisk = 400 > 300 && 400 <= 365;
+          const clockDays = 400;
+          const barred  = clockDays > 365;
+          const barRisk = clockDays > 300 && clockDays <= 365;
           return !(barred && barRisk);
         },
       },
@@ -483,7 +484,8 @@ async function scanSignalEngine(report) {
         test: () => {
           // mandatoryMin fires when !safetyValveEligible
           const sv = true;
-          const mm = true && !sv; // mandatoryMin only when !sv
+          const mandatoryMinCharged = true;
+          const mm = mandatoryMinCharged && !sv; // mandatoryMin only when !sv
           return !(mm && sv);
         },
       },
@@ -584,7 +586,7 @@ async function scanSignalEngine(report) {
 
 // ─── SECTION 5: ANALYTICS BIAS AUDIT ─────────────────────────────────────────
 
-async function scanBiasAudit(report) {
+function scanBiasAudit(report) {
   const section = 'bias_audit';
   logger.info('[scan] Section 5: Analytics bias audit');
 
@@ -790,8 +792,6 @@ async function scanEscalationSLA(report) {
 
   try {
     const db  = await getDb();
-    const now = new Date();
-
     // Find critical matters where updated_at is more than 1 hour ago
     // (should have been contacted within 1 hour of critical escalation)
     const criticalMatters = await db.all(
@@ -836,8 +836,6 @@ async function dispatchNotifications(report, criticalMatters = []) {
   const mediums   = report.findings.filter(f => f.severity === 'MEDIUM');
 
   const hasUrgent   = criticals.length > 0 || highs.length > 0;
-  const hasMedium   = mediums.length > 0;
-  const isHealthy   = report.overall === 'HEALTHY';
   const overall   = report.overall;
 
   // Build notification text

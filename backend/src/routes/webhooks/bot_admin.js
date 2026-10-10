@@ -1,4 +1,3 @@
-import { validate, schemas } from '../../validation/schemas.js';
 /**
  * webhooks/bot_admin.js — Bot monitoring, manual triggers, revenue dashboard
  *
@@ -98,7 +97,7 @@ router.get('/status', requireAdmin, adminLimiter, async (req, res) => {
 
 // ── POST /api/bot/run ─────────────────────────────────────────────────────────
 // Response is sent immediately — bot runs in background via setImmediate.
-router.post('/run', requireAdmin, adminLimiter, async (req, res) => {
+router.post('/run', requireAdmin, adminLimiter, (req, res) => {
   const { dryRun = false, forceRun = false } = req.body || {};
   logger.info(`[bot_admin] Manual bot trigger — dryRun=${dryRun} forceRun=${forceRun}`);
   res.json({

@@ -4,14 +4,8 @@
  *        status, upgrade request, onboarding checklist, RBAC
  */
 
-import jwt      from 'jsonwebtoken';
 
-const SECRET = process.env.JWT_SECRET;
-const tok = (id, role = 'user') =>
-  jwt.sign({ id, role, email: `u${id}@test.com` }, SECRET, { expiresIn: '1h' });
 
-const T1 = tok(1, 'user');
-const T2 = tok(2, 'user');
 
 describe('GET /api/firm-acquisition/plans — logic', () => {
   const TIERS = [
@@ -472,7 +466,8 @@ describe('status GET — member_count catch', () => {
   test('member_count fallback: .catch(() => ({member_count:0})) returns 0 on error', () => {
     // Simulate the catch fallback
     const fallback = { member_count: 0 };
-    const result   = null ?? fallback;  // null simulates a failed DB query
+    const failedQuery = null;           // simulates a failed DB query
+    const result   = failedQuery ?? fallback;
     expect(result.member_count).toBe(0);
   });
   test('matter_count and member_count both have fallbacks', () => {
@@ -561,7 +556,6 @@ describe('lead POST — sanitization', () => {
 describe('lead POST — idempotency', () => {
   // Simulate the duplicate check logic from the lead POST handler
   function processLead(existing, email, firmName, vertical) {
-    const normalEmail = email.trim().toLowerCase();
     if (existing) {
       return { captured: true, id: existing.id, existing: true, action: 'updated', vertical };
     }

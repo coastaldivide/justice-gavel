@@ -1,4 +1,3 @@
-import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/conflicts.js — Conflict Screening & Ethics Wall System
  *
@@ -23,12 +22,7 @@ import { Router }          from 'express';
 import { dispatchWebhookEvent } from './webhooks/outbound.js';
 import { getDb }           from '../db/index.js';
 import { authRequired }    from '../middleware/auth.js';
-import {
-  requireFirmRole,
-  requirePermission,
-  loadFirmContext,
-  hasMinRole,
-}                          from '../middleware/rbac.js';
+import { requireFirmRole, loadFirmContext, hasMinRole } from '../middleware/rbac.js';
 import { writeAuditLog }   from '../middleware/audit.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { err400, err403, err404, err409, safeInt,
@@ -46,26 +40,14 @@ const wallLimiter     = makeUserLimiter({ windowMs: 3_600_000, max: 30, message:
 function normalizeName(raw) {
   return String(raw || '')
     .toLowerCase()
-    .replace(/[.,\-'"\/#!$%\^&\*;:{}=\`~()<>[\]]/g, ' ')
+    .replace(/[.,\-'"/#!$%^&*;:{}=`~()<>[\]]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
 /** Compact form: lowercase alphanumerics only (o'brien → obrien) */
-function compactName(raw) {
-  return String(raw || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-}
 
 /** Check for fuzzy match (one-way containment) */
-function fuzzyMatch(needle, haystack) {
-  const n = normalizeName(needle);
-  const h = normalizeName(haystack);
-  if (n === h || h.includes(n) || n.includes(h)) return true;
-  // Compact fallback: strips spaces → matches o'brien vs obrien, etc.
-  const nc = compactName(needle);
-  const hc = compactName(haystack);
-  return nc === hc || hc.includes(nc) || nc.includes(hc);
-}
 
 // ethics_wall_log, conflict_waivers, conflict_index, matter_team_members, soc2_controls — managed by db/index.js Year 1.5.
 
@@ -495,7 +477,7 @@ router.get('/ethics-wall/:matterId', authRequired, requireFirmRole('partner'), a
       [matterId]
     ).catch(async () => {
       // Fallback: try matter_teams table
-      return db.all(
+      return await db.all(
         `SELECT mt.user_id, 0 as ethics_wall, mt.role as matter_role,
                 u.display_name, u.email
          FROM matter_teams mt

@@ -29,7 +29,7 @@ const T_ADMIN     = tok(1, 'firm_admin');   // firm admin
 const T_PARTNER   = tok(2, 'partner');      // partner
 const T_ASSOCIATE = tok(3, 'associate');    // associate
 const T_PARALEGAL = tok(4, 'paralegal');    // paralegal
-const T_CLIENT    = tok(5, 'client');       // client
+tok(5, 'client');       // client
 const T_VIEWER    = tok(6, 'viewer');       // viewer
 const T_OTHER     = tok(7, 'user');         // not in any firm
 const T_ADMIN2    = tok(8, 'firm_admin');   // separate firm admin
@@ -496,7 +496,7 @@ async function buildApp(db) {
 
 let app, db;
 let firmId, firm2Id;
-let matterId, matter2Id;
+let matterId;
 
 beforeAll(async () => {
   db  = await makeTestDb();
@@ -994,6 +994,7 @@ describe('Audit Log Write Function', () => {
     `);
 
     const { writeAuditLog } = await import('../middleware/audit.js');
+    expect(typeof writeAuditLog).toBe('function');
 
     // Reset table-ready flag for this test db
     await testDb.run('DELETE FROM audit_log');

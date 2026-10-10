@@ -1,4 +1,4 @@
-export async function createSquarePayment({ amount, currency='USD', user, meta }){
+export function createSquarePayment() {
   if(!process.env.SQUARE_ACCESS_TOKEN){
     return { provider:'square-mock', url:'https://example.com/checkout/square-mock', mock:true };
   }
