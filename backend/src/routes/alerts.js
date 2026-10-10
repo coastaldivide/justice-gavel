@@ -133,7 +133,7 @@ router.post('/family-contacts', authRequired, async (req, res) => {
     const count = await db.get('SELECT COUNT(*) as n FROM family_contacts WHERE user_id = ?', [req.user.id]);
     if ((count?.n || 0) >= 3) return res.status(400).json({ error: 'Maximum 3 emergency contacts' });
     const r = await db.run(
-      'INSERT INTO family_contacts (user_id, name, phone, email, relationship, created_at) VALUES (?,?,?,?,?,datetime("now"))',
+      'INSERT INTO family_contacts (user_id, name, phone, email, relationship, created_at) VALUES (?,?,?,?,?,NOW())',
       [req.user.id, name.trim(), phone?.trim() || null, email?.trim() || null, relationship?.trim() || null]
     );
     return res.json({ id: r.lastID, name, phone, email, relationship });

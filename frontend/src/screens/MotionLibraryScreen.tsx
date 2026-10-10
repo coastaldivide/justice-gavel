@@ -1,4 +1,5 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
+import { apiErrorMessage } from '../services/api';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
@@ -7,7 +8,7 @@ import { AppIcon } from '../components/AppIcon';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 import { MotionTypeBadge } from '../components/MotionTypeBadge';
 import Analytics from '../services/analytics';
-import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
 import type { ScreenProps } from '../types/navigation';
 /**
  * MotionLibraryScreen -- AI motion template generator
@@ -31,7 +32,8 @@ import type { ScreenProps } from '../types/navigation';
  *   2. Direct navigation (standalone use)
  */
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { Linking, Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl, Alert, Clipboard, KeyboardAvoidingView, Platform, Animated, Share, LayoutAnimation, InteractionManager} from 'react-native';
+import { Linking, Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Animated, Share, LayoutAnimation, InteractionManager} from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { api }         from '../services/api';
 import { pollJob } from '../services/jobPoller';
 import { cacheMotions, markOnline } from '../services/offlineCache';
@@ -42,18 +44,6 @@ import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDiscla
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 import { t } from '../i18n';
 
-declare var copyTimer: any;
-declare var histFilter: any;
-declare var historyFilter: any;
-declare var historySearch: any;
-declare var load: any;
-declare var refreshing: any;
-declare var selectedType: any;
-declare var setHistFilter: any;
-declare var setRefreshing: any;
-declare var reviewDraft: any; // hoisted from component scope
-declare var reviewResult: any; // hoisted from component scope
-declare var reviewing: any; // hoisted from component scope
 // ── Motion type definitions (mirrors backend) ─────────────────────────────────
 // ── Trial-stage motions ───────────────────────────────────────────────────────
 const TRIAL_MOTIONS = [
@@ -254,7 +244,7 @@ const FILING_STATUS = {
 type FilingStatus = keyof typeof FILING_STATUS;
 
 // ── Motion type card ──────────────────────────────────────────────────────────
-function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPES[0]; onPress: () => void; onReview?: () => void; reviewing?: boolean }) {
+function MotionCard({ m, onPress }: { m: typeof MOTION_TYPES[0]; onPress: () => void }) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -266,73 +256,9 @@ function MotionCard({ m, onPress, onReview, reviewing }: { m: typeof MOTION_TYPE
     ]).start(() => onPress());
   };
 
-  if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '48%' }}>
-              {/* AI Review button */}
-              <TouchableOpacity
-  accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-                style={{ flexDirection:'row', alignItems:'center', gap:8, paddingVertical:12,
-                  paddingHorizontal:16, borderRadius:10, borderWidth:1,
-                  borderColor:COLORS.border, backgroundColor:COLORS.bgSubtle,
-                  marginBottom:8 }}
-                onPress={onReview || (() => {})}
-          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
-                disabled={reviewing}
-                accessibilityLabel="Run AI review of this motion draft"
-              >
-                <AppIcon name="search-outline" size={20} color={COLORS.navy} />
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
-                  fontWeight:'700', color:COLORS.textPrimary }}>
-                  {reviewing ? 'Reviewing…' : 'AI Review Draft'}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Review results */}
-              {reviewResult && (
-                <View style={{ borderRadius:10, padding:14, marginBottom:8,
-                  backgroundColor:
-                    reviewResult.score==='pass' ? COLORS.legalBg :
-                    reviewResult.score==='fail' ? COLORS.emergencyBg : COLORS.warnBg,
-                  borderWidth:1,
-                  borderColor:
-                    reviewResult.score==='pass' ? COLORS.legalDark :
-                    reviewResult.score==='fail' ? COLORS.emergencyDark : COLORS.warnDark }}>
-                  <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
-                    fontWeight:'700', marginBottom:6,
-                    color:
-                      reviewResult.score==='pass' ? COLORS.legalDark :
-                      reviewResult.score==='fail' ? COLORS.emergencyDark : COLORS.warnDark }}>
-                    {reviewResult.score==='pass' ? '✅ Looks good' :
-                     reviewResult.score==='fail' ? '❌ Issues found' : '⚠️ Minor issues'}
-                  </Text>
-                  {reviewResult.missing_fields?.length > 0 && (
-                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, lineHeight:19,
-                      color:COLORS.emergencyDark, marginBottom:4 }}>
-                      Missing: {reviewResult.missing_fields.join(', ')}
-                    </Text>
-                  )}
-                  {reviewResult.issues?.map((issue, i) => (
-                    <Text key={`item-${i}`} maxFontSizeMultiplier={1.4} style={{ fontSize:12,
-                      lineHeight:18, color:COLORS.warnDark, marginBottom:2 }}>
-                      • {issue}
-                    </Text>
-                  ))}
-                  {reviewResult.suggestions?.length > 0 && (
-                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
-                      color:COLORS.blue, marginTop:4 }}>
-                      💡 {reviewResult.suggestions[0]}
-                    </Text>
-                  )}
-                </View>
-              )}
-
-<TouchableOpacity accessibilityRole="button"
+      <TouchableOpacity accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
         style={[styles.motionCard, { backgroundColor: m.bg, borderColor: m.color + '44' }]}
         onPress={handlePress}
@@ -357,7 +283,6 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
   const { colors, isDark } = useTheme();
   const m = MOTION_TYPES.find(t => t.key === item.motion_type);
   const [showPicker, setShowPicker] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [status, setStatus] = useState<FilingStatus>(item.filing_status || 'draft');
   const [updating, setUpdating] = useState(false);
 
@@ -386,7 +311,7 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
         style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
-        accessibilityLabel="{m?.icon || '\ud83d\udcc4'}" onPress={() => onOpen(item)}
+        accessibilityLabel={m?.icon || '\ud83d\udcc4'} onPress={() => onOpen(item)}
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.historyIcon}>{m?.icon || '📄'}</Text>
         <View style={{ flex: 1 }}>
@@ -416,11 +341,10 @@ function HistoryItem({ item, onOpen, onDelete, onStatusChange }: any) {
 
       {/* Delete */}
       <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
         onPress={() => onDelete(item.id)}
         style={styles.historyDelete}
         accessibilityLabel="Delete motion"
-          // @ts-ignore
           accessibilityHint="Permanently removes this item"
       >
         <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 16 }}>✕</Text>
@@ -598,7 +522,6 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
     score: string; issues: string[]; suggestions: string[]; missing_fields: string[];
   } | null>(null);
   const [reviewing, setReviewing]         = useState(false);
-  const [loadError, setLoadError] = React.useState('');
   const [isOffline, setIsOffline] = React.useState(false);
   React.useEffect(() => {
     const NetInfo = require('@react-native-community/netinfo').default;
@@ -611,11 +534,27 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   const [history,   setHistory]   = useState<any[]>([]);
   const [histLoading,setHistLoad] = useState(false);
   const [copied,    setCopied]    = useState(false);
+  const [histFilter, setHistFilter] = useState<FilingStatus | 'all'>('all');
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current); }, []);
+  const { confirm } = useConfirm();
 
   // Pre-fill from case if provided
   useEffect(() => {
     if (prefill && typeof prefill === 'object') setFields(prev => ({ ...prev, ...(prefill as Record<string,string>) }));
   }, [prefill]);
+
+  const loadHistory = useCallback(async () => {
+    setHistLoad(true);
+    try {
+      markOnline();
+      const res = await api.get('/motions/history');
+      setHistory(res.data || []);
+      setPhase('history');
+    } catch (e: any) {
+      showToast('Unable to load. Please check your connection and try again.', 'error'); __DEV__ && console.warn(e?.message); }
+    setHistLoad(false);
+  }, [showToast]);
 
   // Set header
   useEffect(() => {
@@ -627,39 +566,15 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         <TouchableOpacity
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-          style={{ marginRight: 14 }} accessibilityLabel="History">
+          style={{ marginRight: 14 }} accessibilityLabel="History" onPress={() => loadHistory()}>
           <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
         </TouchableOpacity>
       ) : null });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, navigation]);
+  }, [phase, navigation, loadHistory]);
 
 
-  // Memoize filtered history -- avoids recomputing on every render cycle
-  const filteredHistory = useMemo(() => {
-    if (!history) return [];
-    return history.filter(item => {
-      if (historyFilter && historyFilter !== 'all' && item.status !== historyFilter) return false;
-      if (historySearch?.trim()) {
-        const q = historySearch.toLowerCase();
-        return item.motion_type?.toLowerCase().includes(q) ||
-               item.draft?.toLowerCase().includes(q);
-      }
-      return true;
-    });
-  }, [history]);
 
-const loadHistory = useCallback(async () => {
-    setHistLoad(true);
-    try {
-      markOnline();
-      const res = await api.get('/motions/history');
-      setHistory(res.data || []);
-      setPhase('history');
-    } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
-    setHistLoad(false);
-  }, []);
 
   const selectMotion = (m: typeof MOTION_TYPES[0]) => {
     requireAuth(() => {
@@ -689,7 +604,7 @@ const loadHistory = useCallback(async () => {
         const content = (job.result as any)?.content || (job.result as any)?.draft || '';
         setDraft(content);
         setEditDraft(content);
-        Analytics.motionGenerated(selectedType?.key ?? 'unknown');
+        Analytics.motionGenerated(selected.key);
       setPhase('result');
         return;
       }
@@ -698,7 +613,7 @@ const loadHistory = useCallback(async () => {
       setEditDraft(res.data?.draft || res.data?.content || '');
       setPhase('result');
     } catch (e: any) {
-      const msg = e.response?.data?.error || 'Could not generate motion. Check your connection.';
+      const msg = apiErrorMessage(e, 'Could not generate motion. Check your connection.');
       showToast(msg, 'info');
       setPhase('form');
     } finally {
@@ -707,8 +622,15 @@ const loadHistory = useCallback(async () => {
   }, [selected, fields]);
 
   const copyToClipboard = useCallback(async () => {
-    await Clipboard.setString(editDraft);
-    hapticImpact().catch(() => { showToast('Action failed. Please try again.', 'error'); }); setCopied(true);
+    try {
+      await Clipboard.setStringAsync(editDraft);
+    } catch {
+      showToast('Could not copy. Please try again.', 'error');
+      return;
+    }
+    hapticImpact().catch(() => {});
+    setCopied(true);
+    if (copyTimer.current) clearTimeout(copyTimer.current);
     copyTimer.current = setTimeout(() => setCopied(false), 2500);
   }, [editDraft]);
 
@@ -729,8 +651,8 @@ const loadHistory = useCallback(async () => {
 
   const printMotion = useCallback(async () => {
     try {
-      const { default: Print }   = await import('expo-print');
-      const { default: Sharing } = await import('expo-sharing');
+      const Print   = await import('expo-print');
+      const Sharing = await import('expo-sharing');
       const today = new Date().toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric' });
       const motionLabel = selected?.label || 'Motion';
@@ -784,13 +706,12 @@ const loadHistory = useCallback(async () => {
   }, [editDraft, selected, caseTitle]);
 
   const deleteHistory = useCallback(async (id: number) => {
-// @ts-ignore
-confirm('Delete motion?', 'This cannot be undone.',
+    confirm('Delete motion?', 'This cannot be undone.',
       { confirmLabel: 'Delete', destructive: true }).then(async ok => { if (!ok) return;
       await api.delete(`/motions/history/${id}`).catch((e) => { __DEV__ && console.warn(e?.message); });
         setHistory(h => h.filter(m => m.id !== id));
-    })
-  }, []);
+    });
+  }, [confirm]);
 
   if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
 
@@ -799,9 +720,7 @@ confirm('Delete motion?', 'This cannot be undone.',
 
   // ── RENDER: Library ───────────────────────────────────────────────────────
   if (phase === 'library') return (
-    <ScrollView
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() =>
-      { setRefreshing(true); setLoadError(''); load().finally(() => setRefreshing(false)); }} tintColor={colors.textSecond} />}>
+    <ScrollView>
       <View style={{ backgroundColor: colors.warnBg, borderRadius: 8, padding: 12, margin: 12,
         marginBottom: 0, borderLeftWidth: 4, borderLeftColor: colors.gold }}>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.gold, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12, marginBottom: 4 }}>
@@ -944,8 +863,7 @@ confirm('Delete motion?', 'This cannot be undone.',
           accessibilityHint="Double-tap to activate"
           style={[styles.generateBtn, { backgroundColor: selected.color }]}
           onPress={() => {
-// @ts-ignore
-confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your account and generate a court-ready draft.',
+            confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your account and generate a court-ready draft.',
               { confirmLabel: 'Generate — $9.99' }).then(ok => { if (ok) generate(); });
           }}
         >
@@ -955,7 +873,7 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
         </TouchableOpacity>
 
         <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.backLink} accessibilityLabel="\u2190 Back to library" onPress={() => setPhase('library')}
+          accessibilityHint="Double-tap to activate" style={styles.backLink} accessibilityLabel={"\u2190 Back to library"} onPress={() => setPhase('library')}
           >
           <Text maxFontSizeMultiplier={1.4} style={[styles.backLinkText, { color: colors.textMuted }]}>← Back to library</Text>
         </TouchableOpacity>
@@ -963,21 +881,12 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
         <View style={{ height: 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
+    </View>
   );
 
-  // ── RENDER: Generating ────────────────────────────────────────────────────
-  if (phase === 'generating') return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <View style={styles.centreWrap}>
-        <ActivityIndicator size="large" color={selected?.color || COLORS.navy} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.generatingLabel, { color: colors.textPrimary }]}>
-          Drafting {selected?.label}…
-        </Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.generatingSub, { color: colors.textMuted }]}>
-          Applying jurisdiction rules,{'\n'}case law, and your case details
-        </Text>
-      </View>
-
+  // Attorney-reviewed export gate (rendered in the result phase)
+  const exportGate = (
+    <>
       {/* ── Attorney-Reviewed Export Gate ────────────────────────────────────────
            LegalZoom pattern: require explicit confirmation before delivering
            high-stakes documents. A motion filed in a real court can create
@@ -1003,7 +912,7 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
                 accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
                 style={egStyles.reviewBtn}
-                accessibilityLabel="Find Free Legal Help \u2192" onPress={() => Linking.openURL('https://www.lawhelp.org/').catch(() => showToast('Action failed. Please try again.', 'error'))}
+                accessibilityLabel={"Find Free Legal Help \u2192"} onPress={() => Linking.openURL('https://www.lawhelp.org/').catch(() => showToast('Action failed. Please try again.', 'error'))}
               >
                 <Text maxFontSizeMultiplier={1.4} style={egStyles.reviewBtnText}>Find Free Legal Help →</Text>
               </TouchableOpacity>
@@ -1049,7 +958,23 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
           </View>
         </Modal>
       )}
-</View>
+    </>
+  );
+
+  // ── RENDER: Generating ────────────────────────────────────────────────────
+  if (phase === 'generating') return (
+    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      <View style={styles.centreWrap}>
+        <ActivityIndicator size="large" color={selected?.color || COLORS.navy} />
+        <Text maxFontSizeMultiplier={1.4} style={[styles.generatingLabel, { color: colors.textPrimary }]}>
+          Drafting {selected?.label}…
+        </Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.generatingSub, { color: colors.textMuted }]}>
+          Applying jurisdiction rules,{'\n'}case law, and your case details
+        </Text>
+      </View>
+
+    </View>
   );
 
   // ── RENDER: Result ────────────────────────────────────────────────────────
@@ -1076,21 +1001,19 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
       {/* Action bar */}
         <View style={styles.resultActionBar}>
           <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
             style={[styles.resultAction, { backgroundColor: copied ? COLORS.legal : COLORS.navy }]}
             onPress={copyToClipboard}
             accessibilityLabel="Copy motion to clipboard"
-          // @ts-ignore
           accessibilityHint="Copies to clipboard"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>{copied ? '✓ Copied' : '📋 Copy'}</Text>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
             style={[styles.resultAction, { backgroundColor: COLORS.steel }]}
             onPress={shareMotion}
             accessibilityLabel="Share motion"
-          // @ts-ignore
           accessibilityHint="Shares this information"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>↑ Share</Text>
@@ -1122,6 +1045,65 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
             <Text maxFontSizeMultiplier={1.4} style={styles.resultActionText}>⚖️ Research</Text>
           </TouchableOpacity>
         </View>
+
+              {/* AI Review button */}
+              <TouchableOpacity
+  accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
+                style={{ flexDirection:'row', alignItems:'center', gap:8, paddingVertical:12,
+                  paddingHorizontal:16, borderRadius:10, borderWidth:1,
+                  borderColor:COLORS.border, backgroundColor:COLORS.bgSubtle,
+                  marginBottom:8 }}
+                onPress={reviewDraft}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
+                disabled={reviewing}
+                accessibilityLabel="Run AI review of this motion draft"
+              >
+                <AppIcon name="search-outline" size={20} color={COLORS.navy} />
+                <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
+                  fontWeight:'700', color:COLORS.textPrimary }}>
+                  {reviewing ? 'Reviewing…' : 'AI Review Draft'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Review results */}
+              {reviewResult && (
+                <View style={{ borderRadius:10, padding:14, marginBottom:8,
+                  backgroundColor:
+                    reviewResult.score==='pass' ? COLORS.legalBg :
+                    reviewResult.score==='fail' ? COLORS.emergencyBg : COLORS.warnBg,
+                  borderWidth:1,
+                  borderColor:
+                    reviewResult.score==='pass' ? COLORS.legalDark :
+                    reviewResult.score==='fail' ? COLORS.emergencyDark : COLORS.warnDark }}>
+                  <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
+                    fontWeight:'700', marginBottom:6,
+                    color:
+                      reviewResult.score==='pass' ? COLORS.legalDark :
+                      reviewResult.score==='fail' ? COLORS.emergencyDark : COLORS.warnDark }}>
+                    {reviewResult.score==='pass' ? '✅ Looks good' :
+                     reviewResult.score==='fail' ? '❌ Issues found' : '⚠️ Minor issues'}
+                  </Text>
+                  {reviewResult.missing_fields?.length > 0 && (
+                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, lineHeight:19,
+                      color:COLORS.emergencyDark, marginBottom:4 }}>
+                      Missing: {reviewResult.missing_fields.join(', ')}
+                    </Text>
+                  )}
+                  {reviewResult.issues?.map((issue: string, i: number) => (
+                    <Text key={`item-${i}`} maxFontSizeMultiplier={1.4} style={{ fontSize:12,
+                      lineHeight:18, color:COLORS.warnDark, marginBottom:2 }}>
+                      • {issue}
+                    </Text>
+                  ))}
+                  {reviewResult.suggestions?.length > 0 && (
+                    <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
+                      color:COLORS.blue, marginTop:4 }}>
+                      💡 {reviewResult.suggestions[0]}
+                    </Text>
+                  )}
+                </View>
+              )}
 
         {/* MANDATORY citation warning -- impossible to dismiss without reading */}
         <View style={[styles.citationWarning, { backgroundColor: isDark ? colors.bailBg : colors.warnBg, borderColor: colors.warnDark }]}>
@@ -1162,8 +1144,8 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
 
         <View style={{ height: 40 }} />
       </ScrollView>
+      {exportGate}
     </KeyboardAvoidingView>
-  </View>
   );
 
   // ── RENDER: History ───────────────────────────────────────────────────────
@@ -1212,7 +1194,7 @@ confirm(`Generate ${selected.label} for $9.99?`, 'This will charge $9.99 to your
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
               style={[styles.generateBtn, { backgroundColor: COLORS.navy, marginTop: 20, width: '100%' }]}
-              accessibilityLabel="\u2190 Back to Library" onPress={() => setPhase('library')}
+              accessibilityLabel={"\u2190 Back to Library"} onPress={() => setPhase('library')}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.generateBtnText}>← Back to Library</Text>
             </TouchableOpacity>

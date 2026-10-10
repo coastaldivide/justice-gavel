@@ -8,6 +8,7 @@ import { AppIcon } from '../components/AppIcon';
 import { EmptyState } from '../components/EmptyState';
 import LawyerSkeletonCard from '../components/LawyerSkeletonCard';
 import ErrorState from '../components/ErrorState';
+import { useAuthGate } from '../components/AuthGate';
 import { t } from '../i18n';
 import type { ScreenProps } from '../types/navigation';
 import { haptic, hapticCall } from '../services/haptics';
@@ -26,7 +27,7 @@ import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react'
 import {Animated, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Picker } from '@react-native-picker/picker';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocationWithCity, formatDistance } from '../services/location';
 import { cacheSearch, getCachedLawyers } from '../services/offlineCache';
@@ -36,18 +37,6 @@ import { getUserState } from '../utils/userState';
 import * as secureStorage from '../utils/secureStorage';
 import {} from '@react-navigation/native';
 
-declare var SkeletonLawyerList: any;
-declare var filter: any;
-declare var isPro: any;
-declare var caseLoading: any; // hoisted from component scope
-declare var language: any; // hoisted from component scope
-declare var manualCity: any; // hoisted from component scope
-declare var mountedRef: any; // hoisted from component scope
-declare var proBonoOnly: any; // hoisted from component scope
-declare var requireAuth: any; // hoisted from component scope
-declare var setBadgeInfoType: any; // hoisted from component scope
-declare var setCaseLoading: any; // hoisted from component scope
-declare var setShowBadgeInfo: any; // hoisted from component scope
 const CITIES = [
   '', 'Nashville, TN', 'Memphis, TN', 'Knoxville, TN', 'Chattanooga, TN',
   'Atlanta, GA', 'Houston, TX', 'Dallas, TX', 'Austin, TX',
@@ -60,25 +49,24 @@ const CITIES_FILTERED = CITIES.filter(Boolean);
 const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo'];
 const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
 
-function callPhone(phone: string) {
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
+// Module-level link helpers: no hooks here. Failures (e.g. no dialer on web /
+// tablets) are reported through the optional onError callback.
+function callPhone(phone: string, onError?: () => void) {
   hapticCall();
-  Linking.openURL('tel:' + phone.replace(/[^0-9]/g, '')).catch(() => showToast('Action unavailable.', 'error'));
+  Linking.openURL('tel:' + phone.replace(/[^0-9]/g, '')).catch(() => onError?.());
 }
-// @ts-ignore
-function sendSMS(phone: string) { Linking.openURL('sms:' + phone.replace(/[^0-9]/g, '')).catch(() => showToast('Action unavailable.', 'error')); }
-function openDirections(lat: number, lng: number, name: string) {
+function sendSMS(phone: string, onError?: () => void) {
+  Linking.openURL('sms:' + phone.replace(/[^0-9]/g, '')).catch(() => onError?.());
+}
+function openDirections(lat: number, lng: number, name: string, onError?: () => void) {
   const encoded = encodeURIComponent(name);
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encoded}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  // @ts-ignore
-  Linking.openURL(url).catch(() => showToast('Action unavailable.', 'error'));
+  Linking.openURL(url).catch(() => onError?.());
 }
-function openWebsite(url: string) {
-  // @ts-ignore
-  Linking.openURL(url.startsWith('http') ? url : 'https://' + url).catch(() => showToast('Action unavailable.', 'error'));
+function openWebsite(url: string, onError?: () => void) {
+  Linking.openURL(url.startsWith('http') ? url : 'https://' + url).catch(() => onError?.());
 }
 
 // ── Badges ────────────────────────────────────────────────────────────────────
@@ -111,15 +99,10 @@ function TagRow({ items, color = COLORS.steel }: { items: string[]; color?: stri
 // ── Lawyer card ───────────────────────────────────────────────────────────────
 const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: Record<string,any>; navigation: NavigationProp<any> }) {
   const { showToast } = useToast();
-
-  // ── Subscription tier check for soft upsell ────────────────────────────────
-  const [isPro, setIsPro] = useState(false);
-  useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    AsyncStorage.getItem('user_subscription')
-      .then(tier => setIsPro(!!tier && tier !== 'free'))
-      .catch(() => {});
-  }, []);
+  const { requireAuth, AuthGateModal } = useAuthGate(navigation);
+  const [caseLoading, setCaseLoading] = useState(false);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
   const [msgModal, setMsgModal]   = React.useState(false);
   const [msgName,  setMsgName]    = React.useState('');
   const [msgPhone, setMsgPhone]   = React.useState('');
@@ -159,10 +142,10 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
       } catch {
         showToast('Check your connection and try again.');
       } finally {
-        setCaseLoading(false);
+        if (mountedRef.current) setCaseLoading(false);
       }
     });
-  }, [item?.name, navigation]);
+  }, [item?.name, navigation, requireAuth, showToast]);
 
   const [expanded, setExpanded] = useState(false);
   const [saved,   setSaved]   = useState(false);
@@ -223,6 +206,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
   };
   return (
     <View style={styles.card}>
+      <AuthGateModal />
       {/* Header -- name, address, rating, availability */}
       <View style={styles.cardHeader}>
         <View style={{ flex: 1 }}>
@@ -276,7 +260,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation }: { item: 
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate" testID="lawyer-card"
             style={{ flexDirection:'row', alignItems:'center', gap:4 }}
-            onPress={() => { setBadgeInfoType('jtb'); setShowBadgeInfo(true); }}
+            onPress={() => showToast('Justice Gavel Verified: bar license and identity confirmed by our team.', 'info')}
             accessibilityLabel="What does Justice Gavel Verified mean?"
           >
           <View style={[styles.badge, {
@@ -433,9 +417,8 @@ function FilterModal({
 
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.applyBtn} onPress={onApply}
+ style={styles.applyBtn} onPress={onApply}
             accessibilityLabel="Apply Filters"
-          // @ts-ignore
           accessibilityHint="Filters the list by selected criteria"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.applyBtnText}>Apply Filters</Text>
@@ -465,7 +448,6 @@ const QUICK_NEEDS = [
     { key: 'Appeals',        label: 'Appeal / Post-Conviction' },
   ];
 
-const activeFilters = [language, manualCity, proBonoOnly].filter(Boolean).length;
 
 
 // ── Skeleton placeholder card ─────────────────────────────────────────────
@@ -541,7 +523,16 @@ function LawyersScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [coords, setCoords]           = useState<{ lat: number; lng: number } | null>(null);
 
   // Count active filters for pill badge
-  filter(Boolean).length;
+  const activeFilters = [language, manualCity, proBonoOnly].filter(Boolean).length;
+
+  // ── Subscription tier check for soft upsell ────────────────────────────────
+  const [isPro, setIsPro] = useState(false);
+  useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    AsyncStorage.getItem('user_subscription')
+      .then(tier => setIsPro(!!tier && tier !== 'free'))
+      .catch(() => {});
+  }, []);
 
 
   // Memoize sorted + filtered lawyers -- avoids recomputing on every render
@@ -677,15 +668,27 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
     if (!bulkMsg.trim() || selected.length === 0) return;
     setBulkSending(true);
     try {
-      var res = await api.post('/messages/bulk', {
+      const res = await api.post('/messages/bulk', {
         lawyer_ids: selected,
         message:    bulkMsg.trim() });
-      setBulkResult(`✅ Sent to ${res.data?.sent} attorney${res.data?.sent !== 1 ? 's' : ''}.`);
-      setSelected([]);
-      setBulkMsg('');
-      setTimeout(() => { setShowBulk(false); setBulkResult(null); }, 2500);
-    } catch {
-      setBulkResult('❌ Send failed. Check your connection and try again.');
+      const sent = Number(res.data?.sent) || 0;
+      const skipped: { name?: string; phone?: string | null; reason?: string }[] =
+        Array.isArray(res.data?.skipped) ? res.data.skipped : [];
+      const noAccount = skipped.filter(s => s.reason === 'no_account');
+      let text = sent > 0
+        ? `✅ Sent to ${sent} attorney${sent !== 1 ? 's' : ''}.`
+        : 'ℹ️ No in-app messages were sent.';
+      if (noAccount.length) {
+        text += `\n${noAccount.length === 1 ? 'This attorney is' : `${noAccount.length} attorneys are`} not on in-app messaging yet. Contact directly: `
+          + noAccount.map(s => (s.phone ? `${s.name} (${s.phone})` : s.name)).join(', ');
+      }
+      setBulkResult(text);
+      if (sent > 0) { setSelected([]); setBulkMsg(''); }
+      if (sent > 0 && skipped.length === 0) {
+        setTimeout(() => { setShowBulk(false); setBulkResult(null); }, 2500);
+      }
+    } catch (e) {
+      setBulkResult('❌ ' + apiErrorMessage(e, 'Send failed. Check your connection and try again.'));
     } finally {
       setBulkSending(false);
     }
@@ -741,7 +744,9 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
 
       {/* Results -- skeleton while loading */}
       {loading ? (
-        <SkeletonLawyerList count={4} />
+        <View style={{ paddingHorizontal: 16 }}>
+          {[0, 1, 2, 3].map(i => <SkeletonCard key={i} colors={colors} />)}
+        </View>
       ) : (
         <>
           {/* Soft upsell for free users — shown above results */}
@@ -768,13 +773,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
             </TouchableOpacity>
           )}
                 <FlashList testID="lawyer-list"
-          // @ts-ignore
-          getItemLayout={(_, index) => ({ length: 200, offset: 200 * index, index })}
           estimatedItemSize={80}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={true}
           data={sortedLawyers}
           keyExtractor={i => String(i.id)}
           onEndReached={() => { if (hasMore) setPage(p => p + 1); }}
@@ -966,7 +965,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           style={{ position:'absolute', bottom:24, left:16, right:16,
             backgroundColor:colors.navy, borderRadius:14, paddingVertical:16,
             flexDirection:'row', alignItems:'center', justifyContent:'center', gap:10 }}
-          accessibilityLabel="\u2696\ufe0f" onPress={() => setShowBulk(true)}
+          accessibilityLabel={"\u2696\ufe0f"} onPress={() => setShowBulk(true)}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
@@ -1009,16 +1008,15 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
             {bulkResult && (
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14, lineHeight:21,
                 textAlign:'center', marginBottom:10,
-                color: bulkResult.startsWith('✅') ? colors.legalDark : colors.emergencyDark }}>
+                color: bulkResult.startsWith('❌') ? colors.emergencyDark : colors.legalDark }}>
                 {bulkResult}
               </Text>
             )}
             <View style={{ flexDirection:'row', gap:12 }}>
               <TouchableOpacity
                 accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
                 accessibilityLabel="Cancel"
-          // @ts-ignore
           accessibilityHint="Cancels and returns to previous screen"
                 style={{ flex:1, borderWidth:1, borderColor:colors.border,
                   borderRadius:10, paddingVertical:14, alignItems:'center' }}

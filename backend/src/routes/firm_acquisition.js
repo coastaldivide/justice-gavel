@@ -247,8 +247,8 @@ router.post('/trial', authRequired, routeLimiter, async (req, res) => {
 
     // Create default vertical config
     await db.run(
-      `INSERT OR IGNORE INTO firm_vertical_config (firm_id, vertical, updated_at)
-       VALUES (?,?,?)`,
+      `INSERT INTO firm_vertical_config (firm_id, vertical, updated_at)
+       VALUES (?,?,?) ON CONFLICT DO NOTHING`,
       [firmId, vertical, now]
     );
 
@@ -264,8 +264,8 @@ router.post('/trial', authRequired, routeLimiter, async (req, res) => {
     // Seed onboarding checklist — mark vertical_set if vertical is not general
     if (vertical !== 'general') {
       await db.run(
-        `INSERT OR IGNORE INTO firm_onboarding (firm_id, checklist_key, completed_at)
-         VALUES (?,?,?)`,
+        `INSERT INTO firm_onboarding (firm_id, checklist_key, completed_at)
+         VALUES (?,?,?) ON CONFLICT DO NOTHING`,
         [firmId, 'vertical_set', now]
       ).catch(() => null);
     }
@@ -451,8 +451,8 @@ router.post('/checklist/:key', authRequired, routeLimiter, async (req, res) => {
     if (!ctx) return err403(res, 'Not a firm member.');
 
     await db.run(
-      `INSERT OR IGNORE INTO firm_onboarding (firm_id, checklist_key, completed_at)
-       VALUES (?,?,?)`,
+      `INSERT INTO firm_onboarding (firm_id, checklist_key, completed_at)
+       VALUES (?,?,?) ON CONFLICT DO NOTHING`,
       [ctx.firm_id, key, new Date().toISOString()]
     );
 

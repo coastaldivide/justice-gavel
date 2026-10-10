@@ -1,4 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * routes/integrations/dms.js — Document Management System Integration
  *
@@ -130,12 +130,19 @@ async function pushMatterToImanage(db, conn, matter) {
     : workspaceResp.data?.id;
 
   if (workspaceId) {
-    await db.run(
-      `INSERT OR REPLACE INTO document_sync_map
-         (connection_id, matter_id, external_workspace_id, external_folder_path, sync_enabled)
-       VALUES (?,?,?,?,1)`,
-      [conn.id, matter.id, workspaceId, `/workspaces/${workspaceId}`]
+    const upd = await db.run(
+      `UPDATE document_sync_map SET external_workspace_id=?, external_folder_path=?, sync_enabled=1
+        WHERE connection_id=? AND matter_id=?`,
+      [workspaceId, `/workspaces/${workspaceId}`, conn.id, matter.id]
     );
+    if (!upd.changes) {
+      await db.run(
+        `INSERT INTO document_sync_map
+           (connection_id, matter_id, external_workspace_id, external_folder_path, sync_enabled)
+         VALUES (?,?,?,?,1)`,
+        [conn.id, matter.id, workspaceId, `/workspaces/${workspaceId}`]
+      );
+    }
   }
 
   return {
@@ -225,12 +232,19 @@ async function pushMatterToNetdocs(db, conn, matter) {
     : folderResp.standardAttributes?.objectId;
 
   if (folderId) {
-    await db.run(
-      `INSERT OR REPLACE INTO document_sync_map
-         (connection_id, matter_id, external_workspace_id, external_folder_path, sync_enabled)
-       VALUES (?,?,?,?,1)`,
-      [conn.id, matter.id, folderId, `MATTERS/${folderId}`]
+    const upd = await db.run(
+      `UPDATE document_sync_map SET external_workspace_id=?, external_folder_path=?, sync_enabled=1
+        WHERE connection_id=? AND matter_id=?`,
+      [folderId, `MATTERS/${folderId}`, conn.id, matter.id]
     );
+    if (!upd.changes) {
+      await db.run(
+        `INSERT INTO document_sync_map
+           (connection_id, matter_id, external_workspace_id, external_folder_path, sync_enabled)
+         VALUES (?,?,?,?,1)`,
+        [conn.id, matter.id, folderId, `MATTERS/${folderId}`]
+      );
+    }
   }
 
   return {

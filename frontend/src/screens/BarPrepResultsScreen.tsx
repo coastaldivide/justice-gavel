@@ -7,13 +7,13 @@
  *   • See Progress    → goes to BarPrepProgress dashboard
  */
 import React, { useMemo, useState } from 'react';
+import { EmptyState } from '../components/EmptyState';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/NavigationTypes';
-// @ts-ignore
-import { COLORS, FONTS, RADIUS, SPACING } from '../constants/theme';
+import { COLORS, FONTS, RADIUS } from '../constants/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BarPrepResults'>;
 
@@ -114,7 +114,7 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
   const {
     session_id, score_pct, correct, total, mode,
     subject_id, answers, questions, timed_out,
-  } = route.params;
+  } = (route.params ?? {}) as Props['route']['params'];
 
   // Build a quick-lookup: question_id → answer data
   const answerMap = useMemo(() => {
@@ -144,6 +144,14 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
   const handleViewProgress = () => {
     navigation.replace('BarPrepProgress');
   };
+
+  if (!route.params) {
+    return (
+      <EmptyState icon="📊" title="No results to show"
+        subtitle="Finish a Bar Prep quiz to see your results here."
+        action={{ label: 'View progress', onPress: handleViewProgress }} />
+    );
+  }
 
   return (
     <ScrollView
@@ -229,15 +237,12 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // @ts-ignore
-  root:    { flex: 1, backgroundColor: COLORS.bgDark ?? '#020E1C' },
-  content: { padding: SPACING?.lg ?? 20 },
+  root:    { flex: 1, backgroundColor: '#020E1C' },
+  content: { padding: 20 },
 
   header:   { alignItems: 'center', marginBottom: 24 },
-  // @ts-ignore
-  title:    { fontFamily: FONTS?.bold ?? 'System', fontSize: 22, color: COLORS.surface, marginBottom: 4 },
-  // @ts-ignore
-  subtitle: { fontFamily: FONTS?.body ?? 'System', fontSize: 13, color: COLORS.steel },
+  title:    { ...FONTS.bold, fontSize: 22, color: COLORS.surface, marginBottom: 4 },
+  subtitle: { ...FONTS.regular, fontSize: 13, color: COLORS.steel },
 
   // Score ring
   ringWrapper: { alignItems: 'center', marginBottom: 24 },
@@ -247,20 +252,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bgCard,
     ...Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }, android: { elevation: 6 } }),
   },
-  // @ts-ignore
-  ringPct:    { fontFamily: FONTS?.bold ?? 'System', fontSize: 38, fontVariant: ['tabular-nums'] },
-  // @ts-ignore
-  ringLabel:  { fontFamily: FONTS?.body ?? 'System', fontSize: 13, color: COLORS.steel, marginTop: 2 },
-  // @ts-ignore
-  passBadge:  { fontFamily: FONTS?.bold ?? 'System', fontSize: 14, marginTop: 12 },
+  ringPct:    { ...FONTS.bold, fontSize: 38, fontVariant: ['tabular-nums'] },
+  ringLabel:  { ...FONTS.regular, fontSize: 13, color: COLORS.steel, marginTop: 2 },
+  passBadge:  { ...FONTS.bold, fontSize: 14, marginTop: 12 },
 
   // Stats row
   statsRow:    { flexDirection: 'row', backgroundColor: COLORS.bgCard, borderRadius: RADIUS?.md ?? 12, marginBottom: 20, padding: 16 },
   statBox:     { flex: 1, alignItems: 'center' },
-  // @ts-ignore
-  statNum:     { fontFamily: FONTS?.bold ?? 'System', fontSize: 28, fontVariant: ['tabular-nums'] },
-  // @ts-ignore
-  statLabel:   { fontFamily: FONTS?.body ?? 'System', fontSize: 12, color: COLORS.steel, marginTop: 2 },
+  statNum:     { ...FONTS.bold, fontSize: 28, fontVariant: ['tabular-nums'] },
+  statLabel:   { ...FONTS.regular, fontSize: 12, color: COLORS.steel, marginTop: 2 },
   statDivider: { width: 1, backgroundColor: 'rgba(133,183,235,0.15)', marginVertical: 4 },
 
   // CTAs
@@ -268,16 +268,12 @@ const styles = StyleSheet.create({
   ctaBtn:               { borderRadius: RADIUS?.md ?? 12, paddingVertical: 14, alignItems: 'center' },
   ctaPrimary:           { backgroundColor: COLORS.legal },
   ctaSecondary:         { backgroundColor: COLORS.bgCard, borderWidth: 1, borderColor: COLORS.steel },
-  // @ts-ignore
-  ctaBtnTextPrimary:    { fontFamily: FONTS?.bold ?? 'System', fontSize: 15, color: '#fff' },
-  // @ts-ignore
-  ctaBtnTextSecondary:  { fontFamily: FONTS?.bold ?? 'System', fontSize: 15, color: COLORS.steel },
+  ctaBtnTextPrimary:    { ...FONTS.bold, fontSize: 15, color: '#fff' },
+  ctaBtnTextSecondary:  { ...FONTS.bold, fontSize: 15, color: COLORS.steel },
 
   // Section label
-  // @ts-ignore
-  sectionLabel: { fontFamily: FONTS?.bold ?? 'System', fontSize: 16, color: COLORS.surface, marginBottom: 4 },
-  // @ts-ignore
-  sectionHint:  { fontFamily: FONTS?.body ?? 'System', fontSize: 12, color: COLORS.steel, marginBottom: 12 },
+  sectionLabel: { ...FONTS.bold, fontSize: 16, color: COLORS.surface, marginBottom: 4 },
+  sectionHint:  { ...FONTS.regular, fontSize: 12, color: COLORS.steel, marginBottom: 12 },
 
   // Answer rows
   ansRow:     { borderRadius: RADIUS?.md ?? 10, marginBottom: 8, overflow: 'hidden' },
@@ -285,24 +281,16 @@ const styles = StyleSheet.create({
   ansWrong:   { backgroundColor: COLORS.bailBg  ?? '#2C1500', borderLeftWidth: 3, borderLeftColor: COLORS.bail },
 
   ansHeader:  { flexDirection: 'row', alignItems: 'flex-start', padding: 12, gap: 8 },
-  // @ts-ignore
-  ansIcon:    { fontFamily: FONTS?.bold ?? 'System', fontSize: 16, width: 20, textAlign: 'center', color: COLORS.surface, marginTop: 1 },
-  // @ts-ignore
-  ansNum:     { fontFamily: FONTS?.bold ?? 'System', fontSize: 13, color: COLORS.steel, width: 30 },
-  // @ts-ignore
-  ansStem:    { flex: 1, fontFamily: FONTS?.body ?? 'System', fontSize: 13, color: COLORS.surface, lineHeight: 18 },
-  // @ts-ignore
-  ansChevron: { fontFamily: FONTS?.body ?? 'System', fontSize: 11, color: COLORS.steel, marginTop: 2 },
+  ansIcon:    { ...FONTS.bold, fontSize: 16, width: 20, textAlign: 'center', color: COLORS.surface, marginTop: 1 },
+  ansNum:     { ...FONTS.bold, fontSize: 13, color: COLORS.steel, width: 30 },
+  ansStem:    { flex: 1, ...FONTS.regular, fontSize: 13, color: COLORS.surface, lineHeight: 18 },
+  ansChevron: { ...FONTS.regular, fontSize: 11, color: COLORS.steel, marginTop: 2 },
 
   ansDetail:     { paddingHorizontal: 12, paddingBottom: 12 },
   ansLine:       { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
-  // @ts-ignore
-  ansLineLabel:  { fontFamily: FONTS?.bold ?? 'System', fontSize: 13 },
-  // @ts-ignore
-  ansLineVal:    { fontFamily: FONTS?.body ?? 'System', fontSize: 13, flex: 1 },
-  // @ts-ignore
-  ansRule:       { fontFamily: FONTS?.italic ?? 'System', fontSize: 12, color: COLORS.steel, marginTop: 6, fontStyle: 'italic' },
+  ansLineLabel:  { ...FONTS.bold, fontSize: 13 },
+  ansLineVal:    { ...FONTS.regular, fontSize: 13, flex: 1 },
+  ansRule:       { ...FONTS.regular, fontStyle: 'italic' as const, fontSize: 12, color: COLORS.steel, marginTop: 6 },
   explainBtn:    { marginTop: 8, paddingVertical: 8, paddingHorizontal: 14, backgroundColor: 'rgba(133,183,235,0.12)', borderRadius: 8, alignSelf: 'flex-start' },
-  // @ts-ignore
-  explainBtnText:{ fontFamily: FONTS?.bold ?? 'System', fontSize: 13, color: COLORS.steel },
+  explainBtnText:{ ...FONTS.bold, fontSize: 13, color: COLORS.steel },
 });

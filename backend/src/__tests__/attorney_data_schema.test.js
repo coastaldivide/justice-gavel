@@ -81,7 +81,7 @@ describe('Attorney data — US state codes', () => {
 describe('Attorney data — schema file', () => {
   test('schema migration defines attorneys table', () => {
     const mig = readFileSync(
-      resolve(__dirname, '../../../supabase/migrations/20260525000001_justice_gavel_schema.sql'),
+      resolve(__dirname, '../../../supabase/migrations/00000000000000_baseline_schema.sql'),
       'utf-8'
     );
     // Table is named 'lawyers' in schema (attorneys and lawyers are used interchangeably)

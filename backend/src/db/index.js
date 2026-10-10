@@ -1,7 +1,31 @@
 /**
  * db/index.js — Database adapter
- * Uses Postgres when DATABASE_URL is set (production/Railway)
- * Falls back to sql.js SQLite for local development
+ *
+ * PostgreSQL is the only production database. When DATABASE_URL is set the
+ * adapter connects to Postgres and FAILS LOUDLY if the database is unreachable
+ * (no silent stub). In production (NODE_ENV=production) DATABASE_URL is
+ * required.
+ *
+ * For local development only — when DATABASE_URL is unset and NODE_ENV is not
+ * production — a sql.js (in-memory SQLite, persisted to demo.db) fallback is
+ * used and a loud warning is logged. Most features expect Postgres syntax, so
+ * point DATABASE_URL at a local Postgres for real work.
+ *
+ * API (same for both engines):
+ *   db.get(sql, params)   → first row | undefined
+ *   db.all(sql, params)   → rows[]
+ *   db.run(sql, params)   → { lastID, changes, rows }
+ *   db.exec(sql)          → void (multi-statement allowed, no params)
+ *   db.query(sql, params) → { rows, rowCount }  (pg-style)
+ *   db.transaction(async tx => {...}) → runs fn on ONE connection inside BEGIN/COMMIT
+ *   db.close()            → no-op (shared singleton; closeDb() ends the pool)
+ *
+ * Errors are THROWN (routes already wrap handlers in try/catch → 500).
+ *
+ * SQL written with SQLite-style `?` placeholders is rewritten to `$1..$n`.
+ * The rewrite skips string literals, quoted identifiers, comments, dollar-quoted
+ * bodies and the jsonb operators `?|` / `?&` / `? 'key'`. Use `??` to emit a
+ * literal `?` operator.
  */
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -11,170 +35,324 @@ import logger from '../utils/logger.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH   = path.resolve(__dirname, '../../demo.db');
 
+// DB_LOG_ERRORS=true logs every failed query (code + SQL) — useful for debugging.
+const LOG_ERRORS = process.env.DB_LOG_ERRORS === 'true';
+
 let _db = null;
+let _initPromise = null;
+
+// ── `?` → `$n` placeholder rewrite ────────────────────────────────────────────
+export function toPgPlaceholders(sql) {
+  if (!sql.includes('?')) return sql;
+  let out = '';
+  let n = 0;
+  const len = sql.length;
+  for (let i = 0; i < len; i++) {
+    const c = sql[i];
+    // single-quoted string literal ('' escapes)
+    if (c === "'") {
+      let j = i + 1;
+      while (j < len) {
+        if (sql[j] === "'" && sql[j + 1] === "'") { j += 2; continue; }
+        if (sql[j] === "'") break;
+        j++;
+      }
+      out += sql.slice(i, j + 1); i = j; continue;
+    }
+    // double-quoted identifier
+    if (c === '"') {
+      const j = sql.indexOf('"', i + 1);
+      const end = j === -1 ? len - 1 : j;
+      out += sql.slice(i, end + 1); i = end; continue;
+    }
+    // line comment
+    if (c === '-' && sql[i + 1] === '-') {
+      const j = sql.indexOf('\n', i);
+      const end = j === -1 ? len - 1 : j;
+      out += sql.slice(i, end + 1); i = end; continue;
+    }
+    // block comment
+    if (c === '/' && sql[i + 1] === '*') {
+      const j = sql.indexOf('*/', i + 2);
+      const end = j === -1 ? len - 1 : j + 1;
+      out += sql.slice(i, end + 1); i = end; continue;
+    }
+    // dollar-quoted string $tag$ ... $tag$
+    if (c === '$') {
+      const m = /^\$([A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(i));
+      if (m) {
+        const tag = m[0];
+        const j = sql.indexOf(tag, i + tag.length);
+        const end = j === -1 ? len - 1 : j + tag.length - 1;
+        out += sql.slice(i, end + 1); i = end; continue;
+      }
+    }
+    if (c === '?') {
+      const next = sql[i + 1];
+      if (next === '?') { out += '?'; i++; continue; }          // escaped literal ?
+      if (next === '|' || next === '&') { out += c; continue; } // jsonb ?| ?&
+      // jsonb `col ? 'key'` — a bind parameter is never followed by a literal
+      const rest = sql.slice(i + 1).trimStart();
+      if (rest.startsWith("'")) { out += c; continue; }
+      out += '$' + (++n);
+      continue;
+    }
+    out += c;
+  }
+  return out;
+}
+
+const TX_CONTROL_RE = /^\s*(BEGIN|COMMIT|ROLLBACK|END|START\s+TRANSACTION)(\s+(IMMEDIATE|EXCLUSIVE|DEFERRED|TRANSACTION|WORK))?\s*;?\s*$/i;
+const PRAGMA_RE     = /^\s*PRAGMA\b/i;
+const INSERT_RE     = /^\s*INSERT\s+INTO\s+("?[\w.]+"?)/i;
+
+function normParams(params) {
+  if (params === undefined || params === null) return [];
+  if (!Array.isArray(params)) params = [params];
+  // undefined → NULL; JS booleans → 1/0 (valid input for both INTEGER flag
+  // columns and BOOLEAN columns in Postgres).
+  return params.map(p => (p === undefined ? null : typeof p === 'boolean' ? (p ? 1 : 0) : p));
+}
 
 // ── Postgres adapter ──────────────────────────────────────────────────────────
 async function initPostgres(url) {
   const { default: pg } = await import('pg');
+  // BIGINT (int8) and NUMERIC come back as strings by default. Ids and counts in
+  // this schema are bigint and always far below 2^53 — return JS numbers.
+  pg.types.setTypeParser(20, v => (v === null ? null : Number(v)));
+  pg.types.setTypeParser(1700, v => (v === null ? null : Number(v)));
+  // DATE (1082) is a calendar day with no time zone. node-pg's default turns it
+  // into a JS Date at the *server's* local midnight, which JSON-serialises as
+  // e.g. '2026-11-20T00:00:00.000Z' and is shown as Nov 19 on devices west of
+  // UTC. Keep it as the plain 'YYYY-MM-DD' string the app sent.
+  pg.types.setTypeParser(1082, v => v);
+
+  const isLocal = /localhost|127\.0\.0\.1|::1|\.internal\b|\.railway\.internal/.test(url)
+    || /sslmode=disable/.test(url);
   const pool = new pg.Pool({
     connectionString: url,
-    ssl: url.includes('localhost') ? false : { rejectUnauthorized: false },
-    max:                    20,    // 20 app connections → PgBouncer handles DB-side limiting
-    idleTimeoutMillis:   30000,    // close idle connections after 30s
-    connectionTimeoutMillis: 8000, // fail fast if pool exhausted
-    statement_timeout:   30000,    // no query runs > 30s (prevent long-lock queries)
-    query_timeout:       25000,    // slightly under statement_timeout
+    ssl: process.env.PGSSL === 'false' || isLocal ? false : { rejectUnauthorized: false },
+    max:                     parseInt(process.env.PG_POOL_MAX || '20', 10),
+    idleTimeoutMillis:       30000,
+    connectionTimeoutMillis: 8000,
+    statement_timeout:       30000,
+    query_timeout:           25000,
   });
+  pool.on('error', (e) => logger.error({ err: e.message }, '[db] idle client error'));
 
-  await pool.query('SELECT 1'); // test connection
-  logger.info('[db] Postgres connected');
+  await pool.query('SELECT 1'); // fail fast if unreachable
 
-  return {
-    get: async (sql, params = []) => {
+  // Cache which tables have an `id` column so INSERTs get `RETURNING id` only
+  // where it is valid.
+  const idTables = new Set();
+  try {
+    const { rows } = await pool.query(
+      `SELECT table_name FROM information_schema.columns
+        WHERE table_schema = current_schema() AND column_name = 'id'`
+    );
+    rows.forEach(r => idTables.add(r.table_name.toLowerCase()));
+  } catch (e) {
+    logger.warn({ err: e.message }, '[db] could not load table metadata');
+  }
+  logger.info({ tables_with_id: idTables.size }, '[db] Postgres connected');
+
+  function prepare(sql) {
+    let pgSql = toPgPlaceholders(String(sql)).trim().replace(/;\s*$/, '');
+    let wantsId = false;
+    const m = INSERT_RE.exec(pgSql);
+    if (m && !/\bRETURNING\b/i.test(pgSql)) {
+      const table = m[1].replace(/"/g, '').split('.').pop().toLowerCase();
+      if (idTables.has(table)) { pgSql += ' RETURNING id'; wantsId = true; }
+    }
+    return { pgSql, wantsId, isInsert: !!m };
+  }
+
+  function makeApi(executor, { inTx = false } = {}) {
+    const q = async (sql, params) => {
+      const { pgSql } = prepare(sql);
       try {
-        // Convert SQLite ? placeholders to Postgres $1, $2...
-        let i = 0;
-        const pgSql = sql.replace(/\?/g, () => `$${++i}`);
-        const { rows } = await pool.query(pgSql, params);
-        return rows[0] || undefined;
-      } catch(e) {
-        logger.error({ err: e.message, sql: sql.slice(0,80) }, 'db.get error');
-        return undefined;
+        return await executor.query(pgSql, normParams(params));
+      } catch (e) {
+        e.sql = pgSql.slice(0, 200);
+        if (LOG_ERRORS) logger.warn({ err: e.message, code: e.code, sql: e.sql.replace(/\s+/g, ' ') }, '[db] query error');
+        throw e;
       }
-    },
-    all: async (sql, params = []) => {
-      try {
-        let i = 0;
-        const pgSql = sql.replace(/\?/g, () => `$${++i}`);
-        const { rows } = await pool.query(pgSql, params);
-        return rows;
-      } catch(e) {
-        logger.error({ err: e.message, sql: sql.slice(0,80) }, 'db.all error');
-        return [];
-      }
-    },
-    run: async (sql, params = []) => {
-      try {
-        let i = 0;
-        const pgSql = sql.replace(/\?/g, () => `$${++i}`);
-        // For INSERT, append RETURNING id to get lastID
-        const isInsert = sql.trim().toUpperCase().startsWith('INSERT');
-        const finalSql = isInsert && !pgSql.includes('RETURNING') 
-          ? pgSql + ' RETURNING id' 
-          : pgSql;
-        const result = await pool.query(finalSql, params);
-        const lastID = isInsert ? (result.rows[0]?.id || 0) : 0;
-        return { lastID: Number(lastID), changes: result.rowCount || 0 };
-      } catch(e) {
-        logger.error({ err: e.message, sql: sql.slice(0,80) }, 'db.run error');
-        return { lastID: 0, changes: 0 };
-      }
-    },
-    exec: async (sql) => {
-      try { await pool.query(sql); } catch(e) { throw e; }
-    },
-    persist: () => {},
-    _pool: pool,
+    };
+    const api = {
+      engine: 'postgres',
+      get: async (sql, params = []) => (await q(sql, params)).rows[0],
+      all: async (sql, params = []) => (await q(sql, params)).rows,
+      query: async (sql, params = []) => q(sql, params),
+      run: async (sql, params = []) => {
+        if (PRAGMA_RE.test(sql)) return { lastID: 0, changes: 0, rows: [] };
+        if (TX_CONTROL_RE.test(sql)) {
+          // Bare BEGIN/COMMIT on a pool would leave a random pooled connection
+          // inside an open transaction. Use db.transaction() instead.
+          if (inTx) { await executor.query(sql); }
+          return { lastID: 0, changes: 0, rows: [] };
+        }
+        const { pgSql, isInsert } = prepare(sql);
+        let result;
+        try {
+          result = await executor.query(pgSql, normParams(params));
+        } catch (e) {
+          e.sql = pgSql.slice(0, 200);
+          if (LOG_ERRORS) logger.warn({ err: e.message, code: e.code, sql: e.sql.replace(/\s+/g, ' ') }, '[db] query error');
+          throw e;
+        }
+        const raw = isInsert && result.rows?.[0] ? result.rows[0].id : undefined;
+        const lastID = raw === undefined || raw === null ? 0
+          : (typeof raw === 'number' ? raw : (/^\d+$/.test(String(raw)) ? Number(raw) : raw));
+        return { lastID, changes: result.rowCount || 0, rows: result.rows || [] };
+      },
+      exec: async (sql) => {
+        if (PRAGMA_RE.test(sql)) return;
+        if (TX_CONTROL_RE.test(sql) && !inTx) return;
+        await executor.query(sql);
+      },
+      persist: () => {},
+    };
+    return api;
+  }
+
+  const api = makeApi(pool);
+  api.transaction = async (fn) => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const tx = makeApi(client, { inTx: true });
+      tx.transaction = (inner) => inner(tx);
+      const out = await fn(tx);
+      await client.query('COMMIT');
+      return out;
+    } catch (e) {
+      try { await client.query('ROLLBACK'); } catch { /* ignore */ }
+      throw e;
+    } finally {
+      client.release();
+    }
   };
+  // The adapter is a process-wide singleton: legacy code that calls db.close()
+  // after a request must not tear down the shared pool. Only closeDb() (used by
+  // the server shutdown path) ends the pool.
+  api.close = async () => {};
+  api._close = api.close;
+  api._shutdown = async () => { await pool.end(); };
+  api._pool = pool;
+  return api;
 }
 
-// ── SQL.js (SQLite) adapter — local dev only ──────────────────────────────────
+// ── sql.js (SQLite) adapter — local dev fallback ONLY (no DATABASE_URL) ───────
 async function initSqlite() {
   const initSqlJs = (await import('sql.js')).default;
   const SQL = await initSqlJs();
   const dbData = fs.existsSync(DB_PATH) ? fs.readFileSync(DB_PATH) : null;
   const sqlDb = dbData ? new SQL.Database(dbData) : new SQL.Database();
-  try { sqlDb.run('PRAGMA journal_mode=WAL'); } catch {}
-  try { sqlDb.run('PRAGMA foreign_keys=ON'); } catch {}
+  try { sqlDb.run('PRAGMA foreign_keys=ON'); } catch { /* ignore */ }
 
-  let lastID = 0;
+  const bind = (params) => normParams(params).map(p =>
+    typeof p === 'boolean' ? (p ? 1 : 0) : (p instanceof Date ? p.toISOString() : p));
+
   const adapter = {
+    engine: 'sqlite',
     get: async (sql, params = []) => {
+      const stmt = sqlDb.prepare(sql);
       try {
-        const stmt = sqlDb.prepare(sql);
-        stmt.bind(params.map(p => p === undefined ? null : p));
-        if (stmt.step()) { const r = stmt.getAsObject(); stmt.free(); return r; }
-        stmt.free(); return undefined;
-      } catch(e) {
-        logger.error({ err: e.message, sql: sql.slice(0,80) }, 'db.get error');
-        return undefined;
-      }
+        stmt.bind(bind(params));
+        return stmt.step() ? stmt.getAsObject() : undefined;
+      } finally { stmt.free(); }
     },
     all: async (sql, params = []) => {
+      const rows = [];
+      const stmt = sqlDb.prepare(sql);
       try {
-        const rows = [];
-        const stmt = sqlDb.prepare(sql);
-        stmt.bind(params.map(p => p === undefined ? null : p));
+        stmt.bind(bind(params));
         while (stmt.step()) rows.push(stmt.getAsObject());
-        stmt.free(); return rows;
-      } catch(e) {
-        logger.error({ err: e.message, sql: sql.slice(0,80) }, 'db.all error');
-        return [];
-      }
+      } finally { stmt.free(); }
+      return rows;
     },
     run: async (sql, params = []) => {
-      try {
-        sqlDb.run(sql, params.map(p => p === undefined ? null : p));
-        const changes = sqlDb.getRowsModified();
-        try { const r = sqlDb.exec('SELECT last_insert_rowid()'); if (r[0]) lastID = r[0].values[0][0]; } catch {}
-        return { lastID, changes };
-      } catch(e) {
-        logger.error({ err: e.message, sql: sql.slice(0,80) }, 'db.run error');
-        return { lastID: 0, changes: 0 };
-      }
+      sqlDb.run(sql, bind(params));
+      const changes = sqlDb.getRowsModified();
+      let lastID = 0;
+      try { const r = sqlDb.exec('SELECT last_insert_rowid()'); if (r[0]) lastID = r[0].values[0][0]; } catch { /* ignore */ }
+      return { lastID, changes, rows: [] };
     },
-    exec: async (sql) => { try { sqlDb.exec(sql); } catch(e) { throw e; } },
+    query: async (sql, params = []) => {
+      const rows = await adapter.all(sql, params);
+      return { rows, rowCount: rows.length };
+    },
+    exec: async (sql) => { sqlDb.exec(sql); },
+    transaction: async (fn) => {
+      sqlDb.exec('BEGIN');
+      try { const out = await fn(adapter); sqlDb.exec('COMMIT'); return out; }
+      catch (e) { try { sqlDb.exec('ROLLBACK'); } catch { /* ignore */ } throw e; }
+    },
     persist: () => {
-      try { fs.writeFileSync(DB_PATH, Buffer.from(sqlDb.export())); } catch {}
+      try { fs.writeFileSync(DB_PATH, Buffer.from(sqlDb.export())); } catch { /* ignore */ }
     },
+    close: async () => {},   // singleton — see closeDb()
   };
-  const _timer130 = setInterval(() => adapter.persist(), 30_000);
-  _timer130.unref();
-  logger.info({ path: DB_PATH }, 'SQLite (sql.js) ready');
+  adapter._close = adapter.close;
+  adapter._shutdown = async () => { adapter.persist(); sqlDb.close(); };
+  const t = setInterval(() => adapter.persist(), 30_000);
+  t.unref();
+  logger.warn({ path: DB_PATH },
+    '[db] ⚠️  DATABASE_URL is not set — using LOCAL DEV sql.js SQLite fallback. ' +
+    'Postgres-specific features will fail. Set DATABASE_URL for real use.');
   return adapter;
+}
+
+async function connect() {
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (url) return initPostgres(url);
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('DATABASE_URL is required when NODE_ENV=production');
+  }
+  return initSqlite();
 }
 
 export async function getDb() {
   if (_db) return _db;
-
-  if (process.env.DATABASE_URL) {
-    try {
-      _db = await initPostgres(process.env.DATABASE_URL);
-      return _db;
-    } catch(e) {
-      logger.error({ err: e.message }, 'Postgres connection failed — server will start without DB');
-      // Return a stub db that logs errors but doesn't crash the server
-      return {
-        get: async () => undefined,
-        all: async () => [],
-        run: async () => ({ lastID: 0, changes: 0 }),
-        exec: async () => {},
-        persist: () => {},
-      };
-    }
+  if (!_initPromise) {
+    _initPromise = connect()
+      .then(db => { _db = db; return db; })
+      .catch(e => { _initPromise = null; throw e; });
   }
-
-  _db = await initSqlite();
-  return _db;
+  return _initPromise;
 }
 
 export async function initDb() { return getDb(); }
 
+export async function closeDb() {
+  if (_db?._shutdown) { try { await _db._shutdown(); } catch { /* ignore */ } }
+  _db = null; _initPromise = null;
+}
+
 export async function dbHealthCheck() {
   try {
     const db = await getDb();
-    await db.get('SELECT 1');
+    await db.get('SELECT 1 AS ok');
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err.message };
   }
 }
 
-// ── Schema manifest — all tables defined across migrations ───────────────────
-// This comment block exists so schema integrity tests can scan a single file.
-// Tables live in: backend/src/migrations/*.sql + supabase/migrations/*.sql
-//
+// ── Compatibility export: `db` proxy for modules that import { db } ──────────
+// Real connection is established lazily via getDb().
+export const db = {
+  get:         (...args) => getDb().then(d => d.get(...args)),
+  run:         (...args) => getDb().then(d => d.run(...args)),
+  all:         (...args) => getDb().then(d => d.all(...args)),
+  exec:        (...args) => getDb().then(d => d.exec(...args)),
+  query:       (...args) => getDb().then(d => d.query(...args)),
+  transaction: (...args) => getDb().then(d => d.transaction(...args)),
+};
 
+// ── Schema manifest ──────────────────────────────────────────────────────────
+// The schema is owned by supabase/migrations/*.sql (Postgres). This backend
+// never creates tables at runtime. Key tables include:
 // CREATE TABLE IF NOT EXISTS users                  -- core auth
 // CREATE TABLE IF NOT EXISTS firms                  -- law firm accounts
 // CREATE TABLE IF NOT EXISTS firm_members           -- firm membership
@@ -231,17 +409,7 @@ export async function dbHealthCheck() {
 // CREATE TABLE IF NOT EXISTS civil_lead_purchases
 // CREATE TABLE IF NOT EXISTS civil_leads
 // CREATE TABLE IF NOT EXISTS cle_completions
-
-// ── Compatibility export: 'db' proxy for modules that import { db } from './db/index.js'
-// Real connection is established lazily via getDb()
-export const db = {
-  get:    (...args) => getDb().then(d => d.get(...args)),
-  run:    (...args) => getDb().then(d => d.run(...args)),
-  all:    (...args) => getDb().then(d => d.all(...args)),
-  exec:   (...args) => getDb().then(d => d.exec(...args)),
-  prepare:(...args) => getDb().then(d => d.prepare(...args)),
-};
-
+//
 // ── Index manifest — key indexes defined across migrations ───────────────────
 // CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
 // CREATE INDEX IF NOT EXISTS idx_users_created ON users (created_at);

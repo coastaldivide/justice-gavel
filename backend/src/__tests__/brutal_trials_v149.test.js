@@ -1,3 +1,5 @@
+// Repo root, resolved relative to this test file (was a hard-coded /tmp path)
+const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 // JUSTICE GAVEL — BRUTAL TRIALS v149
 // TARGET: billing/bondsman(6) + push(5) + firms(5) + hague(5) + time(5)
 //         + recap(5) + caldav(5) + practice-mgmt(4) + checkins(4)
@@ -15,7 +17,7 @@ beforeAll(async () => {
 describe('BND_B. billing/bondsman.js — 6 Routes → ≥15', () => {
   test('BND_B-01: GET/POST bondsman/verified-badge + cancel', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/bondsman.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js','utf8');
     expect(s).toContain("router.get('/bondsman/verified-badge/status'");
     expect(s).toContain("router.post('/bondsman/verified-badge/subscribe'");
     expect(s).toContain("router.post('/bondsman/verified-badge/cancel'");
@@ -23,7 +25,7 @@ describe('BND_B. billing/bondsman.js — 6 Routes → ≥15', () => {
   });
   test('BND_B-02: GET/POST bondsman/profile + POST /leads/:id/accept', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/billing/bondsman.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/billing/bondsman.js','utf8');
     expect(s).toContain("router.get('/bondsman/profile'");
     expect(s).toContain("router.post('/bondsman/profile'");
     expect(s).toContain("router.post('/leads/:id/accept'");
@@ -33,7 +35,7 @@ describe('BND_B. billing/bondsman.js — 6 Routes → ≥15', () => {
 describe('PSH_B. push.js — 5 Routes → ≥15', () => {
   test('PSH_B-01: POST /d7-reengage + POST /receipts + GET/POST /preferences', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/push.js','utf8');
     expect(s).toContain("router.post('/d7-reengage'");
     expect(s).toContain("router.post('/receipts'");
     expect(s).toContain("router.get('/preferences'");
@@ -42,7 +44,7 @@ describe('PSH_B. push.js — 5 Routes → ≥15', () => {
   });
   test('PSH_B-02: POST /retention/post-purchase — post-purchase retention push', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/push.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/push.js','utf8');
     expect(s).toContain("router.post('/retention/post-purchase'");
     // Sends onboarding sequence after first consultation purchase
   });
@@ -51,7 +53,7 @@ describe('PSH_B. push.js — 5 Routes → ≥15', () => {
 describe('FRM_A. firms.js — 5 Routes → ≥15', () => {
   test('FRM_A-01: POST invite + POST accept-invite + DELETE/PATCH /:id/members/:uid', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firms.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/firms.js','utf8');
     expect(s).toContain("router.post('/:id/members/invite'");
     expect(s).toContain("router.post('/accept-invite'");
     expect(s).toContain("router.delete('/:id/members/:uid'");
@@ -60,7 +62,7 @@ describe('FRM_A. firms.js — 5 Routes → ≥15', () => {
   });
   test('FRM_A-02: GET /:id/audit — firm audit trail', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/firms.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/firms.js','utf8');
     expect(s).toContain("router.get('/:id/audit'");
     // Firm-level audit log: all member actions + matter changes
   });
@@ -69,7 +71,7 @@ describe('FRM_A. firms.js — 5 Routes → ≥15', () => {
 describe('HAG_B. hague_contacts + time + recap + caldav → ≥15', () => {
   test('HAG_B-01: hague all 5 routes', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/hague_contacts.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/hague_contacts.js','utf8');
     expect(s).toContain("router.get('/us-resources'");
     expect(s).toContain("router.get('/member-states'");
     expect(s).toContain("router.post('/report-intake'");
@@ -78,7 +80,7 @@ describe('HAG_B. hague_contacts + time + recap + caldav → ≥15', () => {
   });
   test('HAG_B-02: time invoices pdf + billing-summary + aba-codes + invoices CRUD', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/time.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/time.js','utf8');
     expect(s).toContain("router.get('/invoices/:id/pdf'");
     expect(s).toContain("router.get('/matter/:matterId/billing-summary'");
     expect(s).toContain("router.get('/aba-codes'");
@@ -87,7 +89,7 @@ describe('HAG_B. hague_contacts + time + recap + caldav → ≥15', () => {
   });
   test('HAG_B-03: recap all 5 routes', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/integrations/recap.js','utf8');
     expect(s).toContain("router.get('/status/:matterId'");
     expect(s).toContain("router.delete('/unlink/:matterId'");
     expect(s).toContain("router.post('/link'");
@@ -96,7 +98,7 @@ describe('HAG_B. hague_contacts + time + recap + caldav → ≥15', () => {
   });
   test('HAG_B-04: caldav ical-token + push/matter + ical + DELETE events + push entryId', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/caldav.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/integrations/caldav.js','utf8');
     expect(s).toContain("router.get('/ical-token/:firmId'");
     expect(s).toContain("router.post('/push/matter/:matterId'");
     expect(s).toContain("router.get('/ical/:firmId'");
@@ -108,7 +110,7 @@ describe('HAG_B. hague_contacts + time + recap + caldav → ≥15', () => {
 describe('MISC_C. practice-mgmt + checkins + integrations-index + bot_admin + review → ≥15', () => {
   test('MISC_C-01: practice-mgmt contacts + invoices + matters + time push', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/integrations/practice-mgmt.js','utf8');
     expect(s).toContain("router.get('/contacts'");
     expect(s).toContain("router.post('/invoices/:invoiceId/push'");
     expect(s).toContain("router.post('/matters/:matterId/push'");
@@ -116,7 +118,7 @@ describe('MISC_C. practice-mgmt + checkins + integrations-index + bot_admin + re
   });
   test('MISC_C-02: checkins history + status + enrollments + my', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/checkins.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/checkins.js','utf8');
     expect(s).toContain("router.get('/history/:enrollmentId'");
     expect(s).toContain("router.get('/status/:enrollmentId'");
     expect(s).toContain("router.put('/enrollments/:id'");
@@ -124,7 +126,7 @@ describe('MISC_C. practice-mgmt + checkins + integrations-index + bot_admin + re
   });
   test('MISC_C-03: integrations/index catalogue + oauth + sync/log + sync', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/index.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/integrations/index.js','utf8');
     expect(s).toContain("router.get('/catalogue'");
     expect(s).toContain("router.get('/oauth/callback'");
     expect(s).toContain("router.get('/:provider/sync/log'");
@@ -132,7 +134,7 @@ describe('MISC_C. practice-mgmt + checkins + integrations-index + bot_admin + re
   });
   test('MISC_C-04: bot_admin revenue + opt-outs + expire-links + opt-out', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/bot_admin.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/webhooks/bot_admin.js','utf8');
     expect(s).toContain("router.get('/revenue'");
     expect(s).toContain("router.get('/opt-outs'");
     expect(s).toContain("router.post('/expire-links'");
@@ -141,7 +143,7 @@ describe('MISC_C. practice-mgmt + checkins + integrations-index + bot_admin + re
   });
   test('MISC_C-05: contracts/review redline + history + negotiate + review/:id', async () => {
     const fs=await import('fs');
-    const s=fs.readFileSync('/tmp/JG_fresh/backend/src/routes/contracts/review.js','utf8');
+    const s=fs.readFileSync(__REPO + '/backend/src/routes/contracts/review.js','utf8');
     expect(s).toContain("router.get('/redline/:id'");
     expect(s).toContain("router.get('/review/history'");
     expect(s).toContain("router.post('/:id/negotiate'");

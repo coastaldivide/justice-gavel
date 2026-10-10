@@ -16,18 +16,22 @@ import { validate, schemas } from '../validation/schemas.js';
 
 import { err400, err403, err404, safeInt,
          sanitizeStr, truncateStr,
-         validateEmail }                     from '../utils/routeHelpers.js';
+         validateEmail, escapeLike }         from '../utils/routeHelpers.js';
 import { Router }                             from 'express';
 import { authRequired }                       from '../middleware/auth.js';
 import { getDb }                              from '../db/index.js';
 import { makeUserLimiter }                    from '../middleware/sharedAiLimiter.js';
 import logger                                 from '../utils/logger.js';
+import rateLimit                              from 'express-rate-limit';
+import { apiLimiter }                         from '../middleware/rateLimiters.js';
 import { hasMinRole, ROLES }                  from '../middleware/rbac.js';
 import { auditLog, writeAuditLog,
          getAuditLog }                        from '../middleware/audit.js';
 
 const router      = Router();
 const firmLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 10, message: 'Too many firm operations.' });
+const inviteLimiter    = makeUserLimiter({ windowMs: 3_600_000, max: 20, message: 'Too many invitations — try again later.' });
+const directoryLimiter = rateLimit({ windowMs: 60_000, max: 60, standardHeaders: true, legacyHeaders: false });
 
 // firms, firm_members, firm_invites tables managed by db/index.js Year 1 block.
 
@@ -236,8 +240,8 @@ router.post('/:id/members/invite', authRequired, firmLimiter, async (req, res) =
     // If user already has an account, auto-add them to the firm
     if (existingUser) {
       await db.run(
-        `INSERT OR IGNORE INTO firm_members (firm_id, user_id, firm_role, title, invited_by)
-         VALUES (?,?,?,?,?)`,
+        `INSERT INTO firm_members (firm_id, user_id, firm_role, title, invited_by)
+         VALUES (?,?,?,?,?) ON CONFLICT DO NOTHING`,
         [firmId, existingUser.id, role, title || null, req.user.id]
       );
     }
@@ -377,7 +381,7 @@ router.post('/accept-invite', authRequired, async (req, res) => {
     if (!token) return err400(res, 'Invite token required.');
 
     const invite = await db.get(
-      'SELECT id, firm_id, email, role, invited_by, token, expires_at FROM firm_invites WHERE token=? AND accepted=0 AND expires_at > datetime(\'now\') LIMIT 1',
+      'SELECT id, firm_id, email, role, invited_by, token, expires_at FROM firm_invites WHERE token=? AND accepted=0 AND expires_at > NOW() LIMIT 1',
       [token]
     );
     if (!invite) return err404(res, 'Invite not found, already used, or expired.');
@@ -390,8 +394,8 @@ router.post('/accept-invite', authRequired, async (req, res) => {
 
     // Add to firm
     await db.run(
-      `INSERT OR IGNORE INTO firm_members (firm_id, user_id, firm_role, invited_by)
-       VALUES (?,?,?,?)`,
+      `INSERT INTO firm_members (firm_id, user_id, firm_role, invited_by)
+       VALUES (?,?,?,?) ON CONFLICT DO NOTHING`,
       [invite.firm_id, req.user.id, invite.role, invite.invited_by]
     );
     await db.run('UPDATE firm_invites SET accepted=1 WHERE id=?', [invite.id]);
@@ -504,15 +508,15 @@ router.get('/directory', directoryLimiter, async (req, res) => {
     const db = await getDb();
     const params = [];
     let sql = `SELECT f.id, f.name, f.city, f.state, f.practice_areas,
-                      f.accepting_clients, f.free_consultation, f.website COUNT(fm.id) as attorney_count
+                      f.accepting_clients, f.free_consultation, f.website, COUNT(fm.id) as attorney_count
                FROM firms f
-               LEFT JOIN firm_members fm ON fm.firm_id = f.id AND fm.active = true
+               LEFT JOIN firm_members fm ON fm.firm_id = f.id AND fm.active = 1
                WHERE f.public_listing = true AND f.accepting_clients = true `;
     if (state)          { sql += 'AND f.state = ? '; params.push(state); }
-    if (practice_area)  { sql += 'AND f.practice_areas LIKE ? '; params.push('%' + practice_area + '%'); }
+    if (practice_area)  { sql += 'AND f.practice_areas ILIKE ? '; params.push('%' + escapeLike(String(practice_area).slice(0, 100)) + '%'); }
     sql += 'GROUP BY f.id ORDER BY attorney_count DESC, f.name ASC LIMIT 20 OFFSET ?';
     params.push(offset);
-    const firms = await db.all(sql, params).catch(() => []);
+    const firms = await db.all(sql, params);
     // Get total count for pagination
     const countRow = await db.get(
       `SELECT COUNT(*) as n FROM firms WHERE public_listing = true AND accepting_clients = true` +
@@ -546,7 +550,7 @@ router.get('/:id/public-profile', apiLimiter, async (req, res) => {
     if (!firm) return res.status(404).json({ error: 'Firm not found or not public' });
     const members = await db.all(
       `SELECT u.id, u.display_name, fm.firm_role FROM firm_members fm
-       JOIN users u ON u.id = fm.user_id WHERE fm.firm_id = ? AND fm.active = true LIMIT 10`,
+       JOIN users u ON u.id = fm.user_id WHERE fm.firm_id = ? AND fm.active = 1 LIMIT 10`,
       [id]
     ).catch(() => []);
     return res.json({ ...firm, attorneys: members });
@@ -564,7 +568,7 @@ router.post('/:id/invite', authRequired, inviteLimiter, async (req, res) => {
     const db = await getDb();
     // Verify requester is a firm admin
     const member = await db.get(
-      `SELECT firm_role FROM firm_members WHERE firm_id = ? AND user_id = ? AND active = true`,
+      `SELECT firm_role FROM firm_members WHERE firm_id = ? AND user_id = ? AND active = 1`,
       [fid, req.user.id]
     ).catch(() => null);
     if (!member || !['firm_admin','owner'].includes(member.firm_role)) {

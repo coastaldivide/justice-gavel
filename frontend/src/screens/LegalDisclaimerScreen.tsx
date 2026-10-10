@@ -51,7 +51,6 @@ function LegalDisclaimerScreen({ onAccepted }: Props) {
   }, []);
   const { showToast } = useToast();
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [loading, setLoading] = React.useState(false);
   const [accepting, setAccepting] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -74,7 +73,6 @@ if (loading) return;
           try {
             await api.post('/auth/disclaimer/accept', { version: VERSION });
           } catch (_err) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
             if (__DEV__) console.error(_err);
           }
       onAccepted();
@@ -85,11 +83,6 @@ if (loading) return;
     }
   };
 
-  if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
     <View style={s.root}>
       {/* Header — always visible, non-scrollable */}
@@ -184,8 +177,7 @@ const s = StyleSheet.create({
   scroll:           { flex: 1, backgroundColor: '#f8fafc' },
   scrollContent:    { padding: 20, paddingBottom: 40 },
   section:          { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12,
-                       // @ts-ignore
-                       shadowColor: COLORS.text, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+                       shadowColor: COLORS.textPrimary, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
   sectionHeader:    { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   sectionIcon:      { fontSize: 20, marginRight: 10 },
   sectionTitle:     { fontSize: 15, fontWeight: '700', color: '#1a1a2e' },

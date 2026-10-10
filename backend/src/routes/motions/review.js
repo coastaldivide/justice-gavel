@@ -1,4 +1,6 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { requireAi } from '../../utils/ai.js';
+import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * motions/review.js — Motion status updates and AI quality review
  */
@@ -48,7 +50,7 @@ router.patch('/:id/status', authRequired, async (req, res) => {
 
 // ── GET /api/motions/history ──────────────────────────────────────────────────
 
-router.post('/review', authRequired, perUserAiLimit, async (req, res) => {
+router.post('/review', authRequired, requireAi, perUserAiLimit, async (req, res) => {
   if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
     logger.error('[motions/review] ANTHROPIC_API_KEY not set');
     return res.status(503).json({ error: 'AI review temporarily unavailable.' });
@@ -92,7 +94,7 @@ ${draft.slice(0, 6000)}
 
 Respond ONLY with the JSON object. No other text.`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(ANTHROPIC_MESSAGES_URL, {
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -100,7 +102,7 @@ Respond ONLY with the JSON object. No other text.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model:       'claude-sonnet-4-20250514',
+        model:       CLAUDE_MODEL,
         temperature: 0.10,
         max_tokens:  800,
         messages: [{ role: 'user', content: REVIEW_PROMPT }],

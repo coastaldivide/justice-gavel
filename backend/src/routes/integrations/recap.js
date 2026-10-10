@@ -1,4 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * routes/integrations/recap.js — CourtListener RECAP Federal Docket Import
  * ─────────────────────────────────────────────────────────────────────────────
@@ -223,7 +223,7 @@ router.post('/link', authRequired, async (req, res) => {
 
 // ─── POST /recap/import/:matterId — import docket entries as docket deadlines ─
 // Fetches docket entries from CourtListener and creates docket_entries records.
-// Uses INSERT OR IGNORE to avoid duplicates on re-import.
+// Uses INSERT ... ON CONFLICT DO NOTHING to avoid duplicates on re-import.
 
 router.post('/import/:matterId', authRequired, recapLimiter, async (req, res) => {
   try {
@@ -292,9 +292,9 @@ router.post('/import/:matterId', authRequired, recapLimiter, async (req, res) =>
       if (result?.lastID) {
         // Record the mapping so re-import skips this entry
         await db.run(
-          `INSERT OR IGNORE INTO integration_external_ids
+          `INSERT INTO integration_external_ids
              (firm_id, provider, entity_type, internal_id, external_id, synced_at)
-           VALUES (?, 'recap', 'docket_entry', ?, ?, NOW())`,
+           VALUES (?, 'recap', 'docket_entry', ?, ?, NOW()) ON CONFLICT DO NOTHING`,
           [ctx.firm_id, result.lastID, externalId]
         ).catch(() => {});
         imported++;
@@ -375,7 +375,7 @@ router.get('/status/:matterId', authRequired, async (req, res) => {
 });
 
 // ─── POST /recap/refresh/:matterId — re-fetch and add new entries ────────────
-// Idempotent: INSERT OR IGNORE skips already-imported entries.
+// Idempotent: INSERT ... ON CONFLICT DO NOTHING skips already-imported entries.
 // Defaults to looking back 14 days for any new filings.
 
 router.post('/refresh/:matterId', authRequired, recapLimiter, async (req, res) => {
@@ -431,7 +431,7 @@ router.post('/refresh/:matterId', authRequired, recapLimiter, async (req, res) =
 
       if (result?.lastID) {
         await db.run(
-          `INSERT OR IGNORE INTO integration_external_ids (firm_id,provider,entity_type,internal_id,external_id) VALUES (?,'recap','docket_entry',?,?)`,
+          `INSERT INTO integration_external_ids (firm_id,provider,entity_type,internal_id,external_id) VALUES (?,'recap','docket_entry',?,?) ON CONFLICT DO NOTHING`,
           [ctx.firm_id, result.lastID, externalId]
         ).catch(() => {});
         imported++;
@@ -474,7 +474,7 @@ router.delete('/unlink/:matterId', authRequired, async (req, res) => {
 
 // ─── SHARED: importDocketEntries ─────────────────────────────────────────────
 // Called by /import and /refresh — single source of truth for docket fetch logic.
-// INSERT OR IGNORE + external_id mapping ensures idempotency across calls.
+// INSERT ... ON CONFLICT DO NOTHING + external_id mapping ensures idempotency across calls.
 export async function importDocketEntries(db, ctx, matterId, docketId, opts = {}) {
   const { daysBack = null, pageSize = 50 } = opts;
   const params = {
@@ -518,9 +518,9 @@ export async function importDocketEntries(db, ctx, matterId, docketId, opts = {}
 
     if (result?.lastID) {
       await db.run(
-        `INSERT OR IGNORE INTO integration_external_ids
+        `INSERT INTO integration_external_ids
            (firm_id, provider, entity_type, internal_id, external_id, synced_at)
-         VALUES (?, 'recap', 'docket_entry', ?, ?, NOW())`,
+         VALUES (?, 'recap', 'docket_entry', ?, ?, NOW()) ON CONFLICT DO NOTHING`,
         [ctx.firm_id, result.lastID, externalId]
       ).catch(() => {});
       imported++;

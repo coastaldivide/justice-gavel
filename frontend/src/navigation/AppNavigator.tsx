@@ -1,13 +1,9 @@
-import { OfflineBanner } from '../components/OfflineBanner';
-declare var window: any;
-declare var MediaRecorder: any;
-declare var navigator: any;
 
 /**
  * AppNavigator.tsx — Navigation structure
  * Contains all stack and tab navigators.
  */
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -137,42 +133,13 @@ const MatterIntelligenceScreen = withSuspense(React.lazy(() => import('../screen
 const HagueContactScreen = withSuspense(React.lazy(() => import('../screens/HagueContactScreen')));
 const AttorneyPrivacyScreen = withSuspense(React.lazy(() => import('../screens/AttorneyPrivacyScreen')));
 const ChildSupportScreen = withSuspense(React.lazy(() => import('../screens/ChildSupportScreen')));
+const OfflineStatusScreen = withSuspense(React.lazy(() => import('../screens/OfflineStatusScreen')));
 
 
 
 
 
-// ── Deep link configuration ────────────────────────────────────────────────────
-// Handles universal links (https://justicegavel.app/...) and
-// custom scheme (justicegavel://...) from push notifications,
-const linking = {
-  prefixes: ['https://justicegavel.app', 'justicegavel://'],
-  config: {
-    screens: {
-      HomeTab: '',
-      ChatTab: 'chat',
-      LawyersTab: 'lawyers',
-      BailTab: 'bail',
-      MoreTab: {
-        screens: {
-          MoreHome: 'home',
-          Cases: 'cases',
-          Messages: 'messages/:caseId?',
-          Expungement: 'expunge',
-          Subscription: 'subscribe',
-          ConsumerSubscription: 'subscribe/consumer',
-          ArrestMonitor: 'arrest-monitor',
-          Settings: 'settings',
-          // Password reset and auth flows
-          Login: 'login',
-          Register: 'register',
-        },
-      },
-    },
-  },
-};
-
-
+// Deep link configuration lives in ./linking.ts (single source of truth).
 
 // ── Stack / Tab instances ─────────────────────────────────────────────────────
 const MoreStack  = createNativeStackNavigator();
@@ -193,28 +160,8 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 
 // ── More stack — all secondary screens ────────────────────────────────────────
 function MoreNavigator() {
-  // RESTORED from `declare var` (type-only, emitted no JS -- every read threw
-  // ReferenceError on mount). Scoped to MoreNavigator, where the references live.
-  const [navigationRef, setNavigationRef] = useState<any>(null);
-
-  // Expose navigation to Electron menu and deep links
-  // electron/main.js calls: window.__navigateTo('Settings')
-  // This bridge is harmless on mobile — window is not defined in RN native
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).__navigateTo = (screen: string) => {
-        try { navigationRef.current?.navigate(screen as never); } catch {}
-      };
-      (window as any).__handleDeepLink = (url: string) => {
-        try {
-          const path = url.replace('justicegavel://', '');
-          const [screen, ...params] = path.split('/');
-          if (screen) navigationRef.current?.navigate(screen as never, { id: params[0] });
-        } catch {}
-      };
-    }
-  }, []);
-
+  // The Electron menu / deep-link bridge (window.__navigateTo) lives in
+  // App.tsx, where it has access to the root navigation container ref.
   return (
     <ErrorBoundary>
     <MoreStack.Navigator screenOptions={HDR}>
@@ -306,6 +253,10 @@ options={{ title: '⚙️ Settings' }} />
         />
         <MoreStack.Screen name="ConflictCheck"       component={ConflictCheckScreen}       options={{ title: 'Conflict Check',      headerShown: true }} />
       <MoreStack.Screen name="Matter"              component={MatterScreen}              options={{ title: 'Matter Detail',       headerShown: true }} />
+      <MoreStack.Screen name="OfflineStatus"       component={OfflineStatusScreen}       options={{ title: '📵 Offline Mode' }} />
+      {/* Sign-in from inside the app (guest browsing → AuthGate "Sign in") */}
+      <MoreStack.Screen name="Login"               component={LoginScreen}               options={{ headerShown: false }} />
+      <MoreStack.Screen name="Register"            component={RegisterScreen}            options={{ title: 'Create Account' }} />
 </MoreStack.Navigator>
     </ErrorBoundary>
   );
@@ -353,7 +304,9 @@ function MainTabs() {
 function GuestNavigator() {
   return (
     <ErrorBoundary>
-    <GuestStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
+    {/* App.tsx already shows the age gate before any navigator mounts, so the
+        signed-out flow starts at Onboarding (AgeGate stays registered for links). */}
+    <GuestStack.Navigator initialRouteName="Onboarding" screenOptions={{ headerShown: false, animation: 'fade' }}>
       <GuestStack.Screen name="AgeGate"    component={AgeGateScreen}    />
       <GuestStack.Screen name="Onboarding" component={OnboardingScreen} />
       <GuestStack.Screen name="Login"      component={LoginScreen} />
@@ -362,6 +315,8 @@ function GuestNavigator() {
           <GuestStack.Screen name="LegalDisclaimer" component={LegalDisclaimerScreen} />
         <GuestStack.Screen name="JustArrested"     component={JustArrestedScreen}      options={{ headerTitle: "Your Rights" }} />
         <GuestStack.Screen name="Emergency"        component={EmergencyShareScreen}    options={{ headerShown: false }} />
+        <GuestStack.Screen name="TermsOfService"   component={TermsOfServiceScreen}    options={{ headerShown: true, title: 'Terms of Service', ...HDR }} />
+        <GuestStack.Screen name="PrivacyPolicy"    component={PrivacyPolicyScreen}     options={{ headerShown: true, title: 'Privacy Policy', ...HDR }} />
       </GuestStack.Navigator>
     </ErrorBoundary>
   );
@@ -389,7 +344,6 @@ function SplashScreen() {
 }
 
 export { TabIcon, MoreNavigator, MainTabs, GuestNavigator, SplashScreen };
-export { linking };
 
 
 // ── Screen tracking — call from App.tsx onStateChange ──────────────────────────

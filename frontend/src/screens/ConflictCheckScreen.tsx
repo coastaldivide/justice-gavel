@@ -13,7 +13,7 @@ import {
   View, Text, TextInput, TouchableOpacity, RefreshControl,
   ActivityIndicator, StyleSheet,
 } from 'react-native';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { t } from '../i18n';
 
 interface ConflictResult {
@@ -25,8 +25,6 @@ interface ConflictResult {
 interface Props { navigation: any; }
 
 function ConflictCheckScreen({ navigation }: Props) {
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
   const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -54,7 +52,7 @@ function ConflictCheckScreen({ navigation }: Props) {
       if (e?.response?.status === 403) {
         showToast('Conflict checks require a Legal Pro subscription.');
       } else {
-        setError(e?.response?.data?.error || 'Conflict check failed');
+        setError(apiErrorMessage(e, 'Conflict check failed'));
       }
     } finally {
       setLoading(false);
@@ -98,8 +96,6 @@ function ConflictCheckScreen({ navigation }: Props) {
       {result && (
         <View style={styles.results}>
           <View style={[styles.resultBanner, { backgroundColor: result.found ? '#fef2f2' : '#f0fdf4' }]}>
-            // @ts-ignore
-            // @ts-ignore
             <Text maxFontSizeMultiplier={1.3} style={[styles.resultTitle, { color: result.found ? COLORS.bail : '#16a34a' }]}>
               {result.found ? `⚠️  ${result.matches.length} Conflict(s) Found` : '✅ No Conflicts Found'}
             </Text>
@@ -130,24 +126,20 @@ function ConflictCheckScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   screen:       { flex: 1, padding: 20, backgroundColor: '#f9fafb' },
-  // @ts-ignore
   title:        { fontSize: 22, fontWeight: '700', color: COLORS.navy, marginBottom: 6 },
   subtitle:     { fontSize: 14, color: '#666', marginBottom: 16, lineHeight: 20 },
   input:        { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12,
                   fontSize: 14, backgroundColor: '#fff', minHeight: 120, textAlignVertical: 'top',
                   marginBottom: 16 },
-  // @ts-ignore
   btn:          { backgroundColor: COLORS.navy, borderRadius: 10, padding: 14, alignItems: 'center' },
   btnDisabled:  { opacity: 0.6 },
   btnText:      { color: '#fff', fontSize: 15, fontWeight: '700' },
-  // @ts-ignore
   error:        { color: COLORS.bail, marginTop: 12, fontSize: 14 },
   results:      { marginTop: 20 },
   resultBanner: { borderRadius: 10, padding: 14, marginBottom: 16 },
   resultTitle:  { fontSize: 16, fontWeight: '700', marginBottom: 4 },
   resultSub:    { fontSize: 13, color: '#666' },
   matchRow:     { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 8,
-                  // @ts-ignore
                   borderLeftWidth: 3, borderLeftColor: COLORS.bail },
   matchName:    { fontSize: 15, fontWeight: '600', color: '#111', marginBottom: 2 },
   matchMatter:  { fontSize: 13, color: '#374151', marginBottom: 2 },

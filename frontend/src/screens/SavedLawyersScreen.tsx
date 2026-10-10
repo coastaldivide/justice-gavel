@@ -27,16 +27,13 @@ import type {} from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, Linking, RefreshControl, Platform, KeyboardAvoidingView, LayoutAnimation} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { getCachedSearch } from '../services/offlineCache';
 import { useFocusEffect } from '@react-navigation/native';
 
-declare var setSavedLawyers: any;
-declare var AppNavigation: any; // hoisted from component scope
-declare var load: any; // hoisted from component scope
 interface SavedLawyer {
   id:          number;
   provider_id: number | null;
@@ -49,15 +46,12 @@ interface SavedLawyer {
   saved_at:    string;
 }
 
-function callPhone(phone: string) {
-  const { confirm } = useConfirm();
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
-  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error'));
+// Module-level link helpers: no hooks; failures reported via onError.
+function callPhone(phone: string, onError?: () => void) {
+  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => onError?.());
 }
-function sendSMS(phone: string) {
-  // @ts-ignore
-  Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error'));
+function sendSMS(phone: string, onError?: () => void) {
+  Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => onError?.());
 }
 
 // ── Saved lawyer card ─────────────────────────────────────────────────────────
@@ -71,6 +65,7 @@ function SavedCard({
   onNoteChange: (id: number, note: string) => void;
   navigation: any;
 }) {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -110,26 +105,18 @@ function SavedCard({
       setRating(0);
       setReviewText('');
     } catch (e: any) {
-      showToast(e.response?.data?.error || 'Try again.', 'info');
+      showToast(apiErrorMessage(e, 'Try again.'), 'info');
     } finally { setSubmitting(false); }
   };
 
   const confirmRemove = () => {
-    // @ts-ignore
-    confirm(`Remove ${lawyer.name}?`,'They will be removed from your saved attorneys.',{confirmLabel:'Remove',destructive:true}).then(ok=>{if(ok){() => onRemove(lawyer.id)}});
+    confirm(`Remove ${lawyer.name}?`, 'They will be removed from your saved attorneys.', { confirmLabel: 'Remove', destructive: true })
+      .then(ok => { if (ok) onRemove(lawyer.id); });
   };
 
   const savedDate = lawyer.saved_at
     ? new Date(lawyer.saved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : null;
-
-
-  // Refresh data whenever user navigates back to this screen
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [])
-  );
 
   return (
     <View style={[styles.card, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
@@ -178,7 +165,7 @@ function SavedCard({
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.actionBtn, { backgroundColor: COLORS.legal }]}
-            accessibilityLabel="\ud83d\udcde {t('saved_call')}" onPress={() => callPhone(lawyer.phone!)}
+            accessibilityLabel={"\ud83d\udcde {t('saved_call')}"} onPress={() => callPhone(lawyer.phone!, () => showToast('Calling is unavailable on this device.', 'error'))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📞 {t('saved_call')}</Text>
           </TouchableOpacity>
@@ -187,7 +174,7 @@ function SavedCard({
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.actionBtn, { backgroundColor: COLORS.blue }]}
-            accessibilityLabel="\ud83d\udcac Text" onPress={() => sendSMS(lawyer.phone!)}
+            accessibilityLabel={"\ud83d\udcac Text"} onPress={() => sendSMS(lawyer.phone!, () => showToast('Texting is unavailable on this device.', 'error'))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>💬 Text</Text>
           </TouchableOpacity>
@@ -273,7 +260,7 @@ function SavedCard({
                 style={[styles.notesBtn, { backgroundColor: COLORS.navy }]}
                 onPress={saveNote}
                 disabled={saving}
-               accessibilityLabel="{saving ? 'Saving\u2026' : 'Save note'}">
+               accessibilityLabel={saving ? 'Saving\u2026' : 'Save note'}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.notesBtnText}>{saving ? 'Saving…' : 'Save note'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -308,6 +295,7 @@ function SavedCard({
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
@@ -322,21 +310,13 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
   const [error,     setError]     = useState('');
 
   const load = useCallback(async (refresh = false) => {
-    // Try cache first for instant display while fresh data loads
-    try {
-      const cached = await getCachedSearch();
-      if ((cached as any)?.results?.lawyers?.length && mountedRef.current) {
-        setSavedLawyers((cached as any).results?.lawyers || []);
-      }
-    } catch {}
-
     if (refresh) setRefreshing(true); else setLoading(true);
     setError('');
     try {
       const res = await api.get('/saved/lawyers');
       setLawyers(res.data || []);
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Could not load saved lawyers.');
+      setError(apiErrorMessage(e, 'Could not load saved lawyers.'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -346,7 +326,6 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
   useEffect(() => { load(); }, [load]);
 
   const handleRemove = useCallback((id: number) => {
-// @ts-ignore
 confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
       { confirmLabel: 'Remove', destructive: true }).then(async ok => { if (!ok) return;
       try {
@@ -388,7 +367,7 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.findBtn, { backgroundColor: COLORS.navy }]}
-            accessibilityLabel="{t('saved_find_lawyers')}" onPress={() => navigation.navigate('LawyersTab')}
+            accessibilityLabel={t('saved_find_lawyers')} onPress={() => navigation.navigate('LawyersTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.findBtnText}>{t('saved_find_lawyers')}</Text>
           </TouchableOpacity>
@@ -396,13 +375,7 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
       ) : (
         <FlashList testID="saved-lawyers-list"
           keyboardShouldPersistTaps="handled"
-          // @ts-ignore
-          getItemLayout={(_, index) => ({ length: 190, offset: 190 * index, index })}
           estimatedItemSize={80}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={true}
           data={lawyers}
           keyExtractor={item => String(item.id)}
           contentContainerStyle={styles.list}

@@ -57,10 +57,11 @@ describe('DB layer — migration runner', () => {
     expect(c).toMatch(/\.sql|readFile|migration/i);
   });
 
-  test('migration runner has error handling', () => {
+  test('retired migration runner runs no DDL (schema is supabase/migrations)', () => {
     const fp = resolve(DB_DIR, 'migrate.js');
     const c  = readFileSync(fp, 'utf-8');
-    expect(c).toMatch(/catch|error|try/i);
+    expect(c).toMatch(/supabase\/migrations/);
+    expect(c).not.toMatch(/CREATE TABLE/i);
   });
 });
 

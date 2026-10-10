@@ -1,1 +1,1 @@
-web: cd backend && node src/server.js
+web: cd backend && node --import ./src/instrument.js src/server.js

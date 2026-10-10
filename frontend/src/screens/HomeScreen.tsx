@@ -1,4 +1,5 @@
 import { useNetworkError } from '../hooks/useNetworkError';
+import JTBLogo from '../components/JTBLogo';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -21,7 +22,6 @@ import NetInfo from '@react-native-community/netinfo';
 import * as secureStorage from '../utils/secureStorage';
 import { useFocusEffect } from '@react-navigation/native';
 
-declare var JusticeGavelLogo: any;
 // Tiles ordered by most urgent / most used first
 // Bail Bond Help and Find Lawyer are top-left -- zero ambiguity
 // Labels use plain 3rd-grade functional language -- what the button DOES, not what it IS
@@ -76,11 +76,6 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return () => { mountedRef.current = false; };
   }, []);
 
@@ -88,7 +83,6 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
   // Subscription tier for analytics preview
   const [isPro, setIsPro] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [barPrepStreak, setBarPrepStreak] = useState(0);
   useEffect(() => {
     AsyncStorage.getItem('user_subscription')
@@ -154,8 +148,7 @@ function HomeScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       if (!t) return;
       api.get('/messages/unread/count')
         .then(r => setUnreadMessages(r.data?.count || 0))
-        // @ts-ignore
-        .catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0); });
+        .catch(() => { showToast('Action failed. Please try again.', 'error'); });
     }).catch(() => {});
 
     // Resolve loading state once primary data arrives
@@ -182,9 +175,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           await api.post('/alerts', { userName: user.displayName || user.name || 'User', contacts: active, lat, lng });
           showToast('Your emergency contacts have been notified.');
         } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
-          // @ts-ignore
-          showToast(e.message || 'Check your connection and try again.', 'error'); setRetryCount(0);
+          showToast(e.message || 'Check your connection and try again.', 'error');
         } finally { setSosSending(false); }
     })
   };
@@ -203,7 +194,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.logoMark}>
-            <JusticeGavelLogo size={40} />
+            <JTBLogo size={40} />
           </View>
           <View>
             <Text maxFontSizeMultiplier={1.4} style={styles.brand}>Justice Gavel</Text>
@@ -239,7 +230,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           <TouchableOpacity
             accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-            accessibilityLabel="\u2699\ufe0f" onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
+            accessibilityLabel={"\u2699\ufe0f"} onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             style={styles.settingsBtn}
           >
             <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
@@ -459,7 +450,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
 
         {/* Footer tagline */}
         <View style={styles.footerCard}>
-          <JusticeGavelLogo size={32} />
+          <JTBLogo size={32} />
           <View style={{ marginLeft: 12, flex: 1 }}>
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '800', color: colors.navy, marginBottom: 2 }}>
               ⚖️ Innocent until proven guilty.

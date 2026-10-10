@@ -104,10 +104,9 @@ router.post('/session', authRequired, async (req, res) => {
     // Non-critical: log session in DB. If DB insert fails, still return the room URL.
     await db.run(
       `INSERT INTO video_sessions
-    INSERT INTO video_sessions
          (user_id, matter_id, attorney_id, daily_room_name, daily_room_url,
           topic, scheduled_for, expires_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, datetime(?, 'unixepoch'), NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, to_timestamp(?), NOW())`,
       [req.user.id, matter_id || null, attorney_id || null,
        room.name, room.url, safeTopic,
        scheduled_for || null, expiresAt]

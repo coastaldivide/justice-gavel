@@ -75,9 +75,6 @@ This disclaimer is non-removable and appears on all AI output delivered to clien
 ];
 
 function AttorneyPrivacyScreen({ navigation }: any) {
-  // @ts-ignore
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
   const { impact, success, error: hapticError } = useHaptics();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -119,8 +116,6 @@ function AttorneyPrivacyScreen({ navigation }: any) {
 
         <View style={{ alignItems: 'center', paddingVertical: 48 }}>
           <Text style={{ fontSize: 32, marginBottom: 12 }}>📭</Text>
-          // @ts-ignore
-          // @ts-expect-error
           <Text style={{ fontSize: 16, fontWeight: '700', color: (colors as any).text, marginBottom: 6 }}>
             Nothing here yet
           </Text>
@@ -128,8 +123,7 @@ function AttorneyPrivacyScreen({ navigation }: any) {
             Results will appear here when available
           </Text>
         </View>
-        // @ts-ignore
-        ) : sections.map((sec, idx) => (
+        ) : SECTIONS.map((sec, idx) => (
         <View
           key={`SECTIONS-${idx}`}
           style={[s.section, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}
@@ -138,7 +132,7 @@ function AttorneyPrivacyScreen({ navigation }: any) {
             accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
             style={s.sectionHeader}
-            accessibilityLabel="{sec.icon}" onPress={() => setExpanded(expanded === idx ? null : idx)}
+            accessibilityLabel={sec.icon} onPress={() => setExpanded(expanded === idx ? null : idx)}
           >
             <Text style={s.sectionIcon} maxFontSizeMultiplier={1.4}>{sec.icon}</Text>
             <Text style={[s.sectionTitle, { color: COLORS.textPrimary, flex: 1 }]} maxFontSizeMultiplier={1.4}>

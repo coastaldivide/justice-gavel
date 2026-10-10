@@ -1,4 +1,5 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { requireAi } from '../../utils/ai.js';
+import { validate, schemas } from '../../validation/schemas.js';
 import { withApiRetry } from '../../utils/retry.js';
 import { requireDisclaimer } from '../../middleware/disclaimer.js';
 import { withBreaker } from '../../middleware/circuitBreaker.js';
@@ -26,16 +27,7 @@ const aiLimiter = rateLimit({
 
 const router = Router();
 
-router.post('/ask', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, async (req, res) => {
-  // Fail fast if API key is missing — avoids DB queries for a non-starter request
-  if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
-    return res.status(503).json({
-      error:   'AI service not configured.',
-      code:    'api_key_missing',
-      message: 'ANTHROPIC_API_KEY is not set. Add it to backend/.env to enable the AI assistant.',
-    });
-  }
-
+router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUserAiLimit, async (req, res) => {
   // Compute isDefender early — rate limit check runs before full body destructuring
   const isDefender = req.body?.mode === 'defender';
 
@@ -57,7 +49,7 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, 
       const todayCount = await db.get(
         `SELECT COUNT(*) as n FROM chat_sessions
          WHERE user_id = ? AND role = 'user'
-         AND created_at >= date('now')`,
+         AND created_at >= CURRENT_DATE`,
         [req.user.id]
       ).catch(() => ({ n: 0 }));
 
@@ -108,7 +100,7 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, 
     if (cityTrimmed) locationContext = `City: ${cityTrimmed}`;
     if (Number.isFinite(lat) && Number.isFinite(lng)) locationContext = `${locationContext ? locationContext + ' ' : ''}Coords: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-    const history = await getHistory(db, sessionId, 20);
+    const history = await getHistory(db, sessionId, 20, req.user.id);
 
     // Async: enqueue the Claude call — event loop stays free for other requests
     const jobId = await enqueue('chat', async () => {
@@ -123,7 +115,7 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, 
         suggestLawyerSearch: detectLawyerHandoff(trimmedMsg, r),
         intent: classifyIntent(trimmedMsg),
       };
-    });
+    }, req.user.id);
 
     res.json({
       jobId,

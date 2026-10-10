@@ -72,3 +72,24 @@ export function isEncrypted(value) {
   const parts = value.split(':');
   return parts.length === 3 && parts[0].length === 24; // 12-byte iv = 24 hex chars
 }
+
+/**
+ * Encrypt a Buffer (file contents) with the same AES-256-GCM key.
+ * Layout: iv (12 bytes) | authTag (16 bytes) | ciphertext.
+ */
+export function encryptBuffer(buf) {
+  const iv     = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', KEY, iv);
+  const enc    = Buffer.concat([cipher.update(buf), cipher.final()]);
+  return Buffer.concat([iv, cipher.getAuthTag(), enc]);
+}
+
+/** Inverse of encryptBuffer. Throws if the data was tampered with. */
+export function decryptBuffer(blob) {
+  if (!Buffer.isBuffer(blob) || blob.length < 28) throw new Error('encrypted blob too short');
+  const iv       = blob.subarray(0, 12);
+  const tag      = blob.subarray(12, 28);
+  const decipher = crypto.createDecipheriv('aes-256-gcm', KEY, iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(blob.subarray(28)), decipher.final()]);
+}

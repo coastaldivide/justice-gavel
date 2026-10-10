@@ -26,8 +26,9 @@ const router = Router();
  */
 router.post('/:id/close', sharedAiLimiter, authRequired, asyncRoute(async (req, res) => {
   const { id }    = req.params;
-  const { reason, outcome } = req.body;
+  const { reason, outcome } = req.body || {};
   const userId    = req.user.id;
+  if (!/^\d+$/.test(String(id))) return res.status(400).json({ error: 'Invalid case id' });
 
   // Verify ownership
   const caseRow = await req.db.get(
@@ -114,7 +115,11 @@ async function buildRetentionPayload(userId, caseRow, outcome) {
 async function getExpungementRules(state, charge) {
   // Returns eligibility and wait period from the DB / rules engine
   try {
-    return await require('../utils/expungementRules.js').checkEligibility(state, charge, 0);
+    const { getEligibility, classifyCharge } = await import('./expungement/rules.js');
+    const known = ['felony','misdemeanor','dui','domestic','sexual','dismissed'];
+    const type  = known.includes(String(charge).toLowerCase()) ? String(charge).toLowerCase() : classifyCharge(String(charge || ''));
+    const r = getEligibility(state, type);
+    return { eligible: r.eligible === true || r.eligible === 'conditional', wait_years: r.wait_years ?? r.waitYears ?? r.waiting_years ?? 5 };
   } catch { return { eligible: false, wait_years: 5 }; }
 }
 

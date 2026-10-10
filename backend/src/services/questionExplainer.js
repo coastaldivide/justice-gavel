@@ -1,3 +1,4 @@
+import { CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * services/questionExplainer.js — AI explanation pipeline via BullMQ
  * [I-04]
@@ -12,16 +13,22 @@
 
 import Anthropic    from '@anthropic-ai/sdk';
 import { Queue, Worker } from 'bullmq';
-import { getRedis } from '../utils/redis.js';
+import Redis        from 'ioredis';
 import { db }       from '../db/index.js';
 import logger       from '../utils/logger.js';
+import { aiConfigured } from '../utils/ai.js';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const CLAUDE    = 'claude-sonnet-4-6';
-const connection = { client: getRedis() };
+let _anthropic = null;
+const anthropicClient = () => (_anthropic ||= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }));
+const CLAUDE = CLAUDE_MODEL;
+// BullMQ needs its own ioredis connection with maxRetriesPerRequest: null
+const connection = (process.env.REDIS_URL && process.env.NODE_ENV !== 'test')
+  ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null, enableReadyCheck: false })
+  : null;
+connection?.on('error', (e) => logger.error({ msg: '[explainer] redis error', error: e.message }));
 
 // ── Queue ─────────────────────────────────────────────────────────────────────
-export const explainerQueue = connection.client
+export const explainerQueue = connection
   ? new Queue('bar-explain', { connection })
   : null;
 
@@ -42,6 +49,11 @@ export async function getExplanation(questionId, userId) {
   // Already generated — return immediately
   if (q.ai_explanation) {
     return { explanation: q.ai_explanation, status: 'cached' };
+  }
+
+  // No AI provider: serve the curated explanation that ships with the question
+  if (!aiConfigured()) {
+    return { explanation: q.explanation ?? null, status: q.explanation ? 'static' : 'unavailable' };
   }
 
   // Queue generation if we have a queue, otherwise generate synchronously
@@ -92,7 +104,7 @@ Provide:
 Be concise and bar-exam focused. Cite the specific rule, statute, or case.`;
 
   const t0  = Date.now();
-  const res = await anthropic.messages.create({
+  const res = await anthropicClient().messages.create({
     model:      CLAUDE,
     max_tokens: 600,
     system:     'You are a bar exam expert. Give precise, cited explanations. No fluff.',
@@ -128,7 +140,7 @@ Be concise and bar-exam focused. Cite the specific rule, statute, or case.`;
  * Called from app.js startup.
  */
 export function startExplainerWorker() {
-  if (!connection.client) {
+  if (!connection) {
     logger.warn('[explainer] No Redis — explanations generated synchronously');
     return;
   }

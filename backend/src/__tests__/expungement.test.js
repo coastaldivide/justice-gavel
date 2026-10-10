@@ -218,8 +218,8 @@ describe('classifyCharge() — pure classification logic', () => {
     ['disorderly conduct', 'misdemeanor'],
     ['shoplifting', 'misdemeanor'],
     ['trespassing', 'misdemeanor'],
-    ['', 'misdemeanor'],            // empty string defaults
-    ['   ', 'misdemeanor'],         // whitespace only
+    ['', 'unknown'],                // empty → 'unknown' (attorney CTA, never a false "eligible")
+    ['   ', 'unknown'],             // whitespace only
   ];
 
   test.each(cases)('"%s" → %s', (input, expected) => {
@@ -298,11 +298,12 @@ describe('getEligibility() — state rule lookup', () => {
     expect(r.note).toBeTruthy();
   });
 
-  test('unknown chargeType falls back to misdemeanor rule', () => {
+  test('unknown chargeType is flagged ambiguous (consult-an-attorney path)', () => {
     const r = getEligibility('TN', 'traffic_violation', 'Closed');
-    // traffic_violation not in STATE_RULES, falls back to misdemeanor
+    // traffic_violation not in STATE_RULES → ambiguous result, never throws
     expect(r).toBeDefined();
-    expect(r.waitYears).toBeGreaterThanOrEqual(0);
+    expect(r.isAmbiguous).toBe(true);
+    expect(r.note).toBeTruthy();
   });
 
   // States with legally significant edge cases
@@ -382,7 +383,7 @@ describe('GET /expungement/check', () => {
     const r = await request(app).get('/expungement/check');
     expect(r.status).toBe(200);
     expect(r.body.state).toBe('TN');       // default state
-    expect(r.body.chargeType).toBe('misdemeanor'); // empty charges → misdemeanor
+    expect(r.body.chargeType).toBe('unknown'); // empty charges → unknown (no false eligibility)
   });
 
   test('WI misdemeanor note contains CRITICAL warning', async () => {

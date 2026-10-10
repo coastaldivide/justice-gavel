@@ -2,7 +2,7 @@
   "expo": {
     "name": "Justice Gavel",
     "slug": "justice-gavel",
-    "version": "8.7.33",
+    "version": "8.7.58",
     "orientation": "portrait",
     "platforms": [
       "ios",
@@ -11,16 +11,42 @@
     ],
     "extra": {
       "apiBase": "https://api.justicegavel.app/api",
-      "apiBaseDevice": "http://YOUR_LOCAL_IP:4000/api",
-      "_note": "Set EXPO_PUBLIC_API_BASE=https://your-deployed-backend.railway.app/api before building for production",
-      "_apiBase_instructions": "BEFORE BUILDING: replace apiBase with your deployed backend URL. E.g. https://your-app.railway.app \u2014 see DevHandoff doc.",
-      "EXPO_PUBLIC_SENTRY_DSN": "",
       "eas": {
         "projectId": "PENDING_EAS_INIT"
       },
-      "reviewNotes": "Reviewer credentials: see App Store Connect > App Review Notes. Subscription purchase on iOS opens the web browser to justicegavel.app/subscribe \u2014 this is the intended behavior per Apple guideline \u00a73.1.1 compliance while native StoreKit integration is in development. All other features are fully functional.",
+      "reviewNotes": "Reviewer credentials: see App Store Connect > App Review Notes. Subscription purchase on iOS opens the web browser to justicegavel.app/subscribe — this is the intended behavior per Apple guideline §3.1.1 compliance while native StoreKit integration is in development. All other features are fully functional.",
       "supabaseUrl": "https://yjeplvvnlennyxixwxfq.supabase.co",
-      "stripePublishableKey": "pk_test_51TakD62XUfNqC3X4bEUfw48uj4OrctvShiTn0DTTubDJTxMVvbP4RqDrVFwTg59AVpjtCeO3lnIqWrjkAnxYeKcL00CKoFqEgi"
+      "store": {
+        "privacyPolicyUrl": "https://justicegavel.app/privacy",
+        "termsOfServiceUrl": "https://justicegavel.app/terms",
+        "privacyChoicesUrl": "https://justicegavel.app/privacy#choices",
+        "metadata": {
+          "appleCategoryId": "6013",
+          "appleSecondaryCategory": "6012",
+          "apple": {
+            "subtitle": "Legal help for everyone",
+            "promotionalText": "Find lawyers, track court dates, and know your rights — powered by AI. Built for people who need legal help but can't afford to be lost in the system."
+          },
+          "google": {
+            "shortDescription": "AI legal guide, attorney finder & case tracker"
+          }
+        },
+        "keywords": [
+          "legal help",
+          "attorney finder",
+          "bail bonds",
+          "criminal defense",
+          "legal rights",
+          "public defender",
+          "court dates",
+          "expungement",
+          "case tracker",
+          "legal aid",
+          "Miranda rights",
+          "justice"
+        ],
+        "shortDescription": "AI legal help, attorney finder, bail bonds & case tracker — your rights in one app."
+      }
     },
     "icon": "./assets/icon.png",
     "splash": {
@@ -31,7 +57,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.justicegavel.mobile",
-      "buildNumber": "8733",
+      "buildNumber": "8758",
       "infoPlist": {
         "NSCalendarsUsageDescription": "Justice Gavel adds your court dates to your calendar so you never miss a hearing.",
         "NSCalendarsWriteOnlyAccessUsageDescription": "Justice Gavel adds your court dates to your calendar so you never miss a hearing.",
@@ -52,11 +78,9 @@
         "NSLocationAlwaysUsageDescription": "Background location is used only for the arrest monitor feature when enabled."
       },
       "appStoreUrl": "https://apps.apple.com/app/justice-gavel/id0000000000",
-      "appleCategoryId": "REFERENCE",
       "associatedDomains": [
         "applinks:justicegavel.app"
       ],
-      "privacyPolicyURL": "https://justicegavel.app/privacy",
       "privacyManifests": {
         "NSPrivacyTracking": false,
         "NSPrivacyTrackingDomains": [],
@@ -119,10 +143,6 @@
           }
         ]
       },
-      "entitlements": {
-        "aps-environment": "development"
-      },
-      "statusBarStyle": "auto",
       "googleServicesFile": "./GoogleService-Info.plist",
       "requireFullScreen": false
     },
@@ -132,7 +152,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "app.justicegavel.mobile",
-      "versionCode": 8733,
+      "versionCode": 8758,
       "permissions": [
         "READ_MEDIA_IMAGES",
         "CAMERA",
@@ -161,17 +181,10 @@
           ]
         }
       ],
-      "privacyPolicyUrl": "https://justicegavel.app/privacy",
-      "jsEngine": "hermes",
-      "targetSdkVersion": 34,
-      "minSdkVersion": 24,
-      "googleServicesFile": "./google-services.json",
-      "screenOrientation": "default"
+      "googleServicesFile": "./google-services.json"
     },
     "backgroundColor": "#020E1C",
     "scheme": "justicegavel",
-    "privacyPolicyUrl": "https://justicegavel.app/privacy",
-    "termsOfServiceUrl": "https://justicegavel.app/terms",
     "plugins": [
       [
         "expo-camera",
@@ -201,26 +214,7 @@
         }
       ]
     ],
-    "description": "Legal help for people who need it most. Find bail agents, connect with lawyers, know your rights, and get AI-powered legal guidance \u2014 all in one place.",
-    "metadata": {
-      "appleCategoryId": "6013",
-      "appleSecondaryCategory": "6012",
-      "apple": {
-        "subtitle": "Legal help for everyone",
-        "promotionalText": "Find lawyers, track court dates, and know your rights \u2014 powered by AI. Built for people who need legal help but can't afford to be lost in the system."
-      },
-      "google": {
-        "shortDescription": "AI legal guide, attorney finder & case tracker"
-      }
-    },
-    "fonts": [
-      "./assets/fonts/Inter_400Regular.ttf",
-      "./assets/fonts/Inter_500Medium.ttf",
-      "./assets/fonts/Inter_600SemiBold.ttf",
-      "./assets/fonts/Inter_700Bold.ttf",
-      "./assets/fonts/Inter_800ExtraBold.ttf",
-      "./assets/fonts/Inter_900Black.ttf"
-    ],
+    "description": "Legal help for people who need it most. Find bail agents, connect with lawyers, know your rights, and get AI-powered legal guidance — all in one place.",
     "updates": {
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
@@ -230,51 +224,20 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "keywords": [
-      "legal help",
-      "attorney finder",
-      "bail bonds",
-      "criminal defense",
-      "legal rights",
-      "public defender",
-      "court dates",
-      "expungement",
-      "case tracker",
-      "legal aid",
-      "Miranda rights",
-      "justice"
-    ],
-    "shortDescription": "AI legal help, attorney finder, bail bonds & case tracker \u2014 your rights in one app.",
-    "experiments": {
-      "newArchEnabled": true
-    },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/favicon.png",
       "name": "Justice Gavel",
       "shortName": "JG",
       "lang": "en",
       "themeColor": "#042C53",
       "backgroundColor": "#042C53",
-      "description": "Legal rights, attorneys, and resources in one place.",
-      "htmlPath": "./web/index.html"
+      "description": "Legal rights, attorneys, and resources in one place."
     },
     "userInterfaceStyle": "automatic",
-    "hooks": {
-      "postPublish": [
-        {
-          "file": "sentry-expo/upload-sourcemaps",
-          "config": {
-            "organization": "justice-gavel",
-            "project": "justice-gavel-mobile",
-            "authToken": "${SENTRY_AUTH_TOKEN}"
-          }
-        }
-      ]
-    },
-    "privacyChoicesUrl": "https://justicegavel.app/privacy#choices",
     "owner": "coastaldivide",
-    "privacy": "unlisted"
+    "privacy": "unlisted",
+    "newArchEnabled": true
   }
 }

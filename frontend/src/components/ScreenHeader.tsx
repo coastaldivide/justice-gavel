@@ -9,18 +9,19 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { COLORS, FONTS, SHADOW } from '../constants/theme';
 
-declare var rightLabel: any;
 interface Props {
   title: string;
   subtitle?: string;
   rightIcon?: string;
   onRightPress?: () => void;
+  /** Accessibility label for the right action button */
+  rightLabel?: string;
   accent?: string; // override bar color for emergency/bondsman screens
   compact?: boolean;
 }
 
 function ScreenHeader({
-  title, subtitle, rightIcon, onRightPress, accent, compact = false,
+  title, subtitle, rightIcon, onRightPress, rightLabel, accent, compact = false,
 }: Props) {
   const bg = accent || COLORS.navy;
 
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 48 : 32,
   },
   patternOverlay: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     opacity: 0.04,
     backgroundColor: 'transparent',
   },

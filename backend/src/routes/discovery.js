@@ -1,3 +1,4 @@
+import { CLAUDE_MODEL } from '../utils/ai.js';
 import { validate, schemas } from '../validation/schemas.js';
 import { documentAnalysisLimiter } from '../utils/rateLimiters.js';
 import { safeJson } from '../utils/routeHelpers.js';
@@ -106,7 +107,7 @@ router.post('/analyze', authRequired, perUserAiLimit, async (req, res) => {
 
         // Notification sent via Expo Push (pushDelivery.js) not SMS
         const msg = await client.messages.create({
-          model: 'claude-sonnet-4-6',
+          model: CLAUDE_MODEL,
           max_tokens: 1024,
           messages: [{
             role: 'user',

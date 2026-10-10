@@ -1,50 +1,24 @@
-import { validate, createReviewSchema } from '../middleware/validate.js';
+import { validate, createReviewSchema } from '../validation/schemas.js';
 /**
- * routes/reviews.js — Provider reviews and ratings
+ * routes/reviews.js — Provider reviews and ratings (Postgres `reviews` table)
  *
  * GET  /api/reviews            — list reviews for an entity
  * POST /api/reviews            — submit a review (auth required)
  * GET  /api/reviews/summary    — aggregate rating + top reviews
  *
- * Queries the providers.sqlite database (separate from the main app DB).
- * Uses a module-level singleton connection — NOT re-opened per request.
- * WAL mode enabled for better concurrent read performance.
+ * NOTE: app reviews never overwrite the verified provider rows in `lawyers` /
+ * `bail_agents`; aggregates are computed from `reviews` on read.
  */
 
-import { err400, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
+import { err400, sanitizeStr, truncateStr, safeInt } from '../utils/routeHelpers.js';
 import { makeUserLimiter }                   from '../middleware/sharedAiLimiter.js';
 import logger                                from '../utils/logger.js';
 import { Router }                            from 'express';
 import { authRequired }                      from '../middleware/auth.js';
-// sqlite3 imported dynamically
-import { open }                              from 'sqlite';
-import { fileURLToPath }                     from 'url';
-import path                                  from 'path';
+import { getDb }                             from '../db/index.js';
 
-const router        = Router();
+const router         = Router();
 const reviewsLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 5, message: 'Review limit reached — you can submit 5 reviews per hour.' });
-
-const __dirname_r  = path.dirname(fileURLToPath(import.meta.url));
-const PROVIDERS_DB = path.resolve(__dirname_r, '../../data/providers.sqlite');
-
-// ── Module-level singleton — one connection for the lifetime of the process ────
-// Opens once on first request; reused for all subsequent requests.
-// WAL mode is set on first open for better concurrent read throughput.
-let _rdb = null;
-async function getReviewsDb() {
-  let sqlite3;
-  try { sqlite3 = (await import('sqlite3')).default; } catch(e) { return null; }
-  if (_rdb) return _rdb;
-  try {
-    _rdb = await open({ filename: PROVIDERS_DB, driver: sqlite3.Database });
-    await _rdb.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;');
-    logger.info('[reviews] providers.sqlite connection opened');
-  } catch (e) {
-    logger.warn('[reviews] Could not open providers.sqlite:', e.message);
-    _rdb = null;
-  }
-  return _rdb;
-}
 
 const VALID_ENTITY_TYPES = new Set(['lawyer', 'bail_agent', 'attorney']);
 const REVIEW_COLS = 'id, entity_type, entity_id, rating, comment, anonymous, verified, created_at';
@@ -53,30 +27,19 @@ const REVIEW_COLS = 'id, entity_type, entity_id, rating, comment, anonymous, ver
 router.get('/', async (req, res) => {
   try {
     const { entity_type, entity_id } = req.query;
-    const limit  = Math.min(parseInt(req.query.limit  || '20', 10), 100);
-    const offset = Math.max(parseInt(req.query.offset || '0',  10), 0);
+    const limit  = Math.min(Math.max(safeInt(req.query.limit, 20), 1), 100);
+    const offset = Math.max(safeInt(req.query.offset, 0), 0);
     if (!entity_type || !entity_id) {
       return err400(res, 'entity_type and entity_id required.');
     }
     if (!VALID_ENTITY_TYPES.has(entity_type)) {
       return err400(res, `entity_type must be one of: ${[...VALID_ENTITY_TYPES].join(', ')}.`);
     }
-
-    const d = await getReviewsDb();
-  if (!d) return // Update match scoring after every review
-    if (entity_type === 'lawyer') {
-      db.get(`SELECT AVG(rating) AS a, COUNT(*) AS c FROM reviews_app WHERE entity_type='lawyer' AND entity_id=?`, [entity_id])
-        .then(agg => agg?.a && db.run(`UPDATE lawyers SET rating=ROUND(?,1), review_count=? WHERE id=?`, [agg.a, agg.c, entity_id]))
-        .catch(e => logger.warn('[reviews/update]', e?.message));
-    }
-    res.json({ reviews: [], count: 0 });
-    if (!d) return res.json({ reviews: [], count: 0 });
-
+    const d = await getDb();
     const rows = await d.all(
-      `SELECT ${REVIEW_COLS} FROM reviews WHERE entity_type=? AND entity_id=? ORDER BY id DESC LIMIT 50` + ` LIMIT ? OFFSET ?`,
-      [sanitizeStr(entity_type, 30), sanitizeStr(String(entity_id), 20), limit, offset]
-    ).catch(() => []);
-
+      `SELECT ${REVIEW_COLS} FROM reviews WHERE entity_type=? AND entity_id=? ORDER BY id DESC LIMIT ? OFFSET ?`,
+      [entity_type, safeInt(entity_id), limit, offset]
+    );
     res.json({ reviews: rows, pagination: { limit, offset, count: rows.length } });
   } catch (e) {
     logger.error('[reviews/list]', e.message);
@@ -101,24 +64,18 @@ router.post('/', authRequired, validate(createReviewSchema), reviewsLimiter, asy
 
     const safeComment = rawComment ? truncateStr(sanitizeStr(String(rawComment), 1000), 1000) : '';
 
-    const d = await getReviewsDb();
-  if (!d) return res.json({ reviews: [], count: 0 });
-    if (!d) return res.status(503).json({ error: 'Review service temporarily unavailable.' });
+    const d = await getDb();
+    const entityId = safeInt(entity_id);
+    if (!entityId) return err400(res, 'entity_id must be a number.');
 
     // One review per user per entity
-    const existing = await d.get('SELECT id FROM reviews WHERE user_id=? AND entity_type=? AND entity_id=?', [req.user.id, entity_type, entity_id]).catch(()=>null);
+    const existing = await d.get('SELECT id FROM reviews WHERE user_id=? AND entity_type=? AND entity_id=?', [req.user.id, entity_type, entityId]);
     if (existing) return res.status(409).json({ error: 'You have already reviewed this.', code: 'duplicate_review' });
 
     const r = await d.run(
-          `INSERT INTO reviews (entity_type, entity_id, rating, comment, verified, anonymous)
-       VALUES (?,?,?,?,1,?)`,
-      [
-        sanitizeStr(entity_type, 30),
-        sanitizeStr(String(entity_id), 20),
-        safeRating,
-        safeComment,
-        anonymous ? 1 : 0,
-      ]
+      `INSERT INTO reviews (user_id, entity_type, entity_id, provider_id, rating, comment, verified, anonymous)
+       VALUES (?,?,?,?,?,?,1,?)`,
+      [req.user.id, entity_type, entityId, entityId, safeRating, safeComment, anonymous ? 1 : 0]
     );
 
     const row = await d.get(
@@ -137,35 +94,30 @@ router.post('/', authRequired, validate(createReviewSchema), reviewsLimiter, asy
 router.get('/summary', async (req, res) => {
   try {
     const { entity_type, entity_id } = req.query;
-    const limit  = Math.min(parseInt(req.query.limit  || '20', 10), 100);
-    const offset = Math.max(parseInt(req.query.offset || '0',  10), 0);
     if (!entity_type || !entity_id) {
       return err400(res, 'entity_type and entity_id required.');
     }
 
-    const d = await getReviewsDb();
-  if (!d) return res.json({ reviews: [], count: 0 });
-    if (!d) return res.json({ avg_rating: null, count: 0, top_reviews: [] });
-
+    const d = await getDb();
     const safeType = sanitizeStr(entity_type, 30);
-    const safeId   = sanitizeStr(String(entity_id), 20);
+    const safeId   = safeInt(entity_id);
 
     const [agg, top] = await Promise.all([
       d.get(
         'SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM reviews WHERE entity_type=? AND entity_id=?',
         [safeType, safeId]
-      ).catch(() => null),
+      ),
       d.all(
         `SELECT rating, comment, anonymous, created_at FROM reviews
          WHERE entity_type=? AND entity_id=? AND comment != ''
          ORDER BY id DESC LIMIT 2`,
         [safeType, safeId]
-      ).catch(() => []),
+      ),
     ]);
 
     res.json({
       avg_rating:  agg?.avg_rating ? Math.round(parseFloat(agg.avg_rating) * 10) / 10 : null,
-      count:       agg?.count || 0,
+      count:       Number(agg?.count || 0),
       top_reviews: top || [],
     });
   } catch (e) {

@@ -10,18 +10,24 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Justice Gavel" />
   <meta property="og:description" content="If you or someone you know gets arrested, Justice Gavel connects you with attorneys and bail bondsmen immediately — free." />
-  <meta property="og:image" content="/assets/icon.png" />
+  <meta property="og:image" content="/icon-512.png" />
 
   <!-- PWA -->
-  <link rel="manifest" href="/web/manifest.json" />
-  <link rel="icon" type="image/png" href="/assets/icon.png" />
-  <link rel="apple-touch-icon" href="/assets/icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/favicon.ico" />
 
   <title>Justice Gavel — Free Legal Help</title>
 
+  <style id="expo-reset">
+    /* Expo/react-native-web reset: the root view must be a flex container that
+       fills the viewport, otherwise screens collapse to their content height. */
+    html, body { height: 100%; }
+    body { overflow: hidden; }
+    #root { display: flex; height: 100%; flex: 1; }
+  </style>
   <style>
     /* Prevent flash of unstyled content */
-    html, body, #root { height: 100%; margin: 0; padding: 0; background: #042C53; }
+    html, body, #root { margin: 0; padding: 0; background: #042C53; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
     /* Loading placeholder */
     #loading {
@@ -39,7 +45,7 @@
   <style>
     /* Desktop: center at 500px like a phone, brand bg for sidebars */
     body { background: linear-gradient(135deg, #042C53, #0a4a7a, #063852); margin: 0; }
-    #root { max-width: 500px; margin: 0 auto; min-height: 100vh; background: #fff;
+    #root { max-width: 500px; margin: 0 auto; height: 100vh; background: #fff;
             box-shadow: 0 0 60px rgba(0,0,0,0.3); position: relative; }
     button, [role="button"], a { transition: opacity 0.15s ease; cursor: pointer; }
     button:hover, [role="button"]:hover { opacity: 0.85; }
@@ -49,7 +55,7 @@
     @media (max-width: 520px) { #root { max-width: 100%; box-shadow: none; }
       body { background: #fff; } }
   </style>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; connect-src 'self' https: wss:; font-src 'self' data:; frame-src 'none'; object-src 'none';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:* ws://localhost:*; font-src 'self' data:; frame-src 'none'; object-src 'none';" />
 </head>
 <body>
   <div id="loading">
@@ -72,7 +78,8 @@
     });
   </script>
   <script>
-    if ('serviceWorker' in navigator) {
+    // Not on app:// (Electron desktop) — service workers need http(s).
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
       window.addEventListener('load', function() {
         navigator.serviceWorker.register('/sw.js').catch(function(){});
       });

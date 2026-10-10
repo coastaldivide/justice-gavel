@@ -1,4 +1,5 @@
-import { safeJson } from '../utils/routeHelpers.js';
+import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
+import { safeJson } from '../../utils/routeHelpers.js';
 /**
  * discovery/_helpers.js — File type validation, AI analysis, DB schema
  *
@@ -240,11 +241,11 @@ export async function analyzeDocument(file, filename = 'document', docType = '',
 If a field is not visible in the document, use an empty string. Do not guess.`;
 
     const fileBlocks = await buildContentBlocks(file);
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(ANTHROPIC_MESSAGES_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': (process.env.ANTHROPIC_API_KEY ?? ''), 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: CLAUDE_MODEL,
       temperature: 0.2,
         max_tokens: 600,
         messages: [{ role: 'user', content: [...fileBlocks, { type: 'text', text: intakePrompt }] }],
@@ -320,7 +321,7 @@ Rules:
   // Build content blocks based on file type
   const fileBlocks = await buildContentBlocks(file);
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch(ANTHROPIC_MESSAGES_URL, {
     method: 'POST',
     headers: {
       'Content-Type':      'application/json',
@@ -328,7 +329,7 @@ Rules:
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-20250514',
+      model:      CLAUDE_MODEL,
       max_tokens: 2000,
       messages: [{
         role: 'user',

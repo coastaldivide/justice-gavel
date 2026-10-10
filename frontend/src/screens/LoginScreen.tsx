@@ -1,4 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
+import JTBLogo from '../components/JTBLogo';
 import { useToast } from '../components/ToastProvider';
 import { useForm, Controller } from 'react-hook-form';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -22,8 +23,6 @@ import * as secureStorage from '../utils/secureStorage';
 import { track, identify } from '../services/analytics';
 import { t } from '../i18n';
 
-declare var JusticeGavelLogo: any;
-declare var showPassword: any;
 function LoginScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
@@ -43,17 +42,26 @@ if (loading) return;
     setError(''); setLoading(true);
     try {
       const res = await api.post('/auth/login', { identifier: identifier.trim(), password });
-      await secureStorage.setToken( res.data?.token);
+      if (!res.data?.token) throw new Error('Unexpected response from the server. Please try again.');
+      await secureStorage.setToken(res.data.token);
       await secureStorage.setItem('user', JSON.stringify(res.data?.user));
-      try { const t = await registerForPush(); await api.post('/push/token', { expoPushToken: t }); } catch (e: any) { __DEV__ && console.warn(e?.message); }
+      // registerForPush() posts the token to /push/token itself (native only).
+      registerForPush().catch((e: any) => { __DEV__ && console.warn(e?.message); });
+      await AsyncStorage.removeItem('has_browsed').catch(() => {});
       setAppAuth('authed');
+      // When opened from inside the app (guest browsing → "Sign in"), return to
+      // where the user was. In the guest flow the whole navigator is replaced.
+      if (navigation.getParent()?.getState()?.routeNames?.includes('HomeTab') && navigation.canGoBack()) {
+        navigation.goBack();
+      }
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Login failed. Check your details and try again.');
+      setError(e.response?.data?.message || e.message || 'Login failed. Check your details and try again.');
     } finally { setLoading(false); }
   };
 
   const browseAsGuest = async () => {
     await AsyncStorage.setItem('onboarding_done', 'true').catch(() => {}); // non-fatal storage write
+    await AsyncStorage.setItem('has_browsed', 'true').catch(() => {});
     setAppAuth('browsing');
   };
 
@@ -65,7 +73,7 @@ if (loading) return;
         {/* Logo section */}
         <View style={styles.logoSection}>
           <View style={styles.logoWrap}>
-            <JusticeGavelLogo size={96} showTagline={false} />
+            <JTBLogo size={96} />
           </View>
           <Text maxFontSizeMultiplier={1.4} style={styles.wordmark}>Justice Gavel</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.tagline}>YOUR LEGAL CONNECTION</Text>
@@ -103,10 +111,8 @@ if (loading) return;
               placeholderTextColor={COLORS.textSecond}
               value={identifier}
               onChangeText={(v) => { setIdentifier(v); setError(''); }}
-          keyboardType="phone-pad"
           maxLength={254}
               autoCapitalize="none"
-              // @ts-ignore
               keyboardType="email-address"
               textContentType="username"
               returnKeyType="next"
@@ -125,7 +131,7 @@ if (loading) return;
               style={[styles.input, { flex: 1 }]}
               placeholder="Your password"
               placeholderTextColor={COLORS.textSecond}
-              secureTextEntry={!showPassword}
+              secureTextEntry={!showPass}
               value={password}
               onChangeText={v => { setPassword(v); setError(''); }}
               textContentType="password"
@@ -135,7 +141,7 @@ if (loading) return;
             />
             <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel="{showPass ? 'Hide' : 'Show'}" onPress={() => setShowPass(s => !s)}
+          accessibilityHint="Double-tap to activate" accessibilityLabel={showPass ? 'Hide password' : 'Show password'} onPress={() => setShowPass(s => !s)}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.showBtnText}>{showPass ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
@@ -169,9 +175,8 @@ if (loading) return;
 
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
             accessibilityLabel="Sign In"
-          // @ts-ignore
           accessibilityHint="Signs you in to your account"
             style={[styles.primaryBtn, loading && styles.btnDisabled]}
             testID="login-submit-button" onPress={onLogin} disabled={loading} activeOpacity={0.85}
@@ -214,7 +219,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 12,
   },
   wordmark: {
-    fontSize: 30, ...FONTS.black, color: COLORS.bgCard,
+    fontSize: 30, ...FONTS.black, color: colors.textPrimary,
     letterSpacing: 1, marginBottom: 4,
   },
   tagline: {

@@ -130,7 +130,7 @@ export function startMemoryWatchdog() {
 const BREAKER_WAS_OPEN = new Set();
 
 export function startCircuitBreakerMonitor() {
-  setInterval(() => {
+  const t = setInterval(() => {
     const status = breakerStatus();
     for (const [name, state] of Object.entries(status)) {
       if (state === 'OPEN' && !BREAKER_WAS_OPEN.has(name)) {
@@ -146,6 +146,8 @@ export function startCircuitBreakerMonitor() {
       }
     }
   }, 15_000);  // Check every 15 seconds
+  t.unref();
+  return t;
 }
 
 // ── 4. Stale job lock cleanup ─────────────────────────────────────────────────
@@ -244,15 +246,26 @@ export function startAllWatchdogs() {
   startCircuitBreakerMonitor();
 
   // Run DB health check every 60 seconds
-  setInterval(async () => {
-    const { results } = await runHealthCheck();
-    if (results.database === 'error') {
-      logger.error('[watchdog] DB unhealthy — healing attempt triggered');
-    }
+  const dbTimer = setInterval(async () => {
+    try {
+      const { results } = await runHealthCheck();
+      if (results.database === 'error') {
+        logger.error('[watchdog] DB unhealthy — healing attempt triggered');
+      }
+    } catch (e) { logger.warn('[watchdog] health check failed:', e.message); }
   }, 60_000);
+  dbTimer.unref();
+  _intervals.push(dbTimer);
 
   // Clean stale locks every 15 minutes
-  setInterval(cleanStaleLocks, 15 * 60 * 1000);
+  const lockTimer = setInterval(() => cleanStaleLocks().catch(() => {}), 15 * 60 * 1000);
+  lockTimer.unref();
+  _intervals.push(lockTimer);
 
   logger.info('[watchdog] All watchdogs started: memory, circuit breaker, DB, stale locks');
+}
+export function stopAllWatchdogs() {
+  _intervals.forEach(clearInterval);
+  _intervals.length = 0;
+  _watchdogsStarted = false;
 }

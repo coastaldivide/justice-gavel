@@ -1,7 +1,7 @@
 // PUBLIC ROUTE: Stripe webhook — authenticated by signature, not by JWT
 // Do NOT add authRequired here.
 
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * webhooks/stripe.js — Stripe payment event handler
  *
@@ -27,12 +27,14 @@ const router = Router();
 // Raw body needed for signature verification
 router.post('/', async (req, res) => {
   const sig = req.headers['stripe-signature'];
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    logger.warn('[webhook:stripe] STRIPE_WEBHOOK_SECRET not set — rejecting unverifiable webhook');
+    return res.status(400).json({ error: 'webhook_signature_invalid', message: 'Webhook signature could not be verified' });
+  }
   const event = constructWebhookEvent(req.body, sig);
-
-  // In demo mode (no webhook secret), accept all events
-  if (!event && process.env.STRIPE_WEBHOOK_SECRET) {
+  if (!event) {
     logger.warn('[webhook:stripe] Signature verification failed');
-    return res.status(400).json({ error: 'Invalid signature' });
+    return res.status(400).json({ error: 'webhook_signature_invalid', message: 'Invalid Stripe signature' });
   }
 
   // Acknowledge Stripe immediately
@@ -41,8 +43,8 @@ router.post('/', async (req, res) => {
   // Process async
   setImmediate(async () => {
     try {
-      const type = event?.type || req.body?.type;
-      const data = event?.data?.object || req.body?.data?.object;
+      const type = event.type;
+      const data = event.data?.object;
       if (!type || !data) return;
 
       // Event received — processing
@@ -69,11 +71,13 @@ router.post('/', async (req, res) => {
 
         // ── Subscription updated (plan change / renewal) ──────────────────────────────
         case 'customer.subscription.updated': {
-          const sub = data.object;
+          const sub = data;
           const db2 = await getDb();
-          db2.prepare(`UPDATE subscriptions SET status = ?, plan = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE stripe_subscription_id = ?`)
-            .run(sub.status, sub.items?.data?.[0]?.price?.id || null, sub.id);
+          await db2.run(
+            `UPDATE subscriptions SET status = ?, plan = ?, updated_at = NOW()
+              WHERE stripe_subscription_id = ? OR stripe_sub_id = ?`,
+            [sub.status, sub.items?.data?.[0]?.price?.id || null, sub.id, sub.id]
+          );
           break;
         }
 
@@ -115,9 +119,7 @@ async function handlePaymentIntentSucceeded(pi) {
         `UPDATE family_connections SET status = 'paid', stripe_pi_id = ? WHERE stripe_pi_id = ?`,
         [pi.id, pi.id]
       ).catch(e => logger.warn('[webhook:stripe] family_connections update failed:', e?.message));
-    } finally {
-      await db.close().catch(() => {});
-    }
+    } finally { /* shared pool — never closed here */ }
     return;
   }
 
@@ -157,9 +159,7 @@ async function handleInvoiceSucceeded(invoice) {
       [periodEnd ? new Date(periodEnd * 1000).toISOString() : null, subId]
     ).catch(e => logger.warn('[webhook:stripe/invoice-succeeded] sub update failed:', e?.message));
     logger.info(`[webhook:stripe] Subscription ${subId} payment confirmed`);
-  } finally {
-    await db.close().catch(() => {});
-  }
+    } finally { /* shared pool — never closed here */ }
 }
 
 // ── invoice.payment_failed ───────────────────────────────────────────────────
@@ -174,9 +174,7 @@ async function handleInvoiceFailed(invoice) {
       [subId]
     ).catch(e => logger.warn('[webhook:stripe/invoice-failed] sub update failed:', e?.message));
     logger.info(`[webhook:stripe] Subscription ${subId} payment FAILED — marked past_due`);
-  } finally {
-    await db.close().catch(() => {});
-  }
+    } finally { /* shared pool — never closed here */ }
 }
 
 // ── customer.subscription.deleted ───────────────────────────────────────────
@@ -187,10 +185,7 @@ async function handleSubscriptionDeleted(sub) {
       `UPDATE subscriptions SET status = 'cancelled', updated_at = NOW() WHERE stripe_sub_id = ?`,
       [sub.id]
     ).catch(e => logger.warn('[webhook:stripe/sub-deleted] sub update failed:', e?.message));
-
-  } finally {
-    await db.close().catch(() => {});
-  }
+    } finally { /* shared pool — never closed here */ }
 }
 
 export default router;

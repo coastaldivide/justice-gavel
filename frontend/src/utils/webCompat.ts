@@ -1,7 +1,3 @@
-declare var document: any;
-declare var window: any;
-declare var MediaRecorder: any;
-declare var navigator: any;
 
 /**
  * webCompat.ts — Platform shims for web compatibility
@@ -24,6 +20,7 @@ declare var navigator: any;
  *   expo-print                → window.print() on web
  */
 
+import * as ExpoClipboard from 'expo-clipboard';
 import { Platform } from 'react-native';
 
 const isWeb = Platform.OS === 'web';
@@ -341,35 +338,13 @@ export { KeyboardAvoidingView } from 'react-native';
 export const SafeAreaInsets = isWeb ? { top: 0, bottom: 0, left: 0, right: 0 } : null;
 
 // ── Clipboard shim ────────────────────────────────────────────────────────────
-// @react-native-clipboard/clipboard is native-only.
-// On web, use the browser Clipboard API.
-
+// expo-clipboard works on iOS, Android and web (navigator.clipboard).
 export const Clipboard = {
   setString: (text: string): void => {
-    if (isWeb) {
-      navigator.clipboard?.writeText(text).catch(() => {
-        // Fallback: create a temporary textarea
-        const el = typeof document !== 'undefined' ? document.createElement('textarea') : null;
-        if (!el) return;
-        el.value = text;
-        el.style.position = 'fixed';
-        el.style.opacity  = '0';
-        document.body?.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body?.removeChild(el);
-      });
-      return;
-    }
-    // Native — dynamically import to avoid web bundle issues
-    import('@react-native-clipboard/clipboard').then(m => m.default.setString(text)).catch(() => {});
+    ExpoClipboard.setStringAsync(text).catch(() => {});
   },
   getString: async (): Promise<string> => {
-    if (isWeb) {
-      try { return await navigator.clipboard.readText(); } catch { return ''; }
-    }
-    const m = await import('@react-native-clipboard/clipboard').catch(() => null);
-    return m?.default.getString() ?? '';
+    try { return await ExpoClipboard.getStringAsync(); } catch { return ''; }
   },
 };
 

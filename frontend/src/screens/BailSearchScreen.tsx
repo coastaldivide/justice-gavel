@@ -1,4 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
+import { apiErrorMessage } from '../services/api';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { cacheBailAgents, getCachedBailAgents } from '../services/offlineCache';
@@ -25,14 +26,15 @@ function useCallPhone() {
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   return function callPhone(phone: string) {
-  hapticCall(); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error')); }
+    hapticCall();
+    Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Calling is unavailable on this device.', 'error'));
+  };
 }
-function openDirections(lat: number, lng: number, name: string) {
+function openDirections(lat: number, lng: number, name: string, onError?: () => void) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  // @ts-ignore
-  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
+  Linking.openURL(url).catch(() => onError?.());
 }
 
 
@@ -49,11 +51,6 @@ function SkeletonCard({ colors }: { colors: ThemeColors }) {
     ).start();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return () => shimmer.stopAnimation();
   }, []);
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
@@ -105,7 +102,6 @@ function BailSearchScreen(): React.JSX.Element {
   // on mount. Reinstated as real state; initial values inferred from usage.
 
   const [filteredCities, setFilteredCities] = useState<any[]>([]);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
 
 
   // RESTORED: these were `declare var` declarations -- type-only, emitting no
@@ -174,7 +170,6 @@ function BailSearchScreen(): React.JSX.Element {
           res = await api.get('/providers/bail', { params });
           break;
         } catch (apiErr: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
           // CATCH BINDING MISMATCH. The catch bound `_`/`apiErr`/`shareErr` but the
           // body referenced `e`, which is not in scope -- a ReferenceError thrown
           // from inside an error handler, i.e. exactly when something has already
@@ -203,7 +198,7 @@ function BailSearchScreen(): React.JSX.Element {
         setLoading(false);
         return;
       }
-      const msg = e.response?.data?.error || e.message || 'Connection error';
+      const msg = apiErrorMessage(e, 'Connection error');
       setStatus('');
       setRetryCount(n => n + 1);
       // After 2 failed attempts, offer city fallback
@@ -253,12 +248,11 @@ function BailSearchScreen(): React.JSX.Element {
       <View style={{ flexDirection: 'row', paddingHorizontal: 12, marginBottom: 8, gap: 8 }}>
         {(['rating','distance','rate']).map(s => (
           <TouchableOpacity
-      accessibilityLabel="accessibilityRole=&quot;button&quot; accessibilityLabel=&quot;Sort&quot;"
+      accessibilityLabel={`Sort by ${s}`}
           accessibilityRole="button" key={s} onPress={() => setSortBy(s)}
             style={{ paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20,
               backgroundColor: sortBy === s ? colors.blue : colors.bgCard,
               borderWidth: 1, borderColor: sortBy === s ? colors.blue : colors.border }}>
-            accessibilityRole="button" accessibilityLabel="Sort"
             <Text maxFontSizeMultiplier={1.4} style={{ color: sortBy === s ? colors.bgCard : colors.textSecond, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>
               {s === 'rating' ? 'Rating' : s === 'distance' ? 'Nearest' : 'Low Rate'}
             </Text>
@@ -324,16 +318,10 @@ function BailSearchScreen(): React.JSX.Element {
           )}
       <FlashList testID="bail-agent-list"
           keyExtractor={(item, index) => String(item?.id ?? item?.booking_number ?? index)}
-          // @ts-ignore
           estimatedItemSize={80}
           keyboardShouldPersistTaps="handled"
           onRefresh={() => { setRefreshing(true); search().finally(() => setRefreshing(false)); }}
           refreshing={refreshing}
-          getItemLayout={(_, index) => ({ length: 140, offset: 140 * index, index })}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={true}
           data={(() => {
                 let result = [...items];
                 if (filterVerified)  result = (result ?? []).filter((b: BailAgent) => b.jtb_verified);
@@ -345,7 +333,7 @@ function BailSearchScreen(): React.JSX.Element {
                 return result;
               })()
           }
-          contentContainerStyle={{ padding: 12, paddingBottom: 40, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
+          contentContainerStyle={{ padding: 12, paddingBottom: 40}}
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
               No bail agents found nearby. Try expanding your search area or call 911 for immediate help.
@@ -412,7 +400,7 @@ function BailSearchScreen(): React.JSX.Element {
           <TouchableOpacity
           accessibilityRole="button"
           style={styles.dirBtn}
-          accessibilityLabel="\ud83d\uddfa  Get Directions" onPress={() => openDirections(item.lat, item.lng, item?.name)}
+          accessibilityLabel={"\ud83d\uddfa  Get Directions"} onPress={() => openDirections(item.lat, item.lng, item?.name, () => showToast('Maps unavailable on this device.', 'error'))}
           >
           <Text maxFontSizeMultiplier={1.4} style={styles.dirBtnText}>🗺  Get Directions</Text>
           </TouchableOpacity>
@@ -456,13 +444,12 @@ function BailSearchScreen(): React.JSX.Element {
           <View style={styles.cityList}>
             {filteredCities.map(city => (
               <TouchableOpacity
-      accessibilityLabel="accessibilityRole=&quot;search&quot; accessibilityLabel=&quot;Search&quot;" accessibilityRole="button"
+      accessibilityLabel="Search" accessibilityRole="button"
                 key={city}
                 style={styles.cityRow}
                 onPress={() => { setLocationDenied(false); setCityQuery(''); search(city); }}
                 activeOpacity={0.75}
               >
-                accessibilityRole="search" accessibilityLabel="Search"
                 <Text maxFontSizeMultiplier={1.4} style={styles.cityRowIcon}>📍</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.cityRowText}>{city}</Text>
               </TouchableOpacity>
@@ -490,7 +477,7 @@ function BailSearchScreen(): React.JSX.Element {
             ))}
           </View>
           <TouchableOpacity
-          accessibilityRole="button" style={styles.pickCityBtn} accessibilityLabel="\ud83d\udccd Pick a Different City" onPress={() => setLocationDenied(true)}
+          accessibilityRole="button" style={styles.pickCityBtn} accessibilityLabel={"\ud83d\udccd Pick a Different City"} onPress={() => setLocationDenied(true)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.pickCityBtnText}>📍 Pick a Different City</Text>
           </TouchableOpacity>

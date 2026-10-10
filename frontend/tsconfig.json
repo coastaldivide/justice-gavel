@@ -12,7 +12,6 @@
     "moduleResolution": "bundler",
     "module": "ESNext",
     "target": "ESNext",
-    "ignoreDeprecations": "5.0",
     "paths": {
       "@/*": [
         "./src/*"
@@ -24,7 +23,8 @@
       "jest"
     ],
     "lib": [
-      "ESNext"
+      "ESNext",
+      "DOM"
     ]
   },
   "exclude": [

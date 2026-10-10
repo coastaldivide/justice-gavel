@@ -1,6 +1,5 @@
 import barPrepContentRouter from './routes/admin/barPrepContent.js';
 import barPrepRouter        from './routes/barPrep.js';
-import { startAIWorkers } from './services/aiQueue.js';
 import barVerifyRouter from './routes/admin/barVerification.js';
 import impactRouter from './routes/impact.js';
 import legalAidRouter from './routes/legalAid.js';
@@ -10,7 +9,6 @@ import caseLifecycleRouter from './routes/caseLifecycle.js';
 import aiCostsRouter from './routes/admin/aiCosts.js';
 // ── Sentry backend error tracking ─────────────────────────────────────────
 import * as Sentry from '@sentry/node';
-import { initSentry } from './monitoring/sentry.js';
 import hagueContactsRouter  from './routes/hague_contacts.js';
 import logger from './utils/logger.js';
 import express from 'express';
@@ -20,7 +18,6 @@ import responseTime from 'response-time';
 import compression from 'compression';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import { initDb } from './db/index.js';
 import { CONFIG } from './config.js';
 import authRouter       from './routes/auth.js';
 import alertsRouter     from './routes/alerts.js';
@@ -63,7 +60,6 @@ import goldenGavelRouter     from './routes/golden_gavel.js';
 import recoveryAgentsRouter  from './routes/recovery_agents.js';
 import attorneyPlatformRouter from './routes/attorney/index.js';
 import jobsRouter             from './routes/jobs.js';
-import { startScheduler } from './services/scheduler.js';
 import hpp from 'hpp';
 import interrogationRouter from './routes/interrogation.js';
 import mattersRouter from './routes/matters.js';
@@ -87,167 +83,101 @@ import webpushRouter      from './routes/webpush.js';
 import outboundWHRouter   from './routes/webhooks/outbound.js';
 import analyticsRouter     from './routes/analytics.js';
 import searchRouter                 from './routes/search.js';
-import res                          from './routes/resources.js';
 import { randomUUID } from 'crypto';
-import express_import from 'express';
-
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn:              process.env.SENTRY_DSN,
-    environment:      process.env.NODE_ENV ?? 'production',
-    tracesSampleRate: 0.05,
-    beforeSend(event) {
-      // Strip PII from Sentry reports
-      if (event.request?.data) {
-        delete event.request.data.password;
-        delete event.request.data.token;
-        delete event.request.data.ssn;
-      }
-      return event;
-    },
-  });
-}
+import forumRouter from './routes/forum.js';
+import { stripeConfigured } from './config.js';
+import { aiConfigured } from './utils/ai.js';
+import { getDb } from './db/index.js';
+import { createDbHealthCheck } from './utils/healthCheck.js';
 
 
-// ── App routes ────────────────────────────────────────────────────────────────
+// NOTE: Sentry is initialised once in ./instrument.js (imported first by
+// server.js). Process-level handlers (signals, uncaught errors) live ONLY in
+// server.js so importing this module (e.g. from tests) has no side effects
+// beyond building the Express app.
 
-// ── Webhook routes ────────────────────────────────────────────────────────────
-
-// ── Services ──────────────────────────────────────────────────────────────────
-
-// ── Startup configuration check ───────────────────────────────────────────────
-// Warns about missing keys on boot — does NOT crash. App runs in demo mode.
-const _missing = [];
-if (!process.env.STRIPE_SECRET)       _missing.push('STRIPE_SECRET (payments will use demo mode)');
-if (!process.env.ANTHROPIC_API_KEY)   _missing.push('ANTHROPIC_API_KEY (AI chat + match disabled)');
-if (!process.env.RESEND_API_KEY)    _missing.push('RESEND_API_KEY (email alerts disabled)');
-if (!process.env.OPENAI_API_KEY)       _missing.push('OPENAI_API_KEY (Whisper transcription disabled)');
-if (!process.env.GOOGLE_PLACES_KEY)   _missing.push('GOOGLE_PLACES_KEY (Google Places fallback disabled)');
-
-if (_missing.length > 0) {
-  logger.warn('\n⚠️  JUSTICE GAVEL — MISSING CONFIGURATION KEYS:');
-  _missing.forEach(k => logger.warn(`   • ${k}`));
-  logger.warn('   Add these to backend/.env to enable all features.\n');
-} else {
-  logger.info('✅  All API keys configured — running in LIVE mode');
-}
-
-
-// ── Process crash prevention ────────────────────────────────────────────────
-// Prevents uncaught exceptions and unhandled promise rejections from
-// taking down the entire Node process. Logs the error and continues.
-// Without this: one bad async call crashes ALL users simultaneously.
-
-process.on('uncaughtException', (err, origin) => {
-  console.error('[process] uncaughtException:', err.message, '| origin:', origin);
-  console.error(err.stack?.split('\n').slice(0,5).join('\n'));
-  // Don't exit — keep serving other users
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('[process] unhandledRejection at:', promise, '| reason:', reason?.message ?? reason);
-  // Don't exit — keep serving other users
-});
-
-// ── Graceful shutdown ────────────────────────────────────────────────────────
-// SIGTERM (Railway deploy, scale-down): finish in-flight requests, then exit
-let _shuttingDown = false;
-process.on('SIGTERM', () => {
-  if (_shuttingDown) return;
-  _shuttingDown = true;
-  console.log('[process] SIGTERM received — graceful shutdown starting');
-  // Give in-flight requests 10 seconds to complete
-  setTimeout(() => {
-    console.log('[process] Graceful shutdown complete');
-    process.exit(0);
-  }, 10_000).unref();
-});
-
-process.on('SIGINT', () => {
-  console.log('[process] SIGINT — exiting');
-  process.exit(0);
-});
-
-
-// ── Startup environment validation ──────────────────────────────────────────
-// Warn on missing critical env vars at startup — better than crashing later.
-const REQUIRED_ENV = [
-  'JWT_SECRET', 'JWT_REFRESH_SECRET', 'SUPABASE_URL', 'ANTHROPIC_API_KEY',
-];
-const OPTIONAL_ENV = [
-  'STRIPE_SECRET_KEY', 'RESEND_API_KEY', 'JUDYRECORDS_API_KEY',
-];
-
-const missingRequired = REQUIRED_ENV.filter(k => !process.env[k]);
-const missingOptional = OPTIONAL_ENV.filter(k => !process.env[k]);
-
-if (missingRequired.length > 0) {
-  console.error('[startup] ⛔ Missing REQUIRED env vars:', missingRequired.join(', '));
-  console.error('[startup] App will run in degraded mode — some features will fail.');
-}
-if (missingOptional.length > 0) {
-  console.warn('[startup] ⚠ Missing optional env vars:', missingOptional.join(', '));
-  if (missingOptional.includes('STRIPE_SECRET_KEY'))
-    console.warn('[startup]   Stripe disabled — no billing charges will process');
-  if (missingOptional.includes('JUDYRECORDS_API_KEY'))
-    console.warn('[startup]   Judyrecords disabled — arrest feed using seed data only');
-}
-
+const IS_PROD = process.env.NODE_ENV === 'production';
 const app = express();
-// ── CORS: multi-origin allowlist + dev tunnel support ────────────────────────
-const _rawOrigins = process.env.CORS_ORIGIN || '';
-const _allowedOrigins = _rawOrigins.split(',').map(o => o.trim()).filter(Boolean);
 
-function corsOriginResolver(origin, callback) {
-  if (!origin) return callback(null, true); // non-browser (mobile app, curl)
-  // Electron desktop app — production build loads from file:// (packaged) or app://
-  // Development build loads from localhost. Both must be allowed.
-  if (!origin || origin === 'null' || origin.startsWith('file://') || origin.startsWith('app://')) {
-    return callback(null, true);
-  }
-
-  if (process.env.NODE_ENV !== 'production') {
-    // Allow localhost on any port + Expo dev tunnels, but NOT arbitrary origins
-    if (/^https?:\/\/localhost(?::\d+)?$/.test(origin) ||
-        /^https?:\/\/127\.0\.0\.1(?::\d+)?$/.test(origin) ||
-        /\.exp\.direct$/.test(origin) ||
-        /\.tunnel\.exp\.host$/.test(origin)) {
-      return callback(null, true);
-    }
-    logger.warn('[CORS][dev] Blocked unknown origin:', origin);
-  }
-  if (_allowedOrigins.length === 0 && process.env.NODE_ENV === 'production') {
-    logger.error('[CORS] CORS_ORIGIN not set — add to Railway env vars');
-  }
-  if (_allowedOrigins.includes(origin) || _allowedOrigins.includes('*')) return callback(null, true);
-  return callback(new Error('CORS: origin not allowed: ' + origin), false);
-}
-const CORS_ORIGINS = process.env.NODE_ENV === 'production'
-  ? (process.env.CORS_ORIGIN || 'https://api.justicegavel.app')
-  : (process.env.CORS_ORIGIN || 'http://localhost:19006')
-  .split(',').map(o => o.trim()).filter(Boolean);
-const CORS_ORIGIN = CORS_ORIGINS.length === 1 ? CORS_ORIGINS[0] : CORS_ORIGINS;
-
-// ── Stripe webhook MUST use raw body — mount BEFORE json middleware ────────────
-app.post(
-  '/webhooks/stripe',
-  express.raw({ type: 'application/json' }),
-  (req, res, next) => {
-    // Pass raw body through as req.body for signature verification
-    next();
-  },
-  stripeWebhookRouter
-);
-
-// ── Standard middleware ────────────────────────────────────────────────────────
-
-// ── Trust proxy — required for Railway/Fly.io/Render (rate limiter IP detection) ──
+// ── Trust proxy — required for Railway/Fly.io/Render (rate limiter IP detection)
 app.set('trust proxy', 1);
-
-// ── Security headers (helmet) ─────────────────────────────────────────────────
-// ETag for unchanged responses (304 Not Modified)
 app.set('etag', 'strong');
 
+// ── Express 5: make req.query a writable own property ─────────────────────────
+// Express 5 exposes req.query as a getter that re-parses on every access, so
+// middleware such as hpp() and validateQuery() could not modify it.
+app.use((req, _res, next) => {
+  const q = req.query;
+  Object.defineProperty(req, 'query', { value: { ...q }, writable: true, configurable: true, enumerable: true });
+  next();
+});
+
+// ── /api/v1/* alias → /api/* ──────────────────────────────────────────────────
+app.use((req, _res, next) => {
+  if (req.url === '/api/v1' || req.url.startsWith('/api/v1/') || req.url.startsWith('/api/v1?')) {
+    req.url = '/api' + req.url.slice('/api/v1'.length);
+  }
+  next();
+});
+
+// ── Request ID — correlate frontend errors with logs ─────────────────────────
+app.use((req, res, next) => {
+  const incoming = req.headers['x-request-id'];
+  const id = typeof incoming === 'string' && /^[\w.-]{1,128}$/.test(incoming) ? incoming : randomUUID();
+  req.id = id;
+  req.requestId = id;
+  res.setHeader('X-Request-ID', id);
+  next();
+});
+
+// ── CORS — one configuration ──────────────────────────────────────────────────
+// Allowed: production web origins, local dev origins, plus comma-separated
+// CORS_ORIGIN / EXTRA_ORIGINS / FRONTEND_URL. Requests without an Origin header
+// (native mobile apps, curl, server-to-server) are always allowed. Electron
+// (file://, app://, "null") is allowed. Disallowed origins get 403 JSON.
+const DEFAULT_ORIGINS = [
+  'https://justicegavel.app',
+  'https://www.justicegavel.app',
+  'http://localhost:8081',
+  'http://localhost:19006',
+  'http://localhost:3000',
+];
+const splitList = (v) => String(v || '').split(',').map(o => o.trim().replace(/\/+$/, '')).filter(Boolean);
+const ALLOWED_ORIGINS = new Set([
+  ...DEFAULT_ORIGINS,
+  ...splitList(process.env.CORS_ORIGIN),
+  ...splitList(process.env.EXTRA_ORIGINS),
+  ...splitList(process.env.FRONTEND_URL),
+]);
+const ALLOW_ANY_ORIGIN = ALLOWED_ORIGINS.has('*');
+
+export function isOriginAllowed(origin) {
+  if (!origin) return true;
+  if (origin === 'null' || origin.startsWith('file://') || origin.startsWith('app://')) return true;
+  if (ALLOW_ANY_ORIGIN || ALLOWED_ORIGINS.has(origin.replace(/\/+$/, ''))) return true;
+  if (!IS_PROD) {
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+    if (/\.exp\.direct$/.test(origin) || /\.tunnel\.exp\.host$/.test(origin)) return true;
+  }
+  return false;
+}
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (isOriginAllowed(origin)) return next();
+  logger.warn({ origin, path: req.path }, '[CORS] blocked origin');
+  return res.status(403).json({ error: 'cors_origin_not_allowed', message: 'Origin not allowed' });
+});
+const corsMiddleware = cors({
+  origin: true,          // reflect — disallowed origins were rejected above
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  exposedHeaders: ['X-Request-ID'],
+  maxAge: 86400,
+});
+app.use(corsMiddleware);
+
+// ── Security headers (helmet) ─────────────────────────────────────────────────
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -267,47 +197,20 @@ app.use(helmet({
   xssFilter:               true,
   referrerPolicy:          { policy: 'strict-origin-when-cross-origin' },
   permittedCrossDomainPolicies: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
-// CORS — configured via ALLOWED_ORIGINS set above
-const corsMiddleware = cors({
-  origin: (origin, cb) => {
-    const allowed = new Set([
-      process.env.FRONTEND_URL || 'https://api.justicegavel.app',
-      'http://localhost:8081', 'http://localhost:19006', 'exp://localhost:19000',
-      ...(process.env.EXTRA_ORIGINS || '').split(',').filter(Boolean),
-    ]);
-    if (!origin || allowed.has(origin)) return cb(null, true);
-    cb(new Error('CORS: origin not allowed'));
-  },
-  credentials: true, methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','X-Request-ID'],
-  exposedHeaders: ['X-Request-ID'], maxAge: 86400,
-});
-app.use(corsMiddleware);
-app.options('*', corsMiddleware);  // preflight
-
-// ── Request ID — threaded through all logs ────────────────────────────────────
-app.use((req, _res, next) => {
-  req.id = req.headers['x-request-id'] || crypto.randomUUID();
-  next();
-});
 
 // ── Additional security headers not covered by helmet default ─────────────────
 app.use((req, res, next) => {
-  // API version header
-  res.setHeader('X-API-Version', process.env.npm_package_version || '5.87.3');
-  // Permissions Policy — restrict powerful browser APIs
+  res.setHeader('X-API-Version', process.env.npm_package_version || '8.7.50');
   res.setHeader('Content-Security-Policy',
     "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self';"
   );
   res.setHeader('Permissions-Policy',
     'camera=(), microphone=(), geolocation=(self), payment=(self), usb=()'
   );
-  // Cross-Origin headers for SharedArrayBuffer safety
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  // Referrer — don't leak API paths to third-party analytics
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  // Cache — prevent sensitive API responses being stored in browser cache
   if (req.path.startsWith('/api/') && !req.path.includes('/providers')) {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Pragma', 'no-cache');
@@ -318,75 +221,76 @@ app.use(compression());
 app.use(responseTime((req, res, time) => {
   res.setHeader('X-Response-Time', time.toFixed(2) + 'ms');
 }));
-app.use(morgan(process.env.NODE_ENV === 'production'
-  ? ':date[iso] :method :url :status :res[content-length] :response-time ms'
-  : 'dev'
-)); // Brotli/gzip all API responses
-app.use(cors({ origin: CORS_ORIGIN,  // dynamic resolver above
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','admin-key','x-admin-key'],
-}));
+if (process.env.NODE_ENV !== 'test') {
+  app.use(morgan(IS_PROD
+    ? ':date[iso] :method :url :status :res[content-length] :response-time ms'
+    : 'dev'));
+}
+
+// ── Stripe webhooks — RAW body, mounted BEFORE the JSON parser ────────────────
+// Signature verification needs the exact bytes Stripe sent.
+const STRIPE_WEBHOOK_PATHS = ['/webhooks/stripe', '/api/webhooks/stripe'];
+app.use(STRIPE_WEBHOOK_PATHS, express.raw({ type: () => true, limit: '1mb' }), stripeWebhookRouter);
+// Paths whose routers parse their own raw body (never run express.json on them)
+const RAW_BODY_PATHS = new Set([...STRIPE_WEBHOOK_PATHS, '/api/billing/webhook']);
+
+// ── JSON body parser (skips webhook paths) ────────────────────────────────────
+const jsonParser = express.json({ limit: '1mb' });
+app.use((req, res, next) => (RAW_BODY_PATHS.has(req.path) ? next() : jsonParser(req, res, next)));
+app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
 // ── HTTP Parameter Pollution protection ──────────────────────────────────────
 app.use(hpp());
 
-// ── Request ID — correlate frontend errors with Railway logs ──────────────────
-  const id = req.headers['x-request-id'] || randomUUID();
-  req.requestId = id;
-  res.setHeader('X-Request-ID', id);
-  next();
-
-app.use(express.json({ limit: '1mb' }));
-
+// ── Global rate limit ─────────────────────────────────────────────────────────
 const limiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 200,
+  max: parseInt(process.env.RATE_LIMIT_PER_MIN || '200', 10),
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.path.startsWith('/webhooks/'), // Webhooks exempt from rate limit
+  skip: (req) => req.path.startsWith('/webhooks/') || req.path === '/health',
 });
 app.use(limiter);
-initSentry(app);
 
-// ── Health check ──────────────────────────────────────────────────────────────
-
-// Rate limit /health — prevents timing profiling attacks
-const healthLimiter = rateLimit({
-  windowMs: 60 * 1000, max: 30,
-  standardHeaders: true, legacyHeaders: false,
-  message: { error: 'Too many health checks' },
+// ── Health check — real DB round-trip; 503 when the DB is down ───────────────
+// /health is exempt from rate limiting, so the DB probe is cached (at most one
+// SELECT 1 per HEALTH_CACHE_MS, default 5 s; concurrent requests share it).
+// A failed probe is cached too and keeps answering 503. See utils/healthCheck.js.
+export const checkDbHealth = createDbHealthCheck(getDb, {
+  ttlMs: Math.max(0, parseInt(process.env.HEALTH_CACHE_MS || '5000', 10) || 0),
+  onError: (e) => logger.warn({ err: e.message }, '[health] DB check failed'),
 });
-app.get('/health', healthLimiter, async (req, res) => {
+
+app.get(['/health', '/api/health'], async (req, res) => {
   const start = Date.now();
-  let db_ok = false;
+  const health = await checkDbHealth();
+  const dbOk = health.ok;
+  let queue = null;
   try {
-    const { getDb } = await import('./db/index.js');
-    const db = await getDb();
-    await db.get('SELECT 1');
-    db_ok = true;
-  } catch {}
-  const { getQueueStats } = await import('./services/aiQueue.js').catch(() => ({ getQueueStats: null }));
-  const queue = getQueueStats ? getQueueStats() : null;
-  res.status(200).json({
-    ok:            db_ok,
-    ts:            new Date().toISOString(),
-    uptime_s:      Math.floor(process.uptime()),
-    latency_ms:    Date.now() - start,
-    app:           'Justice Gavel',
-    version:       process.env.npm_package_version || '1.8.32',
-    mode:          process.env.DEMO_MODE !== 'false' ? 'demo' : 'live',
-    db:            db_ok ? 'ok' : 'error',
-    queue:         queue,
-    live_sms:      process.env.LIVE_SMS      === 'true',
-    live_email:    process.env.LIVE_EMAIL    === 'true',
-    live_payments: process.env.LIVE_PAYMENTS === 'true',
-    jwt_secure:    process.env.JWT_SECRET !== 'dev_secret_change_me',
+    const { getQueueStats } = await import('./services/aiQueue.js');
+    queue = getQueueStats ? getQueueStats() : null;
+  } catch { /* queue stats optional */ }
+  res.status(dbOk ? 200 : 503).json({
+    ok:         dbOk,
+    status:     dbOk ? 'ok' : 'degraded',
+    db:         dbOk ? 'ok' : 'error',
+    ts:         new Date().toISOString(),
+    uptime_s:   Math.floor(process.uptime()),
+    latency_ms: Date.now() - start,
+    db_checked_at: new Date(health.checkedAt).toISOString(),
+    db_cached:  health.cached,
+    app:        'Justice Gavel',
+    version:    process.env.npm_package_version || '8.7.50',
+    mode:       process.env.DEMO_MODE === 'true' ? 'demo' : 'live',
     disclaimer_ver: '2026-01-01.1',
-    anthropic:     !!process.env.ANTHROPIC_API_KEY,
-    supabase:     !!process.env.SUPABASE_URL,
-    stripe:        !!process.env.STRIPE_SECRET,
+    queue,
+    features: {
+      ai:       aiConfigured(),
+      payments: stripeConfigured(),
+      email:    !!process.env.RESEND_API_KEY,
+    },
   });
-})
+});
 
 // ── /metrics — machine-readable operational metrics ────────────────────────────
 // Used by: Uptime Robot, Datadog, Railway health checks, Prometheus scrapers
@@ -395,12 +299,13 @@ app.get('/metrics', async (req, res) => {
   try {
     const memUsage = process.memoryUsage();
     const { getQueueStats } = await import('./services/aiQueue.js').catch(() => ({ getQueueStats: () => ({}) }));
-    const queue = getQueueStats();
+    const stats = getQueueStats() || {};
+    const queue = { pending: stats.pending ?? 0, running: stats.running ?? 0, completed: stats.done ?? 0, failed: stats.failed ?? 0 };
 
     const metrics = {
       timestamp:       new Date().toISOString(),
       uptime_s:        Math.floor(process.uptime()),
-      version:         process.env.npm_package_version || '1.8.46',
+      version:         process.env.npm_package_version || '8.7.50',
       node_version:    process.version,
       memory: {
         rss_mb:        (memUsage.rss        / 1024 / 1024).toFixed(1),
@@ -445,35 +350,19 @@ app.get('/metrics', async (req, res) => {
     res.status(500).json({ error: 'Could not collect metrics' });
   }
 });
-;
-
-// ── Init DB then start scheduler ──────────────────────────────────────────────
-try {
-  await initDb();
-} catch(e) {
-  logger.error({ err: e.message }, '[db] Startup DB init failed — continuing without DB');
-}
-startScheduler();
 
 // ── API routes ────────────────────────────────────────────────────────────────
-
-// ── API v1 versioning — all routes accessible at /api/v1/* ────────────────────
-// Legacy /api/* paths still work for backward compatibility.
-// New clients should use /api/v1/*.
-const v1Router = express_import.Router();
-// Mount v1 as an alias — same handlers
-app.use('/api/v1', (req, res, next) => {
-  req.url = req.url;  // pass through to existing /api/* handlers
-  next();
+// Some routers (pretrial, legal-aid, impact, bondsman CRM, …) read req.db.
+app.use('/api', async (req, _res, next) => {
+  try { req.db = await getDb(); next(); } catch (e) { next(e); }
 });
-
 app.use('/api/auth',       authRouter);
 app.use('/api/hague-contacts', hagueContactsRouter);
 app.use('/api/alerts',     alertsRouter);
 app.use('/api/arrests',    arrestsRouter);
 app.use('/api/cases',      casesRouter);
-app.use('/api/forum',         (await import('./routes/forum.js')).default);
-  app.use('/api/legaldata', legaldataRouter);
+app.use('/api/forum',      forumRouter);
+app.use('/api/legaldata',  legaldataRouter);
 app.use('/api/courthouses', courthousesRouter);
 app.use('/api/resources',  resourcesRouter);
 app.use('/api/bail',       bailRouter);
@@ -536,21 +425,7 @@ app.use('/api/recovery-agents', recoveryAgentsRouter);
 app.use('/api/attorney',       attorneyPlatformRouter);
 app.use('/api/jobs',           jobsRouter);           // async AI job polling        // Bot monitoring + manual trigger
 
-// Sentry error handler registered above via Sentry.Handlers.errorHandler()
-
-
-// ── Sentry error handler (must be last middleware) ───────────────────────────
-// Captures all errors that reach Express's error handling layer
-if (Sentry?.Handlers?.errorHandler) {
-  app.use(Sentry.Handlers.errorHandler());
-}
-
-// ── Generic 500 handler (after Sentry) ───────────────────────────────────────
-
-
-
-// ── 404 — route not found ────────────────────────────────────────────────────
-// ── Late-registered routes (moved before 404 handler) ──
+// ── Late-registered routes ────────────────────────────────────────────────────
 app.use('/api/cases', caseLifecycleRouter);
 app.use('/api/pretrial', pretrialRouter);
 app.use('/api/bondsman', bondsmanCRMRouter);
@@ -560,6 +435,12 @@ app.use('/api/admin/bar-verification', barVerifyRouter);
 app.use('/api/admin/bar-prep', barPrepContentRouter);
 app.use('/api/bar-prep',       barPrepRouter);
 
+// ── Sentry error handler (no-op unless SENTRY_DSN set) ───────────────────────
+if (process.env.SENTRY_DSN && typeof Sentry.setupExpressErrorHandler === 'function') {
+  Sentry.setupExpressErrorHandler(app);
+}
+
+// ── 404 — route not found ────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({
     error:  'Not found',
@@ -570,25 +451,23 @@ app.use((req, res) => {
 });
 
 // ── Global error handler ─────────────────────────────────────────────────────
-// Catches everything: route errors, async throws, express middleware failures.
-// MUST have 4 params (err, req, res, next) to be recognised as error middleware.
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, _next) => {
-  const status  = err.status || err.statusCode || 500;
-  const isProd  = process.env.NODE_ENV === 'production';
-  const message = isProd && status >= 500
+  let status = err.status || err.statusCode || 500;
+  if (err.type === 'entity.parse.failed') status = 400;
+  const message = IS_PROD && status >= 500
     ? 'An unexpected error occurred. Our team has been notified.'
     : err.message || 'Internal server error';
 
-  // Never log 4xx as errors — they're client mistakes, not server crashes
   if (status >= 500) {
-    console.error('[global_error]', {
+    logger.error({
       status,
-      message:  err.message,
-      path:     req.path,
-      method:   req.method,
-      stack:    err.stack?.split('\n').slice(0,5).join(' | '),
-    });
+      err:    err.message,
+      code:   err.code,
+      path:   req.path,
+      method: req.method,
+      stack:  err.stack?.split('\n').slice(0, 5).join(' | '),
+    }, '[global_error]');
   }
 
   if (!res.headersSent) {
@@ -596,35 +475,9 @@ app.use((err, req, res, _next) => {
       error:   message,
       status,
       path:    req.path,
-      ...(isProd ? {} : { stack: err.stack?.split('\n').slice(0,4) }),
+      ...(IS_PROD ? {} : { stack: err.stack?.split('\n').slice(0, 4) }),
     });
   }
 });
 
-
 export default app;
-
-// ── Graceful shutdown (SIGTERM / SIGINT) ─────────────────────────────────────
-// Gives in-flight requests time to complete before closing the DB connection.
-// PM2 sends SIGTERM on 'pm2 stop' / 'pm2 reload'. kill_timeout in ecosystem
-// config gives 5s before SIGKILL.
-function gracefulShutdown(signal) {
-  logger.info(`[app] ${signal} received — draining connections…`);
-  // Close DB connections
-  import('./db/index.js').then(({ getDb }) =>
-    getDb().then(db => {
-      if (db && typeof db.close === 'function') db.close();
-    }).catch(() => {})
-  ).catch(() => {});
-  setTimeout(() => {
-    logger.info('[app] Shutdown complete.');
-    process.exit(0);
-  }, 2000);
-}
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
-
-
-
-
-

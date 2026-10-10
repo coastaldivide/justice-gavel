@@ -19,6 +19,7 @@ import { Router }      from 'express';
 import { getDb }       from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
+import { decrypt } from '../services/encryption.js';
 
 const router = Router();
 
@@ -34,84 +35,64 @@ router.get('/', authRequired, async (req, res) => {
     const uid   = req.user.id;
     const db    = await getDb();
 
-    // Detect SQLite vs Postgres — FTS5 is SQLite-only
-    const useFts = db._type !== 'postgres';
-
-    // LIKE fallback term (used by Postgres path and saved_lawyers which has no FTS5 table)
+    // Postgres ILIKE search (case notes are encrypted at rest, so only titles
+    // are searchable for cases).
     const qSafe = escapeLike(raw, 100);
     const likeTerm = '%' + qSafe + '%';
-
-    // FTS5 query: append * for prefix matching so "theft" matches "theft", "thefts"
-    const ftsQuery = raw.replace(/[""]/g, '').trim() + '*';
 
     const [cases, messages, lawyers, lessons] = await Promise.all([
 
       // ── Cases ──────────────────────────────────────────────────────────────
-      useFts
-        ? db.all(
-            `SELECT c.id, c.title, c.status, c.next_court_date,
-                    rank
-             FROM cases_fts WHERE tsv @@ plainto_tsquery('english', $1) AND c.user_id = ?
-             ORDER BY rank, c.next_court_date ASC
-             LIMIT ?`,
-            [ftsQuery, uid, limit]
-          ).catch(() => [])
-        : db.all(
-            `SELECT id, title, status, next_court_date
-             FROM cases
-             WHERE user_id=? AND (title LIKE ? OR notes LIKE ?)
-             ORDER BY next_court_date ASC LIMIT ?`,
-            [uid, likeTerm, likeTerm, limit]
-          ),
+      db.all(
+        `SELECT id, title, status, next_court_date
+           FROM cases
+          WHERE user_id = ? AND deleted_at IS NULL AND title ILIKE ?
+          ORDER BY next_court_date ASC NULLS LAST LIMIT ?`,
+        [uid, likeTerm, limit]
+      ),
 
-      // ── Messages ───────────────────────────────────────────────────────────
-      useFts
-        ? db.all(
-            `SELECT m.id, m.content, m.created_at, c.id as case_id, c.title as case_title
-             FROM messages_fts WHERE tsv @@ plainto_tsquery('english', $1) AND c.user_id = ?
-             ORDER BY rank DESC LIMIT ?`,
-            [ftsQuery, uid, limit]
-          ).catch(() => [])
-        : db.all(
-            `SELECT m.id, m.content, m.created_at, c.id as case_id, c.title as case_title
-             FROM messages m
-             JOIN cases c ON c.id = m.case_id
-             WHERE c.user_id=? AND m.content LIKE ?
-             ORDER BY m.created_at DESC LIMIT ?`,
-            [uid, likeTerm, limit]
-          ),
+      // ── Messages on the user's own cases ───────────────────────────────────
+      // Bodies are encrypted at rest, so the match runs on the decrypted text of
+      // the user's most recent messages instead of in SQL.
+      db.all(
+        `SELECT m.id, COALESCE(m.body, m.content) AS content, m.created_at, c.id AS case_id, c.title AS case_title
+           FROM case_messages m
+           JOIN cases c ON c.id = m.case_id
+          WHERE c.user_id = ? AND m.deleted_at IS NULL
+          ORDER BY m.created_at DESC LIMIT 500`,
+        [uid]
+      ).then(rows => {
+        const needle = raw.slice(0, 100).toLowerCase();
+        return rows
+          .map(r => ({ ...r, content: decrypt(r.content) }))
+          .filter(r => String(r.content || '').toLowerCase().includes(needle))
+          .slice(0, limit);
+      }),
 
-      // ── Saved lawyers — LIKE only (joins saved_lawyers, no FTS5 content table) ──
+      // ── Saved lawyers ──────────────────────────────────────────────────────
       db.all(
         `SELECT l.id, l.name, l.address, l.specialties, l.availability,
                 l.bar_verified, l.jtb_verified, l.rating, l.state as lawyer_state
          FROM saved_lawyers sl
-         JOIN lawyers l ON l.id = sl.lawyer_id
+         JOIN lawyers l ON l.id = COALESCE(sl.lawyer_id, sl.provider_id)
          WHERE sl.user_id=?
-           AND (l.name LIKE ? OR l.address LIKE ? OR l.specialties LIKE ?)
+           AND (l.name ILIKE ? OR l.address ILIKE ? OR l.specialties ILIKE ?)
          ORDER BY
            CASE WHEN l.state = ? THEN 0 ELSE 1 END ASC,
            CASE l.availability WHEN 'accepting' THEN 0 WHEN 'limited' THEN 1 ELSE 2 END ASC,
            CASE WHEN l.bar_verified = 1 THEN 0 ELSE 1 END ASC,
-           l.rating DESC
+           l.rating DESC NULLS LAST
          LIMIT ?`,
         [uid, likeTerm, likeTerm, likeTerm, user_state || 'XX', limit]
-      ).catch(() => []),
+      ),
 
       // ── Lessons ────────────────────────────────────────────────────────────
-      useFts
-        ? db.all(
-            `SELECT l.id, l.title, l.category, l.difficulty
-             FROM lessons_fts WHERE tsv @@ plainto_tsquery('english', $1)
-             ORDER BY rank DESC LIMIT ?`,
-            [ftsQuery, limit]
-          ).catch(() => [])
-        : db.all(
-            `SELECT id, title, category, difficulty
-             FROM lessons WHERE title LIKE ? OR category LIKE ?
-             ORDER BY difficulty ASC LIMIT ?`,
-            [likeTerm, likeTerm, limit]
-          ),
+      db.all(
+        `SELECT id, title, category, difficulty
+           FROM lessons WHERE title ILIKE ? OR category ILIKE ?
+          ORDER BY difficulty ASC NULLS LAST LIMIT ?`,
+        [likeTerm, likeTerm, limit]
+      ),
     ]);
 
     // ── Shape results ────────────────────────────────────────────────────────

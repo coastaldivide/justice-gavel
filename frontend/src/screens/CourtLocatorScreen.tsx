@@ -131,8 +131,6 @@ function CourtLocatorScreen(): React.JSX.Element {
               backgroundColor: courtMode===mode ? colors.primary : card,
               borderWidth:1.5, borderColor: courtMode===mode ? colors.primary : (colors.border),
             }}>
-            accessibilityRole="search" accessibilityLabel="Search"
-          accessibilityHint="Double-tap to activate"
             <Text maxFontSizeMultiplier={1.4} style={{ color: courtMode===mode ? colors.bgCard : text,
               fontWeight:'700', fontSize:13 }}>
               {mode==='state' ? '🏛️ State Courts' : '⚖️ Federal Courts'}
@@ -166,11 +164,8 @@ function CourtLocatorScreen(): React.JSX.Element {
       {error ? (<>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign: 'center', margin: 20 }}>{error}</Text>
         <TouchableOpacity accessibilityRole="button" onPress={() => doSearch('Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:colors.bg,fontWeight:'700'}}>Retry</Text></TouchableOpacity>
-      accessibilityRole="search" accessibilityLabel="Search"
-          accessibilityHint="Double-tap to activate"
       </>) : null}
       <FlashList
-          initialNumToRender={10}
           onRefresh={onRefresh}
         refreshing={refreshing}
         estimatedItemSize={80}

@@ -1,4 +1,5 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { requireAi } from '../../utils/ai.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * discovery/analyze.js — POST /analyze
  */
@@ -46,7 +47,7 @@ const aiLimiter = rateLimit({
 const router = Router();
 
 
-router.post('/analyze', aiLimiter, authRequired, perUserAiLimit, upload.single('document'), async (req, res) => {
+router.post('/analyze', aiLimiter, authRequired, requireAi, perUserAiLimit, upload.single('document'), async (req, res) => {
   try {
     const db = await getDb();
     if (!req.file) return err400(res, 'PDF file required');
@@ -109,7 +110,7 @@ router.post('/analyze', aiLimiter, authRequired, perUserAiLimit, upload.single('
       } catch (e) {
         throw new Error('Analysis failed: ' + e.message);
       }
-      const db2 = await (await import('../db/index.js')).getDb();
+      const db2 = await (await import('../../db/index.js')).getDb();
       const row = await db2.run(
         `INSERT INTO discovery_analyses
           (user_id, filename, doc_type, case_id, summary, key_facts, inconsistencies, questions, page_count, paid_cents, stripe_pi_id)

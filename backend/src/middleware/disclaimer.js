@@ -75,9 +75,11 @@ export async function recordDisclaimerAcceptance(userId, req) {
   try {
     const db = await getDb();
     await db.run(
-      `INSERT OR REPLACE INTO user_disclaimer_acceptance
+      `INSERT INTO user_disclaimer_acceptance
          (user_id, version, accepted_at, ip_address)
-       VALUES (?, ?, NOW(), ?)`,
+       VALUES (?, ?, NOW(), ?)
+       ON CONFLICT (user_id, version) DO UPDATE
+         SET accepted_at = EXCLUDED.accepted_at, ip_address = EXCLUDED.ip_address`,
       [userId, CURRENT_DISCLAIMER_VERSION, req?.ip ?? null]
     );
     logger.info('[disclaimer] accepted', { userId, version: CURRENT_DISCLAIMER_VERSION });

@@ -23,16 +23,31 @@ router.post('/token', authRequired, async (req, res) => {
   try {
     const db = await getDb();
     await db.run(
-      'INSERT OR REPLACE INTO push_tokens (user_id, token) VALUES (?,?)',
+      'INSERT INTO push_tokens (user_id, token) VALUES (?,?) ON CONFLICT (user_id) DO UPDATE SET token = EXCLUDED.token',
       [req.user.id, pushToken]
     );
+    await db.run('UPDATE users SET push_token = ? WHERE id = ?', [pushToken, req.user.id]);
     res.json({ ok: true });
   } catch (e) { logger.error('[push/token]', e.message); res.status(500).json({ error: 'Could not save push token. Please try again.' }); }
 });
 
+// DELETE /api/push/token/:token — unregister a device token (logout / disable push)
+router.delete('/token/:token', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const token = String(req.params.token || '').slice(0, 300);
+    await db.run('DELETE FROM push_tokens WHERE user_id = ? AND token = ?', [req.user.id, token]);
+    await db.run('UPDATE users SET push_token = NULL WHERE id = ? AND push_token = ?', [req.user.id, token]);
+    res.json({ ok: true });
+  } catch (e) {
+    logger.error('[push/token/delete]', e.message);
+    res.status(500).json({ error: 'Could not remove push token.' });
+  }
+});
+
 router.post('/test', authRequired, pushLimiter, async (req,res)=>{
   try {
-    const { message='Test from Justice Gavel' } = req.body || {};
+    let { message='Test from Justice Gavel' } = req.body || {};
   if (message) message = truncateStr(String(message), 2000);
     const db = await getDb();
     const row = await db.get('SELECT token FROM push_tokens WHERE user_id=? ORDER BY id DESC LIMIT 1', [req.user.id]);
@@ -100,7 +115,7 @@ router.post('/retention/post-purchase', authRequired, async (req, res) => {
     const deliverAt = new Date(Date.now() + msg.delay_hours * 3600 * 1000).toISOString();
     await db.run(
       `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at)
-       SELECT ?, push_token, ?, ?, ?, ? FROM users WHERE id=?`,
+       SELECT ?, push_token, ?, ?, ?, ? FROM users WHERE id=? AND push_token IS NOT NULL`,
       [req.user.id, msg.title, msg.body, msg.data, deliverAt, req.user.id]
     ).catch(() => {}); // graceful — table may not exist yet in demo
     return res.json({ scheduled: true, deliver_at: deliverAt, message: msg });
@@ -282,12 +297,12 @@ router.post('/receipts', authRequired, async (req, res) => {
             // DeviceNotRegistered = token is invalid, clean it from DB
             if (receipt.details?.error === 'DeviceNotRegistered') {
               results.invalid++;
-              // Remove the invalid token — find user by matching push sends
-              await db.run(
-                `UPDATE users SET push_token = NULL WHERE push_token IN (
-                  SELECT push_token FROM users WHERE push_token IS NOT NULL LIMIT 1
-                )`
-              ).catch(() => {});
+              // Remove the invalid token (Expo includes it in receipt details)
+              const badToken = receipt.details?.expoPushToken;
+              if (badToken) {
+                await db.run('UPDATE users SET push_token = NULL WHERE push_token = ?', [badToken]).catch(() => {});
+                await db.run('DELETE FROM push_tokens WHERE token = ?', [badToken]).catch(() => {});
+              }
             }
           }
         }

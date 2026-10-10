@@ -41,22 +41,15 @@ function shouldAlert(code) {
   return true;
 }
 
-// ── Send email via SendGrid ───────────────────────────────────────────────────
+// ── Send email via Resend (services/email.js; logs only without RESEND_API_KEY)
 async function sendAlertEmail({ subject, body, to }) {
-  const apiKey = process.env.RESEND_API_KEY || null;
-  if (!apiKey) return;
-
   try {
-    await fetchNotify('https://api.sendgrid.com/v3/mail/send', {
-      method:  'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        personalizations: [{ to: (Array.isArray(to) ? to : [to || 'engineering@justicegavel.app'])
-              .map(e => ({ email: e })) }],
-        from:    { email: 'alerts@justicegavel.app', name: 'Justice Gavel Alerts' },
-        subject,
-        content: [{ type: 'text/plain', value: body }],
-      }),
+    const { sendEmail } = await import('../services/email.js');
+    await sendEmail({
+      to:      to || process.env.ALERT_EMAIL || 'engineering@justicegavel.app',
+      subject,
+      text:    body,
+      html:    `<pre style="font-family:monospace;font-size:13px">${String(body || '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</pre>`,
     });
   } catch (e) {
     logger.error('[notifier] email send failed:', e.message);

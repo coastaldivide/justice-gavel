@@ -40,14 +40,12 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 
 export default function BarPrepExplanationScreen({
   route, navigation
-// @ts-ignore
 }: ScreenProps<'BarPrepExplanation'>) {
-  const { question_id } = route.params as { question_id: number };
+  const { question_id } = (route?.params ?? {}) as { question_id: number };
   const { colors }  = useTheme();
   const { impact }  = useHaptics();
   const [data, setData]       = useState<ExplanationData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [flagging, setFlagging] = useState(false);
 
   const load = useCallback(async () => {
@@ -83,7 +81,6 @@ export default function BarPrepExplanationScreen({
 
   const shareExplanation = useCallback(async () => {
     if (!data) return;
-    // @ts-ignore
     impact('light');
     await RNShare.share({
       title: `MBE Explanation — ${data.rule_tested}`,
@@ -94,11 +91,6 @@ export default function BarPrepExplanationScreen({
   const styles = makeStyles(colors);
 
   if (loading) {
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -123,11 +115,11 @@ export default function BarPrepExplanationScreen({
         title="MBE Explanation"
         subtitle={data.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
         onBack={() => navigation.goBack()}
-        rightAction={{
-          // @ts-ignore
-          label: '↑ Share',
-          onPress: shareExplanation,
-        }}
+        rightAction={
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Share explanation" onPress={shareExplanation}>
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>↑ Share</Text>
+          </TouchableOpacity>
+        }
       />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
@@ -227,8 +219,6 @@ function SectionCard({
 }: { title: string; children: React.ReactNode; colors: any; accent: string }) {
   return (
     <View style={[cardStyles.card, { backgroundColor: colors.card, borderLeftColor: accent }]}>
-      // @ts-ignore
-      // @ts-expect-error
       <Text style={[cardStyles.title, { color: (colors as any).text }] as any}>{title}</Text>
       {children}
 
@@ -244,15 +234,13 @@ function SectionCard({
   );
 }
 
-// @ts-ignore
 const cardStyles = StyleSheet.create({
   card:  {
     marginHorizontal: 16, marginTop: 12, padding: 16,
     borderRadius: RADIUS.lg, borderLeftWidth: 4,
-    // @ts-ignore
-    ...SHADOW.xs,
+    ...SHADOW.sm,
   },
-  title: { fontSize: 13, fontFamily: FONTS.bold, marginBottom: 10 },
+  title: { fontSize: 13, ...FONTS.bold, marginBottom: 10 },
 });
 
 function makeStyles(colors: any) {
@@ -269,12 +257,10 @@ function makeStyles(colors: any) {
     },
     questionMeta:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
     diffBadge:     { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-    // @ts-ignore
-    diffText:      { fontSize: 11, fontFamily: FONTS.bold },
+    diffText:      { fontSize: 11, ...FONTS.bold },
     categoryBadge: { fontSize: 12, color: colors.textMuted },
     stemText:      {
-      // @ts-ignore
-      fontSize: 15, fontFamily: FONTS.medium, color: colors.text,
+      fontSize: 15, ...FONTS.medium, color: colors.text,
       lineHeight: 22, marginBottom: 14,
     },
     correctAnswerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
@@ -282,29 +268,23 @@ function makeStyles(colors: any) {
       backgroundColor: COLORS.legal, paddingHorizontal: 10, paddingVertical: 4,
       borderRadius: 8, flexShrink: 0,
     },
-    // @ts-ignore
-    correctBadgeText: { fontSize: 13, fontFamily: FONTS.bold, color: '#fff' },
+    correctBadgeText: { fontSize: 13, ...FONTS.bold, color: '#fff' },
     correctAnswerText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
-    // @ts-ignore
-    ruleText:      { fontSize: 14, fontFamily: FONTS.semibold, color: colors.text },
+    ruleText:      { fontSize: 14, ...FONTS.semiBold, color: colors.text },
     citationText:  { fontSize: 13, color: colors.textMuted, marginTop: 8, fontStyle: 'italic' },
     explanationText: { fontSize: 14, color: colors.text, lineHeight: 22 },
     studyText:     { fontSize: 14, color: colors.text, lineHeight: 21 },
-    // @ts-ignore
-    studyHighlight: { fontFamily: FONTS.semibold, color: colors.primary },
+    studyHighlight: { ...FONTS.semiBold, color: colors.primary },
     actionRow:     {
       flexDirection: 'row', marginHorizontal: 16, marginTop: 20, gap: 10,
     },
     actionBtn:     {
       flex: 1, paddingVertical: 13, borderRadius: RADIUS.lg,
-      // @ts-ignore
-      alignItems: 'center', ...SHADOW.xs,
+      alignItems: 'center', ...SHADOW.sm,
     },
     flagBtn:       { backgroundColor: colors.border },
-    // @ts-ignore
-    flagBtnText:   { fontSize: 14, color: colors.textMuted, fontFamily: FONTS.medium },
+    flagBtnText:   { fontSize: 14, color: colors.textMuted, ...FONTS.medium },
     doneBtn:       { backgroundColor: colors.primary },
-    // @ts-ignore
-    doneBtnText:   { fontSize: 14, color: '#fff', fontFamily: FONTS.bold },
+    doneBtnText:   { fontSize: 14, color: '#fff', ...FONTS.bold },
   });
 }

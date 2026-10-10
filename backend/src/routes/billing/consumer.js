@@ -1,9 +1,9 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * billing/consumer.js — Consumer (end-user) subscription plans — subscribe, view status, admin stats
  * Part of the billing module. Mounted at /api/billing by billing/index.js
  */
-import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer, calcLeadFee }
+import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer }
   from './_shared.js';
 import { err400, BUSINESS_CONSTANTS, err401, err403, err404, err409,
          err422, err500, err502,

@@ -1,3 +1,4 @@
+import { CLAUDE_MODEL } from '../../utils/ai.js';
 /**
  * chat/_helpers.js — Chat utility functions and Claude API call
  *
@@ -11,13 +12,14 @@
  */
 import { API_URLS, safeJson } from '../../utils/routeHelpers.js';
 import logger               from '../../utils/logger.js';
+import { randomUUID }       from 'crypto';
 import { SYSTEM_PROMPT, DEFENDER_SYSTEM_PROMPT, RESPONSE_FOOTER_INSTRUCTION }
   from './_prompts.js';
 
 export async function getHistory(db, sessionId, limit = 20, userId = null) {
   const rows = await db.all(
     `SELECT role, content, content AS text FROM chat_sessions
-     WHERE session_id = ?${userId ? ' AND user_id = ?' : ''}
+     WHERE session_id = ? AND role IN ('user','assistant')${userId ? ' AND user_id = ?' : ''}
      ORDER BY created_at DESC LIMIT ?`,
     userId ? [sessionId, userId, limit] : [sessionId, limit]
   );
@@ -26,8 +28,8 @@ export async function getHistory(db, sessionId, limit = 20, userId = null) {
 
 export async function saveMessage(db, sessionId, role, content, userId = null) {
   await db.run(
-    `INSERT INTO chat_sessions (session_id, role, content, user_id) VALUES (?, ?, ?, ?)`,
-    [sessionId, role, content, userId]
+    `INSERT INTO chat_sessions (id, session_id, role, content, user_id) VALUES (?, ?, ?, ?, ?)`,
+    [randomUUID(), sessionId, role, content, userId]
   );
 }
 
@@ -143,7 +145,7 @@ export async function callClaude(opts) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model:       'claude-sonnet-4-20250514',
+      model:       CLAUDE_MODEL,
       max_tokens:  maxTokens,
       temperature,
       system:      systemPrompt,

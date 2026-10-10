@@ -26,28 +26,48 @@ const paginationQ  = z.object({
 // ── Schema groups ────────────────────────────────────────────────────────
 export const schemas = {
   auth: {
+    // The mobile/web app sends { identifier, password, displayName?, isAttorney?, ... }
+    // where identifier is an email OR phone number. Legacy clients may send
+    // { email } or { phone } instead of identifier — accepted and normalised.
     register: z.object({
-      name:     nonEmptyStr(200),
-      email:    emailField,
-      password: z.string().min(8).max(200),
-      phone:    phoneField,
-      role:     z.enum(['consumer','attorney','bondsman','firm_admin']).default('consumer'),
+      identifier:  z.string().trim().min(3).max(254).optional(),
+      email:       z.string().trim().max(254).optional(),
+      phone:       z.string().trim().max(30).optional(),
+      password:    z.string().min(8, 'Password must be at least 8 characters').max(200),
+      displayName: z.string().trim().max(200).optional(),
+      name:        z.string().trim().max(200).optional(),
+      isAttorney:  z.boolean().optional(),
+      barNumber:   z.string().trim().max(30).optional().nullable(),
+      barState:    z.string().trim().max(3).optional().nullable(),
+      firmName:    z.string().trim().max(200).optional().nullable(),
+    }).refine(d => !!(d.identifier || d.email || d.phone), {
+      message: 'identifier (email or phone) is required', path: ['identifier'],
     }),
     login: z.object({
-      email:    emailField,
-      password: z.string().min(1).max(200),
+      identifier: z.string().trim().min(1).max(254).optional(),
+      email:      z.string().trim().max(254).optional(),
+      phone:      z.string().trim().max(30).optional(),
+      password:   z.string().min(1).max(200),
+    }).refine(d => !!(d.identifier || d.email || d.phone), {
+      message: 'identifier (email or phone) is required', path: ['identifier'],
     }),
     refresh: z.object({
-      refreshToken: z.string().min(1),
+      refreshToken: z.string().min(1).optional(),
     }),
   },
 
   bail: {
     calculate: z.object({
-      bailAmount:  bailAmount,
-      chargeType:  z.string().max(200).optional(),
-      state:       stateCode.optional(),
-      county:      z.string().max(100).optional(),
+      state:        z.string().trim().min(2).max(20),
+      charge_type:  z.string().trim().max(50),
+      severity:     z.enum(['low','medium','high','extreme']).optional(),
+      prior_record: z.enum(['none','minor','significant','extensive']).optional(),
+      flight_risk:  z.enum(['low','medium','high']).optional(),
+      employed:     z.boolean().optional(),
+      ice_hold:     z.boolean().optional(),
+      violent:      z.boolean().optional(),
+      bailAmount:   bailAmount.optional(),
+      county:       z.string().max(100).optional(),
     }),
     bondsman_payment: z.object({
       arrest_id:  z.number().int().positive(),
@@ -69,18 +89,25 @@ export const schemas = {
   },
 
   cases: {
+    // Matches what the app sends: { title, status: 'Open'|'Active'|..., next_court_date, notes, state? }
     create: z.object({
-      title:       nonEmptyStr(500),
-      charge:      nonEmptyStr(500).optional(),
-      state:       stateCode.optional(),
-      description: z.string().max(5000).optional(),
-      court_date:  z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      title:           nonEmptyStr(500),
+      status:          z.string().trim().max(30).optional().nullable(),
+      charge:          z.string().max(500).optional().nullable(),
+      state:           z.string().trim().max(20).optional().nullable(),
+      description:     z.string().max(5000).optional().nullable(),
+      notes:           z.string().max(10000).optional().nullable(),
+      next_court_date: z.string().max(40).optional().nullable(),
+      court_date:      z.string().max(40).optional().nullable(),
     }),
     update: z.object({
-      title:       nonEmptyStr(500).optional(),
-      status:      z.enum(['active','closed','pending','archived']).optional(),
-      description: z.string().max(5000).optional(),
-      court_date:  z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      title:           nonEmptyStr(500).optional(),
+      status:          z.string().trim().max(30).optional().nullable(),
+      state:           z.string().trim().max(20).optional().nullable(),
+      description:     z.string().max(5000).optional().nullable(),
+      notes:           z.string().max(10000).optional().nullable(),
+      next_court_date: z.string().max(40).optional().nullable(),
+      court_date:      z.string().max(40).optional().nullable(),
     }).partial(),
   },
 
@@ -159,9 +186,9 @@ export const schemas = {
  */
 export function validate(schema) {
   return (req, res, next) => {
-    const result = schema.safeParse(req.body);
+    const result = schema.safeParse(req.body ?? {});
     if (!result.success) {
-      const errors = result.error.errors.map(e => ({
+      const errors = (result.error.issues || result.error.errors || []).map(e => ({
         field:   e.path.join('.'),
         message: e.message,
         code:    e.code,
@@ -172,8 +199,11 @@ export function validate(schema) {
         hint:   'Check the request body against the API documentation.',
       });
     }
-    // Replace req.body with parsed+coerced data
-    req.body = result.data;
+    // Merge parsed+coerced fields over the original body. Zod strips unknown
+    // keys, and many handlers read fields the schema does not list.
+    req.body = (req.body && typeof req.body === 'object' && !Array.isArray(req.body))
+      ? { ...req.body, ...result.data }
+      : result.data;
     next();
   };
 }
@@ -187,13 +217,18 @@ export function validateQuery(schema) {
     if (!result.success) {
       return res.status(400).json({
         error:  'Invalid query parameters',
-        errors: result.error.errors.map(e => ({ field: e.path.join('.'), message: e.message })),
+        errors: (result.error.issues || result.error.errors || []).map(e => ({ field: e.path.join('.'), message: e.message })),
       });
     }
-    req.query = result.data;
+    Object.defineProperty(req, 'query', { value: { ...req.query, ...result.data }, writable: true, configurable: true, enumerable: true });
     next();
   };
 }
+
+export const createReviewSchema = z.object({
+  rating:  z.coerce.number().int().min(1).max(5),
+  comment: z.string().max(2000).optional(),
+}).passthrough();
 
 export const ratingSchema = z.object({ rating: z.number().min(1).max(5), comment: z.string().max(500).optional() });
 

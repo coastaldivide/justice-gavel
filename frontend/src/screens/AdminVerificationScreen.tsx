@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState, useEffect, useCallback, useMemo} from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, ActivityIndicator, LayoutAnimation} from 'react-native';
-import { api }      from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { t } from '../i18n';
 
@@ -69,7 +69,7 @@ function AdminVerificationScreen({ navigation }: ScreenProps): React.JSX.Element
       const res = await api.get('/attorney/pending-verification');
       setPending(res.data?.pending || []);
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Could not load pending verifications.');
+      setError(apiErrorMessage(e, 'Could not load pending verifications.'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -85,9 +85,9 @@ confirm(`Approve ${name}?`, 'Their bar number will be verified. They will appear
             try {
               await api.post('/attorney/approve-verification', { user_id: userId, approved: true });
               setPending(p => p.filter(a => a.user_id !== userId));
-showToast(`${name} is now bar verified.`, 'success');
-              // @ts-ignore
-              showToast(e.response?.data?.error || 'Could not approve the application.', 'info');
+              showToast(`${name} is now bar verified.`, 'success');
+            } catch (e: any) {
+              showToast(apiErrorMessage(e, 'Could not approve the application.'), 'info');
             } finally { setActing(null); }
     })
   };
@@ -100,7 +100,7 @@ confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.'
               await api.post('/attorney/approve-verification', { user_id: userId, approved: false });
               setPending(p => p.filter(a => a.user_id !== userId));
             } catch (e: any) {
-              showToast(e.response?.data?.error || 'Could not reject the application.', 'info');
+              showToast(apiErrorMessage(e, 'Could not reject the application.'), 'info');
             } finally { setActing(null); }
     })
   };

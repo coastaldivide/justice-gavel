@@ -1,6 +1,5 @@
-// TODO: wrap root with <QueryClientProvider client={queryClient}> from @tanstack/react-query
+import 'react-native-gesture-handler';
 import OfflineBanner from './src/components/OfflineBanner';
-import { StripeProvider } from '@stripe/stripe-react-native';
 /**
  * App.tsx — Justice Gavel root
  *
@@ -14,10 +13,13 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   AppState, Platform, StatusBar, Text, TouchableOpacity, View,
 } from 'react-native';
-import { linkingConfig } from './src/navigation/LinkingConfig';
-import { ToastProvider } from './src/components/Toast';
+import { linking } from './src/navigation/linking';
+import { ToastProvider } from './src/components/ToastProvider';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as Font from 'expo-font';
+import { PaymentsProvider } from './src/payments';
 import FeedbackButton from './src/components/FeedbackButton';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef, getStateFromPath, getActionFromState } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
@@ -42,7 +44,10 @@ import { api } from './src/services/api';
 // ── Sentry crash reporting ────────────────────────────────────────────────────
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
-  enabled: process.env.NODE_ENV === 'production',
+  // No-op until a DSN is configured (EXPO_PUBLIC_SENTRY_DSN).
+  enabled: !!process.env.EXPO_PUBLIC_SENTRY_DSN && process.env.NODE_ENV === 'production',
+  environment: __DEV__ ? 'development' : 'production',
+  ignoreErrors: ['Network request failed', 'AbortError'],
   tracesSampleRate: 0.2,
   attachScreenshot: false,
   beforeSend(event) {
@@ -62,90 +67,45 @@ Notifications.setNotificationHandler({
 });
 
 // ── Navigation ref — lets us navigate from outside React tree ────────────────
-const navigationRef = React.createRef<import('@react-navigation/native').NavigationContainerRef<ReactNavigation.RootParamList>>();
+const navigationRef = createNavigationContainerRef<any>();
 
-// ── Deep link / URL scheme config ────────────────────────────────────────────
-const linking = {
-  prefixes: ['justicegavel://', 'https://justicegavel.app'],
-  config: {
-    screens: {
-      // ── Guest flow ────────────────────────────────────────────
-      Onboarding: 'onboarding',
-      Login:      'login',
-      Register:   'register',
+// Deep link / URL scheme config: see src/navigation/linking.ts
 
-      // ── Main app ──────────────────────────────────────────────
-      MainTabs: {
-        screens: {
-          HomeTab:    '',
-          ChatTab:    'chat',
-          LawyersTab: 'lawyers',
-          BailTab:    'bail',
-          MoreTab: {
-            screens: {
-              // Core flows
-              MoreHome:     'home',
-              HelpNow:      'help',
-              Emergency:    'emergency',
-              JustArrested: 'just-arrested',
-
-              // Legal tools
-              Cases:              'cases',
-              CaseTimeline:       'case/:id/timeline',
-              DeadlineCalculator: 'deadlines',
-              Expungement:        'expungement',
-              RightsCard:         'rights',
-              WhatHappensNext:    'what-happens-next',
-              DUILaws:            'dui-laws',
-              DrugPenalties:      'drug-penalties',
-              BailCalculator:     'bail-calculator',
-              CourtLocator:       'courts',
-              SpecialtyCourts:    'specialty-courts',
-              MotionLibrary:      'motions',
-              LegalResearch:      'research',
-              Discovery:          'discovery',
-
-              // Providers
-              LawyerProfile:      'attorney/:id',
-              SavedLawyers:       'saved/attorneys',
-              Booking:            'booking/:lawyerId',
-
-              // Communication
-              Messages:           'messages/:caseId',
-              Chat:               'ai-chat',
-
-              // Tools
-              DocumentScanner:         'scan',
-              VoiceNote:               'voice-note',
-              Translator:              'interpreter',
-              InterrogationRecorder:   'encounter-recorder',
-              CourtForms:              'court-forms',
-
-              // Family & Crisis
-              FamilyConnect:      'family',
-              ArrestMonitor:      'arrest-monitor',
-              EmergencyShare:     'emergency-share',
-              CrisisResources:    'crisis',
-
-              // Community
-              Education:          'learn',
-              Resources:          'resources',
-
-              // Account & Legal
-              Settings:           'settings',
-              TermsOfService:     'terms',
-              'RecoveryAgents': 'recovery-agents',
-              PrivacyPolicy:      'privacy',
-              Rewards:            'rewards',
-              Subscription:       'subscribe',
-              ConsumerSubscription:'plans',
-            },
-          },
-        },
-      },
-    },
-  },
+// ── Fonts referenced by name in styles (fontFamily: 'Inter_700Bold' …) ───────
+const INTER_FONTS = {
+  Inter_400Regular:   require('./assets/fonts/Inter_400Regular.ttf'),
+  Inter_500Medium:    require('./assets/fonts/Inter_500Medium.ttf'),
+  Inter_600SemiBold:  require('./assets/fonts/Inter_600SemiBold.ttf'),
+  Inter_700Bold:      require('./assets/fonts/Inter_700Bold.ttf'),
+  Inter_800ExtraBold: require('./assets/fonts/Inter_800ExtraBold.ttf'),
+  Inter_900Black:     require('./assets/fonts/Inter_900Black.ttf'),
 };
+
+// ── Electron / web bridge ────────────────────────────────────────────────────
+// electron/main.js calls window.__navigateTo('Settings') from the app menu and
+// window.__handleDeepLink('justicegavel://…') for protocol links.
+const TAB_ROUTES = new Set(['HomeTab', 'ChatTab', 'LawyersTab', 'BailTab', 'MoreTab']);
+function installDesktopBridge() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  const w = window as any;
+  w.__navigateTo = (screen: string) => {
+    if (!navigationRef.isReady() || !screen) return;
+    try {
+      if (TAB_ROUTES.has(screen)) navigationRef.navigate(screen);
+      else navigationRef.navigate('MoreTab', { screen });
+    } catch { /* unknown route */ }
+  };
+  w.__handleDeepLink = (url: string) => {
+    if (!navigationRef.isReady() || !url) return;
+    try {
+      const prefix = linking.prefixes.find(p => url.startsWith(p));
+      const path = prefix ? url.slice(prefix.length) : url;
+      const state = getStateFromPath(path.startsWith('/') ? path : '/' + path, linking.config as any);
+      const action = state && getActionFromState(state, linking.config as any);
+      if (action) navigationRef.dispatch(action);
+    } catch { /* malformed link */ }
+  };
+}
 
 // ── Root stack ────────────────────────────────────────────────────────────────
 const RootStack = createNativeStackNavigator();
@@ -172,7 +132,7 @@ function AppInner() {
       setIsOffline(offline);
       // Process sync queue when connectivity is restored
       if (wasOffline && !offline) {
-        processSyncQueue(require('./src/services/api').api).catch(() => {});
+        processSyncQueue().catch(() => {});
       }
       wasOffline = offline;
     });
@@ -321,8 +281,9 @@ function AppInner() {
       <>
       <OfflineBanner />
       <ToastProvider>
-      <NavigationContainer linking={linkingConfig}
+      <NavigationContainer linking={linking}
           ref={navigationRef}
+          onReady={installDesktopBridge}
           onStateChange={(state) => {
             // Track every screen navigation for funnel analysis in Mixpanel
             if (!state) return;
@@ -344,7 +305,7 @@ function AppInner() {
             style={{ backgroundColor:'#2C1800', flexDirection:'row',
               alignItems:'center', paddingHorizontal:16, paddingVertical:10,
               gap:8, borderBottomWidth:1, borderBottomColor:'#E65100' }}
-            onPress={() => (navigationRef.current as any)?.navigate('MoreTab', { screen:'OfflineStatus' })}
+            onPress={() => { if (navigationRef.isReady()) navigationRef.navigate('MoreTab', { screen: 'OfflineStatus' }); }}
             accessibilityRole="button"
             accessibilityLabel="No internet — tap to see what works offline"
           >
@@ -381,20 +342,26 @@ function AppInner() {
 }
 
 function App() {
+  // Load the Inter font family used throughout the styles. Rendering is not
+  // blocked: until (or if) loading fails, text falls back to the system font.
+  useEffect(() => {
+    Font.loadAsync(INTER_FONTS).catch(() => {});
+  }, []);
+
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <ErrorBoundary>
-      <StripeProvider
-      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
-      merchantIdentifier="merchant.com.justicegavel"
-    >
+      {/* StripeProvider only mounts on native when a publishable key is set */}
+      <PaymentsProvider>
       <SafeAreaProvider>
         <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ThemeProvider>
         <AppInner />
       </ThemeProvider>
     </SafeAreaProvider>
-    </StripeProvider>
+    </PaymentsProvider>
     </ErrorBoundary>
+    </GestureHandlerRootView>
     );
 }
 

@@ -85,7 +85,9 @@ async function buildApp(db) {
   });
 
   // Single record
-  router.get('/:id(\\d+)', auth, async (req, res) => {
+  // Express 5 (path-to-regexp v8) has no inline regex params — check digits in the handler
+  router.get('/:id', auth, async (req, res, next) => {
+    if (!/^\d+$/.test(req.params.id)) return next();
     try {
       const row = await db.get('SELECT id,name,charges,bail_amount,county,state FROM arrest_records WHERE id=?', [safeInt(req.params.id)]);
       if (!row) return res.status(404).json({ error:'Record not found' });

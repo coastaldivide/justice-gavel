@@ -1,7 +1,4 @@
-// @ts-ignore
 import { COLORS } from '../constants/theme';
-// @ts-ignore
-import { useTranslation } from 'react-i18next';
 import { useHaptics } from '../hooks/useHaptics';
 /**
  * DiversionScreen.tsx — Diversion program eligibility (merged)
@@ -83,8 +80,7 @@ function DiversionScreen({ navigation }: any) {
   const maybeEligible = yesCount >= criteria.length - 1;
 
   return (
-    // @ts-ignore
-    <SafeAreaView style={[styles.container, { backgroundColor: (colors as any).background ?? COLORS.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: (colors as any).bg ?? COLORS.bg }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -96,8 +92,6 @@ function DiversionScreen({ navigation }: any) {
       </View>
 
       {/* Tabs */}
-      // @ts-ignore
-      // @ts-ignore
       <View style={[styles.tabBar, { borderBottomColor: (colors as any).border ?? COLORS.border }]}>
         {TABS?.length === 0 ? (
 
@@ -110,8 +104,7 @@ function DiversionScreen({ navigation }: any) {
             Results will appear here when available
           </Text>
         </View>
-        // @ts-ignore
-        ) : items.map(tab => (
+        ) : TABS.map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
@@ -121,7 +114,6 @@ function DiversionScreen({ navigation }: any) {
           >
             <Text style={{ fontSize: 16, marginBottom: 2 }}>{tab.emoji}</Text>
             <Text style={[styles.tabText, {
-              // @ts-ignore
               color: activeTab === tab.key ? colors.primary : ((colors as any).subtext ?? COLORS.textMuted),
             }]}>
               {tab.label}
@@ -134,8 +126,6 @@ function DiversionScreen({ navigation }: any) {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        // @ts-ignore
-        // @ts-ignore
         <Text style={[styles.intro, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
           Answer honestly — this helps determine if you may qualify for a diversion program
           that could keep a conviction off your record.
@@ -151,9 +141,7 @@ function DiversionScreen({ navigation }: any) {
               <Switch
                 value={answers[c.key] ?? false}
                 onValueChange={val => setAnswers(prev => ({ ...prev, [c.key]: val }))}
-                // @ts-ignore
                 trackColor={{ false: COLORS.border, true: colors.primary + '66' }}
-                // @ts-ignore
                 thumbColor={answers[c.key] ? colors.primary : COLORS.textMuted}
               />
             </View>
@@ -164,8 +152,7 @@ function DiversionScreen({ navigation }: any) {
         {yesCount > 0 && (
           <View style={[styles.resultCard, {
             backgroundColor: eligible ? '#DCFCE7' : maybeEligible ? '#FEF3C7' : '#FEE2E2',
-            // @ts-ignore
-            borderColor: eligible ? COLORS.success : maybeEligible ? COLORS.warning : COLORS.emergency,
+            borderColor: eligible ? COLORS.legal : maybeEligible ? COLORS.warn : COLORS.emergency,
           }]}>
             <Text style={[styles.resultIcon]}>
               {eligible ? '✅' : maybeEligible ? '⚠️' : '❌'}
@@ -177,8 +164,6 @@ function DiversionScreen({ navigation }: any) {
                maybeEligible? 'You may partially qualify — speak to an attorney' :
                               'You may not qualify — but ask an attorney to be sure'}
             </Text>
-            // @ts-ignore
-            // @ts-ignore
             <Text style={[styles.resultSub, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
               {yesCount} of {criteria.length} criteria met
             </Text>
@@ -220,8 +205,7 @@ function makeStyles(colors: any) {
     tabText:    { fontSize: 11, fontWeight: '600', textAlign: 'center' },
     tabLine:    { position: 'absolute', bottom: 0, left: 8, right: 8, height: 2, borderRadius: 1 },
     intro:      { fontSize: 13, lineHeight: 18, marginBottom: 16 },
-    // @ts-ignore
-    card:       { borderRadius: 12, padding: 14, marginBottom: 8, elevation: 1, shadowColor: COLORS.text, shadowOffset:{width:0,height:1}, shadowOpacity:0.06, shadowRadius:2 },
+    card:       { borderRadius: 12, padding: 14, marginBottom: 8, elevation: 1, shadowColor: COLORS.textPrimary, shadowOffset:{width:0,height:1}, shadowOpacity:0.06, shadowRadius:2 },
     rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     question:   { fontSize: 14, lineHeight: 20 },
     resultCard: { borderRadius: 12, padding: 16, marginVertical: 12, borderWidth: 1, alignItems: 'center' },

@@ -11,7 +11,8 @@ module.exports = {
     }],
   },
   setupFiles: [],
-  testMatch: ['**/src/__tests__/**/*.test.js'],
+  testMatch: ['**/src/__tests__/**/*.test.{js,ts,tsx}'],
+  testPathIgnorePatterns: ['/node_modules/', '/src/__tests__/render/'],
   moduleNameMapper: {
     '^react-native$': '<rootDir>/src/__tests__/__mocks__/react-native.js',
     '^@react-navigation/.*$': '<rootDir>/src/__tests__/__mocks__/navigation.js',
@@ -22,7 +23,7 @@ module.exports = {
     '\\.(png|jpg|svg|ttf)$': '<rootDir>/src/__tests__/__mocks__/file.js',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@react-native-community|@testing-library|expo|react-native-reanimated|react-native-worklets)/)',
+    'node_modules/(?!(react-native|@react-native|@react-native-community|@testing-library|expo|react-native-reanimated)/)',
   ],
   collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/__tests__/**'],
   verbose: true,

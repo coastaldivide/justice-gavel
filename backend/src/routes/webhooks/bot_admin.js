@@ -1,4 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * webhooks/bot_admin.js — Bot monitoring, manual triggers, revenue dashboard
  *
@@ -126,7 +126,7 @@ router.get('/revenue', requireAdmin, adminLimiter, async (req, res) => {
       db.all(
         `SELECT ${REVENUE_COLS}
          FROM revenue_log
-         WHERE recorded_at >= datetime('now', '-${days} days')
+         WHERE recorded_at >= (NOW() - INTERVAL '${days} days')
          GROUP BY source ORDER BY gross DESC`
       ).catch(() => []),
       db.all(
@@ -135,7 +135,7 @@ router.get('/revenue', requireAdmin, adminLimiter, async (req, res) => {
                 SUM(net_cents) as net,
                 COUNT(*) as transactions
          FROM revenue_log
-         WHERE recorded_at >= datetime('now', '-${days} days')
+         WHERE recorded_at >= (NOW() - INTERVAL '${days} days')
          GROUP BY DATE(recorded_at)
          ORDER BY date DESC
          LIMIT 90`
@@ -189,7 +189,7 @@ router.post('/opt-out', requireAdmin, adminLimiter, async (req, res) => {
 
     const db = await getDb();
     await db.run(
-      `INSERT OR IGNORE INTO opt_outs (phone, email, reason) VALUES (?,?,?)`,
+      `INSERT INTO opt_outs (phone, email, reason) VALUES (?,?,?) ON CONFLICT DO NOTHING`,
       [safePhone, safeEmail, safeReason]
     );
     res.json({ success: true, phone: safePhone, email: safeEmail });

@@ -420,14 +420,9 @@ describe('VALID_ORG_TYPES module-level constant', () => {
 });
 
 describe('upgrade POST — RBAC partner+ requirement', () => {
-  const ROLE_HIERARCHY = ['viewer','client','paralegal','associate','partner','firm_admin','super_admin'];
-  const ROLE_ALIASES = {
-    managing_partner:'partner', lead_esquire:'partner', supervising_pd:'partner',
-    co_counsel:'associate', law_clerk:'paralegal',
-  };
-  function resolveRole(r) { return ROLE_ALIASES[r] ?? r; }
-  function roleLevel(r)   { return ROLE_HIERARCHY.indexOf(resolveRole(r)); }
-  function hasMinRole(u,m){ return roleLevel(u) >= roleLevel(m); }
+  // Use the real RBAC helper (the inline copy had drifted: no lead_attorney alias)
+  let hasMinRole;
+  beforeAll(async () => { ({ hasMinRole } = await import('../middleware/rbac.js')); });
 
   test('firm_admin can request upgrade', () => {
     expect(hasMinRole('firm_admin', 'partner')).toBe(true);

@@ -23,8 +23,6 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshC
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
-declare var data: any;
-declare var setIsLoading: any; // hoisted from component scope
 // ── Hotlines ──────────────────────────────────────────────────────────────────
 const CRISIS_LINES = [
   { name: '211 — Social Services',     number: '211',              desc: 'Housing, food, utilities, crisis support. Free, confidential, 24/7.' },
@@ -92,11 +90,10 @@ const GROUNDING = [
   { icon: '📍', title: t('crisis_safe_title'), body: t('crisis_safe_body') },
 ];
 
-function callLine(number: string) {
-  const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
-  // @ts-ignore
-  Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`).catch(() => { showToast('Action failed. Please try again.', 'error'); setRetryCount(0); }).finally(() => setIsLoading(false));
+// Plain helper (no hooks): dial a crisis line; report failure via onError so
+// the caller can show the number to dial manually.
+function callLine(number: string, onError?: (number: string) => void) {
+  Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`).catch(() => onError?.(number));
 }
 
 
@@ -109,22 +106,18 @@ const FALLBACK_CRISIS_RESOURCES = [
 ];
 
 function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
+  const onDialError = (number: string) => showToast(`Please dial ${number} manually.`, 'warning');
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return () => { mountedRef.current = false; };
   }, []);
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [dbLines, setDbLines] = React.useState<any[]>([]);
   const [fetchError, setFetchError] = useState<string>('');
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   React.useEffect(() => {
     api.get('/resources?category=CRISIS_LINE&limit=20')
       .then(r => { if (r.data?.length) setDbLines(r.data || []); })
@@ -163,7 +156,7 @@ function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.El
       <TouchableOpacity
         accessibilityRole="button"
         style={styles.primaryBtn}
-        onPress={() => callLine('988')}
+        onPress={() => callLine('988', onDialError)}
         activeOpacity={0.88}
         accessibilityLabel="Call 988 Suicide and Crisis Lifeline"
         accessibilityHint="Opens your phone to call the free 24/7 crisis line"
@@ -204,7 +197,7 @@ function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.El
           accessibilityRole="button"
           key={line.key}
           style={[styles.lineCard, { backgroundColor: colors.bgCard }]}
-          onPress={() => callLine(line.number)}
+          onPress={() => callLine(line.number, onDialError)}
           activeOpacity={0.85}
           accessibilityLabel={`Call ${line.name}`}
           accessibilityHint={line.forWhom}
@@ -253,14 +246,6 @@ function CrisisResourcesScreen({ route, navigation }: ScreenProps): React.JSX.El
 
       <View style={{ height: 40 }} />
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>🆘</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>Loading resources...</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>If this takes too long, call 988 or 911 directly.</Text>
-        </View>
-      )}
       </ScrollView>
   );
 }

@@ -1,4 +1,6 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { requireAi } from '../../utils/ai.js';
+import { safeJson } from '../../utils/routeHelpers.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * contracts/review.js — Contract review and redline
  *
@@ -43,7 +45,7 @@ const upload = multer({
 });
 
 // ── POST /api/contracts/review — risk analysis ────────────────────────────────
-router.post('/review', authRequired, reviewLimiter, perUserAiLimit,
+router.post('/review', authRequired, requireAi, reviewLimiter, perUserAiLimit,
   upload.single('contract'), async (req, res) => {
   try {
     const db = await getDb();
@@ -138,7 +140,7 @@ router.get('/review/:id', authRequired, async (req, res) => {
 });
 
 // ── POST /api/contracts/redline — compare two versions ────────────────────────
-router.post('/redline', authRequired, redlineLimiter, perUserAiLimit,
+router.post('/redline', authRequired, requireAi, redlineLimiter, perUserAiLimit,
   upload.fields([{ name: 'original', maxCount: 1 }, { name: 'revised', maxCount: 1 }]),
   async (req, res) => {
   try {
@@ -214,7 +216,7 @@ router.get('/redline/:id', authRequired, async (req, res) => {
 });
 
 // ── POST /api/contracts/:id/negotiate — generate negotiation strategy ─────────
-router.post('/:id/negotiate', authRequired, negotiateLimiter, perUserAiLimit, async (req, res) => {
+router.post('/:id/negotiate', authRequired, requireAi, negotiateLimiter, perUserAiLimit, async (req, res) => {
   try {
     const db  = await getDb();
     const contract = await db.get(

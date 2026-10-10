@@ -211,12 +211,20 @@ router.post('/report-intake', authRequired, routeLimiter, async (req, res) => {
     const cas = await db.get('SELECT id FROM cases WHERE id=? AND user_id=?', [safeInt(caseId), userId]);
     if (!cas) return err403(res, 'Access denied to this case');
 
-    await db.run(`
-      INSERT OR REPLACE INTO hague_intakes
-        (case_id, user_id, country_code, child_name, child_age, abduction_date, notes, created_at)
-      VALUES (?,?,?,?,?,?,?,NOW())
-    `, [safeInt(caseId), userId, code, sanitizeStr(childName, 100),
-        safeInt(childAge), sanitizeStr(abductionDate, 20), sanitizeStr(notes || '', 2000)]);
+    // Upsert by (case_id, user_id): update the existing intake, else insert.
+    const hagueVals = [code, sanitizeStr(childName, 100), safeInt(childAge),
+                       sanitizeStr(abductionDate, 20), sanitizeStr(notes || '', 2000)];
+    const upd = await db.run(`
+      UPDATE hague_intakes SET country_code=?, child_name=?, child_age=?, abduction_date=?, notes=?
+       WHERE case_id=? AND user_id=?
+    `, [...hagueVals, safeInt(caseId), userId]);
+    if (!upd.changes) {
+      await db.run(`
+        INSERT INTO hague_intakes
+          (case_id, user_id, country_code, child_name, child_age, abduction_date, notes, created_at)
+        VALUES (?,?,?,?,?,?,?,NOW())
+      `, [safeInt(caseId), userId, ...hagueVals]);
+    }
 
     const isContractingState = state && !state.authority.includes('Not a contracting state');
 

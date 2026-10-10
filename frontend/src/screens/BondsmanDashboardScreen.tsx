@@ -21,20 +21,15 @@ import { FlashList } from '@shopify/flash-list';
 import React, { useCallback, useEffect, useState, useMemo} from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import * as secureStorage from '../utils/secureStorage';
 import { useAuthGate } from '../components/AuthGate';
 import { t } from '../i18n';
 
-declare var _fetchError: any;
-declare var confirmAccept: any; // hoisted from component scope
 // ── Lead fee display helper ───────────────────────────────────────────────────
 function leadFeeLabel(bailAmount: number): string {
-  const { confirm } = useConfirm();
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
   if (!bailAmount || bailAmount <= 0) return '$25';
   if (bailAmount < 5000)   return '$25';
   if (bailAmount < 25000)  return '$75';
@@ -61,32 +56,15 @@ function timeAgo(dateStr: string): string {
 
 // ── Lead card ─────────────────────────────────────────────────────────────────
 function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () => void }) {
-  const [_fetchError, _setFetchError] = useState<string|null>(null);
+  const { showToast } = useToast();
   const [expanded, setExpanded] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const tier = bailTier(lead.bail_amount);
-
-
-  // Refresh data when user navigates back to this screen
-  useFocusEffect(
-    useCallback(() => {
-      confirmAccept();
-    }, [])
-  );
-
-
-  if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
     <TouchableOpacity accessibilityRole="button" testID="lead-card"
       style={[styles.card, lead.purchased && styles.cardPurchased]}
       onPress={() => setExpanded(e => !e)}
       activeOpacity={0.85}
     >
-      accessibilityRole="button" accessibilityLabel="Toggle expand"
       {/* Top row */}
       <View style={styles.cardTop}>
         <View style={{ flex: 1 }}>
@@ -144,8 +122,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
               <Text maxFontSizeMultiplier={1.4} style={styles.revealedTitle}>✓ Contact Information Unlocked</Text>
               {lead.phone && (
                 <TouchableOpacity
-          // @ts-ignore
-          accessibilityRole="button" accessibilityLabel="\ud83d\udcde {lead.phone}" onPress={() => Linking.openURL('tel:' + lead.phone).catch(() => showToast('Action failed. Please try again.', 'error'))}
+          accessibilityRole="button" accessibilityLabel={"\ud83d\udcde {lead.phone}"} onPress={() => Linking.openURL('tel:' + lead.phone).catch(() => showToast('Action failed. Please try again.', 'error'))}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.revealedPhone}>📞 {lead.phone}</Text>
                 </TouchableOpacity>
@@ -199,7 +176,6 @@ function ProfileModal({ visible, onClose, onSaved }: any) {
         states: licenseState ? [licenseState.toUpperCase()] : []});
       onSaved();
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
       showToast('Check your internet and pull down to refresh.');
     } finally {
       setSaving(false);
@@ -334,6 +310,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -422,12 +399,11 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       setBadgeStatus({ active: true, verified_badge: true });
       showToast(res.data?.message, 'success');
     } catch (e: any) {
-      showToast('Check your internet and pull down to refresh.');
+      showToast(apiErrorMessage(e, 'Check your internet and pull down to refresh.'));
     } finally { setBadgeLoading(false); }
   });
 
   const handleBadgeCancel = () => {
-// @ts-ignore
 confirm('Cancel Badge?', 'Your Verified badge will be removed from all listings.',
       { confirmLabel: 'Cancel Badge', destructive: true }).then(async ok => { if (!ok) return;
       try {
@@ -479,18 +455,8 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.checkInMgrBtnText}>📋 Check-Ins</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={[styles.checkInMgrBtn, { backgroundColor: COLORS.navy }]}
-            onPress={() => {
-              hapticImpact();
-              navigation.navigate('RecoveryAgents');
-            }}
-            accessibilityLabel="Find recovery agents for skip apprehension"
-          >
-            <Text maxFontSizeMultiplier={1.4} style={styles.checkInMgrBtnText}>🔍 Recovery</Text>
-          </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" style={styles.profileBtn} accessibilityLabel="\u2699\ufe0f" onPress={() => setShowProfile(true)}
+          {/* Recovery-agent directory suspended (see AppNavigator: unverified, prohibited in some states) */}
+          <TouchableOpacity accessibilityRole="button" style={styles.profileBtn} accessibilityLabel={"\u2699\ufe0f"} onPress={() => setShowProfile(true)}
           >
             <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
           </TouchableOpacity>
@@ -576,7 +542,7 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
             accessibilityRole="button"
             key={h}
             style={[styles.filterChip, filterHours === h && styles.filterChipActive]}
-            accessibilityLabel="{h}h" onPress={() => setFilterHours(h)}
+            accessibilityLabel={`Last ${h} hours`} onPress={() => setFilterHours(h)}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.filterChipText, filterHours === h && styles.filterChipTextActive]}>
               {h}h
@@ -593,22 +559,9 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
         </View>
       ) : (
         <>
-          {_fetchError && (
-            <View style={{ backgroundColor: colors.errorBg, padding: 12, margin: 8, borderRadius: 8 }}>
-              <Text maxFontSizeMultiplier={1.2} style={{ color: colors.emergency, fontSize: 13 }}>
-                {_fetchError}
-              </Text>
-            </View>
-          )}
         <FlashList
           testID="lead-list"
-          // @ts-ignore
-          getItemLayout={(_, index) => ({ length: 150, offset: 150 * index, index })}
           estimatedItemSize={80}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={true}
           data={leads}
           keyExtractor={i => String(i.id)}
           contentContainerStyle={{ padding: 12, paddingBottom: 40 }}

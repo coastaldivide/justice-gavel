@@ -1,53 +1,68 @@
 {
   "cli": {
-    "version": ">= 16.0.0"
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "ios": {
-        "simulator": true
+    "base": {
+      "env": {
+        "EXPO_PUBLIC_API_BASE": "https://api.justicegavel.app/api",
+        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": ""
       }
     },
-    "preview": {
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
       "distribution": "internal",
-      "channel": "preview",
+      "channel": "development",
+      "ios": {
+        "simulator": true,
+        "resourceClass": "m-medium"
+      },
       "android": {
         "buildType": "apk"
       },
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal",
+      "channel": "preview",
       "ios": {
-        "simulator": false
+        "simulator": false,
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "production": {
+      "extends": "base",
+      "distribution": "store",
       "channel": "production",
-      "android": {
-        "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease"
-      },
+      "autoIncrement": true,
+      "credentialsSource": "remote",
       "ios": {
-        "autoIncrement": true
+        "resourceClass": "m-medium"
       },
-      "env": {
-        "EXPO_PUBLIC_API_BASE": "https://api.justicegavel.app/api",
-        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51TakD62XUfNqC3X4bEUfw48uj4OrctvShiTn0DTTubDJTxMVvbP4RqDrVFwTg59AVpjtCeO3lnIqWrjkAnxYeKcL00CKoFqEgi"
-      },
-      "credentialsSource": "remote"
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "appleId": "YOUR_APPLE_ID@email.com",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "YOUR_APPLE_TEAM_ID"
+        "appleId": "REPLACE_WITH_APPLE_ID",
+        "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal"
       }
     }
-  },
-  "channel": "production"
+  }
 }

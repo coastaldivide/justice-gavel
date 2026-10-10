@@ -15,15 +15,6 @@
 import { scale, fontScale, gridColumns, cardWidth, shadow,
          CONTENT_MAX_WIDTH } from '../utils/responsive';
 
-// Mock different screen sizes
-const mockDimensions = (width: number, height: number) => {
-  jest.mock('react-native', () => {
-    const RN = jest.requireActual('react-native');
-    RN.Dimensions.get = (_: string) => ({ width, height });
-    return RN;
-  });
-};
-
 describe('Responsive Utility — Cross-Device', () => {
 
   describe('scale() function', () => {
@@ -114,19 +105,19 @@ describe('Responsive Utility — Cross-Device', () => {
 
 describe('Web Compatibility Shims', () => {
   test('webCompat exports exist', async () => {
-    const compat = await import('../utils/webCompat');
+    const compat = require('../utils/webCompat');
     expect(typeof compat.Haptics).toBe('object');
   });
 
   test('Haptics shim has all required methods', async () => {
-    const { Haptics } = await import('../utils/webCompat');
+    const { Haptics } = require('../utils/webCompat');
     expect(typeof Haptics.impactAsync).toBe('function');
     expect(typeof Haptics.notificationAsync).toBe('function');
     expect(typeof Haptics.selectionAsync).toBe('function');
   });
 
   test('Haptics shim methods do not throw', async () => {
-    const { Haptics } = await import('../utils/webCompat');
+    const { Haptics } = require('../utils/webCompat');
     await expect(Haptics.impactAsync()).resolves.not.toThrow();
     await expect(Haptics.notificationAsync()).resolves.not.toThrow();
     await expect(Haptics.selectionAsync()).resolves.not.toThrow();

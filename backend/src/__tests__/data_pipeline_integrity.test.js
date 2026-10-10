@@ -77,13 +77,15 @@ describe('Data pipeline — script quality', () => {
 });
 
 describe('Data pipeline — output integrity', () => {
-  test('seed script defines required attorney fields', () => {
-    const fp = join(SCRIPTS_DIR, 'seed_providers.js');
-    if (!existsSync(fp)) return;
+  test('provider seed defines required attorney fields', () => {
+    // seed_providers.js is a dev stub; the canonical provider rows are seeded by
+    // supabase/migrations/00000000000001_seed_reference_data.sql (read-only check).
+    const fp = resolve(__dirname, '../../../supabase/migrations/00000000000001_seed_reference_data.sql');
     const c = readFileSync(fp, 'utf-8');
-    expect(c).toMatch(/name/i);
-    expect(c).toMatch(/state/i);
-    expect(c).toMatch(/city/i);
+    const cols = (c.match(/INSERT INTO "lawyers" \(([^)]*)\)/) || [])[1] || '';
+    expect(cols).toMatch(/\bname\b/);
+    expect(cols).toMatch(/\bstate\b/);
+    expect(cols).toMatch(/\bcity\b/);
   });
 
   test('Google Places integration uses API key from env', () => {

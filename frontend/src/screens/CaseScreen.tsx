@@ -10,11 +10,11 @@ import { AppIcon } from '../components/AppIcon';
 import { EmptyState } from '../components/EmptyState';
 
 import React, { useState, useEffect, useCallback, useMemo} from 'react';
-import { FileSystem, ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { FileSystem, ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
 import type {} from '../types/navigation';
 import {View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Modal, ScrollView, Linking, ActivityIndicator, RefreshControl, Share, KeyboardAvoidingView, Platform, AccessibilityInfo, LayoutAnimation} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { cacheAgeLabel, cacheCases, cacheSavedLawyers, getCachedLawyers } from '../services/offlineCache';
 import { t }   from '../i18n';
 import * as Calendar      from 'expo-calendar';
@@ -25,29 +25,13 @@ import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 import { saveCaseOffline, getOfflineCases, startSyncListener } from '../services/offlineSync';
 import Markdown from 'react-native-markdown-display';
 import { useFocusEffect } from '@react-navigation/native';
-import { daysUntil, formatDate} from '../utils/dateUtils';
+import { daysUntil, formatDate, parseLocalDate, toLocalISODate } from '../utils/dateUtils';
 const C_0A1929 = ('\x23' + '0A1929') as string; // hex color
 
-declare var ScreenProps: any;
-declare var caseData: any;
-declare var loadCases: any;
-declare var mountedRef: any;
-declare var newNotes: any;
-declare var newTitle: any;
-declare var refreshing: any;
-declare var selectedCase: any;
-declare var setNewNotes: any;
-declare var setNewTitle: any;
-declare var setRefreshing: any;
-declare var setShowAdd: any;
-declare var userState: any;
-declare var exportCasePDF: any; // hoisted from component scope
 const STATUS_COLORS: Record<string, string> = {
   Open: COLORS.blue, Active: COLORS.legalDark, Pending: COLORS.warnDark,
   Closed: COLORS.textMuted, Dismissed: COLORS.blue};
 const STATUS_OPTIONS = ['Open', 'Active', 'Pending', 'Closed', 'Dismissed'];
-          // Rating prompt on resolution -- highest positive emotion moment
-          setTimeout(() => { StoreReview.isAvailableAsync().then(ok => { if (ok) StoreReview.requestReview(); }).catch(() => {}); }, 2000);
 
 interface Case {
   state?:          string;
@@ -55,9 +39,7 @@ interface Case {
   next_court_date: string | null; notes: string; created_at: string;
 }
 
-const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCalendar, onShare, onInvite }: any) {
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
+const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCalendar, onShare, onInvite, onExport }: any) {
   const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
@@ -82,7 +64,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   onPress={async () => {
 
-                    const d = new Date(item.next_court_date!);
+                    const d = parseLocalDate(item.next_court_date) ?? new Date(NaN);
                     const remind = new Date(d);
                     remind.setDate(d.getDate()-1);
                     if (remind <= new Date()) {
@@ -114,7 +96,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
         <View style={[styles.courtDateRow, days !== null && (days as number) <= 7 && styles.courtDateUrgent]}>
           <Text maxFontSizeMultiplier={1.4} style={styles.courtDateIcon}>📅</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.courtDateText}>
-            Court: {new Date(item.next_court_date!).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            Court: {formatDate(item.next_court_date, { month: 'short', day: 'numeric', year: 'numeric' })}
             {days !== null && (days as number) >= 0 && <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}>  ({(days as number) === 0 ? 'Today!' : (days as number) === 1 ? 'Tomorrow!' : `${days} days`})</Text>}
           </Text>
         </View>
@@ -124,6 +106,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
       <TouchableOpacity
           accessibilityRole="button" testID="case-share-sheet"
         style={styles.shareBtn}
+        onPress={() => onShare?.(item)}
       >
         <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>🔗  Share Link</Text>
       </TouchableOpacity>
@@ -196,7 +179,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.expungeBtn, { backgroundColor: COLORS.bgSubtle }]}
-            onPress={() => exportCasePDF(item)}
+            onPress={() => onExport?.(item)}
             accessibilityLabel="Export full case summary as PDF"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.expungeBtnText}>
@@ -244,6 +227,8 @@ const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
 function CaseScreen({ route, navigation }: any) {
   const { showToast } = useToast();
+  const { confirm } = useConfirm();
+  const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
@@ -261,8 +246,8 @@ function CaseScreen({ route, navigation }: any) {
   // Export full case summary as PDF
   const exportCasePDF = async (cas: Record<string, unknown>) => {
     try {
-      const Print = (await import('expo-print')).default;
-      const Sharing = (await import('expo-sharing')).default;
+      const Print = await import('expo-print');
+      const Sharing = await import('expo-sharing');
       const date = new Date().toLocaleDateString('en-US', {
         year:'numeric', month:'long', day:'numeric'
       });
@@ -283,12 +268,12 @@ function CaseScreen({ route, navigation }: any) {
 <h1>${escapeHtml(String(cas.title || '')) || 'Case Summary'}</h1>
 <div class="meta">Exported ${date} · Justice Gavel</div>
 <h2>Case Details</h2>
-<div class="field"><span class="label">Status:</span> ${cas.status || 'Active'}</div>
-<div class="field"><span class="label">Next Court Date:</span> ${cas.next_court_date ? new Date(String(cas.next_court_date)).toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}) : 'Not set'}</div>
-<div class="field"><span class="label">State:</span> ${cas.state || 'Not specified'}</div>
-${cas.charges ? `<div class="field"><span class="label">Charges:</span> \${escapeHtml(String(cas.charges || ''))}</div>` : ''}
-${cas.bail_amount ? `<div class="field"><span class="label">Bail Amount:</span> $\${Number(cas.bail_amount).toLocaleString()}</div>` : ''}
-${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes || ''))}</div>` : ''}
+<div class="field"><span class="label">Status:</span> ${escapeHtml(String(cas.status || 'Active'))}</div>
+<div class="field"><span class="label">Next Court Date:</span> ${cas.next_court_date ? formatDate(String(cas.next_court_date), {month:'long', day:'numeric', year:'numeric'}) : 'Not set'}</div>
+<div class="field"><span class="label">State:</span> ${escapeHtml(String(cas.state || 'Not specified'))}</div>
+${cas.charges ? `<div class="field"><span class="label">Charges:</span> ${escapeHtml(String(cas.charges || ''))}</div>` : ''}
+${cas.bail_amount ? `<div class="field"><span class="label">Bail Amount:</span> $${Number(cas.bail_amount).toLocaleString()}</div>` : ''}
+${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes || ''))}</div>` : ''}
 <div class="footer">Justice Gavel, Inc. · Not a law firm · Confidential case document</div>
 </body></html>`;
       const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -302,6 +287,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
   };
 
   // Offline case sync -- show locally created cases + sync on reconnect
+  const loadRef = React.useRef<() => Promise<void>>(async () => {});
   const [offlineCases, setOfflineCases] = React.useState<any[]>([]);
   React.useEffect(() => {
     let reloadTimer: ReturnType<typeof setTimeout> | null = null;
@@ -311,7 +297,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
       setOfflineCases(prev => prev.filter(c => c.id !== tempId));
       // Trigger a reload after brief delay (debounced to avoid rapid re-fires)
       if (reloadTimer) clearTimeout(reloadTimer);
-      reloadTimer = setTimeout(() => { reloadTimer = null; loadCases(); }, 500);
+      reloadTimer = setTimeout(() => { reloadTimer = null; loadRef.current(); }, 500);
     });
     return () => { unsub(); if (reloadTimer) clearTimeout(reloadTimer); };
   }, []);
@@ -332,8 +318,9 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
   const autoSaveNotes = (text: string) => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(async () => {
-      if (!caseData?.id) return;
-      try { await api.put(`/cases/${caseData.id}`, { notes: text }); } catch {}
+      const id = editCaseIdRef.current;
+      if (!id) return;
+      try { await api.put(`/cases/${id}`, { notes: text }); } catch {}
     }, 1500);
   };
 
@@ -382,6 +369,9 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
   }, []);
   const [modalVisible, setModal] = useState(false);
   const [editCase, setEditCase] = useState<Partial<Case>>({});
+  const editCaseIdRef = React.useRef<number | undefined>(undefined);
+  editCaseIdRef.current = editCase.id;
+  useEffect(() => () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); }, []);
   const [saving, setSaving]     = useState(false);
   const [scanning,      setScanning]      = useState(false);
   const [familyCases,   setFamilyCases]   = useState<any[]>([]);
@@ -406,6 +396,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
     setLoading(false);
   }, []);
 
+  loadRef.current = load;
   useEffect(() => { load(); }, [load]);
 
   // Unread message badge
@@ -446,31 +437,32 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">\${escapeHtml(String(cas.notes |
       await load();
     } catch (e: any) {
       // Offline fallback -- save locally and sync when reconnected
-      try {
-        const caseData = { title: newTitle.trim(), status: 'Active',
-          notes: newNotes.trim() || null, state: userState || null };
-        const tempId = await saveCaseOffline(caseData);
-        const offlineCase = { id: tempId, title: newTitle.trim(),
-          status: 'Active', _offline: true, created_at: new Date().toISOString() };
-        setOfflineCases(prev => [offlineCase, ...prev]);
-        setShowAdd(false); setNewTitle(''); setNewNotes('');
-        return; // Don't show error -- case was saved offline
-      } catch {}
+      // Only queue offline when the request never reached the server and
+      // this is a new case (edits need the server copy).
+      if (!e?.response && !editCase.id) {
+        try {
+          const offlinePayload = { title: editCase.title!.trim(), status: editCase.status || 'Open',
+            notes: editCase.notes?.trim() || null, state: editCase.state || null };
+          const tempId = await saveCaseOffline(offlinePayload);
+          const offlineCase = { id: tempId, title: offlinePayload.title,
+            status: offlinePayload.status, _offline: true, created_at: new Date().toISOString() };
+          setOfflineCases(prev => [offlineCase, ...prev]);
+          setModal(false);
+          return; // Don't show error -- case was saved offline
+        } catch {}
+      }
 
-      setError(e.response?.data?.error || 'Could not save. Try again.');
+      setError(apiErrorMessage(e, 'Could not save. Try again.'));
     } finally {
       setSaving(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
     }
-  }, [cases, selectedCase]);
+  }, [editCase, load]);
 
   // ── Document scanner ──────────────────────────────────────────────────────
   const scanDocument = useCallback(async () => {
     try {
       // Ask: camera or library
-// @ts-ignore
-confirm('Scan Document','Take a photo or choose from your library to scan this document.',
+      confirm('Scan Document','Take a photo or choose from your library to scan this document.',
       { confirmLabel:'Take Photo', cancelLabel:'Choose Library' }).then(ok=>{
         if(ok) pickScanSource('camera'); else pickScanSource('library');
       });
@@ -484,7 +476,6 @@ confirm('Scan Document','Take a photo or choose from your library to scan this d
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          // @ts-ignore
           confirm('Camera Access Needed', 'To scan documents, go to Settings and turn on Camera for Justice Gavel.',
       { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
           return;
@@ -496,7 +487,6 @@ confirm('Scan Document','Take a photo or choose from your library to scan this d
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          // @ts-ignore
           confirm('Photo Access Needed', 'To attach photos, go to Settings and turn on Photos for Justice Gavel.',
       { confirmLabel: 'Open Settings' }).then(ok => { if (ok) Linking.openURL('app-settings:').catch(() => showToast('Action failed. Please try again.', 'error')) });
           return;
@@ -609,11 +599,11 @@ showToast('Document read — specific fields could not be extracted. Check Notes
       const res = await api.post(`/cases/${cas.id}/share`);
       const url  = res.data?.share_url || `justicegavel.app/case/${res.data?.token}`;
       const msg  = `📁 ${cas.title}\n` +
-        (cas.next_court_date ? `📅 Court date: ${new Date(cas.next_court_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\n` : '') +
+        (cas.next_court_date ? `📅 Court date: ${formatDate(cas.next_court_date)}\n` : '') +
         `\nView this case (read-only, expires in 7 days):\n${url}\n\nSent via Justice Gavel`;
-      await Share.share({ message: msg, title: cas.title });
+      await RNShare.share({ message: msg, title: cas.title });
     } catch (e: any) {
-      showToast(e.response?.data?.error || 'Check your connection and try again.', 'info');
+      showToast(apiErrorMessage(e, 'Check your connection and try again.'), 'info');
     }
   }, []);
 
@@ -635,9 +625,9 @@ showToast('Document read — specific fields could not be extracted. Check Notes
       showToast(res.data?.message || 'Family member can now see this case.', 'info');
     } catch (e: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
-      setInviteError(e.response?.data?.error || 'Could not invite. Check the email address.');
+      setInviteError(apiErrorMessage(e, 'Could not invite. Check the email address.'));
     } finally { setInviting(false); }
-  }, [selectedCase, inviteEmail, invitingCase]);
+  }, [inviteEmail, invitingCase]);
 
   // ── Calendar sync ──────────────────────────────────────────────────────────
   const addToCalendar = useCallback(async (cas: Case) => {
@@ -646,8 +636,6 @@ showToast('Document read — specific fields could not be extracted. Check Notes
       return;
     }
     try {
-
-  if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
       const { status } = await Calendar.requestCalendarPermissionsAsync();
       if (status !== 'granted') {
         showToast('Allow calendar access in Settings to add court dates.');
@@ -678,7 +666,15 @@ showToast('Document read — specific fields could not be extracted. Check Notes
       __DEV__ && console.warn(e?.message);
       showToast('Check your calendar permissions in Settings.');
     }
-  }, [selectedCase, gated, unlock, unlocking]);
+  }, []);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    load().finally(() => setRefreshing(false));
+  }, [load]);
+
+  if (gated) return <BiometricLockView onUnlock={unlock} unlocking={unlocking} />;
 
   return (
     <View testID="case-screen" style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -687,7 +683,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.tabBtn, activeTab === 'cases' && styles.tabBtnActive]}
-        accessibilityState={{ selected: false }}>
+          onPress={() => setActiveTab('cases')}
+        accessibilityState={{ selected: activeTab === 'cases' }}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.tabBtnText, activeTab === 'cases' && styles.tabBtnTextActive]}>{t('case_tab_cases')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -731,7 +728,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1.4} style={styles.heading}>{t('case_tab_cases')}</Text>
         <TouchableOpacity accessibilityRole="button" style={styles.addBtn} testID="case-add-button" onPress={openNew}
-         accessibilityLabel="{t('case_new')}">
+         accessibilityLabel={t('case_new')}>
           <Text maxFontSizeMultiplier={1.4} style={styles.addBtnText}>{t('case_new')}</Text>
         </TouchableOpacity>
       </View>
@@ -768,14 +765,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           : (
             <FlashList
           testID="case-list"
-          // @ts-ignore
-          initialNumToRender={8}
-          maxToRenderPerBatch={5}
-          windowSize={10}
-          removeClippedSubviews={true}
-          getItemLayout={(_, index) => ({ length: 130, offset: 130 * index, index })}
-          estimatedItemSize={80}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadSavedLawyers().finally(() => setRefreshing(false)); }} tintColor={colors.textSecond} />}
+          estimatedItemSize={130}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textSecond} />}
               data={cases}
               keyExtractor={i => String(i.id)}
           ListEmptyComponent={
@@ -783,8 +774,8 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               No cases yet. Tap + to start tracking your first case.
             </Text>
           }
-              renderItem={({ item }) => <CaseCard item={item} testID="case-share-button" onPress={() => openEdit(item)} navigation={navigation} onCalendar={addToCalendar} onShare={shareCase} onInvite={openInvite} />}
-              contentContainerStyle={{ padding: 16, paddingBottom: 40, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
+              renderItem={({ item }) => <CaseCard item={item} testID="case-share-button" onPress={() => openEdit(item)} navigation={navigation} onCalendar={addToCalendar} onShare={shareCase} onInvite={openInvite} onExport={exportCasePDF} />}
+              contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
             />
           )
       }
@@ -808,7 +799,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
                 <Text maxFontSizeMultiplier={1.4} style={[styles.familyCaseTitle, { color: colors.textPrimary }]} numberOfLines={1}>{fc.title}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.familyCaseSub, { color: colors.textMuted }]}>
                   From {fc.owner_name || fc.owner_email || 'family member'}
-                  {fc.next_court_date ? ` · Court: ${new Date(fc.next_court_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                  {fc.next_court_date ? ` · Court: ${formatDate(fc.next_court_date, { month: 'short', day: 'numeric' })}` : ''}
                 </Text>
               </View>
               <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 18 }}>›</Text>
@@ -939,7 +930,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               { label: '+90 days', days: 90 },
             ].map(({ label, days }) => {
               const d = new Date(); d.setDate(d.getDate() + days);
-              const iso = d.toISOString().split('T')[0];
+              const iso = toLocalISODate(d);
               return (
                 <TouchableOpacity
                   accessibilityRole="button"
@@ -1055,9 +1046,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
                 mode:        'defender',
                 caseContext: ctx,
                 caseTitle:   activeCase?.title || 'Active Case',
-                toolCardAI: { borderWidth: 1.5 },
-  privilegeNote:     { borderRadius: 8, borderWidth: 1, padding: 10, marginTop: 6 },
-  privilegeNoteText: { fontSize: 11, lineHeight: 16 }});
+              });
             }}
             accessibilityLabel="Discuss case with AI"
           >

@@ -1,4 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * contracts/execution.js — Contract execution and lifecycle tracking
  *
@@ -63,7 +63,7 @@ router.post('/:id/sign', authRequired, signLimiter, async (req, res) => {
     // If at least 2 parties signed, mark as executed
     if (signers.length >= 2 && contract.status !== 'executed') {
       await db.run(
-        "UPDATE contracts SET status='executed', execution_date=date('now') WHERE id=?",
+        "UPDATE contracts SET status='executed', execution_date=CURRENT_DATE WHERE id=?",
         [contract.id]
       );
     }
@@ -103,12 +103,12 @@ router.get('/expiring', authRequired, async (req, res) => {
 
     const rows = await db.all(
       `SELECT id, contract_type, title, party_a, party_b, status, expiry_date, renewal_date,
-              CAST((julianday(expiry_date) - julianday('now')) AS INTEGER) as days_until_expiry
+              (expiry_date::date - CURRENT_DATE) as days_until_expiry
        FROM contracts
        WHERE user_id=?
          AND expiry_date IS NOT NULL
-         AND expiry_date > date('now')
-         AND expiry_date <= date('now', '+' || ? || ' days')
+         AND expiry_date > CURRENT_DATE
+         AND expiry_date <= (CURRENT_DATE + (? || ' days')::interval)
        ORDER BY expiry_date ASC`,
       [req.user.id, days]
     );
@@ -136,7 +136,7 @@ router.get('/dashboard', authRequired, async (req, res) => {
       db.all('SELECT status, COUNT(*) as count FROM contracts WHERE user_id=? GROUP BY status', [req.user.id]),
       db.all('SELECT contract_type, COUNT(*) as count FROM contracts WHERE user_id=? GROUP BY contract_type ORDER BY count DESC LIMIT 5', [req.user.id]),
       db.get(
-        "SELECT COUNT(*) as n FROM contracts WHERE user_id=? AND expiry_date > date('now') AND expiry_date <= date('now','+30 days')",
+        "SELECT COUNT(*) as n FROM contracts WHERE user_id=? AND expiry_date > CURRENT_DATE AND expiry_date <= (CURRENT_DATE + INTERVAL '30 days')",
         [req.user.id]
       ),
       db.all(

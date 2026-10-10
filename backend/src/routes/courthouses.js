@@ -21,14 +21,14 @@ router.get('/', authRequired, apiLimiter, async (req, res) => {
     let sql = 'SELECT id, name, address, city, state, zip_code, phone, lat, lng, url, hours, court_type, county FROM courthouses WHERE 1=1';
     const params = [];
 
-    if (city)  { sql += ' AND city=?';            params.push(city); }
-    if (state) { sql += ' AND state=?';           params.push(state); }
+    if (city)  { sql += ' AND LOWER(city)=LOWER(?)'; params.push(String(city).slice(0, 100)); }
+    if (state) { sql += ' AND UPPER(state)=?';    params.push(String(state).toUpperCase().slice(0, 2)); }
     if (q)     {
-      sql += ' AND (name LIKE ? OR address LIKE ? OR county LIKE ?)';
+      sql += ' AND (name ILIKE ? OR address ILIKE ? OR county ILIKE ?)';
       params.push(`%${qSafe}%`, `%${qSafe}%`, `%${qSafe}%`);
     }
     sql += ' ORDER BY city ASC LIMIT ?';
-    params.push(safeInt(limit) || 50);
+    params.push(Math.min(safeInt(limit) || 50, 500));
 
     const rows = await db.all(sql, params);
     res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');

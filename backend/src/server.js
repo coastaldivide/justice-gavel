@@ -1,45 +1,43 @@
-import { startAllWatchdogs } from './monitoring/selfHealing.js';
-// ── Sentry error monitoring ───────────────────────────────────────────────────
-import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
+/**
+ * server.js — process entry point.
+ *
+ * Order matters:
+ *   1. instrument.js  — Sentry (single init; no-op without SENTRY_DSN)
+ *   2. config.js      — env normalisation + production validation
+ *   3. app.js         — Express app (no side effects beyond building routes)
+ * Then: connect DB (fatal if DATABASE_URL set but unreachable), listen on
+ * $PORT (default 4000), start background jobs, and install the ONE set of
+ * process handlers (signals, uncaught errors) with a single shutdown path.
+ */
+import './instrument.js';
+import { validateEnv } from './config.js';
+import logger from './utils/logger.js';
 
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn:          process.env.SENTRY_DSN,
-    environment:  process.env.NODE_ENV || 'production',
-    release:      process.env.npm_package_version,
-    tracesSampleRate:    0.2,   // 20% of requests traced
-    profilesSampleRate:  0.1,
-    integrations: [nodeProfilingIntegration()],
-  });
+validateEnv();   // exits(1) in production when JWT/ENCRYPTION/DATABASE_URL are missing
+
+const { default: app } = await import('./app.js');
+const { initDb, closeDb } = await import('./db/index.js');
+const { startAllWatchdogs, stopAllWatchdogs } = await import('./monitoring/selfHealing.js');
+const { startScheduler, stopScheduler } = await import('./services/scheduler.js');
+const { startAIWorkers, stopAIWorkers } = await import('./services/aiQueue.js');
+const { deliverScheduledPushes } = await import('./services/pushDelivery.js');
+const { startContentRefreshSchedule } = await import('./services/contentRefresh.js');
+
+// ── 1. Database — fail startup when DATABASE_URL is set but unreachable ───────
+try {
+  const db = await initDb();
+  logger.info({ engine: db.engine }, '[server] database ready');
+} catch (e) {
+  logger.fatal?.({ err: e.message }, '[server] database connection failed — refusing to start');
+  console.error('[server] FATAL: database connection failed:', e.message);
+  process.exit(1);
 }
 
-import 'dotenv/config';
-import logger from './utils/logger.js';
-import app from './app.js';
-
-// ── Push delivery loop — drain scheduled_pushes every 60s ──────────────────
-import { deliverScheduledPushes, checkPushReceipts } from './services/pushDelivery.js';
-import { startContentRefreshSchedule } from './services/contentRefresh.js';
-
-// ── Legal content refresh schedule (daily at low-traffic window) ───────────
-const contentRefreshInterval = startContentRefreshSchedule();
-
 // ── Quarterly bar license re-verification ─────────────────────────────────────
-// Checks whether bar_verified attorneys still show as active in our records.
-// Full real-time API verification is state-dependent (CA, NY, FL, TX have APIs).
-// This job flags attorneys whose verification is >90 days old for admin review,
-// and emails admin with a list of attorneys to spot-check against state bar sites.
-//
-// WHY QUARTERLY:
-//   Bar suspensions and disbarments are published within days of action.
-//   A 90-day re-check window catches most disciplinary actions before they
-//   cause user harm, while keeping admin workload manageable.
-//
 async function runBarReVerification() {
   try {
     const { getDb } = await import('./db/index.js');
-    const { sendEmail } = await import('./services/sendgrid.js');
+    const { sendEmail } = await import('./services/email.js');
     const db = await getDb();
 
     // Find attorneys whose bar verification is >90 days old
@@ -140,142 +138,127 @@ async function runBarReVerification() {
         ``,
         `Admin panel: ${process.env.ADMIN_PANEL_URL || 'https://admin.justicegavel.app'}/attorneys`,
       ].join('\n'),
-    }).catch(err => logger.error('[Bar Re-Verify] Email failed:', err.message));
+    }).catch(err => logger.error({ err: err.message }, '[Bar Re-Verify] Email failed'));
 
-    logger.warn('[Bar Re-Verify] Quarterly check:', staleVerified.length,
-      'attorneys flagged for re-verification — admin notified');
+    logger.warn(`[Bar Re-Verify] Quarterly check: ${staleVerified.length} attorneys flagged for re-verification — admin notified`);
   } catch (err) {
-    logger.error('[Bar Re-Verify] Failed:', err.message);
+    logger.error({ err: err.message }, '[Bar Re-Verify] Failed');
   }
 }
 
-// Run quarterly (90 days) — first run 2 minutes after startup to avoid startup noise
-const BAR_REVERIFY_INTERVAL_MS = 90 * 24 * 60 * 60 * 1000;
-setTimeout(() => {
-  runBarReVerification();
-  const _timer155 = setInterval(runBarReVerification, BAR_REVERIFY_INTERVAL_MS);
-  _timer155.unref();
-}, 2 * 60 * 1000);
 
-const pushInterval = setInterval(async () => {
-  try { await deliverScheduledPushes(); }
-  catch (err) { logger.error('[Push] Delivery loop error:', err.message); }
-}, 60_000);
-// Drain once at startup for any overdue pushes
-deliverScheduledPushes().catch(err => logger.error('[Push] Startup drain error:', err.message));
-
-
-// ── Required environment variable validation ──────────────────────────────────
-// Fail fast on startup rather than crashing mid-request with a cryptic error.
-const REQUIRED_ENV = [
-  'JWT_SECRET',
-  'JWT_REFRESH_SECRET',
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_KEY',
-  'ANTHROPIC_API_KEY',
-  'STRIPE_SECRET_KEY',
-  'ENCRYPTION_KEY',
-];
-
-const missingEnv = REQUIRED_ENV.filter(k => !process.env[k]);
-if (missingEnv.length > 0) {
-  console.error('\n🚨 STARTUP ERROR — missing required environment variables:');
-  missingEnv.forEach(k => console.error(`   ✗ ${k}`));
-  console.error('\n  Run: railway variables --set "KEY=value"');
-  console.error('  Then redeploy.\n');
-  process.exit(1);
-}
-
+// ── 2. HTTP server ────────────────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT || '4000', 10);
-
-const server = app.listen(PORT, '0.0.0.0', () => {
-  const addr = server?.address?.() || {};
-  logger.info({
-    msg: '[server] Justice Gavel API started',
-    port: addr.port || process.env.PORT || 4000,
-    env: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'local',
-    version: process.env.npm_package_version || '2.9.2',
-    db: process.env.POSTGRES_URL ? 'postgres' : 'sqlite',
-  });
-  logger.info(`[server] Mode: ${process.env.DEMO_MODE !== 'false' ? 'DEMO' : 'LIVE'}`);
-  // Signal PM2 that the process is ready (required for wait_ready: true)
-  if (process.send) process.send('ready');
-});
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    logger.warn(`[server] Port ${PORT} in use — process already running, continuing`);
-    // Don't exit — let the existing server handle requests
-  } else {
-    logger.error('[server] Server error:', err.message);
-    process.exit(1);
-  }
-});
-
-// Keep-alive + timeout settings — prevents hanging connections
+const server = app.listen(PORT, '0.0.0.0');
 server.keepAliveTimeout = 65000;  // > Caddy/nginx idle timeout (60s)
 server.headersTimeout   = 66000;
 
-// ── Graceful shutdown ──────────────────────────────────────────────────────────
-// ECS / Railway / Fly.io send SIGTERM before killing the container.
-// We get ~30s to finish in-flight requests, flush queues, and close DB cleanly.
-function shutdown(signal) {
-  logger.info(`[server] ${signal} received — starting graceful shutdown`);
+const timers = [];
 
-  // 1. Stop accepting new connections
-  server.close(async () => {
-    logger.info('[server] HTTP server closed — draining in-flight work');
-
-    // 2. Stop background intervals
-    clearInterval(pushInterval);
-    clearInterval(contentRefreshInterval);
-
-    // 3. Final push drain before exit
-    try {
-      const { deliverScheduledPushes } = await import('./services/pushDelivery.js');
-      await deliverScheduledPushes();
-    } catch {}
-
-    // 4. Close DB connection
-    try {
-      const { getDb } = await import('./db/index.js');
-      const db = await getDb();
-      if (db._close) await db._close();
-    } catch {}
-
-    logger.info('[server] Shutdown complete');
-    process.exit(0);
+server.on('listening', () => {
+  const addr = server.address() || {};
+  logger.info({
+    msg: '[server] Justice Gavel API started',
+    port: addr.port || PORT,
+    env: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'local',
+    version: process.env.npm_package_version || '8.7.50',
   });
+  logger.info(`[server] Mode: ${process.env.DEMO_MODE === 'true' ? 'DEMO' : 'LIVE'}`);
+  if (process.send) process.send('ready');   // PM2 wait_ready
 
-  // Force-exit if shutdown takes more than 25 seconds
-  setTimeout(() => {
-    logger.error('[server] Graceful shutdown timed out — forcing exit');
-    process.exit(1);
-  }, 25_000).unref();
-}
-
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT',  () => shutdown('SIGINT'));
-
-// Catch uncaught exceptions — log and exit cleanly
-process.on('uncaughtException', async (err) => {
-  // Attempt to notify before crashing
-  try {
-    const { notifyCritical } = await import('./monitoring/errorNotifier.js');
-    await notifyCritical('Uncaught exception — process may restart', {
-      code:    'uncaught_exception',
-      error:   err.message,
-      stack:   err.stack?.slice(0, 500),
-    });
-  } catch {}
-  if (err.code === 'EADDRINUSE') {
-    logger.warn('[server] Port already in use — existing instance running');
-    return; // Don't shutdown
+  // ── 3. Background jobs (after we are accepting traffic) ──────────────────
+  try { startAIWorkers(); } catch (e) { logger.error({ err: e.message }, '[server] AI workers failed to start'); }
+  if (process.env.REDIS_URL) {
+    import('./services/questionExplainer.js').then(m => m.startExplainerWorker()).catch(e => logger.error({ err: e.message }, '[server] explainer worker failed'));
+    import('./services/barPrepNotifications.js').then(m => m.startNotificationWorker()).catch(e => logger.error({ err: e.message }, '[server] bar-prep notification worker failed'));
   }
-  logger.error('[server] Uncaught exception:', err.message, err.stack);
-  shutdown('uncaughtException');
+  try { startScheduler(); } catch (e) { logger.error({ err: e.message }, '[server] scheduler failed to start'); }
+  try { startAllWatchdogs(); } catch (e) { logger.error({ err: e.message }, '[server] watchdogs failed to start'); }
+  try {
+    const t = startContentRefreshSchedule();
+    if (t) { t.unref?.(); timers.push(t); }
+  } catch (e) { logger.error({ err: e.message }, '[server] content refresh failed to start'); }
+
+  const push = setInterval(() => {
+    deliverScheduledPushes().catch(err => logger.error({ err: err.message }, '[Push] Delivery loop error'));
+  }, 60_000);
+  push.unref();
+  timers.push(push);
+  deliverScheduledPushes().catch(err => logger.error({ err: err.message }, '[Push] Startup drain error'));
+
+  // Quarterly bar re-verification — first run 2 minutes after startup
+  const BAR_REVERIFY_INTERVAL_MS = 90 * 24 * 60 * 60 * 1000;
+  const first = setTimeout(() => {
+    runBarReVerification();
+    const t = setInterval(runBarReVerification, BAR_REVERIFY_INTERVAL_MS);
+    t.unref();
+    timers.push(t);
+  }, 2 * 60 * 1000);
+  first.unref();
+  timers.push(first);
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`[server] FATAL: port ${PORT} is already in use`);
+  } else {
+    console.error('[server] FATAL server error:', err.message);
+  }
+  process.exit(1);
+});
+
+// ── 4. Single shutdown path ───────────────────────────────────────────────────
+let shuttingDown = false;
+async function shutdown(signal, exitCode = 0) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info(`[server] ${signal} received — starting graceful shutdown`);
+
+  const force = setTimeout(() => {
+    console.error('[server] Graceful shutdown timed out — forcing exit');
+    process.exit(exitCode || 1);
+  }, 25_000);
+  force.unref();
+
+  try {
+    await new Promise(resolve => server.close(() => resolve()));
+    server.closeAllConnections?.();
+  } catch { /* ignore */ }
+  timers.forEach(t => { clearInterval(t); clearTimeout(t); });
+  try { stopScheduler(); } catch { /* ignore */ }
+  try { stopAllWatchdogs(); } catch { /* ignore */ }
+  try { await stopAIWorkers(); } catch { /* ignore */ }
+  try { await closeDb(); } catch { /* ignore */ }
+  try {
+    if (process.env.SENTRY_DSN) {
+      const Sentry = await import('@sentry/node');
+      await Sentry.close(2000);
+    }
+  } catch { /* ignore */ }
+  logger.info('[server] Shutdown complete');
+  process.exit(exitCode);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM', 0));
+process.on('SIGINT',  () => shutdown('SIGINT', 0));
+
+// A thrown exception leaves the process in an unknown state: report it and
+// exit non-zero so the platform (Railway/PM2/Docker) restarts us.
+process.on('uncaughtException', (err) => {
+  console.error('[server] Uncaught exception:', err?.stack || err);
+  try {
+    import('./monitoring/errorNotifier.js')
+      .then(({ notifyCritical }) => notifyCritical?.('Uncaught exception — process restarting', {
+        code: 'uncaught_exception', error: err?.message, stack: err?.stack?.slice(0, 500),
+      }))
+      .catch(() => {});
+  } catch { /* ignore */ }
+  shutdown('uncaughtException', 1);
+});
+
+// Unhandled rejections are logged (a stray background promise should not take
+// down every user), but they are never silently swallowed.
 process.on('unhandledRejection', (reason) => {
-  logger.error('[server] Unhandled rejection:', reason);
-  // Don't exit for rejections — log and continue
+  logger.error({ err: reason?.message ?? String(reason), stack: reason?.stack?.split('\n').slice(0, 5).join(' | ') },
+    '[server] Unhandled promise rejection');
 });

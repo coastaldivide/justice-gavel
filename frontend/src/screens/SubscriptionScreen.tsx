@@ -16,16 +16,13 @@ import { AppIcon } from '../components/AppIcon';
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation} from 'react-native';
-import { api } from '../services/api';
+import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
+import { PAYMENTS_COMING_SOON } from '../payments';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
 import { t } from '../i18n';
 
-declare var data: any;
-declare var error: any;
-declare var setError: any;
-declare var setSub: any;
 const TIERS = [
   {
     key: 'advisor',
@@ -132,8 +129,6 @@ function TierCard({ tier, active, onSubscribe, loading }: any) {
           onPress={() => onSubscribe(tier.key)}
           disabled={loading}
         >
-          accessibilityRole="button" accessibilityLabel="Subscribe"
-          accessibilityHint="Double-tap to activate"
           {loading
             ? <ActivityIndicator color={COLORS.bgCard} size="small" />
             : <>
@@ -152,6 +147,8 @@ function TierCard({ tier, active, onSubscribe, loading }: any) {
 }
 
 function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
@@ -161,12 +158,14 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading]           = useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
+  const [error, setError] = useState('');
+  const onRefresh = () => {
     setRefreshing(true);
-    // @ts-ignore
-    api.get('/billing/consumer/subscription').then(r => { if (r.data) setSub(r.data || null); }).catch(() => showToast('Action failed. Please try again.', 'error'))
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    api.get('/billing/subscription')
+      .then(r => { if (mountedRef.current) setSubscription(r.data?.subscription ?? null); })
+      .catch(() => showToast('Could not refresh. Check your connection.', 'error'))
+      .finally(() => { if (mountedRef.current) setRefreshing(false); });
+  };
   const [subscribing, setSubscribing]   = useState<string | null>(null);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   const [providerType, setProviderType] = useState<'lawyer' | 'bail_agent'>('lawyer');
@@ -197,7 +196,6 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
     // Apple requires digital subscriptions on iOS to use StoreKit (IAP).
     // Until expo-iap is integrated, we block iOS purchases and show instructions.
     if (Platform.OS === 'ios') {
-      // @ts-ignore
       confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe.',
       { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); })
       setSubscribing(null);
@@ -205,18 +203,20 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
     }
     // ── Android / web: proceed with Stripe backend flow ─────────────────────────
     setSubscribing(tier);
+    setError('');
     try {
       const res = await api.post('/billing/subscribe', { tier, provider_type: providerType });
       setSubscription(res.data?.subscription);
-// @ts-ignore
-showToast(res.data?.message || '30-day free trial activated. No credit card charged yet.', 'success');
+      showToast(res.data?.message || '30-day free trial activated. No credit card charged yet.', 'success');
       loadSubscription();
     } catch (e: any) {
-      const msg = e.response?.data?.error || e.message;
-      if (msg?.includes('Already subscribed')) {
+      const msg = apiErrorMessage(e, '');
+      if (isPaymentsUnavailable(e)) {
+        setError(PAYMENTS_COMING_SOON);
+      } else if (msg.includes('Already subscribed') || e?.response?.data?.error === 'already_subscribed') {
         setError('You already have an active plan. Manage it in Settings.');
       } else {
-        setError('Payment failed. Check your card details and try again.');
+        setError(msg || 'Payment failed. Check your card details and try again.');
       }
     } finally {
       setSubscribing(null);
@@ -224,17 +224,17 @@ showToast(res.data?.message || '30-day free trial activated. No credit card char
   };
 
   const handleCancel = () => {
-// @ts-ignore
-confirm('Cancel Your Plan?',"You'll lose access to leads and alerts at the end of your billing period.",
-      { confirmLabel:'Yes, cancel', destructive:true }).then(async ok=>{ if(!ok) return;
-      try {
-              await api.post('/billing/cancel');
-              setSubscription(null);
-              // @ts-ignore
-              showToast('Your plan has been cancelled. Access continues until period end.', 'info');
-            } catch (e: any) { }
-              setError('Payment failed. Check your card details and try again.');
-    })
+    confirm('Cancel Your Plan?', "You'll lose access to leads and alerts at the end of your billing period.",
+      { confirmLabel: 'Yes, cancel', destructive: true }).then(async ok => {
+        if (!ok) return;
+        try {
+          await api.post('/billing/cancel');
+          setSubscription(null);
+          showToast('Your plan has been cancelled. Access continues until period end.', 'info');
+        } catch (e: any) {
+          setError(apiErrorMessage(e, 'Could not cancel your plan. Please try again.'));
+        }
+      });
   };
 
   if (loading) {
@@ -354,8 +354,6 @@ confirm('Cancel Your Plan?',"You'll lose access to leads and alerts at the end o
           onPress={() => handleSubscribe('intel')}
           disabled={subscribing === 'intel'}
         >
-          accessibilityRole="button" accessibilityLabel="Subscribe"
-          accessibilityHint="Double-tap to activate"
           {subscribing === 'intel'
             ? <ActivityIndicator color={colors.bgCard} size="small" />
             : <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>Add Intel Reports -- $49/mo</Text>
@@ -373,7 +371,7 @@ confirm('Cancel Your Plan?',"You'll lose access to leads and alerts at the end o
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.bondsCTABtn}
-          accessibilityLabel="Open Lead Dashboard \u2192" onPress={() => navigation.navigate('BondsmanDashboard')}
+          accessibilityLabel={"Open Lead Dashboard \u2192"} onPress={() => navigation.navigate('BondsmanDashboard')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTABtnText}>Open Lead Dashboard →</Text>
         </TouchableOpacity>
@@ -392,14 +390,6 @@ confirm('Cancel Your Plan?',"You'll lose access to leads and alerts at the end o
       </Text>
       <View style={{ height: 40 }} />
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>📭</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No results found</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection or try again.</Text>
-        </View>
-      )}
       {/* ── Free plan exit ────────────────────────────────────────────── */}
       <TouchableOpacity
         accessibilityRole="button"

@@ -12,8 +12,8 @@
 import Stripe from 'stripe';
 import logger from '../utils/logger.js';
 
-const key = process.env.STRIPE_SECRET || '';
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
+const key = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
+const webhookSecret = () => process.env.STRIPE_WEBHOOK_SECRET || '';
 export const stripe = key ? new Stripe(key, { apiVersion: '2024-06-20' }) : null;
 export const STRIPE_LIVE = !!key;
 
@@ -83,10 +83,14 @@ export async function createPaymentLink({ amountCents, description, arrestId, re
 }
 
 // ── Verify Stripe webhook ──────────────────────────────────────────────────────
+// Signature verification only needs the webhook signing secret, not the API key.
+let _verifier = null;
 export function constructWebhookEvent(rawBody, signature) {
-  if (!stripe || !webhookSecret) return null;
+  if (!webhookSecret() || !signature) return null;
+  if (!Buffer.isBuffer(rawBody) && typeof rawBody !== 'string') return null;   // body was already parsed
   try {
-    return stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    _verifier ||= stripe || new Stripe('sk_signature_verification_only', { apiVersion: '2024-06-20' });
+    return _verifier.webhooks.constructEvent(rawBody, signature, webhookSecret());
   } catch (err) {
     logger.error('[stripe] Webhook signature verification failed:', err.message);
     return null;

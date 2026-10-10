@@ -20,10 +20,13 @@ describe('Expungement eligibility validation', () => {
 });
 
 describe('Wait period calculation', () => {
+  // Uses the real date helper from the app: date-only strings are parsed as
+  // LOCAL calendar dates (new Date('2020-01-01') is UTC midnight, i.e. Dec 31
+  // 2019 in US time zones, which made this test timezone-dependent).
+  const { parseLocalDate } = require('../utils/dateUtils');
   const eligible = (waitYears, caseDate) => {
-    if (!caseDate) return null;
-    const d = new Date(caseDate);
-    if (isNaN(d.getTime())) return null;
+    const d = parseLocalDate(caseDate);
+    if (!d) return null;
     d.setFullYear(d.getFullYear() + waitYears);
     return d;
   };
@@ -32,6 +35,13 @@ describe('Wait period calculation', () => {
   it('adds correct years for TN 5-year wait', () => {
     const d = eligible(5, '2020-01-01');
     expect(d.getFullYear()).toBe(2025);
+  });
+  it('parses date-only strings as local dates (no UTC shift)', () => {
+    const d = parseLocalDate('2020-01-01');
+    expect([d.getFullYear(), d.getMonth(), d.getDate()]).toEqual([2020, 0, 1]);
+  });
+  it('rejects impossible calendar dates', () => {
+    expect(parseLocalDate('2025-02-31')).toBeNull();
   });
   it('wait period is never NaN', () => {
     const d = eligible(3, '2021-06-15');

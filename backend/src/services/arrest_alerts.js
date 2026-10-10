@@ -14,13 +14,10 @@ import logger from '../utils/logger.js';
  * Can also be triggered via POST /api/admin/send-arrest-alerts
  */
 
-import { open } from 'sqlite';
-import sqlite3 from 'sqlite3';
+import { getDb } from '../db/index.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.resolve(__dirname, '../../data/providers.sqlite');
 
 // Charge keywords mapped to practice areas
 const PRACTICE_AREA_KEYWORDS = {
@@ -116,29 +113,11 @@ async function sendAlert(recipient, message, type, db) {
     [recipient.id, type, message.subject, message.body, message.count]
   ).catch(e => logger.warn('[alerts] DB insert error:', e?.message));
 
-  // ── Send real email via Resend ──────────────────────────────────────────────
-  const RESEND_KEY = process.env.RESEND_API_KEY;
-  if (RESEND_KEY && recipient.email) {
+  // ── Email via services/email.js (Resend; logged only without RESEND_API_KEY)
+  if (recipient.email) {
     try {
-      const resp = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${RESEND_KEY}`,
-        },
-        body: JSON.stringify({
-          from:    'Justice Gavel Alerts <alerts@justicegavel.app>',
-          to:      [recipient.email],
-          subject: message.subject,
-          text:    message.body,
-        }),
-      });
-      if (!resp.ok) {
-        const errText = await resp.text().catch(() => '');
-        logger.warn(`[alerts] Resend error ${resp.status}:`, errText.slice(0, 200));
-      } else {
-        logger.info(`[alerts] ✅ Email delivered → ${recipient.email}`);
-      }
+      const { sendEmail } = await import('./email.js');
+      await sendEmail({ to: recipient.email, subject: message.subject, text: message.body });
     } catch (emailErr) {
       logger.warn('[alerts] Email send failed (non-fatal):', emailErr?.message);
     }
@@ -149,8 +128,7 @@ async function sendAlert(recipient, message, type, db) {
 
 // ── Main alert runner ─────────────────────────────────────────────────────────
 export async function sendArrestAlerts(options = {}) {
-  const db = await open({ filename: DB_PATH, driver: sqlite3.Database });
-  await db.run('PRAGMA journal_mode=WAL');
+  const db = await getDb();   // shared Postgres pool (close() is a no-op)
 
   // attorney_alerts table managed by db/index.js
 
@@ -166,7 +144,6 @@ export async function sendArrestAlerts(options = {}) {
 
   if (!newArrests.length) {
     logger.info('[alerts] No new arrests to alert on');
-    await db.close();
     return { alerts_sent: 0 };
   }
 
@@ -183,7 +160,7 @@ export async function sendArrestAlerts(options = {}) {
 
   // ── Alert attorneys ──
   const attorneys = await db.all(
-    `SELECT id, name, email, city, specialties FROM lawyers WHERE active = 1 AND email IS NOT NULL`
+    `SELECT id, name, email, city, state, specialties FROM lawyers WHERE active = 1 AND email IS NOT NULL`
   );
 
   for (const attorney of attorneys) {
@@ -223,7 +200,7 @@ export async function sendArrestAlerts(options = {}) {
 
   // ── Alert bail agents ──
   const bailAgents = await db.all(
-    `SELECT id, name, email, city FROM bail_agents WHERE active = 1 AND email IS NOT NULL`
+    `SELECT id, name, email, city, state FROM bail_agents WHERE active = 1 AND email IS NOT NULL`
   );
 
   const arrestsWithBail = newArrests.filter(a => a.bail_amount > 0);
@@ -245,6 +222,5 @@ export async function sendArrestAlerts(options = {}) {
   }
 
   logger.info(`[alerts] ✅ ${alertsSent} alerts sent, ${newArrests.length} arrests marked`);
-  await db.close();
   return { alerts_sent: alertsSent, arrests_processed: newArrests.length };
 }

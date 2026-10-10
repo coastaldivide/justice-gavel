@@ -17,23 +17,7 @@
  */
 
 import logger from '../utils/logger.js';
-import { open }  from 'sqlite';
-import sqlite3   from 'sqlite3';
-import path      from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname  = path.dirname(fileURLToPath(import.meta.url));
-const ARREST_DB  = path.resolve(__dirname, '../../demo.db');  // dev: demo.db | prod: use getDb()
-
-async function getDb() {
-  // In production (DATABASE_URL set): use main Postgres via getDb()
-  if (process.env.DATABASE_URL) {
-    const { getDb: pgGetDb } = await import('../db/index.js');
-    return pgGetDb();
-  }
-  // Dev fallback: same SQLite path used by arrests.js
-  return open({ filename: ARREST_DB, driver: sqlite3.Database });
-}
+import { getDb } from '../db/index.js';   // main database (Postgres)
 
 // ── Source definitions ─────────────────────────────────────────────────────
 // Each source has a fetch() that returns normalized arrest records.
@@ -145,10 +129,10 @@ export async function runIngestion(options = {}) {
 
       try {
         await db.run(
-          `INSERT OR IGNORE INTO arrest_records
+          `INSERT INTO arrest_records
              (name, booking_date, charges, bail_amount, court_date,
               county, state, jail_location, has_attorney, case_number, source, alert_sent)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING`,
           [norm.name, norm.booking_date, norm.charges, norm.bail_amount,
            norm.court_date, norm.county, norm.state, norm.jail_location,
            norm.has_attorney, norm.case_number, norm.source, norm.alert_sent]

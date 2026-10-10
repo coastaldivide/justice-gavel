@@ -18,7 +18,6 @@ import { useTheme } from '../constants/theme';
 import ErrorState from '../components/ErrorState';
 import { t } from '../i18n';
 
-declare var bondAmount: any;
 const STATES = [
   'ALL','AL','AK','AZ','AR','CA','CO','CT','DC','DE','FL','GA','HI',
   'ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS',
@@ -32,8 +31,6 @@ type Schedule = {
 };
 
 function BailCalculatorScreen({ route, navigation }: ScreenProps) {
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
   const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -245,7 +242,7 @@ function BailCalculatorScreen({ route, navigation }: ScreenProps) {
         {/* EmptyState: use <EmptyState icon="📋" title="Nothing here yet" subtitle="Content will appear when available" /> */}
 
         {/* Innocent until proven guilty context */}
-        {!!bondAmount && (
+        {!!selected && (
           <View style={{ backgroundColor: colors.bgCard, borderRadius: 12,
             padding: 14, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: colors.gold }}>
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '700',

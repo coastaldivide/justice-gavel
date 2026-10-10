@@ -91,3 +91,5 @@ export function makeUserLimiter({ windowMs = 60_000, max = 10, message = 'Too ma
     next();
   };
 }
+// Alias used by caseLifecycle/legalAid/pretrial routes
+export const sharedAiLimiter = perUserAiLimit;

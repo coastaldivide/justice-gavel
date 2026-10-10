@@ -15,6 +15,7 @@ import { makeUserLimiter }       from '../middleware/sharedAiLimiter.js';
 import { err400, safeInt,
          sanitizeStr }           from '../utils/routeHelpers.js';
 import { Router }                from 'express';
+import { stripeConfigured, PAYMENTS_UNAVAILABLE } from '../config.js';
 import { authRequired }          from '../middleware/auth.js';
 import { createPaymentSession }  from '../payments/orchestrator.js';
 import logger                    from '../utils/logger.js';
@@ -39,6 +40,12 @@ const VALID_METHODS    = new Set(['stripe', 'stripe_ach', 'manual']);
 const VALID_CURRENCIES = new Set(['USD', 'CAD', 'EUR', 'GBP']);
 
 // ── POST /api/pay/create ──────────────────────────────────────────────────────
+// Payments are unavailable until a Stripe key is configured
+router.use((req, res, next) => {
+  if (req.method === 'POST' && !stripeConfigured()) return res.status(503).json({ ...PAYMENTS_UNAVAILABLE });
+  next();
+});
+
 router.post('/create', authRequired, payLimiter, async (req, res) => {
   try {
     const {

@@ -1,4 +1,5 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
+import { parseLocalDate } from '../utils/dateUtils';
 import { useNetworkError } from '../hooks/useNetworkError';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -22,15 +23,13 @@ import LegalNotice from '../components/LegalNotice';
 import React, { useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
-import { api, cachedGet } from '../services/api';
+import { api, cachedGet, apiErrorMessage } from '../services/api';
 import { cacheExpungement } from '../services/offlineCache';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
 import { getUserState } from '../utils/userState';
 import { t } from '../i18n';
 
-declare var onRefresh: any;
-declare var refreshing: any;
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
   'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
@@ -115,9 +114,6 @@ const STATE_CARDS: Record<string, {
 function ExpungementCountdown({ waitYears, caseDate, navigation }: {
   waitYears: number; caseDate: string; navigation: Record<string, any>;
 }) {
-  // @ts-ignore
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
@@ -130,7 +126,8 @@ function ExpungementCountdown({ waitYears, caseDate, navigation }: {
   }, []);
 
   const eligible = React.useMemo(() => {
-    const d = new Date(caseDate);
+    // Date-only strings are local calendar dates (avoid the UTC shift of new Date('YYYY-MM-DD'))
+    const d = parseLocalDate(caseDate) ?? new Date(NaN);
     d.setFullYear(d.getFullYear() + waitYears);
     return d;
   }, [caseDate, waitYears]);
@@ -162,11 +159,6 @@ showToast('Reminder set for when you become eligible.', 'success');
     }
   }, [eligible, isEligible, now]);
 
-  if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
     <View testID="expungement-screen" style={{ backgroundColor: isEligible ? COLORS.legalBg : COLORS.bgSubtle,
       borderRadius: 12, padding: 14, marginTop: 10,
@@ -292,7 +284,6 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
   const [stateError, setStateError]   = useState('');
   const [charges, setCharges]   = useState(incomingCharges || '');
   const [caseStatus, setCaseStatus] = useState('Closed');
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
 
   // Retry logic: exponential backoff on API failures
   const [retryCount, setRetryCount] = React.useState(0);
@@ -332,8 +323,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       }
       setStep('result');
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
-      showToast(e.response?.data?.error || 'Could not check eligibility. Try again.', 'info'); setRetryCount(0);
+      showToast(apiErrorMessage(e, 'Could not check eligibility. Try again.'), 'info'); setRetryCount(0);
     } finally {
       setLoading(false);
     }
@@ -370,9 +360,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
           style={{ flex: 1 }}>
         <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
           contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-}>
+          keyboardShouldPersistTaps="handled">
       <UPLDisclaimer compact />
 
       <View style={styles.hero}>
@@ -416,7 +404,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
           accessibilityRole="button"
           style={styles.stateBtn}
           testID="expungement-state-picker"
-          accessibilityLabel="{stateError}" onPress={() => setShowStatePicker(p => !p)}
+          accessibilityLabel={stateError} onPress={() => setShowStatePicker(p => !p)}
         >
       {!!stateError && <Text testID="expungement-state-error" style={{ color: COLORS.emergency, fontSize: 12, marginTop: 4, marginLeft: 4 }}>{stateError}</Text>}
         <Text maxFontSizeMultiplier={1.4} style={styles.stateBtnText}>{state}  ▾</Text>
@@ -443,7 +431,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
           <TouchableOpacity accessibilityRole="button"
             key={s}
             style={[styles.statusChip, caseStatus === s && styles.statusChipActive]}
-            accessibilityLabel="{s}" onPress={() => setCaseStatus(s)}
+            accessibilityLabel={s} onPress={() => setCaseStatus(s)}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.statusChipText, caseStatus === s && styles.statusChipTextActive]}>{s}</Text>
           </TouchableOpacity>
@@ -457,7 +445,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
           <TouchableOpacity accessibilityRole="button"
             key={ch}
             style={[styles.chargeChip, charges === ch && styles.chargeChipActive]}
-            accessibilityLabel="{ch}" onPress={() => setCharges(charges === ch ? '' : ch)}
+            accessibilityLabel={ch} onPress={() => setCharges(charges === ch ? '' : ch)}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.chargeChipText, charges === ch && styles.chargeChipTextActive]}>{ch}</Text>
           </TouchableOpacity>
@@ -479,7 +467,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
         style={[styles.checkBtn, loading && { opacity: 0.6 }]}
         testID="expungement-check-button" onPress={checkEligibility}
         disabled={loading}
-        activeOpacity={0.85} accessibilityLabel="Check My Eligibility  \u2192">
+        activeOpacity={0.85} accessibilityLabel={"Check My Eligibility  \u2192"}>
 
         {loading
           ? <ActivityIndicator color={colors.bgCard} />
@@ -663,10 +651,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                     disabled={false}
                     activeOpacity={0.85}
                   >
-                    {false
-                      ? <ActivityIndicator color={colors.bgCard} size="small" />
-                      : <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>{partner.cta}  →</Text>
-                    }
+                    <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>{partner.cta}  →</Text>
                   </TouchableOpacity>
               <Text maxFontSizeMultiplier={1.4} style={styles.partnerReturnNote}>
                 Opens in browser · Tap Back to return to Justice Gavel
@@ -690,7 +675,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
           ].map(s => <Text maxFontSizeMultiplier={1.4} key={s} style={styles.notEligibleItem}>{s}</Text>)}
           <TouchableOpacity accessibilityRole="button"
             style={styles.partnerBtn}
-            accessibilityLabel="Find a Criminal Defense Lawyer \u2192" onPress={() => navigation.navigate('LawyersTab')}
+            accessibilityLabel={"Find a Criminal Defense Lawyer \u2192"} onPress={() => navigation.navigate('LawyersTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.partnerBtnText}>Find a Criminal Defense Lawyer →</Text>
           </TouchableOpacity>

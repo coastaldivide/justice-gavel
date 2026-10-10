@@ -1,3 +1,5 @@
+import { requireAi } from '../utils/ai.js';
+import { CLAUDE_MODEL } from '../utils/ai.js';
 import { validate, schemas } from '../validation/schemas.js';
 import { researchLimiter } from '../utils/rateLimiters.js';
 import { requireDisclaimer } from '../middleware/disclaimer.js';
@@ -12,7 +14,7 @@ import { asyncRoute } from '../utils/routeHelpers.js';
  * POST /api/research/subscribe    — subscribe to $49/mo add-on
  * GET  /api/research/status       — check subscription status
  *
- * Model: Claude claude-sonnet-4-20250514 with a legal research system prompt.
+ * Model: CLAUDE_MODEL (utils/ai.js, default claude-sonnet-4-6) with a legal research system prompt.
  * Optimised for:
  *   - Case law queries with jurisdiction awareness
  *   - Statutory interpretation
@@ -135,7 +137,7 @@ async function callResearch(history, query) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-20250514',
+      model:      CLAUDE_MODEL,
       max_tokens: 1500,
       temperature: 0.2,    // 0.2: precision drafting
 
@@ -152,10 +154,10 @@ async function callResearch(history, query) {
 // ── POST /api/research/ask ────────────────────────────────────────────────────
 // ── API key guard — fail fast with clear error rather than cryptic undefined ─
 if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
-  logger.error('[research.js] ANTHROPIC_API_KEY not set — all AI routes will fail');
+  logger.debug('[research.js] ANTHROPIC_API_KEY not set — AI research disabled');
 }
 
-router.post('/ask', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, async (req, res) => {
+router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUserAiLimit, async (req, res) => {
   try {
     const db = await getDb();
     if (!await hasResearchAccess(db, req.user.id)) {

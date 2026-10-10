@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * scripts/run_eval.js — Run 200 eval questions through the Justice Gavel AI
  *
@@ -28,7 +29,7 @@ const argv = yargs(hideBin(process.argv))
   .option('category', { type: 'string' })
   .option('id',       { type: 'string' })
   .option('dry-run',  { type: 'boolean', default: false })
-  .option('model',    { type: 'string',  default: 'claude-sonnet-4-6' })
+  .option('model',    { type: 'string',  default: CLAUDE_MODEL })
   .argv;
 
 const QUESTIONS_FILE = path.resolve(__dirname, '../../data/eval/questions.json');

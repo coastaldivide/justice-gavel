@@ -1,4 +1,6 @@
 import { Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const isWeb = Platform.OS === 'web';
 
@@ -22,10 +24,13 @@ const webStore = {
   },
 };
 
-async function getNativeStore() {
-  const m = await import('expo-secure-store').catch(() => null);
-  return m;
-}
+// On web expo-secure-store is unavailable; use the sessionStorage-backed store.
+const nativeStore = isWeb ? webStore : {
+  getItemAsync: (key: string) => SecureStore.getItemAsync(key),
+  setItemAsync: (key: string, value: string) =>
+    SecureStore.setItemAsync(key, value, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY }),
+  deleteItemAsync: (key: string) => SecureStore.deleteItemAsync(key),
+};
 
 /**
  *
@@ -53,8 +58,6 @@ async function getNativeStore() {
  *     'onboarding_done', 'chat_session_id', etc.
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 const SECURE_KEYS = new Set(['token', 'refresh_token', 'user']);
 
 /**
@@ -63,7 +66,7 @@ const SECURE_KEYS = new Set(['token', 'refresh_token', 'user']);
 export async function setItem(key: string, value: string): Promise<void> {
   if (SECURE_KEYS.has(key)) {
     try {
-      await SecureStore.setItemAsync(key, value, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+      await nativeStore.setItemAsync(key, value);
     } catch { await AsyncStorage.setItem(key, value); }
   } else { await AsyncStorage.setItem(key, value); }
 }
@@ -73,7 +76,10 @@ export async function setItem(key: string, value: string): Promise<void> {
  */
 export async function getItem(key: string): Promise<string | null> {
   if (SECURE_KEYS.has(key)) {
-    try { return await SecureStore.getItemAsync(key); } catch { /* fall through to AsyncStorage */ }
+    try {
+      const v = await nativeStore.getItemAsync(key);
+      if (v != null) return v;
+    } catch { /* fall through to AsyncStorage */ }
   }
   return await AsyncStorage.getItem(key);
 }
@@ -83,7 +89,8 @@ export async function getItem(key: string): Promise<string | null> {
  */
 export async function removeItem(key: string): Promise<void> {
   if (SECURE_KEYS.has(key)) {
-    await SecureStore.deleteItemAsync(key).catch(() => {});
+    await nativeStore.deleteItemAsync(key).catch(() => {});
+    await AsyncStorage.removeItem(key).catch(() => {}); // fallback location
   } else {
     await AsyncStorage.removeItem(key);
   }
@@ -108,33 +115,26 @@ export async function setToken(token: string): Promise<void> {
  * Clear all auth data on logout.
  */
 export async function clearAuth(): Promise<void> {
-  await Promise.all([
-    SecureStore.deleteItemAsync('token').catch(() => {}),
-    SecureStore.deleteItemAsync('refresh_token').catch(() => {}),
-    SecureStore.deleteItemAsync('user').catch(() => {}),
-    AsyncStorage.removeItem('token').catch(() => {}),  // clear legacy location
-    AsyncStorage.removeItem('user').catch(() => {}),
-  ]);
+  // Remove from every place a token may have been written: the platform
+  // secure store (Keychain/Keystore, or sessionStorage on web), the web
+  // fallback store, and AsyncStorage (legacy location + setItem fallback).
+  const keys = Array.from(SECURE_KEYS);
+  await Promise.all(keys.flatMap(k => [
+    nativeStore.deleteItemAsync(k).catch(() => {}),
+    webStore.deleteItemAsync(k).catch(() => {}),
+    AsyncStorage.removeItem(k).catch(() => {}),
+  ]));
 }
 
 // ── Cross-platform wrappers ───────────────────────────────────────────────────
 export async function setSecure(key: string, value: string): Promise<void> {
-  if (isWeb) return webStore.setItemAsync(key, value);
-  const store = await getNativeStore();
-  if (!store) return webStore.setItemAsync(key, value);
-  return store.setItemAsync(key, value);
+  return nativeStore.setItemAsync(key, value);
 }
 
 export async function getSecure(key: string): Promise<string | null> {
-  if (isWeb) return webStore.getItemAsync(key);
-  const store = await getNativeStore();
-  if (!store) return webStore.getItemAsync(key);
-  return store.getItemAsync(key);
+  return nativeStore.getItemAsync(key);
 }
 
 export async function deleteSecure(key: string): Promise<void> {
-  if (isWeb) return webStore.deleteItemAsync(key);
-  const store = await getNativeStore();
-  if (!store) return webStore.deleteItemAsync(key);
-  return store.deleteItemAsync(key);
+  return nativeStore.deleteItemAsync(key);
 }

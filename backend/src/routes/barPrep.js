@@ -158,7 +158,7 @@ router.post('/sessions', sessionLimiter, checkSampleLimit, async (req, res) => {
 
     await db.run(
       `UPDATE quiz_sessions SET question_ids = ? WHERE id = ?`,
-      [JSON.stringify(questions.map(q => q.id)), lastID]
+      [questions.map(q => q.id), lastID]   // uuid[] column — pg serialises JS arrays
     );
 
     res.status(201).json({
@@ -173,10 +173,13 @@ router.post('/sessions', sessionLimiter, checkSampleLimit, async (req, res) => {
   }
 });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // ── 4. POST /sessions/:id/answers ─────────────────────────────────────────────
 router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
   try {
-    const sessionId = safeInt(req.params.id);
+    const sessionId = String(req.params.id || '').trim();   // quiz_sessions.id is a UUID
+    if (!UUID_RE.test(sessionId)) return err400(res, 'Invalid session id');
     const { answers } = req.body; // [{ question_id, selected_answer, time_spent_ms }]
 
     if (!Array.isArray(answers) || answers.length === 0)
@@ -223,9 +226,9 @@ router.post('/sessions/:id/answers', quizLimiter, async (req, res) => {
       if (isRight) correct++;
 
       await db.run(
-        `INSERT OR IGNORE INTO quiz_answers
+        `INSERT INTO quiz_answers
            (session_id, question_id, user_id, selected_answer, is_correct, time_spent_ms, answered_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+         VALUES (?, ?, ?, ?, ?, ?, NOW()) ON CONFLICT DO NOTHING`,
         [sessionId, ans.question_id, req.user.id,
          ans.selected_answer, isRight ? 1 : 0, ans.time_spent_ms || null]
       );
@@ -396,7 +399,11 @@ router.get('/schedule', quizLimiter, async (req, res) => {
 // ── 7. POST /questions/:id/flag ───────────────────────────────────────────────
 router.post('/questions/:id/flag', quizLimiter, async (req, res) => {
   try {
-    const questionId = safeInt(req.params.id);
+    // quiz_questions.id is a UUID
+    const questionId = String(req.params.id || '').trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(questionId)) {
+      return err400(res, 'Invalid question id');
+    }
     const reason     = sanitizeStr(req.body.reason || 'other', 60);
     const note       = sanitizeStr(req.body.note   || '',      500);
 
@@ -424,7 +431,8 @@ router.post('/questions/:id/flag', quizLimiter, async (req, res) => {
 // ── 8. GET /explain/:questionId ───────────────────────────────────────────────
 router.get('/explain/:questionId', explainLimiter, async (req, res) => {
   try {
-    const questionId = safeInt(req.params.questionId);
+    const questionId = String(req.params.questionId || '').trim();   // UUID
+    if (!UUID_RE.test(questionId)) return err400(res, 'Invalid question id');
     const db = await getDb();
     const q  = await db.get(
       `SELECT id, subject_id, category, difficulty, stem,
@@ -435,8 +443,8 @@ router.get('/explain/:questionId', explainLimiter, async (req, res) => {
     );
     if (!q) return err404(res, 'Question not found');
 
-    const explanation = await getExplanation(q);
-    res.json({ question_id: questionId, explanation });
+    const result = await getExplanation(questionId, req.user?.id ?? null);
+    res.json({ question_id: questionId, explanation: result.explanation, status: result.status });
   } catch (e) {
     logger.error('GET /bar-prep/explain/:questionId error', e);
     res.status(500).json({ error: 'Failed to generate explanation' });
@@ -468,7 +476,7 @@ router.get('/leaderboard', quizLimiter, async (req, res) => {
       args.push(subject);
     }
     if (period === 'week') {
-      sql += ` AND date(updated_at) >= date('now', '-7 days')`;
+      sql += ` AND updated_at::date >= (CURRENT_DATE - INTERVAL '7 days')`;
     }
     sql += ` ORDER BY accuracy_pct DESC LIMIT 20`;
 

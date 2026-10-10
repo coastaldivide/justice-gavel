@@ -125,14 +125,11 @@ const styles = StyleSheet.create({
 
 export default SkeletonLoader;
 
-// ── Memoized skeleton exports (required by v7 tests) ─────────────────────────
-// @ts-ignore
-export const MemoizedSkeletonLawyerCard   = React.memo(SkeletonLawyerCard);
-// @ts-ignore
-export const MemoizedSkeletonCaseCard     = React.memo(SkeletonCaseCard);
-// @ts-ignore
-export const MemoizedSkeletonChatMessage  = React.memo(SkeletonChatMessage);
-// @ts-ignore
-export const MemoizedSkeletonProfileCard  = React.memo(SkeletonProfileCard);
-// @ts-ignore
-export const MemoizedSkeletonListItem     = React.memo(SkeletonListItem);
+// ── Memoized skeleton exports ────────────────────────────────────────────────
+// (Previously referenced components that did not exist, which threw a
+// ReferenceError when this module loaded.)
+export const MemoizedSkeletonLawyerCard   = React.memo(LawyerCard);
+export const MemoizedSkeletonCaseCard     = React.memo(GenericCard);
+export const MemoizedSkeletonChatMessage  = React.memo(ChatMessage);
+export const MemoizedSkeletonProfileCard  = React.memo(GenericCard);
+export const MemoizedSkeletonListItem     = React.memo(ArrestCard);

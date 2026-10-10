@@ -16,26 +16,15 @@ import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Linking, KeyboardAvoidingView, Platform, RefreshControl, InteractionManager} from 'react-native';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
 import { t } from '../i18n';
 
-declare var setContacts: any;
-function callPhone(phone: string) {
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
-  React.useEffect(() => {
-    const t = InteractionManager.runAfterInteractions(() => {});
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
-  return () => t.cancel();
-  }, []);
-  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error'));
+// Plain helper (no hooks); failures are reported through onError.
+function callPhone(phone: string, onError?: () => void) {
+  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => onError?.());
 }
 
 // ── Step indicator ────────────────────────────────────────────────────────────
@@ -67,6 +56,7 @@ function StepBar({ step }: { step: number }) {
 
 // ── Contact card ─────────────────────────────────────────────────────────────
 function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'attorney' | 'bail' }) {
+  const { showToast } = useToast();
   const isAtty = type === 'attorney';
   const color = isAtty ? COLORS.navy : COLORS.bail;
   const bg = isAtty ? COLORS.bgSubtle : COLORS.emergencyBg;
@@ -111,7 +101,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'at
           accessibilityRole="button"
           accessibilityLabel="No phone on file"
           style={[styles.callBtn, { backgroundColor: color }]}
-          onPress={() => callPhone(contact.phone)}
+          onPress={() => callPhone(contact.phone, () => showToast(`Please dial ${contact.phone} manually.`, 'warning'))}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 Call {contact.name.split(' ')[0]}</Text>
         </TouchableOpacity>
@@ -131,12 +121,6 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   const [loading, setLoading] = React.useState(false);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    api.get('/family/contacts').then(r => { if (r.data) setContacts(r.data || []); }).catch(() => showToast('Action failed. Please try again.', 'error'))
-    setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 600);
-  }, []);
 
   const passedArrestId = (route?.params as import('../types/api').RouteParams)?.arrest_id;
 
@@ -144,7 +128,6 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
   const [step, setStep] = useState(1);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
 
   // Step 1: find arrest
   const [searchName, setSearchName] = useState('');
@@ -187,7 +170,6 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         showToast('We don\'t have a record matching that name yet. You can still connect with attorneys and bail agents by continuing without an arrest record.');
       }
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
       showToast('Could not search right now. Check your connection and try again.');
     } finally {
       setSearching(false);
@@ -224,7 +206,7 @@ if (submitting) return;
       });
       setResult(res.data || null);
     } catch (e: any) {
-      showToast('Something went wrong. Check your connection and try again.');
+      showToast(apiErrorMessage(e, 'Something went wrong. Check your connection and try again.'));
       setStep(2);
     } finally {
       setPaying(false);
@@ -234,10 +216,7 @@ if (submitting) return;
   return (
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex:1 }}>
 <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled"
-  testID="family-connect-screen"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }>
+  testID="family-connect-screen">
       <EmergencyStrip compact={true} />
 
       {/* Header */}
@@ -504,7 +483,7 @@ if (submitting) return;
             <View style={styles.errorBlock}>
               <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>Something went wrong. Please go back and try again.</Text>
               <TouchableOpacity
-          accessibilityRole="button" style={styles.backBtn} accessibilityLabel="\u2190 Go back" onPress={() => setStep(2)}
+          accessibilityRole="button" style={styles.backBtn} accessibilityLabel={"\u2190 Go back"} onPress={() => setStep(2)}
                 >
                 <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>← Go back</Text>
               </TouchableOpacity>

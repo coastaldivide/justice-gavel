@@ -30,7 +30,7 @@ const StatusBar = { setBarStyle: jest.fn() };
 const Keyboard = { dismiss: jest.fn(), addListener: jest.fn(() => ({ remove: jest.fn() })) };
 const useColorScheme = () => 'dark';
 const useWindowDimensions = () => ({ width: 390, height: 844 });
-const Dimensions = { get: () => ({ width: 390, height: 844 }) };
+const Dimensions = { get: () => ({ width: 390, height: 844 }), addEventListener: () => ({ remove: () => {} }) };
 const NetInfo = { addEventListener: jest.fn(() => jest.fn()), fetch: jest.fn().mockResolvedValue({ isConnected: true }) };
 
 module.exports = {

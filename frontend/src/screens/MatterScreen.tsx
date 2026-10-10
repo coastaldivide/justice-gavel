@@ -1,3 +1,5 @@
+import { COLORS } from '../constants/theme';
+import { EmptyState } from '../components/EmptyState';
 import { useHaptics } from '../hooks/useHaptics';
 /**
  * MatterScreen.tsx — Law firm matter detail view
@@ -5,31 +7,31 @@ import { useHaptics } from '../hooks/useHaptics';
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, StyleSheet, Alert, LayoutAnimation} from 'react-native';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { t } from '../i18n';
+import { formatDate } from '../utils/dateUtils';
 
 interface Props {
-  route: { params: { matterId: string } };
+  route: { params?: { matterId?: string } };
   navigation: any;
 }
 
 function MatterScreen({ route, navigation }: Props) {
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
   const { impact, success, error: hapticError } = useHaptics();
-  const { matterId } = route.params;
+  const matterId = route.params?.matterId;
   const [matter, setMatter]   = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (!matterId) { setLoading(false); return; }
     setLoading(true); setError(null);
     try {
       const { data } = await api.get(`/matters/${matterId}`);
       setMatter(data.matter ?? data);
     } catch (e: any) {
-      setError(e?.response?.data?.error || 'Failed to load matter');
+      setError(apiErrorMessage(e, 'Failed to load matter'));
     } finally {
       setLoading(false);
     }
@@ -51,7 +53,7 @@ function MatterScreen({ route, navigation }: Props) {
         ['Status',        matter.status],
         ['Type',          matter.matter_type],
         ['Jurisdiction',  matter.jurisdiction],
-        ['Court Date',    matter.court_date ? new Date(matter.court_date).toLocaleDateString() : '—'],
+        ['Court Date',    matter.court_date ? formatDate(String(matter.court_date)) : '—'],
         ['Capital Case',  matter.capital_case ? 'Yes' : 'No'],
         ['Co-defendants', matter.co_defendant_count ?? '0'],
         ['Bail Amount',   matter.bail_amount ? `$${Number(matter.bail_amount).toLocaleString()}` : '—'],
@@ -83,7 +85,6 @@ const styles = StyleSheet.create({
   screen:   { flex: 1, backgroundColor: '#f9fafb' },
   content:  { padding: 20 },
   center:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  // @ts-ignore
   title:    { fontSize: 22, fontWeight: '700', color: COLORS.navy, marginBottom: 4 },
   subtitle: { fontSize: 15, color: '#666', marginBottom: 20 },
   row:      { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
@@ -91,7 +92,6 @@ const styles = StyleSheet.create({
   value:    { fontSize: 14, color: '#111', fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
   notes:    { marginTop: 16 },
   noteText: { fontSize: 14, color: '#374151', lineHeight: 22, marginTop: 4 },
-  // @ts-ignore
   btn:      { backgroundColor: COLORS.navy, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 24 },
   btnText:  { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

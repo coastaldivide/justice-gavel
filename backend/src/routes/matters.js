@@ -127,8 +127,8 @@ router.post('/', authRequired, matterLimiter, auditLog('matter', 'create'), asyn
 
     // Auto-add creator as lead_attorney on their own matter
     await db.run(
-      `INSERT OR IGNORE INTO matter_teams (matter_id, user_id, role, added_by)
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO matter_teams (matter_id, user_id, role, added_by)
+       VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING`,
       [matterId, req.user.id, 'lead_attorney', req.user.id]
     );
 
@@ -181,11 +181,11 @@ router.post('/', authRequired, matterLimiter, auditLog('matter', 'create'), asyn
         for (const p of presets) {
           const due = p.business_days ? addBus(trigger, p.days) : addCal(trigger, p.days);
           await db.run(
-            `INSERT OR IGNORE INTO docket_entries
+            `INSERT INTO docket_entries
               (firm_id, matter_id, matter_table, entry_type, title, description,
                due_date, rule_citation, calculated_from, days_from_event,
                status, priority, created_by, created_at, updated_at)
-             VALUES (?,?,?,?,?,?, ?,?,?,?, ?,?,?,?,?)`,
+             VALUES (?,?,?,?,?,?, ?,?,?,?, ?,?,?,?,?) ON CONFLICT DO NOTHING`,
             [
               firm_id, matterId, 'matters', 'deadline',
               p.label, p.description || null,
@@ -265,6 +265,93 @@ router.get('/', authRequired, async (req, res) => {
   } catch (e) {
     logger.error('[matters/list]', e.message);
     res.status(500).json({ error: 'Could not load matters.' });
+  }
+});
+
+// Static paths must be registered before '/:id'
+// ── GET /api/matters/dashboard ────────────────────────────────────────────────
+router.get('/dashboard', authRequired, async (req, res) => {
+  try {
+    const db      = await getDb();
+    const firm_id = await getUserFirmId(db, req.user.id);
+
+    const condition = firm_id
+      ? 'WHERE m.firm_id=?'
+      : 'WHERE m.created_by=?';
+    const param = firm_id || req.user.id;
+
+    const [total, byStatus, byPractice, byPriority, recentActivity] = await Promise.all([
+      db.get(`SELECT COUNT(*) as n FROM matters m ${condition}`, [param]),
+      db.all(`SELECT status, COUNT(*) as count FROM matters m ${condition} GROUP BY status`, [param]),
+      db.all(`SELECT COALESCE(practice_group,'Unassigned') as practice_group, COUNT(*) as count FROM matters m ${condition} GROUP BY practice_group ORDER BY count DESC LIMIT 8`, [param]),
+      db.all(`SELECT priority, COUNT(*) as count FROM matters m ${condition} GROUP BY priority`, [param]),
+      db.all(`SELECT m.id, m.title, m.status, m.updated_at, mt.role as your_role
+              FROM matters m
+              JOIN matter_teams mt ON mt.matter_id=m.id AND mt.user_id=?
+              ORDER BY m.updated_at DESC LIMIT 5`, [req.user.id]),
+    ]);
+
+    res.json({
+      total_matters:   total?.n || 0,
+      by_status:       byStatus,
+      by_practice:     byPractice,
+      by_priority:     byPriority,
+      recent_activity: recentActivity,
+    });
+  } catch (e) {
+    logger.error('[matters/dashboard]', e.message);
+    res.status(500).json({ error: 'Could not load dashboard.' });
+  }
+});
+
+// ── GET /api/matters/workload ─────────────────────────────────────────────────
+router.get('/workload', authRequired, async (req, res) => {
+  try {
+    const db      = await getDb();
+    const firm_id = await getUserFirmId(db, req.user.id);
+    if (!firm_id) return res.json({ workload: [] });
+
+    const firmRole = await getUserFirmRole(db, req.user.id, firm_id);
+    if (!hasMinRole(firmRole, 'partner')) {
+      return err403(res, 'Workload view requires partner role.');
+    }
+
+    const workload = await db.all(
+      `SELECT u.id as user_id, u.display_name, u.email,
+              fm.role as firm_role,
+              COUNT(CASE WHEN m.status='active' THEN 1 END) as open_matters,
+              COUNT(mt.matter_id) as total_matters
+       FROM firm_members fm
+       JOIN users u ON u.id = fm.user_id
+       LEFT JOIN matter_teams mt ON mt.user_id = fm.user_id AND mt.active=1
+       LEFT JOIN matters m ON m.id = mt.matter_id
+       WHERE fm.firm_id=? AND fm.active=1
+       GROUP BY u.id, u.display_name, u.email, fm.role
+       ORDER BY open_matters DESC`,
+      [firm_id]
+    );
+
+    res.json({ workload, firm_id });
+  } catch (e) {
+    logger.error('[matters/workload]', e.message);
+    res.status(500).json({ error: 'Could not load workload.' });
+  }
+});
+
+// ─── RETENTION STATUS ──────────────────────────────────────────────────────
+// GET /api/matters/retention-status — firm retention summary (firm_admin)
+router.get('/retention-status', authRequired, async (req, res) => {
+  try {
+    const db     = await getDb();
+    const firmId = await getFirmId(db, req.user.id);
+    if (!firmId) return res.status(403).json({ error: 'Not a firm member.' });
+    const role = await getFirmRole(db, req.user.id);
+    if (!hasMinRole(role, 'partner')) return res.status(403).json({ error: 'partner+ required.' });
+    const status = await getFirmRetentionStatus(firmId);
+    res.json(status);
+  } catch (e) {
+    logger.error('[matters/retention-status]', e.message);
+    res.status(500).json({ error: 'Could not load retention status.' });
   }
 });
 
@@ -703,74 +790,7 @@ router.delete('/:id/events/:eid', authRequired, requireMatterAccess('id', 'assoc
 // DASHBOARD & WORKLOAD
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// ── GET /api/matters/dashboard ────────────────────────────────────────────────
-router.get('/dashboard', authRequired, async (req, res) => {
-  try {
-    const db      = await getDb();
-    const firm_id = await getUserFirmId(db, req.user.id);
 
-    const condition = firm_id
-      ? 'WHERE m.firm_id=?'
-      : 'WHERE m.created_by=?';
-    const param = firm_id || req.user.id;
-
-    const [total, byStatus, byPractice, byPriority, recentActivity] = await Promise.all([
-      db.get(`SELECT COUNT(*) as n FROM matters m ${condition}`, [param]),
-      db.all(`SELECT status, COUNT(*) as count FROM matters m ${condition} GROUP BY status`, [param]),
-      db.all(`SELECT COALESCE(practice_group,'Unassigned') as practice_group, COUNT(*) as count FROM matters m ${condition} GROUP BY practice_group ORDER BY count DESC LIMIT 8`, [param]),
-      db.all(`SELECT priority, COUNT(*) as count FROM matters m ${condition} GROUP BY priority`, [param]),
-      db.all(`SELECT m.id, m.title, m.status, m.updated_at, mt.role as your_role
-              FROM matters m
-              JOIN matter_teams mt ON mt.matter_id=m.id AND mt.user_id=?
-              ORDER BY m.updated_at DESC LIMIT 5`, [req.user.id]),
-    ]);
-
-    res.json({
-      total_matters:   total?.n || 0,
-      by_status:       byStatus,
-      by_practice:     byPractice,
-      by_priority:     byPriority,
-      recent_activity: recentActivity,
-    });
-  } catch (e) {
-    logger.error('[matters/dashboard]', e.message);
-    res.status(500).json({ error: 'Could not load dashboard.' });
-  }
-});
-
-// ── GET /api/matters/workload ─────────────────────────────────────────────────
-router.get('/workload', authRequired, async (req, res) => {
-  try {
-    const db      = await getDb();
-    const firm_id = await getUserFirmId(db, req.user.id);
-    if (!firm_id) return res.json({ workload: [] });
-
-    const firmRole = await getUserFirmRole(db, req.user.id, firm_id);
-    if (!hasMinRole(firmRole, 'partner')) {
-      return err403(res, 'Workload view requires partner role.');
-    }
-
-    const workload = await db.all(
-      `SELECT u.id as user_id, u.display_name, u.email,
-              fm.role as firm_role,
-              COUNT(CASE WHEN m.status='active' THEN 1 END) as open_matters,
-              COUNT(mt.matter_id) as total_matters
-       FROM firm_members fm
-       JOIN users u ON u.id = fm.user_id
-       LEFT JOIN matter_teams mt ON mt.user_id = fm.user_id AND mt.active=1
-       LEFT JOIN matters m ON m.id = mt.matter_id
-       WHERE fm.firm_id=? AND fm.active=1
-       GROUP BY u.id, u.display_name, u.email, fm.role
-       ORDER BY open_matters DESC`,
-      [firm_id]
-    );
-
-    res.json({ workload, firm_id });
-  } catch (e) {
-    logger.error('[matters/workload]', e.message);
-    res.status(500).json({ error: 'Could not load workload.' });
-  }
-});
 
 // ─── MATTER VERSION HISTORY ────────────────────────────────────────────────
 // GET /api/matters/:id/history — full audit trail of field changes
@@ -821,23 +841,6 @@ router.delete('/:id/hold', authRequired, async (req, res) => {
   } catch (e) {
     logger.error('[matters/hold/release]', e.message);
     res.status(e.message.includes('not found') ? 404 : 500).json({ error: e.message });
-  }
-});
-
-// ─── RETENTION STATUS ──────────────────────────────────────────────────────
-// GET /api/matters/retention-status — firm retention summary (firm_admin)
-router.get('/retention-status', authRequired, async (req, res) => {
-  try {
-    const db     = await getDb();
-    const firmId = await getFirmId(db, req.user.id);
-    if (!firmId) return res.status(403).json({ error: 'Not a firm member.' });
-    const role = await getFirmRole(db, req.user.id);
-    if (!hasMinRole(role, 'partner')) return res.status(403).json({ error: 'partner+ required.' });
-    const status = await getFirmRetentionStatus(firmId);
-    res.json(status);
-  } catch (e) {
-    logger.error('[matters/retention-status]', e.message);
-    res.status(500).json({ error: 'Could not load retention status.' });
   }
 });
 

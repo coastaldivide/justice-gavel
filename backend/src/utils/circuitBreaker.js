@@ -35,5 +35,5 @@ export function getBreaker(name, fn, options = {}) {
 export const anthropicBreaker = (fn) => getBreaker('anthropic', fn, { timeout: 120000 });
 // Used by billing routes — import: { stripeBreaker } from '../utils/circuitBreaker'
 export const stripeBreaker    = (fn) => getBreaker('stripe',    fn, { timeout: 10000  });
-// Used by email routes — import: { sendgridBreaker } from '../utils/circuitBreaker'
+// Legacy name kept for compatibility (email now goes through Resend)
 export const sendgridBreaker  = (fn) => getBreaker('sendgrid',  fn, { timeout: 8000   });

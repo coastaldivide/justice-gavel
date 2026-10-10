@@ -1,4 +1,4 @@
-import { guardedSchedule } from '../utils/cronGuard.js';
+import { scheduleGuarded } from '../utils/cronGuard.js';
 import { getDb } from '../db/index.js';
 const JOB_LAST_RUN = new Map(); // prevents duplicate runs within same window
 
@@ -82,6 +82,8 @@ const SCRIPTS = {
 
 let nightlyTask = null;
 let linkExpiryTask = null;
+let reminderInterval = null;
+let tokenCleanupTask = null;
 
 // ── Spawn a Node script with streamed output ──────────────────────────────────
 function runScript(scriptPath, args = []) {
@@ -136,8 +138,8 @@ async function runDocketReminderSweep() {
        LEFT JOIN users u ON u.id = de.assigned_to
        WHERE de.status = 'pending'
          AND de.reminded_at IS NULL
-         AND date(de.due_date, '-' || de.reminder_days || ' days') <= ?
-         AND de.due_date >= ?
+         AND (de.due_date::date - (COALESCE(de.reminder_days, 0) || ' days')::interval)::date <= ?::date
+         AND de.due_date::date >= ?::date
        LIMIT 500`,
       [today, today]
     ).catch(() => []);
@@ -213,7 +215,7 @@ async function runExpungementTriggerSweep(db) {
     // Find cases closed 25-35 days ago (window around the 30-day mark)
     const eligible = await db.all(
       `SELECT DISTINCT c.user_id, c.id AS case_id, c.title, c.state,
-              u.display_name AS user_name
+              u.display_name AS user_name, c.outcome_recorded_at
          FROM cases c
          JOIN users u ON u.id = c.user_id
         WHERE c.status = 'closed'
@@ -286,8 +288,8 @@ async function runConsultationReminderSweep(db) {
          FROM consultation_bookings cb
          JOIN users u ON u.id = cb.user_id
         WHERE cb.status = 'confirmed'
-          AND datetime(cb.date_slot || ' ' || cb.time_slot) BETWEEN
-              datetime('now', '+20 hours') AND datetime('now', '+28 hours')
+          AND (cb.date_slot || ' ' || cb.time_slot)::timestamp BETWEEN
+              (NOW() + INTERVAL '20 hours') AND (NOW() + INTERVAL '28 hours')
           AND cb.reminder_sent IS NULL
         ORDER BY cb.date_slot ASC, cb.time_slot ASC
         LIMIT 100`
@@ -481,7 +483,7 @@ async function runNightlyJob() {
   try {
     const r8 = await runDocketReminderSweep();
   // Post-case expungement trigger
-  try { await runExpungementTriggerSweep(db); } catch(e) {}
+  try { await runExpungementTriggerSweep(await getDb()); } catch(e) { logger.warn('[scheduler] expungement trigger sweep:', e?.message); }
     logger.info(`[scheduler] Docket: ${r8.remindSent} reminders, ${r8.overdueDispatched} overdue events`);
   } catch (e) {
     logger.error('[scheduler] Docket sweep error:', e.message);
@@ -533,15 +535,17 @@ export function startScheduler() {
 
   // Payment link expiry — every 2 hours
   // Hourly: 24-hour consultation reminders
-  setInterval(async () => {
+  if (reminderInterval) clearInterval(reminderInterval);
+  reminderInterval = setInterval(async () => {
     try {
       const { getDb: _getDb } = await import('../db/index.js');
       const _db = await _getDb();
       await runConsultationReminderSweep(_db);
     } catch(e) { logger.warn('[reminder/hourly]', e?.message); }
   }, 3_600_000);
+  reminderInterval.unref();
 
-  linkExpiryTask = guardedSchedule('0 */2 * * *', async () => {
+  linkExpiryTask = scheduleGuarded('0 */2 * * *', 'payment-link-expiry', async () => {
     try {
       const r = await expireOldPaymentLinks();
       if (r.expired > 0) logger.info(`[scheduler] Expired ${r.expired} payment links`);
@@ -550,6 +554,9 @@ export function startScheduler() {
     }
   }, { timezone: tz });
   logger.info('[scheduler] Link expiry: every 2 hours');
+
+  // Daily refresh-token cleanup
+  tokenCleanupTask = scheduleGuarded('15 3 * * *', 'refresh-token-cleanup', cleanupExpiredTokens, { timezone: tz });
 
   // Health scan — every 12 hours (6 AM and 6 PM Central)
   // Monitors: precedent currency, asylum bar risk, signal invariants,
@@ -560,6 +567,8 @@ export function startScheduler() {
 }
 
 export function stopScheduler() {
+  if (reminderInterval) { clearInterval(reminderInterval); reminderInterval = null; }
+  if (tokenCleanupTask) { tokenCleanupTask.destroy(); tokenCleanupTask = null; }
   if (nightlyTask)    { nightlyTask.destroy();    nightlyTask    = null; }
   if (linkExpiryTask) { linkExpiryTask.destroy(); linkExpiryTask = null; }
   stopHealthScanScheduler();

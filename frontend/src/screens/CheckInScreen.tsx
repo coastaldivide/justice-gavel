@@ -1,4 +1,5 @@
 import { useHaptics } from '../hooks/useHaptics';
+import { parseLocalDate, formatDate, daysUntil } from '../utils/dateUtils';
 import { HapticButton } from '../components/HapticButton';
 import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
@@ -18,18 +19,13 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Animated, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation, InteractionManager} from 'react-native';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { haptic, hapticSelect, hapticSuccess } from '../services/haptics';
 import { getLocation } from '../services/location';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import * as Location from 'expo-location';
 import { t } from '../i18n';
 
-declare var defNameRef: any;
-declare var defName_val: any;
-declare var load: any;
-declare var locationData: any;
-declare var setError: any;
 type CheckInPhase = 'loading' | 'ready' | 'gps' | 'submitting' | 'done' | 'already_done' | 'error' | 'no_enrollment';
 
 
@@ -46,9 +42,11 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
+  // Loader is declared further down; reach it through a ref updated each render.
+  const reloadRef = React.useRef<() => unknown>(() => undefined);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
+    Promise.resolve(reloadRef.current()).catch(() => {}).finally(() => setRefreshing(false));
   }, []);
 
   const enrollmentId = (route?.params as import('../types/api').RouteParams)?.enrollmentId;
@@ -118,7 +116,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
       }
     } catch (e: any) {
       setPhase('error');
-      setErrorMsg(e.response?.data?.error || 'Could not load your check-in. Check your internet.');
+      setErrorMsg(apiErrorMessage(e, 'Could not load your check-in. Check your internet.'));
     }
   };
 
@@ -141,13 +139,10 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
 
     setPhase('submitting');
     try {
-    // Client-side validation
-    const defName = defNameRef || defName_val;
-    if (!defName || !defName.trim()) {
-      setError('Enter the defendant\'s name to check in.');
+    if (!enrollmentId) {
+      setPhase('no_enrollment');
       return;
     }
-
       await api.post('/checkins/submit', {
         enrollment_id: enrollmentId,
         lat, lng,
@@ -166,12 +161,13 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         setPhase('already_done');
       } else {
         setPhase('error');
-        setErrorMsg(e.response?.data?.error || 'Check-in failed. Try again.');
+        setErrorMsg(apiErrorMessage(e, 'Check-in failed. Try again.'));
       }
     }
   };
 
   // ── No enrollment ID ─────────────────────────────────────────────────────
+  reloadRef.current = () => loadStatus();
   if (phase === 'no_enrollment') return (
     <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -207,6 +203,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, ...FONTS.heavy, fontSize: 14 }}>{t('checkin_find_bondsman')}</Text>
       </TouchableOpacity>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -244,7 +241,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
           <Text maxFontSizeMultiplier={1.4} style={styles.enrollmentName}>{enrollment.defendant_name}</Text>
           {enrollment.court_date && (
             <Text maxFontSizeMultiplier={1.4} style={styles.enrollmentDetail}>
-              📅 Court date: {new Date(enrollment.court_date ?? 0).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}
+              📅 Court date: {formatDate(enrollment.court_date, { month:'long', day:'numeric', year:'numeric' })}
             </Text>
           )}
         </View>
@@ -307,9 +304,8 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         <Text maxFontSizeMultiplier={1.4} style={styles.helpBlockSub}>Find a lawyer or bail bondsman instantly.</Text>
         <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
           accessibilityLabel="Find a Lawyer →"
-          // @ts-ignore
           accessibilityHint="Searches for attorneys in your area"
           style={styles.helpBlockBtn}
           onPress={() => navigation.navigate('LawyersTab')}
@@ -350,7 +346,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         {enrollment?.court_date && (
           <View style={styles.statBlock}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.statNum, { fontSize: 14 }]}>
-              {Math.ceil((new Date(enrollment.court_date).getTime() - Date.now()) / 86400000)}d
+              {daysUntil(enrollment.court_date) ?? '--'}d
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.statLabel}>Until court</Text>
           </View>
@@ -359,7 +355,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
 
       {/* Court date reminder */}
       {enrollment?.court_date && (() => {
-        const d = new Date(enrollment.court_date);
+        const d = parseLocalDate(enrollment.court_date) ?? new Date(NaN);
         const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
         return days <= 7 && days >= 0 ? (
           <View style={styles.courtWarning}>
@@ -472,9 +468,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         </Text>
       </View>
       </ScrollView>
-      </KeyboardAvoidingView>
   );
-  return null;
 }
 
 const makeStyles = (colors: any) => StyleSheet.create({

@@ -19,16 +19,14 @@ import { AppIcon } from '../components/AppIcon';
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
-import { api } from '../services/api';
+import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
+import { PAYMENTS_COMING_SOON } from '../payments';
 
 import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { t } from '../i18n';
 
-declare var data: any;
-declare var setError: any;
-declare var setSub: any;
 // Billing period toggle data
 const MONTHLY_TIERS = [
   {
@@ -207,8 +205,6 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
           disabled={loading}
           activeOpacity={0.85}
         >
-          accessibilityRole="button" accessibilityLabel="Subscribe"
-          accessibilityHint="Double-tap to activate"
           {loading
             ? <ActivityIndicator color={COLORS.bgCard} size="small" />
             : <>
@@ -229,25 +225,28 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
 }
 
 function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
   useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     });
-    return () => _task.cancel();
+    return () => { _task.cancel(); mountedRef.current = false; };
   }, []);
 
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = () => {
     setRefreshing(true);
-    api.get('/billing/consumer/subscription').then(r => { if (r.data) setSub(r.data || null); }).catch(() => showToast('Action failed. Please try again.', 'error'))
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    api.get('/billing/consumer/subscription')
+      .then(r => { if (mountedRef.current) setSubscription(r.data?.subscription ?? null); })
+      .catch(() => showToast('Could not refresh. Check your connection.', 'error'))
+      .finally(() => { if (mountedRef.current) setRefreshing(false); });
+  };
   const [subscribing, setSubscribing]   = useState<string | null>(null);
   const [annual, setAnnual]             = useState(false);
   const { requireAuth, AuthGateModal }  = useAuthGate(navigation);
@@ -273,7 +272,6 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
     // Apple requires digital subscriptions on iOS to use StoreKit (IAP).
     // Until expo-iap is integrated, we block iOS purchases and show instructions.
     if (Platform.OS === 'ios') {
-      // @ts-ignore
       confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe. Open website?',
       { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); })
       setSubscribing(null);
@@ -287,26 +285,31 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
 showToast(res.data?.message || 'Free trial activated!', 'success');
       loadSub();
     } catch (e: any) {
-      const msg = e.response?.data?.error || e.message;
-      if (msg?.includes('Already subscribed')) {
-        setError('You already have an active plan. Manage it in Settings.');
+      if (isPaymentsUnavailable(e)) {
+        showToast(PAYMENTS_COMING_SOON, 'info');
+        return;
+      }
+      const msg = apiErrorMessage(e, 'Please try again.');
+      if (msg.includes('Already subscribed') || e?.response?.data?.error === 'already_subscribed') {
+        showToast('You already have an active plan. Manage it in Settings.', 'info');
       } else {
-        showToast(msg || 'Please try again.', 'info');
+        showToast(msg, 'info');
       }
     } finally { setSubscribing(null); }
   };
 
   const handleCancel = () => {
-// @ts-ignore
-confirm('Cancel Plan?', 'You\'ll keep access until the end of your billing period.',
-      { confirmLabel: 'Cancel', destructive: true }).then(async ok => { if (!ok) return;
-      try {
+    confirm('Cancel Plan?', 'You\'ll keep access until the end of your billing period.',
+      { confirmLabel: 'Cancel', destructive: true }).then(async ok => {
+        if (!ok) return;
+        try {
           await api.post('/billing/cancel');
           setSubscription(null);
           showToast('Your plan has been cancelled.');
-        } catch (e: any) { }
-          showToast('Please try again. If this keeps happening, check your internet connection.');
-    })
+        } catch (e: any) {
+          showToast(apiErrorMessage(e, 'Please try again. If this keeps happening, check your internet connection.'), 'error');
+        }
+      });
   };
 
   if (loading) return (
@@ -426,14 +429,6 @@ confirm('Cancel Plan?', 'You\'ll keep access until the end of your billing perio
       </TouchableOpacity>
       <View style={{ height: 40 }} />
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <AppIcon name="card-outline" size={20} color={COLORS.navy} />
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No plans available</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Please check your connection and try again.</Text>
-        </View>
-      )}
           <TouchableOpacity
           accessibilityRole="button"
           style={{ alignItems: 'center', paddingVertical: 16 }}

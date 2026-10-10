@@ -1,4 +1,5 @@
-import { safeJson } from '../utils/routeHelpers.js';
+import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
+import { safeJson } from '../../utils/routeHelpers.js';
 /**
  * contracts/_helpers.js — DB schema + core AI functions
  *
@@ -16,9 +17,8 @@ import logger      from '../../utils/logger.js';
 import { CONTRACT_TYPES } from './_contract_types.js';
 
 const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '');
-const API_URL       = 'https://api.anthropic.com/v1/messages';
-const MODEL         = 'claude-sonnet-4-20250514';
-
+const API_URL = ANTHROPIC_MESSAGES_URL;
+const MODEL = CLAUDE_MODEL;
 // contracts, contract_reviews, contract_redlines, contract_executions managed by db/index.js Year 2.
 // ensureTables kept as a no-op export to avoid import-side errors in legacy callers.
 export async function ensureTables(_db) { /* no-op — tables created at startup */ }

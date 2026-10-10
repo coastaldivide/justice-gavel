@@ -34,19 +34,14 @@ import type { ScreenProps } from '../types/navigation';
 import React, {
   useState, useEffect, useCallback, useRef, useMemo
 } from 'react';
-import { View, Text, Linking, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, Clipboard, RefreshControl, LayoutAnimation, InteractionManager} from 'react-native';
-import { api } from '../services/api';
+import { View, Text, Linking, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, RefreshControl, LayoutAnimation, InteractionManager} from 'react-native';
+import { api, apiErrorMessage } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDisclaimerModal';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { hapticImpact, hapticNotification, hapticSelection, Clipboard } from '../utils/webCompat';
 
-declare var loadHistory: any; // hoisted from component scope
-declare var mountedRef: any; // hoisted from component scope
-declare var onDiscussWithAI: any; // hoisted from component scope
-declare var onRefresh: any; // hoisted from component scope
-declare var refreshing: any; // hoisted from component scope
 // ── Quick research prompts ────────────────────────────────────────────────────
 const QUICK_PROMPTS = [
   { label: 'Motion to suppress',  text: 'What are the legal standards for a successful motion to suppress? Cite key federal and state cases.' },
@@ -70,12 +65,6 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const { colors, isDark } = useTheme();
-  const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(async () => {
-    setRefreshing(true);
-    try { await loadHistory(); } catch {}
-    setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 800);
-  }, []);
 
   const citationBlue = COLORS.blue;
   const headingColor = COLORS.textPrimary;
@@ -96,11 +85,6 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
         return <Text maxFontSizeMultiplier={1.4} key={key} style={{ fontStyle: 'italic', color: citationBlue }}>{seg.slice(1,-1)}</Text>;
       }
       if (/v\.\s+[A-Z].*\d+/.test(seg)) {
-        if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
           <Text maxFontSizeMultiplier={1.4} key={key}
             style={{ fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: citationBlue,
@@ -155,6 +139,7 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
 }
 
 function HighlightedText({ text, style }: { text: string; style?: object }) {
+  const { showToast } = useToast();
   const { colors } = useTheme();
   // Match case citations: Name v. Name, 123 F.3d 456 (Court Year)
   const parts = text.split(/(\*[^*]+\*|\b[A-Z][a-z].*?v\..*?,\s*\d+\s+\S+\s+\d+\s*\([^)]+\))/g);
@@ -162,7 +147,6 @@ function HighlightedText({ text, style }: { text: string; style?: object }) {
   const openVerify = (citation: string) => {
     // CourtListener full-text search -- free, comprehensive federal cases
     const q = encodeURIComponent(citation.trim());
-    // @ts-ignore
     Linking.openURL(`https://www.courtlistener.com/?q=${q}&type=o&order_by=score+desc`).catch(() => showToast('Action failed. Please try again.', 'error'));
   };
 
@@ -195,7 +179,7 @@ function HighlightedText({ text, style }: { text: string; style?: object }) {
 }
 
 // ── Message bubble (research thread) ─────────────────────────────────────────
-function ResearchBubble({ msg }: { msg: Message }) {
+function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithAI?: (content: string) => void }) {
   const { showToast } = useToast();
   const styles = makeStyles(COLORS);
   const { colors, isDark } = useTheme();
@@ -255,8 +239,8 @@ function ResearchBubble({ msg }: { msg: Message }) {
           style={[styles.copyBtn, { borderColor: COLORS.navy, flex: 1 }]}
           onPress={async () => {
             try {
-              const { default: Print } = await import('expo-print');
-              const { default: Sharing } = await import('expo-sharing');
+              const Print = await import('expo-print');
+              const Sharing = await import('expo-sharing');
               const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
               const bodyHtml = msg.content.split('\n').map((line: string) => {
                 if (!line.trim()) return '<p style="height:8px"></p>';
@@ -296,10 +280,7 @@ function ResearchBubble({ msg }: { msg: Message }) {
 function PaywallView({ onSubscribe, loading, colors }: any) {
   const styles = makeStyles(COLORS);
   return (
-    <ScrollView contentContainerStyle={styles.paywallScroll}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }>
+    <ScrollView contentContainerStyle={styles.paywallScroll}>
       <UPLDisclaimer compact />
       <View style={[styles.paywallCard, {
         backgroundColor: COLORS.bgSubtle,
@@ -491,7 +472,6 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
   const [searching,  setSearching]  = useState(false);
   const [hasAccess,  setHasAccess]  = useState<boolean | null>(null);
   const [subLoading, setSubLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [history,    setHistory]    = useState<Session[]>([]);
   const [histLoading,setHistLoad]   = useState(false);
 
@@ -552,8 +532,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
         setPhase('home');
         showToast('Your Legal Research trial is active. Start searching.');
       } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
-        const msg = e.response?.data?.error || 'Could not start subscription.';
+        const msg = apiErrorMessage(e, 'Could not start subscription.');
 showToast(msg, 'error');
         setSubLoading(false);
       }
@@ -607,7 +586,7 @@ showToast(msg, 'error');
       setMessages(prev => [...prev, assistantMsg]);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (e: any) {
-      const errMsg = e.response?.data?.error || 'Research failed. Check your connection.';
+      const errMsg = apiErrorMessage(e, 'Research failed. Check your connection.');
       if (e.response?.status === 402) {
         setPhase('paywall');
       } else {
@@ -649,7 +628,7 @@ showToast(msg, 'error');
             <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No research yet</Text>
             <TouchableOpacity
   accessibilityRole="button"
-              accessibilityLabel="Start Researching \u2192" onPress={() => setPhase('home')}
+              accessibilityLabel={"Start Researching \u2192"} onPress={() => setPhase('home')}
               >
               <Text maxFontSizeMultiplier={1.4} style={styles.newSearchBtnText}>Start Researching →</Text>
             </TouchableOpacity>
@@ -659,7 +638,7 @@ showToast(msg, 'error');
           <TouchableOpacity accessibilityRole="button"
             key={sess.id}
             style={[styles.histRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
-            accessibilityLabel="\u2696\ufe0f" onPress={() => loadSession(sess)}
+            accessibilityLabel={"\u2696\ufe0f"} onPress={() => loadSession(sess)}
           >
             <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
             <View style={{ flex: 1 }}>
@@ -754,7 +733,10 @@ showToast(msg, 'error');
 
         {/* ── Thread ──────────────────────────────────────────────────────── */}
         {(messages ?? []).map((msg, i) => (
-          <ResearchBubble key={`msg-${i}`} msg={msg} />
+          <ResearchBubble key={`msg-${i}`} msg={msg}
+            onDiscussWithAI={msg.role === 'assistant'
+              ? (content: string) => navigation.navigate('ChatTab', { mode: 'defender', caseContext: content.slice(0, 2000), caseTitle: 'Legal research' })
+              : undefined} />
         ))}
 
         {/* Searching indicator */}

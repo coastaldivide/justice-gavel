@@ -1,3 +1,4 @@
+import { safeJson } from '../utils/routeHelpers.js';
 import { validate, schemas } from '../validation/schemas.js';
 /**
  * /api/admin — Provider database management
@@ -38,7 +39,6 @@ import { err400, escapeLike, err401, err403, err404, err409, err422, err500, err
 import logger from '../utils/logger.js';
 import { Router }        from 'express';
 import { authRequired }  from '../middleware/auth.js';
-import { open } from 'sqlite';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -58,7 +58,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Column and table safety — imported from routeHelpers.js (canonical, correct split on /\s*=\s*/)
 // Helper aliases
-const qSafe = safeInt;
 
 const router = Router();
 
@@ -116,20 +115,9 @@ function validateTable(table, res) {
 
 // ── Module-level singleton — one providers.sqlite connection per process ─────────
 // Calling open() on every request leaks file descriptors under load.
-let _adminDb = null;
+// Provider data (lawyers, bail_agents, provider_update_log) lives in Postgres.
 async function openDb() {
-  if (_adminDb) return _adminDb;
-  try {
-    _adminDb = await open({
-      filename: path.resolve(__dirname, '../../data/providers.sqlite'),
-      driver: sqlite3.Database,
-    });
-    await _adminDb.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;');
-  } catch (e) {
-    logger.warn('[admin] Could not open providers.sqlite:', e.message);
-    _adminDb = null;
-  }
-  return _adminDb;
+  return getDb();
 }
 
 function safeParseJson(v, fallback) {
@@ -186,12 +174,18 @@ function crudRoutes(table, extraWriteFields = []) {
       const params = [];
       if (active !== 'all') { sql += ' AND active = ?'; params.push(active === '1' ? 1 : 0); }
       if (city) { sql += ' AND city = ?'; params.push(city); }
-      if (q)    { sql += ' AND (name LIKE ? OR address LIKE ? OR phone LIKE ?)'; params.push(`%${qSafe}%`,`%${qSafe}%`,`%${qSafe}%`); }
+      const qLike = q ? `%${escapeLike(String(q).slice(0, 100))}%` : null;
+      if (q)    { sql += ' AND (name ILIKE ? OR address ILIKE ? OR phone ILIKE ?)'; params.push(qLike, qLike, qLike); }
       // Single paginated ORDER BY — use PAGE_LIMIT/PAGE_OFFSET (validated bounds)
       sql += ` ORDER BY city, name LIMIT ${PAGE_LIMIT} OFFSET ${PAGE_OFFSET}`;
   const rows = await db.all(sql, params);
-      const total = await db.get(`SELECT COUNT(*) as n FROM ${safeTable(table)} WHERE 1=1${active !== 'all' ? ` AND active = ${safeAll === '1' ? 1 : 0}` : ''}${city ? ` AND city=?` : ''}`);
-      res.json({ total: total?.n ?? 0n, offset: safeInt(offset), limit: safeInt(limit), rows: rows.map(formatRow) });
+      const countParams = [];
+      let countSql = `SELECT COUNT(*) as n FROM ${safeTable(table)} WHERE 1=1`;
+      if (active !== 'all') { countSql += ' AND active = ?'; countParams.push(active === '1' ? 1 : 0); }
+      if (city) { countSql += ' AND city = ?'; countParams.push(city); }
+      if (q)    { countSql += ' AND (name ILIKE ? OR address ILIKE ? OR phone ILIKE ?)'; countParams.push(qLike, qLike, qLike); }
+      const total = await db.get(countSql, countParams);
+      res.json({ total: total?.n ?? 0, offset: safeInt(offset), limit: safeInt(limit), rows: rows.map(formatRow) });
     } catch (e) {
     logger.error({ msg: '[admin]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
   });
@@ -341,7 +335,7 @@ router.get('/log', async (req, res) => {
     const total = table
       ? await db.get('SELECT COUNT(*) as n FROM provider_update_log WHERE table_name=?', [table])
       : await db.get('SELECT COUNT(*) as n FROM provider_update_log');
-    res.json({ total: total?.n ?? 0n, rows });
+    res.json({ total: total?.n ?? 0, rows });
   } catch (e) {
     logger.error({ msg: '[admin]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
@@ -393,7 +387,6 @@ router.get('/stats', async (req, res) => {
 
 router.post('/refresh', authRequired, async (req, res) => {
   const { city, type = 'all', source = 'all', dryRun = false } = req.body || {};
-  const safeAll = ['0','1','true','false','all'].includes(String(all||'').toLowerCase()) ? all : '1';
   const scriptPath = path.resolve(__dirname, '../scripts/refresh.js');
 
   const args = ['--node-options=--experimental-vm-modules'];
@@ -460,12 +453,6 @@ router.get('/health-scan/latest', authRequired, async (req, res) => {
     if (!hasMinRole(userRole, 'firm_admin')) {
       return res.status(403).json({ error: 'firm_admin+ required.' });
     }
-    // Ensure table exists
-    await db.run(`CREATE TABLE IF NOT EXISTS scan_results (
-      id INTEGER PRIMARY KEY AUTOINCREMENT, scan_id TEXT, started_at TEXT,
-      completed_at TEXT, elapsed_ms INTEGER, overall TEXT,
-      summary_json TEXT, findings_json TEXT, created_at TEXT DEFAULT (NOW())
-    )`).catch(() => {});
     const result = await db.get(
       'SELECT id, scan_id, overall, summary_json AS summary, findings_json, created_at FROM scan_results ORDER BY id DESC LIMIT 1'
     ).catch(() => null);
@@ -494,11 +481,6 @@ router.get('/health-scan/history', authRequired, async (req, res) => {
     if (!hasMinRole(userRole, 'firm_admin')) {
       return res.status(403).json({ error: 'firm_admin+ required.' });
     }
-    await db.run(`CREATE TABLE IF NOT EXISTS scan_results (
-      id INTEGER PRIMARY KEY AUTOINCREMENT, scan_id TEXT, started_at TEXT,
-      completed_at TEXT, elapsed_ms INTEGER, overall TEXT,
-      summary_json TEXT, findings_json TEXT, created_at TEXT DEFAULT (NOW())
-    )`).catch(() => {});
     const limit  = Math.min(parseInt(req.query.limit) || 30, 100);
     const results = await db.all(
       'SELECT scan_id, started_at, completed_at, elapsed_ms, overall, summary_json FROM scan_results ORDER BY id DESC LIMIT ?',

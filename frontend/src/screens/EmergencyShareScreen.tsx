@@ -1,4 +1,5 @@
 import { useHaptics } from '../hooks/useHaptics';
+import { RNShare } from '../utils/webCompat';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH, isTablet } from '../utils/responsive';
 import { HapticButton } from '../components/HapticButton';
@@ -34,18 +35,12 @@ import { getContacts } from '../services/storage';
 import { haptic, hapticCall, hapticSuccess, hapticWarn } from '../services/haptics';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { t } from '../i18n';
-declare var name: any; // hoisted from component scope
 
-declare var load: any;
-declare var mapsLink: any; // hoisted from component scope
 type Phase = 'ready' | 'locating' | 'finding' | 'confirm' | 'sharing' | 'done' | 'error';
 
 // Message template lines are built inside buildMessage()
 
 function EmergencyShareScreen({ route, navigation }: ScreenProps) {
-  // @ts-ignore
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
@@ -58,11 +53,6 @@ function EmergencyShareScreen({ route, navigation }: ScreenProps) {
   const [submitting, setSubmitting] = React.useState(false);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
-  }, []);
 
   const [phase, setPhase]       = useState<Phase>('ready');
   const [loading, setLoading] = useState(false);
@@ -234,7 +224,7 @@ function EmergencyShareScreen({ route, navigation }: ScreenProps) {
       // Fallback: native share sheet
       let result;
       try {
-        result = await Share.share({ message, title: `${userName} needs help` });
+        result = await RNShare.share({ message, title: `${userName} needs help` });
       } catch (shareErr: any) {
         // Share sheet unavailable — fallback already handled above
       }
@@ -275,8 +265,7 @@ function EmergencyShareScreen({ route, navigation }: ScreenProps) {
 
 if (phase === 'ready') return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
-        contentContainerStyle={{ paddingBottom: 24, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        contentContainerStyle={{ paddingBottom: 24, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}>
       <View style={styles.quickExitBar}>
         <TouchableOpacity accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
@@ -306,7 +295,7 @@ if (phase === 'ready') return (
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
             style={styles.addContactsBtn}
-            accessibilityLabel="Add Emergency Contacts \u2192" onPress={() => navigation.navigate('Contacts')}
+            accessibilityLabel={"Add Emergency Contacts \u2192"} onPress={() => navigation.navigate('Contacts')}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.addContactsBtnText}>Add Emergency Contacts →</Text>
           </TouchableOpacity>
@@ -340,14 +329,14 @@ if (phase === 'ready') return (
         onPress={gatherInfo}
         disabled={contacts.length === 0}
         activeOpacity={0.85}
-       accessibilityLabel="\ud83d\udea8  Get Info & Preview Message">
+       accessibilityLabel={"\ud83d\udea8  Get Info & Preview Message"}>
         <Text maxFontSizeMultiplier={1.4} style={styles.goBtnText}>🚨  Get Info & Preview Message</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-       accessibilityLabel="Edit emergency contacts \u2192">
+       accessibilityLabel={"Edit emergency contacts \u2192"}>
         <Text maxFontSizeMultiplier={1.4} style={styles.editContactsText}>Edit emergency contacts →</Text>
       </TouchableOpacity>
 
@@ -477,9 +466,8 @@ if (phase === 'ready') return (
       <Text maxFontSizeMultiplier={1.4} style={styles.doneSub}>Your emergency contacts have been notified.</Text>
       <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
          accessibilityLabel="Done Sharing"
-          // @ts-ignore
           accessibilityHint="Confirms and closes this view">
         <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Done Sharing</Text>
       </TouchableOpacity>
@@ -527,7 +515,7 @@ if (phase === 'ready') return (
             <TouchableOpacity
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-               accessibilityLabel="{bondsman.phone}">
+               accessibilityLabel={bondsman.phone}>
               <Text maxFontSizeMultiplier={1.4} style={styles.providerPhone}>{bondsman.phone}</Text>
             </TouchableOpacity>
           )}
@@ -541,7 +529,7 @@ if (phase === 'ready') return (
             <TouchableOpacity
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-               accessibilityLabel="{lawyer.phone}">
+               accessibilityLabel={lawyer.phone}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.providerPhone, { color: COLORS.legal }]}>{lawyer.phone}</Text>
             </TouchableOpacity>
           )}
@@ -550,16 +538,15 @@ if (phase === 'ready') return (
       <TouchableOpacity
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-       accessibilityLabel="\ud83d\udea8  Send Now">
+       accessibilityLabel={"\ud83d\udea8  Send Now"}>
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>🚨  Send Now</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnSub}>Opens your Messages app</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
          accessibilityLabel="Cancel"
-          // @ts-ignore
           accessibilityHint="Cancels and returns to previous screen">
         <Text maxFontSizeMultiplier={1.4} style={styles.cancelBtnText}>Cancel</Text>
       </TouchableOpacity>

@@ -1,3 +1,4 @@
+import { useFocusEffect } from '@react-navigation/native';
 /**
  * AttorneyInboxScreen — Unified attorney command center
  *
@@ -20,8 +21,9 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme, COLORS, RADIUS } from '../constants/theme';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { useToast } from '../components/ToastProvider';
+import { parseLocalDate, toLocalISODate } from '../utils/dateUtils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface InboxSummary {
@@ -105,11 +107,8 @@ interface InboxData {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtDate(iso: string) {
-  try {
-    return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', {
-      weekday: 'short', month: 'short', day: 'numeric',
-    });
-  } catch { return iso; }
+  const d = parseLocalDate(iso);
+  return d ? d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : iso;
 }
 
 function fmtTime(t: string) {
@@ -135,36 +134,37 @@ export default function AttorneyInboxScreen() {
   const [data, setData]           = useState<InboxData | null>(null);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [accepting, setAccepting] = useState<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const load = useCallback(async (isRefresh = false) => {
+  const load = useCallback(async (isRefresh = false, silent = false) => {
     if (isRefresh) setRefreshing(true);
-    else           setLoading(true);
+    else if (!silent) setLoading(true);
     try {
       const resp = await api.get('/attorney/inbox');
       setData(resp.data);
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
-      showToast(e?.response?.data?.error || 'Could not load inbox', 'error');
+      // Background polls fail quietly; user-initiated loads show a toast.
+      if (!silent) showToast(apiErrorMessage(e, 'Could not load inbox'), 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [showToast]);
 
-  useEffect(() => {
-    load();
-    // Poll every 60 seconds so unread count stays fresh
-    pollRef.current = setInterval(() => load(), 60_000);
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
+  useEffect(() => { load(); }, [load]);
+
+  // Poll every 60 seconds while this screen is focused so the unread count
+  // stays fresh; the interval is always cleared on blur/unmount.
+  useFocusEffect(
+    useCallback(() => {
+      pollRef.current = setInterval(() => load(false, true), 60_000);
+      return () => {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = null;
+      };
+    }, [load])
   );
-  return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [load]);
 
   const markRead = useCallback(async (caseId: number) => {
     try {
@@ -209,7 +209,7 @@ export default function AttorneyInboxScreen() {
         };
       });
     } catch (e: any) {
-      showToast(e?.response?.data?.error || 'Could not accept assignment', 'error');
+      showToast(apiErrorMessage(e, 'Could not accept assignment'), 'error');
     } finally {
       setAccepting(null);
     }
@@ -283,7 +283,7 @@ export default function AttorneyInboxScreen() {
                 <TouchableOpacity
                   accessibilityRole="button"
                   style={[styles.btn, styles.btnSecondary]}
-                  onPress={() => navigation.navigate('AttorneyCase', { caseId: a.case_id })}
+                  onPress={() => navigation.navigate('Messages', { caseId: a.case_id })}
                 >
                   <Text style={styles.btnSecondaryText}>View Details</Text>
                 </TouchableOpacity>
@@ -295,7 +295,7 @@ export default function AttorneyInboxScreen() {
 
       {/* ── Today's consultations + hearings ─────────────────────────────── */}
       {((data?.upcoming_consultations?.filter(
-          c => c.date_slot === new Date().toISOString().slice(0,10)
+          c => c.date_slot === toLocalISODate(new Date())
         ).length ?? 0) + (data?.today_hearings?.length ?? 0)) > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>📅  Today</Text>
@@ -315,7 +315,7 @@ export default function AttorneyInboxScreen() {
             </View>
           ))}
           {data!.upcoming_consultations
-            .filter(c => c.date_slot === new Date().toISOString().slice(0,10))
+            .filter(c => c.date_slot === toLocalISODate(new Date()))
             .map(c => (
               <View key={`c-${c.id}`} style={[styles.card, styles.cardToday]}>
                 <Text style={styles.cardBadgeText}>📹  CONSULTATION</Text>
@@ -369,12 +369,12 @@ export default function AttorneyInboxScreen() {
 
       {/* ── Upcoming consultations (next 7 days) ─────────────────────────── */}
       {(data?.upcoming_consultations?.filter(
-          c => c.date_slot !== new Date().toISOString().slice(0,10)
+          c => c.date_slot !== toLocalISODate(new Date())
         ).length ?? 0) > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>🗓  Upcoming Consultations</Text>
           {data!.upcoming_consultations
-            .filter(c => c.date_slot !== new Date().toISOString().slice(0,10))
+            .filter(c => c.date_slot !== toLocalISODate(new Date()))
             .map(c => (
               <View key={`uc-${c.id}`} style={styles.card}>
                 <Text style={styles.cardTitle}>{c.client_name}</Text>

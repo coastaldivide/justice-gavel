@@ -15,30 +15,21 @@ import { AppIcon } from '../components/AppIcon';
  *   6. About -- ToS, Privacy, Feedback, version
  *   7. testID="settings-logout-button" Sign out
  */
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { COLORS, FONTS, RADIUS, SHADOW, ThemeColors, useTheme } from '../constants/theme';
 import type {} from '../types/navigation';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert, Share, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert, Share, ActivityIndicator, RefreshControl, LayoutAnimation, Modal, FlatList, Platform } from 'react-native';
 import AsyncStorage          from '@react-native-async-storage/async-storage';
-import { ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { ScreenCapture, StoreReview, hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
 import Constants   from 'expo-constants';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { setLang, t } from '../i18n'  // t() already available;
-import { getUserState, STATE_NAMES } from '../utils/userState';
+import { getUserState, setUserState, STATE_NAMES, STATE_LIST } from '../utils/userState';
 import { clearAuth } from '../utils/secureStorage';
 import { setAppAuth } from '../services/auth';
 import { clearAllCaches } from '../services/offlineCache';
 
-declare var data: any;
-declare var goldenGavel: any;
-declare var setGoldenGavel: any;
-declare var setProfile: any;
-declare var toggleBiometric: any;
-declare var toggleDark: any;
-declare var AppNavigation: any; // hoisted from component scope
-declare var goToCourtForms: any; // hoisted from component scope
-declare var setShowStatePickerSettings: any; // hoisted from component scope
-declare var userState: any; // hoisted from component scope
 interface User { displayName?: string; name?: string; email?: string; phone?: string; }
 
 interface NotifPrefs {
@@ -71,11 +62,6 @@ function TierGatedRow({
   const hasAccess = tiers.includes(currentTier);
 
   if (hasAccess) {
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
       <View style={[gStyles.row, { opacity: 1 }]}>
         <View style={{ flex: 1 }}>
@@ -91,24 +77,6 @@ function TierGatedRow({
           accessibilityState={{ checked: value }}
         />
 
-        {/* State preference -- controls rights card, AI jurisdiction, and provider search */}
-        <TouchableOpacity accessibilityRole="button"
-          style={styles.row}
-          onPress={() => setShowStatePickerSettings(true)}
-          accessibilityLabel="Change your state preference"
-        >
-          <View style={styles.rowLeft}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.rowIcon}>🗺️</Text>
-            <View>
-              <Text maxFontSizeMultiplier={1.4} style={styles.rowLabel}>Your State</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>
-                {userState ? STATE_NAMES[userState] || userState : 'Not set -- tap to select'}
-              </Text>
-            </View>
-          </View>
-          <Text maxFontSizeMultiplier={1.4} style={styles.rowArrow}>›</Text>
-        </TouchableOpacity>
-
       </View>
     );
   }
@@ -116,19 +84,7 @@ function TierGatedRow({
   // Locked -- show tier badge + upgrade CTA
   return (
     <>
-      {/* Official Court Forms -- all 50 states */}
-      <TouchableOpacity accessibilityRole="button"
-        onPress={goToCourtForms}
-        style={{ flexDirection:'row', alignItems:'center', paddingVertical:14, paddingHorizontal:4, borderBottomWidth:StyleSheet.hairlineWidth, borderBottomColor:COLORS.border }}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-        <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
-        <View style={{ flex:1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, ...FONTS.semiBold, color:COLORS.textPrimary }}>Official Court Forms</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, ...FONTS.regular, color:COLORS.textMuted }}>Government forms -- all 50 states</Text>
-        </View>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, color:COLORS.textMuted }}>›</Text>
-      </TouchableOpacity>
-<TouchableOpacity accessibilityRole="button"
+    <TouchableOpacity accessibilityRole="button"
       style={[gStyles.row, gStyles.lockedRow, {
         backgroundColor: isDark ? COLORS.bgCard : COLORS.bg,
         borderColor: COLORS.border }]}
@@ -244,9 +200,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
 // Module-level fallback for helper components
 const styles = makeStyles(COLORS);
 function SettingsScreen({ route, navigation }: any) {
-  // @ts-ignore
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
   const { confirm } = useConfirm();
   const { showToast } = useToast();
 
@@ -270,20 +223,21 @@ function SettingsScreen({ route, navigation }: any) {
 
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    api.get('/auth/me').then(r => { if (r.data?.user) setProfile(r.data?.user); }).catch(() => showToast('Action failed. Please try again.', 'error'))
-    setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 600);
-  }, []);
-
-
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
+  const [refreshing, setRefreshing] = React.useState(false);
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    api.get('/auth/me')
+      .then(r => { if (mountedRef.current && r.data?.user) setUser(r.data.user); })
+      .catch(() => showToast('Could not refresh. Check your connection.', 'error'))
+      .finally(() => { if (mountedRef.current) setRefreshing(false); });
+  }, [showToast]);
+
   const [user, setUser]                   = useState<User>({});
   const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
+  const [goldenGavel, setGoldenGavel] = useState(false);
   const [isAdmin,          setIsAdmin]          = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [language, setLanguage]           = useState('en');
@@ -295,6 +249,42 @@ function SettingsScreen({ route, navigation }: any) {
   const [userState, setUserStatePref] = React.useState('');
   const [showStatePicker, setShowStatePickerSettings] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
+  const { toggleDark } = useTheme();
+
+  // Biometric lock availability + saved preference
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    (async () => {
+      try {
+        const [hw, enrolled] = await Promise.all([
+          LocalAuthentication.hasHardwareAsync(),
+          LocalAuthentication.isEnrolledAsync(),
+        ]);
+        if (!mountedRef.current) return;
+        setBiometricAvailable(hw && enrolled);
+        const on = await AsyncStorage.getItem('biometric_enabled');
+        if (mountedRef.current) setBiometricEnabled(on === 'true');
+      } catch { /* biometrics unavailable */ }
+    })();
+  }, []);
+
+  const toggleBiometric = useCallback(async (val: boolean) => {
+    if (val) {
+      // Confirm the user can authenticate before enabling the lock
+      try {
+        const res = await LocalAuthentication.authenticateAsync({ promptMessage: 'Enable biometric lock' });
+        if (!res.success) return;
+      } catch { return; }
+    }
+    setBiometricEnabled(val);
+    await AsyncStorage.setItem('biometric_enabled', String(val)).catch(() => {});
+  }, []);
+
+  const chooseState = useCallback(async (code: string) => {
+    setShowStatePickerSettings(false);
+    setUserStatePref(code);
+    await setUserState(code).catch(() => {});
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -350,31 +340,19 @@ function SettingsScreen({ route, navigation }: any) {
       notif_marketing:         next.notif_marketing         ? 1 : 0 }).catch((e) => { __DEV__ && console.warn(e?.message); }).finally(() => setPrefsSaving(false));
   };
 
-  const logout = () => {
-    // @ts-ignore
+  const logout = async () => {
     const ok = await confirm('Sign out?', 'You can sign back in any time. Your data is saved.',
       { confirmLabel: 'Sign out', destructive: true });
     if (!ok) return;
-    // @ts-ignore
     await clearAuth();
-          setAppAuth('guest');
-          // @ts-ignore
-          await clearAllCaches().catch(() => {});
-          import('../services/analytics').then(m => m.reset?.()).catch(() => {});
-          // @ts-ignore
-          await AsyncStorage.multiRemove(['user', 'chat_session_id']);
-          navigation.getParent()?.getParent()?.reset({ index: 0, routes: [{ name: 'Login' }] }, [])
-            ?? navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    await clearAllCaches().catch(() => {});
+    await AsyncStorage.multiRemove(['user', 'chat_session_id', 'has_browsed']).catch(() => {});
+    import('../services/analytics').then(m => m.reset()).catch(() => {});
+    // Switching the root auth state swaps the navigator tree to the guest flow
+    // (Login), so no manual navigation reset is needed.
+    setAppAuth('guest');
   };
 
-  const shareReferral = () => {
-    try {
-          /* referral share removed */
-        } catch (shareErr: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
-          // Share failed (unsupported browser) — silently ignore
-        };
-  };
 
   // ── Reusable row components ──────────────────────────────────────────────
   const InfoRow = ({ icon, label, value }: { icon: string; label: string; value?: string }) => (
@@ -439,7 +417,66 @@ function SettingsScreen({ route, navigation }: any) {
           : <InfoRow icon="⚖️" label="Golden Gavel" value="Check eligibility  ›" />
         }
         {!!user.phone && <InfoRow icon="📱" label="Phone" value={user.phone} />}
+        {/* State preference -- controls rights card, AI jurisdiction, and provider search */}
+        <TouchableOpacity accessibilityRole="button"
+          style={styles.row}
+          onPress={() => setShowStatePickerSettings(true)}
+          accessibilityLabel="Change your state preference"
+        >
+          <View style={styles.rowLeft}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.rowIcon}>🗺️</Text>
+            <View>
+              <Text maxFontSizeMultiplier={1.4} style={styles.rowLabel}>Your State</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>
+                {userState ? STATE_NAMES[userState] || userState : 'Not set -- tap to select'}
+              </Text>
+            </View>
+          </View>
+          <Text maxFontSizeMultiplier={1.4} style={styles.rowArrow}>›</Text>
+        </TouchableOpacity>
+        {/* Official Court Forms -- all 50 states */}
+        <TouchableOpacity accessibilityRole="button"
+        onPress={goToCourtForms}
+        style={{ flexDirection:'row', alignItems:'center', paddingVertical:14, paddingHorizontal:4, borderBottomWidth:StyleSheet.hairlineWidth, borderBottomColor:COLORS.border }}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+        <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
+        <View style={{ flex:1 }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, ...FONTS.semiBold, color:COLORS.textPrimary }}>Official Court Forms</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, ...FONTS.regular, color:COLORS.textMuted }}>Government forms -- all 50 states</Text>
+        </View>
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, color:COLORS.textMuted }}>›</Text>
+      </TouchableOpacity>
       </View>
+
+      {/* State picker */}
+      <Modal visible={showStatePicker} animationType="slide" transparent onRequestClose={() => setShowStatePickerSettings(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ maxHeight: '75%', backgroundColor: colors.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 24 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>Select your state</Text>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close" onPress={() => setShowStatePickerSettings(false)}>
+                <Text style={{ fontSize: 18, color: colors.textMuted }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={STATE_LIST}
+              keyExtractor={item => item.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: item.code === userState }}
+                  style={{ paddingVertical: 12, paddingHorizontal: 16 }}
+                  onPress={() => chooseState(item.code)}
+                >
+                  <Text style={{ fontSize: 15, color: item.code === userState ? COLORS.navy : colors.textPrimary, fontWeight: item.code === userState ? '700' : '400' }}>
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Appearance ───────────────────────────────────────────────────── */}
       <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>Appearance</Text>
@@ -508,9 +545,7 @@ function SettingsScreen({ route, navigation }: any) {
               hint="Require Face ID or fingerprint to open Justice Gavel"
               value={biometricEnabled}
               onChange={toggleBiometric}
-              trackOn={colors.legal}
-            // @ts-ignore
-            accessibilityState={{ checked: biometricEnabled }}/>
+              trackOn={colors.legal}/>
           </View>
         </>
       )}
@@ -524,9 +559,7 @@ function SettingsScreen({ route, navigation }: any) {
           label="Push notifications"
           hint="Turn off all notifications at once"
           value={notifMaster}
-          onChange={toggleMaster}
-        // @ts-ignore
-        accessibilityState={{ checked: notifMaster }}/>
+          onChange={toggleMaster}/>
 
         {/* Per-category -- only visible when master is on */}
         {notifMaster && (
@@ -588,7 +621,7 @@ function SettingsScreen({ route, navigation }: any) {
             await api.post('/push/test', { message: 'Justice Gavel push notifications are working ✓' });
             showToast('Check your device notifications.');
           } catch (e: any) {
-            showToast(e.response?.data?.error || e.message, 'error');
+            showToast(apiErrorMessage(e), 'error');
           }
         }}
         accessibilityLabel="Send a test push notification"
@@ -597,26 +630,7 @@ function SettingsScreen({ route, navigation }: any) {
         <Text maxFontSizeMultiplier={1.4} style={[styles.testPushText, { color: colors.textMuted }]}>Send test notification →</Text>
       </TouchableOpacity>
 
-      <View style={card}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.cardHint, { color: colors.textMuted }]}>
-        </Text>
-        <View style={styles.referralRow}>
-          <View style={[styles.codeBox, { backgroundColor: isDark ? COLORS.bgElevated : COLORS.bgSubtle }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.codeLabel, { color: colors.textMuted }]}>Your Code</Text>
-          </View>
-            <View style={[styles.creditBox, { backgroundColor: isDark ? colors.legal : colors.legal }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.codeLabel, { color: colors.textMuted }]}>Your Credit</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.codeText, { color: COLORS.legal }]}>
-              </Text>
-            </View>
-        </View>
-        <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
-          style={[styles.shareBtn, { backgroundColor: COLORS.navy }]}
-          onPress={shareReferral}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>Share My Code →</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Referral program removed (empty placeholder card) */}
 
       {/* ── My Tools -- quick access to all features ──────────────────────── */}
       <Text maxFontSizeMultiplier={1.4} style={sectionTitle}>My Tools</Text>
@@ -630,7 +644,6 @@ function SettingsScreen({ route, navigation }: any) {
           { icon: '✓',  label: 'Daily Check-In',        hint: 'Court-ordered check-in compliance',          screen: 'CheckIn' },
           { icon: '🤝', label: 'Diversion Checker',     hint: 'Could charges be dropped?',                  screen: 'Diversion' },
           { icon: '🏆', label: 'Golden Gavel',           hint: 'Your path to elite status',                  screen: 'GoldenGavel' },
-          { icon: '⭐', label: 'Rewards',               hint: 'Your points and referral credits',           screen: 'Rewards' },
           { icon: '🛡️', label: 'Legal Insurance',       hint: 'Monthly coverage plans',                    screen: 'Insurance' },
           { icon: '🧒', label: 'Juvenile Justice',       hint: 'Rights, process, and record sealing',        screen: 'JuvenileJustice' },
           { icon: '🧠', label: 'Mental Health & Law',    hint: 'MH courts, competency, diversion',           screen: 'MentalHealthDiversion' },
@@ -763,7 +776,6 @@ function SettingsScreen({ route, navigation }: any) {
               try {
                 const res = await api.get('/auth/export');
                 const data = JSON.stringify(res.data, null, 2);
-                const { Share } = require('react-native');
                 await RNShare.share({ message: data, title: 'My Justice Gavel Data Export' });
               } catch {
                 showToast('Could not export your data. Please try again.');
@@ -800,14 +812,6 @@ function SettingsScreen({ route, navigation }: any) {
             <Text style={{ color:colors.textMuted, fontSize:12 }}>Tell us what you think →</Text>
           </TouchableOpacity>
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>📭</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No results found</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.textMuted, textAlign: 'center', lineHeight: 20 }}>Check your connection or try again.</Text>
-        </View>
-      )}
       </ScrollView>
   );
 }

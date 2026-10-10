@@ -433,7 +433,7 @@ async function fetchYelp(city, state, type) {
         headers
       );
       for (const b of (data.businesses || [])) {
-        if (isJunkBusiness(d.name || place.name)) continue; // Skip non-bail businesses
+        if (isJunkBusiness(b.name)) continue; // Skip non-bail businesses
           records.push({
           type: pType, source: 'yelp',
           source_id: 'yelp_' + b.id,
@@ -482,7 +482,7 @@ async function fetchStateBar(city, state, barUrl, type) {
       const webM   = text.match(/href="(https?:\/\/[^"]{8,80})"/i);
       const barM   = text.match(/bar\s*(?:no|num|number|#)\.?\s*(\d{4,8})/i);
 
-      if (isJunkBusiness(d.name || place.name)) continue; // Skip non-bail businesses
+      if (isJunkBusiness(name)) continue; // Skip non-bail businesses
           records.push({
         type: 'lawyers', source: 'state_bar',
         source_id: `bar_${state}_${name.toLowerCase().replace(/\W/g,'_').substring(0,30)}`,

@@ -1,4 +1,7 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { requireAi } from '../../utils/ai.js';
+import { safeJson } from '../../utils/routeHelpers.js';
+import { CLAUDE_MODEL } from '../../utils/ai.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * routes/motions/export.js — PDF Motion Export
  *
@@ -105,7 +108,7 @@ router.get('/:id/pdf', authRequired, pdfLimiter, async (req, res) => {
 });
 
 // ── POST /api/motions/export/:id/refine — AI-refine for PDF before export ────
-router.post('/:id/refine', authRequired, pdfLimiter, async (req, res) => {
+router.post('/:id/refine', authRequired, requireAi, pdfLimiter, async (req, res) => {
   try {
     const db     = await getDb();
     const motion = await db.get(
@@ -141,7 +144,7 @@ OUTPUT ONLY the cleaned motion text. No explanatory notes. No markdown.`;
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model:       'claude-sonnet-4-20250514',
+          model:       CLAUDE_MODEL,
           temperature: 0.05,
           max_tokens:  8000,
           messages:    [{ role: 'user', content: cleanPrompt }],

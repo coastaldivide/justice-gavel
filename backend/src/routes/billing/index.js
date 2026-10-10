@@ -1,4 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 import logger from '../../utils/logger.js';
 /**
  * billing/index.js — Billing module entry point
@@ -21,6 +21,7 @@ import logger from '../../utils/logger.js';
  */
 
 import { Router }        from 'express';
+import { stripeConfigured, PAYMENTS_UNAVAILABLE } from '../../config.js';
 import express           from 'express';
 
 import subscriptionsRouter from './subscriptions.js';
@@ -31,6 +32,18 @@ import piLeadsRouter       from './pi_leads.js';
 import webhooksRouter      from './webhooks.js';
 
 const router = Router();
+
+// ── Payments availability gate ────────────────────────────────────────────────
+// Without a Stripe key every endpoint that would create/modify a charge or a
+// subscription returns 503 payments_unavailable (no mock activations).
+// Read-only GETs keep working (users are on the free tier) and so do the few
+// POSTs that never touch Stripe.
+const NO_STRIPE_NEEDED = [/^\/bondsman\/profile\/?$/, /^\/pi-lead\/submit\/?$/, /^\/webhook\/?$/];
+router.use((req, res, next) => {
+  if (stripeConfigured() || req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  if (NO_STRIPE_NEEDED.some(re => re.test(req.path))) return next();
+  return res.status(503).json({ ...PAYMENTS_UNAVAILABLE });
+});
 
 // ── Standard billing routes (JSON body) ───────────────────────────────────────
 router.use('/', subscriptionsRouter);
@@ -54,6 +67,6 @@ router.post('/webhook',
 );
 
 // Re-export shared billing helpers for use by other modules
-export { calcLeadFee, getOrCreateStripeCustomer, TIERS, stripe, LIVE } from './_shared.js';
+export { getOrCreateStripeCustomer, TIERS, stripe, LIVE } from './_shared.js';
 
 export default router;

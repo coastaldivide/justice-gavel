@@ -19,7 +19,7 @@ import { CaseStatusBadge } from '../components/CaseStatusBadge';
 import React, { useState, useCallback, useRef } from 'react';
 import {Alert, View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, RefreshControl, Platform, ActivityIndicator, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, RADIUS, SHADOW, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
@@ -91,9 +91,6 @@ interface CaseEvent {
 }
 
 function formatEventDate(dateStr: string | null): string {
-  const { confirm } = useConfirm();
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
   if (!dateStr) return '';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
@@ -115,6 +112,7 @@ const EmptyState = ({ icon, title, subtitle }: { icon: string; title: string; su
 );
 
 function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
 
   // Schedule push reminder for a timeline event
@@ -148,11 +146,7 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   return () => { mountedRef.current = false; };
     });
     return () => _task.cancel();
@@ -169,7 +163,6 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
   }, []);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [showAdd, setShowAdd]     = useState(false);
   const [saving, setSaving]       = useState(false);
 
@@ -240,20 +233,15 @@ function CaseTimelineScreen({ navigation, route }: ScreenProps): React.JSX.Eleme
     }
   };
 
-  const handleDelete = (eventId: number) => {
-// @ts-ignore
-confirm('Remove Event?', 'This will permanently remove this event from your timeline.',
-      { confirmLabel: 'Remove', destructive: true }).then(async ok => { if (!ok) return;
-      try {
-              setEvents(prev => prev.filter(e => e.id !== eventId));
-              await api.delete(`/cases/${caseId}/events/${eventId}`);
-            } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.'); }
-              // Rollback: re-fetch events to restore the deleted item
-              setEvents(prev => prev);
-              // @ts-ignore
-              showToast(e?.response?.data?.error || 'Try again.', 'error'); setRetryCount(0);
-    })
+  // Optimistically remove an event; restore the list from the server on failure.
+  const removeEvent = async (eventId: number) => {
+    setEvents(prev => prev.filter(e => e.id !== eventId));
+    try {
+      await api.delete(`/cases/${caseId}/events/${eventId}`);
+    } catch (e: any) {
+      showToast(apiErrorMessage(e, 'Could not remove the event. Try again.'), 'error');
+      loadEvents();
+    }
   };
 
   const s = styles(colors as any);
@@ -281,12 +269,10 @@ confirm('Remove Event?', 'This will permanently remove this event from your time
           style={[s.eventCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
           onLongPress={() => {
               if (item.id < 0) return; // auto-generated -- not deletable
-// @ts-ignore
-confirm(item.title.slice(0,40),'Set a reminder or remove this event?',
-      { confirmLabel:'🗑️ Remove Event', cancelLabel:'🔔 Set Reminder', destructive:true }).then(ok=>{
-        // @ts-ignore
-        if(ok) removeEvent(item.id); else scheduleEventReminder(item);
-      });
+              confirm(item.title.slice(0, 40), 'Set a reminder or remove this event?',
+                { confirmLabel: '🗑️ Remove Event', cancelLabel: '🔔 Set Reminder', destructive: true }).then(ok => {
+                  if (ok) removeEvent(item.id); else scheduleEventReminder(item);
+                });
             }}
           accessibilityLabel={`${label}: ${item.title}. Long press to remove.`}
           accessibilityHint={item.id < 0 ? "Auto-recorded status change" : "Long press for options"}
@@ -354,11 +340,6 @@ confirm(item.title.slice(0,40),'Set a reminder or remove this event?',
           )}
       <FlashList
           keyboardShouldPersistTaps="handled"
-        // @ts-ignore
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        removeClippedSubviews={true}
         data={events}
         keyExtractor={(item) => String(item.id)}
           estimatedItemSize={80}

@@ -22,9 +22,6 @@ interface GavelCriteria {
 }
 
 
-declare var hasAny: any;
-declare var level: any;
-declare var fetchError: any; // hoisted from component scope
 // ── Constants ─────────────────────────────────────────────────────────────────
 const GAVEL_EMOJI  = { 0: '',    1: '🥉', 2: '🥈', 3: '🏆' } as const;
 const GAVEL_LABEL  = { 0: 'None', 1: 'Bronze', 2: 'Silver', 3: 'Golden' } as const;
@@ -86,19 +83,8 @@ function CritRow({ label, met }: { label: string; met: boolean }) {
   const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
-  if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
     <View style={styles.critRow}>
-    {fetchError && (
-      <View style={{ margin: 16, padding: 14, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.danger || colors.emergency }}>
-        <Text style={{ color: colors.danger || colors.emergency, fontWeight: '700', fontSize: 14 }}>⚠ Unable to load</Text>
-        <Text style={{ color: COLORS.textMuted, fontSize: 13, marginTop: 4 }}>{fetchError}</Text>
-      </View>
-    )}
       <Text maxFontSizeMultiplier={1.4} style={[styles.critIcon, { color: met ? COLORS.legalDark : COLORS.emergencyDark }]}>
         {met ? '✓' : '✗'}
       </Text>
@@ -212,17 +198,20 @@ function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const load = useCallback(async (refresh = false) => {
     refresh ? setRefreshing(true) : setLoading(true);
+    setFetchError(null);
     try {
+      let failed = 0;
       const [s, e, h] = await Promise.all([
-        api.get('/golden-gavel/status').catch(() => ({ data: null })),
-        api.get('/golden-gavel/eligibility').catch(() => ({ data: null })),
-        api.get('/golden-gavel/hall').catch(() => ({ data: [] })),
+        api.get('/golden-gavel/status').catch(() => { failed++; return { data: null }; }),
+        api.get('/golden-gavel/eligibility').catch(() => { failed++; return { data: null }; }),
+        api.get('/golden-gavel/hall').catch(() => { failed++; return { data: [] }; }),
       ]);
       if (s.data) setStatus(s.data);
       if (e.data) setElig(e.data);
-      if (h.data) setHall(h.data);
+      if (Array.isArray(h.data)) setHall(h.data);
+      if (failed === 3) setFetchError('Unable to load. Please check your connection and try again.');
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
+      setFetchError('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
     refresh ? setRefreshing(false) : setLoading(false);
   }, []);
 
@@ -245,14 +234,24 @@ function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   if (loading) return <SkeletonLoader count={5} label="Progress" />;
 
+  const level: GavelLevel = (status?.gavel_level ?? elig?.level ?? 0) as GavelLevel;
+  const hasAny = level > 0;
+  const headerColor = level > 0 ? GAVEL_COLOR[level as 1 | 2 | 3].header : colors.navy;
+
   return (
     <ScrollView
       style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={styles.scroll}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.gold} />}
     >
+      {fetchError && (
+        <View style={{ margin: 16, padding: 14, backgroundColor: colors.bgCard, borderRadius: 10, borderWidth: 1, borderColor: colors.emergency }}>
+          <Text style={{ color: colors.emergency, fontWeight: '700', fontSize: 14 }}>⚠ Unable to load</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 4 }}>{fetchError}</Text>
+        </View>
+      )}
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <View style={[styles.header, { backgroundColor: hasAny ? (gc as any).header : colors.navy }]}>
+      <View style={[styles.header, { backgroundColor: headerColor }]}>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerIcon}>{hasAny ? GAVEL_EMOJI[level] : '⚖️'}</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerTitle}>Gavel Program</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.headerSub}>
@@ -304,7 +303,7 @@ function GoldenGavelScreen({ navigation }: ScreenProps): React.JSX.Element {
           )}
           <TouchableOpacity accessibilityRole="button"
           accessibilityHint="Double-tap to activate" activeOpacity={0.6}
-            style={[styles.optInBtn, { backgroundColor: (gc as any).header }, optingIn && { opacity: 0.6 }]}
+            style={[styles.optInBtn, { backgroundColor: headerColor }, optingIn && { opacity: 0.6 }]}
             onPress={handleOptIn}
             disabled={optingIn}>
 

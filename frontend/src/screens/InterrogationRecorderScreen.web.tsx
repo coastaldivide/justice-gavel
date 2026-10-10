@@ -1,7 +1,4 @@
 import { useHaptics } from '../hooks/useHaptics';
-declare var window: any;
-declare var MediaRecorder: any;
-declare var navigator: any;
 
 /**
  * InterrogationRecorderScreen.web.tsx -- Web version

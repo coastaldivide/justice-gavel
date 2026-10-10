@@ -654,8 +654,8 @@ async function scanDatabaseHealth(report) {
       );
     }
 
-    // WAL mode check (SQLite performance)
-    const walRow = await db.get("PRAGMA journal_mode").catch(() => null);
+    // WAL mode check — only meaningful for the local SQLite dev fallback
+    const walRow = db.engine === 'sqlite' ? await db.get("PRAGMA journal_mode").catch(() => null) : null;
     if (walRow && walRow.journal_mode !== 'wal') {
       report.fail(section, 'LOW', 'WAL_MODE',
         `SQLite not in WAL mode (current: ${walRow.journal_mode}) — WAL improves read concurrency`
@@ -797,14 +797,14 @@ async function scanEscalationSLA(report) {
     const criticalMatters = await db.all(
       `SELECT m.id, m.title, m.firm_id, m.vulnerability_level, m.time_pressure,
               m.updated_at, f.name as firm_name,
-              datetime('now', '-1 hour') as sla_threshold_1h,
+              (NOW() - INTERVAL '1 hour') as sla_threshold_1h,
               (NOW() - INTERVAL '4 hours') as sla_threshold_4h
        FROM matters m
        LEFT JOIN firms f ON f.id = m.firm_id
        WHERE m.status = 'active'
          AND m.vulnerability_level = 'crisis'
          AND m.time_pressure = 'emergency'
-         AND m.updated_at < datetime('now', '-1 hour')
+         AND m.updated_at < (NOW() - INTERVAL '1 hour')
        LIMIT 50`
     ).catch(() => []);
 
@@ -978,20 +978,6 @@ function buildEmailHtml(report) {
 async function persistScanResult(report) {
   try {
     const db = await getDb();
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS scan_results (
-        id           INTEGER PRIMARY KEY AUTOINCREMENT,
-        scan_id      TEXT NOT NULL,
-        started_at   TEXT NOT NULL,
-        completed_at TEXT,
-        elapsed_ms   INTEGER,
-        overall      TEXT,
-        summary_json TEXT,
-        findings_json TEXT,
-        created_at   TEXT DEFAULT (NOW())
-      )
-    `).catch(() => {}); // table may already exist
-
     await db.run(
       `INSERT INTO scan_results
          (scan_id, started_at, completed_at, elapsed_ms, overall, summary_json, findings_json)
@@ -1033,7 +1019,7 @@ async function scanRetentionHealth(report) {
       `SELECT id, name, subscription_grace_until, subscription_status
        FROM firms
        WHERE subscription_status='grace'
-         AND subscription_grace_until < date('now')
+         AND subscription_grace_until < CURRENT_DATE
        LIMIT 20`
     ).catch(() => []);
 
@@ -1093,7 +1079,7 @@ async function scanExtenuatingDeadlines(report) {
        FROM voluntary_departure vd
        LEFT JOIN firms f ON f.id = vd.firm_id
        WHERE vd.status = 'pending'
-         AND vd.departure_deadline <= date('now', '+14 days')
+         AND vd.departure_deadline <= (CURRENT_DATE + INTERVAL '14 days')
        LIMIT 50`
     ).catch(() => []);
 
@@ -1113,7 +1099,7 @@ async function scanExtenuatingDeadlines(report) {
        LEFT JOIN firms f ON f.id = po.firm_id
        WHERE po.status = 'pending'
          AND po.expires_date IS NOT NULL
-         AND po.expires_date <= date('now', '+2 days')
+         AND po.expires_date <= (CURRENT_DATE + INTERVAL '2 days')
        LIMIT 50`
     ).catch(() => []);
 
@@ -1133,7 +1119,7 @@ async function scanExtenuatingDeadlines(report) {
        FROM dv_firearm_surrender fs
        LEFT JOIN firms f ON f.id = fs.firm_id
        WHERE fs.status = 'pending'
-         AND fs.surrender_deadline < date('now')
+         AND fs.surrender_deadline < CURRENT_DATE
        LIMIT 50`
     ).catch(() => []);
 
@@ -1150,7 +1136,7 @@ async function scanExtenuatingDeadlines(report) {
        FROM bop_exhaustion bo
        LEFT JOIN firms f ON f.id = bo.firm_id
        WHERE bo.status = 'warden_submitted'
-         AND bo.thirty_day_lapse_date <= date('now')
+         AND bo.thirty_day_lapse_date <= CURRENT_DATE
          AND bo.court_motion_filed = 0
        LIMIT 50`
     ).catch(() => []);
@@ -1207,7 +1193,7 @@ async function scanExtendedTrackers(report) {
        LEFT JOIN firms f ON f.id = hp.firm_id
        WHERE hp.within_one_year = 1
          AND hp.status IN ('pending','petition_filed')
-         AND hp.one_year_deadline <= date('now', '+30 days')
+         AND hp.one_year_deadline <= (CURRENT_DATE + INTERVAL '30 days')
        LIMIT 30`
     ).catch(() => []);
 
@@ -1227,7 +1213,7 @@ async function scanExtendedTrackers(report) {
        LEFT JOIN firms f ON f.id = et.firm_id
        WHERE et.status = 'pending'
          AND et.answer_deadline IS NOT NULL
-         AND et.answer_deadline <= date('now', '+5 days')
+         AND et.answer_deadline <= (CURRENT_DATE + INTERVAL '5 days')
        LIMIT 30`
     ).catch(() => []);
 

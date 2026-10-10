@@ -252,7 +252,9 @@ export function requirePermission(resource, action) {
 //   requireEdit:    must have can_edit = 1
 //   requireMessage: must have can_message = 1
 //   idParam:        req.params key for case ID (default: 'id')
-export function requireMatterAccess(opts = {}) {
+export function requireMatterAccess(opts = {}, legacyMinRole) {
+  // Also accepts the positional form used by routes: requireMatterAccess('id', 'partner')
+  if (typeof opts === 'string') opts = { idParam: opts, minRole: legacyMinRole || 'viewer' };
   const {
     minRole        = 'viewer',
     requireEdit    = false,

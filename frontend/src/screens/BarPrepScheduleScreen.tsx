@@ -56,11 +56,9 @@ function daysUntilColor(days: number): string {
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
-// @ts-ignore
 export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPrepSchedule'>) {
   const { colors }             = useTheme();
   const [schedule, setSchedule] = useState<StudySchedule | null>(null);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [examDate, setExamDate] = useState('');
@@ -106,11 +104,6 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
   const styles = makeStyles(colors);
 
   if (loading) {
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -144,8 +137,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
           <Text style={styles.examCardTitle}>📅 Bar Exam Date</Text>
           <View style={styles.examInputRow}>
             <TextInput
-              // @ts-ignore
-              style={[styles.examInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+              style={[styles.examInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }]}
               value={examDate}
               onChangeText={setExamDate}
               placeholder="YYYY-MM-DD"
@@ -251,9 +243,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
                       </Text>
                     )}
                   </View>
-                  // @ts-ignore
-                  // @ts-expect-error
-                  <Text style={[styles.calendarLabel, (day as any).is_today && { color: colors.primary, fontFamily: FONTS.bold }]}>
+                  <Text style={[styles.calendarLabel, (day as any).is_today && { color: colors.primary, ...FONTS.bold }]}>
                     {label}
                   </Text>
                 </View>
@@ -297,46 +287,35 @@ function makeStyles(colors: any) {
     center:          { justifyContent: 'center', alignItems: 'center' },
     scroll:          { flex: 1 },
     scrollContent:   { paddingBottom: 40 },
-    // @ts-ignore
-    examCard:        { margin: 16, padding: 16, borderRadius: RADIUS.lg, ...SHADOW.xs },
-    // @ts-ignore
-    examCardTitle:   { fontSize: 14, fontFamily: FONTS.bold, color: colors.text, marginBottom: 12 },
+    examCard:        { margin: 16, padding: 16, borderRadius: RADIUS.lg, ...SHADOW.sm },
+    examCardTitle:   { fontSize: 14, ...FONTS.bold, color: colors.text, marginBottom: 12 },
     examInputRow:    { flexDirection: 'row', gap: 10 },
     examInput:       {
       flex: 1, paddingHorizontal: 14, paddingVertical: 10,
       borderRadius: RADIUS.md, borderWidth: 1.5,
-      // @ts-ignore
-      fontSize: 14, fontFamily: FONTS.medium,
+      fontSize: 14, ...FONTS.medium,
     },
     saveBtn:         {
       paddingHorizontal: 20, paddingVertical: 10,
       borderRadius: RADIUS.md, justifyContent: 'center',
     },
-    // @ts-ignore
-    saveBtnText:     { fontSize: 14, fontFamily: FONTS.bold, color: '#fff' },
+    saveBtnText:     { fontSize: 14, ...FONTS.bold, color: '#fff' },
     countdownRow:    { flexDirection: 'row', alignItems: 'baseline', marginTop: 14 },
-    // @ts-ignore
-    countdownNum:    { fontSize: 36, fontFamily: FONTS.bold },
+    countdownNum:    { fontSize: 36, ...FONTS.bold },
     countdownLabel:  { fontSize: 15, color: colors.textMuted },
-    // @ts-ignore
-    goalCard:        { marginHorizontal: 16, marginTop: 4, padding: 16, borderRadius: RADIUS.lg, ...SHADOW.xs },
+    goalCard:        { marginHorizontal: 16, marginTop: 4, padding: 16, borderRadius: RADIUS.lg, ...SHADOW.sm },
     goalHeader:      { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-    // @ts-ignore
-    goalTitle:       { fontSize: 15, fontFamily: FONTS.bold, color: colors.text },
-    // @ts-ignore
-    goalFraction:    { fontSize: 15, fontFamily: FONTS.bold, color: colors.primary },
+    goalTitle:       { fontSize: 15, ...FONTS.bold, color: colors.text },
+    goalFraction:    { fontSize: 15, ...FONTS.bold, color: colors.primary },
     goalTrack:       { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden', marginBottom: 10 },
     goalFill:        { height: '100%', borderRadius: 4 },
     goalMeta:        { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
     goalMetaText:    { fontSize: 12, color: colors.textMuted },
-    // @ts-ignore
-    overdueText:     { fontSize: 12, color: COLORS.bail, fontFamily: FONTS.semibold },
+    overdueText:     { fontSize: 12, color: COLORS.bail, ...FONTS.semiBold },
     startBtn:        { paddingVertical: 13, borderRadius: RADIUS.lg, alignItems: 'center' },
-    // @ts-ignore
-    startBtnText:    { fontSize: 15, fontFamily: FONTS.bold, color: '#fff' },
+    startBtnText:    { fontSize: 15, ...FONTS.bold, color: '#fff' },
     sectionTitle:    {
-      // @ts-ignore
-      fontSize: 13, fontFamily: FONTS.bold, color: colors.text,
+      fontSize: 13, ...FONTS.bold, color: colors.text,
       marginTop: 20, marginBottom: 10, marginHorizontal: 16,
     },
     recommendList:   { paddingHorizontal: 12, gap: 6 },
@@ -347,22 +326,18 @@ function makeStyles(colors: any) {
     recommendRank:   {
       width: 24, height: 24, borderRadius: 12,
       backgroundColor: COLORS.primary, textAlign: 'center',
-      // @ts-ignore
-      fontSize: 12, fontFamily: FONTS.bold, color: '#fff',
+      fontSize: 12, ...FONTS.bold, color: '#fff',
       lineHeight: 24,
     },
-    // @ts-ignore
-    recommendName:   { fontSize: 14, color: colors.text, fontFamily: FONTS.medium },
-    // @ts-ignore
-    calendarCard:    { marginHorizontal: 16, padding: 16, borderRadius: RADIUS.lg, ...SHADOW.xs },
+    recommendName:   { fontSize: 14, color: colors.text, ...FONTS.medium },
+    calendarCard:    { marginHorizontal: 16, padding: 16, borderRadius: RADIUS.lg, ...SHADOW.sm },
     calendarGrid:    { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     calendarCell:    { width: 44, alignItems: 'center' },
     calendarDot:     {
       width: 36, height: 36, borderRadius: 8,
       justifyContent: 'center', alignItems: 'center',
     },
-    // @ts-ignore
-    calendarCount:   { fontSize: 11, fontFamily: FONTS.bold, color: '#fff' },
+    calendarCount:   { fontSize: 11, ...FONTS.bold, color: '#fff' },
     calendarLabel:   { fontSize: 9, color: colors.textMuted, marginTop: 3, textAlign: 'center' },
     calendarLegendRow: {
       flexDirection: 'row', justifyContent: 'center', gap: 16,

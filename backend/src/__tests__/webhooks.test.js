@@ -9,10 +9,10 @@
  *   - WEBHOOK_EVENTS is a non-empty array of strings
  *   - WEBHOOK_EVENTS contains expected core events
  *
- * Stripe webhook tests cover (mock mode — no STRIPE_WEBHOOK_SECRET):
- *   - Returns 200 + { received: true } for all event types in mock mode
+ * Stripe webhook tests cover (signed with a test STRIPE_WEBHOOK_SECRET):
+ *   - Returns 200 + { received: true } for correctly signed events
  *   - Unknown event types are gracefully accepted (not rejected)
- *   - Missing stripe-signature header is accepted in mock mode
+ *   - Missing/bad signature, or no STRIPE_WEBHOOK_SECRET → 400
  *   - Empty body returns 200 (graceful — async processing handles missing data)
  */
 import { createHmac }   from 'crypto';
@@ -22,18 +22,25 @@ import request          from 'supertest';
 import billingRouter    from '../routes/billing/index.js';
 
 // ── Stripe webhook app ──────────────────────────────────────────────────────
+import Stripe           from 'stripe';
+
+// Mirrors app.js: the JSON parser skips the webhook path so the raw body reaches
+// Stripe signature verification.
 const stripeApp = express();
-stripeApp.use(express.json());
+stripeApp.use((req, res, next) => req.path.endsWith('/webhook') ? next() : express.json()(req, res, next));
 stripeApp.use('/api/billing', billingRouter);
 
+const WEBHOOK_SECRET = 'whsec_test_' + 'c'.repeat(32);
+let _evt = 0;
 const makePayload = (type, data = {}) =>
-  JSON.stringify({ type, data: { object: data } });
+  JSON.stringify({ id: `evt_test_${Date.now()}_${++_evt}`, object: 'event', type, data: { object: data } });
 
-const postWebhook = (payload, sig = 'test_sig') =>
+// Signs the payload the way Stripe does (t=...,v1=HMAC) unless a signature is given.
+const postWebhook = (payload, sig) =>
   request(stripeApp)
     .post('/api/billing/webhook')
     .set('Content-Type', 'application/json')
-    .set('stripe-signature', sig)
+    .set('stripe-signature', sig ?? Stripe.webhooks.generateTestHeaderString({ payload, secret: WEBHOOK_SECRET }))
     .send(payload);
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -131,7 +138,11 @@ describe('WEBHOOK_EVENTS registry', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 // STRIPE WEBHOOK — MOCK MODE (no STRIPE_WEBHOOK_SECRET configured in test env)
 // ══════════════════════════════════════════════════════════════════════════════
-describe('Stripe webhook — mock mode', () => {
+describe('Stripe webhook — signed events (STRIPE_WEBHOOK_SECRET set)', () => {
+  const _savedSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  beforeAll(() => { process.env.STRIPE_WEBHOOK_SECRET = WEBHOOK_SECRET; });
+  afterAll(() => { if (_savedSecret === undefined) delete process.env.STRIPE_WEBHOOK_SECRET; else process.env.STRIPE_WEBHOOK_SECRET = _savedSecret; });
+
   // In mock mode, constructWebhookEvent returns null (no secret to verify with).
   // The route checks: if (!event && process.env.STRIPE_WEBHOOK_SECRET) → 400.
   // Without STRIPE_WEBHOOK_SECRET, it accepts all events and returns 200.
@@ -170,12 +181,26 @@ describe('Stripe webhook — mock mode', () => {
     expect(r.body.received).toBe(true);
   });
 
-  test('missing stripe-signature header is accepted in mock mode → 200', async () => {
+  test('missing stripe-signature header is rejected → 400 (no unsigned events)', async () => {
     const r = await request(stripeApp)
       .post('/api/billing/webhook')
       .set('Content-Type', 'application/json')
       .send(makePayload('payment_intent.succeeded', { id: 'pi_test' }));
-    expect(r.status).toBe(200);
+    expect(r.status).toBe(400);
+  });
+
+  test('bad stripe-signature is rejected → 400', async () => {
+    const r = await postWebhook(makePayload('payment_intent.succeeded', { id: 'pi_test' }), 't=1,v1=deadbeef');
+    expect(r.status).toBe(400);
+  });
+
+  test('without STRIPE_WEBHOOK_SECRET every webhook is rejected → 400', async () => {
+    const saved = process.env.STRIPE_WEBHOOK_SECRET;
+    delete process.env.STRIPE_WEBHOOK_SECRET;
+    try {
+      const r = await postWebhook(makePayload('payment_intent.succeeded', { id: 'pi_test' }));
+      expect(r.status).toBe(400);
+    } finally { process.env.STRIPE_WEBHOOK_SECRET = saved; }
   });
 
   test('response body always contains received: true', async () => {

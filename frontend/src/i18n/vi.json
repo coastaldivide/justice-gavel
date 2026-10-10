@@ -789,5 +789,11 @@
   "warning": "Warning",
   "note": "Note",
   "important": "Important",
-  "legal_disclaimer_short": "This information is for general education only and is not legal advice."
+  "legal_disclaimer_short": "This information is for general education only and is not legal advice.",
+  "settings.display_name": "Tên hiển thị",
+  "settings.account_status": "Trạng thái tài khoản",
+  "advocacy.stats.active_lawyers": "Luật sư đang hoạt động",
+  "advocacy.stats.bail_agents": "Đại lý bảo lãnh",
+  "golden_gavel.bar_verified": "Giấy phép luật sư đã xác minh",
+  "golden_gavel.zero_flags": "Không có cảnh báo tuân thủ"
 }

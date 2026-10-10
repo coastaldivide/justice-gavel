@@ -10,14 +10,16 @@ import React, { useState, useCallback} from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
   ActivityIndicator, Platform, LayoutAnimation} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../constants/theme';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { t } from '../i18n';
 
 function DocumentScannerScreen(): React.JSX.Element {
   const { impact, success, error: hapticError } = useHaptics();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const caseId: number | undefined = route?.params?.caseId;
   const { colors }  = useTheme();
   const [scanning,  setScanning]  = useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -33,14 +35,18 @@ function DocumentScannerScreen(): React.JSX.Element {
     try {
           const formData = new FormData();
       formData.append('document', file);
+      if (caseId) formData.append('case_id', String(caseId));
       const res = await api.post('/messages/attachment', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setResult(res.data?.url || res.data.path || 'File uploaded successfully');
-    } catch {
-      setError('Could not process document. Try a clearer photo.');
+      setResult(res.data?.attachment?.name
+        ? `Uploaded ${res.data.attachment.name}`
+        : 'File uploaded successfully');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Could not upload the document. Please try again.'));
     } finally {
       setScanning(false);
+      setLoading(false);
     }
   };
 

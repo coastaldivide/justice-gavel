@@ -29,11 +29,10 @@ const useCameraPermissions = Platform.OS === 'web'
 import * as ImageManipulator from 'expo-image-manipulator';
 import {  useTheme, RADIUS, FONTS, TYPE, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { t } from '../i18n';
 
-declare var CameraType: any;
 function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
@@ -49,11 +48,6 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
     const sub = AppState.addEventListener('change', state => {
       setIsCameraActive(state === 'active');
     });
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return () => sub.remove();
   }, []);
   const [scanError, setScanError] = React.useState<string|null>(null);
@@ -108,21 +102,13 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
         type: 'image/jpeg' } as any);
       if (caseId) form.append('case_id', String(caseId));
 
-      try {
-
-        await api.post('/messages/attachment', form, {
+      await api.post('/messages/attachment', form, {
         headers: { 'Content-Type': 'multipart/form-data' } });
-
-      } catch (_err) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
-
-        if (__DEV__) console.error(_err);
-
-      }
       await hapticNotification();
-showToast('Document attached to your case.', 'success');
-    } catch {
-      showToast('Could not upload the document. Check your connection and try again.');
+      showToast(caseId ? 'Document attached to your case.' : 'Document uploaded.', 'success');
+    } catch (err) {
+      if (__DEV__) console.error(err);
+      showToast(apiErrorMessage(err, 'Could not upload the document. Check your connection and try again.'), 'error');
     } finally {
       if (mountedRef.current) setUploading(false);
     }
@@ -171,7 +157,7 @@ showToast('Document attached to your case.', 'success');
             accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
             style={[s.previewBtn, { backgroundColor: 'rgba(255,255,255,0.15)' }]}
-            accessibilityLabel="\u21a9 Retake" onPress={() => setCaptured(null)}
+            accessibilityLabel={"\u21a9 Retake"} onPress={() => setCaptured(null)}
           >
             <Text maxFontSizeMultiplier={1.4} style={s.previewBtnText}>↩ Retake</Text>
           </TouchableOpacity>

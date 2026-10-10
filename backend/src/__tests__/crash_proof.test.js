@@ -20,7 +20,7 @@
  */
 
 import { classifyCharge, getEligibility, STATE_RULES } from '../routes/expungement/rules.js';
-import { calcLeadFee }                                   from '../routes/billing/_shared.js';
+// calcLeadFee was intentionally removed (flat $75 lead fee in billing/bondsman.js)
 
 const BAD_INPUTS   = [null, undefined, '', '   ', 0, -1, false, true, {}, [], NaN, Infinity, 9999999];
 const STATES       = [...Object.keys(STATE_RULES), 'XX', '', null, undefined];
@@ -45,7 +45,7 @@ describe('CRASH PROOF — Legal Engine', () => {
         expect(() => classifyCharge(input)).not.toThrow();
         const result = classifyCharge(input);
         expect(typeof result).toBe('string');
-        expect(['felony','misdemeanor','dui','domestic','sexual','dismissed']).toContain(result);
+        expect(['felony','misdemeanor','dui','domestic','sexual','dismissed','unknown']).toContain(result);
       }
     });
 
@@ -55,10 +55,10 @@ describe('CRASH PROOF — Legal Engine', () => {
       }
     });
 
-    test('returns conservative default (misdemeanor) for unrecognized input', () => {
-      expect(classifyCharge(null)).toBe('misdemeanor');
-      expect(classifyCharge(undefined)).toBe('misdemeanor');
-      expect(classifyCharge('')).toBe('misdemeanor');
+    test('returns safe defaults: empty → unknown (attorney CTA), unrecognized text → misdemeanor', () => {
+      expect(classifyCharge(null)).toBe('unknown');
+      expect(classifyCharge(undefined)).toBe('unknown');
+      expect(classifyCharge('')).toBe('unknown');
       expect(classifyCharge('gibberish xyz 123')).toBe('misdemeanor');
     });
 
@@ -120,28 +120,6 @@ describe('CRASH PROOF — Legal Engine', () => {
           expect(['boolean','string']).toContain(typeof result.eligible); // 'conditional' is valid for some states
         }
       }
-    });
-  });
-
-  describe('calcLeadFee()', () => {
-    test('never returns a negative number for any input', () => {
-      for (const input of BAD_INPUTS) {
-        const fee = calcLeadFee(input);
-        expect(fee).toBeGreaterThanOrEqual(0);
-      }
-    });
-
-    test('returns 0 for OR release (bail = 0)', () => {
-      expect(calcLeadFee(0)).toBe(0);
-      expect(calcLeadFee(-100)).toBe(0);
-      expect(calcLeadFee(null)).toBe(0);
-      expect(calcLeadFee(undefined)).toBe(0);
-      expect(calcLeadFee(NaN)).toBe(0);
-    });
-
-    test('returns scaled fee for positive bail amounts', () => {
-      expect(calcLeadFee(5000)).toBeGreaterThan(0);
-      expect(calcLeadFee(100000)).toBeGreaterThan(calcLeadFee(5000));
     });
   });
 

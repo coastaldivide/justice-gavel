@@ -1,4 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * routes/integrations/index.js — Integration Connection Management Hub
  *
@@ -348,10 +348,16 @@ router.post('/connect', authRequired, requireFirmRole('firm_admin'), connLimiter
       // Create pending connection record
       const existing = await db.get('SELECT id FROM integration_connections WHERE firm_id=? AND provider=?', [ctx.firm_id, provider]);
       if (!existing) {
-        await db.run(
-          `INSERT INTO integration_connections (firm_id, user_id, provider, status) VALUES (?,?,?,?)`,
+        // uq_integration_connections_firm_provider (migration 09): a concurrent
+        // request that created the row first wins; fall through to the update.
+        const ins = await db.run(
+          `INSERT INTO integration_connections (firm_id, user_id, provider, status) VALUES (?,?,?,?)
+           ON CONFLICT DO NOTHING`,
           [ctx.firm_id, req.user.id, provider, 'pending']
         );
+        if (!ins.changes) {
+          await db.run("UPDATE integration_connections SET status='pending', updated_at=NOW() WHERE firm_id=? AND provider=?", [ctx.firm_id, provider]);
+        }
       } else {
         await db.run("UPDATE integration_connections SET status='pending', updated_at=NOW() WHERE firm_id=? AND provider=?", [ctx.firm_id, provider]);
       }
@@ -391,13 +397,24 @@ router.post('/connect', authRequired, requireFirmRole('firm_admin'), connLimiter
          JSON.stringify(metadata), existing.id]
       );
     } else {
-      await db.run(
+      const ins = await db.run(
         `INSERT INTO integration_connections
            (firm_id, user_id, provider, status, access_token, instance_url, customer_id, metadata)
-         VALUES (?,?,?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?)
+         ON CONFLICT DO NOTHING`,
         [ctx.firm_id, req.user.id, provider, 'active', effectiveToken,
          instance_url || null, customer_id || null, JSON.stringify(metadata)]
       );
+      if (!ins.changes) {
+        await db.run(
+          `UPDATE integration_connections SET
+             status='active', access_token=?, instance_url=?, customer_id=?,
+             metadata=?, updated_at=NOW()
+           WHERE firm_id=? AND provider=?`,
+          [effectiveToken, instance_url || null, customer_id || null,
+           JSON.stringify(metadata), ctx.firm_id, provider]
+        );
+      }
     }
 
     await writeAuditLog(db, {
@@ -501,12 +518,21 @@ router.get('/oauth/callback', async (req, res) => {
         [newStatus, accessToken, refreshToken, expiresAt, existing.id]
       );
     } else {
-      await db.run(
+      const ins = await db.run(
         `INSERT INTO integration_connections
            (firm_id, user_id, provider, status, access_token, refresh_token, token_expires_at)
-         VALUES (?,?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?)
+         ON CONFLICT DO NOTHING`,
         [firm_id, user_id, provider, newStatus, accessToken, refreshToken, expiresAt]
       );
+      if (!ins.changes) {
+        await db.run(
+          `UPDATE integration_connections SET
+             status=?, access_token=?, refresh_token=?, token_expires_at=?, updated_at=NOW()
+           WHERE firm_id=? AND provider=?`,
+          [newStatus, accessToken, refreshToken, expiresAt, firm_id, provider]
+        );
+      }
     }
 
     await writeAuditLog(db, {

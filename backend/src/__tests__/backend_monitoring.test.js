@@ -10,8 +10,9 @@ const __dirname  = fileURLToPath(new URL('.', import.meta.url));
 const MON_DIR    = resolve(__dirname, '../monitoring');
 
 describe('Monitoring — Sentry', () => {
-  const SENTRY = resolve(MON_DIR, 'sentry.js');
-  test('sentry.js exists', () => expect(existsSync(SENTRY)).toBe(true));
+  // Sentry is initialised once in src/instrument.js (monitoring/sentry.js only re-exports helpers)
+  const SENTRY = resolve(__dirname, '../instrument.js');
+  test('sentry.js exists', () => expect(existsSync(resolve(MON_DIR, 'sentry.js'))).toBe(true));
   test('Sentry reads DSN from environment', () => {
     const c = readFileSync(SENTRY, 'utf-8');
     expect(c).toMatch(/SENTRY_DSN|process\.env/);

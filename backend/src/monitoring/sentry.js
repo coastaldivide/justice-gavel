@@ -15,49 +15,8 @@
 import * as Sentry from '@sentry/node';
 
 export function initSentry() {
-  if (!process.env.SENTRY_DSN) {
-    console.warn('[sentry] SENTRY_DSN not set — error tracking disabled');
-    return;
-  }
-
-  Sentry.init({
-    dsn:         process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || 'development',
-    release:     `justice-gavel@${process.env.npm_package_version || '6.6.0'}`,
-
-    // Capture 100% of errors in production (performance traces at 10%)
-    tracesSampleRate:    process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    sampleRate:          1.0,
-
-    // Attach request data to all events
-    integrations: [
-      Sentry.httpIntegration({ breadcrumbs: true }),
-    ],
-
-    // Scrub sensitive fields before sending to Sentry
-    beforeSend(event) {
-      // Never send passwords, tokens, or SSNs to Sentry
-      if (event.request?.data) {
-        const data = event.request.data;
-        if (data.password)     data.password = process.env.SENTRY_AUTH_TOKEN || '';
-        if (data.token)        data.token        = '[REDACTED]';
-        if (data.refreshToken) data.refreshToken = '[REDACTED]';
-        if (data.ssn)          data.ssn          = '[REDACTED]';
-      }
-      return event;
-    },
-
-    // Ignore intentional errors (rate limits, not found, validation)
-    ignoreErrors: [
-      'rate_limited',
-      'not_found',
-      'validation_error',
-      'unauthorized',
-      'token_expired',
-    ],
-  });
-
-  console.info('[sentry] initialized — DSN set, environment:', process.env.NODE_ENV);
+  // Sentry is initialised exactly once in src/instrument.js (loaded first by
+  // server.js). Kept as a no-op for backwards compatibility.
 }
 
 /**

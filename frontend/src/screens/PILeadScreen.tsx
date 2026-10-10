@@ -21,13 +21,12 @@ import { AppIcon } from '../components/AppIcon';
 import React, { useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
 import { t } from '../i18n';
 
-declare var data: any;
 type Step = 'type' | 'severity' | 'details' | 'submitted';
 
 const CASE_TYPES = [
@@ -56,11 +55,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const [refreshing, setRefreshing] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   return () => { mountedRef.current = false; }; }, []);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -73,7 +68,6 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
 
   const [step, setStep]         = useState<Step>(initType ? 'severity' : 'type');
   const [caseType, setCaseType] = useState(initType);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [severity, setSeverity] = useState('');
   const [description, setDesc]  = useState('');
   const [loading, setLoading]   = useState(false);
@@ -89,19 +83,14 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
     }
     if (mountedRef.current) setLoading(true);
     try {
-      try {
-        await api.post('/billing/pi-lead/submit', {
+      await api.post('/billing/pi-lead/submit', {
         case_type:   caseType,
         severity,
         description: description.trim(),
       });
-      } catch (_err) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
-        if (__DEV__) console.error(_err);
-      }
       if (mountedRef.current) setStep('submitted');
-    } catch {
-      showToast('Check your connection and try again.');
+    } catch (e: any) {
+      showToast(apiErrorMessage(e, 'Check your connection and try again.'));
     } finally {
       if (mountedRef.current) setLoading(false);
     }
@@ -167,7 +156,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
                 accessibilityRole="button"
                 key={t.key}
                 style={[styles.typeCard, { backgroundColor: t.bg, borderColor: t.color + '55' }]}
-                accessibilityLabel="{t.icon}" onPress={() => { setCaseType(t.key); setStep('severity'); }}
+                accessibilityLabel={t.icon} onPress={() => { setCaseType(t.key); setStep('severity'); }}
 
               >
                 <Text maxFontSizeMultiplier={1.4} style={styles.typeIcon}>{t.icon}</Text>
@@ -185,7 +174,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
         {step === 'severity' && (
           <>
             <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel="\u2190 Back" onPress={() => setStep('type')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel={"\u2190 Back"} onPress={() => setStep('type')} style={styles.back}
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
             </TouchableOpacity>
@@ -222,7 +211,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
         {step === 'details' && (
           <>
             <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel="\u2190 Back" onPress={() => setStep('severity')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel={"\u2190 Back"} onPress={() => setStep('severity')} style={styles.back}
             >
               <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
             </TouchableOpacity>
@@ -286,14 +275,6 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
         )}
 
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No civil leads available</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection or broaden your search criteria.</Text>
-        </View>
-      )}
       </ScrollView>
     </KeyboardAvoidingView>
   );

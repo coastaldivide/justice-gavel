@@ -1,4 +1,4 @@
-import { validate, createCaseSchema } from '../middleware/validate.js';
+import { validate, schemas } from '../validation/schemas.js';
 import { audit, AUDIT_ACTIONS } from '../utils/audit.js';
 import { auditLog } from '../utils/auditLog.js';
 /**
@@ -57,16 +57,36 @@ const CASE_SAFE_COLS = `id, user_id, title, status, next_court_date,
 
 // ── VALID STATUS SET ──────────────────────────────────────────────────────────
 const VALID_STATUSES = new Set([
-  'Open', 'Closed', 'Dismissed', 'Pending', 'On Appeal',
+  'Open', 'Active', 'Closed', 'Dismissed', 'Pending', 'On Appeal',
   'Expunged', 'Transferred', 'Inactive',
 ]);
+// Case-insensitive lookup so 'open' / 'OPEN' map to the canonical 'Open'
+const STATUS_CANON = new Map([...VALID_STATUSES].map(s => [s.toLowerCase(), s]));
+const canonStatus  = (s) => (s == null ? s : STATUS_CANON.get(String(s).trim().toLowerCase()) || s);
+// Accept 'YYYY-MM-DD' or a full ISO timestamp; anything else → null.
+// The column is a DATE (calendar day): keep the day exactly as the client wrote
+// it (no UTC conversion, which would move evening times in the Americas to the
+// next day) and reject impossible days such as 2026-02-30.
+export function safeCourtDate(v) {
+  if (!v) return null;
+  const str = String(v).trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})([T ][\d:.]+(Z|[+-]\d{2}:?\d{2})?)?$/.exec(str);
+  if (!m || Number.isNaN(Date.parse(str))) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const probe = new Date(Date.UTC(y, mo - 1, d));
+  if (probe.getUTCFullYear() !== y || probe.getUTCMonth() !== mo - 1 || probe.getUTCDate() !== d) return null;
+  return `${m[1]}-${m[2]}-${m[3]}`;
+}
 
 // ── GET / — list own cases (paginated) ───────────────────────────────────────
 router.get('/', authRequired, async (req, res) => {
   try {
     const db     = await getDb();
+    // The app expects a plain array (CaseScreen/HomeScreen/LawyersScreen).
+    // Pass ?page= to get the paginated envelope { data, pagination } instead.
+    const paginated = req.query.page !== undefined;
     const page   = Math.max(1, safeInt(req.query.page  || '1'));
-    const limit  = Math.min(50, Math.max(1, safeInt(req.query.limit || '20')));
+    const limit  = Math.min(paginated ? 50 : 200, Math.max(1, safeInt(req.query.limit || (paginated ? '20' : '200'))));
     const offset = (page - 1) * limit;
     const status = req.query.status ? sanitizeStr(req.query.status, 30) : null;
 
@@ -87,6 +107,8 @@ router.get('/', authRequired, async (req, res) => {
     ]);
 
     const total = countRow?.total ?? 0;
+    res.setHeader('X-Total-Count', String(total));
+    if (!paginated) return res.json(rows);
     res.json({
       data:       rows,
       pagination: {
@@ -102,42 +124,44 @@ router.get('/', authRequired, async (req, res) => {
 });
 
 // ── POST / — create case ──────────────────────────────────────────────────────
-router.post('/', validate(schemas.cases.create), authRequired, validate(createCaseSchema), casesLimiter, async (req, res) => {
+router.post('/', authRequired, validate(schemas.cases.create), casesLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const {
       title        = '',
       status       = 'Open',
-      next_court_date = null,
       notes        = '',
       state        = null,
     } = req.body || {};
+    const next_court_date = safeCourtDate(req.body?.next_court_date ?? req.body?.court_date);
+    if ((req.body?.next_court_date || req.body?.court_date) && !next_court_date) {
+      return err400(res, 'next_court_date must be YYYY-MM-DD');
+    }
 
     const safeTitle = truncateStr(sanitizeStr(String(title || ''), 300), 300);
     if (!safeTitle.trim()) return err400(res, 'title is required.');
 
-    const safeStatus = VALID_STATUSES.has(status) ? status : 'Open';
+    const safeStatus = VALID_STATUSES.has(canonStatus(status)) ? canonStatus(status) : 'Open';
     const safeNotes  = notes ? truncateStr(sanitizeStr(String(notes), 10_000), 10_000) : '';
     const safeState  = state ? sanitizeStr(String(state), 3).toUpperCase() : null;
 
     // Idempotency: prevent duplicate case creation
     const recent = await db.get(
       `SELECT id FROM cases WHERE user_id = ? AND title = ?
-       AND created_at > datetime('now','-10 seconds') LIMIT 1`,
+       AND created_at > (NOW() - INTERVAL '10 seconds') LIMIT 1`,
       [req.user.id, (req.body.title || '').trim()]
     ).catch(() => null);
     if (recent) return res.status(409).json({ error: 'Duplicate case — please wait before submitting again', existingId: recent.id });
 
     const r = await db.run(
-      `INSERT INTO cases (user_id, title, status, next_court_date, notes, state,
-         bail_amount_cents, related_case_id, capital_case, co_defendant_count, bail_status)
-        VALUES (?,?,?,?,?,?,
-          ?, ?, ?, ?, ?)`,
+      `INSERT INTO cases (user_id, title, status, next_court_date, notes, state, charge, updated_at)
+        VALUES (?,?,?,?,?,?,?, NOW())`,
       [
         req.user.id, safeTitle.trim(), safeStatus,
-        next_court_date ? sanitizeStr(String(next_court_date), 20) : null,
+        next_court_date,
         safeNotes ? encrypt(safeNotes) : '',
         safeState,
+        req.body?.charge ? truncateStr(sanitizeStr(String(req.body.charge), 500), 500) : null,
       ]
     );
 
@@ -174,7 +198,7 @@ router.post('/', validate(schemas.cases.create), authRequired, validate(createCa
 });
 
 // ── PUT /:id — update case ────────────────────────────────────────────────────
-router.put('/:id', authMiddleware, validate(schemas.cases.update), authRequired, casesLimiter, async (req, res) => {
+router.put('/:id', authRequired, validate(schemas.cases.update), casesLimiter, async (req, res) => {
   const db = await getDb();
   try {
     const caseId   = safeInt(req.params.id);
@@ -196,13 +220,15 @@ router.put('/:id', authMiddleware, validate(schemas.cases.update), authRequired,
       if (!t.trim()) return err400(res, 'title cannot be empty.');
       updates.push('title=?'); vals.push(t.trim());
     }
-    if (status !== undefined) {
-      if (!VALID_STATUSES.has(status)) return err400(res, `Invalid status. Valid: ${[...VALID_STATUSES].join(', ')}`);
-      updates.push('status=?'); vals.push(status);
+    if (status !== undefined && status !== null) {
+      if (!VALID_STATUSES.has(canonStatus(status))) return err400(res, `Invalid status. Valid: ${[...VALID_STATUSES].join(', ')}`);
+      updates.push('status=?'); vals.push(canonStatus(status));
     }
     if (next_court_date !== undefined) {
+      const d = safeCourtDate(next_court_date);
+      if (next_court_date && !d) return err400(res, 'next_court_date must be YYYY-MM-DD');
       updates.push('next_court_date=?');
-      vals.push(next_court_date ? sanitizeStr(String(next_court_date), 20) : null);
+      vals.push(d);
     }
     if (notes !== undefined) {
       const n = notes ? truncateStr(sanitizeStr(String(notes), 10_000), 10_000) : '';
@@ -218,7 +244,6 @@ router.put('/:id', authMiddleware, validate(schemas.cases.update), authRequired,
     updates.push("updated_at=NOW()");
     vals.push(caseId, req.user.id);
 
-    await db.run('BEGIN');
     await db.run(
       `UPDATE cases SET ${updates.join(',')} WHERE id=? AND user_id=?`,
       vals
@@ -227,31 +252,31 @@ router.put('/:id', authMiddleware, validate(schemas.cases.update), authRequired,
       `SELECT ${CASE_COLS} FROM cases WHERE id=?`,
       [caseId]
     );
-    await db.run('COMMIT');
 
     // Record status change (non-blocking)
-    if (status !== undefined && existing.status !== status) {
+    if (status != null && existing.status !== canonStatus(status)) {
       db.run(
         `INSERT INTO case_status_history (case_id, user_id, old_status, new_status)
          VALUES (?,?,?,?)`,
-        [caseId, req.user.id, existing.status, status]
-      ).catch(() => {});
+        [caseId, req.user.id, existing.status, canonStatus(status)]
+      ).catch(e => logger.warn('[cases/update] status history:', e.message));
     }
 
     const updated = { ...raw, notes: decrypt(raw?.notes || '') };
 
     // Expungement push when case closes/dismisses (fire once)
-    const newStatus = status ?? existing.status;
+    const newStatus = canonStatus(status) ?? existing.status;
     if (['Closed', 'Dismissed'].includes(newStatus) && !existing.expungement_notified) {
       triggerExpungementPush(db, req.user.id, updated).catch(() => {});
     }
 
     // Reschedule court reminders if date changed
-    if (next_court_date !== undefined && next_court_date !== existing.next_court_date) {
+    const newCourtDate = next_court_date === undefined ? undefined : safeCourtDate(next_court_date);
+    if (newCourtDate && newCourtDate !== existing.next_court_date) {
       scheduleCourtReminders(
         db, req.user.id, caseId,
         updated.title || existing.title,
-        next_court_date
+        newCourtDate
       ).catch(() => {});
     }
 
@@ -260,7 +285,6 @@ router.put('/:id', authMiddleware, validate(schemas.cases.update), authRequired,
 
     res.json(updated);
   } catch (e) {
-    await db.run('ROLLBACK').catch(() => {});
     logger.error('[cases/update]', e.message);
     res.status(500).json({ error: 'Could not update case.' });
   }
@@ -461,7 +485,7 @@ router.post('/:id/invite', authRequired, casesLimiter, async (req, res) => {
     if (!email?.trim()) return err400(res, 'email required.');
 
     const invitee = await db.get(
-      'SELECT id, display_name FROM users WHERE email=? COLLATE NOCASE',
+      'SELECT id, display_name FROM users WHERE LOWER(email)=LOWER(?)',
       [email.trim().toLowerCase()]
     );
     if (!invitee) return err404(res, 'No Justice Gavel account found for that email. They must create an account first.');
@@ -586,8 +610,10 @@ async function scheduleCourtReminders(db, userId, caseId, caseTitle, courtDateSt
     if (!sub || !STARTER_TIERS.has(sub.tier)) return;
   } catch (e) { logger.warn('[cases/court-reminder]', e?.message); return; }
 
-  const courtDate = new Date(courtDateStr);
-  if (isNaN(courtDate.getTime()) || courtDate < new Date()) return;
+  // 'YYYY-MM-DD' parses as UTC midnight; the day is formatted in UTC below so the
+  // reminder names the same calendar day regardless of the server's TZ.
+  const courtDate = new Date(String(courtDateStr).slice(0, 10));
+  if (isNaN(courtDate.getTime()) || courtDate.getTime() + 86_400_000 < Date.now()) return;
 
   // Remove stale reminders for this case before inserting new ones
   await db.run(
@@ -599,7 +625,7 @@ async function scheduleCourtReminders(db, userId, caseId, caseTitle, courtDateSt
   const token = user?.push_token || null;
 
   const reminders = [
-    { days: 7, title: '📅 Court date in 7 days',   body: `${caseTitle} — Court on ${courtDate.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })}` },
+    { days: 7, title: '📅 Court date in 7 days',   body: `${caseTitle} — Court on ${courtDate.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', timeZone: 'UTC' })}` },
     { days: 3, title: '⚠️ Court date in 3 days',   body: `${caseTitle} — Review your case and contact your lawyer.` },
     { days: 1, title: '🚨 Court date TOMORROW',    body: `${caseTitle} — Be on time and bring all documents.` },
     { days: 0, title: '🏛️ Court date TODAY',       body: `${caseTitle} — Your court appearance is today. Good luck.` },

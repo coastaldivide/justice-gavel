@@ -15,11 +15,14 @@ import { getToken, clearAuth, setToken as storeToken } from '../utils/secureStor
 import { setAppAuth } from './auth';
 
 // EXPO_PUBLIC_API_BASE must be set in frontend/.env for staging/production.
-// Fallback to localhost:4000 is intentional for local development only.
+// Falls back to the production API when the variable is not set.
 // Example: EXPO_PUBLIC_API_BASE=https://api.justicegavel.app/api
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE ||
   'https://api.justicegavel.app/api';  // always use production as fallback
+
+/** Resolved API base URL (for the few callers that must use fetch directly, e.g. SSE). */
+export const API_BASE_URL = BASE_URL;
 
 if (!process.env.EXPO_PUBLIC_API_BASE && !__DEV__) {
   if (__DEV__) console.error('[api] CRITICAL: EXPO_PUBLIC_API_BASE is not set. Add it to your EAS secrets.');
@@ -101,7 +104,29 @@ instance.interceptors.request.use(async (config) => {
   return config;
 });
 
-  // Auto-logout on 401 — JWT expired or revoked
+// Friendly copy for well-known backend error codes (503 feature flags etc.)
+export const FRIENDLY_ERRORS: Record<string, string> = {
+  payments_unavailable: 'Payments aren’t available yet. No charge was made — free features keep working.',
+  ai_unavailable:       'AI features are temporarily unavailable. Please try again later.',
+};
+
+/** True when the backend reports billing is not configured (503 payments_unavailable). */
+export function isPaymentsUnavailable(e: any): boolean {
+  return e?.response?.data?.error === 'payments_unavailable' || e?.code === 'payments_unavailable';
+}
+
+/** True when the backend reports AI is not configured (503 ai_unavailable). */
+export function isAiUnavailable(e: any): boolean {
+  return e?.response?.data?.error === 'ai_unavailable' || e?.code === 'ai_unavailable';
+}
+
+/** Best human-readable message for an API error. */
+export function apiErrorMessage(e: any, fallback = 'Something went wrong. Please try again.'): string {
+  const code = e?.response?.data?.error;
+  return FRIENDLY_ERRORS[code] || e?.response?.data?.message || (typeof e?.message === 'string' && e.message) || fallback;
+}
+
+// Auto-logout on 401 — JWT expired or revoked
 // Clears secure token storage and returns user to guest/login screen.
 instance.interceptors.response.use(
   (response) => {
@@ -115,10 +140,14 @@ instance.interceptors.response.use(
     // Extract the server's error string from the response body so screens
     // can do `catch (e: any) { setError(e.message) }` and get a real message.
     // API returns { error: '...' } or occasionally { message: '...' }.
+    // Backend contract: errors are JSON { error: <code>, message: <human text> }.
+    const errCode: string | undefined = error?.response?.data?.error;
     const serverMsg: string | undefined =
-      error?.response?.data?.error ??
+      FRIENDLY_ERRORS[errCode as string] ??
       error?.response?.data?.message ??
+      errCode ??
       undefined;
+    if (errCode && typeof errCode === 'string') error.code = errCode;
     if (serverMsg && typeof serverMsg === 'string') {
       // Override the generic axios message with the server's actual message
       error.message = serverMsg;
@@ -132,7 +161,11 @@ instance.interceptors.response.use(
       error.message = 'Server error. Please try again in a few moments.';
     }
 
-    if (error?.response?.status === 401) {
+    // Only auto-logout when we actually sent a token (an expired/revoked
+    // session). Guests browsing without a token, or a failed login attempt,
+    // must not be bounced out of the app.
+    const sentAuth = !!(error?.config?.headers?.Authorization);
+    if (error?.response?.status === 401 && sentAuth && !String(error?.config?.url || '').includes('/auth/login')) {
       // Token expired or invalid — clear credentials and force re-login
       await clearAuth().catch(() => {});
       setAppAuth('guest');
@@ -185,9 +218,11 @@ async function request<T = any>(
   config: AxiosRequestConfig,
   signal?: AbortSignal,
 ): Promise<{ data: T }> {
-  return withRetry(() =>
-    instance.request<T>({ ...config, signal })
-  );
+  const method = (config.method || 'GET').toUpperCase();
+  const send = () => instance.request<T>({ ...config, signal });
+  // Only idempotent reads are retried automatically. Retrying a POST (login,
+  // payment, booking) after a timeout could submit it twice.
+  return method === 'GET' || method === 'HEAD' ? withRetry(send) : send();
 }
 
 // ── Cached GET (for static / rarely-changing data) ────────────────────────────

@@ -347,13 +347,14 @@ router.get('/summary', authRequired, async (req, res) => {
 
     let whereFirm = ctx?.firm_id ? `AND firm_id = ${safeInt(ctx.firm_id)}` /* parameterize: move to bind array */ : `AND user_id=${req.user.id}`;
     const dateFilter = [
-      date_from ? `AND entry_date >= '${sanitizeStr(date_from,20)}'` : '',
-      date_to   ? `AND entry_date <= '${sanitizeStr(date_to,20)}'`   : '',
+      // strict YYYY-MM-DD only — these values are interpolated into SQL
+      /^\d{4}-\d{2}-\d{2}$/.test(String(date_from || '')) ? `AND entry_date >= '${date_from}'` : '',
+      /^\d{4}-\d{2}-\d{2}$/.test(String(date_to || ''))   ? `AND entry_date <= '${date_to}'`   : '',
     ].join(' ');
 
     const [byStatus, byUser, byMonth] = await Promise.all([
       db.all(`SELECT billing_status, SUM(hours) as hours, SUM(hours*rate_cents) as amount FROM time_entries WHERE 1=1 ${whereFirm} ${dateFilter} GROUP BY billing_status`),
-      ctx?.firm_id ? db.all(`SELECT u.display_name, SUM(te.hours) as hours, SUM(te.hours*te.rate_cents) as amount FROM time_entries te JOIN users u ON u.id=te.user_id WHERE te.firm_id=? ${dateFilter} GROUP BY te.user_id ORDER BY hours DESC`, [ctx.firm_id]) : Promise.resolve([]),
+      ctx?.firm_id ? db.all(`SELECT u.display_name, SUM(te.hours) as hours, SUM(te.hours*te.rate_cents) as amount FROM time_entries te JOIN users u ON u.id=te.user_id WHERE te.firm_id=? ${dateFilter} GROUP BY te.user_id, u.display_name ORDER BY hours DESC`, [ctx.firm_id]) : Promise.resolve([]),
       db.all(`SELECT substr(entry_date,1,7) as month, SUM(hours) as hours, SUM(hours*rate_cents) as amount FROM time_entries WHERE 1=1 ${whereFirm} ${dateFilter} GROUP BY month ORDER BY month DESC LIMIT 12`),
     ]);
 

@@ -1,3 +1,4 @@
+import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
 
 // UPL compliance: all AI responses include disclaimer metadata
 const UPL_DISCLAIMER = {
@@ -148,7 +149,7 @@ GENERAL REQUIREMENTS:
 
 Generate the complete motion now:`;
 
-  const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+  const ANTHROPIC_URL = ANTHROPIC_MESSAGES_URL;
   const res = await fetch(ANTHROPIC_URL, {
     method: 'POST',
     headers: {
@@ -157,7 +158,7 @@ Generate the complete motion now:`;
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-20250514',
+      model:      CLAUDE_MODEL,
       temperature: 0.15,
       max_tokens: isAppellatMotion ? 8000 : 2000, // appellate briefs need more room
       messages:   [{ role: 'user', content: prompt }],

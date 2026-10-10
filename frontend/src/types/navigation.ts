@@ -7,8 +7,8 @@ export type AppNavigation  = NativeStackNavigationProp<RootStackParamList>;
 export type AppRoute<T extends string = string> = RouteProp<RootStackParamList, T>;
 
 // Convenience shorthand for screen props
-export interface ScreenProps {
+export interface ScreenProps<T extends string = string> {
   navigation: AppNavigation;
-  route?:     AppRoute;
+  route?:     AppRoute<T>;
   [key: string]: unknown;
 }

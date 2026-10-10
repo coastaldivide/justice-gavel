@@ -18,6 +18,7 @@
  * and are silently no-ops in production (no crash risk).
  */
 
+import { API_BASE_URL } from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ── Event schema ───────────────────────────────────────────────────────────────
@@ -88,7 +89,7 @@ export async function track(event: EventName, props: EventProps = {}): Promise<v
     // ── Fallback: send to own backend for basic event logging ─────────────────
     const _eventToken = await AsyncStorage.getItem('token').catch(() => null);
     const _ac = new AbortController(); setTimeout(() => _ac.abort(), 5000);
-    fetch((process.env.EXPO_PUBLIC_API_BASE || '') + '/analytics/event', { signal: _ac.signal,
+    fetch(API_BASE_URL + '/analytics/event', { signal: _ac.signal,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

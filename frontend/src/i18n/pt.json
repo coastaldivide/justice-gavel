@@ -789,5 +789,11 @@
   "warning": "Warning",
   "note": "Note",
   "important": "Important",
-  "legal_disclaimer_short": "This information is for general education only and is not legal advice."
+  "legal_disclaimer_short": "This information is for general education only and is not legal advice.",
+  "settings.display_name": "Nome de exibição",
+  "settings.account_status": "Status da conta",
+  "advocacy.stats.active_lawyers": "Advogados ativos",
+  "advocacy.stats.bail_agents": "Agentes de fiança",
+  "golden_gavel.bar_verified": "Licença de advogado verificada",
+  "golden_gavel.zero_flags": "Zero alertas de conformidade"
 }

@@ -789,5 +789,11 @@
   "warning": "Warning",
   "note": "Note",
   "important": "Important",
-  "legal_disclaimer_short": "This information is for general education only and is not legal advice."
+  "legal_disclaimer_short": "This information is for general education only and is not legal advice.",
+  "settings.display_name": "Display name",
+  "settings.account_status": "Account status",
+  "advocacy.stats.active_lawyers": "Active lawyers",
+  "advocacy.stats.bail_agents": "Bail agents",
+  "golden_gavel.bar_verified": "Bar license verified",
+  "golden_gavel.zero_flags": "Zero compliance flags"
 }

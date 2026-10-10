@@ -23,7 +23,7 @@ import {
   StyleSheet, ActivityIndicator, Alert, RefreshControl,
   KeyboardAvoidingView, Platform, LayoutAnimation, InteractionManager} from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import type {} from '../types/navigation';
 import { useAuthGate } from '../components/AuthGate';
 import { t } from '../i18n';
@@ -57,8 +57,6 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 function FirmAcquisitionScreen({ navigation }: any) {
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors } = useTheme();
@@ -68,11 +66,7 @@ function FirmAcquisitionScreen({ navigation }: any) {
   const mountedRef = useRef(true);
   useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   return () => { mountedRef.current = false; };
     });
     return () => _task.cancel();
@@ -84,7 +78,6 @@ function FirmAcquisitionScreen({ navigation }: any) {
 
   // Browse state
   const [selectedV, setSelectedV] = useState('criminal_defense');
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [pitch, setPitch]         = useState<any>(null);
   const [plans, setPlans]         = useState<any[]>([]);
   const [pitchLoading, setPL]     = useState(false);
@@ -131,7 +124,6 @@ function FirmAcquisitionScreen({ navigation }: any) {
       const res = await api.get(`/firm-acquisition/vertical-demo?vertical=${v}`);
       if (!pitchAbort.current?.signal.aborted) setPitch(res.data || null);
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
       // Ignore AbortError — a newer request is taking over
       // Guard all cancellation signal variants (browser AbortError, Axios ERR_CANCELED/CanceledError)
       const isCancellation = e?.name === 'AbortError' ||
@@ -154,7 +146,7 @@ function FirmAcquisitionScreen({ navigation }: any) {
       const res = await api.post('/firm-acquisition/upgrade', { target_tier: tier });
 showToast(res.data?.message, 'success');
     } catch (e: any) {
-      showToast(e?.response?.data?.error || 'Could not submit upgrade request.', 'error');
+      showToast(apiErrorMessage(e, 'Could not submit upgrade request.'), 'error');
     } finally { setUpgrading(false); }
   };
 
@@ -180,7 +172,7 @@ showToast(res.data?.message, 'success');
       setFlow('status');  // navigate first — loadStatus failure must not trap user on trial form
       loadStatus().catch(() => null);  // refresh status in background
     } catch (e: any) {
-      showToast(e?.response?.data?.error || 'Could not activate trial.', 'error');
+      showToast(apiErrorMessage(e, 'Could not activate trial.'), 'error');
     } finally { setActiv(false); }
   };
 
@@ -311,7 +303,7 @@ showToast(res.data?.message, 'success');
             <View style={s.actionGrid}>
               <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={s.actionBtn} accessibilityLabel="\u2699\ufe0f" onPress={() => navigation.navigate('FirmVertical')}
+          accessibilityHint="Double-tap to activate" style={s.actionBtn} accessibilityLabel={"\u2699\ufe0f"} onPress={() => navigation.navigate('FirmVertical')}
                       >
                 <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Configure vertical</Text>
@@ -319,8 +311,6 @@ showToast(res.data?.message, 'success');
               <TouchableOpacity accessibilityRole="button"
           accessibilityHint="Double-tap to activate" style={s.actionBtn} onPress={() => navigation.navigate('DeadlineCalculator')}
                       >
-                accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel="Navigate"
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📅</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Deadline calculator</Text>
               </TouchableOpacity>
@@ -328,16 +318,12 @@ showToast(res.data?.message, 'success');
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate" style={s.actionBtn} onPress={() => navigation.navigate('MatterIntelligence')}
                       >
-                accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel="Navigate"
                 <Text maxFontSizeMultiplier={1.4} style={s.actionEmoji}>📁</Text>
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Create matter</Text>
               </TouchableOpacity>
               <TouchableOpacity accessibilityRole="button"
           accessibilityHint="Double-tap to activate" style={s.actionBtn} onPress={() => navigation.navigate('FirmVertical', { tab: 'pricing' })}
                       >
-                accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel="Navigate"
                 <AppIcon name="card-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={s.actionLabel}>Upgrade plan</Text>
               </TouchableOpacity>
@@ -359,7 +345,7 @@ showToast(res.data?.message, 'success');
           accessibilityHint="Double-tap to activate"
                   key={v.key}
                   style={[s.vertTile, selectedV === v.key && { borderColor: v.color, borderWidth: 1.5 }]}
-                  accessibilityLabel="{v.emoji}" onPress={() => setSelectedV(v.key)}
+                  accessibilityLabel={v.emoji} onPress={() => setSelectedV(v.key)}
                   activeOpacity={0.75}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={s.vertEmoji}>{v.emoji}</Text>
@@ -414,7 +400,7 @@ showToast(res.data?.message, 'success');
 
             <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={s.ctaBtn} accessibilityLabel="Start {TRIAL_DAYS}-day free trial \u2192" onPress={() => setFlow('activate')}
+          accessibilityHint="Double-tap to activate" style={s.ctaBtn} accessibilityLabel={"Start {TRIAL_DAYS}-day free trial \u2192"} onPress={() => setFlow('activate')}
                     >
               <Text maxFontSizeMultiplier={1.4} style={s.ctaBtnText}>Start {TRIAL_DAYS}-day free trial →</Text>
             </TouchableOpacity>

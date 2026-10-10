@@ -159,9 +159,7 @@ function issueJwt(user, firmRole) {
   };
   return jwt.sign(
     payload,
-    process.env.JWT_SECRET || (process.env.NODE_ENV === 'production'
-      ? (() => { throw new Error('JWT_SECRET required'); })()
-      : 'dev_secret_change_me'),
+    process.env.JWT_SECRET,   // always set: required in production, generated per-process in dev (config.js)
     { expiresIn: CONFIG.JWT_EXPIRES_IN || '30d' }
   );
 }
@@ -334,8 +332,8 @@ router.post('/acs', async (req, res) => {
       // Auto-provision with 'associate' role unless IdP provides role claim
       const provisionedRole = idpRole || 'associate';
       await db.run(
-        `INSERT OR IGNORE INTO firm_members (firm_id, user_id, firm_role, status)
-         VALUES (?,?,?,?)`,
+        `INSERT INTO firm_members (firm_id, user_id, firm_role, status)
+         VALUES (?,?,?,?) ON CONFLICT DO NOTHING`,
         [firmId, user.id, provisionedRole, 'active']
       );
       firmMember = { firm_role: provisionedRole };

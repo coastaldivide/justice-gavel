@@ -1,4 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * attorney/templates.js — Motion templates — list, create, approve
  */
@@ -8,7 +8,7 @@ import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger           from '../../utils/logger.js';
-import { sanitiseField, sanitiseProfileFields, STATE_BAR_LOOKUP } from './_helpers.js';
+import { sanitiseField, sanitiseProfileFields, STATE_BAR_LOOKUP, requireAttorney } from './_helpers.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 
 const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
@@ -19,7 +19,7 @@ const router = Router();
 // GET /api/attorney/templates — all templates for this user's office
 router.get('/templates', authRequired, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db, user } = ctx;
     const { status = 'approved' } = req.query;
@@ -40,7 +40,7 @@ router.get('/templates', authRequired, async (req, res) => {
 // POST /api/attorney/templates — create a new template
 router.post('/templates', authRequired, routeLimiter, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db, user } = ctx;
     const { motion_type, title, content, notes = '' } = req.body;
@@ -60,7 +60,7 @@ router.post('/templates', authRequired, routeLimiter, async (req, res) => {
 // PATCH /api/attorney/templates/:id/approve — supervisor approves a template
 router.patch('/templates/:id/approve', authRequired, routeLimiter, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db, user } = ctx;
     const { approved, rejection_reason = '' } = req.body;
@@ -75,11 +75,11 @@ router.patch('/templates/:id/approve', authRequired, routeLimiter, async (req, r
 
     await db.run(
       `UPDATE motion_templates SET status=?, approved_by=?, approved_at=NOW(),
-       notes = CASE WHEN ? !== '' THEN notes || char(10) || 'Reviewer: ' || ? ELSE notes END
+       notes = CASE WHEN COALESCE(?, '') <> '' THEN COALESCE(notes, '') || chr(10) || 'Reviewer: ' || ? ELSE notes END
        WHERE id=? AND office_id=?`,
       [approved ? 'approved' : 'rejected', req.user.id,
-       rejection_reason, rejection_reason,
-       safeInt(req.params.id), user.office_id || '']
+       rejection_reason || '', rejection_reason || '',
+       safeInt(req.params.id), user.office_id || null]
     );
     return res.json({ ok: true, status: approved ? 'approved' : 'rejected' });
   } catch (e) { logger.error('[attorney/templates/approve]', e.message); res.status(500).json({ error: 'Server error. Please try again.' }); }

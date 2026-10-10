@@ -11,7 +11,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import {View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutAnimation} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutAnimation, FlatList} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
@@ -64,8 +64,6 @@ const SLIDES = [
 ];
 
 function OnboardingScreen({ route, navigation }: ScreenProps) {
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
   const { impact, success, error: hapticError } = useHaptics();
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -75,15 +73,10 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
-  useEffect(() => { if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
+  useEffect(() => {
   return () => { mountedRef.current = false; }; }, []);
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [situation, setSituation] = React.useState<string | null>(null);
   const [showSituationPicker, setShowSituationPicker] = React.useState(true);
   // Active slides -- changes based on situation selected
@@ -162,8 +155,7 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
         </View>
       )}
 
-  // @ts-ignore
-  const flatRef  = useRef<InstanceType<typeof FlatList<(typeof SLIDES)[0]>>>( null as any);
+  const flatRef  = useRef<FlatList<(typeof SLIDES)[0]>>(null);
   const scrollX  = useRef(new Animated.Value(0)).current;
 
   // P2 FIX: Browse goes directly to app -- NOT to Login
@@ -193,7 +185,7 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
           });
         }
       } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
+      __DEV__ && console.warn(e?.message); }
     }).catch(() => {});
   }, []);
 
@@ -206,7 +198,7 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
 
   const goToLogin = async () => {
     await AsyncStorage.setItem('onboarding_done', 'true').catch(() => {}); // non-fatal storage write
-    navigation.navigate('AgeGate');
+    navigation.navigate('Login');
   };
 
   const next = () => {
@@ -309,12 +301,12 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
         <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, textAlign: 'center', lineHeight: 16, paddingHorizontal: 24, marginTop: 6, color: 'rgba(133,183,235,0.7)' }}>
           {'By continuing you agree to our '}
           <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}
-            onPress={() => navigation.navigate('MoreTab', { screen: 'TermsOfService' })}>
+            onPress={() => navigation.navigate('TermsOfService')}>
             Terms of Service
           </Text>
           {' and '}
           <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}
-            onPress={() => navigation.navigate('MoreTab', { screen: 'PrivacyPolicy' })}>
+            onPress={() => navigation.navigate('PrivacyPolicy')}>
             Privacy Policy
           </Text>
         </Text>
@@ -325,7 +317,7 @@ function OnboardingScreen({ route, navigation }: ScreenProps) {
           {!isLast && (
             <TouchableOpacity
               accessibilityRole="button" style={styles.nextBtn} onPress={next} activeOpacity={0.8}
-             accessibilityLabel="{t('onboard_next')}">
+             accessibilityLabel={t('onboard_next')}>
               <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>{t('onboard_next')}</Text>
             </TouchableOpacity>
           )}

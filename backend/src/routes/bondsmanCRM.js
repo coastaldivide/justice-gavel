@@ -81,7 +81,10 @@ router.get('/dashboard', authRequired, bondsmanLimiter, asyncRoute(async (req, r
 /** PATCH /api/bondsman/leads/:id — update lead status */
 router.patch('/leads/:id', authRequired, asyncRoute(async (req, res) => {
   const { id } = req.params;
-  const { status, notes, contacted_at } = req.body;
+  const { status, notes, contacted_at } = req.body || {};
+  if (status === undefined && notes === undefined && contacted_at === undefined) {
+    return res.status(400).json({ error: 'Nothing to update (status, notes or contacted_at)' });
+  }
 
   const lead = await req.db.get(
     'SELECT * FROM pi_leads WHERE id = ? AND bondsman_id = ?',

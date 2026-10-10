@@ -76,15 +76,17 @@ export async function retrieveLegalContext(userMessage, caseState = null) {
   const msg = (userMessage || '').toLowerCase();
   const matched = [];
 
-  for (const [topic, triggers] of Object.entries(TOPIC_TRIGGERS)) {
-    const { positive, negative } = triggers;
+  for (const [topic, triggers] of Object.entries(TOPIC_KEYWORDS)) {
+    // TOPIC_KEYWORDS values are plain keyword arrays; { positive, negative } also supported
+    const positive = Array.isArray(triggers) ? triggers : (triggers.positive || []);
+    const negative = Array.isArray(triggers) ? [] : (triggers.negative || []);
     // Any positive keyword must match
     const hasPositive = positive.some(kw => msg.includes(kw));
     if (!hasPositive) continue;
     // No negative keyword may match
     const hasNegative = (negative || []).some(kw => msg.includes(kw));
     if (hasNegative) continue;
-    matched.push(VERIFIED_LEGAL_CONTEXT[topic]);
+    if (VERIFIED_LEGAL_CONTEXT[topic]) matched.push(VERIFIED_LEGAL_CONTEXT[topic]);
   }
 
   // Include Miranda for arrest questions — but not if the question is clearly

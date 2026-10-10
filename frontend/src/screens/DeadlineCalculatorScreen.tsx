@@ -1,4 +1,6 @@
 import { RNShare } from '../utils/webCompat';
+import { parseLocalDate } from '../utils/dateUtils';
+import { api } from '../services/api';
 import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -31,11 +33,6 @@ import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity
 import { getUserState } from '../utils/userState';
 import { t } from '../i18n';
 
-declare var data: any;
-declare var setRemindLoading: any;
-declare var dl: any; // hoisted from component scope
-declare var scheduleReminder: any; // hoisted from component scope
-declare var state: any; // hoisted from component scope
 // ── Deadline rules per stage ──────────────────────────────────────────────────
 interface DeadlineRule {
   label:       string;
@@ -325,7 +322,6 @@ const STATE_PCR_YEARS: Record<string, number> = {
 
 
 function getStateName(code: string): string {
-  const { impact, success, error: hapticError } = useHaptics();
   const NAMES: Record<string,string> = {
     AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',
     CO:'Colorado',CT:'Connecticut',DE:'Delaware',DC:'Washington D.C.',FL:'Florida',
@@ -363,25 +359,22 @@ function daysLabel(deadline: Date, today: Date): string {
 
 function parseDate(str: string): Date | null {
   if (!str.trim()) return null;
-  const d = new Date(str);
-  return isNaN(d.getTime()) ? null : d;
+  return parseLocalDate(str.trim());
 }
 
 // ── Deadline row ──────────────────────────────────────────────────────────────
-function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
+function DeadlineRow({ rule, arrest, judgment, today, colors, isDark, state }: {
   rule: DeadlineRule; arrest: Date | null; judgment: Date | null;
   today: Date; colors: ThemeColors; isDark: boolean; state?: string;
 }) {
   const { showToast } = useToast();
   const [remindLoading, setRemindLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
   const [expanded, setExpanded] = useState(false);
   const deadline = arrest ? rule.compute(arrest, judgment, state || '') : null;
 
   const addToCalendar = React.useCallback(async (title: string, dueDate: Date) => {
     try {
-      const { default: Calendar } = await import('expo-calendar');
+      const Calendar = await import('expo-calendar');
       const { status } = await Calendar.requestCalendarPermissionsAsync();
       if (status !== 'granted') {
         showToast('Enable calendar access in Settings to add deadlines.');
@@ -414,12 +407,31 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
     }
   }, []);
 
+  // Schedule a push notification reminder 3 days before a deadline
+  const scheduleReminder = async (label: string, due: Date) => {
+    const remind3Days = new Date(due);
+    remind3Days.setDate(remind3Days.getDate() - 3);
+    if (remind3Days <= new Date()) {
+      showToast('This deadline is within 3 days -- act today.');
+      return;
+    }
+    setRemindLoading(true);
+    try {
+      await api.post('/push/reminders', {
+        title: '⏱️ Deadline in 3 days',
+        body: label + ' -- ' + due.toLocaleDateString('en-US',
+          { month: 'short', day: 'numeric', year: 'numeric' }),
+        scheduled_for: remind3Days.toISOString(),
+        notification_type: 'court_reminder' });
+      showToast('Reminder set for 3 days before.', 'success');
+    } catch {
+      showToast("Make sure you're signed in and notifications are enabled.", 'info');
+    } finally {
+      setRemindLoading(false);
+    }
+  };
+
   if (!deadline) {
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
       <View style={[styles.row, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border, opacity: 0.5 }]}
         testID="deadline-calculator-screen">
@@ -433,34 +445,6 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
           </Text>
 
 
-                <TouchableOpacity
-                  accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-                  onPress={() => scheduleReminder(rule.label, deadline)}
-                  style={{ marginTop: 6, marginRight: 8, flexDirection: 'row', alignItems: 'center',
-                    paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
-                    borderWidth: 1, borderColor: COLORS.navy + '40',
-                    backgroundColor: COLORS.navy + '08', alignSelf: 'flex-start' }}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 18,
-                    color: COLORS.navy, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>
-                    🔔 Remind me
-                  </Text>
-                </TouchableOpacity>
-<TouchableOpacity
-  accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            onPress={() => addToCalendar(dl.label, dl.date)}
-            style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center',
-              paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
-              borderWidth: 1, borderColor: COLORS.border,
-              backgroundColor: COLORS.bgCard, alignSelf: 'flex-start' }}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 18, color: COLORS.steel,
-              fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>
-              + Calendar
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -473,12 +457,6 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
     gray:  { bg: COLORS.bgCard,                  border: COLORS.border, text: COLORS.textSecond } };
   const col = COLOR_MAP[status];
 
-
-  if (isLoading) return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.navy }}>
-      <ActivityIndicator size="large" color="#C9A84C" />
-    </View>
-  );
 
   return (
     <TouchableOpacity
@@ -504,6 +482,39 @@ function DeadlineRow({ rule, arrest, judgment, today, colors, isDark }: {
             {rule.note}
           </Text>
         )}
+        {expanded && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={`Remind me 3 days before ${rule.label}`}
+              onPress={() => scheduleReminder(rule.label, deadline)}
+              disabled={remindLoading}
+              style={{ marginTop: 6, marginRight: 8, flexDirection: 'row', alignItems: 'center',
+                paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
+                borderWidth: 1, borderColor: COLORS.navy + '40',
+                backgroundColor: COLORS.navy + '08', alignSelf: 'flex-start', opacity: remindLoading ? 0.6 : 1 }}
+            >
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 18,
+                color: COLORS.navy, fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>
+                {remindLoading ? 'Setting…' : '🔔 Remind me'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={`Add ${rule.label} to calendar`}
+              onPress={() => addToCalendar(rule.label, deadline)}
+              style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center',
+                paddingHorizontal: 10, paddingVertical: 10, borderRadius: 8,
+                borderWidth: 1, borderColor: COLORS.border,
+                backgroundColor: COLORS.bgCard, alignSelf: 'flex-start' }}
+            >
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 18, color: COLORS.steel,
+                fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>
+                + Calendar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
       <Text maxFontSizeMultiplier={1.4} style={[{ color: COLORS.textMuted, marginLeft: 6 }]}>{expanded ? '▲' : '▼'}</Text>
     </TouchableOpacity>
@@ -521,28 +532,6 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
   }, []);
 
 
-  // Schedule a push notification reminder 3 days before a deadline
-  const scheduleReminder = React.useCallback(async (label: string, deadline: Date) => {
-    try {
-      const { api } = await import('../services/api');
-      const remind3Days = new Date(deadline);
-      remind3Days.setDate(remind3Days.getDate() - 3);
-      if (remind3Days <= new Date()) {
-        showToast('This deadline is within 3 days -- act today.');
-        return;
-      }
-      setRemindLoading(true);
-      await api.post('/push/reminders', {
-        title: '⏱️ Deadline in 3 days',
-        body: label + ' -- ' + deadline.toLocaleDateString('en-US',
-          { month: 'short', day: 'numeric', year: 'numeric' }),
-        scheduled_for: remind3Days.toISOString(),
-        notification_type: 'court_reminder' });
-showToast('Reminder set for 3 days before.', 'success');
-    } catch {
-      showToast("Make sure you're signed in and notifications are enabled.", 'info');
-    }
-  }, []);
 
   // User's state -- loaded once on mount for state-specific deadlines
   const [userState, setUserStateLocal] = React.useState('');
@@ -670,6 +659,7 @@ showToast('Reminder set for 3 days before.', 'success');
             today={today}
             colors={colors}
             isDark={isDark}
+            state={userState}
           />
         ))}
       </View>
@@ -685,7 +675,7 @@ showToast('Reminder set for 3 days before.', 'success');
 
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
           style={{ backgroundColor:colors.navy, borderRadius:10, padding:14,
             alignItems:'center', marginHorizontal:16, marginBottom:12 }}
           onPress={async () => {
@@ -697,7 +687,6 @@ showToast('Reminder set for 3 days before.', 'success');
             } catch {}
           }}
           accessibilityLabel="Share deadline results"
-          // @ts-ignore
           accessibilityHint="Shares this information"
         >
           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
@@ -718,14 +707,6 @@ showToast('Reminder set for 3 days before.', 'success');
         </Text>
       </View>
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>📭</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No results found</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection or try again.</Text>
-        </View>
-      )}
       </ScrollView>
       <AIDisclaimer variant="banner" />
 

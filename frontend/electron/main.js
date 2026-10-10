@@ -9,7 +9,9 @@
  * Dev:   npm run electron:dev
  */
 
-const { app, BrowserWindow, Menu, shell, Notification, nativeTheme } = require('electron');
+const { app, BrowserWindow, Menu, shell, Notification, nativeTheme, protocol, net } = require('electron');
+const fs  = require('fs');
+const url = require('url');
 
 // ── Main process error logging ──────────────────────────────────────────────
 // electron-log writes to platform log files (~/Library/Logs on macOS, etc.)
@@ -24,7 +26,44 @@ try {
   process.on('unhandledRejection', (err) => log.error('Unhandled rejection:', err));
 } catch { log = console; }
 const path  = require('path');
-const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+// ── Serving the exported web build ──────────────────────────────────────────
+// `expo export --platform web` emits absolute URLs (/_expo/static/js/…,
+// /favicon.ico, /assets/…). Loading index.html from file:// would resolve
+// those against the filesystem root, so production serves the build from a
+// privileged custom scheme instead: app://justicegavel/<path> → web-build/<path>.
+// Unknown extension-less paths fall back to index.html (client-side routing).
+const APP_SCHEME = 'app';
+const APP_HOST   = 'justicegavel';
+const WEB_ROOT   = path.join(__dirname, '..', 'web-build');
+
+// Dev mode = load the Metro dev server. Used when explicitly requested, or when
+// running unpackaged without an exported build. `electron electron/main.js`
+// after `npm run electron:build` therefore exercises the production path.
+const isDev = !!process.env.ELECTRON_START_URL
+  || process.env.NODE_ENV === 'development'
+  || (!app.isPackaged && !fs.existsSync(path.join(WEB_ROOT, 'index.html')));
+
+protocol.registerSchemesAsPrivileged([{
+  scheme: APP_SCHEME,
+  privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true },
+}]);
+
+function registerAppProtocol() {
+  protocol.handle(APP_SCHEME, (request) => {
+    const { pathname } = new URL(request.url);
+    const rel = decodeURIComponent(pathname).replace(/^\/+/, '');
+    let filePath = path.normalize(path.join(WEB_ROOT, rel));
+    // Never serve anything outside the web build directory
+    if (filePath !== WEB_ROOT && !filePath.startsWith(WEB_ROOT + path.sep)) return new Response('Forbidden', { status: 403 });
+    const isFile = fs.existsSync(filePath) && fs.statSync(filePath).isFile();
+    if (!isFile) {
+      if (path.extname(rel)) return new Response('Not found', { status: 404 });
+      filePath = path.join(WEB_ROOT, 'index.html'); // SPA fallback
+    }
+    return net.fetch(url.pathToFileURL(filePath).toString());
+  });
+}
 
 // ── Security: enforce content security policy ─────────────────────────────────
 // Prevent remote code execution if the app ever loads external content
@@ -33,7 +72,8 @@ app.on('web-contents-created', (event, contents) => {
     const parsedUrl = new URL(url);
     // Allow localhost (dev) and justicegavel.app (prod)
     const allowed = ['localhost', '127.0.0.1', 'justicegavel.app'];
-    if (!allowed.some(h => parsedUrl.hostname.endsWith(h))) {
+    const isAppScheme = parsedUrl.protocol === `${APP_SCHEME}:` && parsedUrl.hostname === APP_HOST;
+    if (!isAppScheme && !allowed.some(h => parsedUrl.hostname === h || parsedUrl.hostname.endsWith('.' + h))) {
       event.preventDefault();
       shell.openExternal(url); // open external URLs in default browser
     }
@@ -51,13 +91,23 @@ if (!gotTheLock) {
   app.quit();
   process.exit(0);
 }
-app.on('second-instance', (_event, _argv, _workingDir) => {
+app.on('second-instance', (_event, argv, _workingDir) => {
   // Someone tried to open a second instance — focus the existing window
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
+    // Windows/Linux: a justicegavel:// link arrives as a command-line argument
+    const link = argv.find(a => typeof a === 'string' && a.startsWith('justicegavel://'));
+    if (link) sendDeepLink(link);
   }
 });
+
+function sendDeepLink(link) {
+  if (!mainWindow) return;
+  mainWindow.webContents.executeJavaScript(
+    `window.__handleDeepLink && window.__handleDeepLink(${JSON.stringify(link)})`
+  ).catch(() => {});
+}
 
 let mainWindow;
 
@@ -77,7 +127,6 @@ function createWindow() {
       nodeIntegration:    false,     // security: no node in renderer
       contextIsolation:   true,      // security: isolate preload
       sandbox:            true,      // security: renderer in sandbox
-      sandbox:            true,      // security: renderer in sandbox
       webSecurity:        true,
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -85,8 +134,9 @@ function createWindow() {
 
   // Load the web build or dev server
   const startUrl = isDev
-    ? (process.env.EXPO_WEB_PORT ? `http://localhost:\${process.env.EXPO_WEB_PORT}` : 'http://localhost:8081')
-    : 'file://' + path.join(__dirname, '../web-build/index.html');
+    ? (process.env.ELECTRON_START_URL
+        || (process.env.EXPO_WEB_PORT ? `http://localhost:${process.env.EXPO_WEB_PORT}` : 'http://localhost:8081'))
+    : `${APP_SCHEME}://${APP_HOST}/`;
 
   mainWindow.loadURL(startUrl);
 
@@ -107,7 +157,7 @@ function buildMenu() {
         { label: 'Preferences…', accelerator: 'CmdOrCtrl+,', click: () => {
             mainWindow?.webContents.executeJavaScript(
               'window.__navigateTo && window.__navigateTo("Settings")'
-            );
+            ).catch(() => {});
           }
         },
         { type: 'separator' },
@@ -188,6 +238,7 @@ ipcMain.on('open-external', (_event, url) => {
 ipcMain.handle('get-version', () => app.getVersion());
 
 app.on('ready', () => {
+  if (!isDev) registerAppProtocol();
   createWindow();
   buildMenu();
 
@@ -231,8 +282,6 @@ app.on('open-url', (event, url) => {
   if (mainWindow) {
     mainWindow.focus();
     // Pass the deep link URL to the renderer for in-app navigation
-    mainWindow.webContents.executeJavaScript(
-      `window.__handleDeepLink && window.__handleDeepLink(${JSON.stringify(url)})`
-    );
+    sendDeepLink(url);
   }
 });

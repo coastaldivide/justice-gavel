@@ -1,3 +1,4 @@
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * checkins.js — Post-release check-in system
  *
@@ -35,7 +36,7 @@ router.get('/status', authRequired, async (req, res) => {
       [req.user.id, today]
     );
     const streak = await db.get(
-      'SELECT COUNT(*) as n FROM checkins WHERE user_id=? AND created_at >= datetime(\'now\',\'-30 days\')',
+      "SELECT COUNT(*) as n FROM checkins WHERE user_id=? AND created_at >= (NOW() - INTERVAL '30 days')",
       [req.user.id]
     );
     res.json({ checked_in_today: !!checked_in, streak: streak?.n || 0 });
@@ -118,7 +119,7 @@ router.get('/enrollments', authRequired, async (req, res) => {
       `SELECT e.*,
          (SELECT COUNT(*) FROM checkin_records cr WHERE cr.enrollment_id = e.id) as total_checkins,
          (SELECT COUNT(*) FROM checkin_records cr WHERE cr.enrollment_id = e.id
-            AND cr.checked_in_at >= date('now')) as checkins_today,
+            AND cr.checked_in_at >= CURRENT_DATE) as checkins_today,
          (SELECT checked_in_at FROM checkin_records cr WHERE cr.enrollment_id = e.id
             ORDER BY cr.checked_in_at DESC LIMIT 1) as last_checkin
        FROM checkin_enrollments e
@@ -224,7 +225,7 @@ router.post('/submit', validate(schemas.checkins.submit), authRequired, checkins
     // Check if already checked in today
     const todayCheckin = await db.get(
       `SELECT id FROM checkin_records
-       WHERE enrollment_id=? AND checked_in_at >= date('now')`,
+       WHERE enrollment_id=? AND checked_in_at >= CURRENT_DATE`,
       [enrollment_id]
     );
     if (todayCheckin) {
@@ -233,7 +234,7 @@ router.post('/submit', validate(schemas.checkins.submit), authRequired, checkins
 
     const record = await db.run(
       `INSERT INTO checkin_records
-         (enrollment_id, lat = null, lng = null, location_label, selfie_url, notes, status, device_info)
+         (enrollment_id, lat, lng, location_label, selfie_url, notes, status, device_info)
        VALUES (?,?,?,?,?,?,?,?)`,
       [
         enrollment_id, lat || null, lng || null, location_label,
@@ -266,7 +267,7 @@ router.get('/status/:enrollmentId', async (req, res) => {
     const todayCheckin = await db.get(
       `SELECT id, enrollment_id, checked_in_at, check_in_type, notes, verified, location_lat, location_lng
        FROM checkin_records
-       WHERE enrollment_id=? AND checked_in_at >= date('now')
+       WHERE enrollment_id=? AND checked_in_at >= CURRENT_DATE
        ORDER BY checked_in_at DESC LIMIT 1`,
       [req.params.enrollmentId]
     );
@@ -334,7 +335,7 @@ router.post('/remind-all', async (req, res) => {
       `SELECT ce.user_id, pt.token
        FROM checkin_enrollments ce
        JOIN push_tokens pt ON pt.user_id = ce.user_id
-       WHERE ce.active = true
+       WHERE ce.active = 1
          AND DATE(ce.next_check_in_at) = CURRENT_DATE
          AND pt.token IS NOT NULL`,
       []
@@ -426,14 +427,3 @@ router.get('/family-contacts', authRequired, async (req, res) => {
     res.json({ contacts });
   } catch(e) { res.status(500).json({ error: 'Internal server error.', code: 'server_error' }); }
 });
-
-    // ── Push notification on missed check-in ─────────────────────────────────
-    if (status === 'missed') {
-      const token = await db.get('SELECT token FROM push_tokens WHERE user_id = ?', [userId]).catch(() => null);
-      if (token?.token) {
-        sendPushNotification(token.token, {
-          title: 'Missed Check-In',
-          body:  'You missed your scheduled check-in. Contact your attorney immediately.',
-        }).catch(() => {}); // non-blocking — don't fail check-in on push failure
-      }
-    }

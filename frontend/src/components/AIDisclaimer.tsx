@@ -17,7 +17,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, Modal,
   ScrollView, Platform,
 } from 'react-native';
-import { storage } from '../utils/storage';
+import { storage, storageReady } from '../utils/storage';
 import { useTheme } from '../constants/theme';
 
 const DISCLAIMER_KEY = 'upl_disclaimer_acknowledged_v1';
@@ -32,10 +32,13 @@ export function AIDisclaimer({ variant = 'banner', feature = 'AI Legal Analysis'
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    if (variant === 'modal') {
+    if (variant !== 'modal') return;
+    let active = true;
+    storageReady.then(() => {
       const acknowledged = storage.getString(DISCLAIMER_KEY);
-      if (!acknowledged) setShowModal(true);
-    }
+      if (active && !acknowledged) setShowModal(true);
+    });
+    return () => { active = false; };
   }, [variant]);
 
   const acknowledge = useCallback(() => {

@@ -34,8 +34,11 @@ export function useHaptics() {
     fn().catch(() => {}); // never crash for haptics failure
   }, []);
 
-  const impact  = useCallback(() => trigger(() =>
-    Haptics!.impactAsync(Haptics!.ImpactFeedbackStyle.Light)
+  const impact  = useCallback((style: 'light' | 'medium' | 'heavy' = 'light') => trigger(() =>
+    Haptics!.impactAsync(
+      style === 'heavy'  ? Haptics!.ImpactFeedbackStyle.Heavy
+      : style === 'medium' ? Haptics!.ImpactFeedbackStyle.Medium
+      : Haptics!.ImpactFeedbackStyle.Light)
   ), [trigger]);
 
   const heavy   = useCallback(() => trigger(() =>

@@ -24,8 +24,8 @@ const SERVICE_META = {
 function fmt(level, args) {
   const ts = new Date().toISOString();
   if (JSON_FORMAT) {
-    const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
-    return JSON.stringify({ ts, level, msg, ...SERVICE_META });
+    const msg = args.map(a => typeof a === 'string' ? a : (a instanceof Error ? a.message : JSON.stringify(a))).join(' ');
+    return [JSON.stringify({ ts, level, msg, ...SERVICE_META })];
   }
   return [ts, `[${level.toUpperCase()}]`, ...args];
 }
@@ -42,6 +42,9 @@ export const logger = {
   },
   error: (...args) => {
     if (LEVEL_ORDER.error >= MIN_LEVEL) console.error(...fmt('error', args));
+  },
+  fatal: (...args) => {
+    console.error(...fmt('fatal', args));
   },
 };
 

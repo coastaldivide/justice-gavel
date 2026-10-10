@@ -28,7 +28,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, FONTS, FONT } from '../constants/theme';
 import {
   View,
   Text,
@@ -94,7 +94,7 @@ function LegalDisclaimerModal({ visible, onAccept }: Props) {
     Linking.openURL(url).catch(() => {});
   }, []);
 
-  const s = styles(COLORS, FONTS);
+  const s = styles(COLORS, FONT);
 
   return (
     <Modal
@@ -192,7 +192,7 @@ function LegalDisclaimerModal({ visible, onAccept }: Props) {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = (C: any, F: any) => StyleSheet.create({
+const styles = (C: any, F: typeof FONT) => StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: C.bg,

@@ -1,3 +1,4 @@
+import { requireAi } from '../utils/ai.js';
 // Input size guard — applied globally to all POST handlers in this file
 const MAX_BODY = 50000;
 /**
@@ -15,8 +16,16 @@ import { sharedAiLimiter } from '../middleware/sharedAiLimiter.js';
 import { asyncRoute } from '../utils/routeHelpers.js';
 import { authRequired } from '../middleware/auth.js';
 import { enqueueAIJob } from '../services/aiQueue.js';
+import { requireDefender } from './attorney/_helpers.js';
 
 const router = Router();
+
+// Legal-aid B2B routes read other people's records, so they are limited to
+// attorney / defender accounts. (Any signed-in user used to be able to list
+// every user's cases with names, phones and e-mail addresses.)
+router.use(authRequired, async (req, res, next) => {
+  try { if (await requireDefender(req, res)) next(); } catch (e) { next(e); }
+});
 
 /** GET /api/legal-aid/clients — public defender's client queue */
 router.get('/clients', authRequired, asyncRoute(async (req, res) => {
@@ -33,7 +42,7 @@ router.get('/clients', authRequired, asyncRoute(async (req, res) => {
       CASE WHEN cs.status = 'closed' THEN true ELSE false END AS expungement_candidate
     FROM cases cs
     JOIN users u ON u.id = cs.user_id
-    LEFT JOIN client_assignments c ON c.case_id = cs.id AND c.attorney_id = ?
+    JOIN client_assignments c ON c.case_id = cs.id AND c.attorney_id = ?   -- only this attorney's clients
     WHERE cs.status = ?
     ORDER BY cs.next_court_date ASC NULLS LAST
     LIMIT ? OFFSET ?
@@ -43,13 +52,21 @@ router.get('/clients', authRequired, asyncRoute(async (req, res) => {
 }));
 
 /** POST /api/legal-aid/expungement-petition — AI-assisted petition drafting */
-router.post('/expungement-petition', sharedAiLimiter, authRequired, asyncRoute(async (req, res) => {
+router.post('/expungement-petition', sharedAiLimiter, authRequired, requireAi, asyncRoute(async (req, res) => {
   const {
     client_id, case_id, charge_type, disposition,
     sentence_completed, years_since_completion, state,
-  } = req.body;
+  } = req.body || {};
+  if (!client_id || !state || !charge_type) {
+    return res.status(400).json({ error: 'client_id, state and charge_type are required' });
+  }
 
-  const client = await req.db.get('SELECT * FROM users WHERE id = ?', [client_id]);
+  // The client must be assigned to this attorney
+  const client = await req.db.get(
+    `SELECT u.id, u.full_name FROM users u
+       JOIN cases cs ON cs.user_id = u.id
+       JOIN client_assignments ca ON ca.case_id = cs.id AND ca.attorney_id = ?
+      WHERE u.id = ? LIMIT 1`, [req.user.id, client_id]);
   if (!client) return res.status(404).json({ error: 'Client not found' });
 
   // Queue AI petition drafting
@@ -79,7 +96,10 @@ Always include the required verification language and proper legal formatting.`,
 
 /** POST /api/legal-aid/intake — client intake automation */
 router.post('/intake', authRequired, asyncRoute(async (req, res) => {
-  const { client_id, case_type, interview_notes } = req.body;
+  const { client_id, case_type, interview_notes } = req.body || {};
+  if (!interview_notes || typeof interview_notes !== 'string' || !interview_notes.trim()) {
+    return res.status(400).json({ error: 'interview_notes is required' });
+  }
 
   const job = await enqueueAIJob('research', {
     prompt: `Based on these intake interview notes, generate a structured case summary:

@@ -1,3 +1,4 @@
+import { COLORS } from '../constants/theme';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 /**
@@ -36,7 +37,6 @@ function FirmDiscoveryScreen() {
   const [firms, setFirms]           = useState<Firm[]>([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [stateFilter, setStateFilter] = useState('');
   const [areaFilter, setAreaFilter]   = useState('');
   const [code, setCode]               = useState('');
@@ -112,11 +112,6 @@ function FirmDiscoveryScreen() {
     </TouchableOpacity>
   );
 
-  if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
     <View style={[s.container, { backgroundColor: colors.primary }]}>
       {/* Referral code entry */}
@@ -194,10 +189,8 @@ const s = StyleSheet.create({
   container:   { flex: 1 },
   codeBar:     { flexDirection: 'row', margin: 16, marginBottom: 8, borderRadius: 10, borderWidth: 1, overflow: 'hidden' },
   codeInput:   { flex: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
-  // @ts-ignore
   codeBtn:     { backgroundColor: COLORS.navy, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 },
-  // @ts-ignore
-  codeBtnText: { color: colors.bg, fontWeight: '700', fontSize: 13 },
+  codeBtnText: { color: COLORS.bg, fontWeight: '700', fontSize: 13 },
   filters:     { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 4 },
   filterInput: { flex: 1, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, minHeight: 44 },
   card:        { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 12 },

@@ -50,17 +50,18 @@ import { FlashList } from '@shopify/flash-list';
 import { useFocusEffect } from '@react-navigation/native';
 import { track } from '../services/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const Clipboard = { setStringAsync: async (s: string) => {} };
 
 import type { ScreenProps } from '../types/navigation';
-import { api }            from '../services/api';
+import { api, isAiUnavailable, API_BASE_URL } from '../services/api';
 import { pollJob }        from '../services/jobPoller';
 import { isOnline }       from '../services/offlineCache';
 import { t }              from '../i18n';
 import { getUserState }   from '../utils/userState';
 import { getToken }       from '../utils/secureStorage';
+import * as ExpoCrypto from 'expo-crypto';
+import * as Clipboard from 'expo-clipboard';
 import {  useTheme, COLORS }       from '../constants/theme';
-import { hapticImpact }   from '../utils/webCompat';
+import { hapticImpact, RNShare } from '../utils/webCompat';
 
 // ── Static colour palette used in module-scope constants and StyleSheet ────────
 // (useTheme() is hook-only; these mirror the dark-navy design system values)
@@ -85,13 +86,17 @@ interface Message {
   showUpgrade?:        boolean;
 }
 
-// ── Cryptographically secure session token ────────────────────────────────────
+// ── Cryptographically secure id / session token ──────────────────────────────
+// expo-crypto works on Hermes (where global crypto.getRandomValues may be
+// missing) and on web. Falls back to Math.random if the native module is
+// unavailable (e.g. tests).
 function randomId(): string {
-  const { showToast } = useToast();
-  const { confirm } = useConfirm();
-  const arr = new Uint32Array(2);
-  crypto.getRandomValues(arr);
-  return Array.from(arr, n => n.toString(36)).join('');
+  try {
+    const bytes = ExpoCrypto.getRandomBytes(8);
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return Math.random().toString(36).slice(2) + Date.now().toString(36);
+  }
 }
 
 async function getSessionId(): Promise<string> {
@@ -103,7 +108,6 @@ async function getSessionId(): Promise<string> {
     }
     return id;
   } catch (_) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
     // AsyncStorage unavailable — use in-memory session ID (resets on restart)
     return randomId();
   }
@@ -138,19 +142,14 @@ interface BubbleProps {
 }
 
 function Bubble({ msg, isDefender, onFindLawyer, onUpgrade }: BubbleProps) {
+  const { showToast } = useToast();
   const isUser = msg.role === 'user';
 
   const handleLongPress = () => {
     const text = msg.text || '';
-    // @ts-ignore
     Clipboard.setStringAsync(text).then(() => showToast('Copied to clipboard', 'success')).catch(() => {});
   };
 
-  if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
     <View style={[styles.bubbleWrap, isUser && styles.bubbleWrapUser]}
       testID="chat-screen">
@@ -341,6 +340,7 @@ function getOfflineAnswer(query: string): string | null {
 const a11yAnnounce = (msg) => AccessibilityInfo.announceForAccessibility(msg);
 
 function ChatScreen({ navigation, route }: ScreenProps) {
+  const { confirm } = useConfirm();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
 
@@ -375,9 +375,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
 
   // ── Refs ──────────────────────────────────────────────────────────────────────
   const mountedRef   = useRef(true);
-  // T1-L: correct generic type; no JSX attribute in type parameter
-  // @ts-ignore
-  const listRef      = useRef<InstanceType<typeof FlatList<Message>>>( null as any);
+  const listRef      = useRef<FlashList<Message>>(null);
   const userStateRef = useRef<{ code: string; name: string } | null>(null);
 
   // ── Effects ───────────────────────────────────────────────────────────────────
@@ -465,7 +463,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
         'Justice Gavel · justicegavel.app',
       ].join('\n');
 
-      await Share.share({
+      await RNShare.share({
         message: header + '\n\n' + body + '\n\n' + footer,
         title: 'AI Legal Conversation',
       });
@@ -473,7 +471,6 @@ function ChatScreen({ navigation, route }: ScreenProps) {
   }, [messages, caseTitle]);
 
   const clearChat = useCallback(() => {
-// @ts-ignore
 confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
       { confirmLabel: 'Clear', destructive: true }).then(async ok => { if (!ok) return;
       const isFirstMsg = messages.length === 0;
@@ -561,12 +558,13 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
         scrollToBottom();
         try {
           const token = await getToken();
+          let gotContent = false;
           await new Promise<void>((resolve, reject) => {
-            fetch((process.env.EXPO_PUBLIC_API_BASE || (api as any).defaults?.baseURL || (process.env.EXPO_PUBLIC_API_BASE || "https://api.justicegavel.app/api")) + '/chat/stream', {
+            fetch(API_BASE_URL + '/chat/stream', {
               method: 'POST',
               headers: {
                 'Content-Type':  'application/json',
-                'Authorization': `Bearer ${token}`,
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
               },
               body: JSON.stringify({
                 message:         text.trim(),
@@ -594,12 +592,14 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
                   try {
                     const event = JSON.parse(line.slice(6));
                     if (event.type === 'token') {
+                      gotContent = true;
                       setMessages(prev => prev.map(m =>
                         m.id === placeholderId
                           ? { ...m, text: m.text + event.text }
                           : m
                       ));
                     } else if (event.type === 'done') {
+                      gotContent = true;
                       setMessages(prev => prev.map(m =>
                         m.id === placeholderId ? {
                           ...m,
@@ -616,7 +616,9 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
                   } catch { /* malformed SSE chunk — skip */ }
                 }
               }
-              resolve();
+              // A stream that ends without any content is treated as a failure
+              // so the request falls back to the job-queue endpoint below.
+              if (gotContent) resolve(); else reject(new Error('Empty stream'));
             }).catch(reject);
           });
           // T1-N: setSending → setLoading
@@ -699,12 +701,11 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
           showUpgrade: true,
         }]);
       } else if (status === 503 || status === 500) {
-        const errBody  = (e as { response?: { data?: { error?: string } } }).response?.data?.error || '';
-        const isApiKey = errBody.toLowerCase().includes('api') || errBody.toLowerCase().includes('anthropic');
+        const aiDown = isAiUnavailable(e) || status === 503;
         setMessages(prev => [...prev, {
           id: randomId(), role: 'assistant',
-          text: isApiKey
-            ? 'AI chat needs an Anthropic API key to work.\n\nSetup: add ANTHROPIC_API_KEY to backend/.env and restart. Get your key at console.anthropic.com'
+          text: aiDown
+            ? 'AI chat is temporarily unavailable. In the meantime you can browse lawyers, your rights card, and the legal guides — they all work without AI.'
             : 'The server had an error. Please try again in a moment.',
           suggestLawyerSearch: false,
         }]);
@@ -811,7 +812,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
                 accessibilityRole="button"
                 key={p.label}
                 style={styles.quickChip}
-                accessibilityLabel="{p.label}" onPress={() => send(p.text)}
+                accessibilityLabel={p.label} onPress={() => send(p.text)}
               >
                 <Text maxFontSizeMultiplier={1.4} style={styles.quickChipText}>{p.label}</Text>
               </TouchableOpacity>
@@ -820,14 +821,9 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
         </View>
       ) : (
         // T1-Q: renderItem and ListEmptyComponent are separate props, cleanly formatted
-        // @ts-ignore
         <FlashList<Message> estimatedItemSize={80}
           ref={listRef}
           keyboardShouldPersistTaps="handled"
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={true}
           data={messages}
           keyExtractor={m => m.id}
           onRefresh={onRefresh}
@@ -950,9 +946,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
   avatarDotDefender:{ backgroundColor: COLORS.navy },
   avatarText:       { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 0.5 },
   bubble:           { maxWidth: '78%', borderRadius: 20, padding: 12 },
-  bubbleAssistant:  { backgroundColor: COLORS.bgCard, borderBottomLeftRadius: 4, elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 3 },
+  bubbleAssistant:  { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4, elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 3 },
   bubbleUser:       { backgroundColor: COLORS.navy, borderBottomRightRadius: 4 },
-  bubbleText:       { fontSize: 14, color: colors.bgCard, lineHeight: 20 },
+  bubbleText:       { fontSize: 14, color: colors.textPrimary, lineHeight: 20 },
   bubbleTextUser:   { color: COLORS.bgCard },
   lawyerCta:        { marginTop: 10, backgroundColor: colors.legal, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: colors.legal },
   lawyerCtaText:    { fontSize: 12, lineHeight: 20, color: colors.bg, fontFamily: 'Inter_700Bold', fontWeight: '700' },

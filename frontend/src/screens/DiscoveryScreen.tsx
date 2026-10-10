@@ -30,19 +30,14 @@ import { AppIcon } from '../components/AppIcon';
  */
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useRef, useMemo} from 'react';
-import { ActivityIndicator, Alert, Animated, Clipboard, Platform, RefreshControl, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
-import { FileSystem, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
-import { api } from '../services/api';
+import * as Clipboard from 'expo-clipboard';
+import { ActivityIndicator, Alert, Animated, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
+import { FileSystem, hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
+import { api, apiErrorMessage } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 
-declare var load: any;
-declare var refreshing: any;
-declare var setRefreshing: any;
-declare var expanded: any; // hoisted from component scope
-declare var mountedRef: any; // hoisted from component scope
-declare var setExpanded: any; // hoisted from component scope
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Analysis {
   id?:             number;
@@ -62,10 +57,6 @@ type Phase = 'upload' | 'analyzing' | 'result' | 'history';
 
 // ── Animated progress bar ─────────────────────────────────────────────────────
 function ProgressBar({ active }: { active: boolean }) {
-  const { confirm } = useConfirm();
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
   const progress = useRef(new Animated.Value(0)).current;
   const anim     = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -83,14 +74,8 @@ function ProgressBar({ active }: { active: boolean }) {
       Animated.timing(progress, {
         toValue: active ? 1 : 0, duration: 300, useNativeDriver: false }).start();
     }
+    return () => anim.current?.stop();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
-  return () => anim.current?.stop();
   }, [active]);
 
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
@@ -135,6 +120,8 @@ function Section({
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [expanded, setExpanded] = useState(true);
+  const { showToast } = useToast();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -168,7 +155,11 @@ function Section({
           accessibilityHint="Double-tap to activate"
               key={`row-${i}`}
               style={styles.itemRow}
-              onPress={() => Clipboard.setString(item)}
+              onPress={() => {
+                Clipboard.setStringAsync(item)
+                  .then(() => showToast('Copied to clipboard', 'success'))
+                  .catch(() => {});
+              }}
               accessibilityLabel={`Copy item: ${item}`}
             >
               <View style={[styles.itemBullet, { backgroundColor: color }]}>
@@ -217,11 +208,10 @@ function HistoryRow({ item, onOpen, onDelete }: any) {
       </View>
       <TouchableOpacity
   accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
         onPress={() => onDelete(item.id)}
         style={styles.histDelete}
         accessibilityLabel="Delete analysis"
-          // @ts-ignore
           accessibilityHint="Permanently removes this item"
       >
         <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 16 }}>✕</Text>
@@ -241,24 +231,16 @@ const DOC_TYPES = [
 
 function DiscoveryScreen({ route, navigation }: ScreenProps) {
   const { showToast } = useToast();
-  React.useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-    mountedRef.current = true;
-    return () => { mountedRef.current = false; };
-    });
-    return () => _task.cancel();
-  }, []);
+  const { confirm } = useConfirm();
   const { colors, isDark } = useTheme();
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   const { caseId, caseTitle } = (route?.params as import('../types/api').RouteParams) ?? {};
 
   const [phase,     setPhase]     = useState<Phase>('upload');
-  const [loading, setLoading] = React.useState(false);
   const [file,      setFile]      = useState<{ name: string; uri: string; size: number } | null>(null);
   const [docType,   setDocType]   = useState('');
   const [analysis,  setAnalysis]  = useState<Analysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [history,   setHistory]   = useState<any[]>([]);
   const [histLoad,  setHistLoad]  = useState(false);
   const [hasPro,    setHasPro]    = useState(false);
@@ -326,29 +308,10 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       }
       setFile({ name: asset.name, uri: asset.uri, size: asset.size || 0 });
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
-      showToast(e.message, 'error');
+      showToast(e?.message || 'Could not open the file picker.', 'error');
     }
   }, []);
 
-  const analyze = useCallback(async () => {
-    if (!file) return;
-    requireAuth(async () => {
-      // Confirm payment if not Pro subscriber
-      if (!hasPro) {
-// @ts-ignore
-confirm(`Analyze "${file.name}" for $19.99?`,
-          'Full analysis: summary, key facts, inconsistencies, and cross-examination questions.',
-          { confirmLabel: 'Analyze — $19.99' }).then(async ok => { if (!ok) return;
-          runAnalysis()
-        });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-      } else {
-        runAnalysis();
-      }
-    });
-  }, [file, hasPro, requireAuth]);
 
   const runAnalysis = useCallback(async () => {
     if (!file) return;
@@ -395,7 +358,7 @@ confirm(`Analyze "${file.name}" for $19.99?`,
       // Clean up cached PDF
       await FileSystem.deleteAsync(file.uri, { idempotent: true }).catch((e) => { __DEV__ && console.warn(e?.message); });
     } catch (e: any) {
-      const msg = e.response?.data?.error || e.message || 'Analysis failed.';
+      const msg = apiErrorMessage(e, 'Analysis failed.');
       showToast(msg + ' Try a smaller PDF or check your connection.', 'error');
         setPhase('upload');
       setPhase('upload');
@@ -404,9 +367,24 @@ confirm(`Analyze "${file.name}" for $19.99?`,
     }
   }, [file, docType, caseId, caseTitle]);
 
+  const analyze = useCallback(async () => {
+    if (!file) return;
+    requireAuth(async () => {
+      // Confirm payment if not Pro subscriber
+      if (!hasPro) {
+        confirm(`Analyze "${file.name}" for $19.99?`,
+          'Full analysis: summary, key facts, inconsistencies, and cross-examination questions.',
+          { confirmLabel: 'Analyze — $19.99' }).then(async ok => { if (!ok) return;
+          runAnalysis();
+        });
+      } else {
+        runAnalysis();
+      }
+    });
+  }, [file, hasPro, requireAuth, confirm, runAnalysis]);
+
   const loadHistory = useCallback(async () => {
     setHistLoad(true);
-    setLoading(true);
     try {
           const res = await api.get('/discovery/history');
       setHistory(res.data || []);
@@ -426,13 +404,12 @@ confirm(`Analyze "${file.name}" for $19.99?`,
   }, []);
 
   const deleteAnalysis = useCallback(async (id: number) => {
-// @ts-ignore
-confirm('Delete analysis?','This cannot be undone.',
+    confirm('Delete analysis?','This cannot be undone.',
       { confirmLabel:'Delete', destructive:true }).then(async ok=>{ if(!ok) return;
       await api.delete(`/discovery/analysis/${id}`).catch((e) => { __DEV__ && console.warn(e?.message); });
         setHistory(h => h.filter(a => a.id !== id));
-    })
-  }, []);
+    });
+  }, [confirm]);
 
   const shareAnalysis = useCallback(async () => {
     if (!analysis) return;
@@ -459,7 +436,7 @@ confirm('Delete analysis?','This cannot be undone.',
   // ── RENDER: Upload ────────────────────────────────────────────────────────
   if (phase === 'upload') return (
     <ScrollView
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load().finally(() => setRefreshing(false)); }} tintColor={colors.textSecond} />} style={[styles.screen, { backgroundColor: colors.bg }]}
+      style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={styles.uploadScroll}>
       <AuthGateModal />
 
@@ -646,7 +623,7 @@ confirm('Delete analysis?','This cannot be undone.',
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
               style={[styles.analyzeBtn, { backgroundColor: COLORS.navy, width: '100%', marginTop: 16 }]}
-              accessibilityLabel="\u2190 Upload a Document" onPress={() => setPhase('upload')}
+              accessibilityLabel={"\u2190 Upload a Document"} onPress={() => setPhase('upload')}
           >
               <Text maxFontSizeMultiplier={1.4} style={styles.analyzeBtnText}>← Upload a Document</Text>
             </TouchableOpacity>
@@ -697,11 +674,10 @@ confirm('Delete analysis?','This cannot be undone.',
           </View>
         </View>
         <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
           onPress={shareAnalysis}
           style={styles.shareBtn}
           accessibilityLabel="Share analysis"
-          // @ts-ignore
           accessibilityHint="Shares this information"
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: COLORS.navy }]}>↑ Share</Text>

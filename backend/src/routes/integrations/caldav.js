@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/routeHelpers.js';
 /**
  * routes/integrations/caldav.js — CalDAV Calendar Push Integration
  *
@@ -428,7 +429,7 @@ router.get('/ical/:firmId', async (req, res) => {
 
     // The ?token param is a HMAC-SHA256 of firm_id with webhook_secret or JWT_SECRET
     const token  = sanitizeStr(req.query.token || '', 100);
-    const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
+    const secret = process.env.JWT_SECRET;
     const expected = createHmac('sha256', secret).update(String(firmId)).digest('hex').slice(0, 32);
 
     if (token !== expected && process.env.NODE_ENV === 'production') {
@@ -469,7 +470,7 @@ router.get('/ical-token/:firmId', authRequired, requireFirmRole('partner'), asyn
     const firmId = safeInt(req.params.firmId);
     if (ctx.firm_id !== firmId) return err403(res);
 
-    const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
+    const secret = process.env.JWT_SECRET;
     const token  = createHmac('sha256', secret).update(String(firmId)).digest('hex').slice(0, 32);
     const baseUrl = process.env.BASE_URL || process.env.CORS_ORIGIN || 'https://justicegavel.app';
 

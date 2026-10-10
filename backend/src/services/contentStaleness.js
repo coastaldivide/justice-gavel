@@ -95,7 +95,7 @@ export async function scanAllContent(db) {
                 COALESCE(last_reviewed_at, '2020-01-01') AS last_reviewed_at
            FROM ${table}
           WHERE last_reviewed_at IS NULL
-             OR last_reviewed_at < datetime('now', '-${REVIEW_THRESHOLD_DAYS} days')
+             OR last_reviewed_at < (NOW() - INTERVAL '${REVIEW_THRESHOLD_DAYS} days')
           LIMIT 20`
       ).catch(() => []);
       if (staleRows.length) {
@@ -126,7 +126,7 @@ export async function scanAllContent(db) {
     const oldestBP = await db.get(
       `SELECT MIN(source_date) AS oldest, COUNT(*) AS unreviewed
          FROM bar_prep_questions
-        WHERE reviewed_by IS NULL OR source_date < datetime('now', '-${REVIEW_THRESHOLD_DAYS} days')`
+        WHERE reviewed_by IS NULL OR source_date < (NOW() - INTERVAL '${REVIEW_THRESHOLD_DAYS} days')`
     ).catch(() => null);
     if (oldestBP?.unreviewed > 0) {
       report.needs_review.push({ type: 'bar_prep_questions', unreviewed: oldestBP.unreviewed, oldest: oldestBP.oldest });
@@ -160,7 +160,7 @@ export async function recordAttorneyReview(db, { contentType, contentKey, attorn
        reviewed_by      = excluded.reviewed_by,
        bar_number       = excluded.bar_number,
        notes            = excluded.notes,
-       review_count     = review_count + 1`,
+       review_count     = COALESCE(legal_content_versions.review_count, 0) + 1`,
     [contentType, contentKey, attorneyName, barNumber, notes || null]
   );
   logger.info({ msg: '[contentStaleness] attorney review recorded', contentType, contentKey, attorneyName });

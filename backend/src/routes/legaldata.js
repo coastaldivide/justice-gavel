@@ -1,3 +1,4 @@
+import { safeJson } from '../utils/routeHelpers.js';
 /**
  * GET /api/legaldata/:type
  * Serves structured legal reference data by state.
@@ -41,17 +42,19 @@ router.get("/:type", authRequired, async (req, res) => {
 
     if (state) {
       // Also include national records (state="ALL" or "FED") plus specific state
-      sql += ` AND (${cfg.stateCol}=? OR ${cfg.stateCol}="ALL" OR ${cfg.stateCol}="FED")`;
-      params.push(state.toUpperCase());
-    }
-    if (q) {
-      const qParam = `%${qSafe}%`;
-      sql += " AND (name LIKE ? OR charge LIKE ? OR notes LIKE ? OR district LIKE ?)";
-      params.push(qParam, qParam, qParam, qParam);
+      sql += ` AND (UPPER(${cfg.stateCol})=? OR ${cfg.stateCol} IN ('ALL','FED'))`;
+      params.push(String(state).toUpperCase().slice(0, 3));
     }
     sql += " ORDER BY id ASC LIMIT 500";
 
-    const rows = await db.all(sql, params);
+    let rows = await db.all(sql, params);
+    // Free-text filter across the row's text columns (tables have different schemas)
+    if (q) {
+      const needle = String(q).trim().toLowerCase().slice(0, 100);
+      rows = rows.filter(r => Object.values(r).some(v => typeof v === 'string' && v.toLowerCase().includes(needle)));
+    }
+    const lim = Math.min(Math.max(safeInt(req.query.limit, 500), 1), 500);
+    rows = rows.slice(0, lim);
 
     // Parse JSON columns
     const parsed = rows.map(r => {

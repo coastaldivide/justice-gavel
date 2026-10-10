@@ -24,13 +24,12 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, KeyboardAvoidingView, ScrollView, RefreshControl, TouchableOpacity,
   StyleSheet, Alert, ActivityIndicator, Linking,
-  TextInput, LayoutAnimation, InteractionManager} from 'react-native';
+  TextInput, LayoutAnimation, InteractionManager, Platform } from 'react-native';
 import { useTheme } from '../constants/theme';
 import { haptic, hapticCall, hapticSelect, hapticSuccess, hapticWarn } from '../services/haptics';
 import api from '../services/api';
 import { t } from '../i18n';
 
-declare var Platform: any;
 // ── Member state list (subset — full list from API) ─────────────────────────
 const QUICK_COUNTRIES = [
   { code:'GB', name:'United Kingdom' },
@@ -65,15 +64,10 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
   const { caseId, caseName } = route?.params || {};
 
   const [phase, setPhase] = useState<'home'|'lookup'|'intake'|'result'>('home');
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   return () => { mountedRef.current = false; };
     });
     return () => _task.cancel();
@@ -208,7 +202,7 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
           <TouchableOpacity
             accessibilityRole="button"
             style={s.contactRow}
-            accessibilityLabel="\ud83d\udd34 NCMEC 24/7" onPress={() => callNumber('18008435678')}
+            accessibilityLabel={"\ud83d\udd34 NCMEC 24/7"} onPress={() => callNumber('18008435678')}
           >
             <Text maxFontSizeMultiplier={1.4} style={s.contactName}>🔴 NCMEC 24/7</Text>
             <Text maxFontSizeMultiplier={1.4} style={s.contactDetail}>1-800-843-5678</Text>
@@ -369,7 +363,7 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
           </View>
         )}
 
-        <TouchableOpacity accessibilityRole="button" style={s.btnSecondary} accessibilityLabel="\u2190 Back" onPress={() => setPhase('home')}
+        <TouchableOpacity accessibilityRole="button" style={s.btnSecondary} accessibilityLabel={"\u2190 Back"} onPress={() => setPhase('home')}
         >
           <Text maxFontSizeMultiplier={1.4} style={s.btnSecondaryText}>← Back</Text>
         </TouchableOpacity>

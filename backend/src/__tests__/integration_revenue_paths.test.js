@@ -12,7 +12,7 @@
  */
 
 import request  from 'supertest';
-import { app }  from '../app.js';
+import app      from '../app.js';   // app.js has a default export only
 
 // ── Mock auth token — any valid-looking JWT ────────────────────────────────
 const TEST_TOKEN = 'Bearer test-token-placeholder';

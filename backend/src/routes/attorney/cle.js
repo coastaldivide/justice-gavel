@@ -19,7 +19,7 @@ import { Router }                     from 'express';
 import { authRequired }               from '../../middleware/auth.js';
 import { getDb }                      from '../../db/index.js';
 import logger                         from '../../utils/logger.js';
-import { requireDefender }            from './_helpers.js';
+import { requireDefender, requireAttorney }            from './_helpers.js';
 
 const router       = Router();
 const cleLimiter   = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'CLE request limit reached.' });
@@ -27,7 +27,7 @@ const cleLimiter   = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'CLE 
 // ── GET /api/attorney/cle — course catalogue with completion status ────────────
 router.get('/cle', authRequired, cleLimiter, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db } = ctx;
 
@@ -64,7 +64,7 @@ router.get('/cle', authRequired, cleLimiter, async (req, res) => {
 // ── GET /api/attorney/cle/transcript ─────────────────────────────────────────
 router.get('/cle/transcript', authRequired, cleLimiter, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db, user } = ctx;
 
@@ -100,7 +100,7 @@ router.get('/cle/transcript', authRequired, cleLimiter, async (req, res) => {
 // ── GET /api/attorney/cle/:id — single course detail ─────────────────────────
 router.get('/cle/:id', authRequired, cleLimiter, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db } = ctx;
 
@@ -128,7 +128,7 @@ router.get('/cle/:id', authRequired, cleLimiter, async (req, res) => {
 // ── POST /api/attorney/cle/:id/complete — mark complete, award credit ─────────
 router.post('/cle/:id/complete', authRequired, cleLimiter, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db, user } = ctx;
 

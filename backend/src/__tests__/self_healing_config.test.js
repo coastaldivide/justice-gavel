@@ -88,8 +88,9 @@ describe('Self-healing — health endpoint', () => {
 
   test('health endpoint checks database connectivity', () => {
     const app = readFileSync(resolve(__dirname, '../app.js'), 'utf-8');
-    const healthIdx = app.indexOf('/health');
-    if (healthIdx === -1) return;
+    // locate the route definition (not e.g. the ./utils/healthCheck.js import)
+    const healthIdx = app.search(/app\.get\(\[?\s*'\/health'/);
+    expect(healthIdx).toBeGreaterThan(-1);
     const healthBlock = app.slice(healthIdx, healthIdx + 500);
     expect(healthBlock).toMatch(/db|database|supabase|ping|query/i);
   });

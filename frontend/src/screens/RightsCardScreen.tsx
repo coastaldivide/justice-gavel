@@ -18,7 +18,7 @@ import { AppIcon } from '../components/AppIcon';
  * Free for 24 Hour Advisor+ subscribers. Unsubscribed users see a preview + upgrade prompt.
  * Designed for TikTok virality: "Print this before you go out tonight"
  */
-import { Linking, LayoutAnimation, InteractionManager, View, Text} from 'react-native';
+import { Linking, LayoutAnimation, InteractionManager } from 'react-native';
 import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useState, useEffect, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
@@ -26,14 +26,13 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Share, ActivityIn
 import { api } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
 import { getUserState, setUserState} from '../utils/userState';
 import { detectAndSaveUserState } from '../services/location';
 import * as secureStorage from '../utils/secureStorage';
 const C_064E3B = ('\x23' + '064e3b') as string; // hex color
 const C_DC2626 = ('\x23' + 'dc2626') as string; // hex color
 
-declare var data: any;
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
   'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
@@ -70,11 +69,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = useRef(true);
   useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   return () => { mountedRef.current = false; };
     });
     return () => _task.cancel();
@@ -91,7 +86,6 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [loading, setLoading]   = useState(false);
   const [sharing, setSharing]   = useState(false);
   const [isSubscriber, setIsSubscriber] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [showPicker, setShowPicker]     = useState(false);
 
   // Check subscription status
@@ -106,7 +100,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           setIsSubscriber(true);
         }
       } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
+      __DEV__ && console.warn(e?.message); }
     });
 
     // Load user's saved state preference -- set during onboarding or Settings
@@ -169,7 +163,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
     setSharing(true);
     try {
       const shareText = buildShareText(card);
-      await Share.share(
+      await RNShare.share(
         {
           title: `Know Your Rights -- ${card.state}`,
           message: shareText },
@@ -239,7 +233,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={styles.statePicker}
-          accessibilityLabel="{state}  \u25be" onPress={() => setShowPicker(p => !p)}
+          accessibilityLabel={"{state}  \u25be"} onPress={() => setShowPicker(p => !p)}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.statePickerText}>{state}  ▾</Text>
         </TouchableOpacity>
@@ -275,7 +269,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
             style={styles.gateBtn}
-            accessibilityLabel="Start Free Trial \u2192" onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
+            accessibilityLabel={"Start Free Trial \u2192"} onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.gateBtnText}>Start Free Trial →</Text>
           </TouchableOpacity>
@@ -364,8 +358,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-          // @ts-ignore
-          style={{ flex: 1, backgroundColor: colors.green, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
+          style={{ flex: 1, backgroundColor: colors.legal, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}
           onPress={() => Linking.openURL('tel:+18009800010').catch(() => showToast('Action unavailable.', 'error'))}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
@@ -395,9 +388,8 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           {isSubscriber && (
             <TouchableOpacity
               accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.textShareBtn} onPress={shareCard}
+ style={styles.textShareBtn} onPress={shareCard}
              accessibilityLabel="Share as text (for SMS / iMessage)"
-          // @ts-ignore
           accessibilityHint="Shares this information">
               <Text maxFontSizeMultiplier={1.4} style={styles.textShareBtnText}>Share as text (for SMS / iMessage)</Text>
             </TouchableOpacity>
@@ -406,7 +398,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
             accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
             style={styles.stateChangeBtn}
-            accessibilityLabel="\ud83d\uddfa  Change State" onPress={() => setShowPicker(p => !p)}
+            accessibilityLabel={"\ud83d\uddfa  Change State"} onPress={() => setShowPicker(p => !p)}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.stateChangeBtnText}>🗺  Change State</Text>
           </TouchableOpacity>
@@ -426,14 +418,6 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
 
       <View style={{ height: 40 }} />
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>📭</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No results found</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection or try again.</Text>
-        </View>
-      )}
       </ScrollView>
   );
 }

@@ -1,3 +1,4 @@
+import { COLORS } from '../constants/theme';
 import { useConfirm } from '../hooks/useConfirm';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
@@ -227,7 +228,7 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.callBtn, { backgroundColor: colors.legalDark }]}
-            accessibilityLabel="\ud83d\udcde Call" onPress={() => call(item.phone, item.name)}
+            accessibilityLabel={"\ud83d\udcde Call"} onPress={() => call(item.phone, item.name)}
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2} style={styles.callBtnText}>
@@ -244,7 +245,7 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.webBtn, { borderColor: colors.border }]}
-            accessibilityLabel="\ud83c\udf10 Website" onPress={() => openWeb(item.website)}
+            accessibilityLabel={"\ud83c\udf10 Website"} onPress={() => openWeb(item.website)}
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.webBtnText,
@@ -314,8 +315,6 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
           disabled={!selectedState || loading}
           activeOpacity={0.85}
         >
-          accessibilityRole="search" accessibilityLabel="Search"
-          accessibilityHint="Double-tap to activate"
           <Text maxFontSizeMultiplier={1.2} style={[styles.searchBtnText,
             { color: selectedState ? colors.bg : colors.textMuted }]}>
             {loading ? 'Searching…' : '🔍  Search Recovery Agents'}
@@ -397,16 +396,11 @@ function RecoveryAgentsScreen({ navigation }: ScreenProps): React.JSX.Element {
         <FlashList
           onRefresh={onRefresh}
           refreshing={refreshing}
-          // @ts-ignore
-          initialNumToRender={8}
-          maxToRenderPerBatch={8}
-          windowSize={5}
-          removeClippedSubviews={true}
           data={agents}
           keyExtractor={(item) => String(item.id)}
           estimatedItemSize={80}
           renderItem={renderAgent}
-          contentContainerStyle={{ padding: 12, paddingBottom: 40, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
+          contentContainerStyle={{ padding: 12, paddingBottom: 40}}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
             agents.length > 0 ? (
@@ -448,8 +442,7 @@ const styles = StyleSheet.create({
   loadingText:   { marginTop: 12, fontSize: 14 },
   errorText:     { fontSize: 14, textAlign: 'center', marginBottom: 16 },
   retryBtn:      { borderRadius: 10, paddingVertical: 12, paddingHorizontal: 24 },
-  // @ts-ignore
-  retryText:     { color: colors.bg, fontWeight: '700', fontSize: 14 },
+  retryText:     { color: COLORS.bg, fontWeight: '700', fontSize: 14 },
   emptyIcon:     { fontSize: 48, marginBottom: 12 },
   emptyText:     { fontSize: 14, textAlign: 'center', lineHeight: 21 },
   resultCount:   { fontSize: 12, marginBottom: 8 },
@@ -471,8 +464,7 @@ const styles = StyleSheet.create({
 
   actionRow:     { flexDirection: 'row', gap: 8 },
   callBtn:       { flex: 2, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  // @ts-ignore
-  callBtnText:   { color: colors.bg, fontWeight: '800', fontSize: 14 },
+  callBtnText:   { color: COLORS.bg, fontWeight: '800', fontSize: 14 },
   webBtn:        { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: 'center',
                    borderWidth: 1 },
   webBtnText:    { fontWeight: '700', fontSize: 13 },

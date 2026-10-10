@@ -7,32 +7,45 @@
  * All functions are drop-in replacements for the old sendgrid.js exports.
  */
 
-import { Resend } from 'resend';
-import logger     from '../utils/logger.js';
+import logger from '../utils/logger.js';
 
-// Resend constructor throws if key is undefined/empty — use placeholder in non-live mode
-if (!process.env.RESEND_API_KEY) {
-  console.warn('[email] RESEND_API_KEY missing — email disabled (demo mode)');
-}
-const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder_not_live');
-const FROM      = process.env.SENDGRID_FROM_EMAIL || 'noreply@justicegavel.app';
+const FROM      = process.env.EMAIL_FROM || process.env.ALERT_EMAIL_FROM || process.env.SENDGRID_FROM_EMAIL || 'noreply@justicegavel.app';
 const FROM_NAME = 'Justice Gavel';
-const LIVE      = process.env.LIVE_EMAIL === 'true';
+
+/** Email is sent only when RESEND_API_KEY is set (LIVE_EMAIL=false forces log-only). */
+export function emailLive() {
+  return !!process.env.RESEND_API_KEY && process.env.LIVE_EMAIL !== 'false';
+}
+
+let _resend = null;
+async function resendClient() {
+  if (!_resend) {
+    const { Resend } = await import('resend');
+    _resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return _resend;
+}
 
 async function send({ to, subject, html, text }) {
-  if (!LIVE) {
-    logger.info(`[email] DEMO — would send "${subject}" to ${to}`);
-    return { id: 'demo-mode', to, subject };
+  if (!to || !subject) {
+    logger.warn('[email] missing to/subject — not sent');
+    return { error: 'missing_fields' };
+  }
+  if (!emailLive()) {
+    logger.info(`[email] (not sent — RESEND_API_KEY not set) "${subject}" → ${Array.isArray(to) ? to.join(',') : to}`);
+    return { id: 'log-only', to, subject, mock: true };
   }
   try {
+    const resend = await resendClient();
     const result = await resend.emails.send({
       from:    `${FROM_NAME} <${FROM}>`,
       to:      Array.isArray(to) ? to : [to],
       subject,
-      html,
-      text: text || html.replace(/<[^>]+>/g, ''),
+      html:    html || `<p>${String(text || '').replace(/\n/g, '<br>')}</p>`,
+      text:    text || String(html || '').replace(/<[^>]+>/g, ''),
     });
-    logger.info(`[email] sent "${subject}" to ${to} — id: ${result.data?.id}`);
+    if (result?.error) throw new Error(result.error.message || 'resend error');
+    logger.info(`[email] sent "${subject}" — id: ${result.data?.id}`);
     return result.data;
   } catch (err) {
     logger.error('[email] send failed:', err.message);
@@ -131,8 +144,10 @@ export async function sendCriticalAlert(subject, body) {
  * Used by outbound_bot, healthScan, retention, dunning, etc.
  * Accepts { to, subject, html?, text? }
  */
-export async function sendEmail({ to, subject, html, text }) {
-  return send({ to, subject, html: html || text || '', text });
+export async function sendEmail(arg, subjectArg, textArg) {
+  // Accepts sendEmail({ to, subject, html?, text? }) or legacy sendEmail(to, subject, text)
+  const o = (arg && typeof arg === 'object' && !Array.isArray(arg)) ? arg : { to: arg, subject: subjectArg, text: textArg };
+  return send({ to: o.to, subject: o.subject, html: o.html, text: o.text });
 }
 
 export default { sendPasswordReset, sendWelcome, sendSubscriptionConfirm, sendPaymentFailed, sendCriticalAlert, sendEmail };

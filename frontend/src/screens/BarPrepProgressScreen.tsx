@@ -19,6 +19,7 @@ import {
 import { api }            from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { GradientHeader } from '../components/GradientHeader';
+import { toLocalISODate } from '../utils/dateUtils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface CategoryStat {
@@ -65,13 +66,11 @@ function getAccuracyColor(pct: number): string {
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
-// @ts-ignore
 export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPrepProgress'>) {
   const { colors }              = useTheme();
   const [data, setData]         = useState<Dashboard | null>(null);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -92,11 +91,6 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
   const styles = makeStyles(colors);
 
   if (loading) {
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -188,7 +182,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
             {Array.from({ length: 30 }, (_, i) => {
               const d = new Date();
               d.setDate(d.getDate() - (29 - i));
-              const iso = d.toISOString().slice(0, 10);
+              const iso = toLocalISODate(d);
               const active = (data?.streak_calendar || []).includes(iso);
               return (
                 <View
@@ -267,16 +261,13 @@ function makeStyles(colors: any) {
     heroRow:       { flexDirection: 'row', padding: 12, gap: 8 },
     heroCard:      {
       flex: 1, padding: 12, borderRadius: RADIUS.lg,
-      // @ts-ignore
-      backgroundColor: colors.card, alignItems: 'center', ...SHADOW.xs,
+      backgroundColor: colors.card, alignItems: 'center', ...SHADOW.sm,
     },
     heroLabel:     { fontSize: 10, color: colors.textMuted, textAlign: 'center', marginBottom: 4 },
-    // @ts-ignore
-    heroValue:     { fontSize: 22, fontFamily: FONTS.bold },
+    heroValue:     { fontSize: 22, ...FONTS.bold },
     heroSub:       { fontSize: 11, color: colors.textMuted, marginTop: 2 },
     sectionTitle:  {
-      // @ts-ignore
-      fontSize: 13, fontFamily: FONTS.bold, color: colors.text,
+      fontSize: 13, ...FONTS.bold, color: colors.text,
       marginTop: 20, marginBottom: 10, marginHorizontal: 16,
     },
     categoryList:  { marginHorizontal: 12, gap: 6 },
@@ -290,11 +281,9 @@ function makeStyles(colors: any) {
       borderRadius: 3, overflow: 'hidden',
     },
     categoryBarFill: { height: '100%', borderRadius: 3 },
-    // @ts-ignore
-    categoryPct:   { width: 38, fontSize: 12, fontFamily: FONTS.bold, textAlign: 'right' },
+    categoryPct:   { width: 38, fontSize: 12, ...FONTS.bold, textAlign: 'right' },
     categorySub:   { width: 36, fontSize: 10, color: colors.textMuted, textAlign: 'right' },
-    // @ts-ignore
-    calendarCard:  { marginHorizontal: 16, padding: 16, borderRadius: RADIUS.lg, ...SHADOW.xs },
+    calendarCard:  { marginHorizontal: 16, padding: 16, borderRadius: RADIUS.lg, ...SHADOW.sm },
     calendarGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     calendarDot:   { width: 22, height: 22, borderRadius: 4 },
     calendarLegend: { fontSize: 12, color: colors.textMuted, marginTop: 10, textAlign: 'center' },
@@ -304,19 +293,16 @@ function makeStyles(colors: any) {
       padding: 12, borderRadius: RADIUS.md,
     },
     sessionLeft:   {},
-    // @ts-ignore
-    sessionMode:   { fontSize: 13, fontFamily: FONTS.medium, color: colors.text },
+    sessionMode:   { fontSize: 13, ...FONTS.medium, color: colors.text },
     sessionDate:   { fontSize: 11, color: colors.textMuted, marginTop: 2 },
     sessionRight:  { alignItems: 'flex-end' },
-    // @ts-ignore
-    sessionScore:  { fontSize: 18, fontFamily: FONTS.bold },
+    sessionScore:  { fontSize: 18, ...FONTS.bold },
     sessionFraction: { fontSize: 11, color: colors.textMuted },
     emptyText:     { color: colors.textMuted, fontSize: 13, textAlign: 'center', padding: 20 },
     ctaBtn:        {
       marginHorizontal: 16, marginTop: 24, paddingVertical: 15,
       borderRadius: RADIUS.lg, alignItems: 'center', ...SHADOW.sm,
     },
-    // @ts-ignore
-    ctaBtnText:    { fontSize: 16, fontFamily: FONTS.bold, color: '#fff' },
+    ctaBtnText:    { fontSize: 16, ...FONTS.bold, color: '#fff' },
   });
 }

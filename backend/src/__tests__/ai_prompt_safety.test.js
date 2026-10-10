@@ -62,7 +62,9 @@ describe('AI route — safety gates', () => {
 
   test('ask route does not hardcode API key', () => {
     expect(ask).not.toMatch(/sk-ant-api[0-9]{2}-/);
-    expect(ask).toMatch(/ANTHROPIC_API_KEY|process\.env/);
+    // key handling is centralised in utils/ai.js (requireAi → 503 ai_unavailable without a key)
+    expect(ask).toMatch(/ANTHROPIC_API_KEY|process\.env|requireAi/);
+    expect(readFileSync(resolve(__dirname, '../utils/ai.js'), 'utf-8')).toMatch(/process\.env\.ANTHROPIC_API_KEY/);
   });
 
   test('max_tokens is set on every AI call', () => {
@@ -87,7 +89,11 @@ describe('AI route — safety gates', () => {
     });
     const configHasModel = /claude-(?:opus|sonnet|haiku)/i.test(
       readFileSync(resolve(__dirname, '../config.js'), 'utf-8'));
-    expect(hasModel || configHasModel || ask.match(/claude-/i)).toBeTruthy();
+    // the model id is pinned once in utils/ai.js (CLAUDE_MODEL, overridable by env)
+    const aiHasModel = /CLAUDE_MODEL\s*=\s*process\.env\.CLAUDE_MODEL\s*\|\|\s*'claude-(?:opus|sonnet|haiku)-[\w-]+'/.test(
+      readFileSync(resolve(__dirname, '../utils/ai.js'), 'utf-8'));
+    expect(hasModel || configHasModel || aiHasModel || ask.match(/claude-/i)).toBeTruthy();
+    expect(aiHasModel).toBe(true);
   });
 });
 

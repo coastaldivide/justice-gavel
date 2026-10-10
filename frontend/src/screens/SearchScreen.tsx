@@ -88,11 +88,6 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     mountedRef.current = true;
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return () => { mountedRef.current = false; };
   }, []);
   
@@ -100,7 +95,6 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { colors } = useTheme();
   const [query, setQuery]       = useState('');
   const [searchError, setSearchError] = useState('');
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [results, setResults]   = useState<SearchResult[]>([]);
 
   // Retry logic: exponential backoff on API failures
@@ -165,7 +159,6 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
       params: item.params });
   };
 
-  // @ts-ignore
   const s = styles(colors as any);
 
   return (
@@ -202,7 +195,6 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
           data={grouped ?? []}
         keyExtractor={item => item.type}
         contentContainerStyle={s.list}
-          initialNumToRender={6}
           onRefresh={onRefresh}
         refreshing={refreshing}
         ListEmptyComponent={
@@ -329,7 +321,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
     </View>
     </KeyboardAvoidingView>
   );
-
+}
 
 const styles = (C: Record<string, string>) => StyleSheet.create({
   screen:       { flex:1 },
@@ -350,5 +342,5 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
   emptyIcon:    { fontSize:48, marginBottom:16 },
   emptyTitle:   { fontSize:TYPE.lg, lineHeight:27, ...FONTS.semiBold, marginBottom:8, textAlign:'center' },
   emptySub:     { fontSize:TYPE.base, lineHeight:21, textAlign:'center' } });
-}
+
 export default React.memo(SearchScreen);

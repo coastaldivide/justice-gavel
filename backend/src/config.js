@@ -11,52 +11,75 @@
  */
 
 import 'dotenv/config';
+import crypto from 'crypto';
 
-// ── Production gate ────────────────────────────────────────────────────────────
-const REQUIRED_IN_PROD = [
-  'ANTHROPIC_API_KEY',
-  'STRIPE_SECRET',
-  'JWT_SECRET',
-  'ENCRYPTION_KEY',
-];
-const DEMO_MODE = process.env.DEMO_MODE !== 'false';
+const IS_PROD = process.env.NODE_ENV === 'production';
 
-if (!DEMO_MODE) {
-  const missing = REQUIRED_IN_PROD.filter(k => !process.env[k]);
-  if (missing.length) {
-    console.error('[config] ❌ Missing required env vars:', missing.join(', '));
-    console.error('[config]    Add them to backend/.env — see .env.example');
-    process.exit(1);
+// ── Stripe key aliases — accept either STRIPE_SECRET_KEY or STRIPE_SECRET ─────
+if (!process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET) process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET;
+if (!process.env.STRIPE_SECRET && process.env.STRIPE_SECRET_KEY) process.env.STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
+// Railway/Supabase sometimes expose POSTGRES_URL instead of DATABASE_URL
+if (!process.env.DATABASE_URL && process.env.POSTGRES_URL) process.env.DATABASE_URL = process.env.POSTGRES_URL;
+
+// ── Hard requirements in production ───────────────────────────────────────────
+export const REQUIRED_IN_PROD = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'ENCRYPTION_KEY', 'DATABASE_URL'];
+
+// ── Dev-only generated secrets (never in production) ──────────────────────────
+// In development/test a missing secret is replaced by a random per-process value
+// so nothing ever signs tokens with a well-known string. Tokens/encrypted data do
+// not survive a restart in that case — set the vars in backend/.env to persist.
+if (!IS_PROD) {
+  for (const [k, bytes] of [['JWT_SECRET', 48], ['JWT_REFRESH_SECRET', 48], ['ENCRYPTION_KEY', 32]]) {
+    if (!process.env[k]) {
+      process.env[k] = crypto.randomBytes(bytes).toString('hex');
+      if (process.env.NODE_ENV !== 'test') console.warn(`[config] ${k} not set — generated a random dev-only value`);
+    }
   }
 }
 
-// ── Optional features — degrade gracefully if absent ──────────────────────────
-const OPTIONAL_WARNINGS = {
-  // Existing infrastructure  RESEND_API_KEY:      'Email alerts disabled — emergency SOS will only SMS contacts',
-  SENTRY_DSN:            'Error tracking disabled — errors will only appear in PM2 logs',
-  GOOGLE_PLACES_KEY:     'Google Places fallback disabled — GPS city lookup may fail',
-  ADMIN_KEY:             'Admin API unprotected — set ADMIN_KEY to restrict provider DB access',
-  STRIPE_WEBHOOK_SECRET: 'Stripe webhooks unverified — subscription events ignored',
-  EXPO_ACCESS_TOKEN:     'Expo push enhanced delivery disabled — push still works via anonymous token',
+// DEMO_MODE: always off in production unless explicitly DEMO_MODE=true;
+// on by default elsewhere unless DEMO_MODE=false.
+const DEMO_MODE = IS_PROD ? process.env.DEMO_MODE === 'true' : process.env.DEMO_MODE !== 'false';
+process.env.DEMO_MODE = DEMO_MODE ? 'true' : 'false';
 
-  // Year 3: DMS integrations
-  IMANAGE_CLIENT_ID:       'iManage OAuth disabled — connections use demo mode only',
-  NETDOCUMENTS_CLIENT_ID:  'NetDocuments OAuth disabled — connections use demo mode only',
+/** Standard 503 body when Stripe is not configured. */
+export const PAYMENTS_UNAVAILABLE = Object.freeze({
+  error:   'payments_unavailable',
+  message: 'Payments are not available yet',
+});
 
-  // Year 3: Practice management integrations
-  CLIO_CLIENT_ID:          'Clio Manage OAuth disabled — connections use demo mode only',
-  PRACTICEPANTHER_CLIENT_ID: 'PracticePanther OAuth disabled — connections use demo mode only',
-  MYCASE_CLIENT_ID:        'MyCase OAuth disabled — connections use demo mode only',
+/** True when a Stripe secret key is configured. */
+export const stripeConfigured = () => !!(process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET);
 
-  // Year 3: Calendar integrations
-  GOOGLE_CALENDAR_CLIENT_ID: 'Google Calendar OAuth disabled — CalDAV basic auth only',
-  OUTLOOK_CLIENT_ID:         'Microsoft Outlook OAuth disabled — CalDAV basic auth only',
+// ── Optional features — each disables one feature when absent ────────────────
+const OPTIONAL_FEATURES = {
+  ANTHROPIC_API_KEY:     'AI chat, motions, research and analysis disabled (AI endpoints return 503 ai_unavailable)',
+  STRIPE_SECRET_KEY:     'Payments disabled (billing endpoints return 503 payments_unavailable; everyone is on the free tier)',
+  STRIPE_WEBHOOK_SECRET: 'Stripe webhooks cannot be verified (webhook returns 400)',
+  RESEND_API_KEY:        'Email disabled — emails are logged instead of sent',
+  REDIS_URL:             'BullMQ queue disabled — AI jobs run in-process',
+  SENTRY_DSN:            'Error tracking disabled',
+  GOOGLE_PLACES_KEY:     'Google Places fallback disabled',
+  SUPABASE_URL:          'Supabase storage/auth helpers disabled',
+  OPENAI_API_KEY:        'Whisper transcription disabled',
 };
 
-if (!DEMO_MODE) {
-  for (const [key, msg] of Object.entries(OPTIONAL_WARNINGS)) {
-    if (!process.env[key]) console.warn(`[config] ⚠️  ${key} not set — ${msg}`);
+/**
+ * validateEnv — called once by server.js at startup.
+ * Exits the process in production when a hard requirement is missing; otherwise
+ * logs one "feature disabled" line per missing optional variable.
+ */
+export function validateEnv({ exit = true } = {}) {
+  const missing = IS_PROD ? REQUIRED_IN_PROD.filter(k => !process.env[k]) : [];
+  if (missing.length) {
+    console.error('[config] ❌ Missing required env vars for production:', missing.join(', '));
+    if (exit) process.exit(1);
   }
+  for (const [key, msg] of Object.entries(OPTIONAL_FEATURES)) {
+    const present = key === 'STRIPE_SECRET_KEY' ? stripeConfigured() : !!process.env[key];
+    if (!present) console.warn(`[config] ${key} not set — ${msg}`);
+  }
+  return { missing };
 }
 
 // ── Exported configuration ─────────────────────────────────────────────────────
@@ -69,8 +92,8 @@ export const CONFIG = {
   LIVE_REFRESH:   process.env.LIVE_REFRESH    === 'true',
 
   // ── Infrastructure ───────────────────────────────────────────────────────────
-  POSTGRES_URL:   process.env.POSTGRES_URL    || '',
-  USE_POSTGRES:   !!process.env.POSTGRES_URL,
+  POSTGRES_URL:   process.env.DATABASE_URL || process.env.POSTGRES_URL || '',
+  USE_POSTGRES:   !!(process.env.DATABASE_URL || process.env.POSTGRES_URL),
   SENTRY_DSN:     process.env.SENTRY_DSN      || '',
   PORT:           parseInt(process.env.PORT   || '4000', 10),
 
@@ -78,8 +101,11 @@ export const CONFIG = {
   AI_CONCURRENCY: parseInt(process.env.AI_CONCURRENCY || '8', 10),
 
   // ── Auth ─────────────────────────────────────────────────────────────────────
-  JWT_EXPIRES_IN:         process.env.JWT_EXPIRES_IN          || '15m'   ,  // Access token: 15 min
-  JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN  || '7d'    ,  // Refresh token: 7 days,
+  // Access token lifetime. The mobile app keeps only the access token and
+  // refreshes it (POST /api/auth/refresh with the bearer token) once it is
+  // older than 25 days, so the default must stay >= 30d unless the app changes.
+  JWT_EXPIRES_IN:         process.env.JWT_EXPIRES_IN          || '30d'   ,
+  JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN  || '60d'   ,  // Refresh token (single-use, rotated)
 
   // ── URLs ─────────────────────────────────────────────────────────────────────
   BASE_URL:       process.env.BASE_URL || process.env.CORS_ORIGIN || 'https://justicegavel.app',

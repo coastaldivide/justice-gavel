@@ -37,14 +37,12 @@ import type { ScreenProps } from '../types/navigation';
 import React, {
   useState, useEffect, useCallback, useRef
 , useMemo} from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, Share, Clipboard, RefreshControl, InteractionManager} from 'react-native';
-import { api } from '../services/api';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Platform, Share, RefreshControl, InteractionManager} from 'react-native';
+import { api, apiErrorMessage } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { hapticImpact, hapticNotification, hapticSelection, RNShare, Clipboard } from '../utils/webCompat';
 import { t } from '../i18n';
 
-declare var events: any;
-declare var load: any; // hoisted from component scope
 // ── Language config ────────────────────────────────────────────────────────
 const LANGUAGES = [
   { code: 'en', label: 'English',    native: 'English',    flag: '🇺🇸' },
@@ -68,17 +66,6 @@ interface TurnMessage {
 type Phase = 'setup' | 'session' | 'join';
 
 function getLang(code: string) {
-  const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
-  React.useEffect(() => {
-    const t = InteractionManager.runAfterInteractions(() => {});
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
-  return () => t.cancel();
-  }, []);
   return LANGUAGES.find(l => l.code === code) || LANGUAGES[0];
 }
 
@@ -90,11 +77,6 @@ function TurnBubble({
 }) {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
-  }, []);
 
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(isA ? -12 : 12)).current;
@@ -199,6 +181,7 @@ function LangPicker({
 
 // ── Main screen ────────────────────────────────────────────────────────────
 function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const [submitting, setSubmitting] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -216,7 +199,6 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
   const [sessionCode, setCode]    = useState('');
   const [joinCode,  setJoinCode]  = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [joiningAs, setJoiningAs] = useState<'a'|'b'>('b');
   const [messages,  setMessages]  = useState<TurnMessage[]>([]);
   const [inputA,    setInputA]    = useState('');
@@ -265,7 +247,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
           setLastMsgId(newId);
         }
       } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.'); __DEV__ && console.warn(e?.message); }
+      __DEV__ && console.warn(e?.message); }
     }, 2000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [phase, mode, sessionCode]); // lastMsgId via ref -- no restart on each message
@@ -282,8 +264,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
         setMessages([]);
         setPhase('session');
       } catch (e: any) {
-// @ts-ignore
-showToast(e.response?.data?.error || 'Translation session failed.', 'error');
+showToast(apiErrorMessage(e, 'Translation session failed.'), 'error');
         setCreating(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
       }
@@ -367,8 +348,7 @@ showToast(e.response?.data?.error || 'Translation session failed.', 'error');
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
       if (side === 'a') setInputA(text);
       else              setInputB(text);
-// @ts-ignore
-showToast(e.response?.data?.error || 'Check your connection.', 'error');
+showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
       if (side === 'a') setSendingA(false);
       else              setSendingB(false);
     }
@@ -376,7 +356,7 @@ showToast(e.response?.data?.error || 'Check your connection.', 'error');
 
   const shareCode = useCallback(() => {
     try {
-      Share.share({
+      RNShare.share({
       message: `Join my translation session on Justice Gavel.\n\nCode: ${sessionCode}\n\nDownload the app and tap "Interpreter" → "Join with code".`,
       title: 'Join Translation Session',
     });
@@ -435,7 +415,7 @@ showToast(e.response?.data?.error || 'Check your connection.', 'error');
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.backLink}
-          accessibilityLabel="\u2190 Back" onPress={() => setPhase('setup')}
+          accessibilityLabel={"\u2190 Back"} onPress={() => setPhase('setup')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.backLinkText, { color: colors.textMuted }]}>← Back</Text>
         </TouchableOpacity>
@@ -541,7 +521,7 @@ showToast(e.response?.data?.error || 'Check your connection.', 'error');
           {mode === 'split' && (
             <TouchableOpacity
               accessibilityRole="button" onPress={shareCode} style={styles.shareCodeBtn}
-             accessibilityLabel="Share \u2192">
+             accessibilityLabel={"Share \u2192"}>
               <Text maxFontSizeMultiplier={1.4} style={[styles.shareCodeText, { color: COLORS.navy }]}>Share →</Text>
             </TouchableOpacity>
           )}

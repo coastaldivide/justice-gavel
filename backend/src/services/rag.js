@@ -1,3 +1,4 @@
+import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../utils/ai.js';
 
 // External fetch with 15s timeout (embeddings + Anthropic can be slow)
 // Embedding model: Supabase gte-small (384 dimensions, no API key needed)
@@ -106,7 +107,7 @@ Instructions:
 
 // ── Step 4: Generate answer with Claude ───────────────────────────────────
 async function generateAnswer(prompt) {
-  const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+  const res = await fetchWithTimeout(ANTHROPIC_MESSAGES_URL, {
     method:  'POST',
     headers: {
       'Content-Type':      'application/json',
@@ -114,7 +115,7 @@ async function generateAnswer(prompt) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-6',
+      model:      CLAUDE_MODEL,
       max_tokens: 2048,
       messages:   [{ role: 'user', content: prompt }],
     }),

@@ -1,4 +1,7 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { requireAi } from '../../utils/ai.js';
+import { safeJson } from '../../utils/routeHelpers.js';
+import { CLAUDE_MODEL } from '../../utils/ai.js';
+import { validate, schemas } from '../../validation/schemas.js';
 import { withApiRetry } from '../../utils/retry.js';
 import { requireDisclaimer } from '../../middleware/disclaimer.js';
 import { withBreaker } from '../../middleware/circuitBreaker.js';
@@ -29,7 +32,7 @@ const aiLimiter = rateLimit({
 
 const router = Router();
 
-router.post('/stream', aiLimiter, authRequired, requireDisclaimer, perUserAiLimit, async (req, res) => {
+router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, perUserAiLimit, async (req, res) => {
   if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
     return res.status(503).json({
       error:   'AI service not configured.',
@@ -58,7 +61,7 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, perUserAiLimi
       const todayCount = await db.get(
         `SELECT COUNT(*) as n FROM chat_sessions
          WHERE user_id = ? AND role = 'user'
-         AND created_at >= date('now')`,
+         AND created_at >= CURRENT_DATE`,
         [req.user.id]
       ).catch(() => ({ n: 0 }));
       if (!isDefender && (todayCount?.n ?? 0) >= BUSINESS_CONSTANTS.AI_MESSAGES_PER_DAY_FREE) {
@@ -152,7 +155,7 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, perUserAiLimi
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model:       'claude-sonnet-4-20250514',
+        model:       CLAUDE_MODEL,
         temperature: isDefender ? 0.3 : 0.4,  // defenders: precise; consumers: conversational
         max_tokens:  isDefender ? 1500 : 600,
         stream:      true,   // ← enables token streaming

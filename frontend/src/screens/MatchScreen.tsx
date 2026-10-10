@@ -18,45 +18,42 @@ import { AppIcon } from '../components/AppIcon';
 
 import React, { useState, useCallback, useMemo} from 'react';
 import { View, Text, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, TextInput, Linking, ActivityIndicator, Platform, KeyboardAvoidingView, Modal, LayoutAnimation} from 'react-native';
-import PracticeAreaSelector, {} from '../components/PracticeAreaSelector';
-import { api } from '../services/api';
+import { PRACTICE_AREAS } from '../components/PracticeAreaSelector';
+import { Picker } from '@react-native-picker/picker';
+import { useNavigation } from '@react-navigation/native';
+import { api, apiErrorMessage } from '../services/api';
 import { getLocationWithCity, formatDistance } from '../services/location';
 import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { t } from '../i18n';
 
-declare var CASE_TYPES: any;
-declare var Picker: any;
-declare var caseLoading: any; // hoisted from component scope
-declare var useNavigation: any; // hoisted from component scope
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const LANGUAGES = ['', 'Spanish', 'Arabic', 'Mandarin', 'Vietnamese', 'Hmong', 'Navajo'];
 const LANGUAGES_FILTERED = LANGUAGES.filter(Boolean);
+const CASE_TYPES = PRACTICE_AREAS.map(a => a.key);
 
 
 // ── Contact helpers ───────────────────────────────────────────────────────────
 
-function callPhone(phone: string) {
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
-  const bottomSheetRef = React.useRef<BottomSheet>(null); Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error')); }
-// @ts-ignore
-function sendSMS(phone: string)   { Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error')); }
-function openDirections(lat: number, lng: number, name: string) {
+// Module-level link helpers: no hooks here; failures go to the optional callback.
+function callPhone(phone: string, onError?: () => void) {
+  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => onError?.());
+}
+function sendSMS(phone: string, onError?: () => void) {
+  Linking.openURL('sms:' + phone.replace(/\D/g, '')).catch(() => onError?.());
+}
+function openDirections(lat: number, lng: number, name: string, onError?: () => void) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  // @ts-ignore
-  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
+  Linking.openURL(url).catch(() => onError?.());
 }
-function openWebsite(url: string) {
+function openWebsite(url: string, onError?: () => void) {
   const BLOCKED_SCHEMES = ['javascript:', 'data:', 'vbscript:', 'file:'];
-        const safeUrl = url.startsWith('http') ? url : 'https://' + url;
-        if (!BLOCKED_SCHEMES.some(s => url.toLowerCase().startsWith(s))) {
-          // @ts-ignore
-          Linking.openURL(safeUrl).catch(() => showToast('Action failed. Please try again.', 'error'));
-        }
+  if (BLOCKED_SCHEMES.some(sc => url.toLowerCase().startsWith(sc))) return;
+  const safeUrl = url.startsWith('http') ? url : 'https://' + url;
+  Linking.openURL(safeUrl).catch(() => onError?.());
 }
 
 // ── Match result card ─────────────────────────────────────────────────────────
@@ -66,20 +63,15 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
   const rankColors = [COLORS.emergencyDark, COLORS.warnDark, COLORS.legalDark];
   const rankColor = rankColors[rank - 1] ?? COLORS.navy;
 
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
+  const onLinkError = () => showToast('Action unavailable on this device.', 'error');
   const [msgModal,   setMsgModal]   = useState(false);
   const openSecureMessage = () => { setMsgSent(false); setMsgModal(true); };
   const [msgName,    setMsgName]    = useState('');
   const [msgPhone,   setMsgPhone]   = useState('');
   const [msgNote,    setMsgNote]    = useState('');
   const [msgSending, setMsgSending] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [msgSent,    setMsgSent]    = useState(false);
-  if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
     <TouchableOpacity
       accessibilityRole="button"
@@ -150,16 +142,15 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
           {item?.phone && (
             <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.callBtn]} accessibilityLabel="\ud83d\udcde Call"
-          // @ts-ignore
-          accessibilityHint="Dials this phone number" onPress={() => callPhone(item?.phone)}
+ style={[styles.actionBtn, styles.callBtn]} accessibilityLabel={"\ud83d\udcde Call"}
+          accessibilityHint="Dials this phone number" onPress={() => callPhone(item?.phone, onLinkError)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📞 Call</Text>
             </TouchableOpacity>
           )}
           {item?.phone && (
             <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.smsBtn]} accessibilityLabel="\ud83d\udcac Text" onPress={() => sendSMS(item?.phone)}
+          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.smsBtn]} accessibilityLabel={"\ud83d\udcac Text"} onPress={() => sendSMS(item?.phone, onLinkError)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>💬 Text</Text>
             </TouchableOpacity>
@@ -167,14 +158,14 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
           {item.lat && item.lng && (
             <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.dirBtn]} accessibilityLabel="\ud83d\uddfa Dir" onPress={() => openDirections(item.lat, item.lng, item?.name)}
+          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.dirBtn]} accessibilityLabel={"\ud83d\uddfa Dir"} onPress={() => openDirections(item.lat, item.lng, item?.name, onLinkError)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>🗺 Dir</Text>
             </TouchableOpacity>
           )}
           {item.website && (
             <TouchableOpacity accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.webBtn]} accessibilityLabel="\ud83c\udf10 Web" onPress={() => openWebsite(item.website)}
+          accessibilityHint="Double-tap to activate" style={[styles.actionBtn, styles.webBtn]} accessibilityLabel={"\ud83c\udf10 Web"} onPress={() => openWebsite(item.website, onLinkError)}
                     >
               <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>🌐 Web</Text>
             </TouchableOpacity>
@@ -210,8 +201,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                   </Text>
                   <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={[styles.msgSendBtn, { marginTop: 20, width: '100%' }]} accessibilityLabel="Done"
-          // @ts-ignore
+ style={[styles.msgSendBtn, { marginTop: 20, width: '100%' }]} accessibilityLabel="Done"
           accessibilityHint="Confirms and closes this view" onPress={() => setMsgModal(false)}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.msgSendBtnText}>Done</Text>
@@ -287,10 +277,9 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
                   </TouchableOpacity>
                   <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={{ alignItems: 'center', paddingVertical: 12 }} onPress={() => setMsgModal(false)}
+ style={{ alignItems: 'center', paddingVertical: 12 }} onPress={() => setMsgModal(false)}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
                     accessibilityLabel="Cancel"
-          // @ts-ignore
           accessibilityHint="Cancels and returns to previous screen"
                   >
                     <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textMuted, fontSize: 12 }}>Cancel</Text>
@@ -309,11 +298,10 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
           accessibilityLabel="open Secure Message"
           style={[styles.leaveMessageBtn, styles.secureMsgBtn]}
           onPress={openSecureMessage}
-          disabled={caseLoading}
           activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.leaveMessageBtnText, { color: COLORS.legalDark }]}>
-            {caseLoading ? '…' : '🔒  Message Securely -- End-to-End Encrypted'}
+            {'🔒  Message Securely -- End-to-End Encrypted'}
           </Text>
         </TouchableOpacity>
 
@@ -377,11 +365,10 @@ function MatchScreen(): React.JSX.Element {
       setResults(res.data || []);
       setStatusMsg(res.data?.length === 0 ? 'No matches found. Try removing filters.' : '');
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
-      const errMsg  = e.response?.data?.error || e.message || '';
+      const errMsg  = e.response?.data?.message || apiErrorMessage(e, '');
       const status  = e.response?.status;
-      if (status === 503 || errMsg.toLowerCase().includes('api') || errMsg.toLowerCase().includes('anthropic')) {
-        setStatusMsg('AI Lawyer Match needs ANTHROPIC_API_KEY configured.\nAdd it to backend/.env → restart server → try again.');
+      if (status === 503 || e.response?.data?.error === 'ai_unavailable') {
+        setStatusMsg('AI lawyer matching is temporarily unavailable. Please try again later, or browse the Lawyers tab.');
       } else if (!e.response) {
         setStatusMsg('No connection. Check your internet and try again.');
       } else {

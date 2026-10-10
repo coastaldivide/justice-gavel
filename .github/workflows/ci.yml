@@ -4,26 +4,50 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  backend-tests:
-    name: Backend test suite
+  # ───────────────────────────────────────────────────────────────────────────
+  # Backend: migrations on a real Postgres 16, boot in production mode,
+  # end-to-end smoke test, then the full jest suite (in-memory store).
+  # Every step is blocking.
+  # ───────────────────────────────────────────────────────────────────────────
+  backend:
+    name: Backend (Postgres + smoke + jest)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
 
     defaults:
       run:
         working-directory: backend
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: jg_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d jg_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
     env:
-      NODE_ENV: test
-      JWT_SECRET: ci_test_secret_change_in_prod
-      # Stripe / external services stubbed in test mode — no real keys needed
-      STRIPE_SECRET_KEY: sk_test_ci_placeholder
-      RESEND_API_KEY: re_placeholder_not_live
-      LIVE_EMAIL: "false"
-      LIVE: "false"
+      CI_DATABASE_URL: postgres://postgres:postgres@localhost:5432/jg_ci
+      API_PORT: "4000"
+      ANTHROPIC_MOCK_PORT: "4010"
 
     steps:
       - name: Checkout
@@ -33,74 +57,101 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
+          cache: npm
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run core unit + integration tests
-        run: |
-          node --experimental-vm-modules node_modules/.bin/jest \
-            src/__tests__/bar_prep.test.js \
-            src/__tests__/auth.test.js \
-            src/__tests__/billing.test.js \
-            src/__tests__/golden_gavel.test.js \
-            src/__tests__/middleware.auth.test.js \
-            src/__tests__/webhook_signature.test.js \
-            src/__tests__/session_management.test.js \
-            src/__tests__/subscription_state_machine.test.js \
-            src/__tests__/migration_idempotency.test.js \
-            src/__tests__/cases.test.js \
-            src/__tests__/chat.test.js \
-            src/__tests__/messages.test.js \
-            src/__tests__/push.test.js \
-            src/__tests__/motions.test.js \
-            src/__tests__/research.test.js \
-            src/__tests__/transcribe.test.js \
-            src/__tests__/translate.test.js \
-            src/__tests__/consultations.test.js \
-            src/__tests__/insurance.test.js \
-            src/__tests__/duplicate_submission_guard.test.js \
-            src/__tests__/contracts.test.js \
-            src/__tests__/ai_prompt_safety.test.js \
-            src/__tests__/promptInjection.test.js \
-            src/__tests__/attorney_platform.test.js \
-            --no-coverage --forceExit --testTimeout=20000 --runInBand
+      - name: Audit production dependencies (high+)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Import smoke (app module loads)
         env:
           NODE_ENV: test
+        run: node -e "import('./src/app.js').then(() => { console.log('app.js imported OK'); process.exit(0); }, (e) => { console.error(e); process.exit(1); })"
 
-      - name: Run simulation suites
-        run: |
-          node --experimental-vm-modules node_modules/.bin/jest \
-            src/__tests__/customer_trials.test.js \
-            src/__tests__/firm_trials.test.js \
-            src/__tests__/matter_intelligence.test.js \
-            src/__tests__/golden_gavel.test.js \
-            src/__tests__/godzilla_simulation.test.js \
-            src/__tests__/realworld_simulation.test.js \
-            src/__tests__/stress_simulation.test.js \
-            --no-coverage --forceExit --testTimeout=30000 --runInBand
+      - name: Apply database migrations (supabase/migrations, in order)
+        working-directory: .
         env:
-          NODE_ENV: test
-        continue-on-error: false
-
-      - name: Syntax check all source files
+          PGOPTIONS: "-c client_min_messages=warning"
         run: |
-          find src -name "*.js" \
-            ! -path "*/node_modules/*" \
-            ! -path "*/__tests__/*" \
-            -exec node --check {} \;
-        continue-on-error: false
+          set -euo pipefail
+          for f in $(ls supabase/migrations/*.sql | sort); do
+            echo "::group::$f"
+            psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$f"
+            echo "::endgroup::"
+          done
+          psql "$CI_DATABASE_URL" -Atc "select count(*) || ' tables in public' from information_schema.tables where table_schema='public'"
 
-  frontend-typecheck:
-    name: Frontend type check
+      - name: Generate production secrets
+        run: |
+          set -euo pipefail
+          for k in JWT_SECRET:48 JWT_REFRESH_SECRET:48 ENCRYPTION_KEY:32; do
+            name=${k%%:*}; bytes=${k##*:}
+            val=$(openssl rand -hex "$bytes")
+            echo "::add-mask::$val"
+            echo "$name=$val" >> "$GITHUB_ENV"
+          done
+
+      - name: Start API server (NODE_ENV=production, no Stripe, mock Anthropic)
+        env:
+          NODE_ENV: production
+          PORT: ${{ env.API_PORT }}
+          DATABASE_URL: ${{ env.CI_DATABASE_URL }}
+          ANTHROPIC_API_KEY: dummy
+          ANTHROPIC_BASE_URL: http://127.0.0.1:${{ env.ANTHROPIC_MOCK_PORT }}
+        run: |
+          set -euo pipefail
+          nohup node --import ./src/instrument.js src/server.js > "$RUNNER_TEMP/server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/server.pid"
+          for i in $(seq 1 60); do
+            if curl -fsS "http://localhost:${API_PORT}/health" > "$RUNNER_TEMP/health.json" 2>/dev/null; then
+              cat "$RUNNER_TEMP/health.json"; echo
+              grep -q '"db":"ok"' "$RUNNER_TEMP/health.json" || { echo "::error::/health does not report db ok"; exit 1; }
+              exit 0
+            fi
+            if ! kill -0 "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null; then
+              echo "::error::API server exited during startup"; cat "$RUNNER_TEMP/server.log"; exit 1
+            fi
+            sleep 1
+          done
+          echo "::error::API server did not become healthy within 60s"
+          cat "$RUNNER_TEMP/server.log"
+          exit 1
+
+      - name: End-to-end smoke test (real Postgres)
+        env:
+          DATABASE_URL: ${{ env.CI_DATABASE_URL }}
+        run: node scripts/smoke-test.mjs "http://localhost:${API_PORT}" --anthropic-mock "${ANTHROPIC_MOCK_PORT}"
+
+      - name: Stop API server
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/server.pid" ]; then kill "$(cat "$RUNNER_TEMP/server.pid")" 2>/dev/null || true; fi
+          echo "── server log (tail) ──"
+          tail -n 200 "$RUNNER_TEMP/server.log" 2>/dev/null || true
+
+      - name: Jest suite (in-memory store, no DATABASE_URL)
+        # src/__tests__/env.js sets NODE_ENV=test and test secrets; DATABASE_URL is
+        # deliberately not set so routes use the in-memory fallback.
+        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Frontend: clean install, types, lint, tests, navigation targets, exports.
+  # ───────────────────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend (types + lint + tests + export)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
 
     defaults:
       run:
         working-directory: frontend
+
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
 
     steps:
       - name: Checkout
@@ -110,7 +161,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
@@ -118,9 +169,38 @@ jobs:
 
       - name: TypeScript type check
         run: npx tsc --noEmit
-        continue-on-error: true   # warn only until all types are clean
 
-      - name: Check for bare hex colors in screens
+      - name: ESLint (errors fail, warnings allowed)
+        run: npx eslint src App.tsx
+
+      - name: Navigation targets resolve
+        run: node scripts/check-nav-targets.mjs
+
+      - name: Jest (logic + render suites)
+        run: npm test
+
+      - name: Export web bundle
+        run: npx expo export --platform web --output-dir dist
+
+      - name: Verify web bundle (app screens present, no Electron code)
+        run: |
+          set -euo pipefail
+          js=dist/_expo/static/js/web
+          test -f dist/index.html
+          cat $js/*.js > "$RUNNER_TEMP/web-bundle.js"
+          if grep -qE "electron-log|electron-updater|ipcRenderer" "$RUNNER_TEMP/web-bundle.js"; then
+            echo "::error::Electron code found in the web bundle"; exit 1
+          fi
+          for s in HomeScreen ChatScreen LawyersScreen PaymentsScreen SettingsScreen; do
+            compgen -G "$js/$s-*.js" > /dev/null || { echo "::error::$s chunk missing from web bundle"; exit 1; }
+          done
+          grep -q "Justice Gavel" "$RUNNER_TEMP/web-bundle.js"
+          echo "web bundle: $(ls $js | wc -l) chunks, $(du -sh $js | cut -f1)"
+
+      - name: Export Android bundle
+        run: npx expo export --platform android --output-dir dist-android
+
+      - name: Raw hex colours in screens (informational)
         run: |
           VIOLATIONS=$(grep -rn "#[0-9A-Fa-f]\{6\}" src/screens/ \
             --include="*.tsx" | grep -v "//\|COLORS\.\|theme\." | wc -l)

@@ -15,13 +15,10 @@ import { useNavigation } from '@react-navigation/native';
  * Accessible from: HomeScreen tile "My Plan" → upsell, or direct nav from Pro plan
  */
 import React, { useState, useEffect, useCallback, useMemo} from 'react';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { t } from '../i18n';
 
-declare var setError: any;
-declare var setWallTapCount: any;
-declare var wallTapCount: any;
 const MAX_WATCHES = 5;
 
 interface Watch {
@@ -34,7 +31,6 @@ interface Watch {
   active: number;
 }
 
-// @ts-ignore
 function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const { confirm } = useConfirm();
   const { showToast } = useToast();
@@ -70,7 +66,6 @@ function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   };
 
   const { colors, isDark } = useTheme();
-  // @ts-ignore
   const styles = makeStyles(colors);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
@@ -106,9 +101,11 @@ function ArrestMonitorScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   useEffect(() => { load(); }, [load]);
 
   const addWatch = async () => {
-    if (!name.trim()) { setError('Enter the full name to start monitoring.'); return; }
+    if (!name.trim()) { showToast('Enter the full name to start monitoring.', 'error'); return; }
     if (watches.length >= MAX_WATCHES) {
-showToast(`Pro plan supports up to ${MAX_WATCHES} active monitors.`, 'warning'); return;
+      showToast(`Pro plan supports up to ${MAX_WATCHES} active monitors.`, 'warning');
+      return;
+    }
     setAdding(true);
     try {
       await api.post('/arrests/monitors', {
@@ -119,7 +116,7 @@ showToast(`Pro plan supports up to ${MAX_WATCHES} active monitors.`, 'warning');
       await load();
     } catch (e: any) {
       setLoading(false);
-      showToast(e.response?.data?.error || 'Could not add monitor.', 'info');
+      showToast(apiErrorMessage(e, 'Could not add monitor.'), 'info');
     }
     setAdding(false);
   };
@@ -162,15 +159,7 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
             accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
             style={styles.upsellBtn}
-            onPress={() => (() => {
-              const newCount = wallTapCount + 1;
-              setWallTapCount(newCount);
-              if (newCount >= 2) {
-                showToast('Arrest Monitor sends instant alerts — no checking required. Upgrade to Pro.', 'info');
-              } else {
-                navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' });
-              }
-            })()}
+            onPress={() => navigation.navigate('MoreTab', { screen: 'ConsumerSubscription' })}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.upsellBtnText}>Upgrade to Legal Pro -- $14.99/mo</Text>
           </TouchableOpacity>
@@ -303,10 +292,9 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                   </TouchableOpacity>
                   <TouchableOpacity
                     accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
                     style={styles.cancelFormBtn}
                     accessibilityLabel="Cancel"
-          // @ts-ignore
           accessibilityHint="Cancels and returns to previous screen" onPress={() => { setShowForm(false); setName(''); setCounty(''); }}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.cancelFormText}>Cancel</Text>
@@ -398,5 +386,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   infoCard:  { backgroundColor: COLORS.bg, borderRadius: RADIUS.lg, padding: 16, borderWidth: 1, borderColor: COLORS.border },
   infoTitle: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },
   infoText:  { fontSize: 12, color: COLORS.textMuted, lineHeight: 17 }});
-}
 export default React.memo(ArrestMonitorScreen);

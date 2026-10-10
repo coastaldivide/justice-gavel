@@ -28,7 +28,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import {View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet, TextInput, Platform, ActivityIndicator, Alert, KeyboardAvoidingView, RefreshControl, LayoutAnimation} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
-import {  useTheme, COLORS } from '../constants/theme';
+import { useTheme, COLORS, FONTS, FONT } from '../constants/theme';
 import {
   STATE_COURT_FORMS,
   FEDERAL_SOURCES,
@@ -37,10 +37,6 @@ import LegalDisclaimerModal, { hasValidConsent } from '../components/LegalDiscla
 import { api } from '../services/api';
 import { t } from '../i18n';
 
-declare var FONTS: any;
-declare var ScreenProps: any;
-declare var onRefresh: any;
-declare var refreshing: any;
 // ── Form categories ───────────────────────────────────────────────────────────
 const FORM_CATEGORIES = [
   {
@@ -81,10 +77,9 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const { colors } = useTheme();
-  const s = styles(COLORS, FONTS);
+  const s = styles(COLORS, FONT);
 
   const [phase, setPhase] = useState<Phase>('state_select');
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [selectedState, setSelectedState] = useState<CourtFormSource | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -180,7 +175,7 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
     <TouchableOpacity
   accessibilityRole="button"
       style={s.stateRow}
-      accessibilityLabel="{item.stateName}" onPress={() => onSelectState(item)}
+      accessibilityLabel={item.stateName} onPress={() => onSelectState(item)}
     >
       <View style={s.stateInfo}>
         <Text maxFontSizeMultiplier={1.4} style={s.stateName}>{item.stateName}</Text>
@@ -198,18 +193,11 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
           </View>
         )}
       </View>
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
     </TouchableOpacity>
   ), [s, onSelectState]);
 
   // ── Phase: State selection ─────────────────────────────────────────────────
   if (phase === 'state_select') {
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
       <View style={s.root}
         testID="court-forms-screen">
@@ -234,16 +222,10 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
         />
         </View>
         <FlashList
-          // @ts-ignore
-          initialNumToRender={12}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={true}
           data={filteredStates}
+          estimatedItemSize={72}
           ListEmptyComponent={
-            <View style={{ padding:40, alignItems:'center' }}
-        // @ts-ignore
-        estimatedItemSize={80}>
+            <View style={{ padding:40, alignItems:'center' }}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, color:COLORS.textMuted, textAlign:'center' }}>
                 📄 No states match your search. Try a different name or abbreviation.
               </Text>
@@ -252,7 +234,6 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
           keyExtractor={item => item.state}
           renderItem={renderStateItem}
           ItemSeparatorComponent={() => <View style={s.separator} />}
-          getItemLayout={(_, index) => ({ length: 72, offset: 72 * index, index })}
           ListHeaderComponent={
             <View>
               <Text maxFontSizeMultiplier={1.4} style={s.disclaimerText}>
@@ -276,8 +257,9 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
       <View style={s.root}>
         <View style={s.subHeader}>
           <TouchableOpacity
-  accessibilityRole="button"
-           accessibilityLabel="\u2190 States">
+            accessibilityRole="button"
+            accessibilityLabel="Back to states"
+            onPress={() => { setSelectedState(null); setPhase('state_select'); }}>
             <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← States</Text>
           </TouchableOpacity>
           <Text maxFontSizeMultiplier={1.4} style={s.subHeaderTitle}>{selectedState.stateName}</Text>
@@ -286,8 +268,7 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps='handled' contentContainerStyle={s.categoryList}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        <ScrollView keyboardShouldPersistTaps='handled' contentContainerStyle={s.categoryList}>
           
           {FORM_CATEGORIES.length === 0 && (
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
@@ -298,7 +279,7 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
             <TouchableOpacity accessibilityRole="button"
               key={cat.key}
               style={s.categoryCard}
-              accessibilityLabel="{cat.icon}" onPress={() => onSelectCategory(cat.key)}
+              accessibilityLabel={cat.icon} onPress={() => onSelectCategory(cat.key)}
             >
               <Text maxFontSizeMultiplier={1.4} style={s.categoryIcon}>{cat.icon}</Text>
               <View style={s.categoryInfo}>
@@ -363,8 +344,9 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
       <View style={s.root}>
         <View style={s.subHeader}>
           <TouchableOpacity
-  accessibilityRole="button"
-           accessibilityLabel="\u2190 {selectedState.stateName}">
+            accessibilityRole="button"
+            accessibilityLabel={`Back to ${selectedState.stateName}`}
+            onPress={() => { setSelectedCategory(null); setPhase('category_select'); }}>
             <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← {selectedState.stateName}</Text>
           </TouchableOpacity>
           <Text maxFontSizeMultiplier={1.4} style={s.subHeaderTitle}>{categoryInfo?.label}</Text>
@@ -503,8 +485,9 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
       <View style={s.root}>
         <View style={s.subHeader}>
           <TouchableOpacity
-  accessibilityRole="button"
-           accessibilityLabel="\u2190 Forms">
+            accessibilityRole="button"
+            accessibilityLabel="Back to forms"
+            onPress={() => setPhase('form_display')}>
             <Text maxFontSizeMultiplier={1.4} style={s.backBtnText}>← Forms</Text>
           </TouchableOpacity>
           <Text maxFontSizeMultiplier={1.4} style={s.subHeaderTitle}>Field Guide</Text>
@@ -565,7 +548,7 @@ function CourtFormsScreen({ route, navigation }: any): React.JSX.Element | null 
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = (C: any, F: any) => StyleSheet.create({
+const styles = (C: any, F: typeof FONT) => StyleSheet.create({
   root:            { flex: 1, backgroundColor: C.bg },
   header:          { backgroundColor: C.navy, paddingTop: Platform.OS === 'ios' ? 56 : 32, paddingBottom: 16, paddingHorizontal: 20 },
   headerTitle:     { fontSize: 22, fontFamily: F.bold, color: COLORS.bgCard, marginBottom: 4 },

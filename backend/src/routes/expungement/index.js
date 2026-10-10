@@ -1,6 +1,6 @@
-import { validate, schemas } from '../validation/schemas.js';
-import { cacheFor } from '../utils/cache.js';
-import { asyncRoute } from '../utils/routeHelpers.js';
+import { validate, schemas } from '../../validation/schemas.js';
+import { cacheFor } from '../../utils/cache.js';
+import { asyncRoute } from '../../utils/routeHelpers.js';
 /**
  * expungement/index.js — Expungement module entry point
  *
@@ -18,6 +18,8 @@ import petitionRouter   from './petition.js';
 import { authRequired }    from '../../middleware/auth.js';
 import { getDb }           from '../../db/index.js';
 import { err400 }          from '../../utils/routeHelpers.js';
+import logger              from '../../utils/logger.js';
+import { getEligibility, classifyCharge } from './rules.js';
 
 const router = Router();
 router.use('/', attorneysRouter);
@@ -36,7 +38,12 @@ router.post('/eligibility', authRequired, async (req, res) => {
     const chargeList = charges.length > 0 ? charges : [req.body];
 
     const results = chargeList.map(charge => {
-      const result = getEligibility(state, charge);
+      const desc = typeof charge === 'string' ? charge : (charge.charge || charge.description || charge.charge_type || '');
+      const known = ['felony','misdemeanor','dui','domestic','sexual','dismissed'];
+      const type = (typeof charge === 'object' && known.includes(String(charge.charge_type || '').toLowerCase()))
+        ? String(charge.charge_type).toLowerCase() : classifyCharge(String(desc));
+      const result = { ...getEligibility(state, type, dismissed ? 'Dismissed' : undefined) };
+      result.wait_years = result.wait_years ?? result.waitYears ?? result.waiting_years;
       // Calculate wait_until_date
       if (result.eligible && result.wait_years && conviction_date) {
         const base = new Date(conviction_date);
@@ -47,7 +54,7 @@ router.post('/eligibility', authRequired, async (req, res) => {
         );
         result.eligible_now = result.wait_days_remaining === 0;
       }
-      return { charge: charge.charge_type || charge, ...result };
+      return { charge: typeof charge === 'string' ? charge : (charge.charge_type || desc), ...result };
     });
 
     // Overall: eligible only if ALL charges eligible

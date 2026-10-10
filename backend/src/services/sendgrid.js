@@ -9,22 +9,17 @@
  *  - Payment link delivery
  *  - Unsubscribe/opt-out handling
  */
-import logger from '../utils/logger.js';
+/*
+ * NOTE: SendGrid has been retired. This module is a thin compatibility shim:
+ * the HTML builders and parseEmailIntent remain here, and sendEmail delegates
+ * to services/email.js (Resend). Without RESEND_API_KEY emails are logged.
+ */
+import { sendEmail as resendSendEmail, emailLive } from './email.js';
 
-const sgKey  = process.env.SENDGRID_API_KEY || '';
 const FROM   = process.env.ALERT_EMAIL_FROM || 'alerts@justicegavel.app';
-export const SENDGRID_LIVE = !!sgKey;
+export const SENDGRID_LIVE = false;          // legacy flag — SendGrid is no longer used
 export const SENDGRID_FROM = FROM;
-
-let sgClient = null;
-
-async function getSgClient() {
-  if (sgClient) return sgClient;
-  const sgMail = (await import('@sendgrid/mail')).default;
-  sgMail.setApiKey(sgKey);
-  sgClient = sgMail;
-  return sgClient;
-}
+export const EMAIL_LIVE    = () => emailLive();
 
 // ── Branded email HTML ─────────────────────────────────────────────────────────
 // Builds a fully-branded HTML email wrapping arbitrary body HTML.
@@ -97,32 +92,15 @@ export function buildReceiptEmail(tier, amount, nextBillingDate) {
   return buildEmailHtml('Justice Gavel subscription receipt', body, 'Your receipt is here');
 }
 
-// ── Send email ─────────────────────────────────────────────────────────────────
-export async function sendEmail({ to, subject, text, html }) {
-  if (!to || !subject) {
-    logger.error('[sendgrid] Missing to or subject');
-    return { error: 'missing_fields' };
-  }
-
-  if (!SENDGRID_LIVE) {
-    logger.info({ msg: '[sendgrid:mock]', to, subject });
-    return { mock: true, messageId: 'mock_' + Date.now() };
-  }
-
+// ── Send email (delegates to Resend via services/email.js) ───────────────────
+export async function sendEmail(arg, subjectArg, textArg) {
+  const o = (arg && typeof arg === 'object' && !Array.isArray(arg)) ? arg : { to: arg, subject: subjectArg, text: textArg };
+  if (!o.to || !o.subject) return { error: 'missing_fields' };
+  const html = o.html || buildEmailHtml(o.subject, '<p>' + String(o.text || o.subject).replace(/\n/g, '<br>') + '</p>');
   try {
-    const client = await getSgClient();
-    const msg = {
-      to,
-      from: FROM,
-      subject,
-      text: text || subject,
-      html: html || buildEmailHtml(subject, '<p>' + (text || subject).replace(/\n/g, '<br>') + '</p>'),
-    };
-    const [response] = await client.send(msg);
-    logger.info({ msg: '[sendgrid] sent', to, status: response.statusCode });
-    return { statusCode: response.statusCode, messageId: response.headers['x-message-id'] };
+    const r = await resendSendEmail({ to: o.to, subject: o.subject, html, text: o.text || o.subject });
+    return r?.mock ? { mock: true, messageId: 'mock_' + Date.now() } : { messageId: r?.id };
   } catch (err) {
-    logger.error({ msg: '[sendgrid] failed', to, error: err.message });
     return { error: err.message };
   }
 }

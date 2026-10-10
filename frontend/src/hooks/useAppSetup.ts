@@ -10,23 +10,13 @@
 import React, { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
-import * as Sentry from '@sentry/react-native';
-// ── Sentry error monitoring ────────────────────────────────────────────────────
+import Constants from 'expo-constants';
+// Sentry is initialised once in App.tsx (no-op when EXPO_PUBLIC_SENTRY_DSN is empty).
 
-const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
-if (SENTRY_DSN) {
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: __DEV__ ? 'development' : 'production',
-    enableAutoSessionTracking: true,
-    sessionTrackingIntervalMillis: 30000,
-    // Ignore common non-errors
-    ignoreErrors: [
-      'Network request failed',
-      'TypeError: Network request failed',
-      'AbortError',
-    ],
-  });
+/** EAS project id, or null while the owner has not run `eas init` yet. */
+function easProjectId(): string | null {
+  const id = (Constants.expoConfig?.extra as any)?.eas?.projectId ?? (Constants as any).easConfig?.projectId;
+  return typeof id === 'string' && id && !id.startsWith('PENDING') ? id : null;
 }
 
 export async function registerForPushNotificationsAsync(): Promise<string | null | undefined> {
@@ -40,7 +30,10 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     }
     if (finalStatus !== 'granted') return;
 
-    const tokenData = await Notifications.getExpoPushTokenAsync();
+    // Expo push tokens are scoped to the EAS project; skip until it exists.
+    const projectId = easProjectId();
+    if (!projectId) return;
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
     const token = tokenData.data;
     if (!token) return;
 
@@ -76,6 +69,7 @@ export function usePushTokenRefresh() {
 export function useOTAUpdates() {
   useEffect(() => {
     if (__DEV__) return; // skip in dev — Metro handles updates
+    if (!Updates.isEnabled) return; // updates disabled (no EAS project yet / web)
     (async () => {
       try {
         const update = await Updates.checkForUpdateAsync();
@@ -103,13 +97,13 @@ export function usePushNotificationTap(navigationRef: React.RefObject<any>) {
 
         // Route to relevant screen based on notification type
         if (data?.type === 'checkin_reminder') {
-          nav.navigate('HomeTab', { screen: 'CheckIn' });
+          nav.navigate('MoreTab', { screen: 'CheckIn' });
         } else if (data?.type === 'arrest_alert' && data?.watchId) {
-          nav.navigate('HomeTab', { screen: 'ArrestMonitor' });
+          nav.navigate('MoreTab', { screen: 'ArrestMonitor' });
         } else if (data?.type === 'court_reminder' && data?.caseId) {
-          nav.navigate('MoreTab', { screen: 'CaseScreen', params: { caseId: data.caseId } });
+          nav.navigate('MoreTab', { screen: 'Cases', params: { caseId: data.caseId } });
         } else if (data?.type === 'message' && data?.threadId) {
-          nav.navigate('HomeTab', { screen: 'Chat' });
+          nav.navigate('ChatTab');
         } else if (data?.type === 'expungement_eligible') {
           nav.navigate('MoreTab', { screen: 'Expungement' });
         } else if (data?.type === 'cle_reminder') {

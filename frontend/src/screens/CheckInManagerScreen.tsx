@@ -31,9 +31,6 @@ import { useAuthGate } from '../components/AuthGate';
 import ErrorState from '../components/ErrorState';
 import { t } from '../i18n';
 
-declare var loading: any;
-declare var setLoading: any;
-declare var load: any; // hoisted from component scope
 type DefendantRow = {
   id: number; defendant_name: string; defendant_phone: string;
   case_number: string; court_date: string; active: number;
@@ -42,7 +39,6 @@ type DefendantRow = {
 };
 
 function statusColor(row: DefendantRow): { color: string; bg: string; label: string } {
-  const { confirm } = useConfirm();
   if (!row.active) return { color: COLORS.textMuted, bg: COLORS.bg, label: 'Inactive' };
   if (row.checkins_today > 0) return { color: COLORS.legal, bg: COLORS.legalBg, label: '✓ Checked in today' };
   const courtSoon = row.court_date &&
@@ -89,14 +85,6 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
       setSaving(false);
     }
   };
-
-
-  // Refresh data whenever user navigates back to this screen
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [])
-  );
 
   return (
     <Modal accessibilityViewIsModal={true} visible={visible} animationType="slide" presentationStyle="pageSheet"
@@ -171,7 +159,7 @@ function EnrollModal({ visible, onClose, onEnrolled }: any) {
             style={[styles.saveBtn, saving && { opacity: 0.6 }]}
             onPress={save}
             disabled={saving}
-           accessibilityLabel="Enroll \u00b7 $9.99/month">
+           accessibilityLabel={"Enroll \u00b7 $9.99/month"}>
             {saving
               ? <ActivityIndicator color={COLORS.bgCard} />
               : <Text maxFontSizeMultiplier={1.4} style={styles.saveBtnText}>Enroll · $9.99/month</Text>
@@ -240,16 +228,10 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
             : (
               <FlashList
           accessibilityLabel="Check-in schedule list"
-                // @ts-ignore
-                getItemLayout={(_, index) => ({ length: 80, offset: 80 * index, index })}
           estimatedItemSize={80}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={true}
           data={records}
                 keyExtractor={r => String(r.id)}
-                contentContainerStyle={{ padding: 14, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
+                contentContainerStyle={{ padding: 14}}
                 renderItem={({ item }) => (
                   <View style={styles.historyRow}>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.historyStatus,
@@ -282,6 +264,7 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 function CheckInManagerScreen({ route, navigation }: ScreenProps) {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
   React.useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -292,6 +275,7 @@ function CheckInManagerScreen({ route, navigation }: ScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [showEnroll, setShowEnroll] = useState(false);
   const [selectedEnroll, setSelectedEnroll] = useState<any>(null);
+  const [loading, setLoading]       = useState(true);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
 
   const load = useCallback(async (isRefresh = false) => {
@@ -308,13 +292,17 @@ function CheckInManagerScreen({ route, navigation }: ScreenProps) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [showToast]);
 
-  useEffect(() => { load(); }, [load]);
+  // Refresh whenever the user navigates back to this screen
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const deactivate = (id: number, name: string) => {
-// @ts-ignore
-confirm(`Remove ${name}?`, 'They will no longer need to check in.',
+    confirm(`Remove ${name}?`, 'They will no longer need to check in.',
       { confirmLabel: 'Remove', destructive: true }).then(async ok => { if (!ok) return;
       await api.put(`/checkins/enrollments/${id}`, { active: false }).catch((e) => { __DEV__ && console.warn(e?.message); });
         load();
@@ -362,7 +350,7 @@ confirm(`Remove ${name}?`, 'They will no longer need to check in.',
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
             style={styles.howBtn}
-            accessibilityLabel="Enroll First Defendant \u2192" onPress={() => requireAuth(() => setShowEnroll(true))}
+            accessibilityLabel={"Enroll First Defendant \u2192"} onPress={() => requireAuth(() => setShowEnroll(true))}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.howBtnText}>Enroll First Defendant →</Text>
           </TouchableOpacity>
@@ -375,7 +363,6 @@ confirm(`Remove ${name}?`, 'They will no longer need to check in.',
         <FlashList
           data={[...active, ...inactive]}
           keyExtractor={(r) => String(r.id)}
-          // @ts-ignore
           estimatedItemSize={80}
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
@@ -409,7 +396,7 @@ confirm(`Remove ${name}?`, 'They will no longer need to check in.',
                   {!!item.court_date && (
                     <View style={styles.miniStat}>
                       <Text maxFontSizeMultiplier={1.4} style={[styles.miniStatNum, { fontSize: 12 }]}>
-                        {Math.max(0, Math.ceil((new Date(item.court_date).getTime() - Date.now()) / 86400000))}d
+                        {Math.max(0, daysUntil(item.court_date) ?? 0)}d
                       </Text>
                       <Text maxFontSizeMultiplier={1.4} style={styles.miniStatLabel}>Court</Text>
                     </View>
@@ -425,7 +412,7 @@ confirm(`Remove ${name}?`, 'They will no longer need to check in.',
                     accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
                     style={styles.actionBtn}
-                    accessibilityLabel="\ud83d\udccb View History" onPress={() => setSelectedEnroll(item)}
+                    accessibilityLabel={"\ud83d\udccb View History"} onPress={() => setSelectedEnroll(item)}
                   >
                     <Text maxFontSizeMultiplier={1.4} style={styles.actionBtnText}>📋 View History</Text>
                   </TouchableOpacity>

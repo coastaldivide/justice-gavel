@@ -3,11 +3,10 @@ import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 import React, { useEffect, useState, useCallback} from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, LayoutAnimation} from 'react-native';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { t } from '../i18n';
 
-declare var data: any;
 interface Stats {
   lawyerCount: number;
   bailCount: number;
@@ -51,7 +50,7 @@ function AdvocacyScreen(): React.JSX.Element {
       const r = await api.get('/advocacy/stats');
       setStats(r.data || {});
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Could not load stats. Check your connection.');
+      setError(apiErrorMessage(e, 'Could not load stats. Check your connection.'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -130,14 +129,6 @@ function AdvocacyScreen(): React.JSX.Element {
         </>
       ) : null}
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>📣</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No advocacy resources available</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check back soon for updates.</Text>
-        </View>
-      )}
         <Text style={{ fontSize: 11, color: '#888', textAlign: 'center', padding: 12, paddingBottom: 24 }}>⚖️ This content is for general educational purposes only and does not constitute legal advice. Laws vary by jurisdiction. Consult a licensed attorney for advice specific to your situation.</Text>
         </ScrollView>
   );

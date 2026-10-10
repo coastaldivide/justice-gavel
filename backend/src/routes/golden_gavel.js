@@ -316,7 +316,7 @@ export async function processGoldenGavelAward(userId) {
 router.get('/status', authRequired, gavelLimiter, async (req, res) => {
   try {
     const db   = await getDb();
-    const user = await db.get(
+    let user = await db.get(
       `SELECT gavel_level, gavel_level_awarded_at, gavel_bronze_at, gavel_silver_at,
               golden_gavel, golden_gavel_awarded_at, golden_gavel_tier
        FROM users WHERE id = ?`, [req.user.id]
@@ -366,9 +366,13 @@ router.post('/hall/opt-in', authRequired, gavelLimiter, async (req, res) => {
     const helped  = (consult?.n ?? 0) + (motions?.n ?? 0) + (fc?.n ?? 0);
 
     await db.run(
-      `INSERT OR REPLACE INTO golden_gavel_hall
+      `INSERT INTO golden_gavel_hall
        (user_id, display_name, tier, state, people_helped, gavel_level, opted_in_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, NOW())
+       ON CONFLICT (user_id) DO UPDATE SET
+         display_name = EXCLUDED.display_name, tier = EXCLUDED.tier, state = EXCLUDED.state,
+         people_helped = EXCLUDED.people_helped, gavel_level = EXCLUDED.gavel_level,
+         opted_in_at = EXCLUDED.opted_in_at`,
       [req.user.id, display_name || user.name, user.golden_gavel_tier || 'consumer', state||'', helped, level]
     );
     res.json({ success: true, people_helped: helped, gavel_level: level, level_label: GAVEL_LABEL[level] });

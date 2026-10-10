@@ -12,16 +12,13 @@ import { err400, truncateStr, err401, err403, err404, err409, err422, err500, er
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
 import express from 'express';
-import { open } from 'sqlite';
-import sqlite3 from 'sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { getDb } from '../db/index.js';
+import { validate, schemas } from '../validation/schemas.js';
+import { escapeLike } from '../utils/routeHelpers.js';
 import { authRequired as authMiddleware } from '../middleware/auth.js';
 import { sendArrestAlerts } from '../services/arrest_alerts.js';
-const alertsPipelineLimiter = makeUserLimiter(20, 60_000); // auto-generated rate limiter
+const alertsPipelineLimiter = makeUserLimiter({ windowMs: 60_000, max: 20 });
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.resolve(__dirname, '../../data/providers.sqlite');
 
 // Column allowlist for dynamic WHERE conditions
 const ALLOWED_ARREST_COLS = new Set(['state','county','has_attorney','source','booking_date','bail_amount']);
@@ -32,9 +29,6 @@ function safeCondition(col, val, params) {
 }
 const router = express.Router();
 
-async function getDb() {
-  return open({ filename: DB_PATH, driver: sqlite3.Database });
-}
 
 // Search by name or charge (family member looking up loved one)
 router.get('/search', authMiddleware, async (req, res) => {
@@ -44,26 +38,26 @@ router.get('/search', authMiddleware, async (req, res) => {
     return err400(res, 'Provide name, charge, or county to search');
   }
 
-  const db = await getDb();
   try {
+    const db = await getDb();
     const conditions = [];
     const params = [];
 
     if (name) {
-      conditions.push('LOWER(name) LIKE LOWER(?)');
-      params.push(`%${name}%`);
+      conditions.push('name ILIKE ?');
+      params.push(`%${escapeLike(String(name).slice(0, 100))}%`);
     }
     if (county) {
       conditions.push('LOWER(county) = LOWER(?)');
       params.push(county);
     }
     if (charge) {
-      conditions.push('LOWER(charges) LIKE LOWER(?)');
-      params.push(`%${charge}%`);
+      conditions.push('charges ILIKE ?');
+      params.push(`%${escapeLike(String(charge).slice(0, 100))}%`);
     }
     if (state) {
       conditions.push('state = ?');
-      params.push(state.toUpperCase());
+      params.push(String(state).toUpperCase().slice(0, 2));
     }
 
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
@@ -72,9 +66,9 @@ router.get('/search', authMiddleware, async (req, res) => {
               has_attorney, jail_location, county, state, case_number
        FROM arrest_records
        ${where}
-       ORDER BY booking_date DESC
+       ORDER BY booking_date DESC NULLS LAST
        LIMIT ? OFFSET ?`,
-      [...params, safeInt(limit), safeInt(offset)]
+      [...params, Math.min(Math.max(safeInt(limit, 20), 1), 100), Math.max(safeInt(offset), 0)]
     );
 
     const total = await db.get(
@@ -93,21 +87,21 @@ router.get('/recent', authMiddleware, async (req, res) => {
 
   try {
     const db = await getDb();
-    const conditions = [`created_at >= datetime('now', '-${safeInt(hours)} hours')`];
+    const conditions = [`created_at >= (NOW() - INTERVAL '${Math.min(Math.max(safeInt(hours, 24), 1), 24 * 365)} hours')`];
     const params = [];
 
     if (county) { conditions.push('LOWER(county) = LOWER(?)'); params.push(county); }
-    if (state)  { conditions.push('state = ?'); params.push(state.toUpperCase()); }
+    if (state)  { conditions.push('state = ?'); params.push(String(state).toUpperCase().slice(0, 2)); }
     if (no_attorney === 'true') { conditions.push('has_attorney = 0'); }
     if (has_bail === 'true')    { conditions.push('bail_amount > 0'); }
 
     const records = await db.all(
-      `SELECT id, name, booking_date, charges, bail_amount, status, city, county, state, has_attorney, source FROM arrest_records
+      `SELECT id, name, booking_date, charges, bail_amount, status, city, county, state, has_attorney, source
        FROM arrest_records
        WHERE ${conditions.join(' AND ')}
-       ORDER BY booking_date DESC
+       ORDER BY booking_date DESC NULLS LAST
        LIMIT ?`,
-      [...params, safeInt(limit)]
+      [...params, Math.min(Math.max(safeInt(limit, 100), 1), 500)]
     );
 
     res.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=300');
@@ -116,24 +110,10 @@ router.get('/recent', authMiddleware, async (req, res) => {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
 
-// Single arrest detail
-router.get('/:id', authMiddleware, async (req, res) => {
-  const db = await getDb();
-  try {
-    const record = await db.get(
-      'SELECT id, name, booking_date, charges, bail_amount, status, city, county, state, has_attorney, source FROM arrest_records WHERE id = ?',
-      [safeInt(req.params.id)]
-    );
-    if (!record) return err404(res, 'Record not found');
-    res.json(record);
-  } catch (e) {
-    logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
-});
-
 // County stats — how many arrests, breakdown by charge type
 router.get('/stats/county/:county', authMiddleware, async (req, res) => {
-  const db = await getDb();
   try {
+    const db = await getDb();
     const { days = 7 } = req.query;
     const county = req.params.county;
 
@@ -147,9 +127,8 @@ router.get('/stats/county/:county', authMiddleware, async (req, res) => {
         MAX(bail_amount) as max_bail
        FROM arrest_records
        WHERE LOWER(county) = LOWER(?)
-       AND created_at >= datetime('now', ?)` , [county, `-${safeInt(days)} days`]
-    // NOTE: moved params inline,
-      [county]
+       AND created_at >= (NOW() - (? || ' days')::interval)`,
+      [county, String(Math.min(Math.max(safeInt(days, 7), 1), 3650))]
     );
 
     res.json({ county, days: safeInt(days), ...stats });
@@ -159,6 +138,9 @@ router.get('/stats/county/:county', authMiddleware, async (req, res) => {
 
 // Manually trigger alert send (admin)
 router.post('/send-alerts', authMiddleware, alertsPipelineLimiter, async (req, res) => {
+  if (!['admin', 'super_admin'].includes(req.user?.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
   try {
     const result = await sendArrestAlerts();
     res.json({ success: true, ...result });
@@ -177,27 +159,27 @@ router.get('/monitors', authMiddleware, async (req, res) => {
   try {
     const db = await getDb();
     const rows = await db.all(
-      'SELECT id, user_id, name, county, state, notify_email, notify_sms, created_at FROM arrest_monitors WHERE user_id=? ORDER BY id DESC',
+      'SELECT id, user_id, COALESCE(watch_name, name) AS watch_name, name, county, state, notify_email, notify_sms, active, created_at FROM arrest_monitors WHERE user_id=? AND COALESCE(active, 1) = 1 ORDER BY id DESC',
       [req.user.id]
-    ).catch(() => []);
+    );
     res.json({ monitors: rows, count: rows.length });
   } catch (e) {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
 
-router.post('/monitors', validate(schemas.arrests.create_monitor), authMiddleware, async (req, res) => {
+router.post('/monitors', authMiddleware, validate(schemas.arrests.create_monitor), async (req, res) => {
   let { watch_name, county = 'All', state = 'TN' } = req.body;
 
   if (watch_name) watch_name = truncateStr(watch_name, 200);  if (!watch_name) return err400(res, 'watch_name required');
   try {
     const db = await getDb();
     // Limit: 5 per user
-    const count = await db.get('SELECT COUNT(*) as n FROM arrest_monitors WHERE user_id=? AND active=1', [req.user.id]).catch(()=>({n:0}));
-    if (count.n >= 5) return res.status(429).json({ error: 'Monitor limit reached (5 max)' });
+    const count = await db.get('SELECT COUNT(*) as n FROM arrest_monitors WHERE user_id=? AND active=1', [req.user.id]);
+    if ((count?.n ?? 0) >= 5) return res.status(429).json({ error: 'Monitor limit reached (5 max)' });
     const r = await db.run(
-      'INSERT INTO arrest_monitors (user_id, watch_name, county, state, active) VALUES (?,?,?,?,1)',
-      [req.user.id, watch_name.trim(), county.trim(), state.trim()]
-    ).catch(() => null);
+      'INSERT INTO arrest_monitors (user_id, watch_name, name, county, state, active) VALUES (?,?,?,?,?,1)',
+      [req.user.id, watch_name.trim(), watch_name.trim(), String(county).trim(), String(state).trim()]
+    );
     res.status(201).json({ created: true, id: r?.lastID });
   } catch (e) {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
@@ -230,8 +212,8 @@ router.get('/warrant-check', authMiddleware, async (req, res) => {
     const safeName  = sanitizeStr(name, 200).trim();
     const safeState = (state || '').toUpperCase().slice(0, 2);
 
-    const conditions = ["LOWER(name) LIKE LOWER(?)"];
-    const params     = [`%${safeName}%`];
+    const conditions = ["name ILIKE ?"];
+    const params     = [`%${escapeLike(safeName)}%`];
 
     if (safeState) { conditions.push('state = ?'); params.push(safeState); }
 
@@ -241,7 +223,7 @@ router.get('/warrant-check', authMiddleware, async (req, res) => {
               court_date, case_number, status
        FROM arrest_records
        WHERE ${conditions.join(' AND ')}
-         AND (status = 'warrant_active' OR charges LIKE '%warrant%' OR charges LIKE '%failure to appear%')
+         AND (status = 'warrant_active' OR charges ILIKE '%warrant%' OR charges ILIKE '%failure to appear%')
        ORDER BY booking_date DESC
        LIMIT 10`,
       params
@@ -254,7 +236,7 @@ router.get('/warrant-check', authMiddleware, async (req, res) => {
     ).catch(() => []);
 
     const isMonitored = monitors.some(
-      m => m.watch_name.toLowerCase().includes(safeName.toLowerCase())
+      m => String(m.watch_name || '').toLowerCase().includes(safeName.toLowerCase())
     );
 
     res.json({
@@ -279,7 +261,9 @@ router.get('/warrant-check', authMiddleware, async (req, res) => {
 // ── POST /api/arrests/ingest — manually trigger data ingestion (admin only) ──
 router.post('/ingest', authMiddleware, async (req, res) => {
   // Admin check
-  if (!req.user?.is_admin && req.headers['x-admin-key'] !== process.env.ADMIN_KEY) {
+  const isAdmin = ['admin', 'super_admin'].includes(req.user?.role) ||
+    (!!process.env.ADMIN_KEY && req.headers['x-admin-key'] === process.env.ADMIN_KEY);
+  if (!isAdmin) {
     return res.status(403).json({ error: 'Admin access required' });
   }
   try {
@@ -291,5 +275,20 @@ router.post('/ingest', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Ingestion failed', detail: e?.message });
   }
 });
+
+// Single arrest detail
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDb();
+    const record = await db.get(
+      'SELECT id, name, booking_date, charges, bail_amount, status, city, county, state, has_attorney, source FROM arrest_records WHERE id = ?',
+      [safeInt(req.params.id)]
+    );
+    if (!record) return err404(res, 'Record not found');
+    res.json(record);
+  } catch (e) {
+    logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
 
 export default router;

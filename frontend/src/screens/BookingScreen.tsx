@@ -13,15 +13,15 @@ import type { ScreenProps } from '../types/navigation';
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Linking, LayoutAnimation} from 'react-native';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { track } from '../services/analytics';
 import { useAuthGate } from '../components/AuthGate';
-import { useStripe } from '@stripe/stripe-react-native';
+import { usePaymentSheet, PAYMENTS_COMING_SOON } from '../payments';
+import { toLocalISODate } from '../utils/dateUtils';
 
 
-declare var setError: any;
 const DURATIONS = [
   { min: 15, label: '15 min',  sub: 'Quick intro',      fee: '$9.99',  cents: 999,  emoji: '⚡' },
   { min: 30, label: '30 min',  sub: 'Standard consult', fee: '$14.99', cents: 1499, emoji: '⚖️', popular: true },
@@ -34,14 +34,13 @@ const TIMES = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
 type Step = 'duration' | 'datetime' | 'confirm' | 'confirmed' | 'callback_sent';
 
 function buildDays(): { date: string; label: string; times: { time: string; available: boolean }[] }[] {
-  const { showToast } = useToast();
   const days: { date: string; label: string; times: { time: string; available: boolean }[] }[] = [];
   const d = new Date();
   for (let i = 1; i <= 14; i++) {
     d.setDate(d.getDate() + 1);
     if (d.getDay() === 0) continue; // skip Sundays
     days.push({
-      date:  d.toISOString().split('T')[0],
+      date:  toLocalISODate(d),
       label: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
       times: TIMES.map((t, ti) => {
         // Deterministic availability based on date + time index
@@ -56,12 +55,13 @@ function buildDays(): { date: string; label: string; times: { time: string; avai
 }
 
 function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { showToast } = useToast();
   const [submitting, setSubmitting] = React.useState(false);
 
   // Load attorney's weekly availability so users know best times to expect responses
   const { lawyerName, lawyerId } = (route?.params as import('../types/api').RouteParams) ?? {};
   const [prefillLoaded, setPrefillLoaded] = React.useState(false);
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
 
   React.useEffect(() => {
     // Pre-populate notes from the defendant's active case — reduces typing friction
@@ -124,9 +124,8 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const noSlots    = availTimes.length === 0;
 
   const confirmBooking = () => requireAuth(async () => {
-    if (!selTime) { setError('Select a time slot to continue.'); return; }
+    if (!selTime) { showToast('Select a time slot to continue.', 'warning'); return; }
     setBooking(true);
-    setError('');
     try {
       // Step 1 — Create booking + PaymentIntent server-side
       const res = await api.post('/consultations/book', {
@@ -173,7 +172,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       });
 
       if (initError) {
-        setError(initError.message || 'Payment setup failed. Please try again.');
+        showToast(initError.message || 'Payment setup failed. Please try again.', 'error');
         setBooking(false);
         return;
       }
@@ -183,7 +182,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
       if (presentError) {
         if (presentError.code !== 'Canceled') {
-          setError(presentError.message || 'Payment failed. Please try again.');
+          showToast(presentError.message || 'Payment failed. Please try again.', 'error');
         }
         setBooking(false);
         return;
@@ -194,16 +193,14 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       setStep('confirmed');
       track('consultation_booked', { lawyerId: lawyerId ?? null, slot: selTime, mock: false }).catch(()=>{});
     } catch (e: any) {
-      const msg = e.response?.data?.error || 'Could not complete booking. Please try again.';
-      // @ts-ignore
-      showToast(msg, 'info');
+      showToast(apiErrorMessage(e, 'Could not complete booking. Please try again.'), 'info');
     } finally {
       setBooking(false);
     }
   });
 
   const sendCallback = async () => {
-    if (!callbackPhone.trim()) { setError('Enter your phone number so the attorney can reach you.'); return; }
+    if (!callbackPhone.trim()) { showToast('Enter your phone number so the attorney can reach you.', 'warning'); return; }
     setSendingCallback(true);
     try {
       await api.post('/consultations/callback-request', {
@@ -254,14 +251,12 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           style={[styles.doneBtn, { backgroundColor: COLORS.legal, marginBottom: 10 }]}
           onPress={() => {
             Linking.openURL('calshow://').catch(() =>
-              // @ts-ignore
               Linking.openURL('content://com.android.calendar/time/').catch(() => showToast('Action failed. Please try again.', 'error')));
           }}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>📅 Add to Calendar</Text>
         </TouchableOpacity>
         <TouchableOpacity accessibilityRole="button" style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
-          // @ts-ignore — handleBack is declared via var and is assigned before first user interaction
           onPress={handleBack}
            accessibilityLabel="Back to Home">
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Back to Home</Text>
@@ -282,7 +277,6 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           {lawyerName || 'The attorney'} will call you at {callbackPhone} to schedule a time.
         </Text>
         <TouchableOpacity accessibilityRole="button" style={[styles.doneBtn, { backgroundColor: COLORS.navy }]}
-          // @ts-ignore — handleBack var declaration is hoisted
           onPress={handleBack}
            accessibilityLabel="Back to Home">
           <Text maxFontSizeMultiplier={1.4} style={styles.doneBtnText}>Back to Home</Text>
@@ -339,7 +333,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           ))}
           <TouchableOpacity
             accessibilityRole="button" style={[styles.nextBtn, { backgroundColor: COLORS.navy }]}
-            onPress={handleDatetimeStep} accessibilityLabel="Next \u2192">
+            onPress={handleDatetimeStep} accessibilityLabel={"Next \u2192"}>
             <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>Next →</Text>
           </TouchableOpacity>
         </>
@@ -349,7 +343,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       {step === 'datetime' && (
         <>
           <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel="\u2190 Back" onPress={() => setStep('duration')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel={"\u2190 Back"} onPress={() => setStep('duration')} style={styles.back}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
           </TouchableOpacity>
@@ -420,7 +414,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                 accessibilityRole="button"
                 style={[styles.nextBtn, { backgroundColor: COLORS.navy }, !selTime && styles.nextBtnDisabled]}
                 testID="booking-confirm-button" onPress={handleConfirmStep}
-                disabled={!selTime} accessibilityLabel="Next \u2192">
+                disabled={!selTime} accessibilityLabel={"Next \u2192"}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.nextBtnText}>Next →</Text>
               </TouchableOpacity>
             </>
@@ -432,7 +426,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       {step === 'confirm' && (
         <>
           <TouchableOpacity
-          accessibilityRole="button" accessibilityLabel="\u2190 Back" onPress={() => setStep('datetime')} style={styles.back}
+          accessibilityRole="button" accessibilityLabel={"\u2190 Back"} onPress={() => setStep('datetime')} style={styles.back}
           >
             <Text maxFontSizeMultiplier={1.4} style={[styles.backText, { color: colors.textMuted }]}>← Back</Text>
           </TouchableOpacity>
@@ -466,7 +460,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
 
           <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
             style={[styles.confirmBtn, { backgroundColor: COLORS.navy }, booking && { opacity: 0.6 }]}
-            testID="booking-confirm" onPress={confirmBooking} disabled={booking} accessibilityLabel="Confirm & Pay {duration.fee} \u2192"
+            testID="booking-confirm" onPress={confirmBooking} disabled={booking} accessibilityLabel={"Confirm & Pay {duration.fee} \u2192"}
           accessibilityHint="Double-tap to activate">
             {booking
               ? <ActivityIndicator color={colors.bgCard} />

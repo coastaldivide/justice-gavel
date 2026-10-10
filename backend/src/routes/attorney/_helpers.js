@@ -31,18 +31,42 @@ export function sanitiseProfileFields(obj) {
 
 const router = Router();
 
-// ── Helper: ensure user is a defender ────────────────────────────────────────
+// ── Access helpers ───────────────────────────────────────────────────────────
+// Both return { db, user } when allowed. When NOT allowed they send the 401/403
+// response themselves and return null — callers must `if (!ctx) return;`.
+const ATTORNEY_ROLES = new Set(['attorney', 'defender', 'admin', 'super_admin']);
+
+async function loadUser(db, id) {
+  return db.get(
+    `SELECT id, display_name, email, role, bar_number, bar_state, bar_verified, jtb_verified,
+            is_admin, is_defender, office_id
+       FROM users WHERE id = ?`, [id]);
+}
+
 export async function requireDefender(req, res) {
   const db   = await getDb();
-  const user = await db.get('SELECT id, display_name, email, bar_number, bar_verified, jtb_verified, is_admin FROM users WHERE id=? LIMIT 50', [req.user.id]);
+  const user = await loadUser(db, req.user.id);
   if (!user) { err401(res, 'Not found'); return null; }
-  // Accept is_defender flag OR attorney subscription
+  if (ATTORNEY_ROLES.has(user.role) || Number(user.is_defender) === 1) return { db, user };
+  // Attorney subscription also grants access
   const sub = await db.get(
     `SELECT tier FROM subscriptions WHERE user_id=? AND provider_type='lawyer'
      AND status IN ('active','trialing') LIMIT 1`, [req.user.id]
-  ).catch(() => null);
-  if (!user.is_defender && !sub) {
-    return res.status(403).json({ error: 'Attorney account required' });
+  );
+  if (!sub) {
+    res.status(403).json({ error: 'Attorney account required' });
+    return null;
+  }
+  return { db, user };
+}
+
+export async function requireAttorney(req, res) {
+  const db   = await getDb();
+  const user = await loadUser(db, req.user.id);
+  if (!user) { err401(res, 'Not found'); return null; }
+  if (!ATTORNEY_ROLES.has(user.role) && Number(user.is_defender) !== 1) {
+    res.status(403).json({ error: 'Attorney access required' });
+    return null;
   }
   return { db, user };
 }

@@ -11,13 +11,17 @@
  */
 
 import { Queue, Worker } from 'bullmq';
-import { getRedis }      from '../utils/redis.js';
+import Redis             from 'ioredis';
 import { db }            from '../db/index.js';
 import logger            from '../utils/logger.js';
 
-const connection = { client: getRedis() };
+// BullMQ needs its own ioredis connection with maxRetriesPerRequest: null
+const connection = (process.env.REDIS_URL && process.env.NODE_ENV !== 'test')
+  ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null, enableReadyCheck: false })
+  : null;
+connection?.on('error', (e) => logger.error({ msg: '[bar_notify] redis error', error: e.message }));
 
-export const notifyQueue = connection.client
+export const notifyQueue = connection
   ? new Queue('bar-notifications', { connection })
   : null;
 
@@ -59,7 +63,7 @@ export async function schedulePrepNotifications() {
  * Start the notification worker.
  */
 export function startNotificationWorker() {
-  if (!connection.client) return;
+  if (!connection) return;
 
   const worker = new Worker('bar-notifications', async (job) => {
     switch (job.name) {

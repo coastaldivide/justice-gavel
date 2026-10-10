@@ -20,6 +20,7 @@ import { getDb }            from '../../db/index.js';
 import { err403, safeInt }  from '../../utils/routeHelpers.js';
 import { makeUserLimiter }   from '../../middleware/sharedAiLimiter.js';
 import logger               from '../../utils/logger.js';
+import { decrypt }          from '../../services/encryption.js';
 import { requireDefender }  from './_helpers.js';
 
 const router = Router();
@@ -62,8 +63,8 @@ router.get('/inbox', authRequired, inboxLimiter, async (req, res) => {
                 )
              OR cb.lawyer_id = ?
           AND cb.status = 'confirmed'
-          AND cb.date_slot >= date('now')
-          AND cb.date_slot <= date('now', '+7 days')
+          AND cb.date_slot >= CURRENT_DATE
+          AND cb.date_slot <= (CURRENT_DATE + INTERVAL '7 days')
           ORDER BY cb.date_slot ASC, cb.time_slot ASC
           LIMIT 20`,
         [attorneyId, attorneyId, attorneyId]
@@ -99,10 +100,10 @@ router.get('/inbox', authRequired, inboxLimiter, async (req, res) => {
            LEFT JOIN case_events ce ON ce.case_id = c.id
                                    AND ce.id = (
                                      SELECT id FROM case_events
-                                      WHERE case_id = c.id AND event_date >= date('now')
+                                      WHERE case_id = c.id AND event_date >= CURRENT_DATE
                                       ORDER BY event_date ASC LIMIT 1
                                    )
-          WHERE c.next_court_date = date('now')
+          WHERE c.next_court_date = CURRENT_DATE
           ORDER BY c.next_court_date ASC`,
         [attorneyId]
       ),
@@ -158,7 +159,7 @@ router.get('/inbox', authRequired, inboxLimiter, async (req, res) => {
         urgent_count:    urgentCount,
       },
       upcoming_consultations: upcomingConsults,
-      unread_messages:        unreadMessages,
+      unread_messages:        unreadMessages.map(m => ({ ...m, body: decrypt(m.body) })),
       today_hearings:         todayHearings,
       pending_assignments:    pendingAssignments,
       recent_cases:           recentActivity,

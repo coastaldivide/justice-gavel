@@ -1011,8 +1011,8 @@ router.get('/firm/dashboard', authRequired, async (req, res) => {
               fvc.vertical AS firm_vertical
        FROM matters m
        LEFT JOIN (
-         SELECT firm_id, vertical FROM firm_vertical_config
-         GROUP BY firm_id
+         SELECT DISTINCT ON (firm_id) firm_id, vertical FROM firm_vertical_config
+         ORDER BY firm_id, id DESC
        ) fvc ON fvc.firm_id = m.firm_id
        WHERE m.firm_id=? AND m.status='active'
        ORDER BY m.updated_at DESC LIMIT ? OFFSET ?`,

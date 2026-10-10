@@ -30,20 +30,12 @@ const RIGHTS_CARDS = [
 ];
 
 function EmergencyScreen({ route, navigation }: ScreenProps) {
-  // @ts-ignore
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     mountedRef.current = true;
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return () => { mountedRef.current = false; };
   }, []);
 
@@ -59,7 +51,6 @@ function EmergencyScreen({ route, navigation }: ScreenProps) {
   const [countdown, setCount]   = useState(5);
   const [result, setResult]     = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [contacts, setContacts] = useState<string[]>([]);
   const [sendingSOS, setSendingSOS] = useState(false);
   const timerRef = useRef<any>(null);
@@ -146,7 +137,7 @@ function EmergencyScreen({ route, navigation }: ScreenProps) {
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.stripBtn, { backgroundColor: colors.blue }]}
-          accessibilityLabel="\ud83d\udc99  CRISIS 988" onPress={() => call('988')}
+          accessibilityLabel={"\ud83d\udc99  CRISIS 988"} onPress={() => call('988')}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.stripBtnText}>💙  CRISIS 988</Text>
         </TouchableOpacity>

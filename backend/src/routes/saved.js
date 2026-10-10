@@ -1,3 +1,4 @@
+import { safeJson } from '../utils/routeHelpers.js';
 import { validate, schemas } from '../validation/schemas.js';
 /**
  * saved.js — Saved lawyers (personal attorney contact list)
@@ -37,7 +38,19 @@ router.get('/lawyers', authRequired, async (req, res) => {
 });
 
 router.post('/lawyers', authRequired, savedLimiter, async (req, res) => {
-  const { provider_id, name = '', phone = '', address, specialties = [], rating, notes } = req.body;
+  let { provider_id, lawyer_id, name = '', phone = '', address, specialties = [], rating, notes } = req.body || {};
+  provider_id = provider_id || lawyer_id || null;
+  // The profile screen sends only { lawyer_id } — fill the snapshot from the directory
+  if (provider_id && !name) {
+    try {
+      const l = await (await getDb()).get('SELECT name, phone, address, specialties, rating FROM lawyers WHERE id = ?', [safeInt(provider_id)]);
+      if (l) {
+        name = l.name || ''; phone = phone || l.phone || '';
+        address = address || l.address; rating = rating ?? l.rating;
+        if ((!specialties || !specialties.length) && l.specialties) specialties = safeJson(l.specialties, []);
+      }
+    } catch (e) { logger.warn('[saved] lawyer lookup failed:', e.message); }
+  }
   if (name) name = truncateStr(String(name), 200);
   if (address) address = truncateStr(String(address), 300);
   if (notes) notes = truncateStr(String(notes), 2000);
@@ -49,8 +62,8 @@ router.post('/lawyers', authRequired, savedLimiter, async (req, res) => {
       : null;
     if (existing) return res.status(201).json({ already_saved: true, id: existing.id });
     const r = await db.run(
-      'INSERT INTO saved_lawyers (user_id, provider_id, name, phone, address, specialties, rating, notes) VALUES (?,?,?,?,?,?,?,?)',
-      [req.user.id, provider_id || null, name, phone || null, address || null,
+      'INSERT INTO saved_lawyers (user_id, provider_id, lawyer_id, name, phone, address, specialties, rating, notes) VALUES (?,?,?,?,?,?,?,?,?)',
+      [req.user.id, provider_id || null, provider_id || null, name, phone || null, address || null,
        JSON.stringify(specialties), rating || null, notes || null]
     );
     return res.status(201).json({ saved: true, id: r.lastID });
@@ -63,7 +76,7 @@ router.patch('/lawyers/:id', authRequired, async (req, res) => {
     if (!idVal) return res.status(400).json({ error: 'Invalid id' });
   try {
     const db = await getDb();
-    const { notes = '' } = req.body;
+    let { notes = '' } = req.body || {};
   if (notes) notes = truncateStr(String(notes), 2000);
     await db.run(
       'UPDATE saved_lawyers SET notes=? WHERE id=? AND user_id=?',

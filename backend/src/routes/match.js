@@ -1,3 +1,5 @@
+import { safeJson } from '../utils/routeHelpers.js';
+import { CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * /api/match — Two-stage Claude-powered lawyer matching
  * General guidance only, not legal advice.
@@ -20,16 +22,11 @@
 import { err400, safeInt, sanitizeStr, truncateStr, API_URLS, parsePagination} from '../utils/routeHelpers.js';
 import { Router }      from 'express';
 import { enqueueAIJob as enqueue }     from '../services/aiQueue.js';
-import { open } from 'sqlite';
-import sqlite3 from 'sqlite3';
-import { fileURLToPath } from 'url';
-import path from 'path';
+import { getDb } from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
 import { perUserAiLimit } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PROVIDERS_DB = path.resolve(__dirname, '../../data/providers.sqlite');
 
 // ── Shared column list for providers DB — keeps projections consistent ──────
 const LAWYERS_COLS = 'id, name, phone, website, address, lat, lng, city, state, rating, reviews,'
@@ -39,8 +36,9 @@ const LAWYERS_COLS = 'id, name, phone, website, address, lat, lng, city, state, 
 
 const router = Router();
 
+// Provider data (lawyers / bail_agents) lives in the main Postgres database.
 async function openProvidersDb() {
-  return open({ filename: PROVIDERS_DB, driver: sqlite3.Database });
+  return getDb();
 }
 
 // ── geo distance (haversine) ──────────────────────────────────────────────────
@@ -64,7 +62,7 @@ async function fetchAndFilterLawyers(db, { city, caseType, language, lat, lng, p
 
   // Pull a broad candidate pool for the city
   const rows = await db.all(
-    `SELECT ${LAWYERS_COLS}, (SELECT COUNT(*) > 0 FROM attorney_profiles ap WHERE ap.lawyer_id = lawyers.id) AS is_jtb_registered FROM lawyers WHERE city = ? COLLATE NOCASE ORDER BY jtb_verified DESC, bar_verified DESC, rating DESC, reviews DESC LIMIT 100`,
+    `SELECT ${LAWYERS_COLS}, (SELECT COUNT(*) > 0 FROM attorney_profiles ap WHERE ap.lawyer_id = lawyers.id) AS is_jtb_registered FROM lawyers WHERE LOWER(city) = LOWER(?) ORDER BY jtb_verified DESC NULLS LAST, bar_verified DESC NULLS LAST, rating DESC NULLS LAST, reviews DESC NULLS LAST LIMIT 100`,
     [city]
   );
 
@@ -261,7 +259,7 @@ async function generateMatchReports(candidates, userSituation, caseType, languag
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: CLAUDE_MODEL,
       temperature: 0.25,
       max_tokens: 1000,
       system: MATCH_SYSTEM_PROMPT,
@@ -319,7 +317,7 @@ router.get('/lawyers', authRequired, perUserAiLimit, async (req, res) => {
         // Fallback: no matches — return top-rated nationally
         const fallback = await db.all(
           city
-            ? `SELECT ${LAWYERS_COLS} FROM lawyers WHERE city = ? COLLATE NOCASE ORDER BY rating DESC LIMIT 3`
+            ? `SELECT ${LAWYERS_COLS} FROM lawyers WHERE LOWER(city) = LOWER(?) ORDER BY rating DESC NULLS LAST LIMIT 3`
             : `SELECT ${LAWYERS_COLS} FROM lawyers ORDER BY rating DESC LIMIT 3`,
           city ? [city] : []
         );
@@ -358,7 +356,6 @@ router.get('/lawyers', authRequired, perUserAiLimit, async (req, res) => {
       });
     } finally {
       // Always close the providers DB connection — SQLite file handle
-      await db.close().catch(() => {});
     }
   } catch (err) {
     logger.error('[match/lawyers]', err);
@@ -456,7 +453,7 @@ router.get('/profile/:lawyerId', async (req, res) => {
     const booked = await appDb.all(
       `SELECT date_slot, time_slot FROM consultation_bookings
         WHERE lawyer_id = ? AND status NOT IN ('cancelled')
-          AND date_slot >= date('now')`,
+          AND date_slot >= CURRENT_DATE`,
       [lawyerId]
     ).catch(() => []);
 

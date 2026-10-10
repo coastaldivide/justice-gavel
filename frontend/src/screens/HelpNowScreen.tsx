@@ -25,20 +25,16 @@ import { haptic, hapticCall } from '../services/haptics';
 import { api } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
-declare var onRefresh: any;
-declare var refreshing: any;
-declare var sort: any;
-declare var load: any; // hoisted from component scope
-function callPhone(p: string) {
-  const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
-  const bottomSheetRef = React.useRef<BottomSheet>(null); hapticCall(); Linking.openURL('tel:' + p.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error')); }
-function openDir(lat: number, lng: number, name: string) {
+// Module-level link helpers: no hooks; failures reported via onError.
+function callPhone(p: string, onError?: () => void) {
+  hapticCall();
+  Linking.openURL('tel:' + p.replace(/\D/g, '')).catch(() => onError?.());
+}
+function openDir(lat: number, lng: number, name: string, onError?: () => void) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  // @ts-ignore
-  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
+  Linking.openURL(url).catch(() => onError?.());
 }
 
 function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'bail' | 'lawyer' }) {
@@ -46,11 +42,8 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
   const color   = isBail ? COLORS.bail   : COLORS.legal;
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
-  }, []);
+  const { showToast } = useToast();
+  const onLinkError = () => showToast('Action unavailable on this device.', 'error');
   const bg = isBail ? colors.bailBg : colors.legalBg;
   const label   = isBail ? t('help_now_bail_label') : t('help_now_lawyer_label');
 
@@ -65,8 +58,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
           accessibilityRole="button"
           style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10,
             paddingVertical: 12, alignItems: 'center' }}
-          // @ts-ignore
-          onPress={() => Linking.openURL('tel:911').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          onPress={() => Linking.openURL('tel:911').catch(() => showToast('Please dial 911 manually.', 'error'))}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
         >
           <AppIcon name="flash" size={20} color={COLORS.emergency} />
@@ -77,7 +69,6 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
           accessibilityLabel="CRISIS 988"
           style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10,
             paddingVertical: 12, alignItems: 'center' }}
-          // @ts-ignore
           onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
         >
@@ -116,7 +107,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.callBtn, { backgroundColor: color }]}
-          onPress={() => callPhone(contact.phone)}
+          onPress={() => callPhone(contact.phone, onLinkError)}
             activeOpacity={0.85}
           accessibilityLabel={`Call ${contact.name}`}
           accessibilityHint="Opens your phone dialer to call this contact"
@@ -134,7 +125,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.dirBtn, { borderColor: color }]}
-          onPress={() => openDir(contact.lat, contact.lng, contact.name)}
+          onPress={() => openDir(contact.lat, contact.lng, contact.name, onLinkError)}
             activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.dirBtnText, { color }]}>{t('help_now_directions')}</Text>
@@ -224,7 +215,11 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [publicDefender, setPublicDefender] = useState<any>(null);
   const [crisisLine, setCrisisLine]         = useState<any>(null);
 
-  sort();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    Promise.resolve(fetchBoth()).catch(() => {}).finally(() => setRefreshing(false));
+  };
 
   const filteredCities = cityQuery.length >= 2
     ? TOP_CITIES.filter(city => city.toLowerCase().includes(cityQuery.toLowerCase())).slice(0, 8)
@@ -369,7 +364,7 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                   accessibilityRole="button"
                   key={city}
                   style={styles.cityRow}
-                  accessibilityLabel="\ud83d\udccd  {city}" onPress={() => fetchForCity(city)}
+                  accessibilityLabel={"\ud83d\udccd  {city}"} onPress={() => fetchForCity(city)}
                     activeOpacity={0.85}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.cityRowText}>📍  {city}</Text>
@@ -474,7 +469,7 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                 </TouchableOpacity>
               ) : null}
               {courthouse.phone ? (
-                <TouchableOpacity accessibilityRole="button" style={styles.callBtn} accessibilityLabel="\ud83d\udcde {courthouse.phone}" onPress={() => callPhone(courthouse.phone)}
+                <TouchableOpacity accessibilityRole="button" style={styles.callBtn} accessibilityLabel={"\ud83d\udcde {courthouse.phone}"} onPress={() => callPhone(courthouse.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {courthouse.phone}</Text>
                 </TouchableOpacity>
@@ -506,7 +501,7 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
               ) : null}
               {publicDefender.phone ? (
                 <TouchableOpacity
-          accessibilityRole="button" style={styles.callBtn} accessibilityLabel="\ud83d\udcde {publicDefender.phone}" onPress={() => callPhone(publicDefender.phone)}
+          accessibilityRole="button" style={styles.callBtn} accessibilityLabel={"\ud83d\udcde {publicDefender.phone}"} onPress={() => callPhone(publicDefender.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {publicDefender.phone}</Text>
                 </TouchableOpacity>
@@ -523,7 +518,7 @@ function HelpNowScreen({ route, navigation }: ScreenProps): React.JSX.Element {
               <Text maxFontSizeMultiplier={1.4} style={styles.contactName}>{crisisLine.title}</Text>
               {crisisLine.phone ? (
                 <TouchableOpacity
-          accessibilityRole="button" style={styles.callBtn} accessibilityLabel="\ud83d\udcde {crisisLine.phone}" onPress={() => callPhone(crisisLine.phone)}
+          accessibilityRole="button" style={styles.callBtn} accessibilityLabel={"\ud83d\udcde {crisisLine.phone}"} onPress={() => callPhone(crisisLine.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {crisisLine.phone}</Text>
                 </TouchableOpacity>

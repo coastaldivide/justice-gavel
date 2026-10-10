@@ -10,8 +10,6 @@ import {  useTheme, COLORS } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { t } from '../i18n';
 
-declare var data: any;
-declare var load: any;
 const PLANS = [
   { key: 'basic',  label: 'Basic',  icon: '🛡️', desc: 'Consultations, document review, Q&A hotline',     color: COLORS.blue },
   { key: 'legal_pro',    label: 'Legal Pro',    icon: '⚖️', desc: 'Basic + court date reminders, attorney matching', color: COLORS.blue },
@@ -31,14 +29,9 @@ function InsuranceScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { impact, success, error: hapticError } = useHaptics();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
-  const [refreshing, setRefreshing] = React.useState(false);
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
-  }, []);
 
   const [plan, setPlan]     = useState('basic');
   const [quote, setQuote]   = useState<any>(null);
@@ -62,10 +55,7 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scroll}
-      testID="insurance-screen"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }>
+      testID="insurance-screen">
 
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Legal Insurance</Text>
@@ -163,14 +153,6 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
         </Text>
       </View>
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <AppIcon name="shield-checkmark-outline" size={20} color={COLORS.navy} />
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No insurance information available</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection and try again.</Text>
-        </View>
-      )}
       </ScrollView>
   );
 }

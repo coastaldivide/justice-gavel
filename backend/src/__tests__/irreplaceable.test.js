@@ -694,13 +694,13 @@ describe('Time Entries — List and Get', () => {
 });
 
 describe('Time Entries — Matter Summary', () => {
-  test('returns matter total with by_attorney breakdown', async () => {
+  test('returns matter total with per-attorney (by_esquire) breakdown', async () => {
     const r = await request(app).get('/api/time/matter/1').set('Authorization', `Bearer ${T_ADMIN}`);
     expect(r.status).toBe(200);
     expect(r.body).toHaveProperty('totals');
-    expect(r.body).toHaveProperty('by_attorney');
+    expect(r.body).toHaveProperty('by_esquire');   // same key as routes/time.js
     expect(r.body.totals.total_hours).toBeGreaterThan(0);
-    expect(Array.isArray(r.body.by_attorney)).toBe(true);
+    expect(Array.isArray(r.body.by_esquire)).toBe(true);
   });
   test('summary returns by_status and by_month', async () => {
     const r = await request(app).get('/api/time/summary').set('Authorization', `Bearer ${T_ADMIN}`);

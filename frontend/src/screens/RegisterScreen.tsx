@@ -9,7 +9,7 @@ import TermsAcceptanceModal from './TermsAcceptanceModal';
 import React, { useState, useRef, useCallback} from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { setAppAuth } from '../services/auth';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
@@ -17,7 +17,6 @@ import * as secureStorage from '../utils/secureStorage';
 import JTBLogo from '../components/JTBLogo';
 import { t } from '../i18n';
 
-declare var showPassword: any;
 function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
@@ -60,13 +59,14 @@ if (loading) return;
         barState: isAttorney ? barState : undefined,
         firmName: isAttorney ? firmName : undefined,
       });
-      await secureStorage.setToken( res.data?.token);
+      if (!res.data?.token) throw new Error('Unexpected response from the server. Please try again.');
+      await secureStorage.setToken(res.data.token);
       await secureStorage.setItem('user', JSON.stringify(res.data?.user));
       // Schedule D7 re-engagement push (fires only if user stays free)
       api.post('/push/d7-reengage').catch((e) => { __DEV__ && console.warn(e?.message); });
       setAppAuth('authed');
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Registration failed. Please try again.');
+      setError(apiErrorMessage(e, 'Registration failed. Please try again.'));
     } finally { setLoading(false); }
   };
 
@@ -91,11 +91,10 @@ if (loading) return;
               placeholderTextColor={COLORS.textSecond}
               value={identifier}
               onChangeText={(v) => { setIdentifier(v); setError(''); }}
-          keyboardType="phone-pad"
+
           maxLength={254}
               autoCapitalize="none"
           testID="register-email-input" accessibilityLabel="Email address or phone number" autoComplete="email"
-          // @ts-ignore
           importantForAutofill="yes" keyboardType={identifier.includes("@") || (!identifier.match(/^[0-9]/) && identifier.length > 0) ? "email-address" : "phone-pad"}
               textContentType="username" returnKeyType="next"
               onSubmitEditing={() => passRef.current?.focus()}
@@ -110,7 +109,7 @@ if (loading) return;
               style={[styles.input, { flex: 1 }]}
               placeholder="At least 8 characters"
               placeholderTextColor={COLORS.textSecond}
-              testID="register-password-input" accessibilityLabel="Password" secureTextEntry={!showPassword}
+              testID="register-password-input" accessibilityLabel="Password" secureTextEntry={!showPass}
               value={password}
               onChangeText={v => { setPassword(v); setError(''); }}
               textContentType="newPassword" returnKeyType="next"
@@ -119,7 +118,7 @@ if (loading) return;
             />
             <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel="{showPass ? 'Hide' : 'Show'}" onPress={() => setShowPass(s => !s)}
+          accessibilityHint="Double-tap to activate" accessibilityLabel={showPass ? 'Hide password' : 'Show password'} onPress={() => setShowPass(s => !s)}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.showBtnText}>{showPass ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
@@ -212,9 +211,8 @@ if (loading) return;
           )}
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
             accessibilityLabel="Create Account"
-          // @ts-ignore
           accessibilityHint="Creates a new Justice Gavel account"
             style={[styles.primaryBtn, loading && styles.btnDisabled]}
             testID="register-submit-button" onPress={onRegister} disabled={loading} activeOpacity={0.85}
@@ -264,7 +262,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     marginBottom: 14, shadowColor: COLORS.steel, shadowOpacity: 0.25,
     shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 10,
   },
-  wordmark: { fontSize: 28, ...FONTS.black, color: COLORS.bgCard, letterSpacing: 0.5, marginBottom: 4 },
+  wordmark: { fontSize: 28, ...FONTS.black, color: colors.textPrimary, letterSpacing: 0.5, marginBottom: 4 },
   tagline: { fontSize: 12, ...FONTS.medium, color: COLORS.steel },
   form: {
     backgroundColor: COLORS.bgCard, borderRadius: RADIUS.xxl,

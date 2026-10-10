@@ -21,7 +21,10 @@
  */
 
 import { classifyCharge, getEligibility, STATE_RULES } from '../routes/expungement/rules.js';
-import { calcLeadFee }                                    from '../routes/billing/_shared.js';
+// calcLeadFee (per-bail scaled fee) was intentionally removed from billing/_shared.js:
+// bail-scaled lead fees implicate runner-capper statutes, so the bondsman lead fee is a
+// flat $75 (FLAT_LEAD_FEE_CENTS in routes/billing/bondsman.js). Modelled locally here.
+const calcLeadFee = (bail) => (!bail || bail <= 0 || !Number.isFinite(bail)) ? 0 : 7500;
 import { CURRENT_DISCLAIMER_VERSION }                     from '../middleware/disclaimer.js';
 import { AUDIT_ACTIONS }                                  from '../utils/audit.js';
 

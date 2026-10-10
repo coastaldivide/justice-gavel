@@ -33,7 +33,7 @@ router.post('/', feedbackLimiter, optionalAuth, async (req, res) => {
     // Award 5 points for feedback (authenticated users only)
     if (req.user?.id) {
       await db.run(
-        'INSERT INTO rewards (user_id, points) VALUES (?,5) ON CONFLICT(user_id) DO UPDATE SET points=points+5, updated_at=datetime("now")',
+        'INSERT INTO rewards (user_id, points) VALUES (?,5) ON CONFLICT(user_id) DO UPDATE SET points = rewards.points + 5, updated_at = NOW()',
         [String(userId)]
       ).catch(() => {});
     }

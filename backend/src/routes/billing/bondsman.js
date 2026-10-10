@@ -69,7 +69,7 @@ router.get('/leads', authRequired, async (req, res) => {
     const conditions = [
       `ar.has_attorney = 0`,
       `ar.bail_amount > 0`,
-      `ar.created_at >= datetime('now', '-${safeInt(hours)} hours')`
+      `ar.created_at >= (NOW() - INTERVAL '${safeInt(hours)} hours')`
     ];
     const params = [];
 

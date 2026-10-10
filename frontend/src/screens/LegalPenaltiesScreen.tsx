@@ -62,8 +62,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
   };
 
   return (
-    // @ts-ignore
-    <SafeAreaView style={[styles.container, { backgroundColor: (colors as any).background ?? COLORS.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: (colors as any).bg ?? COLORS.bg }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -89,11 +88,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
       </View>
 
       {/* Tabs */}
-      // @ts-ignore
-      // @ts-ignore
       <View style={[styles.tabBar, { borderBottomColor: (colors as any).border ?? COLORS.border }]}>
-        // @ts-ignore
-        // @ts-expect-error
         {(TABS as any)?.length === 0 ? (
 
         <View style={{ alignItems: 'center', paddingVertical: 48 }}>
@@ -105,20 +100,17 @@ function LegalPenaltiesScreen({ navigation }: any) {
             Results will appear here when available
           </Text>
         </View>
-        // @ts-ignore
-        ) : items.map(tab => (
+        ) : TABS.map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
             onPress={() => switchTab(tab.key)}
-          accessibilityState={{  selected: false  }}
+
             accessibilityRole="tab"
-            // @ts-ignore
             accessibilityState={{ selected: activeTab === tab.key }}
           >
             <Text style={[
               styles.tabText,
-              // @ts-ignore
               { color: activeTab === tab.key ? colors.primary : (colors as any).subtext ?? COLORS.textMuted }
             ]}>
               {tab.label}
@@ -146,32 +138,22 @@ function LegalPenaltiesScreen({ navigation }: any) {
                 <Text style={[styles.scheduleLabel, { color: colors.primary }]}>
                   {s.schedule}
                 </Text>
-                // @ts-ignore
-                // @ts-ignore
                 <Text style={[styles.examples, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
                   {s.examples}
                 </Text>
                 <View style={styles.penaltyRow}>
                   <View style={styles.penaltyItem}>
-                    // @ts-ignore
-                    // @ts-ignore
                     <Text style={[styles.penaltyValue, { color: (colors as any).error ?? COLORS.emergency }]}>
                       {s.max_years} yrs
                     </Text>
-                    // @ts-ignore
-                    // @ts-ignore
                     <Text style={[styles.penaltyLabel, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
                       Max prison
                     </Text>
                   </View>
                   <View style={styles.penaltyItem}>
-                    // @ts-ignore
-                    // @ts-ignore
                     <Text style={[styles.penaltyValue, { color: (colors as any).error ?? COLORS.emergency }]}>
                       ${s.max_fine.toLocaleString()}
                     </Text>
-                    // @ts-ignore
-                    // @ts-ignore
                     <Text style={[styles.penaltyLabel, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
                       Max fine
                     </Text>
@@ -218,15 +200,12 @@ function LegalPenaltiesScreen({ navigation }: any) {
                 <View style={styles.rowBetween}>
                   <Text style={[styles.chargeName, { color: colors.text }]}>{item.charge}</Text>
                   <Text style={[styles.chargeClass, {
-                    // @ts-ignore
-                    color: item.class === 'Felony' ? ((colors as any).error ?? COLORS.emergency) : ((colors as any).warning ?? COLORS.warning),
+                    color: item.class === 'Felony' ? ((colors as any).error ?? COLORS.emergency) : ((colors as any).warn ?? COLORS.warn),
                     backgroundColor: item.class === 'Felony' ? '#FEE2E2' : '#FEF3C7',
                   }]}>
                     {item.class}
                   </Text>
                 </View>
-                // @ts-ignore
-                // @ts-ignore
                 <Text style={[styles.sentenceText, { color: (colors as any).subtext ?? COLORS.textMuted }]}>
                   Prison: {item.prison}  ·  Fine: {item.fine}
                 </Text>
@@ -253,8 +232,7 @@ function makeStyles(colors: any) {
     tabText:      { fontSize: 13, fontWeight: '600' },
     tabIndicator: { position: 'absolute', bottom: 0, left: 8, right: 8, height: 2, borderRadius: 1 },
     sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
-    // @ts-ignore
-    card:         { borderRadius: 12, padding: 14, marginBottom: 10, shadowColor: COLORS.text, shadowOffset:{width:0,height:1}, shadowOpacity:0.06, shadowRadius:3, elevation:1 },
+    card:         { borderRadius: 12, padding: 14, marginBottom: 10, shadowColor: COLORS.textPrimary, shadowOffset:{width:0,height:1}, shadowOpacity:0.06, shadowRadius:3, elevation:1 },
     scheduleLabel:{ fontSize: 15, fontWeight: '700', marginBottom: 4 },
     examples:     { fontSize: 13, lineHeight: 18, marginBottom: 10 },
     penaltyRow:   { flexDirection: 'row', gap: 16 },

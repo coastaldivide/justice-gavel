@@ -1,4 +1,6 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { requireAi } from '../../utils/ai.js';
+import { safeJson } from '../../utils/routeHelpers.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * contracts/draft.js — POST /api/contracts/draft
  *
@@ -49,7 +51,7 @@ router.get('/types', authRequired, (req, res) => {
 });
 
 // ── POST /api/contracts/draft — generate a new contract ──────────────────────
-router.post('/draft', authRequired, draftLimiter, perUserAiLimit, async (req, res) => {
+router.post('/draft', authRequired, requireAi, draftLimiter, perUserAiLimit, async (req, res) => {
   try {
     const db = await getDb();
     const { contract_type, fields = {}, title } = req.body || {};

@@ -22,6 +22,17 @@ import { Router }     from 'express';
 import { sharedAiLimiter } from '../middleware/sharedAiLimiter.js';
 import { asyncRoute } from '../utils/routeHelpers.js';
 import { authRequired } from '../middleware/auth.js';
+import { requireAttorney } from './attorney/_helpers.js';
+
+// Pretrial monitoring data (names, phones, check-in locations) is for court /
+// agency staff only; any signed-in user used to be able to read or create it.
+// A defendant may still read their own compliance report.
+async function staffOnly(req, res, next) {
+  try {
+    if (req.params?.defendant_id && String(req.params.defendant_id) === String(req.user?.id)) return next();
+    if (await requireAttorney(req, res)) next();
+  } catch (e) { next(e); }
+}
 
 const router = Router();
 
@@ -30,7 +41,7 @@ const router = Router();
  * Generate a court-ready compliance report for a specific defendant.
  * Used by pretrial officers for weekly status reviews.
  */
-router.get('/compliance-report/:defendant_id', authRequired, asyncRoute(async (req, res) => {
+router.get('/compliance-report/:defendant_id', authRequired, staffOnly, asyncRoute(async (req, res) => {
   const { defendant_id } = req.params;
   const { from_date, to_date } = req.query;
 
@@ -97,7 +108,7 @@ router.get('/compliance-report/:defendant_id', authRequired, asyncRoute(async (r
  * GET /api/pretrial/dashboard
  * Court officer dashboard: all defendants under monitoring
  */
-router.get('/dashboard', authRequired, asyncRoute(async (req, res) => {
+router.get('/dashboard', authRequired, staffOnly, asyncRoute(async (req, res) => {
   const { agency_id, risk_level, date } = req.query;
 
   const defendants = await req.db.all(`
@@ -133,12 +144,15 @@ router.get('/dashboard', authRequired, asyncRoute(async (req, res) => {
  * POST /api/pretrial/enroll
  * Court officer enrolls a defendant in monitoring
  */
-router.post('/enroll', sharedAiLimiter, authRequired, asyncRoute(async (req, res) => {
+router.post('/enroll', sharedAiLimiter, authRequired, staffOnly, asyncRoute(async (req, res) => {
   const {
     defendant_id, case_number, court_date,
     required_checkins = 1, agency_id, officer_id,
     conditions = [],
-  } = req.body;
+  } = req.body || {};
+  if (!defendant_id || !case_number) {
+    return res.status(400).json({ error: 'defendant_id and case_number are required' });
+  }
 
   const enrollment = await req.db.get(
     `INSERT INTO checkin_enrollments

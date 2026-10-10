@@ -1,3 +1,4 @@
+import { CLAUDE_MODEL } from '../utils/ai.js';
 import { validate, schemas } from '../validation/schemas.js';
 /**
  * interrogation.js — Police Encounter Recorder
@@ -163,7 +164,7 @@ The label SUSPECT is the legal term for the person being questioned — it carri
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: CLAUDE_MODEL,
       max_tokens: 4000,
       temperature: 0.1,
       messages: [{ role: 'user', content: prompt }],

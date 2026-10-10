@@ -23,11 +23,6 @@ function calculateSupport(
   monthsAlimony: number,
   alimonyAmount: number,
 ) {
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
-  React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  }, []);
   const combined = parent1Income + parent2Income;
   if (combined <= 0 || numChildren <= 0) return null;
 
@@ -181,7 +176,7 @@ function ChildSupportScreen({ navigation }: any) {
               key={n}
               accessibilityRole="button"
               style={[s.childBtn, { borderColor: COLORS.border, backgroundColor: children === n ? COLORS.navy : COLORS.bgCard }]}
-              accessibilityLabel="{n}" onPress={() => setChildren(n)}
+              accessibilityLabel={n} onPress={() => setChildren(n)}
             >
               <Text style={{ color: children === n ? '#fff' : COLORS.textPrimary, fontWeight: '700' }} maxFontSizeMultiplier={1.4}>{n}</Text>
             </TouchableOpacity>

@@ -1,4 +1,6 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { requireAi } from '../../utils/ai.js';
+import { CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL } from '../../utils/ai.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * expungement/petition.js — POST /petition — AI expungement petition
  */
@@ -14,7 +16,7 @@ import { STATE_RULES, DEFAULT_RULES, classifyCharge, getEligibility } from './ru
 const router = Router();
 
 
-router.post('/petition', authRequired, async (req, res) => {
+router.post('/petition', authRequired, requireAi, async (req, res) => {
   if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
     return res.status(503).json({ error: 'AI petition generation temporarily unavailable.' });
   }
@@ -54,7 +56,7 @@ Include: caption, statement of facts, legal basis with specific ${state} statute
 Format as a formal legal document.
 Note at the top in ALL CAPS: THIS IS AN AI-GENERATED DRAFT — NOT REVIEWED BY AN ATTORNEY — VERIFY ALL INFORMATION AND STATUTES BEFORE FILING.`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(ANTHROPIC_MESSAGES_URL, {
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -62,7 +64,7 @@ Note at the top in ALL CAPS: THIS IS AN AI-GENERATED DRAFT — NOT REVIEWED BY A
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model:       'claude-sonnet-4-20250514',
+        model:       CLAUDE_MODEL,
         temperature: 0.10,
         max_tokens:  4000,
         messages: [{ role: 'user', content: prompt }],

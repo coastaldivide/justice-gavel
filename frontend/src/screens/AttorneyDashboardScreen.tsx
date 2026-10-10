@@ -1,4 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
+import { apiErrorMessage } from '../services/api';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -31,9 +32,6 @@ import { daysUntil, formatDate} from '../utils/dateUtils';
 import { useFocusEffect } from '@react-navigation/native';
 import { t } from '../i18n';
 
-declare var profile: any;
-declare var setError: any;
-declare var setTab: any;
 type Tab = 'cases' | 'templates' | 'cle' | 'profile';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -105,7 +103,7 @@ function AvailabilityGrid({ userId }: { userId: number }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e: any) {
-      showToast(e?.response?.data?.error || 'Could not save availability. Try again.', 'error');
+      showToast(apiErrorMessage(e, 'Could not save availability. Try again.'), 'error');
     }
     finally { setSaving(false); }
   };
@@ -162,8 +160,7 @@ function AvailabilityGrid({ userId }: { userId: number }) {
         placeholderTextColor={COLORS.placeholder}
         value={note}
         onChangeText={(t) => { setNote(t); setSaved(false); }}
-          maxLength={1000}
-        // @ts-ignore
+
         maxLength={200}
         returnKeyType="done"
         blurOnSubmit
@@ -202,20 +199,24 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
   const [roleChecked, setRoleChecked] = React.useState(false);
   const [isAuthorized, setIsAuthorized] = React.useState(false);
   React.useEffect(() => {
+    const leave = () => {
+      if (navigation.canGoBack()) navigation.goBack();
+      else (navigation as any).navigate('HomeTab');
+    };
     AsyncStorage.getItem('user').then(raw => {
       if (raw) {
         const u = (() => { try { return JSON.parse(raw); } catch { return null; } })();
-        const allowed = ['attorney','defender','admin'].includes(u.role);
+        const allowed = ['attorney','defender','admin'].includes(u?.role);
         setIsAuthorized(allowed);
         if (!allowed) {
           // Redirect immediately -- consumer users should not see this screen
-          (navigation as any).replace('HomeTab');
+          leave();
         }
       } else {
-        (navigation as any).replace('HomeTab');
+        leave();
       }
       setRoleChecked(true);
-    }).catch(() => { (navigation as any).replace('HomeTab'); });
+    }).catch(() => { leave(); });
   }, [navigation]);
 
 
@@ -284,7 +285,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
         : `✓ ${res.data?.message}`;
       showToast(msg, 'info');
       loadAll();
-    } catch (e: any) { showToast(e.response?.data?.error || 'Could not complete course', 'info'); }
+    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not complete course'), 'info'); }
     setCompleting(null);
   };
 
@@ -301,7 +302,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       }
       showToast('Profile updated.');
       loadAll();
-    } catch (e: any) { showToast(e.response?.data?.error || 'Could not save', 'info'); }
+    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not save'), 'info'); }
     setSavingProfile(false);
   };
 
@@ -323,6 +324,10 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
     }
     return null;
   }, [profile]);
+
+  // Role gate: render nothing until the role check passes (redirects otherwise)
+  if (!roleChecked || !isAuthorized) return null;
+
   if (loading) return (
     <View style={[styles.screen, { backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }]}>
       <ActivityIndicator size="large" color={colors.steel} />
@@ -362,9 +367,6 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
           </TouchableOpacity>
         </View>
       </View>
-
-  if (!roleChecked) return null;
-  if (!isAuthorized) return null;
 
       {/* Tab bar */}
       <View style={[styles.tabBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
@@ -661,6 +663,37 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
         )}
         {tab === 'profile' && profile && (
           <>
+            {/* Bar Verification Status */}
+            <View style={[styles.barStatusCard, {
+              backgroundColor: profile.bar_verified ? COLORS.legal : COLORS.steelMid,
+              borderColor: profile.bar_verified ? COLORS.legal : COLORS.warn,
+            }]}>
+              <View style={{ flex: 1 }}>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.barStatusTitle, {
+                  color: profile.bar_verified ? COLORS.legal : COLORS.steelMid
+                }]}>
+                  {profile.bar_verified ? '✓ Bar Verified -- JTB Badge Active' : '⏳ Bar Verification Pending'}
+                </Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.barStatusSub}>
+                  {profile.bar_verified
+                    ? ('Bar #' + (profile.bar_number || 'on file') + ' · ' + (profile.subscription_tier || 'Attorney') + ' plan')
+                    : profile.bar_number
+                      ? ('Bar #' + profile.bar_number + ' submitted -- review within 1-2 business days')
+                      : 'Submit your bar number in the field below to get verified'}
+                </Text>
+              </View>
+              {!profile.bar_verified && (
+                <TouchableOpacity
+  accessibilityRole="button"
+                  style={styles.barStatusAction}
+                  onPress={() => setTab('profile')}
+                >
+                  <Text maxFontSizeMultiplier={1.4} style={styles.barStatusActionText}>
+                    {profile.bar_number ? 'View Status' : 'Verify Now'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
             {/* Profile completion indicator */}
             {(() => {
@@ -782,14 +815,14 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               style={[styles.outlineBtn, { borderColor: colors.legalDark }]}
               onPress={async () => {
                 if (!barInput.trim()) {
-                  setError('Enter your bar number in the field above, then tap Verify.');
+                  showToast('Enter your bar number in the field above, then tap Verify.', 'error');
                   return;
                 }
                 try {
                   await api.post('/attorney/verify-bar', { bar_number: barInput, state: officeInput.slice(0,2) || 'TN' });
                   showToast('Your bar number has been submitted for verification. You will be notified when approved. Verified attorneys appear first in search results.');
                 } catch (e: any) {
-                  showToast(e.response?.data?.error || 'Try again.', 'info');
+                  showToast(apiErrorMessage(e, 'Try again.'), 'info');
                 }
               }}
               accessibilityLabel="Submit bar number for verification"
@@ -904,35 +937,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);
 
-            {/* Bar Verification Status */}
-            <View style={[styles.barStatusCard, {
-              backgroundColor: profile.bar_verified ? COLORS.legal : COLORS.steelMid,
-              borderColor: profile.bar_verified ? COLORS.legal : COLORS.warn,
-            }]}>
-              <View style={{ flex: 1 }}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.barStatusTitle, {
-                  color: profile.bar_verified ? COLORS.legal : COLORS.steelMid
-                }]}>
-                  {profile.bar_verified ? '✓ Bar Verified -- JTB Badge Active' : '⏳ Bar Verification Pending'}
-                </Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.barStatusSub}>
-                  {profile.bar_verified
-                    ? ('Bar #' + (profile.bar_number || 'on file') + ' · ' + (profile.subscription_tier || 'Attorney') + ' plan')
-                    : profile.bar_number
-                      ? ('Bar #' + profile.bar_number + ' submitted -- review within 1-2 business days')
-                      : 'Submit your bar number in the field below to get verified'}
-                </Text>
-              </View>
-              {!profile.bar_verified && (
-                <TouchableOpacity
-  accessibilityRole="button"
-                  style={styles.barStatusAction}
-                  onPress={() => setTab('profile')}
-                >
-                  <Text maxFontSizeMultiplier={1.4} style={styles.barStatusActionText}>
-                    {profile.bar_number ? 'View Status' : 'Verify Now'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
 export default React.memo(AttorneyDashboardScreen);

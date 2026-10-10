@@ -12,7 +12,7 @@ import historyRouter from './history.js';
 
 
 if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
-  logger.error('[discovery] ANTHROPIC_API_KEY not set — AI discovery disabled');
+  logger.debug('[discovery] ANTHROPIC_API_KEY not set — AI discovery disabled (see config feature log)');
 }
 
 const router = Router();

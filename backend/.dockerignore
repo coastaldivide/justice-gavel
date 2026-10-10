@@ -22,3 +22,6 @@ Thumbs.db
 Dockerfile
 .dockerignore
 scripts/
+
+# Local message-attachment store (never bake user files into the image)
+data/attachments

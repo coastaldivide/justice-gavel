@@ -1,3 +1,4 @@
+import { safeJson } from '../utils/routeHelpers.js';
 import { validate, schemas } from '../validation/schemas.js';
 /**
  * /api/providers — GPS-first lawyer and bail agent search
@@ -21,18 +22,13 @@ import { validate, schemas } from '../validation/schemas.js';
 import { err400, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, parsePagination} from '../utils/routeHelpers.js';
 import { Router } from 'express';
 import { haversineKm, bboxFromLatLng } from '../services/geolink.js';
-import { authRequired } from '../middleware/auth.js';
-
-// Optional auth — identifies user if token present, but never blocks guests
-const optionalAuth = (req, res, next) => {
-  const auth = req.headers.authorization || '';
-  if (!auth.startsWith('Bearer ')) return next();
-  authRequired(req, res, next);
-};
+import { authRequired, optionalAuth } from '../middleware/auth.js';
 import path from 'path';
 import logger              from '../utils/logger.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import rateLimit           from 'express-rate-limit';
+import { apiLimiter }      from '../middleware/rateLimiters.js';
+import { getDb }           from '../db/index.js';
 
 const router = Router();
 
@@ -49,6 +45,15 @@ router.get('/list', async (req, res, next) =>{
 
 
 const MIN_RESULTS    = 3;
+
+// "Nashville, TN" → { cityName: 'Nashville', stateCode: 'TN' }
+function parseCityState(city, state) {
+  let cityName  = city ? String(city).trim().slice(0, 100) : null;
+  let stateCode = state ? String(state).trim().toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2) || null : null;
+  const m = cityName && /^(.*?),\s*([A-Za-z]{2})$/.exec(cityName);
+  if (m) { cityName = m[1].trim(); stateCode = stateCode || m[2].toUpperCase(); }
+  return { cityName: cityName || null, stateCode };
+}
 const RADIUS_STEPS_KM = [50, 100, 200, 500, 99999]; // expand until MIN_RESULTS found
 
 // ── Rate limiters ─────────────────────────────────────────────────────────────
@@ -159,6 +164,7 @@ function formatLawyer(l, distanceKm) {
     lng: l.lng,
     website: l.website || null,
     city: l.city,
+    state: l.state || null,
     rating: l.rating,
     reviews: l.reviews,
     verified: !!l.verified,
@@ -194,10 +200,15 @@ function formatBailAgent(a, distanceKm) {
     lat: a.lat,
     lng: a.lng,
     website: a.website || null,
+    company: a.company || null,
     city: a.city,
+    state: a.state || null,
     rating: a.rating,
     reviews: a.reviews,
-    verified: !!a.verified,
+    license_number: a.license_number || null,
+    verified: !!(a.verified || a.doi_verified),
+    available_24_7: !!a.available_24_7,
+    payment_plans: !!a.payment_plans,
     jtb_verified: !!a.jtb_verified,
     jtb_verified_since: a.jtb_verified_since || null,
     distanceKm: distanceKm != null ? Math.round(distanceKm * 10) / 10 : null,
@@ -320,19 +331,31 @@ router.get('/lawyers', optionalAuth, searchLimiter, async (req, res) => {
       res.setHeader('Cache-Control', 'private, max-age=60');
       return res.json(result);
     }
-    // City string path
-    if (city) {
+    // City / state path. Accepts city=Nashville&state=TN or city="Nashville, TN".
+    const { cityName, stateCode } = parseCityState(city, req.query.state || user_state);
+    if (cityName || stateCode) {
+      const where = ['COALESCE(active, 1) = 1'];
+      const params = [];
+      if (cityName)  { where.push('LOWER(city) = LOWER(?)'); params.push(cityName); }
+      if (stateCode) { where.push('UPPER(state) = ?');       params.push(stateCode); }
       const rows = await db.all(
-        'SELECT id, name, city, state, phone, address, lat, lng, specialties, data_verified, sort_priority, avg_rating, review_count, available_24h, free_consultation, pro_bono, sliding_scale, bar_verified, source, website, photo_url FROM lawyers WHERE city = ? ORDER BY CASE WHEN l.state = ? THEN 0 ELSE 1 END ASC, rating DESC, reviews DESC LIMIT 300',
-        [city]
+        `SELECT id, name, city, state, phone, address, lat, lng, website, rating, reviews,
+                specialties, languages, data_verified, sort_priority, avg_rating, review_count,
+                available_24h, free_consultation, pro_bono, sliding_scale, bar_verified,
+                jtb_verified, verified, gavel_level, golden_gavel, hourly_rate, availability,
+                source, photo_url
+           FROM lawyers WHERE ${where.join(' AND ')}
+          ORDER BY COALESCE(sort_priority, 0) DESC, COALESCE(rating, 0) DESC, COALESCE(reviews, 0) DESC
+          LIMIT 300`,
+        params
       );
       const filtered = applyFilters(rows, { caseType, language, proBonoOnly, slidingScaleOnly });
-      return res.json(filtered.slice(0, limit).map(l => formatLawyer(l, null)));
+      return res.json(filtered.slice(offset, offset + limit).map(l => formatLawyer(l, null)));
     }
 
     // Fallback: all lawyers, rating-sorted
-    const rows = await db.all('SELECT id,name,phone,address,lat,lng,website,city,state,rating,reviews,verified,bar_verified,jtb_verified,bar_number,pro_bono,sliding_scale,free_consultation,years_experience,hourly_rate,availability,photo_url,languages,specialties,bio,gavel_level,golden_gavel,avg_response_hrs,data_verified,years_experience,seed_data,active FROM lawyers WHERE active=1 OR active IS NULL ORDER BY jtb_verified DESC, bar_verified DESC, rating DESC, reviews DESC LIMIT 500');
-    res.json(rows.slice(0, limit).map(l => formatLawyer(l, null)));
+    const rows = await db.all('SELECT id,name,phone,address,lat,lng,website,city,state,rating,reviews,verified,bar_verified,jtb_verified,bar_number,pro_bono,sliding_scale,free_consultation,years_experience,hourly_rate,availability,photo_url,languages,specialties,bio,gavel_level,golden_gavel,avg_response_hrs,data_verified,active FROM lawyers WHERE active=1 OR active IS NULL ORDER BY jtb_verified DESC NULLS LAST, bar_verified DESC NULLS LAST, rating DESC NULLS LAST, reviews DESC NULLS LAST LIMIT 500');
+    res.json(rows.slice(offset, offset + limit).map(l => formatLawyer(l, null)));
   } catch (err) {
     logger.error('[providers/lawyers]', err.message);
     res.status(500).json({ error: 'Providers unavailable' });
@@ -352,7 +375,7 @@ router.get('/bail', optionalAuth, searchLimiter, async (req, res) => {
     const user_state = (req.query.user_state || '').toString().toUpperCase().slice(0,2) || null;
 
     const db = await openDb();
-    if (!db) return res.status(503).json({ error: 'Provider service unavailable.' });
+    const { cityName: bailCity, stateCode: bailState } = parseCityState(city, req.query.state || user_state);
     // bbox pre-filter: only load agents within an outer bounding box (SQL-level, fast)
     const bboxPad = hasCoords ? Math.max(radiusKm * 0.621371 + 50, 150) : 0;
     const bboxQ   = hasCoords ? bboxFromLatLng(lat, lng, bboxPad) : null;
@@ -362,9 +385,13 @@ router.get('/bail', optionalAuth, searchLimiter, async (req, res) => {
     const bboxParams = bboxQ ? [bboxQ.minLat, bboxQ.maxLat, bboxQ.minLng, bboxQ.maxLng] : [];
 
     const all = await db.all(
-      'SELECT id,name,phone,address,lat,lng,city,state,rating,reviews,license_number,verified,license_type,languages FROM bail_agents WHERE active=1 AND lat IS NOT NULL AND lng IS NOT NULL'
-      + bboxWhere,
-      bboxParams
+      'SELECT id,name,company,phone,address,lat,lng,city,state,rating,reviews,license_number,verified,doi_verified,languages,website,available_24_7,payment_plans,fee_percent,bond_rate FROM bail_agents WHERE COALESCE(active, 1) = 1'
+      + (hasCoords ? ' AND lat IS NOT NULL AND lng IS NOT NULL' : '')
+      + bboxWhere
+      + (!hasCoords && bailCity  ? ' AND LOWER(city) = LOWER(?)' : '')
+      + (!hasCoords && bailState ? ' AND UPPER(state) = ?' : '')
+      + ' ORDER BY COALESCE(rating, 0) DESC, COALESCE(reviews, 0) DESC',
+      [...bboxParams, ...(!hasCoords && bailCity ? [bailCity] : []), ...(!hasCoords && bailState ? [bailState] : [])]
     );
 
     if (hasCoords) {
@@ -383,12 +410,6 @@ router.get('/bail', optionalAuth, searchLimiter, async (req, res) => {
 
       res.setHeader('Cache-Control', 'private, max-age=60');
     return res.json(results.slice(0, limit).map(a => formatBailAgent(a, a._dist)));
-    }
-
-    if (city) {
-      return res.json(
-        all.filter(a => a.city === city).slice(0, limit).map(a => formatBailAgent(a, null))
-      );
     }
 
     res.json(all.slice(0, limit).map(a => formatBailAgent(a, null)));

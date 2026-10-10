@@ -16,33 +16,13 @@ import { authRequired }    from '../middleware/auth.js';
 import { getDb }           from '../db/index.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import logger              from '../utils/logger.js';
-// sqlite3 imported dynamically
-import { open }            from 'sqlite';
-import { fileURLToPath }   from 'url';
-import path                from 'path';
 
 const router       = Router();
 const statsLimiter = makeUserLimiter({ windowMs: 60_000, max: 10, message: 'Stats limit reached.' });
 
-const __dirname_r  = path.dirname(fileURLToPath(import.meta.url));
-const PROVIDERS_DB = path.resolve(__dirname_r, '../../data/providers.sqlite');
-
-// ── Module-level singleton — one connection for the lifetime of the process ────
-let _pdb = null;
+// Provider data lives in the main Postgres database.
 async function getProvidersDb() {
-  let sqlite3;
-  try { sqlite3 = (await import('sqlite3')).default; } catch(e) { return null; }
-  if (_pdb) return _pdb;
-  try {
-    _pdb = await open({ filename: PROVIDERS_DB, driver: sqlite3.Database });
-    // WAL mode for better read concurrency
-    await _pdb.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;");
-    logger.info('[advocacy] providers.sqlite connection opened');
-  } catch (e) {
-    logger.warn('[advocacy] Could not open providers.sqlite:', e.message);
-    _pdb = null;
-  }
-  return _pdb;
+  return getDb();
 }
 
 // ── GET /api/advocacy/stats ───────────────────────────────────────────────────

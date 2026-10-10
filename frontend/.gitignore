@@ -18,3 +18,9 @@ pc-api-key.json
 
 # Sentry auth token — add real token via EAS Secrets, not this file
 # sentry.properties
+
+# Build output
+dist/
+.expo/
+node_modules/
+web-smoke-out/

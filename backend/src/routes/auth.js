@@ -1,318 +1,249 @@
 import { audit, AUDIT_ACTIONS } from '../utils/audit.js';
-import { auditLog } from '../utils/auditLog.js';
-import { validate, schemas } from '../middleware/validate.js';
+import { validate, schemas } from '../validation/schemas.js';
 /**
  * /api/auth — Email-or-phone authentication
  *
- * POST /api/auth/register
- *   Body: { identifier, password, displayName? }
- *   identifier = email address OR phone number (e.g. +16155551234 or 6155551234)
+ * POST /api/auth/register         { identifier, password, displayName?, isAttorney?, barNumber?, barState?, firmName? }
+ *                                  identifier = email OR phone (+16155551234 / 6155551234)
+ *                                  (legacy { email } / { phone } also accepted)
+ * POST /api/auth/login            { identifier, password }   (legacy { email } accepted)
+ * POST /api/auth/refresh          { refreshToken }  — single-use rotation
+ *                                  OR no body + "Authorization: Bearer <access token>" (mobile app)
+ * GET  /api/auth/me               current user
+ * POST /api/auth/update-profile   { displayName?, phone?, email? }
+ * POST /api/auth/forgot-password  { email } — always 200; stores a hashed reset token
+ * POST /api/auth/reset-password   { token, password }
+ * POST /api/auth/logout           { refreshToken? }
  *
- * POST /api/auth/login
- *   Body: { identifier, password }
- *
- * GET /api/auth/me
- *   Returns current user from token
- *
- * POST /api/auth/update-profile
- *   Body: { displayName?, phone?, email? }
+ * Responses for register/login/refresh: { token, refreshToken, user }
  */
 
-import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere, withTransaction} from '../utils/routeHelpers.js';
+import { err400, truncateStr, err401, err404, sanitizeStr, validateEmail } from '../utils/routeHelpers.js';
 import { Router } from 'express';
+import crypto from 'crypto';
 import { getDb } from '../db/index.js';
 import bcrypt from 'bcryptjs';
 import { CONFIG } from '../config.js';
 import jwt from 'jsonwebtoken';
 import { authRequired } from '../middleware/auth.js';
-
-// ── Brute-force protection on credential endpoints (10 req / 15 min per IP) ──
 import rateLimit from 'express-rate-limit';
 import logger from '../utils/logger.js';
 
-// ── Password reset rate limit — 3 attempts per hour per IP ───────────────────
+const IS_TEST = process.env.NODE_ENV === 'test';
+
+// ── Secrets — always from env (config.js generates dev-only values; production
+//    refuses to start without them). No hard-coded fallbacks. ──────────────────
+const JWT_SECRET         = () => process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = () => process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+
+const sha256 = (v) => crypto.createHash('sha256').update(String(v)).digest('hex');
+
+// ── Rate limits ───────────────────────────────────────────────────────────────
 const resetLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,  // 1 hour
-  max:      3,
+  windowMs: 60 * 60 * 1000, max: 5,
   message:  { error: 'Too many password reset requests. Try again in 1 hour.' },
-  standardHeaders: true,
-  legacyHeaders:   false,
-  keyGenerator:    (req) => req.ip + (req.body?.email || ''),
+  standardHeaders: true, legacyHeaders: false,
+  skip: () => IS_TEST,
 });
-
-// ── Refresh token helpers ─────────────────────────────────────────────────────
-const JWT_REFRESH_SECRET = () => process.env.JWT_REFRESH_SECRET
-  || (process.env.JWT_SECRET ?? 'change-me-in-production') + '_refresh'  // fallback: derive from main secret
-  || 'dev_refresh_secret_change_me';
-
-async function issueTokenPair(user, db) {
-  const payload = { id: user.id, role: user.role || 'user', email: user.email };
-
-  // Short-lived access token (15 min)
-  const jwt_mod  = await import('jsonwebtoken');
-  const accessToken = jwt_mod.default.sign(payload, JWT_SECRET(), {
-    expiresIn: CONFIG.JWT_EXPIRES_IN,
-  });
-
-  // Long-lived refresh token (7 days) — stored in DB, single-use
-  const refreshPayload = { id: user.id, type: 'refresh' };
-  const refreshToken = jwt_mod.default.sign(refreshPayload, JWT_REFRESH_SECRET(), {
-    expiresIn: CONFIG.JWT_REFRESH_EXPIRES_IN || '7d',
-  });
-
-  // Persist refresh token hash (so we can invalidate on use)
-  const tokenHash = Buffer.from(refreshToken).toString('base64').slice(-32);
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  await db.run(
-    `INSERT OR REPLACE INTO refresh_tokens (user_id, token_hash, expires_at, used)
-     VALUES (?, ?, ?, 0)`,
-    [user.id, tokenHash, expiresAt]
-  ).catch(() => {}); // non-fatal — degrades to expiry-only
-
-  return { token: accessToken, refreshToken, user: payload };
-}
-
-const JWT_SECRET = () => process.env.JWT_SECRET || 'dev_secret_change_me';
-
-// ── Login attempt tracking ────────────────────────────────────────────────────
-const MAX_LOGIN_ATTEMPTS = 10;
-const LOCKOUT_MINUTES    = 15;
-
-async function recordFailedLogin(db, userId) {
-  await db.run(
-    `UPDATE users
-       SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1,
-           lock_until             = CASE
-             WHEN COALESCE(failed_login_attempts, 0) + 1 >= ? 
-             THEN datetime('now', '+${LOCKOUT_MINUTES} minutes')
-             ELSE lock_until
-           END
-     WHERE id = ?`,
-    [MAX_LOGIN_ATTEMPTS, userId]
-  );
-}
-
-async function clearFailedLogins(db, userId) {
-  await db.run(
-    `UPDATE users SET failed_login_attempts = 0, lock_until = NULL WHERE id = ?`,
-    [userId]
-  );
-}
-
-async function isAccountLocked(user) {
-  if (!user.lock_until) return false;
-  return new Date(user.lock_until) > new Date();
-}
-
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,   // 15 minutes
-  max: 10,                      // 10 attempts per window
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true, // only count failures toward the limit
+  windowMs: 15 * 60 * 1000, max: parseInt(process.env.AUTH_RATE_LIMIT || '10', 10),
+  standardHeaders: true, legacyHeaders: false,
+  skipSuccessfulRequests: true,     // only failures count toward the limit
   message: { error: 'Too many login attempts — please wait 15 minutes before trying again.' },
-  keyGenerator: (req) => req.ip,
+  skip: () => IS_TEST,
 });
-
-// ── Account creation rate limit — 5 registrations per IP per hour ─────────────
 const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 5,
+  windowMs: 60 * 60 * 1000, max: parseInt(process.env.REGISTER_RATE_LIMIT || '5', 10),
   message: { error: 'Too many accounts created from this device. Please try again in an hour.' },
-  standardHeaders: true,
-  legacyHeaders: false,
+  standardHeaders: true, legacyHeaders: false,
+  skip: () => IS_TEST,
 });
 
-
-const ALLOWED_UPDATE_COLS = new Set([
-  'display_name','phone','email','push_token','profile_pic',
-  'notification_prefs','language','theme','biometric_enabled',
-]);
-function safeUpdateCols(updates) {
-  return updates.filter(col => ALLOWED_UPDATE_COLS.has(col.split('=')[0].trim()));
-}
-
-// ── Auth-specific rate limiting — 10 attempts per 15 min per IP ──────────────
-const authAttempts = new Map();
-function authRateLimit(req, res, next) {
-  const key = req.ip || 'unknown';
-  const now = Date.now();
-  const WINDOW = 15 * 60 * 1000; // 15 minutes
-  const MAX    = 10;
-  const entry  = authAttempts.get(key) || { count: 0, start: now };
-  if (now - entry.start > WINDOW) {
-    entry.count = 1; entry.start = now;
-  } else {
-    entry.count++;
-    if (entry.count > MAX) {
-      return res.status(429).json({ error: 'Too many login attempts. Wait 15 minutes.' });
-    }
-  }
-  authAttempts.set(key, entry);
-  next();
-}
 const router = Router();
 
-// ── Identifier normalization ──────────────────────────────────────────────────
-// Accepts: email, +1+1XXXXXXXXXX or 10 digits
-
+// ── Identifier normalisation (email or phone) ────────────────────────────────
 function normalizeIdentifier(raw = '') {
-  const s = raw.trim().toLowerCase();
-  // Email
-  if (s.includes('@')) return { type: 'email', value: s };
-  // Phone: strip everything except digits
+  const s = String(raw).trim().toLowerCase();
+  if (s.includes('@')) return validateEmail(s) ? { type: 'email', value: s } : { type: 'unknown', value: s };
   const digits = s.replace(/\D/g, '');
   if (digits.length === 10) return { type: 'phone', value: '+1' + digits };
   if (digits.length === 11 && digits[0] === '1') return { type: 'phone', value: '+' + digits };
-  if (digits.length > 6) return { type: 'phone', value: '+' + digits };
+  if (digits.length >= 7 && digits.length <= 15) return { type: 'phone', value: '+' + digits };
   return { type: 'unknown', value: s };
 }
+const pickIdentifier = (b = {}) => b.identifier || b.email || b.phone || '';
 
-// Build display name from identifier if none provided
 function defaultDisplayName(identifier, type) {
   if (type === 'email') {
     const local = identifier.split('@')[0];
     return local.charAt(0).toUpperCase() + local.slice(1).replace(/[._]/g, ' ');
   }
-  if (type === 'phone') {
-    const digits = identifier.replace(/\D/g, '');
-    return '••• ' + digits.slice(-4);
-  }
+  if (type === 'phone') return '••• ' + identifier.replace(/\D/g, '').slice(-4);
   return 'User';
 }
 
-// ── JWT helper ────────────────────────────────────────────────────────────────
-
-async function sign(user) {
-  const payload = {
-    id: user.id,
-    email: user.email || null,
-    phone: user.phone || null,
-    displayName: user.display_name || user.name || user.email?.split('@')[0] || 'User',
-    premium: !!user.is_premium
+function publicUser(u) {
+  return {
+    id:               u.id,
+    email:            u.email || null,
+    phone:            u.phone || null,
+    identifier:       u.login_identifier || u.email || u.phone || null,
+    displayName:      u.display_name || u.name || (u.email ? u.email.split('@')[0] : 'User'),
+    role:             u.role || 'user',
+    subscriptionTier: u.subscription_tier || 'free',
+    premium:          !!Number(u.is_premium || 0),
+    createdAt:        u.created_at || null,
   };
-  const db_for_token = await getDb();
-  return await issueTokenPair(user, db_for_token);
+}
+
+// ── Token issuing ─────────────────────────────────────────────────────────────
+async function issueTokenPair(user, db) {
+  const pub = publicUser(user);
+  const accessToken = jwt.sign(
+    { id: user.id, role: pub.role, email: pub.email, phone: pub.phone, displayName: pub.displayName, premium: pub.premium },
+    JWT_SECRET(),
+    { expiresIn: CONFIG.JWT_EXPIRES_IN, algorithm: 'HS256' }
+  );
+  const refreshToken = jwt.sign(
+    { id: user.id, type: 'refresh', jti: crypto.randomUUID() },
+    JWT_REFRESH_SECRET(),
+    { expiresIn: CONFIG.JWT_REFRESH_EXPIRES_IN, algorithm: 'HS256' }
+  );
+  const decoded   = jwt.decode(refreshToken);
+  const expiresAt = new Date((decoded?.exp ?? Math.floor(Date.now() / 1000) + 60 * 86400) * 1000).toISOString();
+  await db.run(
+    `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, used)
+     VALUES (?, ?, ?, 0) ON CONFLICT (user_id, token_hash) DO NOTHING`,
+    [user.id, sha256(refreshToken), expiresAt]
+  );
+  return { token: accessToken, refreshToken, user: pub };
+}
+
+// ── Login lockout ─────────────────────────────────────────────────────────────
+const MAX_LOGIN_ATTEMPTS = 10;
+const LOCKOUT_MINUTES    = 15;
+
+async function recordFailedLogin(db, userId) {
+  const lockUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60_000).toISOString();
+  await db.run(
+    `UPDATE users
+        SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1,
+            lock_until = CASE WHEN COALESCE(failed_login_attempts, 0) + 1 >= ? THEN ? ELSE lock_until END
+      WHERE id = ?`,
+    [MAX_LOGIN_ATTEMPTS, lockUntil, userId]
+  );
+}
+async function clearFailedLogins(db, userId) {
+  await db.run('UPDATE users SET failed_login_attempts = 0, lock_until = NULL WHERE id = ?', [userId]);
+}
+function isAccountLocked(user) {
+  if (!user.lock_until) return false;
+  const t = new Date(user.lock_until).getTime();
+  return Number.isFinite(t) && t > Date.now();
+}
+
+async function findUserByIdentifier(db, type, value) {
+  return type === 'email'
+    ? db.get(`SELECT * FROM users WHERE LOWER(email) = ? AND COALESCE(account_status, 'active') <> 'banned'`, [value])
+    : db.get(`SELECT * FROM users WHERE (phone = ? OR login_identifier = ?) AND COALESCE(account_status, 'active') <> 'banned'`, [value, value]);
 }
 
 // ── POST /register ────────────────────────────────────────────────────────────
-
-router.post('/register', validate(schemas.auth.register), authRateLimit, registerLimiter, async (req, res) => {
-  let db;
+router.post('/register', registerLimiter, validate(schemas.auth.register), async (req, res) => {
   try {
-    db = await getDb();
+    const db = await getDb();
     const {
-      identifier, password, displayName: rawDisplayName,
-      // Attorney self-registration fields
-      isAttorney   = false,
-      barNumber    = null,
-      barState     = null,
-      practiceAreas = null,
-      firmName     = null,
+      password, displayName: rawDisplayName, name: rawName,
+      isAttorney = false, barNumber = null, barState = null, practiceAreas = null, firmName = null,
     } = req.body || {};
-    const safeDisplayName = rawDisplayName ? truncateStr(sanitizeStr(String(rawDisplayName), 100), 100) : null;
-    if (!identifier || !password) {
-      return err400(res, 'identifier and password are required');
-    }
-    if (password.length < 8) {
-      return err400(res, 'password must be at least 8 characters');
-    }
+    const identifier = pickIdentifier(req.body);
+    if (!identifier || !password) return err400(res, 'identifier and password are required');
+    if (String(password).length < 8) return err400(res, 'password must be at least 8 characters');
 
     const { type, value } = normalizeIdentifier(identifier);
-    if (type === 'unknown') {
-      return err400(res, 'identifier must be a valid email or phone number');
-    }
+    if (type === 'unknown') return err400(res, 'identifier must be a valid email or phone number');
 
-    // Check uniqueness
-    const field = type === 'email' ? 'email' : type === 'phone' ? 'phone' : null;
-  if (!field) return err400(res, 'Invalid type. Must be email or phone.');
-    const SAFE_FIELDS = new Set(['email','phone','login_identifier']);
-    if (!SAFE_FIELDS.has(field)) return err400(res, 'Invalid field');
-    const exists = await db.get(field === 'email' ? 'SELECT id FROM users WHERE email = ?' : 'SELECT id FROM users WHERE phone = ?', [value]);
-    if (exists) {
+    const exists = await findUserByIdentifier(db, type, value);
+    const existsAny = exists || await db.get(
+      type === 'email' ? 'SELECT id FROM users WHERE LOWER(email) = ?' : 'SELECT id FROM users WHERE phone = ?', [value]);
+    if (existsAny) {
       return res.status(409).json({ error: `${type === 'email' ? 'Email' : 'Phone number'} already registered` });
     }
 
     const hash = await bcrypt.hash(password, 12);
-    const name = safeDisplayName?.trim() || defaultDisplayName(value, type);
-
-    await db.run('BEGIN');
+    const rawDN = rawDisplayName || rawName;
+    const safeDisplayName = rawDN ? truncateStr(sanitizeStr(String(rawDN), 100), 100).trim() : '';
+    const name = safeDisplayName || defaultDisplayName(value, type);
     const userRole = isAttorney ? 'attorney' : 'user';
     const safeBarNumber = barNumber ? sanitizeStr(String(barNumber), 30) : null;
-    const safeBarState  = barState  ? sanitizeStr(String(barState),  3)  : null;
+    const safeBarState  = barState  ? sanitizeStr(String(barState), 3).toUpperCase() : null;
     const safeFirmName  = firmName  ? truncateStr(sanitizeStr(String(firmName), 100), 100) : null;
 
-    const r = await db.run(
-      `INSERT INTO users
-         (email, phone, password_hash, name, display_name, login_identifier,
-          role, bar_number, bar_state, firm_name)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        type === 'email' ? value : null,
-        type === 'phone' ? value : null,
-        hash, name, name, value,
-        userRole,
-        safeBarNumber,
-        safeBarState,
-        safeFirmName,
-      ]
-    );
+    const user = await db.transaction(async (tx) => {
+      const r = await tx.run(
+        `INSERT INTO users
+           (email, phone, password_hash, name, display_name, login_identifier,
+            role, bar_number, bar_state, firm_name)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [type === 'email' ? value : null, type === 'phone' ? value : null,
+         hash, name, name, value, userRole, safeBarNumber, safeBarState, safeFirmName]
+      );
+      if (isAttorney && r.lastID) {
+        await tx.run(
+          `INSERT INTO attorney_profiles
+             (user_id, bar_number, bar_state, firm_name, practice_areas, bar_verification_status)
+           VALUES (?, ?, ?, ?, ?, 'pending')`,
+          [r.lastID, safeBarNumber, safeBarState, safeFirmName, practiceAreas ? JSON.stringify(practiceAreas) : null]
+        );
+      }
+      return tx.get('SELECT * FROM users WHERE id = ?', [r.lastID]);
+    });
+    if (!user) return res.status(500).json({ error: 'Registration failed' });
 
-    const user = await db.get('SELECT * FROM users WHERE id = ?', [r.lastID]);
-    if (!user) return res.status(404).json({ error: 'User not found.' });
-    // If attorney registration — create attorney_profiles row immediately
-    if (isAttorney && r.lastID) {
-      await db.run(
-        `INSERT OR IGNORE INTO attorney_profiles
-           (user_id, bar_number, bar_state, firm_name, practice_areas, bar_verification_status)
-         VALUES (?, ?, ?, ?, ?, 'pending')`,
-        [r.lastID, safeBarNumber, safeBarState, safeFirmName,
-         practiceAreas ? JSON.stringify(practiceAreas) : null]
-      ).catch(() => {}); // Non-fatal — profile created on first dashboard load if missing
+    const out = await issueTokenPair(user, db);
+    audit?.('auth.register', { userId: user.id, req })?.catch?.(() => {});
+    if (type === 'email') {
+      import('../services/email.js')
+        .then(m => m.sendWelcome(value, name))
+        .catch(e => logger.warn('[auth/register] welcome email:', e.message));
     }
-    await db.run('COMMIT');
-    await clearFailedLogins(db, user.id).catch(() => {});
-    res.json(sign(user));
+    res.status(201).json(out);
   } catch (e) {
-    // ROLLBACK if db was initialized
-    try { await db.run('ROLLBACK'); } catch (_) { logger?.warn?.("[auth] suppressed:", _?.message); }
+    if (e.code === '23505') return res.status(409).json({ error: 'Account already registered' });
     logger.error('[auth/register]', e.message);
     res.status(500).json({ error: 'Registration failed' });
   }
 });
 
 // ── POST /login ───────────────────────────────────────────────────────────────
-
-router.post('/login', validate(schemas.auth.login), authRateLimit, authLimiter, async (req, res) => {
+router.post('/login', authLimiter, validate(schemas.auth.login), async (req, res) => {
   try {
     const db = await getDb();
-    const { identifier, password } = req.body || {};
-    if (!identifier || !password) {
-      return err400(res, 'identifier and password are required');
-    }
+    const { password } = req.body || {};
+    const identifier = pickIdentifier(req.body);
+    if (!identifier || !password) return err400(res, 'identifier and password are required');
 
     const { type, value } = normalizeIdentifier(identifier);
-    const field = type === 'email' ? 'email' : type === 'phone' ? 'phone' : null;
-  if (!field) return err400(res, 'Invalid type. Must be email or phone.');
+    if (type === 'unknown') return err401(res, 'Invalid credentials. Please check your email/phone and password.');
 
-    const SAFE_FIELDS_Q = new Set(['email','phone','login_identifier']);
-    if (!SAFE_FIELDS_Q.has(field)) throw new Error('Invalid field');
-    const user = await db.get(
-      field === 'email'
-        ? 'SELECT * FROM users WHERE email = ? AND account_status != \'banned\''
-        : 'SELECT * FROM users WHERE phone = ? AND account_status != \'banned\'',
-      [value]
-    );
-    if (!user) {
+    const user = await findUserByIdentifier(db, type, value);
+    if (!user || !user.password_hash) {
       return err401(res, 'Invalid credentials. Please check your email/phone and password.');
+    }
+    if (isAccountLocked(user)) {
+      const mins = Math.max(1, Math.ceil((new Date(user.lock_until) - Date.now()) / 60000));
+      return res.status(423).json({ error: `Account temporarily locked. Try again in ${mins} minutes.`, code: 'account_locked' });
     }
 
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) {
+      await recordFailedLogin(db, user.id).catch(e => logger.warn('[auth/login] lockout update:', e.message));
       return err401(res, 'Invalid credentials. Please check your email/phone and password.');
     }
+    if (user.failed_login_attempts || user.lock_until) await clearFailedLogins(db, user.id).catch(() => {});
+    db.run('UPDATE users SET last_seen = ? WHERE id = ?', [new Date().toISOString(), user.id]).catch(() => {});
 
-    res.json(sign(user));
+    res.json(await issueTokenPair(user, db));
   } catch (e) {
     logger.error('[auth/login]', e.message);
     res.status(500).json({ error: 'Login failed' });
@@ -320,39 +251,19 @@ router.post('/login', validate(schemas.auth.login), authRateLimit, authLimiter, 
 });
 
 // ── GET /me ───────────────────────────────────────────────────────────────────
-
 router.get('/me', authRequired, async (req, res) => {
   try {
     const db   = await getDb();
-    const rows = await db.query(
-      'SELECT id, identifier, display_name, role, subscription_tier, created_at FROM users WHERE id = $1',
-      [req.user.id]
-    );
-    const user = rows.rows?.[0] ?? rows[0];
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
     if (!user) return err404(res, 'User not found');
-    res.json({
-      id:                user.id,
-      identifier:        user.identifier,
-      displayName:       user.display_name,
-      role:              user.role,
-      subscriptionTier:  user.subscription_tier,
-      createdAt:         user.created_at,
-    });
+    res.json(publicUser(user));
   } catch (e) {
-    // Fallback: return what we have from the JWT
-    logger.warn('[auth/me] db error, returning JWT payload:', e.message);
-    res.json({
-      id:               req.user.id,
-      identifier:       req.user.identifier,
-      displayName:      req.user.displayName || req.user.display_name,
-      role:             req.user.role || 'consumer',
-      subscriptionTier: req.user.subscriptionTier || 'free',
-    });
+    logger.error('[auth/me]', e.message);
+    res.status(500).json({ error: 'Could not load profile' });
   }
 });
 
 // ── POST /update-profile ──────────────────────────────────────────────────────
-
 router.post('/update-profile', authRequired, async (req, res) => {
   try {
     const db = await getDb();
@@ -366,168 +277,207 @@ router.post('/update-profile', authRequired, async (req, res) => {
       vals.push(displayName.trim(), displayName.trim());
     }
     if (phone) {
-      const { value } = normalizeIdentifier(phone);
+      const { type, value } = normalizeIdentifier(phone);
+      if (type !== 'phone') return err400(res, 'Invalid phone number');
       updates.push('phone = ?');
       vals.push(value);
     }
-    if (email?.includes('@')) {
+    if (email) {
+      if (!validateEmail(email)) return err400(res, 'Invalid email format');
       updates.push('email = ?');
-      vals.push(email.trim().toLowerCase());
+      vals.push(String(email).trim().toLowerCase());
     }
-
     if (updates.length === 0) return err400(res, 'Nothing to update');
 
     vals.push(req.user.id);
     await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, vals);
     const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
     if (!user) return res.status(404).json({ error: 'Account not found.' });
-    res.json(sign(user).user);
+    res.json(publicUser(user));
   } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'That email or phone is already in use.' });
     logger.error('[auth/update-profile]', e.message);
     res.status(500).json({ error: 'Profile update failed' });
   }
 });
 
-// ── POST /api/auth/forgot-password ───────────────────────────────────────────
+// ── POST /forgot-password ─────────────────────────────────────────────────────
+// Always 200 (prevents account enumeration). Stores only a SHA-256 of the token.
 router.post('/forgot-password', resetLimiter, async (req, res) => {
   try {
-    const { email } = req.body;
-  if (email && !validateEmail(email)) return err400(res, 'Invalid email format');
+    const email = String(req.body?.email || req.body?.identifier || '').trim().toLowerCase();
     if (!email) return err400(res, 'Email required');
+    if (!validateEmail(email)) return err400(res, 'Invalid email format');
     const db   = await getDb();
-    const user = await db.get(
-      'SELECT id, email FROM users WHERE email = ? COLLATE NOCASE',
-      [email.trim()]
-    );
-    // Always 200 — prevents email enumeration
+    const user = await db.get('SELECT id, email FROM users WHERE LOWER(email) = ?', [email]);
     if (!user) return res.json({ sent: true });
-    const crypto = await import('crypto');
-    const token  = crypto.randomBytes(32).toString('hex');
-    const exp    = new Date(Date.now() + 3_600_000).toISOString();
-    // password_resets table managed by db/index.js
-    try {
-      await db.run(
-        'INSERT OR REPLACE INTO password_resets (user_id, token, expires_at, used) VALUES (?,?,?,false)',
-        [user.id, token, exp]
-      );
-    } catch (_dbErr) {
-      // Table may not exist in demo mode — create it
-      await db.run(
-        'CREATE TABLE IF NOT EXISTS password_resets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, token TEXT UNIQUE, expires_at TEXT, used INTEGER DEFAULT 0)'
-      ).catch(() => {});
-      await db.run(
-        'INSERT OR REPLACE INTO password_resets (user_id, token, expires_at) VALUES (?,?,?)',
-        [user.id, token, exp]
-      ).catch(() => {});
-    }
-    const base = process.env.CORS_ORIGIN || 'https://justicegavel.app';
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const exp   = new Date(Date.now() + 3_600_000).toISOString();
+    // Invalidate older outstanding tokens for this user, then store the new one
+    await db.run('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [user.id]);
+    await db.run('INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)',
+      [user.id, sha256(token), exp]);
+
+    const base = (process.env.APP_URL || process.env.FRONTEND_URL || 'https://justicegavel.app').split(',')[0].trim().replace(/\/+$/, '');
     const url  = `${base}/reset-password?token=${token}`;
-    // sendEmail imported from sendgrid service
     try {
-      const { sendEmail } = await import('../services/sendgrid.js');
-      await sendEmail(
-        user.email,
-        'Reset your Justice Gavel password',
-        `Click this link to reset your password (expires in 1 hour):\n\n${url}\n\nIf you did not request this, you can ignore this email.`
-      );
+      const { sendPasswordReset } = await import('../services/email.js');
+      await sendPasswordReset(user.email, url);
     } catch (e) { logger.warn('[auth/forgot-password/email]', e?.message); }
     res.json({ sent: true });
-  } catch (e) { logger.error('[auth/forgot-password]', e.message); res.status(500).json({ error: 'Server error. Please try again.' }); }
+  } catch (e) {
+    logger.error('[auth/forgot-password]', e.message);
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
 });
 
-// ── POST /api/auth/refresh — exchange valid token for a fresh one ─────────────
-router.post('/refresh', validate(schemas.auth.refresh), async (req, res) => {
-  const { refreshToken } = req.body;
-  if (!refreshToken) return err400(res, 'refreshToken required');
-
+// ── POST /reset-password ──────────────────────────────────────────────────────
+router.post('/reset-password', resetLimiter, async (req, res) => {
   try {
-    const jwt_mod = await import('jsonwebtoken');
+    const { token, password } = req.body || {};
+    if (!token || !password) return err400(res, 'token and password are required');
+    if (String(password).length < 8) return err400(res, 'password must be at least 8 characters');
+    const db  = await getDb();
+    const row = await db.get(
+      'SELECT id, user_id FROM password_resets WHERE token = ? AND used_at IS NULL AND expires_at > NOW()',
+      [sha256(token)]
+    );
+    if (!row) return res.status(400).json({ error: 'Reset link is invalid or has expired.', code: 'invalid_reset_token' });
+    const hash = await bcrypt.hash(password, 12);
+    await db.transaction(async (tx) => {
+      await tx.run('UPDATE users SET password_hash = ?, failed_login_attempts = 0, lock_until = NULL WHERE id = ?', [hash, row.user_id]);
+      await tx.run('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [row.user_id]);
+      await tx.run('DELETE FROM refresh_tokens WHERE user_id = ?', [row.user_id]);   // sign out other sessions
+    });
+    res.json({ ok: true, message: 'Password updated. Please sign in.' });
+  } catch (e) {
+    logger.error('[auth/reset-password]', e.message);
+    res.status(500).json({ error: 'Could not reset password. Please try again.' });
+  }
+});
+
+// ── POST /refresh ─────────────────────────────────────────────────────────────
+router.post('/refresh', validate(schemas.auth.refresh), async (req, res) => {
+  try {
     const db = await getDb();
-    const JWT_REFRESH_SECRET_FN = () => process.env.JWT_REFRESH_SECRET
-      || ((process.env.JWT_SECRET ?? 'change-me-in-production') + '_refresh')
-      || 'dev_refresh_secret_change_me';
+    const { refreshToken } = req.body || {};
 
-    // 1. Verify refresh token signature and expiry
-    let decoded;
+    if (refreshToken) {
+      // 1. Verify signature + expiry
+      let decoded;
+      try {
+        decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET(), { algorithms: ['HS256'] });
+      } catch {
+        return res.status(401).json({ error: 'Invalid or expired refresh token', code: 'invalid_refresh' });
+      }
+      if (decoded.type !== 'refresh') {
+        return res.status(401).json({ error: 'Not a refresh token', code: 'invalid_refresh' });
+      }
+      // 2. Single-use rotation: atomically mark this token used
+      const marked = await db.run(
+        `UPDATE refresh_tokens SET used = 1
+          WHERE user_id = ? AND token_hash = ? AND used = 0 AND expires_at > NOW()`,
+        [decoded.id, sha256(refreshToken)]
+      );
+      if (!marked.changes) {
+        // Reuse of a rotated token → possible theft: revoke every session
+        await db.run('DELETE FROM refresh_tokens WHERE user_id = ?', [decoded.id]).catch(() => {});
+        return res.status(401).json({ error: 'Refresh token already used or expired', code: 'token_reuse' });
+      }
+      const user = await db.get('SELECT * FROM users WHERE id = ?', [decoded.id]);
+      if (!user || user.account_status === 'banned') {
+        return res.status(401).json({ error: 'Account not found', code: 'user_not_found' });
+      }
+      return res.json(await issueTokenPair(user, db));
+    }
+
+    // Mobile app path: no refresh token — re-issue from a still-valid access token
+    const auth  = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null;
+    if (!token) return err400(res, 'refreshToken required');
+    let claims;
     try {
-      decoded = jwt_mod.default.verify(refreshToken, JWT_REFRESH_SECRET_FN(), { algorithms: ['HS256'] });
-    } catch (e) {
-      return res.status(401).json({ error: 'Invalid or expired refresh token', code: 'invalid_refresh' });
+      claims = jwt.verify(token, JWT_SECRET(), { algorithms: ['HS256'] });
+    } catch {
+      return res.status(401).json({ error: 'Session expired. Please log in again.', code: 'token_expired' });
     }
-
-    if (decoded.type !== 'refresh') {
-      return res.status(401).json({ error: 'Not a refresh token', code: 'invalid_refresh' });
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [claims.id]);
+    if (!user || user.account_status === 'banned') {
+      return res.status(401).json({ error: 'Account not found', code: 'user_not_found' });
     }
-
-    // 2. Check token hasn't been used (replay protection)
-    const tokenHash = Buffer.from(refreshToken).toString('base64').slice(-32);
-    const stored = await db.get(
-      'SELECT * FROM refresh_tokens WHERE user_id=? AND token_hash=? AND used=0 AND expires_at > datetime("now")',
-      [decoded.id, tokenHash]
-    ).catch(() => null);
-
-    if (!stored) {
-      // Token already used or not found — possible token theft; invalidate all user tokens
-      await db.run('DELETE FROM refresh_tokens WHERE user_id=?', [decoded.id]).catch(() => {});
-      return res.status(401).json({ error: 'Refresh token already used or expired', code: 'token_reuse' });
-    }
-
-    // 3. Mark old token as used (single-use rotation)
-    await db.run('UPDATE refresh_tokens SET used=1 WHERE token_hash=?', [tokenHash]).catch(() => {});
-
-    // 4. Fetch current user (ensures account still active)
-    const user = await db.get('SELECT id, display_name, email, role FROM users WHERE id=?', [decoded.id]).catch(() => null);
-    if (!user) return res.status(401).json({ error: 'Account not found', code: 'user_not_found' });
-
-    // 5. Issue new token pair (rotation)
-    const result = await issueTokenPair(user, db);
-    res.json(result);
-
+    res.json(await issueTokenPair(user, db));
   } catch (e) {
     logger.error('[auth/refresh]', e.message);
     res.status(500).json({ error: 'Could not refresh token' });
   }
 });
 
-
+// ── DELETE /account ───────────────────────────────────────────────────────────
 router.delete('/account', authRequired, async (req, res) => {
   const { password } = req.body || {};
-  if (!password) {
-    return err400(res, 'Password required to delete account.');
-  }
+  if (!password) return err400(res, 'Password required to delete account.');
   try {
     const db = await getDb();
     const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
     if (!user) return err404(res, 'Account not found.');
-
-    // Verify password before deletion
-    // Check account lockout first
-    if (await isAccountLocked(user)) {
+    if (isAccountLocked(user)) {
       const mins = Math.ceil((new Date(user.lock_until) - new Date()) / 60000);
       return res.status(423).json({ error: `Account temporarily locked. Try again in ${mins} minutes.` });
     }
-    const valid = await bcrypt.compare(password, user.password_hash);
+    const valid = await bcrypt.compare(password, user.password_hash || '');
     if (!valid) return err401(res, 'Incorrect password.');
 
-    // Delete all user data in dependency order
-    await db.run('DELETE FROM messages        WHERE sender_id   = ? OR recipient_id = ?', [req.user.id, req.user.id]);
-    await db.run('DELETE FROM cases           WHERE user_id     = ?', [req.user.id]);
-    await db.run('DELETE FROM push_tokens     WHERE user_id     = ?', [req.user.id]);
-    await db.run('DELETE FROM scheduled_pushes WHERE user_id   = ?', [req.user.id]);
-    await db.run('DELETE FROM subscriptions   WHERE user_id     = ?', [req.user.id]);
-    await db.run('DELETE FROM saved_lawyers   WHERE user_id     = ?', [req.user.id]);
-    await db.run('DELETE FROM consultations   WHERE user_id     = ?', [req.user.id]);
-    await db.run('DELETE FROM motions         WHERE user_id     = ?', [req.user.id]);
-    await db.run('DELETE FROM ai_jobs         WHERE user_id     = ?', [req.user.id]);
-    // Delete the user record last
-    await db.run('DELETE FROM users           WHERE id          = ?', [req.user.id]);
-
-    // Log deletion for compliance (anonymised — no PII)
-    await db.run(
-      'INSERT OR IGNORE INTO account_deletion_log (deleted_at, region) VALUES (datetime(\'now\'), ?)',
-      [req.headers['cf-ipcountry'] || 'unknown']
-    ).catch(() => {}); // table may not exist — non-fatal
-
+    const uid = req.user.id;
+    let attachmentKeys = [];
+    await db.transaction(async (tx) => {
+      // Child rows first. A missing table/column (schema drift) is skipped via
+      // a SAVEPOINT so it cannot abort the whole transaction.
+      const purge = async (sql, params) => {
+        await tx.run('SAVEPOINT purge_step');
+        try { await tx.run(sql, params); await tx.run('RELEASE SAVEPOINT purge_step'); }
+        catch (e) {
+          await tx.run('ROLLBACK TO SAVEPOINT purge_step');
+          if (!['42P01', '42703'].includes(e.code)) throw e;
+        }
+      };
+      await purge('DELETE FROM case_messages WHERE user_id = ? OR sender_id = ?', [uid, uid]);
+      await purge('DELETE FROM messages WHERE sender_id = ? OR recipient_id = ?', [uid, uid]);
+      await tx.run('SAVEPOINT purge_step');
+      try {
+        attachmentKeys = await tx.all('SELECT storage, storage_key FROM message_attachments WHERE uploader_id = ?', [uid]);
+        await tx.run('RELEASE SAVEPOINT purge_step');
+      } catch (e) {
+        await tx.run('ROLLBACK TO SAVEPOINT purge_step');
+        if (!['42P01', '42703'].includes(e.code)) throw e;
+      }
+      await purge('DELETE FROM message_attachments WHERE uploader_id = ?', [uid]);
+      await purge('DELETE FROM case_events WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM cases WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM push_tokens WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM scheduled_pushes WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM subscriptions WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM saved_lawyers WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM consultations WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM motions WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM ai_jobs WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM chat_messages WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM refresh_tokens WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM password_resets WHERE user_id = ?', [uid]);
+      await purge('DELETE FROM user_disclaimer_acceptance WHERE user_id = ?', [uid]);
+      await tx.run('DELETE FROM users WHERE id = ?', [uid]);
+      await purge('INSERT INTO account_deletion_log (deleted_at, reason) VALUES (NOW(), ?)', ['user_request']);
+    });
+    try { (await import('../middleware/auth.js')).invalidateUserCache?.(uid); } catch { /* ignore */ }
+    // Remove the user's encrypted attachment files (best effort, after commit).
+    if (attachmentKeys.length) {
+      import('../services/attachmentStorage.js').then(async ({ getAttachmentStorage }) => {
+        const storage = await getAttachmentStorage();
+        for (const a of attachmentKeys) {
+          if (storage && storage.kind === a.storage) await storage.remove(a.storage_key).catch(() => {});
+        }
+      }).catch(() => {});
+    }
     res.json({ ok: true, message: 'Account permanently deleted.' });
   } catch (e) {
     logger.error('[auth/account/delete]', e.message);
@@ -535,25 +485,22 @@ router.delete('/account', authRequired, async (req, res) => {
   }
 });
 
-// ── GDPR data export ───────────────────────────────────────────────────────
-// GET /api/auth/export
-// Returns all user data as JSON — required for GDPR/CCPA compliance
+// ── GET /export — GDPR/CCPA data export ───────────────────────────────────────
 router.get('/export', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    const [user, cases_, messages, motions, consultations, savedLawyers] = await Promise.all([
-      await db.get('SELECT id, email, name, phone, created_at FROM users WHERE id = ?', [req.user.id]),
-      db.all('SELECT id, title, status, created_at, updated_at FROM cases WHERE user_id = ? ORDER BY created_at DESC LIMIT 500', [req.user.id]),
-      db.all('SELECT id, case_id, sender_id, sender_role, lang, created_at FROM messages WHERE sender_id = ? OR recipient_id = ? ORDER BY created_at DESC LIMIT 500', [req.user.id, req.user.id]),
-      db.all('SELECT id, user_id, case_id, title, type, status, created_at FROM motions WHERE user_id = ? ORDER BY created_at DESC LIMIT 200', [req.user.id]).catch(() => []),
-      db.all('SELECT id, user_id, lawyer_id, status, scheduled_at, created_at FROM consultations WHERE user_id = ? ORDER BY created_at DESC LIMIT 200', [req.user.id]).catch(() => []),
-      db.all('SELECT id, user_id, lawyer_id, created_at FROM saved_lawyers WHERE user_id = ? ORDER BY created_at DESC LIMIT 200', [req.user.id]).catch(() => []),
+    const opt = (p) => p.catch(() => []);
+    const [user, cases_, motions, consultations, savedLawyers] = await Promise.all([
+      db.get('SELECT id, email, name, display_name, phone, role, created_at FROM users WHERE id = ?', [req.user.id]),
+      opt(db.all('SELECT id, title, status, created_at, updated_at FROM cases WHERE user_id = ? ORDER BY created_at DESC LIMIT 500', [req.user.id])),
+      opt(db.all('SELECT * FROM motions WHERE user_id = ? ORDER BY created_at DESC LIMIT 200', [req.user.id])),
+      opt(db.all('SELECT * FROM consultations WHERE user_id = ? ORDER BY created_at DESC LIMIT 200', [req.user.id])),
+      opt(db.all('SELECT * FROM saved_lawyers WHERE user_id = ? ORDER BY created_at DESC LIMIT 200', [req.user.id])),
     ]);
-
     res.json({
       exported_at: new Date().toISOString(),
       notice: 'This export contains all personal data Justice Gavel holds for your account.',
-      data: { profile: user, cases: cases_, messages, motions, consultations, savedLawyers },
+      data: { profile: user, cases: cases_, motions, consultations, savedLawyers },
     });
   } catch (e) {
     logger.error('[auth/export]', e.message);
@@ -561,12 +508,16 @@ router.get('/export', authRequired, async (req, res) => {
   }
 });
 
-
-// POST /logout — invalidate session and clear push token
-// Clears push_token so stale device tokens don't accumulate on logout
+// ── POST /logout ──────────────────────────────────────────────────────────────
 router.post('/logout', authRequired, async (req, res) => {
   try {
     const db = await getDb();
+    const { refreshToken, allDevices } = req.body || {};
+    if (allDevices) {
+      await db.run('DELETE FROM refresh_tokens WHERE user_id = ?', [req.user.id]);
+    } else if (refreshToken) {
+      await db.run('UPDATE refresh_tokens SET used = 1 WHERE user_id = ? AND token_hash = ?', [req.user.id, sha256(refreshToken)]);
+    }
     await db.run('UPDATE users SET push_token = NULL WHERE id = ?', [req.user.id]);
     res.json({ ok: true, message: 'Logged out successfully.' });
   } catch (e) {

@@ -171,7 +171,7 @@ export async function releaseLegalHold(holdId, releasedBy) {
   if (!hold) throw new Error('Legal hold not found or already released.');
 
   await db.run(
-    'UPDATE legal_holds SET active=0, released_by=?, released_at=datetime(\'now\') WHERE id=?',
+    'UPDATE legal_holds SET active=0, released_by=?, released_at=NOW() WHERE id=?',
     [releasedBy, holdId]
   );
 
@@ -234,7 +234,7 @@ export async function archiveCompletedDocketEntries(daysThreshold = 90) {
          AND (
            -- Use completed_at if available; fall back to updated_at
            -- completed_at is the authoritative completion timestamp
-           COALESCE(de.completed_at, de.updated_at) < datetime('now', '-' || ? || ' days')
+           COALESCE(de.completed_at, de.updated_at) < (NOW() - (? || ' days')::interval)
          )
        LIMIT 500`,
       [daysThreshold]
@@ -244,15 +244,15 @@ export async function archiveCompletedDocketEntries(daysThreshold = 90) {
       // Each entry is wrapped in its own transaction.
       // If INSERT succeeds but DELETE fails (or process crashes between),
       // the ROLLBACK ensures the entry stays in docket_entries — no data lost.
-      // INSERT OR IGNORE means a re-run after crash skips already-archived entries.
+      // INSERT ... ON CONFLICT DO NOTHING means a re-run after crash skips already-archived entries.
       try {
         await db.run('BEGIN');
         await db.run(
-          `INSERT OR IGNORE INTO docket_archive
+          `INSERT INTO docket_archive
              (id, matter_id, firm_id, title, entry_type, due_date, due_time,
               completed_at, priority, status, notes, assigned_to,
               original_created_at, archived_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()) ON CONFLICT DO NOTHING`,
           [
             entry.id, entry.matter_id, entry.firm_id, entry.title, entry.entry_type,
             entry.due_date, entry.due_time, entry.updated_at, entry.priority,
@@ -422,9 +422,9 @@ export async function checkAccountInactivity() {
        LEFT JOIN matters m ON m.created_by = u.id AND m.status='active'
        LEFT JOIN cases c ON c.user_id = u.id
        WHERE u.last_login_at IS NOT NULL
-         AND u.last_login_at < datetime('now', '-' || ? || ' days')
-       GROUP BY u.id
-       HAVING (matters_count > 0 OR cases_count > 0)`,
+         AND u.last_login_at < (NOW() - (? || ' days')::interval)
+       GROUP BY u.id, fm.firm_id
+       HAVING (COUNT(DISTINCT m.id) > 0 OR COUNT(DISTINCT c.id) > 0)`,
       [threshold.days]
     ).catch(() => []);
 

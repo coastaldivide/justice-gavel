@@ -30,13 +30,11 @@ import React, {
   useState, useEffect, useRef, useCallback
 } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, ActivityIndicator, Alert, TextInput, Platform, KeyboardAvoidingView, Share, RefreshControl, LayoutAnimation, InteractionManager} from 'react-native';
-import { FileSystem } from '../utils/webCompat';
-import { api } from '../services/api';
+import { FileSystem, RNShare } from '../utils/webCompat';
+import { api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { t } from '../i18n';
 
-declare var data: any;
-declare var load: any;
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Phase = 'idle' | 'recording' | 'processing' | 'result' | 'text_input';
 
@@ -80,11 +78,6 @@ function PulseRing({ active }: { active: boolean }) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return () => anim.current?.stop();
   }, [active]);
 
@@ -100,7 +93,6 @@ function PulseRing({ active }: { active: boolean }) {
 // ── Timer ─────────────────────────────────────────────────────────────────────
 function useTimer(running: boolean) {
   const [secs, setSecs] = useState(0);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const ref = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (running) {
@@ -118,6 +110,7 @@ function useTimer(running: boolean) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element {
+  const { confirm } = useConfirm();
   const { showToast } = useToast();
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -144,11 +137,6 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
   }, []);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
-  }, []);
 
   const { caseId, caseTitle, existingNotes = '', onSave } = (route?.params as import('../types/api').RouteParams) ?? {};
 
@@ -186,7 +174,6 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
     try {
       const perm = await Audio.requestPermissionsAsync();
       if (!perm.granted) {
-        // @ts-ignore
         confirm('Microphone needed', 'Allow microphone access to record voice notes, or type your note instead.',
       { confirmLabel: 'Type instead', cancelLabel: 'OK' }).then(ok => { if (ok) setPhase('text_input'); });
         return;
@@ -201,7 +188,6 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       recordingRef.current = recording;
       setPhase('recording');
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
       showToast(e.message || 'Try typing your note instead.', 'error'); setRetryCount(0);
       setPhase('text_input');
     }
@@ -241,8 +227,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       // Clean up temp file
       await FileSystem.deleteAsync(uri, { idempotent: true });
     } catch (e: any) {
-      const msg = e.response?.data?.error || e.message || 'Could not process audio.';
-      // @ts-ignore
+      const msg = apiErrorMessage(e, 'Could not process audio.');
       confirm('Processing error', msg + ' Would you like to type your note instead?',
       { confirmLabel: 'Type instead', cancelLabel: 'Try again' }).then(ok => { if (ok) setPhase('text_input'); else setPhase('idle'); });
     }
@@ -340,7 +325,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={styles.typeLink}
-          accessibilityLabel="\u270f\ufe0f  Type instead" onPress={() => setPhase('text_input')}
+          accessibilityLabel={"\u270f\ufe0f  Type instead"} onPress={() => setPhase('text_input')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>
             ✏️  Type instead
@@ -400,10 +385,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       style={[styles.screen, { backgroundColor: colors.bg }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.textInputScroll} keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }>
+      <ScrollView contentContainerStyle={styles.textInputScroll} keyboardShouldPersistTaps="handled">
         {caseTitle && (
           <View style={[styles.casePill, { backgroundColor: COLORS.navy + '18', borderColor: COLORS.navy + '33' }]}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.casePillText, { color: COLORS.navy }]} numberOfLines={1}>
@@ -444,7 +426,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={styles.typeLink}
-          accessibilityLabel="\u2190 Use voice instead" onPress={() => setPhase('idle')}
+          accessibilityLabel={"\u2190 Use voice instead"} onPress={() => setPhase('idle')}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>← Use voice instead</Text>
         </TouchableOpacity>
@@ -528,7 +510,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           accessibilityHint="Double-tap to activate"
           style={[styles.shareNoteBtn, { borderColor: COLORS.navy + '55' }]}
           onPress={async () => { try {
-            await Share.share({ message: editText, title: 'Case Note' });
+            await RNShare.share({ message: editText, title: 'Case Note' });
           } catch (shareErr: any) { /* ignore */ } finally {
       setLoading(false);
     }
@@ -541,21 +523,13 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={styles.typeLink}
-          accessibilityLabel="\ud83c\udf99  Record another note" onPress={() => { setPhase('idle'); setNote(null); setEditText(''); }}
+          accessibilityLabel={"\ud83c\udf99  Record another note"} onPress={() => { setPhase('idle'); setNote(null); setEditText(''); }}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>🎙  Record another note</Text>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>📭</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No results found</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection or try again.</Text>
-        </View>
-      )}
       </ScrollView>
       <AIDisclaimer variant="banner" />
 

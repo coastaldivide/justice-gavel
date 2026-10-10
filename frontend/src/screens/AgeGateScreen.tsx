@@ -29,17 +29,20 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { t } from '../i18n';
 
-declare var ScreenProps: any;
-declare var onVerified: any;
 const CURRENT_YEAR = new Date().getFullYear();
 const MIN_YEAR     = CURRENT_YEAR - 100;   // 100 years old max
 const MAX_YEAR     = CURRENT_YEAR - 18;    // must be born ≤ 18 years ago
 
 type Phase = 'entry' | 'underage';
 
-function AgeGateScreen({ route, navigation }: any) {
-  // @ts-ignore
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+interface AgeGateProps {
+  /** Present when mounted in the guest stack. */
+  navigation?: { navigate: (name: string) => void };
+  /** Present when App.tsx renders the gate before any navigator. */
+  onVerified?: () => void;
+}
+
+function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
 
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
@@ -84,7 +87,7 @@ function AgeGateScreen({ route, navigation }: any) {
     } catch (_) {
       // Storage unavailable — still proceed, gate will re-show on next launch
     }
-    if (onVerified) onVerified(); else navigation.navigate('Onboarding');
+    if (onVerified) onVerified(); else navigation?.navigate('Onboarding');
   };
 
   // ── Under 18 screen ────────────────────────────────────────────────────────
@@ -92,7 +95,7 @@ function AgeGateScreen({ route, navigation }: any) {
     <View style={styles.screen}>
       {/* ── Emergency bypass — always accessible regardless of age gate ─── */}
       <TouchableOpacity
-        onPress={() => navigation.navigate('Emergency')}
+        onPress={() => { if (navigation) navigation.navigate('Emergency'); else Linking.openURL('tel:911').catch(() => {}); }}
         accessibilityRole="button"
         accessibilityLabel="Emergency help — get immediate legal assistance without age verification"
         style={{ backgroundColor: COLORS.bail, borderRadius: 10, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
@@ -127,7 +130,7 @@ function AgeGateScreen({ route, navigation }: any) {
             try {
               await AsyncStorage.setItem('age_verified', 'family_mode');
             } catch (_) { /* non-fatal — family mode flag re-set on next launch */ }
-            if (onVerified) onVerified(); else navigation.navigate('Onboarding');
+            if (onVerified) onVerified(); else navigation?.navigate('Onboarding');
 
     } catch (e: any) {
       __DEV__ && console.warn('[AgeGateScreen.tsx]', e?.message);
@@ -141,7 +144,7 @@ function AgeGateScreen({ route, navigation }: any) {
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.backBtn}
-          accessibilityLabel="\u2190 Go back" onPress={() => { setPhase('entry'); setYear(''); }}
+          accessibilityLabel={"\u2190 Go back"} onPress={() => { setPhase('entry'); setYear(''); }}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.backBtnText}>← Go back</Text>
         </TouchableOpacity>

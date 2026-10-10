@@ -1,3 +1,5 @@
+// Repo root, resolved relative to this test file (was a hard-coded /tmp path)
+const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
  * JUSTICE GAVEL — BRUTAL TRIALS v24
  * ═══════════════════════════════════════════════════════════════════════════
@@ -67,26 +69,26 @@ const mkMatter = (v, o = {}) => ({
 });
 
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/webhooks/stripe.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/stripe.js', 'utf8');
 
 // ── 2. integrations/recap.js importDocketEntries ─────────────────────────
 describe('2. integrations/recap.js — Docket Import', () => {
   test('2-01: importDocketEntries uses INSERT OR IGNORE for idempotency', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/integrations/recap.js', 'utf8');
   });
   test('2-02: importDocketEntries supports daysBack and pageSize options', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/integrations/recap.js', 'utf8');
   });
   test('2-03: recap.js has 6 handlers: search/link/import/status/refresh/unlink', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/integrations/recap.js', 'utf8');
     const h = src.match(/router\.(get|post|delete)\s*\(/g) || [];
   });
   test('2-04: external_id mapping ensures idempotency across calls', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/recap.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/integrations/recap.js', 'utf8');
   });
 });
 
@@ -94,19 +96,19 @@ describe('2. integrations/recap.js — Docket Import', () => {
 describe('3. attorney/cases.js — Office Management', () => {
   test('3-01: has GET /office — member list with case counts', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/cases.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/cases.js', 'utf8');
   });
   test('3-02: has POST /office/join — join or create an office', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/cases.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/cases.js', 'utf8');
   });
   test('3-03: all endpoints require verified defender status', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/cases.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/cases.js', 'utf8');
   });
   test('3-04: GET /cases scoped to own assignments (no case leakage)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/attorney/cases.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/attorney/cases.js', 'utf8');
   });
 });
 
@@ -114,15 +116,15 @@ describe('3. attorney/cases.js — Office Management', () => {
 describe('4. outbound_bot.js — processOptOut', () => {
   test('4-01: processOptOut inserts to opt_outs with INSERT OR IGNORE', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/outbound_bot.js', 'utf8');
   });
   test('4-02: processOptOut normalizes phone number before insertion', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/outbound_bot.js', 'utf8');
   });
   test('4-03: processOptOut sends TCPA-required confirmation SMS', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/services/outbound_bot.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/services/outbound_bot.js', 'utf8');
   });
   test('4-04: default reason is STOP (standard TCPA opt-out)', () => {
     // processOptOut({ phone, email, reason = 'STOP' })
@@ -134,20 +136,20 @@ describe('4. outbound_bot.js — processOptOut', () => {
 describe('5. integrations/practice-mgmt — syncPracticeMgmt', () => {
   test('5-01: syncPracticeMgmt calls refreshTokenIfNeeded first', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
   });
   test('5-02: bidirectional sync — PULL and PUSH directions', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
   });
   test('5-03: practice-mgmt.js has 5 route handlers', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
   });
   test('5-04: demo mode enabled when access_token starts with demo_', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/integrations/practice-mgmt.js', 'utf8');
   });
 });
 
@@ -155,24 +157,24 @@ describe('5. integrations/practice-mgmt — syncPracticeMgmt', () => {
 describe('6. golden_gavel /evaluate + jobs.js', () => {
   test('6-01: /evaluate/:id uses timingSafeEqual for admin key check', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/golden_gavel.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/golden_gavel.js', 'utf8');
   });
   test('6-02: /evaluate/:id uses gavelLimiter rate protection', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/golden_gavel.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/golden_gavel.js', 'utf8');
   });
   test('6-03: jobs.js has 2 handlers: GET /:id and GET /stats', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/jobs.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/jobs.js', 'utf8');
     const h = src.match(/router\.get\s*\(/g) || [];
   });
   test('6-04: jobs.js has 4 status shapes: pending/processing/done/failed', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/jobs.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/jobs.js', 'utf8');
   });
   test('6-05: jobs.js /stats is admin-only', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync('/tmp/JG_fresh/backend/src/routes/jobs.js', 'utf8');
+    const src = fs.readFileSync(__REPO + '/backend/src/routes/jobs.js', 'utf8');
   });
 });
 
@@ -180,7 +182,7 @@ describe('6. golden_gavel /evaluate + jobs.js', () => {
 describe('7. i18n disc_ — Discovery AI Screen (36 keys)', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
   };
   test('7-01: upload flow labels', async () => {
     const en = await getEn();
@@ -200,7 +202,7 @@ describe('7. i18n disc_ — Discovery AI Screen (36 keys)', () => {
 describe('8. i18n case_ — Case Management Screen (37 keys)', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
   };
   test('8-01: tab labels', async () => {
     const en = await getEn();
@@ -216,7 +218,7 @@ describe('8. i18n case_ — Case Management Screen (37 keys)', () => {
 describe('9. i18n rc_ — Rights Card Screen (35 keys)', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
   };
   test('9-01: rights card content labels', async () => {
     const en = await getEn();
@@ -233,7 +235,7 @@ describe('9. i18n rc_ — Rights Card Screen (35 keys)', () => {
 describe('10. i18n gg_ — Golden Gavel Screen (19 keys)', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
   };
   test('10-01: status and progress labels', async () => {
     const en = await getEn();
@@ -253,7 +255,7 @@ describe('10. i18n gg_ — Golden Gavel Screen (19 keys)', () => {
 describe('11. i18n ice_ + booking_ final sweeps', () => {
   const getEn = async () => {
     const fs = await import('fs');
-    return JSON.parse(fs.readFileSync('/tmp/JG_fresh/frontend/src/i18n/en.json', 'utf8'));
+    return JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
   };
   test('11-01: ice_ detention rights and steps', async () => {
     const en = await getEn();
@@ -291,7 +293,7 @@ describe('12. Regression — All v1–v23 Confirmed', () => {
   test('12-08: zero hex violations in useTheme screens', async () => {
     const fs = await import('fs');
     const path = await import('path');
-    const dir = '/tmp/JG_fresh/frontend/src/screens';
+    const dir = __REPO + '/frontend/src/screens';
     const BRAND = new Set(["'#042C53'","'#C9A84C'","'#85B7EB'","'#F9A825'","'#EF5350'","'#FFA726'","'#ffffff'","'#FFFFFF'","'#000000'","'#000'","'#fff'"]);
     const violations = [];
     for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))) {

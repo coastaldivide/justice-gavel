@@ -20,33 +20,12 @@ import { ActivityIndicator, Alert, Linking, Platform, ScrollView, Share, StyleSh
 import { api } from '../services/api';
 import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
-  const { impact, success, error: hapticError } = useHaptics();
-  const { showToast } = useToast();
-  const { colors, isDark } = useTheme();
-  const [fetchError, setFetchError] = React.useState<string|null>(null);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    load().finally ? load().finally(() => setRefreshing(false)) : (setRefreshing(false))
-  }, []);
-
   const filled = Math.round(rating);
-  if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
     <View style={{ flexDirection:'row', alignItems:'center', gap:4 }}>
-    {fetchError && (
-      <View style={{margin:16,padding:14,backgroundColor:colors.surface,
-        borderRadius:10,borderWidth:1,borderColor:COLORS.border}}>
-        <Text style={{color:colors.danger,fontWeight:'700',fontSize:14}}>⚠ {fetchError}</Text>
-      </View>
-    )}
       <View style={{ flexDirection:'row', gap:2 }}>
         {[1,2,3,4,5].map(i => (
           <Text key={`item-${i}`} style={{ fontSize:14, color: i<=filled ? COLORS.gold : COLORS.border }}>
@@ -64,9 +43,6 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
 
 import Analytics from '../services/analytics';
 import { t } from '../i18n';
-declare var onRefresh: any;
-declare var refreshing: any;
-declare var load: any; // hoisted from component scope
 function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
 
@@ -113,7 +89,6 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
 
   const [lawyer, setLawyer]   = useState<any>(preload || null);
   const [reviews, setReviews] = useState<any[]>([]);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [jtbProfile, setJtbProfile] = React.useState<any>(null);
 
   // Retry logic: exponential backoff on API failures
@@ -128,11 +103,11 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
   const [submitted,   setSubmitted]   = useState(false);
   const [showReview,  setShowReview]  = useState(false);
 
-  useEffect(() => {
-    (async () => {
+  const [refreshing, setRefreshing] = useState(false);
+  const loadProfile = useCallback(async (forceLawyer = false) => {
       try {
         const [lawyerRes, reviewRes] = await Promise.allSettled([
-          !preload ? api.get(`/providers/lawyers/${lawyerId}`) : Promise.resolve(null),
+          !preload || forceLawyer ? api.get(`/providers/lawyers/${lawyerId}`) : Promise.resolve(null),
           api.get('/reviews', { params: { entity_type:'lawyer', entity_id:lawyerId } }),
         ]);
         if (mountedRef.current) {
@@ -146,8 +121,13 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
           setLoading(false);
         }
       } catch { if (mountedRef.current) setLoading(false); }
-    })();
-  }, [lawyerId, preload]);
+  }, [lawyerId, preload, navigation]);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadProfile(true).finally(() => { if (mountedRef.current) setRefreshing(false); });
+  }, [loadProfile]);
+
+  useEffect(() => { loadProfile(); }, [loadProfile]);
 
   const handleBook = useCallback(() => {
     navigation.navigate('MoreTab', {
@@ -430,9 +410,8 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
       <View style={s.actions}>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={[s.actionBtn, { backgroundColor:colors.navy }]}
-          testID="lawyer-book-button" accessibilityLabel="\ud83d\udcc5 Book Consultation"
-          // @ts-ignore
+ style={[s.actionBtn, { backgroundColor:colors.navy }]}
+          testID="lawyer-book-button" accessibilityLabel={"\ud83d\udcc5 Book Consultation"}
           accessibilityHint="Schedules a video consultation" onPress={() => { hapticImpact(); handleBook(); }}>
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>📅 Book Consultation</Text>
         </TouchableOpacity>
@@ -445,8 +424,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         {lawyer.phone && (
           <TouchableOpacity style={[s.actionBtn, { backgroundColor:colors.legalDark }]}
             testID="lawyer-profile-contact-button" onPress={handleCall} accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel="Call attorney"
-          // @ts-ignore
+ accessibilityLabel="Call attorney"
           accessibilityHint="Dials this phone number">
             <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>📞 Call</Text>
           </TouchableOpacity>
@@ -455,10 +433,9 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         <View style={{ flexDirection:'row', gap:10 }}>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleSave} accessibilityLabel="\u2b50 Save"
-          // @ts-ignore
+            onPress={handleSave} accessibilityLabel={"\u2b50 Save"}
           accessibilityHint="Saves your changes">
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>⭐ Save</Text>
           </TouchableOpacity>
@@ -466,15 +443,14 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
             accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleDirections} accessibilityLabel="\ud83d\udccd Directions">
+            onPress={handleDirections} accessibilityLabel={"\ud83d\udccd Directions"}>
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>📍 Directions</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleShare} accessibilityLabel="\u2191 Share"
-          // @ts-ignore
+            onPress={handleShare} accessibilityLabel={"\u2191 Share"}
           accessibilityHint="Shares this information">
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>↑ Share</Text>
           </TouchableOpacity>

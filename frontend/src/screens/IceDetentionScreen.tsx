@@ -27,7 +27,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Linking, Alert, Share, LayoutAnimation} from 'react-native';
 import { useTheme, COLORS, FONTS, RADIUS } from '../constants/theme';
-import { hapticImpact, hapticSelection } from '../utils/webCompat';
+import { hapticImpact, hapticSelection, RNShare } from '../utils/webCompat';
 import { t } from '../i18n';
 const C_059669 = ('\x23' + '059669') as string; // hex color
 const C_1D4ED8 = ('\x23' + '1d4ed8') as string; // hex color
@@ -347,7 +347,7 @@ function IceDetentionScreen(): React.JSX.Element {
       <View style={s.langRow}>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={s.langBtn} onPress={toggleLang} testID="ice-lang-toggle" accessibilityLabel="{L.langBtn}">
+          accessibilityHint="Double-tap to activate" style={s.langBtn} onPress={toggleLang} testID="ice-lang-toggle" accessibilityLabel={L.langBtn}>
           <Text style={s.langBtnTxt} maxFontSizeMultiplier={1.4}>{L.langBtn}</Text>
         </TouchableOpacity>
       </View>
@@ -392,7 +392,7 @@ function IceDetentionScreen(): React.JSX.Element {
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={s.locatorBtn}
-          accessibilityLabel="{L.locateBtn}" onPress={() => openLink(L.locateUrl)}
+          accessibilityLabel={L.locateBtn} onPress={() => openLink(L.locateUrl)}
           testID="ice-locator-btn"
         >
           <Text style={s.locatorBtnTxt} maxFontSizeMultiplier={1.4}>{L.locateBtn}</Text>
@@ -415,7 +415,7 @@ function IceDetentionScreen(): React.JSX.Element {
               accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
               style={[s.callBtn, { backgroundColor: r.highlight ? COLORS.legal : COLORS.navy }]}
-              accessibilityLabel="\ud83d\udcde {r.phone}" onPress={() => callNumber(r.phone)}
+              accessibilityLabel={"\ud83d\udcde {r.phone}"} onPress={() => callNumber(r.phone)}
               testID={`ice-call-${i}`}
             >
               <Text style={s.callBtnTxt} maxFontSizeMultiplier={1.4}>📞 {r.phone}</Text>
@@ -424,7 +424,7 @@ function IceDetentionScreen(): React.JSX.Element {
               accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
               style={[s.webBtn, { borderColor: colors.border }]}
-              accessibilityLabel="Web \u2192" onPress={() => openLink(r.url)}
+              accessibilityLabel={"Web \u2192"} onPress={() => openLink(r.url)}
               testID={`ice-web-${i}`}
             >
               <Text style={[s.webBtnTxt, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>Web →</Text>
@@ -436,7 +436,7 @@ function IceDetentionScreen(): React.JSX.Element {
       {/* Share */}
       <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={s.shareBtn} onPress={shareInfo} testID="ice-share-btn" accessibilityLabel="{L.shareBtn}">
+          accessibilityHint="Double-tap to activate" style={s.shareBtn} onPress={shareInfo} testID="ice-share-btn" accessibilityLabel={L.shareBtn}>
         <Text style={s.shareBtnTxt} maxFontSizeMultiplier={1.4}>{L.shareBtn}</Text>
       </TouchableOpacity>
 

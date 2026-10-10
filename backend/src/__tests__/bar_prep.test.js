@@ -27,6 +27,46 @@ const CON_LAW   = path.resolve(__dirname, '../../../../con_law_qs.json');
 const SECRET    = process.env.JWT_SECRET || 'test-secret-bar-prep';
 const VALID_TIERS = new Set(['legal_radar','advisor','legal_pro','esquire']);
 
+
+// Parse `INSERT INTO quiz_questions (cols...) SELECT v.* FROM (VALUES (...), (...)) ...`
+// tuples out of a migration section into objects keyed by column name.
+function parseQuestions(sqlText) {
+  const out = [];
+  const re = /INSERT INTO quiz_questions\s*\(([^)]*)\)/g;
+  let m;
+  while ((m = re.exec(sqlText))) {
+    const cols = m[1].split(',').map(c => c.trim());
+    let i = sqlText.indexOf('(VALUES', m.index) + '(VALUES'.length;
+    let depth = 0, tuple = null, tok = '', inStr = false;
+    for (; i < sqlText.length; i++) {
+      const ch = sqlText[i];
+      if (inStr) {
+        if (ch === "'" && sqlText[i + 1] === "'") { tok += "'"; i++; }
+        else if (ch === "'") inStr = false;
+        else tok += ch;
+        continue;
+      }
+      if (ch === "'") { inStr = true; continue; }
+      if (ch === '(') { depth++; if (depth === 1) { tuple = []; tok = ''; } continue; }
+      if (ch === ',' && depth === 1) { tuple.push(tok.trim()); tok = ''; continue; }
+      if (ch === ')') {
+        if (depth === 0) break;                 // end of VALUES list
+        depth--;
+        if (depth === 0) {
+          tuple.push(tok.trim());
+          const q = Object.fromEntries(cols.map((c, k) => [c, tuple[k]]));
+          q.rule = q.rule_tested;
+          out.push(q);
+          tok = '';
+        }
+        continue;
+      }
+      if (depth >= 1) tok += ch;
+    }
+  }
+  return out;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. QUESTION BANK SEED INTEGRITY
 // ─────────────────────────────────────────────────────────────────────────────
@@ -34,25 +74,16 @@ describe('Question Bank — Seed Integrity', () => {
   let crimLaw, conLaw;
 
   beforeAll(() => {
-    // Try /tmp first (CI), then relative path
-    const cLPath = fs.existsSync(CRIM_LAW) ? CRIM_LAW
-      : path.resolve(__dirname, '../../../../../../../tmp/criminal_law_qs.json');
-    const cnPath = fs.existsSync(CON_LAW) ? CON_LAW
-      : path.resolve(__dirname, '../../../../../../../tmp/con_law_qs.json');
-
-    if (!fs.existsSync(cLPath)) {
-      console.warn('criminal_law_qs.json not found — skipping seed tests');
-      crimLaw = [];
-    } else {
-      crimLaw = JSON.parse(fs.readFileSync(cLPath, 'utf8'));
-    }
-
-    if (!fs.existsSync(cnPath)) {
-      console.warn('con_law_qs.json not found — skipping seed tests');
-      conLaw = [];
-    } else {
-      conLaw = JSON.parse(fs.readFileSync(cnPath, 'utf8'));
-    }
+    // The question bank ships as supabase/migrations/00000000000005_bar_prep_questions.sql
+    // (it used to be read from /tmp/*_qs.json, which only existed on one machine).
+    const sql = fs.readFileSync(path.resolve(__dirname, '../../../supabase/migrations/00000000000005_bar_prep_questions.sql'), 'utf8');
+    const section = (marker) => {
+      const i = sql.indexOf(marker);
+      const j = sql.indexOf('-- ══ from', i + marker.length);
+      return i < 0 ? '' : sql.slice(i, j < 0 ? undefined : j);
+    };
+    crimLaw = parseQuestions(section('_seed_criminal_law_questions.sql'));
+    conLaw  = parseQuestions(section('_seed_con_law_questions.sql'));
   });
 
   describe('Criminal Law (125 Q)', () => {

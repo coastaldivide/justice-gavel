@@ -95,7 +95,7 @@ router.post('/submit', validate(schemas.pi_leads.submit), piLeadLimiter, authReq
         req.user?.id ?? null,
         city, state, county,
         incident_type ?? lead_type,
-        incident_summary, incident_date, injury_severity,
+        incident_summary, incident_date || null, injury_severity,
         contact_name, contact_phone, contact_email,
         feeCents, 'open', expiresAt,
       ]

@@ -1,4 +1,4 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * attorney/verification.js — Bar verification submit + admin approve
  */
@@ -8,7 +8,7 @@ import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger           from '../../utils/logger.js';
-import { sanitiseField, sanitiseProfileFields, STATE_BAR_LOOKUP } from './_helpers.js';
+import { sanitiseField, sanitiseProfileFields, STATE_BAR_LOOKUP, requireAttorney } from './_helpers.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 
 const routeLimiter = makeUserLimiter(30, 60_000); // 30 req/min per user
@@ -37,7 +37,7 @@ router.post('/verify-bar', authRequired, routeLimiter, async (req, res) => {
    * and expose the company to FTC enforcement and state bar complaints.
    */
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
 
     const { bar_number, state } = req.body || {};
@@ -135,7 +135,7 @@ router.post('/verify-bar', authRequired, routeLimiter, async (req, res) => {
     const adminUrl  = `${process.env.ADMIN_PANEL_URL || 'https://admin.justicegavel.app'}/verify/${req.user.id}`;
 
     // Notify admin team
-    const { sendEmail } = await import('../services/sendgrid.js');
+    const { sendEmail } = await import('../../services/email.js');
     await sendEmail({
       to:      process.env.ADMIN_EMAIL || 'admin@justicegavel.app',
       subject: `[JTB Verify] Bar submission — ${cleanBar} (${stateUpper}) from ${user.email}`,
@@ -205,8 +205,8 @@ router.post('/approve-verification', authRequired, routeLimiter, async (req, res
     const attorney = await db.get('SELECT id, email, phone, name, type, user_type, avatar_url, created_at, bar_number, bar_verified, bar_state, office_id, is_defender, gavel_level, golden_gavel, subscription, push_token, lang, notifs_enabled FROM users WHERE id=?', [attorney_user_id]);
     if (!attorney) return err404(res, 'Attorney not found.');
 
-    const { sendEmail } = await import('../services/sendgrid.js');
-    const { sendPushToUser } = await import('../services/pushDelivery.js');
+    const { sendEmail } = await import('../../services/email.js');
+    const { sendPushToUser } = await import('../../services/pushDelivery.js');
 
     if (approved) {
       // Grant the JTB Verified badge

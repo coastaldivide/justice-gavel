@@ -19,18 +19,14 @@ import React, { useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '../services/api';
+import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
-import { useStripe } from '@stripe/stripe-react-native';
+import { usePaymentSheet, PAYMENTS_COMING_SOON } from '../payments';
 import { useAuthGate } from '../components/AuthGate';
 import { t } from '../i18n';
 
-declare var amt: any;
-declare var data: any;
-declare var payment: any;
-declare var showMore: any; // hoisted from component scope
 // ── Payment purposes ──────────────────────────────────────────────────────────
 
 const PURPOSES = [
@@ -65,17 +61,12 @@ function PurposeCard({ p, selected, onSelect }: any) {
   const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const bottomSheetRef = React.useRef<BottomSheet>(null);
-  if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
   return (
     <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
       style={[styles.purposeCard, selected && styles.purposeCardSelected]}
-      accessibilityLabel="{p.icon}" onPress={() => onSelect(p)}
+      accessibilityLabel={p.icon} onPress={() => onSelect(p)}
       activeOpacity={0.8}
     >
       <Text maxFontSizeMultiplier={1.4} style={styles.purposeIcon}>{p.icon}</Text>
@@ -96,7 +87,7 @@ function MethodRow({ m, selected, onSelect }: any) {
       accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
       style={[styles.methodRow, selected && styles.methodRowSelected]}
-      accessibilityLabel="{m.icon}" onPress={() => onSelect(m.key)}
+      accessibilityLabel={m.icon} onPress={() => onSelect(m.key)}
       activeOpacity={0.8}
     >
       <Text maxFontSizeMultiplier={1.4} style={styles.methodIcon}>{m.icon}</Text>
@@ -110,11 +101,6 @@ function MethodRow({ m, selected, onSelect }: any) {
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-
-const allMethods = [
-    ...PRIMARY_METHODS,
-    ...(showMore ? MORE_METHODS : [])
-  ];
 
 // Stripe PaymentSheet hook — enables native card sheet instead of browser redirect
 function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
@@ -131,8 +117,8 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const generateReceipt = React.useCallback(async (payment: Record<string, unknown>) => {
     setGeneratingReceipt(true);
     try {
-      const Print   = (await import('expo-print')).default;
-      const Sharing = (await import('expo-sharing')).default;
+      const Print   = await import('expo-print');
+      const Sharing = await import('expo-sharing');
       const date = new Date(String(payment.created_at || Date.now())).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric',
       });
@@ -202,12 +188,12 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   const [amount, setAmount]       = useState(PURPOSES[0].defaultAmount);
   const [method, setMethod]       = useState(PRIMARY_METHODS[0].key);
   const [showMore, setShowMore]   = useState(false);
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
   const [loading, setLoading]     = useState(false);
   const [status, setStatus]       = useState('');
   const [lastMethod, setLastMethod] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [generatingReceipt, setGeneratingReceipt] = React.useState(false);
+  const [lastPayment, setLastPayment] = React.useState<Record<string, unknown> | null>(null);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
 
   useEffect(() => {
@@ -222,16 +208,21 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
     setStatus('');
   };
 
-    const selectedMethod = allMethods.find(m => m.key === method) || PRIMARY_METHODS[0];
+  const allMethods = [
+    ...PRIMARY_METHODS,
+    ...(showMore ? MORE_METHODS : []),
+  ];
+  const selectedMethod = allMethods.find(m => m.key === method) || PRIMARY_METHODS[0];
 
   const onPay = () => {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) { setStatus('Please enter a valid amount.'); return; }
-    requireAuth(() => doPayment());
+    requireAuth(() => doPayment(amt));
   };
 
-  const doPayment = async () => {
+  const doPayment = async (amt: number) => {
     setLoading(true);
+    setLastPayment(null);
     setStatus('');
     try {
       const res = await api.post('/pay/create', {
@@ -257,6 +248,9 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           const { error: presentError } = await presentPaymentSheet();
           if (!presentError) {
             setStatus('Payment complete ✓');
+            setLastPayment({ ...(res.data || {}), amount: amt, method, purpose: purpose.label, created_at: new Date().toISOString() });
+          } else if (presentError.code === 'payments_unavailable') {
+            setStatus(PAYMENTS_COMING_SOON);
           } else if (presentError.code !== 'Canceled') {
             setStatus(presentError.message || 'Payment failed. Please try again.');
           }
@@ -270,16 +264,15 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         setStatus('Payment initiated. Check your email for confirmation.');
       }
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
       setLoading(false);
-      const serverMsg = e.response?.data?.error || e.message || '';
+      const serverMsg = apiErrorMessage(e, '');
       const statusCode = e.response?.status;
 
-      if (statusCode === 503 || serverMsg.toLowerCase().includes('stripe') ||
-          serverMsg.toLowerCase().includes('key') || serverMsg.toLowerCase().includes('config')) {
-        // Stripe not configured -- show demo mode message instead of raw error
-        setStatus('Live payments are not yet configured. In demo mode all other features work normally.');
-      } else if (statusCode === 401 || statusCode === 403) { setStatus('Please sign in to make a payment.'); } else if (statusCode === 401 || statusCode === 403) { setStatus('Please sign in to make a payment.');
+      if (isPaymentsUnavailable(e) || statusCode === 503) {
+        // Billing not configured on the backend -- friendly message, nothing charged
+        setStatus(PAYMENTS_COMING_SOON);
+      } else if (statusCode === 401 || statusCode === 403) {
+        setStatus('Please sign in to make a payment.');
       } else if (!e.response && serverMsg.toLowerCase().includes('network')) {
         setStatus('No connection. Check your internet and try again.');
       } else {
@@ -343,23 +336,7 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
               ↩ Use last method: {[...PRIMARY_METHODS, ...MORE_METHODS].find(m => m.key === lastMethod)?.label || lastMethod}
             </Text>
 
-              {/* Receipt download */}
-              <TouchableOpacity
-                accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-                style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:8,
-                  paddingVertical:6 }}
-                onPress={() => generateReceipt(payment)}
-          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
-                disabled={generatingReceipt}
-                accessibilityLabel="Download payment receipt"
-              >
-                <AppIcon name="document-outline" size={20} color={COLORS.navy} />
-                <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
-                  color:colors.blue, fontWeight:'600' }}>
-                  {generatingReceipt ? 'Generating…' : 'Download Receipt'}
-                </Text>
-              </TouchableOpacity></TouchableOpacity>
+          </TouchableOpacity>
         )}
 
         {allMethods.map(m => (
@@ -391,8 +368,6 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
           style={[styles.payBtn, loading && styles.payBtnDisabled]}
           onPress={onPay}
           disabled={loading}>
-          accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" accessibilityLabel="Continue to payment"
           {loading
             ? <ActivityIndicator color={colors.bgCard} />
             : <Text maxFontSizeMultiplier={1.4} style={styles.payBtnText}>Pay ${(parseFloat(amount || '0') || 0).toFixed(2)} with {selectedMethod.label}</Text>
@@ -402,10 +377,29 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         {!!status && (
           <Text maxFontSizeMultiplier={1.4} style={[styles.statusText,
             (status.startsWith('Payment could') || status.startsWith('Please sign')) && styles.statusError,
-            status.startsWith('Live payments') && styles.statusConfig,
+            status === PAYMENTS_COMING_SOON && styles.statusConfig,
           ]}>
             {status}
           </Text>
+        )}
+        {/* Receipt download (after a completed payment) */}
+        {!!lastPayment && (
+              <TouchableOpacity
+                accessibilityRole="button"
+          accessibilityHint="Double-tap to activate"
+                style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:8,
+                  paddingVertical:6 }}
+                onPress={() => lastPayment && generateReceipt(lastPayment)}
+          hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
+                disabled={generatingReceipt}
+                accessibilityLabel="Download payment receipt"
+              >
+                <AppIcon name="document-outline" size={20} color={COLORS.navy} />
+                <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
+                  color:colors.blue, fontWeight:'600' }}>
+                  {generatingReceipt ? 'Generating…' : 'Download Receipt'}
+                </Text>
+              </TouchableOpacity>
         )}
       </View>
 
@@ -425,14 +419,6 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         </Text>
       </View>
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>📭</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No results found</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection or try again.</Text>
-        </View>
-      )}
       </ScrollView>
     </KeyboardAvoidingView>
   );

@@ -1,3 +1,5 @@
+// Repo root, resolved relative to this test file (was a hard-coded /tmp path)
+const __REPO = decodeURIComponent(new URL('../../../', import.meta.url).pathname).replace(/\/$/, '');
 /**
  * landmark_case_simulations.test.js
  *
@@ -10,7 +12,7 @@
  * victim management, capital cases, MDL, crypto evidence, etc.
  */
 
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -30,12 +32,8 @@ function anyRouteHas(files, pattern) {
 }
 function schemaHas(pattern) {
   const migDir = resolve(ROOT, 'supabase/migrations');
-  const migs = [
-    '20260525000001_justice_gavel_schema.sql',
-    '20260604_enable_rls_all_tables.sql',
-    '20260626000001_performance_indexes.sql',
-    '20260710000001_matters_and_case_enhancements.sql',
-  ];
+  // every migration in supabase/migrations (the old dated file names were consolidated)
+  const migs = readdirSync(migDir).filter(f => f.endsWith('.sql')).sort();
   const allSql = migs.map(f => {
     try { return readFileSync(resolve(migDir, f), 'utf-8'); } catch { return ''; }
   }).join('\n');

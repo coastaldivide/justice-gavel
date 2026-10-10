@@ -21,7 +21,7 @@ import { Router }                             from 'express';
 import { authRequired }                       from '../../middleware/auth.js';
 import { getDb }                              from '../../db/index.js';
 import logger                                 from '../../utils/logger.js';
-import { sanitiseField, requireDefender }     from './_helpers.js';
+import { sanitiseField, requireDefender, requireAttorney }     from './_helpers.js';
 
 const router        = Router();
 const casesListLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Too many requests.' });
@@ -30,7 +30,7 @@ const assignLimiter = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'Too
 // ── GET /api/attorney/cases ───────────────────────────────────────────────────
 router.get('/cases', authRequired, casesListLimiter, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db } = ctx;
 
@@ -51,11 +51,11 @@ router.get('/cases', authRequired, casesListLimiter, async (req, res) => {
                              AND cm.sender_type = 'user') as unread_count,
                          (SELECT ce.description FROM case_events ce
                            WHERE ce.case_id = c.id
-                             AND ce.event_date >= date('now')
+                             AND ce.event_date >= CURRENT_DATE
                            ORDER BY ce.event_date ASC LIMIT 1) as next_event_description,
                          (SELECT ce.event_date FROM case_events ce
                            WHERE ce.case_id = c.id
-                             AND ce.event_date >= date('now')
+                             AND ce.event_date >= CURRENT_DATE
                            ORDER BY ce.event_date ASC LIMIT 1) as next_event_date
                   FROM cases c
                   JOIN case_assignments ca ON ca.case_id = c.id
@@ -117,7 +117,7 @@ router.get('/cases', authRequired, casesListLimiter, async (req, res) => {
 // ── POST /api/attorney/cases/:caseId/assign ───────────────────────────────────
 router.post('/cases/:caseId/assign', authRequired, assignLimiter, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db }       = ctx;
     const caseId       = safeInt(req.params.caseId);
@@ -131,12 +131,21 @@ router.post('/cases/:caseId/assign', authRequired, assignLimiter, async (req, re
     );
     if (!cas) return err404(res, 'Case not found.');
 
-    await db.run(
-      `INSERT OR REPLACE INTO case_assignments
-         (case_id, defender_id, assigned_by, office_id, status, notes, assigned_at)
-       VALUES (?,?,?,?,?,?,NOW())`,
-      [caseId, assignTo, req.user.id, ctx.user.office_id || null, 'active', safeNotes]
+    // One active assignment per case: update it if present, else insert.
+    const upd = await db.run(
+      `UPDATE case_assignments
+          SET defender_id=?, assigned_by=?, office_id=?, status=?, notes=?, assigned_at=NOW()
+        WHERE case_id=?`,
+      [assignTo, req.user.id, ctx.user.office_id || null, 'active', safeNotes, caseId]
     );
+    if (!upd.changes) {
+      await db.run(
+        `INSERT INTO case_assignments
+           (case_id, defender_id, assigned_by, office_id, status, notes, assigned_at)
+         VALUES (?,?,?,?,?,?,NOW())`,
+        [caseId, assignTo, req.user.id, ctx.user.office_id || null, 'active', safeNotes]
+      );
+    }
     res.status(201).json({ ok: true, case_id: caseId, defender_id: assignTo });
   } catch (e) {
     logger.error('[attorney/cases/assign]', e.message);
@@ -147,7 +156,7 @@ router.post('/cases/:caseId/assign', authRequired, assignLimiter, async (req, re
 // ── GET /api/attorney/office ──────────────────────────────────────────────────
 router.get('/office', authRequired, casesListLimiter, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db, user } = ctx;
     if (!user.office_id) return res.json({ members: [], office_id: null });
@@ -161,7 +170,7 @@ router.get('/office', authRequired, casesListLimiter, async (req, res) => {
        LEFT JOIN case_assignments ca
          ON ca.defender_id = om.user_id AND ca.status='active'
        WHERE om.office_id=? AND om.active=1
-       GROUP BY om.id
+       GROUP BY om.id, u.display_name, u.email
        ORDER BY om.role DESC, u.display_name ASC
        LIMIT 100`,
       [user.office_id]
@@ -253,7 +262,7 @@ router.post('/cases/:caseId/outcome', authRequired, assignLimiter, async (req, r
 
 router.post('/office/join', authRequired, assignLimiter, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db }                      = ctx;
     const { office_id, office_name, role = 'attorney' } = req.body || {};
@@ -267,8 +276,8 @@ router.post('/office/join', authRequired, assignLimiter, async (req, res) => {
 
     await db.run('UPDATE users SET office_id=? WHERE id=?', [office_id, req.user.id]);
     await db.run(
-      `INSERT OR IGNORE INTO office_members (office_id, office_name, user_id, role)
-       VALUES (?,?,?,?)`,
+      `INSERT INTO office_members (office_id, office_name, user_id, role)
+       VALUES (?,?,?,?) ON CONFLICT DO NOTHING`,
       [office_id, safeOfficeName, req.user.id, safeRole]
     );
     res.status(201).json({ ok: true, office_id, role: safeRole });

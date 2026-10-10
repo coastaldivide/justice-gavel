@@ -310,7 +310,7 @@ router.post('/:id/complete', authRequired, lessonsLimiter, async (req, res) => {
     }
     // Award points
     await db.run(
-      'INSERT INTO rewards (user_id, points, updated_at) VALUES (?,10, datetime("now")) ON CONFLICT(user_id) DO UPDATE SET points = points + 10, updated_at=datetime("now")',
+      'INSERT INTO rewards (user_id, points, updated_at) VALUES (?,10, NOW()) ON CONFLICT(user_id) DO UPDATE SET points = rewards.points + 10, updated_at = NOW()',
       [user_id]
     );
     return res.json({ ok: true, pointsAwarded: 10 });
@@ -318,7 +318,11 @@ router.post('/:id/complete', authRequired, lessonsLimiter, async (req, res) => {
     logger.error({ msg: '[lessons]', error: e?.message }); res.status(500).json({ error: 'Could not mark complete' }); }
 });
 
-router.get('/progress/:userId', authRequired, async (req, res) => {
+router.get('/progress/:userId', authRequired, async (req, res, next) => {
+  if (req.params.userId === 'me') return next('route');      // handled by /progress/me below
+  if (String(req.params.userId) !== String(req.user.id) && !['admin', 'super_admin'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'You can only view your own progress.' });
+  }
   try {
     const db = await getDb();
     const rows = await db.all('SELECT lesson_id FROM lesson_progress WHERE user_id=? AND completed=1', [req.params.userId]);
@@ -430,7 +434,7 @@ router.get('/progress/me', authRequired, async (req, res) => {
       [req.user.id]
     );
     // Calculate streak
-    const days = [...new Set(completed.map(r => r.completed_at?.slice(0,10)))].sort().reverse();
+    const days = [...new Set(completed.filter(r => r.completed_at).map(r => new Date(r.completed_at).toISOString().slice(0,10)))].sort().reverse();
     let streak = 0;
     const today = new Date(); today.setHours(0,0,0,0);
     for (let i = 0; i < days.length; i++) {
@@ -457,7 +461,7 @@ router.get('/streak/:userId', authRequired, async (req, res) => {
     const db = await getDb();
     const progress = await db.all(
       `SELECT DATE(completed_at) as day  -- Postgres: ::DATE; SQLite: DATE(), COUNT(*) as lessons
-       FROM lesson_progress WHERE user_id = ? AND completed = true
+       FROM lesson_progress WHERE user_id = ? AND completed = 1
        AND completed_at > NOW() - INTERVAL '365 days'  -- Postgres/Supabase only
        GROUP BY day ORDER BY day DESC`,
       [uid]

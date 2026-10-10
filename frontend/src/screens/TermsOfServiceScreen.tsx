@@ -1,3 +1,4 @@
+import { COLORS } from '../constants/theme';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
@@ -263,8 +264,7 @@ function TermsOfServiceScreen({ navigation }: ScreenProps): React.JSX.Element {
             Results will appear here when available
           </Text>
         </View>
-        // @ts-ignore
-        ) : items.map((section, idx) => (
+        ) : SECTIONS.map((section, idx) => (
         <View key={`SECTIONS-${idx}`} style={[styles.section, { backgroundColor: colors.bgCard,
           borderLeftColor: idx === 0 ? colors.emergency :
                           idx === 4 ? colors.warnDark :
@@ -314,8 +314,7 @@ const styles = StyleSheet.create({
   header:          { padding: 28, paddingTop: 48 },
   headerEyebrow:   { color: 'rgba(133,183,235,0.8)', fontSize: 11, fontWeight: '800',
                      letterSpacing: 3, marginBottom: 6 },
-  // @ts-ignore
-  headerTitle:     { color: colors.bg, fontSize: 28, fontWeight: '900', marginBottom: 8 },
+  headerTitle:     { color: COLORS.bg, fontSize: 28, fontWeight: '900', marginBottom: 8 },
   headerMeta:      { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
   noticeBox:       { margin: 16, borderRadius: 12, padding: 16, borderLeftWidth: 5 },
   noticeTitle:     { fontSize: 14, fontWeight: '800', marginBottom: 6 },

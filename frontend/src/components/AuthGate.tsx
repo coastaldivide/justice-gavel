@@ -18,7 +18,7 @@ import {
   TextInput, ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import { setAppAuth } from '../services/auth';
 import { COLORS, FONTS, RADIUS, SHADOW } from '../constants/theme';
 import { getToken, setToken } from '../utils/secureStorage';
@@ -47,12 +47,12 @@ export function useAuthGate(navigation: any, quickMode = false) {
 
   const goToLogin = () => {
     setVisible(false);
-    navigation.navigate('GuestNav', { screen: 'Login' });
+    navigation.navigate('MoreTab', { screen: 'Login' });
   };
 
   const goToRegister = () => {
     setVisible(false);
-    navigation.navigate('GuestNav', { screen: 'Register' });
+    navigation.navigate('MoreTab', { screen: 'Register' });
   };
 
   // Quick phone+PIN signup — fewer fields = fewer drops
@@ -71,14 +71,15 @@ export function useAuthGate(navigation: any, quickMode = false) {
         password: pin + pin, // double PIN as password (6+ chars)
         displayName: undefined,
       });
-      await setToken(res.data?.token);
+      if (!res.data?.token) throw new Error('Unexpected response from the server. Please try again.');
+      await setToken(res.data.token);
       try { await AsyncStorage.setItem('user', JSON.stringify(res.data?.user)); } catch {} // storage failure is non-fatal
       setAppAuth('authed');
       setVisible(false);
       // Execute the pending action
       if (pendingFn) setTimeout(() => pendingFn(), 300);
     } catch (e: unknown) {
-      setSignupError((e as any).response?.data?.error || 'Could not create account. Try again.');
+      setSignupError(apiErrorMessage(e, 'Could not create account. Try again.'));
     } finally {
       setSignupLoading(false);
     }

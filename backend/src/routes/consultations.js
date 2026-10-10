@@ -24,6 +24,7 @@ import { sendBookingConfirmation, sendAttorneyBookingAlert } from '../services/e
 // Added: these names were used at module scope but never imported --
 // an ESM ReferenceError at import time, which blocked the whole app.
 import { validate, schemas } from '../validation/schemas.js';
+import { PAYMENTS_UNAVAILABLE } from '../config.js';
 
 const slotsLimiter  = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Too many slot requests.' });
 const listLimiter   = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'Too many list requests.' });
@@ -161,7 +162,7 @@ router.get('/slots/:lawyerId', slotsLimiter, async (req, res) => {
     const booked = await db.all(
       `SELECT date_slot, time_slot FROM consultation_bookings
        WHERE lawyer_id = ? AND status NOT IN ('cancelled')
-         AND date_slot >= date('now')`,
+         AND date_slot >= CURRENT_DATE`,
       [lawyerId]
     ).catch(() => []);
 
@@ -200,8 +201,8 @@ router.get('/', authRequired, listLimiter, async (req, res) => {
   try {
     const db = await getDb();
     const rows = await db.all(
-      `SELECT id, user_id, lawyer_id, lawyer_name, lawyer_phone, date_slot, time_slot, duration_min, notes, status, created_at FROM consultation_bookings WHERE user_id=? ORDER BY date_slot DESC, time_slot ASC LIMIT ? OFFSET ?
-       ORDER BY date_slot ASC, time_slot ASC`,
+      `SELECT id, user_id, lawyer_id, lawyer_name, lawyer_phone, date_slot, time_slot, duration_min, notes, status, created_at FROM consultation_bookings WHERE user_id=?
+       ORDER BY date_slot DESC, time_slot ASC LIMIT ? OFFSET ?`,
       [req.user.id, pgSize, page * pgSize]
     );
     res.json({ consultations: rows, page, pageSize: pgSize, hasMore: rows.length === pgSize });
@@ -211,7 +212,7 @@ router.get('/', authRequired, listLimiter, async (req, res) => {
 });
 
 // POST /api/consultations/book
-router.post('/book', validate(schemas.consultations.book), authRequired, consultationsLimiter, async (req, res) => {
+router.post('/book', authRequired, validate(schemas.consultations.book), consultationsLimiter, async (req, res) => {
   const {
     lawyer_id, lawyer_name, lawyer_phone = '',
     date_slot = null, time_slot = null,
@@ -224,6 +225,9 @@ router.post('/book', validate(schemas.consultations.book), authRequired, consult
   if (!time_slot)           return err400(res, 'time_slot required');
 
   const feeCents = FEE_BY_DURATION[duration_min] ?? 1500;
+
+  // Booking charges a platform fee — unavailable until Stripe is configured.
+  if (!LIVE) return res.status(503).json({ ...PAYMENTS_UNAVAILABLE });
 
   try {
     const db = await getDb();
@@ -274,7 +278,7 @@ router.post('/book', validate(schemas.consultations.book), authRequired, consult
       `SELECT id FROM consultation_bookings
         WHERE lawyer_id = ? AND date_slot = ? AND time_slot = ?
           AND status NOT IN ('cancelled')`,
-      [lawyerId, date_slot, time_slot]
+      [lawyer_id ?? null, date_slot, time_slot]
     ).catch(() => null);
     if (conflictCheck) {
       return res.status(409).json({
@@ -310,6 +314,71 @@ router.post('/book', validate(schemas.consultations.book), authRequired, consult
         ? `Booking confirmed. Platform fee of $${(feeCents/100).toFixed(2)} charged. Meeting link sent.`
         : `Booking confirmed (demo — no charge). Meeting link: ${meetingLink}`,
     });
+
+    // ── Send confirmation email to defendant ──────────────────────────────────
+    if (req.user.email) {
+      sendBookingConfirmation({
+        to:           req.user.email,
+        clientName:   req.user.display_name || req.user.name || 'Client',
+        attorneyName: lawyer_name,
+        dateSlot:     date_slot,
+        timeSlot:     time_slot,
+        durationMin:  duration_min,
+        feeDollars:   (feeCents / 100).toFixed(2),
+        meetingLink,
+        cancellationUrl: `https://justicegavel.app/consultations/${result.lastID}/cancel`,
+      }).catch(e => logger.warn('[email] booking confirmation failed:', e?.message));
+    }
+
+    // ── Notify attorney (if they have a JTB account) ────────────────────────
+    // If the lawyer is a registered Justice Gavel attorney, push them immediately.
+    // This is the core two-sided marketplace notification.
+    if (lawyer_id) {
+      try {
+        const attyUser = await db.get(
+          `SELECT u.id, u.display_name, u.email FROM users u
+            JOIN attorney_profiles ap ON ap.user_id = u.id
+           WHERE ap.lawyer_id = ? LIMIT 1`,
+          [lawyer_id]
+        );
+        if (attyUser) {
+          await sendPushToUser(attyUser.id, {
+            title: '📋 New Consultation Booked',
+            body: `${req.user.display_name || 'A client'} booked a ${duration_min}-min consult on ${date_slot} at ${time_slot}`,
+            data: {
+              screen: 'AttorneyInbox',
+              booking_id: result.lastID,
+              client_name: req.user.display_name || '',
+              date_slot,
+              time_slot,
+            },
+            channelId: 'attorney_bookings',
+          });
+          logger.info({ msg: '[consultations] attorney notified', attyId: attyUser.id, bookingId: result.lastID });
+          // Also send attorney an email with full client details
+          if (attyUser.email) {
+            const caseRow = await db.get(
+              `SELECT title FROM cases WHERE user_id=? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1`,
+              [req.user.id]).catch(()=>null);
+            sendAttorneyBookingAlert({
+              to:          attyUser.email,
+              attorneyName: attyUser.display_name || attyUser.name || 'Attorney',
+              clientName:  req.user.display_name || req.user.name || 'Client',
+              dateSlot:    date_slot,
+              timeSlot:    time_slot,
+              durationMin: duration_min,
+              caseTitle:   caseRow?.title || null,
+              clientEmail: req.user.email || null,
+              clientPhone: req.user.phone || null,
+              meetingLink,
+            }).catch(e => logger.warn('[email] attorney alert failed:', e?.message));
+          }
+        }
+      } catch (pushErr) {
+        // Non-fatal — booking succeeded even if push fails
+        logger.warn('[consultations] attorney push failed', pushErr?.message);
+      }
+    }
   } catch (e) {
     logger.error('[consultations] book error:', e.message);
     res.status(500).json({ error: 'Server error. Please try again.' });
@@ -370,72 +439,9 @@ router.post('/:id/cancel', authRequired, consultationsLimiter, async (req, res) 
       refund_id: refundId,
     });
 
-    // ── Send confirmation email to defendant ──────────────────────────────────
-    if (req.user.email) {
-      sendBookingConfirmation({
-        to:           req.user.email,
-        clientName:   req.user.display_name || req.user.name || 'Client',
-        attorneyName: lawyer_name,
-        dateSlot:     date_slot,
-        timeSlot:     time_slot,
-        durationMin:  duration_min,
-        feeDollars:   (feeCents / 100).toFixed(2),
-        meetingLink,
-        cancellationUrl: `https://justicegavel.app/consultations/${result.lastID}/cancel`,
-      }).catch(e => logger.warn('[email] booking confirmation failed:', e?.message));
-    }
-
-    // ── Notify attorney (if they have a JTB account) ────────────────────────
-    // If the lawyer is a registered Justice Gavel attorney, push them immediately.
-    // This is the core two-sided marketplace notification.
-    if (lawyer_id) {
-      try {
-        const attyUser = await db.get(
-          `SELECT u.id, u.display_name FROM users u
-            JOIN attorney_profiles ap ON ap.user_id = u.id
-           WHERE ap.lawyer_id = ? LIMIT 1`,
-          [lawyer_id]
-        );
-        if (attyUser) {
-          await sendPushToUser(attyUser.id, {
-            title: '📋 New Consultation Booked',
-            body: `${req.user.display_name || 'A client'} booked a ${duration_min}-min consult on ${date_slot} at ${time_slot}`,
-            data: {
-              screen: 'AttorneyInbox',
-              booking_id: result.lastID,
-              client_name: req.user.display_name || '',
-              date_slot,
-              time_slot,
-            },
-            channelId: 'attorney_bookings',
-          });
-          logger.info({ msg: '[consultations] attorney notified', attyId: attyUser.id, bookingId: result.lastID });
-          // Also send attorney an email with full client details
-          if (attyUser.email) {
-            const caseRow = await db.get(
-              `SELECT title FROM cases c JOIN case_assignments ca ON ca.case_id=c.id WHERE ca.user_id=? ORDER BY ca.assigned_at DESC LIMIT 1`,
-              [req.user.id]).catch(()=>null);
-            sendAttorneyBookingAlert({
-              to:          attyUser.email,
-              attorneyName: attyUser.display_name || attyUser.name || 'Attorney',
-              clientName:  req.user.display_name || req.user.name || 'Client',
-              dateSlot:    date_slot,
-              timeSlot:    time_slot,
-              durationMin: duration_min,
-              caseTitle:   caseRow?.title || null,
-              clientEmail: req.user.email || null,
-              clientPhone: req.user.phone || null,
-              meetingLink,
-            }).catch(e => logger.warn('[email] attorney alert failed:', e?.message));
-          }
-        }
-      } catch (pushErr) {
-        // Non-fatal — booking succeeded even if push fails
-        logger.warn('[consultations] attorney push failed', pushErr?.message);
-      }
-    }
   } catch (e) {
-    res.status(500).json({ error: 'Server error. Please try again.' });
+    logger.error('[consultations/cancel]', e.message);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error. Please try again.' });
   }
 });
 

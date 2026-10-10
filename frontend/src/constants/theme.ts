@@ -326,7 +326,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const { default: Font } = await import('expo-font');
+        const Font = await import('expo-font');
         await Font.loadAsync({
           Inter_400Regular:   require('../../assets/fonts/Inter_400Regular.ttf'),
           Inter_500Medium:    require('../../assets/fonts/Inter_500Medium.ttf'),

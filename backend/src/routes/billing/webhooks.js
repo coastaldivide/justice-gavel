@@ -79,18 +79,14 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      logger.error('[billing/webhook] STRIPE_WEBHOOK_SECRET not set — rejecting webhook in production');
-      return res.status(400).json({ error: 'Webhook configuration error.' });
-    }
-    logger.warn('[billing/webhook] STRIPE_WEBHOOK_SECRET not set — accepting without verification (dev only)');
-    return res.json({ received: true, mock: true });
+    logger.warn('[billing/webhook] STRIPE_WEBHOOK_SECRET not set — rejecting unverifiable webhook');
+    return res.status(400).json({ error: 'webhook_signature_invalid', message: 'Webhook signature could not be verified' });
   }
 
   let event;
   try {
     const StripeLib = (await import('stripe')).default;
-    const stripeVerify = new StripeLib(process.env.STRIPE_SECRET_KEY ?? '');
+    const stripeVerify = new StripeLib(process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || 'sk_signature_verification_only');
     event = stripeVerify.webhooks.constructEvent(req.body, sig, secret);
   } catch (err) {
     logger.error('[billing/webhook] Signature verification failed:', err.message);
@@ -124,14 +120,6 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     //      another delivery won the race, and we return early instead of
     //      double-processing.
     const eventId = event.id;
-
-    await db.run(
-      `CREATE TABLE IF NOT EXISTS stripe_event_log (
-         id INTEGER PRIMARY KEY AUTOINCREMENT,
-         stripe_event_id TEXT UNIQUE NOT NULL,
-         event_type TEXT,
-         processed_at TEXT DEFAULT CURRENT_TIMESTAMP)`
-    ).catch(() => {});   // Postgres already has it from the migration
 
     // INSERT-first: claim the event, then check whether we actually claimed it.
     const claim = await db.run(
@@ -311,7 +299,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       if (uid) {
         const db = await getDb();
         await db.run(
-          `UPDATE users SET subscription_tier='advisor', advisor_expires_at=datetime('now','+1 day') WHERE id=?`,
+          `UPDATE users SET subscription_tier='advisor', advisor_expires_at=(NOW() + INTERVAL '1 day') WHERE id=?`,
           [uid]
         ).catch(() => {});
         await sendPushToUser(db, Number(uid), {

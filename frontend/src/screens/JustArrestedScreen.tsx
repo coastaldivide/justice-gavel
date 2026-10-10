@@ -10,7 +10,9 @@ import React, { useState, useCallback} from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { Share, View, Text, TouchableOpacity, ScrollView, Linking, StyleSheet, Alert, LayoutAnimation} from 'react-native';
 import {  useTheme, COLORS } from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setAppAuth } from '../services/auth';
+import { hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
 
 const STEPS = [
   {
@@ -82,12 +84,20 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
     hapticImpact();
     if (step > 0) setStep(s => s - 1);
   };
-  const handleAction = () => {
+  const handleAction = async () => {
     hapticImpact();
+    // This screen is also mounted in the guest (signed-out) stack, where the
+    // main tabs don't exist yet. Enter browse mode first in that case.
+    const inMainApp = !!navigation.getParent()?.getState()?.routeNames?.includes('MoreTab');
+    if (!inMainApp) {
+      await AsyncStorage.setItem('has_browsed', 'true').catch(() => {});
+      setAppAuth('browsing');
+      return;
+    }
     if (current.action === 'find_help')    navigation.navigate('MoreTab', { screen: 'HelpNow' });
-    else if (current.action === 'bail')     navigation.navigate('HomeTab', { screen: 'BailSearch' });
-    else if (current.action === 'rights')   navigation.navigate('HomeTab', { screen: 'RightsCard' });
-    else if (current.action === 'emergency') navigation.navigate('HomeTab', { screen: 'Emergency' });
+    else if (current.action === 'bail')     navigation.navigate('BailTab');
+    else if (current.action === 'rights')   navigation.navigate('MoreTab', { screen: 'RightsCard' });
+    else if (current.action === 'emergency') navigation.navigate('MoreTab', { screen: 'Emergency' });
     else if (current.action === 'deadline') navigation.navigate('MoreTab', { screen: 'DeadlineCalculator' });
     else if (current.action === 'home')     navigation.navigate('HomeTab');
   };
@@ -172,12 +182,11 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         <View style={styles.emergencyRow}>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
             style={[styles.emergencyBtn, { backgroundColor: colors.emergencyDark }]}
             onPress={() => call('911')}
             activeOpacity={0.85}
             accessibilityLabel="Call 911 emergency services"
-          // @ts-ignore
           accessibilityHint="Dials this phone number"
           >
             <AppIcon name="flash" size={20} color={COLORS.emergency} />
@@ -185,12 +194,11 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+
             style={[styles.emergencyBtn, { backgroundColor: colors.blue }]}
             onPress={() => call('988')}
             activeOpacity={0.85}
             accessibilityLabel="Call 988 crisis line"
-          // @ts-ignore
           accessibilityHint="Dials this phone number"
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.emergencyIcon}>💙</Text>
@@ -388,8 +396,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   scriptBox: {
     borderRadius: 16, padding: 20,
     borderLeftWidth: 6,
-    // @ts-ignore
-    shadowColor: COLORS.text, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
+    shadowColor: COLORS.textPrimary, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
   },
   scriptLabel: { fontSize: 13, fontWeight: '800', letterSpacing: 1, marginBottom: 12 },
   scriptText:  { fontWeight: '800' },

@@ -507,7 +507,7 @@ describe('T. Docket Deadlines — Court Calendar Logic', () => {
     const denialDate = new Date('2024-01-15');
     const certDeadlineDays = 90; // SCOTUS Rule 13 — 90 days
     const deadline = new Date(denialDate);
-    deadline.setDate(deadline.getDate() + certDeadlineDays);
+    deadline.setUTCDate(deadline.getUTCDate() + certDeadlineDays);   // UTC: independent of the machine's timezone
     const expectedDate = '2024-04-14';
     expect(deadline.toISOString().slice(0,10)).toBe(expectedDate);
   });

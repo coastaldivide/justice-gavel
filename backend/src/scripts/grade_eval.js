@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { CLAUDE_MODEL } from '../utils/ai.js';
 /**
  * scripts/grade_eval.js — Grade eval responses on 5 legal-AI dimensions
  *
@@ -174,7 +175,7 @@ async function gradeResponse(response, dimensionKeys) {
     const dim = DIMENSIONS[key];
     try {
       const msg = await client.messages.create({
-        model:      'claude-sonnet-4-6',
+        model:      CLAUDE_MODEL,
         max_tokens: 400,
         messages:   [{ role: 'user', content: dim.prompt(response) }],
       });

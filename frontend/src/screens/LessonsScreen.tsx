@@ -9,15 +9,12 @@ import type { ScreenProps } from '../types/navigation';
 import {View, Text, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, LayoutAnimation} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api, cachedGet } from '../services/api';
+import { api, cachedGet, apiErrorMessage } from '../services/api';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
 import { COLORS, RADIUS, useTheme } from '../constants/theme';
 import * as Haptics from 'expo-haptics';
 import { t } from '../i18n';
 
-declare var load: any;
-declare var refreshing: any;
-declare var setRefreshing: any;
 interface Lesson { id: number; title: string; category: string; content: string; points: number; }
 
 const CAT_COLORS: Record<string, string> = {
@@ -25,20 +22,15 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 function LessonsScreen({ navigation, route }: ScreenProps) {
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-
   const { showToast } = useToast();
   const { impact, success, error: hapticError } = useHaptics();
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
-  return () => { mountedRef.current = false; }; }, []);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -46,7 +38,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
   const incomingQuery    = (route?.params as import('../types/api').RouteParams)?.query    || null;
   const [lessons, setLessons]   = useState<Lesson[]>([]);
   const [completed, setCompleted] = useState<Set<number>>(new Set());
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded]   = useState<number | null>(null);
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -60,8 +52,15 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       const done = await AsyncStorage.getItem('completed_lessons');
       if (done) { try { setCompleted(new Set(JSON.parse(done))); } catch {} }
       if (incomingCategory) setFilterCat(incomingCategory as string);
+      await loadLessons();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(()=>{});
+      if (mountedRef.current) setLoading(false);
+    })();
+  }, [incomingCategory]);
+
+  const loadLessons = async (fresh = false) => {
       try {
-        const r = await cachedGet('/lessons');
+        const r = fresh ? await api.get('/lessons') : await cachedGet('/lessons');
         setLessons(r.data || []);
         cacheLessons(r.data); // save for offline
       } catch {
@@ -71,10 +70,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
           setLessons(cached);
         }
       }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(()=>{});
-    setLoading(false);
-    })();
-  }, [incomingCategory]);
+  };
 
   const markComplete = async (id: number, pts: number) => {
     if (completed.has(id)) return;
@@ -89,8 +85,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
       await AsyncStorage.setItem(`points_${userId}`, String(newPts));
       showToast(`+${pts} points added to your rewards!`, 'success');
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
-      showToast(e.response?.data?.error || 'Could not mark complete.', 'info');
+      showToast(apiErrorMessage(e, 'Could not mark complete.'), 'info');
     }
   };
 
@@ -193,14 +188,8 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
           </View>
         )}
         <FlashList
-          // @ts-ignore
-          getItemLayout={(_, index) => ({ length: 110, offset: 110 * index, index })}
           estimatedItemSize={80}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={true}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load().finally(() => setRefreshing(false)); }} tintColor={colors.textSecond} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadLessons(true).finally(() => setRefreshing(false)); }} tintColor={colors.textSecond} />}
           data={displayLessons}
           keyExtractor={l => String(l.id)}
           ListFooterComponent={
@@ -210,8 +199,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                 <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.lifeBtn} accessibilityLabel="Find a Lawyer"
-          // @ts-ignore
+ style={styles.lifeBtn} accessibilityLabel="Find a Lawyer"
           accessibilityHint="Searches for attorneys in your area" onPress={() => navigation.navigate("LawyersTab")}
           >
                   <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>Find a Lawyer</Text>
@@ -220,14 +208,14 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
                   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
                   style={[styles.lifeBtn, { backgroundColor: colors.emergencyDark }]}
-                  accessibilityLabel="\ud83d\udccb Get Rights Card" onPress={() => navigation.navigate('MoreTab', { screen: 'RightsCard' })}
+                  accessibilityLabel={"\ud83d\udccb Get Rights Card"} onPress={() => navigation.navigate('MoreTab', { screen: 'RightsCard' })}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.lifeBtnText}>📋 Get Rights Card</Text>
                 </TouchableOpacity>
               </View>
             </View>
           }
-          contentContainerStyle={{ padding: 12, paddingBottom: 40, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
+          contentContainerStyle={{ padding: 12, paddingBottom: 40}}
           ListEmptyComponent={
             <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
               No lessons found. Check your connection.

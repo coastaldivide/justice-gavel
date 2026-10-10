@@ -1,3 +1,5 @@
+import { requireAi } from '../utils/ai.js';
+import { CLAUDE_MODEL } from '../utils/ai.js';
 import { validate, schemas } from '../validation/schemas.js';
 /**
  * routes/privilege.js — Privilege Log Generator
@@ -85,7 +87,7 @@ router.get('/bases', authRequired, (req, res) => {
 });
 
 // ── POST /api/privilege/generate — AI-generate entries ───────────────────────
-router.post('/generate', authRequired, aiLimiter, async (req, res) => {
+router.post('/generate', authRequired, requireAi, aiLimiter, async (req, res) => {
   try {
     const db  = await getDb();
     const ctx = await loadFirmContext(req);
@@ -165,7 +167,7 @@ CRITICAL: The description must NOT reveal privileged content. It must only descr
             'anthropic-version': '2023-06-01',
           },
           body: JSON.stringify({
-            model:       'claude-sonnet-4-20250514',
+            model:       CLAUDE_MODEL,
             temperature: 0.10,
             max_tokens:  4000,
             messages:    [{ role: 'user', content: prompt }],

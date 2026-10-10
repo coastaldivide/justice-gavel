@@ -51,6 +51,11 @@ function normalizeName(raw) {
     .trim();
 }
 
+/** Compact form: lowercase alphanumerics only (o'brien → obrien) */
+function compactName(raw) {
+  return String(raw || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
 /** Check for fuzzy match (one-way containment) */
 function fuzzyMatch(needle, haystack) {
   const n = normalizeName(needle);
@@ -73,7 +78,19 @@ function fuzzyMatch(needle, haystack) {
  * Query params: names (comma-separated), firm_id (optional — uses JWT firm if omitted)
  * Returns: { conflicts: [], clear: bool }
  */
-router.get('/check', authRequired, conflictLimiter, async (req, res) => {
+// POST /check — body form used by the app: { parties: [{ name, role }], firm_id? }
+router.post('/check', authRequired, conflictLimiter, (req, res, next) => {
+  const parties = Array.isArray(req.body?.parties) ? req.body.parties : [];
+  const names = parties.map(p => (typeof p === 'string' ? p : p?.name)).filter(Boolean)
+    .map(n => String(n).replace(/,/g, ' ').trim());
+  if (Array.isArray(req.body?.names)) names.push(...req.body.names.map(String));
+  req.query = { ...req.query, names: names.join(','), ...(req.body?.firm_id ? { firm_id: String(req.body.firm_id) } : {}) };
+  return conflictCheckHandler(req, res, next);
+});
+
+router.get('/check', authRequired, conflictLimiter, (req, res, next) => conflictCheckHandler(req, res, next));
+
+async function conflictCheckHandler(req, res) {
   try {
     const db  = await getDb();
     const ctx    = await loadFirmContext(req);
@@ -189,7 +206,7 @@ router.get('/check', authRequired, conflictLimiter, async (req, res) => {
     logger.error('[conflicts/check]', e.message);
     res.status(500).json({ error: 'Conflict check failed.' });
   }
-});
+}
 
 /**
  * POST /api/conflicts/index — add parties to conflict index
@@ -264,7 +281,7 @@ router.post('/index', authRequired, requireFirmRole('associate'), async (req, re
       const placeholders = added.map(() => '(?,?,?,?,?)').join(',');
       const values = normalisedParties.flatMap(p => [firmId, matter_id ? safeInt(matter_id) : null, p.norm, p.name, p.role]);
       await db.run(
-        `INSERT OR IGNORE INTO conflict_index (firm_id, matter_id, party_name_norm, party_name_orig, party_role) VALUES ${placeholders}`,
+        `INSERT INTO conflict_index (firm_id, matter_id, party_name_norm, party_name_orig, party_role) VALUES ${placeholders} ON CONFLICT DO NOTHING`,
         values
       ).catch(() => {});
     }
@@ -542,9 +559,9 @@ router.post('/ethics-wall/:matterId', authRequired, requireFirmRole('partner'), 
       if (matterMember) {
         // Add to matter_team_members with ethics wall set
         await db.run(
-          `INSERT OR IGNORE INTO matter_team_members
+          `INSERT INTO matter_team_members
             (case_id, user_id, matter_role, ethics_wall, added_by)
-           VALUES (?,?,?,1,?)`,
+           VALUES (?,?,?,1,?) ON CONFLICT DO NOTHING`,
           [matterId, targetId, 'screened', req.user.id]
         );
       } else {
@@ -737,8 +754,7 @@ async function runRuntimeSOC2Checks(db, firmId) {
   const checks = {};
 
   // CC6.1 — RBAC permissions seeded
-  const rbacCount = await db.get('SELECT COUNT(*) as n FROM role_permissions').catch(() => ({ n: 0 }));
-  if (!rbacCount) return res.status(404).json({error: 'Not found'});
+  const rbacCount = await db.get('SELECT COUNT(*) as n FROM role_permissions').catch(() => ({ n: 0 })) || { n: 0 };
   checks.rbac_permissions_seeded = { pass: rbacCount.n > 0, value: rbacCount.n };
 
   // CC6.2 — SSO configured for firm

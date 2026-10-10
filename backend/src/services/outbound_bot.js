@@ -24,17 +24,12 @@ import logger from '../utils/logger.js';
  *  - Safe to run multiple times — no double-sends
  */
 
-import { open } from 'sqlite';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { getDb as getAppDb } from '../db/index.js';
 import { normalizePhone } from '../utils/sanitize.js';
 const sendSms = async () => null; // SMS not used — push notifications and Resend email handle delivery
 import { sendEmail } from './email.js';
 import { createPaymentLink, calcStripeFee, STRIPE_LIVE } from '../payments/stripe.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH   = path.resolve(__dirname, '../../data/providers.sqlite');
-const MAIN_DB   = path.resolve(__dirname, '../../demo.db');
 
 // ── Lead fee tiers ────────────────────────────────────────────────────────────
 function calcLeadFee(bailAmount) {
@@ -56,17 +51,10 @@ function isQuietHours() {
 }
 
 // ── DB helpers ────────────────────────────────────────────────────────────────
-async function getDb() {
-  const db = await open({ filename: DB_PATH, driver: sqlite3.Database });
-  await db.run('PRAGMA journal_mode=WAL');
-  return db;
-}
-
-async function getMainDb() {
-  const db = await open({ filename: MAIN_DB, driver: sqlite3.Database });
-  await db.run('PRAGMA journal_mode=WAL');
-  return db;
-}
+// All provider, arrest and outbound tables live in the main Postgres database.
+// (The adapter is a shared singleton; its close() is a no-op.)
+async function getDb()     { return getAppDb(); }
+async function getMainDb() { return getAppDb(); }
 
 // Check if phone/email is opted out
 async function isOptedOut(db, phone, email) {
@@ -87,13 +75,19 @@ async function isOptedOut(db, phone, email) {
 // Log a sent message — idempotency key prevents duplicates
 async function logMessage(db, { recipientType, recipientId, recipientPhone, recipientEmail, channel, arrestId, messageType, body, status, sendgridId, idempotencyKey, errorMsg } = {}) {
   try {
-    await db.run(
+    const r = await db.run(
       `INSERT INTO outbound_messages
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         (idempotency_key, recipient_type, recipient_id, recipient_phone, recipient_email,
+          channel, arrest_id, message_type, body, status, sendgrid_id, error_msg, sent_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?, NOW())
+       ON CONFLICT (idempotency_key) DO NOTHING`,
+      [idempotencyKey ?? null, recipientType ?? null, recipientId ?? null, recipientPhone ?? null,
+       recipientEmail ?? null, channel ?? null, arrestId ?? null, messageType ?? null, body ?? null,
+       status ?? null, sendgridId ?? null, errorMsg ?? null]
     );
-    return true;
+    return r.changes > 0;   // 0 → already logged (idempotency working)
   } catch (err) {
-    if (err.message?.includes('UNIQUE constraint')) {
+    if (err.code === '23505' || err.message?.includes('UNIQUE constraint')) {
       return false; // Already sent — idempotency working correctly
     }
     logger.error('[bot] logMessage error:', err.message);
@@ -385,7 +379,6 @@ export async function runOutboundBot(options = {}) {
     await logBotRun(db, 'nightly', stats, errors, startTime);
     return { ...stats, errors };
   } finally {
-    await db.close().catch(() => {});
   }
 }
 
@@ -475,7 +468,6 @@ export async function sendPaymentLink({ phone, arrestId, recipientType, recipien
     logger.error('[bot] sendPaymentLink error:', err.message);
     return { error: err.message };
   } finally {
-    await db.close().catch(() => {});
   }
 }
 
@@ -505,8 +497,8 @@ export async function deliverLead({ phone, arrestId, stripeLinkId, stripePayment
 
     // Mark lead_purchase in billing table
     await db.run(
-      `INSERT OR IGNORE INTO lead_purchases (arrest_id, bail_amount, lead_fee_cents, status, contact_revealed, stripe_pi_id)
-       VALUES (?,?,?,?,?,?)`,
+      `INSERT INTO lead_purchases (arrest_id, bail_amount, lead_fee_cents, status, contact_revealed, stripe_pi_id)
+       VALUES (?,?,?,?,?,?) ON CONFLICT DO NOTHING`,
       [arrestId, arrest.bail_amount, feeCents, 'charged', 1, stripePaymentIntentId || null]
     ).catch(() => {});
 
@@ -548,7 +540,6 @@ export async function deliverLead({ phone, arrestId, stripeLinkId, stripePayment
     logger.error('[bot] deliverLead error:', err.message);
     return { error: err.message };
   } finally {
-    await db.close().catch(() => {});
   }
 }
 
@@ -558,7 +549,7 @@ export async function processOptOut({ phone, email, reason = 'STOP' }) {
   try {
     const norm = phone ? normalizePhone(phone) : null;
     await db.run(
-      `INSERT OR IGNORE INTO opt_outs (phone, email, reason) VALUES (?,?,?)`,
+      `INSERT INTO opt_outs (phone, email, reason) VALUES (?,?,?) ON CONFLICT DO NOTHING`,
       [norm, email?.toLowerCase() || null, reason]
     );
 
@@ -576,7 +567,6 @@ export async function processOptOut({ phone, email, reason = 'STOP' }) {
     logger.error('[bot] processOptOut error:', err.message);
     return { error: err.message };
   } finally {
-    await db.close().catch(() => {});
   }
 }
 
@@ -624,6 +614,5 @@ export async function expireOldPaymentLinks() {
     logger.error('[bot] expireOldPaymentLinks error:', err.message);
     return { error: err.message };
   } finally {
-    await db.close().catch(() => {});
   }
 }

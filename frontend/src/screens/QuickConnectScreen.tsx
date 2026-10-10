@@ -23,30 +23,27 @@ import { haptic, hapticSelect, hapticSuccess, hapticWarn } from '../services/hap
 import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
 import { getLocation } from '../services/location';
-import { api } from '../services/api';
+import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
 import PracticeAreaSelector from '../components/PracticeAreaSelector';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 
-declare var credit: any;
-declare var data: any;
-declare var setCredit: any;
-function callPhone(phone: string) {
-  const { showToast } = useToast();
-  const { impact, success, error: hapticError } = useHaptics();
-  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => showToast('Action failed. Please try again.', 'error')).catch(() => showToast('Action failed. Please try again.', 'error'));
+// Module-level link helpers: no hooks; failures reported via onError.
+function callPhone(phone: string, onError?: () => void) {
+  Linking.openURL('tel:' + phone.replace(/\D/g, '')).catch(() => onError?.());
 }
 
-function openDirections(lat: number, lng: number, name: string) {
+function openDirections(lat: number, lng: number, name: string, onError?: () => void) {
   const url = Platform.OS === 'ios'
     ? `maps://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(name)}`
     : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  // @ts-ignore
-  Linking.openURL(url).catch(() => showToast('Action failed. Please try again.', 'error'));
+  Linking.openURL(url).catch(() => onError?.());
 }
 
 // ── Contact result card ────────────────────────────────────────────────────────
 function ResultCard({ contact, type, price }: { contact: Record<string,any>; type: 'bondsman' | 'lawyer'; price: string }) {
+  const { showToast } = useToast();
+  const onLinkError = () => showToast('Action unavailable on this device.', 'error');
   const isBail  = type === 'bondsman';
   const accent  = isBail ? COLORS.bail : COLORS.legal;
   const bg      = isBail ? COLORS.bailBg   : COLORS.legalBg;
@@ -54,8 +51,9 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
 
   let specialties: string[] = [];
   if (contact.specialties) {
-    try { specialties = JSON.parse(contact.specialties); } catch (e: any) {
-      setLoading(false); __DEV__ && console.warn(e?.message); }
+    try {
+      specialties = Array.isArray(contact.specialties) ? contact.specialties : JSON.parse(contact.specialties);
+    } catch (e: any) { __DEV__ && console.warn(e?.message); }
   }
 
   return (
@@ -104,7 +102,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.callBtn, { backgroundColor: accent }]}
-          onPress={() => callPhone(contact.phone)}
+          onPress={() => callPhone(contact.phone, onLinkError)}
             activeOpacity={0.85}
           accessibilityHint="Opens your phone dialer"
         >
@@ -122,7 +120,7 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.dirBtn}
-          accessibilityLabel="\ud83d\uddfa  Get Directions" onPress={() => openDirections(contact.lat, contact.lng, contact.name)}
+          accessibilityLabel={"\ud83d\uddfa  Get Directions"} onPress={() => openDirections(contact.lat, contact.lng, contact.name, onLinkError)}
             activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.dirBtnText}>🗺  Get Directions</Text>
@@ -134,16 +132,14 @@ function ResultCard({ contact, type, price }: { contact: Record<string,any>; typ
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Element {
-  const [submitting, setSubmitting] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
+  const { showToast } = useToast();
+  const [credit, setCredit] = React.useState<number>(0);
 
   // Mounted guard -- prevents setState after unmount (crash in strict mode)
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
-    const _task = InteractionManager.runAfterInteractions(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; };
-    });
-    return () => _task.cancel();
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    return () => { mountedRef.current = false; };
   }, []);
 
   const { colors, isDark } = useTheme();
@@ -152,7 +148,7 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     api.get('/billing/subscription')
-      .then(r => { if (mountedRef.current) setCredit(r.data?.credit_cents ?? null); })
+      .then(r => { if (mountedRef.current) setCredit(Number(r.data?.credit_cents) || 0); })
       .catch(() => {})
       .finally(() => { if (mountedRef.current) setRefreshing(false); });
   }, []);
@@ -170,7 +166,7 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
   // Get GPS on mount
   useEffect(() => {
     api.get('/billing/subscription')
-      .then(r => { if (mountedRef.current) setCredit(r.data?.credit_cents ?? null); })
+      .then(r => { if (mountedRef.current) setCredit(Number(r.data?.credit_cents) || 0); })
       .catch(() => {});
     getLocation()
       .then(({ lat, lng }) => {
@@ -190,7 +186,6 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
   const doPay = async () => {
     setPaying(true);
     setError('');
-    setLoading(true);
     try {
           const res = await api.post('/billing/quickconnect', {
         lat:          (coords as any)?.lat,
@@ -202,14 +197,12 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
       // Fire post-purchase retention trigger (48hr arrest monitoring upsell)
       api.post('/push/retention/post-purchase', { purchase_type: 'quickconnect' }).catch((e) => { __DEV__ && console.warn(e?.message); });
     } catch (e: any) {
-      setLoading(false);
-      const errMsg   = e.response?.data?.error || e.message || '';
+      const errMsg   = apiErrorMessage(e, '');
       const status   = e.response?.status;
       let userMsg = errMsg;
 
-      if (status === 503 || errMsg.toLowerCase().includes('stripe') || errMsg.toLowerCase().includes('key')) {
-        userMsg = 'Demo mode -- no charge was made.';
-        setShowDemoHelp(true);
+      if (isPaymentsUnavailable(e) || status === 503) {
+        userMsg = 'Payments aren’t available yet. No charge was made — free features keep working.';
       } else if (status === 402 && errMsg.toLowerCase().includes('payment')) {
         userMsg = 'Card was declined. Please try a different payment method.';
       } else if (!e.response) {
@@ -218,8 +211,7 @@ function QuickConnectScreen({ route, navigation }: ScreenProps): React.JSX.Eleme
 
       setError(userMsg);
       hapticWarn();
-// @ts-ignore
-showToast(userMsg, 'error');
+      showToast(userMsg, 'error');
       setPaying(false);
     }
   };
@@ -458,7 +450,7 @@ showToast(userMsg, 'error');
         <TouchableOpacity
           accessibilityRole="button"
           style={styles.homeBtn}
-          accessibilityLabel="\u2190 Back to Home" onPress={() => navigation.navigate('HomeTab')}
+          accessibilityLabel={"\u2190 Back to Home"} onPress={() => navigation.navigate('HomeTab')}
             activeOpacity={0.85}
         >
           <Text maxFontSizeMultiplier={1.4} style={styles.homeBtnText}>← Back to Home</Text>
@@ -466,14 +458,6 @@ showToast(userMsg, 'error');
 
         <View style={{ height: 40 }} />
 
-      {/* Empty state */}
-      {data?.length === 0 && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 }}>
-          <Text style={{ fontSize: 40 }}>📭</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '600', color: colors?.textPrimary || colors.bg, textAlign: 'center' }}>No results found</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: colors?.textMuted || colors.steel, textAlign: 'center', lineHeight: 20 }}>Check your connection or try again.</Text>
-        </View>
-      )}
       </ScrollView>
     </View>
   );

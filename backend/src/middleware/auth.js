@@ -11,10 +11,12 @@
  *   - Sets req.user if valid token present; proceeds regardless
  */
 
+import '../config.js';   // ensures JWT_SECRET is populated (dev) before first use
 import jwt    from 'jsonwebtoken';
 import logger from '../utils/logger.js';
 
-const JWT_SECRET  = () => process.env.JWT_SECRET || 'dev_secret_change_me';
+// Always set: required in production, generated per-process in dev (config.js)
+const JWT_SECRET  = () => process.env.JWT_SECRET;
 const ALGORITHMS  = ['HS256'];
 
 // ── In-process revocation cache ───────────────────────────────────────────────

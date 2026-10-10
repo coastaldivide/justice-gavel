@@ -7,3 +7,6 @@ demo.db
 dist/
 build/
 .temp/
+
+# Encrypted message attachments (local storage backend)
+data/attachments/

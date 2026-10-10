@@ -24,7 +24,7 @@ function createRedisClient() {
     maxRetriesPerRequest: 3,
     enableOfflineQueue:   false,
     connectTimeout:       5000,
-    lazyConnect:          true,
+    lazyConnect:          false,   // connect immediately (offline queue is disabled)
   });
 
   client.on('connect',      () => logger.info('[redis] connected'));

@@ -50,9 +50,9 @@ export async function trackFunnel(db, userId, stage, metadata = {}) {
 
   try {
     await db.run(
-      `INSERT OR IGNORE INTO funnel_events
+      `INSERT INTO funnel_events
          (user_id, stage, metadata, occurred_at)
-       VALUES (?, ?, ?, NOW())`,
+       VALUES (?, ?, ?, NOW()) ON CONFLICT DO NOTHING`,
       [userId, stage, JSON.stringify(metadata)]
     );
   } catch (e) {
@@ -69,7 +69,7 @@ export async function getFunnelCohorts(db, weekCount = 8) {
   try {
     const cohorts = await db.all(
       `SELECT
-         strftime('%Y-W%W', u.created_at) AS cohort_week,
+         to_char(u.created_at, 'IYYY-"W"IW') AS cohort_week,
          COUNT(DISTINCT u.id)             AS registered,
          COUNT(DISTINCT CASE WHEN fe_case.user_id IS NOT NULL THEN u.id END) AS activated,
          COUNT(DISTINCT CASE WHEN fe_ai.user_id   IS NOT NULL THEN u.id END) AS first_ai,
@@ -82,7 +82,7 @@ export async function getFunnelCohorts(db, weekCount = 8) {
        LEFT JOIN funnel_events fe_lv   ON fe_lv.user_id   = u.id AND fe_lv.stage   = 'lawyer_viewed'
        LEFT JOIN funnel_events fe_cb   ON fe_cb.user_id   = u.id AND fe_cb.stage   = 'consultation_booked'
        LEFT JOIN funnel_events fe_sub  ON fe_sub.user_id  = u.id AND fe_sub.stage   = 'subscription_started'
-       WHERE u.created_at >= datetime('now', '-' || ? || ' days')
+       WHERE u.created_at >= (NOW() - (? || ' days')::interval)
          AND u.role = 'user'
        GROUP BY cohort_week
        ORDER BY cohort_week DESC`,

@@ -15,6 +15,11 @@
 --
 -- Depends on 00000000000004 (bar_subjects rows are the foreign-key target).
 -- Verified: loads with 0 errors.
+--
+-- Idempotency: each INSERT is written as INSERT ... SELECT FROM (VALUES ...)
+-- WHERE NOT EXISTS (same subject_id + stem), so re-running this migration adds
+-- no duplicate questions. First-run results are unchanged (the seed has no
+-- duplicate subject_id+stem pairs: 548 rows, 548 distinct).
 
 
 -- ══ from 20260717000002_seed_criminal_law_questions.sql ══
@@ -25,11 +30,9 @@
 BEGIN;
 
 INSERT INTO quiz_questions
-  (subject_id, category, difficulty, stem,
-   option_a, option_b, option_c, option_d,
-   correct_answer, explanation, rule_tested, case_citation, is_active)
-VALUES
-  ('crim-law-001', 'homicide', 'medium', 'Dan intentionally shoots at Victor intending to kill him. The bullet misses Victor and kills Paula. Dan is charged with murder of Paula. Is Dan guilty?',
+  (subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+SELECT v.* FROM (VALUES
+('crim-law-001', 'homicide', 'medium', 'Dan intentionally shoots at Victor intending to kill him. The bullet misses Victor and kills Paula. Dan is charged with murder of Paula. Is Dan guilty?',
    'Yes, under the transferred intent doctrine.', 'No, because Dan had no knowledge of Paula.', 'Yes, but only for involuntary manslaughter.', 'No, because Dan did not intend to kill Paula.',
    'A', 'Under transferred intent, intent to harm one person transfers to the actual victim. Dan''s intent to kill Victor transfers to Paula, making him liable for Paula''s murder.', 'Transferred Intent Doctrine', 'People v. Suesser (1901)', true),
   ('crim-law-001', 'homicide', 'medium', 'Tom sees his wife in bed with Bob and immediately kills Bob in a rage. Tom''s best defense at common law is:',
@@ -403,7 +406,10 @@ VALUES
    'A', 'The Fifth Amendment grand jury indictment requirement is one of the few Bill of Rights provisions NOT incorporated against the states (Hurtado v. California, 1884). States may use grand juries, preliminary hearings, or other methods to bring felony charges.', 'Grand Jury Indictment — Fifth Amendment / Not Incorporated Against States', 'Hurtado v. California (1884)', true),
   ('crim-law-001', 'fifth_sixth_amendment', 'hard', 'Walt is on trial for murder. The prosecution introduces a lab report prepared by a forensic analyst who does not testify. The analyst is unavailable. Walt argues a Confrontation Clause violation. Under Melendez-Diaz v. Massachusetts, the report is:',
    'Admissible if the supervising analyst testifies instead.', 'Admissible — scientific documents are non-testimonial.', 'Inadmissible — forensic lab reports are testimonial; Walt had no opportunity to cross-examine.', 'Admissible — lab reports are business records not subject to the Confrontation Clause.',
-   'C', 'In Melendez-Diaz v. Massachusetts (2009), the Supreme Court held that forensic lab reports prepared for use at trial are testimonial under Crawford v. Washington. Introducing a lab report without the analyst''s testimony violates the Confrontation Clause. The prosecution must call the analyst or establish an exception. The fact that lab reports may also serve a business function does not make them non-testimonial when prepared for use at trial.', 'Confrontation Clause — Forensic Lab Reports Are Testimonial (Melendez-Diaz)', 'Melendez-Diaz v. Massachusetts (2009)', true);
+   'C', 'In Melendez-Diaz v. Massachusetts (2009), the Supreme Court held that forensic lab reports prepared for use at trial are testimonial under Crawford v. Washington. Introducing a lab report without the analyst''s testimony violates the Confrontation Clause. The prosecution must call the analyst or establish an exception. The fact that lab reports may also serve a business function does not make them non-testimonial when prepared for use at trial.', 'Confrontation Clause — Forensic Lab Reports Are Testimonial (Melendez-Diaz)', 'Melendez-Diaz v. Massachusetts (2009)', true)
+) AS v(subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM quiz_questions q
+                  WHERE q.subject_id = v.subject_id AND q.stem = v.stem);
 
 COMMIT;
 -- ══ from 20260717000003_seed_con_law_questions.sql ══
@@ -413,11 +419,9 @@ COMMIT;
 BEGIN;
 
 INSERT INTO quiz_questions
-  (subject_id, category, difficulty, stem,
-   option_a, option_b, option_c, option_d,
-   correct_answer, explanation, rule_tested, case_citation, is_active)
-VALUES
-  ('con-law-001', 'fourth_amendment', 'easy', 'The Fourth Amendment''s protection against unreasonable searches and seizures is triggered when the government violates a person''s:',
+  (subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+SELECT v.* FROM (VALUES
+('con-law-001', 'fourth_amendment', 'easy', 'The Fourth Amendment''s protection against unreasonable searches and seizures is triggered when the government violates a person''s:',
    'Property rights in any tangible item.', 'Right to be free from any government surveillance.', 'Absolute right to privacy in any location.', 'Reasonable expectation of privacy (REP) — both subjective and objective.',
    'D', 'Katz v. United States (1967) established the two-part REP test: (1) the individual must have a subjective expectation of privacy, and (2) society must recognize that expectation as reasonable. This replaced the prior property-based trespass test for most Fourth Amendment analysis.', 'Fourth Amendment — Katz REP Test', 'Katz v. United States (1967)', true),
   ('con-law-001', 'fourth_amendment', 'medium', 'Police fly a helicopter at 400 feet over Alex''s backyard and observe marijuana plants inside his fenced enclosure. Alex had no roof. This observation is:',
@@ -791,7 +795,10 @@ VALUES
    'A', 'Ramos v. Louisiana (2020): the Supreme Court held that the Sixth Amendment right to a jury trial — incorporated against the states through the Fourteenth Amendment — requires a unanimous verdict to convict a defendant of a serious crime. The Court overruled Apodaca v. Oregon (1972), which had permitted non-unanimous verdicts, holding that the Sixth Amendment''s jury right must mean the same thing in state and federal courts.', 'Sixth Amendment Incorporation — Unanimous Jury Verdict Required (Ramos v. Louisiana)', 'Ramos v. Louisiana (2020)', true),
   ('con-law-001', 'incorporation_14th', 'hard', 'The Fourth Amendment''s exclusionary rule was incorporated against the states in:',
    'Katz v. United States (1967) — established the REP test.', 'Mapp v. Ohio (1961) — incorporated against the states through the Fourteenth Amendment.', 'Weeks v. United States (1914) — applied in federal courts.', 'Terry v. Ohio (1968) — applied to investigative stops.',
-   'B', 'Mapp v. Ohio (1961): the Supreme Court held that the Fourth Amendment''s exclusionary rule — which bars admission of evidence obtained through unconstitutional searches — is incorporated against the states through the Fourteenth Amendment Due Process Clause. Prior to Mapp, states were not required to exclude illegally obtained evidence. Mapp made the exclusionary rule a federal constitutional requirement in state court proceedings.', 'Exclusionary Rule Incorporation — Mapp v. Ohio', 'Mapp v. Ohio (1961)', true);
+   'B', 'Mapp v. Ohio (1961): the Supreme Court held that the Fourth Amendment''s exclusionary rule — which bars admission of evidence obtained through unconstitutional searches — is incorporated against the states through the Fourteenth Amendment Due Process Clause. Prior to Mapp, states were not required to exclude illegally obtained evidence. Mapp made the exclusionary rule a federal constitutional requirement in state court proceedings.', 'Exclusionary Rule Incorporation — Mapp v. Ohio', 'Mapp v. Ohio (1961)', true)
+) AS v(subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM quiz_questions q
+                  WHERE q.subject_id = v.subject_id AND q.stem = v.stem);
 
 COMMIT;
 -- ══ from 20260720000001_seed_con_law_gaps.sql ══
@@ -801,11 +808,9 @@ COMMIT;
 BEGIN;
 
 INSERT INTO quiz_questions
-  (subject_id, category, difficulty, stem,
-   option_a, option_b, option_c, option_d,
-   correct_answer, explanation, rule_tested, case_citation, is_active)
-VALUES
-  ('con-law-001', 'fifth_sixth_amendment', 'easy', 'Under Miranda v. Arizona, police MUST administer Miranda warnings before custodial interrogation. Which statement about Miranda is CORRECT?',
+  (subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+SELECT v.* FROM (VALUES
+('con-law-001', 'fifth_sixth_amendment', 'easy', 'Under Miranda v. Arizona, police MUST administer Miranda warnings before custodial interrogation. Which statement about Miranda is CORRECT?',
    'Miranda warnings are required whenever police ask a question.', 'Miranda warnings are required only when a suspect is in custody and subject to interrogation.', 'A suspect who waives Miranda rights may reassert them only before confessing.', 'Miranda warnings are constitutionally required in all criminal investigations.',
    'B', 'Miranda applies only to custodial interrogation — both custody and interrogation are required. Routine non-custodial questioning does not require warnings.', 'Miranda Custody + Interrogation Requirement', 'Miranda v. Arizona (1966)', true),
   ('con-law-001', 'fifth_sixth_amendment', 'medium', 'Dan is arrested and, after receiving Miranda warnings, invokes his right to counsel. Two hours later, a different officer asks Dan about a separate crime. Dan makes incriminating statements. Are the statements admissible?',
@@ -1029,7 +1034,10 @@ VALUES
    'B', 'Ramos v. Louisiana (2020) overruled Apodaca v. Oregon and held that the Sixth Amendment''s unanimity requirement is incorporated against the states and applies jot-for-jot. A 10-2 verdict violates the Sixth Amendment when applied to a state felony prosecution.', 'Selective Incorporation — Jury Unanimity (Ramos)', 'Ramos v. Louisiana (2020)', true),
   ('con-law-001', 'incorporation_14th', 'hard', 'Which of the following lists represents Bill of Rights provisions that remain NOT fully incorporated against the states as of the Supreme Court''s current doctrine?',
    'First Amendment Free Speech; Fourth Amendment Search and Seizure; Sixth Amendment Jury Trial.', 'Fifth Amendment Grand Jury; Seventh Amendment Civil Jury Trial; Third Amendment Quartering.', 'Second Amendment; Fifth Amendment Self-Incrimination; Eighth Amendment Cruel and Unusual Punishment.', 'Fourth Amendment; Fifth Amendment Takings; Sixth Amendment Confrontation.',
-   'B', 'The primary non-incorporated provisions are: (1) Fifth Amendment grand jury requirement (Hurtado); (2) Seventh Amendment right to civil jury trial (only applies to federal courts); (3) Third Amendment quartering (never litigated for incorporation). All provisions in choices A, C, and D are incorporated.', 'Selective Incorporation — Non-Incorporated Rights (Complete List)', 'Hurtado v. California (1884); Minneapolis & St. Louis Ry. v. Bombolis (1916)', true);
+   'B', 'The primary non-incorporated provisions are: (1) Fifth Amendment grand jury requirement (Hurtado); (2) Seventh Amendment right to civil jury trial (only applies to federal courts); (3) Third Amendment quartering (never litigated for incorporation). All provisions in choices A, C, and D are incorporated.', 'Selective Incorporation — Non-Incorporated Rights (Complete List)', 'Hurtado v. California (1884); Minneapolis & St. Louis Ry. v. Bombolis (1916)', true)
+) AS v(subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM quiz_questions q
+                  WHERE q.subject_id = v.subject_id AND q.stem = v.stem);
 
 COMMIT;
 
@@ -1040,11 +1048,9 @@ COMMIT;
 BEGIN;
 
 INSERT INTO quiz_questions
-  (subject_id, category, difficulty, stem,
-   option_a, option_b, option_c, option_d,
-   correct_answer, explanation, rule_tested, case_citation, is_active)
-VALUES
-  ('contracts-001', 'formation', 'easy', 'Under the objective theory of contracts, courts determine whether a contract was formed by asking:',
+  (subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+SELECT v.* FROM (VALUES
+('contracts-001', 'formation', 'easy', 'Under the objective theory of contracts, courts determine whether a contract was formed by asking:',
    'What the promisor subjectively intended.', 'What a reasonable person in the position of the promisee would understand.', 'Whether the promisor felt bound to perform.', 'Whether both parties read and understood all terms.',
    'B', 'Contract formation is judged objectively — courts ask what a reasonable person would understand from the words and conduct. A party''s unexpressed intentions are irrelevant to formation.', 'Objective Theory of Contracts', 'Lucy v. Zehmer (1954)', true),
   ('contracts-001', 'formation', 'medium', 'Ann offers to sell her car to Bob for $5,000. Bob replies: ''I accept, but I need delivery by Friday.'' Under common law, Bob''s response is:',
@@ -1358,7 +1364,10 @@ VALUES
    'D', 'UCC § 2-711: when the seller fails to deliver conforming goods, the buyer may cancel the contract, recover any price paid, then pursue: (1) cover (§ 2-712), (2) market price damages (§ 2-713), (3) specific performance for unique goods (§ 2-716), and (4) incidental and consequential damages (§ 2-715).', 'Buyer''s Remedies — UCC § 2-711', 'UCC § 2-711', true),
   ('contracts-001', 'ucc_article_2', 'hard', 'An oral contract for the sale of 200 widgets at $3 each ($600 total) is disputed. The buyer says there was a contract; the seller says there was not. Under UCC § 2-201, which of the following would satisfy the Statute of Frauds to allow enforcement?',
    'The buyer''s testimony alone.', 'A confirmatory memo sent by the buyer and received by the seller, who did not object within 10 days.', 'An invoice from a third-party shipper.', 'The buyer''s payment alone.',
-   'B', 'UCC § 2-201: between merchants, a written confirmation of a contract signed by one party satisfies the SOF against the receiving merchant if the receiving merchant does not object in writing within 10 days of receipt. The seller''s failure to object binds the seller despite not signing the confirmation.', 'UCC Statute of Frauds — Merchant Confirmation Exception', 'UCC § 2-201(2)', true);
+   'B', 'UCC § 2-201: between merchants, a written confirmation of a contract signed by one party satisfies the SOF against the receiving merchant if the receiving merchant does not object in writing within 10 days of receipt. The seller''s failure to object binds the seller despite not signing the confirmation.', 'UCC Statute of Frauds — Merchant Confirmation Exception', 'UCC § 2-201(2)', true)
+) AS v(subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM quiz_questions q
+                  WHERE q.subject_id = v.subject_id AND q.stem = v.stem);
 
 COMMIT;
 
@@ -1369,11 +1378,9 @@ COMMIT;
 BEGIN;
 
 INSERT INTO quiz_questions
-  (subject_id, category, difficulty, stem,
-   option_a, option_b, option_c, option_d,
-   correct_answer, explanation, rule_tested, case_citation, is_active)
-VALUES
-  ('civ-pro-001', 'jurisdiction', 'easy', 'For a federal court to have subject matter jurisdiction based on diversity of citizenship, the amount in controversy must exceed:',
+  (subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+SELECT v.* FROM (VALUES
+('civ-pro-001', 'jurisdiction', 'easy', 'For a federal court to have subject matter jurisdiction based on diversity of citizenship, the amount in controversy must exceed:',
    '$50,000.', '$75,000, exclusive of interest and costs.', '$100,000.', '$25,000.',
    'B', '28 U.S.C. § 1332 grants diversity jurisdiction when (1) the parties are citizens of different states (complete diversity), and (2) the amount in controversy exceeds $75,000, exclusive of interest and costs. The $75,000 threshold is exclusive — claims of exactly $75,000 do not qualify.', 'Diversity Jurisdiction — Amount in Controversy', '28 U.S.C. § 1332', true),
   ('civ-pro-001', 'jurisdiction', 'medium', 'Plaintiff, a citizen of New York, sues Defendant Corp, incorporated in Delaware with its principal place of business in California. For diversity purposes, Defendant Corp is a citizen of:',
@@ -1501,7 +1508,10 @@ VALUES
    'B', '28 U.S.C. § 1291: the courts of appeals have jurisdiction from all final decisions of the district courts. The final judgment rule requires that a case be fully resolved below before appeal as of right. Exceptions include interlocutory appeals under § 1292 and Rule 54(b).', 'Final Judgment Rule — § 1291', '28 U.S.C. § 1291', true),
   ('civ-pro-001', 'appeals', 'medium', 'The collateral order doctrine allows appeal of non-final orders that:',
    'Involve important constitutional questions.', 'Conclusively determine a disputed question, resolve an issue completely separate from the merits, and are effectively unreviewable after final judgment.', 'Are certified by the district court for interlocutory appeal.', 'The defendant designates as immediately appealable.',
-   'B', 'Cohen v. Beneficial Industrial Loan Corp.: a non-final order may be immediately appealable if it (1) conclusively determines the disputed question, (2) resolves an important issue completely separate from the merits, and (3) is effectively unreviewable on appeal from a final judgment. The right to be free from standing trial is a classic example.', 'Collateral Order Doctrine', 'Cohen v. Beneficial Industrial Loan Corp. (1949)', true);
+   'B', 'Cohen v. Beneficial Industrial Loan Corp.: a non-final order may be immediately appealable if it (1) conclusively determines the disputed question, (2) resolves an important issue completely separate from the merits, and (3) is effectively unreviewable on appeal from a final judgment. The right to be free from standing trial is a classic example.', 'Collateral Order Doctrine', 'Cohen v. Beneficial Industrial Loan Corp. (1949)', true)
+) AS v(subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM quiz_questions q
+                  WHERE q.subject_id = v.subject_id AND q.stem = v.stem);
 
 COMMIT;
 
@@ -1512,11 +1522,9 @@ COMMIT;
 BEGIN;
 
 INSERT INTO quiz_questions
-  (subject_id, category, difficulty, stem,
-   option_a, option_b, option_c, option_d,
-   correct_answer, explanation, rule_tested, case_citation, is_active)
-VALUES
-  ('evidence-001','relevance','easy','Under FRE 401, evidence is relevant if:',
+  (subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+SELECT v.* FROM (VALUES
+('evidence-001','relevance','easy','Under FRE 401, evidence is relevant if:',
    'It makes a fact more or less probable than it would be without the evidence, and the fact is of consequence to the action.','It directly proves an element of a claim or defense.','Any judge would find it probative.','It is authenticated and not hearsay.',
    'A','FRE 401: evidence is relevant if (a) it has any tendency to make a fact of consequence more or less probable than it would be without the evidence. The threshold is very low — any tendency suffices. Relevance is a necessary but not sufficient condition for admissibility.','Relevance — FRE 401','FRE 401', true),
   ('evidence-001','relevance','medium','Under FRE 403, relevant evidence may be excluded when:',
@@ -1590,7 +1598,10 @@ VALUES
    'B','FRE 1002 (Original Writing Rule): to prove the content of a writing, recording, or photograph, the original must be produced. The rule applies only when the content of the document itself is at issue, not when a witness is testifying from personal knowledge about facts that happen to be in a document.','Best Evidence Rule — FRE 1002','FRE 1002', true),
   ('evidence-001','authentication','hard','Under FRE 1003, a duplicate is admissible to the same extent as the original:',
    'Never — only originals are admissible.','Unless there is a genuine question about the authenticity of the original or it would be unfair to admit the duplicate.','Only if the original is unavailable.','Only with the opposing party''s consent.',
-   'B','FRE 1003: duplicates are generally as admissible as originals. A duplicate may be excluded if there is a genuine question raised as to the authenticity of the original, or if it would be unfair to admit the duplicate in lieu of the original. Modern copying technology makes duplicates generally as reliable as originals.','Duplicate Documents — FRE 1003','FRE 1003', true);
+   'B','FRE 1003: duplicates are generally as admissible as originals. A duplicate may be excluded if there is a genuine question raised as to the authenticity of the original, or if it would be unfair to admit the duplicate in lieu of the original. Modern copying technology makes duplicates generally as reliable as originals.','Duplicate Documents — FRE 1003','FRE 1003', true)
+) AS v(subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM quiz_questions q
+                  WHERE q.subject_id = v.subject_id AND q.stem = v.stem);
 
 COMMIT;
 
@@ -1601,11 +1612,9 @@ COMMIT;
 BEGIN;
 
 INSERT INTO quiz_questions
-  (subject_id, category, difficulty, stem,
-   option_a, option_b, option_c, option_d,
-   correct_answer, explanation, rule_tested, case_citation, is_active)
-VALUES
-  ('real-prop-001','ownership','easy','Fee simple absolute is:',
+  (subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+SELECT v.* FROM (VALUES
+('real-prop-001','ownership','easy','Fee simple absolute is:',
    'A freehold estate that is limited in duration.','The largest possible ownership interest in real property — infinite in duration and freely alienable.','Ownership subject to a condition subsequent.','A life estate measured by the owner''s life.',
    'B','Fee simple absolute (FSA) is the most complete form of property ownership. It is of potentially infinite duration, freely transferable inter vivos and by will or intestacy, and carries no conditions on ownership. Created by ''to A'' or ''to A and his heirs'' at common law.','Fee Simple Absolute — Characteristics',null, true),
   ('real-prop-001','ownership','medium','A conveyance ''to A, but if A ever uses the land for commercial purposes, then to B'' creates:',
@@ -1679,7 +1688,10 @@ VALUES
    'A','The equitable right of redemption (equity of redemption) allows a defaulting mortgagor to cure the default and redeem the property up until the foreclosure sale. Many states also provide a statutory right of redemption — a period after the foreclosure sale during which the mortgagor may redeem.','Equity of Redemption',null, true),
   ('real-prop-001','mortgages','hard','A deficiency judgment after a foreclosure sale is available when:',
    'The foreclosure sale proceeds exceed the mortgage debt.','The foreclosure sale proceeds are less than the outstanding debt, allowing the lender to sue the mortgagor personally for the difference.','The lender agrees to a deed in lieu of foreclosure.','The mortgagor files for bankruptcy after the foreclosure.',
-   'B','If the foreclosure sale does not generate enough to pay off the mortgage debt, the lender may pursue a deficiency judgment — a personal judgment against the mortgagor for the balance. Many states have anti-deficiency statutes that limit or prohibit deficiency judgments, particularly for purchase money mortgages.','Deficiency Judgment After Foreclosure',null, true);
+   'B','If the foreclosure sale does not generate enough to pay off the mortgage debt, the lender may pursue a deficiency judgment — a personal judgment against the mortgagor for the balance. Many states have anti-deficiency statutes that limit or prohibit deficiency judgments, particularly for purchase money mortgages.','Deficiency Judgment After Foreclosure',null, true)
+) AS v(subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM quiz_questions q
+                  WHERE q.subject_id = v.subject_id AND q.stem = v.stem);
 
 COMMIT;
 
@@ -1690,11 +1702,9 @@ COMMIT;
 BEGIN;
 
 INSERT INTO quiz_questions
-  (subject_id, category, difficulty, stem,
-   option_a, option_b, option_c, option_d,
-   correct_answer, explanation, rule_tested, case_citation, is_active)
-VALUES
-  ('torts-001','intentional_torts','easy','Battery requires:',
+  (subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+SELECT v.* FROM (VALUES
+('torts-001','intentional_torts','easy','Battery requires:',
    'An intent to cause harmful or offensive contact and actual physical harm.','An intent to cause harmful or offensive contact, which results in such contact.','Deliberate violence against another person.','Offensive words or threats causing apprehension.',
    'B','Battery: (1) intent to cause harmful or offensive contact, and (2) harmful or offensive contact results. Intent to make contact is required, not intent to harm. Contact with the person or something closely connected to the person (e.g., clothing, a cane) qualifies. Damages are presumed.','Battery — Elements',null, true),
   ('torts-001','intentional_torts','medium','Assault requires:',
@@ -1768,6 +1778,9 @@ VALUES
    'B','Compensatory damages aim to restore the plaintiff to the position they would have been in but for the tort. They include special (economic) damages — medical expenses, lost wages, property damage — and general (non-economic) damages — pain and suffering, emotional distress, loss of enjoyment of life.','Compensatory Damages — Goal',null, true),
   ('torts-001','damages_torts','hard','Punitive damages in tort cases are awarded when:',
    'The plaintiff suffers severe injuries.','The defendant''s conduct was intentional, malicious, fraudulent, or so reckless as to show conscious disregard for the rights of others.','Economic damages are very high.','The defendant is a large corporation.',
-   'B','Punitive damages are awarded in addition to compensatory damages to punish and deter egregious misconduct. They require a finding that the defendant acted with malice, fraud, oppression, or reckless disregard for others'' rights. Due process limits their amount relative to compensatory damages (BMW v. Gore).','Punitive Damages — Standard','BMW of North America v. Gore (1996)', true);
+   'B','Punitive damages are awarded in addition to compensatory damages to punish and deter egregious misconduct. They require a finding that the defendant acted with malice, fraud, oppression, or reckless disregard for others'' rights. Due process limits their amount relative to compensatory damages (BMW v. Gore).','Punitive Damages — Standard','BMW of North America v. Gore (1996)', true)
+) AS v(subject_id, category, difficulty, stem, option_a, option_b, option_c, option_d, correct_answer, explanation, rule_tested, case_citation, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM quiz_questions q
+                  WHERE q.subject_id = v.subject_id AND q.stem = v.stem);
 
 COMMIT;

@@ -1,3 +1,4 @@
+import { safeJson } from '../../utils/routeHelpers.js';
 /**
  * attorney/profile.js — Attorney profile and availability schedule
  */
@@ -7,7 +8,7 @@ import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger           from '../../utils/logger.js';
-import { sanitiseField, sanitiseProfileFields, STATE_BAR_LOOKUP } from './_helpers.js';
+import { sanitiseField, sanitiseProfileFields, STATE_BAR_LOOKUP, requireAttorney } from './_helpers.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 
 
@@ -20,7 +21,7 @@ const router = Router();
 // GET /api/attorney/profile
 router.get('/profile', authRequired, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db } = ctx;
     const user = ctx.user;
@@ -62,7 +63,7 @@ router.get('/profile', authRequired, async (req, res) => {
 // PATCH /api/attorney/profile
 router.patch('/profile', authRequired, routeLimiter, async (req, res) => {
   try {
-    const ctx = await req.user?.role !== 'attorney' ? res.status(403).json({ error: 'Attorney access required' }) : null;
+    const ctx = await requireAttorney(req, res);
     if (!ctx) return;
     const { db } = ctx;
     const { bar_number, is_defender } = req.body;

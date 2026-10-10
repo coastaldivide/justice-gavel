@@ -1,4 +1,5 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { safeJson } from '../../utils/routeHelpers.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * routes/webhooks/outbound.js — Outbound Webhook System
  *
@@ -35,7 +36,7 @@ import { validate, schemas } from '../validation/schemas.js';
  */
 
 import { Router }      from 'express';
-import { asyncRoute } from '../utils/routeHelpers.js';
+import { asyncRoute } from '../../utils/routeHelpers.js';
 import { createHmac, randomBytes } from 'crypto';
 import { getDb }       from '../../db/index.js';
 import { authRequired } from '../../middleware/auth.js';

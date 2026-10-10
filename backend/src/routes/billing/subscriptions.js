@@ -1,9 +1,9 @@
-import { validate, schemas } from '../validation/schemas.js';
+import { validate, schemas } from '../../validation/schemas.js';
 /**
  * billing/subscriptions.js — Attorney & general subscriptions — subscribe, view, cancel, refund
  * Part of the billing module. Mounted at /api/billing by billing/index.js
  */
-import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer, calcLeadFee }
+import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer }
   from './_shared.js';
 import { err400, BUSINESS_CONSTANTS, err401, err403, err404, err409,
          err422, err500, err502,
@@ -127,7 +127,7 @@ router.post('/cancel', billingLimiter, authRequired, async (req, res) => {
     }
 
     await db.run(
-      'UPDATE subscriptions SET status = ?, updated_at = datetime(\'now\') WHERE id = ?',
+      'UPDATE subscriptions SET status = ?, updated_at = NOW() WHERE id = ?',
       ['cancelled', sub.id]
     );
 
@@ -231,7 +231,8 @@ router.post('/refund', billingLimiter, authRequired, async (req, res) => {
 
           // Update refund log
           await db.run(
-            `UPDATE refund_requests SET status='refunded', stripe_refund_id=? WHERE user_id=? ORDER BY id DESC LIMIT 1`,
+            `UPDATE refund_requests SET status='refunded', stripe_refund_id=?
+              WHERE id = (SELECT id FROM refund_requests WHERE user_id=? ORDER BY id DESC LIMIT 1)`,
             [refund.id, req.user.id]
           ).catch(() => {});
 
@@ -243,8 +244,8 @@ router.post('/refund', billingLimiter, authRequired, async (req, res) => {
           );
 
           // Notify user
-          const { sendEmail } = await import('../services/sendgrid.js');
-          const { sendPushToUser } = await import('../services/pushDelivery.js');
+          const { sendEmail } = await import('../../services/email.js');
+          const { sendPushToUser } = await import('../../services/pushDelivery.js');
           const user = await db.get('SELECT email FROM users WHERE id=?', [req.user.id]);
     if (!user) return res.status(404).json({ error: 'User not found.' });
           const refundDollars = ((refund.amount || latestInvoice?.amount_paid || 0) / 100).toFixed(2);
@@ -292,7 +293,7 @@ router.post('/refund', billingLimiter, authRequired, async (req, res) => {
     }
 
     // Cases that require manual review (30+ days, prorated, or Stripe failure)
-    const { sendEmail } = await import('../services/sendgrid.js');
+    const { sendEmail } = await import('../../services/email.js');
     const user = await db.get('SELECT email FROM users WHERE id=?', [req.user.id]);
     await sendEmail({
       to:      process.env.ADMIN_EMAIL || 'admin@justicegavel.app',

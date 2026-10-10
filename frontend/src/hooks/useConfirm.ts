@@ -34,6 +34,15 @@ export function useConfirm() {
   const confirm = useCallback(
     (title: string, message?: string, opts: ConfirmOptions = {}): Promise<boolean> => {
       const { confirmLabel = 'OK', cancelLabel = 'Cancel', destructive = false } = opts;
+      // Alert.alert is a no-op on react-native-web, so the promise would never
+      // resolve. Use the browser's confirm dialog instead.
+      if (Platform.OS === 'web') {
+        const text = message ? `${title}\n\n${message}` : title;
+        const ok = typeof window !== 'undefined' && typeof window.confirm === 'function'
+          ? window.confirm(text)
+          : true;
+        return Promise.resolve(ok);
+      }
       return new Promise((resolve) => {
         Alert.alert(
           title,

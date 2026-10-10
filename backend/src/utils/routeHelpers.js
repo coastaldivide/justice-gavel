@@ -1,3 +1,4 @@
+import { ANTHROPIC_MESSAGES_URL } from './ai.js';
 /**
  * routeHelpers.js — safe route wrapper utilities
  *
@@ -82,7 +83,8 @@ export const err500 = (res, message = 'Server error. Please try again.') => res.
  * Safe JSON parse — never throws.
  */
 export function safeJson(str, fallback = null) {
-  if (!str) return fallback;
+  if (str === null || str === undefined || str === '') return fallback;
+  if (typeof str === 'object') return str;   // jsonb columns arrive already parsed
   try { return JSON.parse(str); } catch { return fallback; }
 }
 
@@ -150,8 +152,9 @@ export function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ''));
 }
 
-export function escapeLike(s) {
-  return String(s || '').replace(/[%_\\]/g, '\\$&');
+export function escapeLike(s, maxLen = 100) {
+  // Callers pass maxLen (search/resources/legaldata/courthouses use 100); it used to be ignored.
+  return String(s || '').slice(0, maxLen).replace(/[%_\\]/g, '\\$&');
 }
 
 export function parsePagination(query, defaults = { limit: 20, offset: 0 }) {
@@ -160,13 +163,14 @@ export function parsePagination(query, defaults = { limit: 20, offset: 0 }) {
   return { limit, offset };
 }
 
-export function buildWhere(conditions) {
-  const clauses = Object.entries(conditions)
-    .filter(([, v]) => v !== undefined && v !== null)
-    .map(([k]) => `${k} = ?`);
-  const values = Object.entries(conditions)
-    .filter(([, v]) => v !== undefined && v !== null)
-    .map(([, v]) => v);
+export function buildWhere(conditions, allowedCols = null) {
+  // Keys are interpolated into SQL, so only plain identifiers (and, when an
+  // allow-list is given, only listed columns) are accepted.
+  const entries = Object.entries(conditions || {})
+    .filter(([k, v]) => v !== undefined && v !== null && ADMIN_COL_PATTERN.test(k)
+      && (!allowedCols || allowedCols.has(k)));
+  const clauses = entries.map(([k]) => `${k} = ?`);
+  const values  = entries.map(([, v]) => v);
   return clauses.length
     ? { where: `WHERE ${clauses.join(' AND ')}`, values }
     : { where: '', values: [] };
@@ -194,15 +198,10 @@ export async function ownsResource(dbOrRow, tableOrUserId, id, userId, idCol = '
 }
 
 export async function withTransaction(db, fn) {
-  try {
-    await db.run('BEGIN');
-    const result = await fn();
-    await db.run('COMMIT');
-    return result;
-  } catch (err) {
-    await db.run('ROLLBACK').catch(() => {});
-    throw err;
-  }
+  // Runs fn on a single connection inside BEGIN/COMMIT. fn receives the
+  // transaction-scoped db handle (use it for every query in the transaction).
+  if (typeof db.transaction === 'function') return db.transaction(tx => fn(tx));
+  return fn(db);
 }
 
 // ── Business constants used across billing/route files ────────────────────────
@@ -231,6 +230,7 @@ export const LIMITS = {
 };
 
 export const API_URLS = {
+  ANTHROPIC:    ANTHROPIC_MESSAGES_URL,
   JUDYRECORDS:  'https://api.judyrecords.com/v1',
   GOOGLE_PLACES:'https://maps.googleapis.com/maps/api/place',
   CALENDLY:     'https://api.calendly.com/v2',

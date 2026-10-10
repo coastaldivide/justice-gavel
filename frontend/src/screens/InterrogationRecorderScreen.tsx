@@ -22,10 +22,10 @@ import {
 // Audio -- native only. Web uses MediaRecorder API (see handleWebRecord below)
 const Audio = Platform.OS === 'web' ? null : require('expo-av').Audio;
 import * as Location from 'expo-location';
-import { FileSystem, hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { FileSystem, hapticImpact, hapticNotification, hapticSelection, RNShare } from '../utils/webCompat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api} from '../services/api';
-import { useTheme } from '../constants/theme';
+import { api, API_BASE_URL } from '../services/api';
+import { useTheme, COLORS } from '../constants/theme';
 import { getToken } from '../utils/secureStorage';
 import { t } from '../i18n';
 
@@ -244,7 +244,7 @@ showToast('Allow microphone access in Settings.', 'warning');
       formData.append('dateTime', new Date().toLocaleString('en-US', { timeZoneName: 'short' }));
 
       const res = await fetch(
-        (process.env.EXPO_PUBLIC_API_BASE || (process.env.EXPO_PUBLIC_API_BASE || "https://api.justicegavel.app/api")) + '/interrogation/transcribe',
+        API_BASE_URL + '/interrogation/transcribe',
         {
           method: 'POST',
           headers: {
@@ -278,7 +278,7 @@ showToast('Allow microphone access in Settings.', 'warning');
       Platform.OS !== 'web' ? (await FileSystem.writeAsStringAsync(path, pdfBase64, {
         encoding: FileSystem.EncodingType.Base64,
       })) : null;
-      await Share.share({
+      await RNShare.share({
         url: path,
         title: 'Police Encounter Transcript',
         message: 'My police encounter transcript from Justice Gavel',
@@ -337,7 +337,7 @@ showToast('Allow microphone access in Settings.', 'warning');
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.emergencyBtn, { backgroundColor: colors.blue }]}
-          accessibilityLabel="\ud83d\udc99 CRISIS 988" onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
+          accessibilityLabel={"\ud83d\udc99 CRISIS 988"} onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
           <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>💙 CRISIS 988</Text>
         </TouchableOpacity>
@@ -347,7 +347,6 @@ showToast('Allow microphone access in Settings.', 'warning');
       {recordingLaw && (
         <View style={[styles.lawBox, {
           backgroundColor: recordingLaw.warn ? colors.warnBg : colors.legalBg,
-          // @ts-ignore
           borderLeftColor: recordingLaw.warn ? COLORS.steelMid : colors.legal,
         }]}>
           <Text maxFontSizeMultiplier={1.3} style={[styles.lawTitle,

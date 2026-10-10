@@ -1,0 +1,82 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "REPLACE_WITH_APPLE_TEAM_ID.app.justicegavel.mobile",
+        "paths": [
+          "/42",
+          "/7",
+          "/age-check",
+          "/arrest-monitor",
+          "/attorney-dashboard",
+          "/attorney-inbox",
+          "/attorney-privacy",
+          "/bail",
+          "/bail-agents",
+          "/bail-calculator",
+          "/bondsman-dashboard",
+          "/case/*",
+          "/cases",
+          "/chat",
+          "/checkin",
+          "/checkin/manage",
+          "/court-forms",
+          "/courts",
+          "/crisis",
+          "/deadlines",
+          "/discovery",
+          "/diversion",
+          "/drug-penalties",
+          "/dui-laws",
+          "/emergency",
+          "/emergency-share",
+          "/encounter-recorder",
+          "/expungement",
+          "/family",
+          "/firms",
+          "/golden-gavel",
+          "/help",
+          "/home",
+          "/interpreter",
+          "/invite/*",
+          "/join/*",
+          "/just-arrested",
+          "/lawyers",
+          "/learn",
+          "/legal-disclaimer",
+          "/login",
+          "/match",
+          "/motions",
+          "/offline",
+          "/payments",
+          "/plans",
+          "/privacy",
+          "/quick-connect",
+          "/referral/*",
+          "/register",
+          "/research",
+          "/reset-password/*",
+          "/resources",
+          "/rights",
+          "/saved/attorneys",
+          "/scan",
+          "/search",
+          "/settings",
+          "/specialty-courts",
+          "/subscribe",
+          "/terms",
+          "/verify/*",
+          "/voice-note",
+          "/welcome",
+          "/what-happens-next"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "REPLACE_WITH_APPLE_TEAM_ID.app.justicegavel.mobile"
+    ]
+  }
+}

@@ -30,17 +30,11 @@ import {
   StyleSheet, ActivityIndicator, Alert, RefreshControl,
   Switch, Platform, KeyboardAvoidingView, LayoutAnimation, InteractionManager} from 'react-native';
 import {  useTheme, RADIUS, FONT, TYPE, COLORS } from '../constants/theme';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 import type {} from '../types/navigation';
 import { t } from '../i18n';
+import { toLocalISODate } from '../utils/dateUtils';
 
-declare var graceUntil: any;
-declare var route: any;
-declare var setGraceUntil: any;
-declare var setRefreshing: any;
-declare var setSelectedVsetSelectedV: any;
-declare var setSubStatus: any;
-declare var subscriptionStatus: any;
 type Tab = 'setup' | 'pricing' | 'trackers' | 'deadlines';
 
 // ─── Vertical metadata ────────────────────────────────────────────────────────
@@ -114,8 +108,7 @@ const FEATURE_FLAGS: Record<string, { key: string; label: string; desc: string }
 const ISO_DATE_RE_FV = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const isValidDateFV  = (s: string) => ISO_DATE_RE_FV.test(s);
 
-function FirmVerticalScreen({ navigation }: any) {
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+function FirmVerticalScreen({ navigation, route }: any) {
 
   const { confirm } = useConfirm();
   const { impact, success, error: hapticError } = useHaptics();
@@ -136,24 +129,23 @@ function FirmVerticalScreen({ navigation }: any) {
 
   const mountedRef = useRef(true);
   useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); if (errorMsg) return (
-    <View style={{ flex:1, justifyContent:'center', alignItems:'center', padding:24 }}>
-      <Text style={{ color:'#c00', textAlign:'center', fontSize:15 }}>{errorMsg}</Text>
-    </View>
-  );
-  return () => { mountedRef.current = false; }; }, []);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    return () => { mountedRef.current = false; };
+  }, []);
   const [tab, setTab]               = useState<Tab>('setup');
   // Read initial tab from navigation params (e.g. FirmAcquisition sends { tab: 'pricing' })
   React.useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
     const initialTab = (route?.params as Record<string,string>)?.tab as Tab | undefined;
-    if (initialTab && ['setup','pricing','tracker','dpa','asylum'].includes(initialTab)) {
+    if (initialTab && (['setup','pricing','trackers','deadlines'] as Tab[]).includes(initialTab)) {
       setTab(initialTab);
     }
     });
     return () => _task.cancel();
-  }, []);
+  }, [route?.params]);
 
+  const [subscriptionStatus, setSubStatus] = useState<string>('active');
+  const [graceUntil, setGraceUntil]        = useState<string | null>(null);
 
   // Retry logic: exponential backoff on API failures
   const [retryCount, setRetryCount] = React.useState(0);
@@ -173,7 +165,6 @@ function FirmVerticalScreen({ navigation }: any) {
   // Pricing state
   const [tiers, setTiers]           = useState<any[]>([]);
   const [missionOrg, setMissionOrg] = useState('nonprofit');
-  const [errorMsg, setErrorMsg] = React.useState<string|null>(null);
   const [missionEIN, setMissionEIN] = useState('');
   const [missionWeb, setMissionWeb] = useState('');
   const [submittingMV, setSubMV]    = useState(false);
@@ -187,7 +178,7 @@ function FirmVerticalScreen({ navigation }: any) {
 
   // New asylum clock form
   const [acName, setACName]   = useState('');
-  const [acStart, setACStart] = useState(new Date().toISOString().slice(0, 10));
+  const [acStart, setACStart] = useState(toLocalISODate(new Date()));
   const [acRelief, setACRelief] = useState('asylum');
   const [acDetained, setACDet]  = useState(false);
   const [acCountry, setACCountry] = useState('');
@@ -214,7 +205,7 @@ function FirmVerticalScreen({ navigation }: any) {
 
   // Deadlines state
   const [deadlines, setDeadlines] = useState<any[]>([]);
-  const [trigDate, setTrigDate]   = useState(new Date().toISOString().slice(0, 10));
+  const [trigDate, setTrigDate]   = useState(toLocalISODate(new Date()));
   const [dlLoading, setDLLoading] = useState(false);
 
   // ── Load ───────────────────────────────────────────────────────────────────
@@ -250,7 +241,6 @@ function FirmVerticalScreen({ navigation }: any) {
         setTiers(pricingResult.value.data?.tiers || []);
       }
     } catch (e: any) {
-      setErrorMsg('Unable to load. Please check your connection and try again.');
       if (e?.response?.status !== 400) showToast('Could not load firm configuration.');
     } finally {
       setLoading(false);
@@ -265,7 +255,7 @@ function FirmVerticalScreen({ navigation }: any) {
 confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the tracker.`,
       { confirmLabel: 'Mark Resolved', destructive: true }).then(async ok => { if (!ok) return;
       try { await api.patch(`/firm-verticals/${type}/${id}/resolve`, {}); loadTrackers(); }
-         catch (e: any) { showToast(e?.response?.data?.error || 'Could not resolve.', 'error'); setRetryCount(0); }
+         catch (e: any) { showToast(apiErrorMessage(e, 'Could not resolve.'), 'error'); setRetryCount(0); }
     })
   };
 
@@ -334,7 +324,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       showToast('Mission pricing request received. Review takes 1–3 business days.');
       setMissionEIN(''); setMissionWeb('');
     } catch (e: any) {
-      showToast(e?.response?.data?.error || 'Could not submit request.', 'error'); setRetryCount(0);
+      showToast(apiErrorMessage(e, 'Could not submit request.'), 'error'); setRetryCount(0);
     } finally { setSubMV(false); }
   };
 
@@ -351,10 +341,10 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
         country_condition: acCountry || undefined,
         notes: acNotes.trim() || undefined,
       });
-      setACName(''); setACStart(new Date().toISOString().slice(0, 10));
+      setACName(''); setACStart(toLocalISODate(new Date()));
       setACDet(false); setACCountry(''); setACNotes('');
       loadTrackers();
-    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create clock.', 'error'); setRetryCount(0); }
+    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create clock.'), 'error'); setRetryCount(0); }
     finally { setCreatingAC(false); }
   };
 
@@ -381,7 +371,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       setDPAName(''); setDPAAgency(''); setDPACoop('unknown'); setDPAFineM('');
       setDPASignDue(''); setDPAWellsDue(''); setDPASubDue('');
       loadTrackers();
-    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create tracker.', 'error'); setRetryCount(0); }
+    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create tracker.'), 'error'); setRetryCount(0); }
     finally { setCreatingDPA(false); }
   };
 
@@ -396,7 +386,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
       });
       setTROName(''); setTRODV(false); setTROAsset('under_100k');
       loadTrackers();
-    } catch (e: any) { showToast(e?.response?.data?.error || 'Could not create TRO tracker.', 'error'); setRetryCount(0); }
+    } catch (e: any) { showToast(apiErrorMessage(e, 'Could not create TRO tracker.'), 'error'); setRetryCount(0); }
     finally { setCreatingTRO(false); }
   };
 
@@ -469,7 +459,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
         style={{ flex: 1 }}
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() =>
-      { setRefreshing(true); loadAll().catch(()=>{}).finally(() => setRefreshing(false)); }} />}
+      { setRefresh(true); loadAll().catch(()=>{}).finally(() => setRefresh(false)); }} />}
         keyboardShouldPersistTaps="handled"
       >
 
@@ -484,7 +474,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                 key={v.key}
                 style={[s.vertCard, selectedV === v.key && s.vertCardSelected]}
                 onPress={() => {
-                  setSelectedVsetSelectedV(v.key);
+                  setSelectedV(v.key);
                   // Preserve existing flag values; only initialise new flags to false
                   const f: Record<string, boolean> = {};
                   (FEATURE_FLAGS[v.key] || []).forEach(fl => {
@@ -514,7 +504,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
                       <Text maxFontSizeMultiplier={1.4} style={s.flagLabel}>{fl.label}</Text>
                       <Text maxFontSizeMultiplier={1.4} style={s.flagDesc}>{fl.desc}</Text>
                     </View>
-                    <Switch accessibilityLabel="{fl.label}"
+                    <Switch accessibilityLabel={fl.label}
                       value={!!features[fl.key]}
                       onValueChange={v => setFeatures(prev => ({ ...prev, [fl.key]: v }))}
                       trackColor={{ false: colors.borderSubtle, true: colors.gold }}
@@ -661,7 +651,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
         'withholding', 'CAT', 'adjustment', 'citizenship', 'humanitarian', 'TPS', 'SIJ',
       ].map(rt => (
                           <TouchableOpacity
-          accessibilityRole="button" key={rt} style={[s.segBtn, acRelief===rt && s.segBtnActive]} accessibilityLabel="{rt}" onPress={() => setACRelief(rt)}
+          accessibilityRole="button" key={rt} style={[s.segBtn, acRelief===rt && s.segBtnActive]} accessibilityLabel={rt} onPress={() => setACRelief(rt)}
                                   >
                             <Text maxFontSizeMultiplier={1.4} style={[s.segLabel, acRelief===rt && s.segLabelActive]}>{rt}</Text>
                           </TouchableOpacity>
@@ -695,7 +685,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
           )}
         />
                       <TouchableOpacity style={[s.addBtn, creatingAC && { opacity: 0.6 }]} onPress={createAC} disabled={creatingAC}
-            accessibilityRole="button" accessibilityLabel="{creatingAC ? 'Adding\u2026' : 'Add clock'}"><Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{creatingAC ? 'Adding…' : 'Add clock'}</Text></TouchableOpacity>
+            accessibilityRole="button" accessibilityLabel={creatingAC ? 'Adding\u2026' : 'Add clock'}><Text maxFontSizeMultiplier={1.4} style={s.addBtnText}>{creatingAC ? 'Adding…' : 'Add clock'}</Text></TouchableOpacity>
                     </View>
 
                     {asylumClocks.map((c: any) => {
@@ -1005,8 +995,7 @@ const styles = (c: any) => StyleSheet.create({
   segLabel:         { fontSize: TYPE.xs, color: c.textMuted, fontFamily: FONT.medium },
   segLabelActive:   { color: c.navy },
   missionBtn:       { backgroundColor: COLORS.legal, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center', marginTop: 14 },
-  // @ts-ignore
-  missionBtnText:   { fontSize: TYPE.base, fontFamily: FONT.bold, color: colors.bg },
+  missionBtnText:   { fontSize: TYPE.base, fontFamily: FONT.bold, color: c.bg },
   // Sub tabs
   subTabRow:        { flexDirection: 'row', backgroundColor: c.bgElevated, borderRadius: RADIUS.md, padding: 4, marginBottom: 16 },
   subTab:           { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: RADIUS.md },

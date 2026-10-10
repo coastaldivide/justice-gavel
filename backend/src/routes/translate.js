@@ -1,3 +1,5 @@
+import { requireAi } from '../utils/ai.js';
+import { CLAUDE_MODEL } from '../utils/ai.js';
 import { validate, schemas } from '../validation/schemas.js';
 import { translateLimiter } from '../utils/rateLimiters.js';
 // AI route — general guidance only, not legal advice
@@ -75,7 +77,7 @@ async function translate(text, srcLang, tgtLang) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-20250514',
+      model:      CLAUDE_MODEL,
       temperature: 0.1,
       max_tokens: 500,
       messages: [{
@@ -98,10 +100,10 @@ ${text}`,
 // ── POST /api/translate/message — standalone translation ─────────────────────
 // ── API key guard — fail fast with clear error rather than cryptic undefined ─
 if (!(process.env.ANTHROPIC_API_KEY ?? '')) {
-  logger.error('[translate.js] ANTHROPIC_API_KEY not set — all AI routes will fail');
+  logger.debug('[translate.js] ANTHROPIC_API_KEY not set — AI translation disabled');
 }
 
-router.post('/message', authRequired, perUserAiLimit, async (req, res) => {
+router.post('/message', authRequired, requireAi, perUserAiLimit, async (req, res) => {
   try {
 
     // Verify caller has an active subscription or is using defender mode
