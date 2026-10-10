@@ -31,14 +31,14 @@ function walk(dir, out = []) {
 const BAILS = [undefined, null, 0, -5, 1, 999, 4999, 5000, 24999, 25000, 99999, 100000, 250000, 1e7, NaN, Infinity];
 
 describe('lead fee source of truth', () => {
-  it('is a flat $75 regardless of the bail amount', () => {
-    expect(BONDSMAN_LEAD_FEE_CENTS).toBe(7500);
+  it('is a flat $100 regardless of the bail amount', () => {
+    expect(BONDSMAN_LEAD_FEE_CENTS).toBe(10000);
     for (const bail of BAILS) {
-      expect(bondsmanLeadFeeCents(bail)).toBe(7500);
-      expect(bondsmanLeadFeeCents({ bail_amount: bail })).toBe(7500);
+      expect(bondsmanLeadFeeCents(bail)).toBe(10000);
+      expect(bondsmanLeadFeeCents({ bail_amount: bail })).toBe(10000);
     }
-    expect(formatLeadFee()).toBe('$75');
-    expect(bondsmanLeadFeeInfo()).toMatchObject({ cents: 7500, display: '$75', model: 'flat' });
+    expect(formatLeadFee()).toBe('$100');
+    expect(bondsmanLeadFeeInfo()).toMatchObject({ cents: 10000, display: '$100', model: 'flat' });
   });
 
   it('billing/_shared re-exports the same values', async () => {
@@ -59,7 +59,7 @@ describe('every fee quote uses it', () => {
     const { buildBondsmanSms } = await import('../services/outbound_bot.js');
     for (const bail of [500, 30000, 750000]) {
       const sms = buildBondsmanSms({ bail_amount: bail, county: 'Davidson', state: 'TN', charges: 'DUI' });
-      expect(sms).toContain('for $75.');
+      expect(sms).toContain('for $100.');
     }
   });
 
@@ -101,7 +101,35 @@ describe('every fee quote uses it', () => {
       const text = read(doc);
       expect(text).not.toMatch(/\$15\s*[–-]\s*\$(1,000|400|250)/);
       expect(text).not.toMatch(/per[- ]lead[^\n]*by bail amount/i);
-      expect(text).toMatch(/flat \$75/);
+      expect(text).toMatch(/flat \$100/);
     }
+  });
+});
+
+// ── Attorney personal-injury lead fee: flat $200, one source of truth ────────
+import { PI_LEAD_FEE_CENTS, attorneyLeadFeeCents } from '../routes/billing/attorneyLeadFee.js';
+
+describe('personal-injury attorney lead fee', () => {
+  it('is a flat $200 for every severity', () => {
+    expect(PI_LEAD_FEE_CENTS).toBe(20000);
+    for (const sv of ['minor', 'moderate', 'serious', 'catastrophic', undefined]) {
+      expect(attorneyLeadFeeCents('Personal Injury', sv)).toBe(20000);
+      expect(attorneyLeadFeeCents('personal_injury', sv)).toBe(20000);
+    }
+  });
+
+  it('the app display constant matches the backend', () => {
+    const ts = read('frontend/src/constants/leadFee.ts');
+    const m = /PI_LEAD_FEE_CENTS\s*=\s*(\d+)/.exec(ts);
+    expect(m && Number(m[1])).toBe(PI_LEAD_FEE_CENTS);
+  });
+
+  it('both lead routes use the shared fee function and no severity tiers remain', () => {
+    for (const f of ['backend/src/routes/pi_leads.js', 'backend/src/routes/billing/pi_leads.js']) {
+      const src = read(f);
+      expect(src).toContain('attorneyLeadFeeCents');
+      expect(src).not.toMatch(/\b(4999|14999|29999|49999)\b/);
+    }
+    expect(read('frontend/src/screens/PILeadScreen.tsx')).not.toMatch(/\$(49|149|299|499)\.99/);
   });
 });

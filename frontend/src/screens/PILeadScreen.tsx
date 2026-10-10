@@ -1,15 +1,11 @@
-import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
-import { SkeletonLoader } from '../components/SkeletonLoader';
-import { HapticButton } from '../components/HapticButton';
-import { GradientHeader } from '../components/GradientHeader';
 import { AppIcon } from '../components/AppIcon';
 /**
  * PILeadScreen -- Personal Injury & Civil Rights Lead Submission
  *
  * Lets a user describe their injury or rights violation.
  * Submitted lead goes to the PI attorney lead marketplace.
- * Attorneys pay a connection fee based on case value. You pay nothing..
+ * Attorneys pay a flat connection fee (the same for every case). You pay nothing.
  *
  * Entry points:
  *   1. LawyersScreen Need modal → "I Was Injured" or "Rights Violated"
@@ -22,10 +18,10 @@ import React, { useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, RefreshControl, LayoutAnimation} from 'react-native';
 import { api, apiErrorMessage } from '../services/api';
+import { PI_LEAD_FEE_DISPLAY } from '../constants/leadFee';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
-import { hapticImpact, hapticNotification, hapticSelection } from '../utils/webCompat';
+import { hapticImpact } from '../utils/webCompat';
 import { useAuthGate } from '../components/AuthGate';
-import { t } from '../i18n';
 
 type Step = 'type' | 'severity' | 'details' | 'submitted';
 
@@ -41,14 +37,13 @@ const CASE_TYPES = [
 ];
 
 const SEVERITIES = [
-  { key: 'minor',        label: 'Minor',        sub: 'Small injury, recovered quickly',    color: COLORS.legalDark, bg: COLORS.legalBg,  fee: '$49.99' },
-  { key: 'moderate',     label: 'Moderate',     sub: 'Medical treatment needed',           color: COLORS.warnDark, bg: COLORS.warnBg,  fee: '$149.99' },
-  { key: 'serious',      label: 'Serious',      sub: 'Hospitalized or lasting impact',     color: COLORS.blue, bg: COLORS.bgSubtle,  fee: '$299.99' },
-  { key: 'catastrophic', label: 'Catastrophic', sub: 'Permanent disability or death',      color: COLORS.emergencyDark, bg: COLORS.emergencyBg,  fee: '$499.99' },
+  { key: 'minor',        label: 'Minor',        sub: 'Small injury, recovered quickly',    color: COLORS.legalDark, bg: COLORS.legalBg },
+  { key: 'moderate',     label: 'Moderate',     sub: 'Medical treatment needed',           color: COLORS.warnDark, bg: COLORS.warnBg },
+  { key: 'serious',      label: 'Serious',      sub: 'Hospitalized or lasting impact',     color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'catastrophic', label: 'Catastrophic', sub: 'Permanent disability or death',      color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
 ];
 
 function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
-  const { impact, success, error: hapticError } = useHaptics();
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
@@ -196,13 +191,10 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
                   <Text maxFontSizeMultiplier={1.4} style={[styles.sevLabel, { color: s.color }]}>{s.label}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.sevSub, { color: colors.textSecond }]}>{s.sub}</Text>
                 </View>
-                <View style={[styles.feePill, { backgroundColor: s.color }]}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.feePillText}>{s.fee} attorney fee</Text>
-                </View>
               </TouchableOpacity>
             ))}
             <Text maxFontSizeMultiplier={1.4} style={[styles.feeNote, { color: colors.textMuted }]}>
-              The fee is paid by the attorney who takes your case -- not by you.
+              Attorneys pay a flat {PI_LEAD_FEE_DISPLAY} connection fee, whatever the severity -- you pay nothing.
             </Text>
           </>
         )}
@@ -313,8 +305,6 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   sevLabel:  { fontSize: 16, lineHeight: 24, ...FONTS.black, marginBottom: 2 },
   sevSub:    { fontSize: 12 },
-  feePill:   { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, marginLeft: 8 },
-  feePillText:{ color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   feeNote:   { fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 16 },
 
   // Details step

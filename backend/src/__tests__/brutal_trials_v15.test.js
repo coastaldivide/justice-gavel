@@ -604,7 +604,7 @@ describe('16. outbound_bot.js — Automated Revenue Engine', () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/outbound_bot.js', 'utf8');
     expect(src).toContain('$30k bail');
-    expect(src).toContain('$75');
+    expect(src).toContain('$100');
   });
 
   test('16-03: TCPA quiet hours — no sends between 9pm–8am', async () => {

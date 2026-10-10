@@ -1,7 +1,7 @@
 # Justice Gavel — Bondsman Outreach Package
 **Goal:** 10 paying bondsmen → Marcus Okafor VC condition  
 **Target market:** Tennessee (local first, then TX, FL, GA)  
-**Monthly fee:** $49/month Verified Badge + flat $75 per accepted lead (same fee whatever the bail amount)
+**Monthly fee:** $49/month Verified Badge + flat $100 per accepted lead (same fee whatever the bail amount)
 
 ---
 
@@ -58,7 +58,7 @@ Confirm numbers via Google before calling.
 >
 > [Let them answer]
 >
-> Got it. We built a feature that connects people who've just been arrested directly with local bondsmen. When someone in [City] gets booked, they open our app, see their bail amount, and can request a bondsman immediately. You'd get their name, bail amount, charges, and jail location — for about $75 a case.
+> Got it. We built a feature that connects people who've just been arrested directly with local bondsmen. When someone in [City] gets booked, they open our app, see their bail amount, and can request a bondsman immediately. You'd get their name, bail amount, charges, and jail location — for $100 a case.
 >
 > We're launching the Tennessee market right now and we're only onboarding 20 bondsmen statewide — we want the ones who actually answer the phone at 2am.
 >
@@ -105,7 +105,7 @@ Here's the short version:
 
 **What happens:** Someone gets arrested in [County] County. Before they make a single phone call, they open our app, see their bail amount, and request a bondsman. You get a notification with their name, bail amount, charges, and jail.
 
-**What it costs:** $49/month Verified Badge (top of search results for your counties) + a flat $75 per lead you accept, whatever the bail amount. You only pay for the ones you want.
+**What it costs:** $49/month Verified Badge (top of search results for your counties) + a flat $100 per lead you accept, whatever the bail amount. You only pay for the ones you want.
 
 **Why now:** We're onboarding the first 20 bondsmen in Tennessee. The first bondsman in each county gets preferred placement until we reach capacity.
 
@@ -160,11 +160,11 @@ Use this to track your 10:
 | Active paid bondsmen | 10 | 50 |
 | Monthly badge revenue | $490 | $2,450 |
 | Leads accepted/bondsman/month | 2 | 5 |
-| Lead fee (flat) | $75 | $75 |
-| Lead revenue/month | $1,500 | $18,750 |
-| **Total MRR** | **$1,990** | **$21,200** |
+| Lead fee (flat) | $100 | $100 |
+| Lead revenue/month | $2,000 | $25,000 |
+| **Total MRR** | **$2,490** | **$27,450** |
 
-At 50 bondsmen statewide: **~$254K/year run rate**, before expanding to TX, FL, GA.
+At 50 bondsmen statewide: **~$329K/year run rate**, before expanding to TX, FL, GA.
 
 ---
 

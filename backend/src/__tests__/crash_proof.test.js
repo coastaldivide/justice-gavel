@@ -20,7 +20,7 @@
  */
 
 import { classifyCharge, getEligibility, STATE_RULES } from '../routes/expungement/rules.js';
-// calcLeadFee was intentionally removed (flat $75 lead fee in billing/bondsman.js)
+// calcLeadFee was intentionally removed (flat $100 lead fee in billing/bondsman.js)
 
 const BAD_INPUTS   = [null, undefined, '', '   ', 0, -1, false, true, {}, [], NaN, Infinity, 9999999];
 const STATES       = [...Object.keys(STATE_RULES), 'XX', '', null, undefined];

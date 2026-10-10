@@ -9,14 +9,15 @@
  *   GET  /api/pi-leads/profile         — attorney gets their profile
  *
  * Lead fee schedule:
- *   Personal Injury — by severity:
- *     flat fee: $75 per lead — no severity tiering (Rule 5.4/7.2 compliance)
- *   Civil Rights  — flat $200 (wrongful arrest is high-value case)
+ *   Personal Injury (incl. medical malpractice):
+ *     flat fee: $200 per lead — no severity tiering (Rule 5.4/7.2 compliance)
+ *   Civil Rights  — flat $200
  *   Employment    — $100 flat
  *   ICE Detention — $75 flat (time-critical, lower case value)
  */
 import { err400, truncateStr, err401, err403, err404, err409, err422, err500, err502, safeInt, sanitizeStr, validateEmail, normalizeEmail, ownsResource, buildWhere } from '../utils/routeHelpers.js';
 import { Router } from 'express';
+import { attorneyLeadFeeCents } from './billing/attorneyLeadFee.js';
 import { getDb }       from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
 
@@ -40,24 +41,8 @@ const router = Router();
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
 
 // ── Lead fee schedule ─────────────────────────────────────────────────────────
-function calcCivilLeadFee(leadType, severity = 'moderate') {
-  if (leadType === 'personal_injury') {
-    // ── FLAT FEE — severity tiering removed ────────────────────────────────────
-  // Value-scaled fees (minor→catastrophic) move from advertising cost to
-  // compensation tied to expected attorney fee — implicating Rule 5.4(a)
-  // (fee-splitting with non-lawyer) and Rule 7.2(b) (paying for recommendation).
-  // ABA Formal Opinion 501 (2022): flat per-lead is generally permissible;
-  // scaled-to-matter-value is the prohibited fact pattern.
-  //
-  // PI platform lead fee: $75 flat per revealed contact
-  // Attorneys choose which leads to purchase; we do not rank by injury severity.
-  return 7500; // $75.00 flat fee regardless of severity
-  }
-  if (leadType === 'civil_rights')  return 20000;  // $200
-  if (leadType === 'employment')    return 10000;  // $100
-  if (leadType === 'ice_detention') return  7500;  // $75
-  return 10000;
-}
+// Flat fee per lead type — single source of truth in billing/attorneyLeadFee.js.
+const calcCivilLeadFee = (leadType, severity) => attorneyLeadFeeCents(leadType, severity);
 
 function feeLabel(cents) {
   return `$${(cents / 100).toFixed(0)}`;

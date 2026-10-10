@@ -305,7 +305,7 @@ router.post('/bondsman/verified-badge/cancel', billingLimiter, authRequired, asy
 
 // ════════════════════════════════════════════════════════════════════════
 // PI / CIVIL RIGHTS ATTORNEY LEAD MARKETPLACE
-// Flat $75 per lead — no severity or bail-amount tiering.
+// Flat $100 per lead — no severity or bail-amount tiering.
 // Per-lead fees scaled to case value implicate Rule 5.4(a) / 7.2(b).
 // See: backend/src/routes/pi_leads.js for the lead fee logic.
 // ════════════════════════════════════════════════════════════════════════

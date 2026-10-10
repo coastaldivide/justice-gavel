@@ -9,7 +9,7 @@
  * drifts from the backend value.
  */
 
-export const BONDSMAN_LEAD_FEE_CENTS = 7500;
+export const BONDSMAN_LEAD_FEE_CENTS = 10000;
 
 export const BONDSMAN_LEAD_FEE_DISPLAY = `$${(BONDSMAN_LEAD_FEE_CENTS / 100).toFixed(0)}`;
 
@@ -21,3 +21,12 @@ export function leadFeeLabel(lead?: { lead_fee_display?: string | null; lead_fee
   }
   return BONDSMAN_LEAD_FEE_DISPLAY;
 }
+
+/**
+ * Attorney lead fee for personal-injury leads — FLAT, never scaled by injury
+ * severity. Source of truth: backend/src/routes/billing/attorneyLeadFee.js
+ * (PI_LEAD_FEE_CENTS); lead_fee_consistency.test.js fails if they drift.
+ */
+export const PI_LEAD_FEE_CENTS = 20000;
+
+export const PI_LEAD_FEE_DISPLAY = `$${(PI_LEAD_FEE_CENTS / 100).toFixed(0)}`;

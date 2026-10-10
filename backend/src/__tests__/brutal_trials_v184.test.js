@@ -130,7 +130,7 @@ describe('BOT. Outbound Lead Bot', () => {
     expect(src).not.toContain('calcLeadFee');
     expect(src).toContain('bondsmanLeadFeeCents');
     const { bondsmanLeadFeeCents } = await import('../routes/billing/leadFee.js');
-    for (const bail of [0, -1, null, undefined, NaN, 1e6]) expect(bondsmanLeadFeeCents(bail)).toBe(7500);
+    for (const bail of [0, -1, null, undefined, NaN, 1e6]) expect(bondsmanLeadFeeCents(bail)).toBe(10000);
   });
 });
 

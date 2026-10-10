@@ -10,20 +10,15 @@ import { err400, BUSINESS_CONSTANTS, err401, err403, err404, err409,
          err422, err500, err502,
          safeInt, safeFloat, sanitizeStr, validateEmail } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
+import { attorneyLeadFeeCents } from './attorneyLeadFee.js';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger             from '../../utils/logger.js';
 
 const router = Router();
 
-function piLeadFee(caseType, severity) {
-  if (caseType === 'Civil Rights') return 9999; // $100
-  if (!severity) return 5000;
-  if (severity === 'minor')   return 4999;   // $50
-  if (severity === 'moderate')return 14999;  // $150
-  if (severity === 'serious') return 29999;  // $300
-  return 49999;                               // $499.99 catastrophic
-}
+// Flat fee per lead type — see billing/attorneyLeadFee.js (no severity tiering).
+const piLeadFee = (caseType, severity) => attorneyLeadFeeCents(caseType, severity);
 
 // ── Submit a PI/Civil Rights lead (from user who tapped "I Was Injured" or civil rights) ──
 router.post('/pi-lead/submit', billingLimiter, authRequired, async (req, res) => {

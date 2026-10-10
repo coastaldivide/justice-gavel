@@ -188,8 +188,8 @@ describePg('sample arrests on Postgres (real routes)', () => {
       const r = await get('/api/billing/leads?county=Zedcounty&state=TN&hours=48&limit=50');
       expect(r.status).toBe(200);
       expect(r.body.leads.map(x => Number(x.id))).toEqual([ids.real]);
-      expect(r.body.leads[0].lead_fee_cents).toBe(7500);
-      expect(r.body.leads[0].lead_fee_display).toBe('$75');
+      expect(r.body.leads[0].lead_fee_cents).toBe(10000);
+      expect(r.body.leads[0].lead_fee_display).toBe('$100');
       expect(r.body.lead_fee).toMatchObject({ cents: 7500, model: 'flat' });
     });
   });

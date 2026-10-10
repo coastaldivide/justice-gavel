@@ -17,8 +17,8 @@
  * without pulling in the billing routers.
  */
 
-/** Flat bondsman lead fee in cents ($75.00). */
-export const BONDSMAN_LEAD_FEE_CENTS = 7500;
+/** Flat bondsman lead fee in cents ($100.00). */
+export const BONDSMAN_LEAD_FEE_CENTS = 10000;
 
 /**
  * Lead fee for an arrest record. Accepts (and ignores) the arrest/bail amount
@@ -29,7 +29,7 @@ export function bondsmanLeadFeeCents(_arrestOrBail) {
   return BONDSMAN_LEAD_FEE_CENTS;
 }
 
-/** "$75" — display string for a fee in cents (defaults to the flat lead fee). */
+/** "$100" — display string for a fee in cents (defaults to the flat lead fee). */
 export function formatLeadFee(cents = BONDSMAN_LEAD_FEE_CENTS) {
   return `$${(cents / 100).toFixed(0)}`;
 }

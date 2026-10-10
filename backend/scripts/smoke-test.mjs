@@ -244,7 +244,7 @@ async function main() {
   await check('bondsman pricing quotes the flat lead fee', async () => {
     const r = await call('GET', '/api/billing/bondsman/tiers');
     assert(r.status === 200, `tiers failed: ${brief(r)}`);
-    assert(r.json?.lead_fee?.cents === 7500 && r.json.lead_fee.model === 'flat', `unexpected lead_fee: ${brief(r)}`);
+    assert(r.json?.lead_fee?.cents === 10000 && r.json.lead_fee.model === 'flat', `unexpected lead_fee: ${brief(r)}`);
     return r.json.lead_fee.display;
   });
 

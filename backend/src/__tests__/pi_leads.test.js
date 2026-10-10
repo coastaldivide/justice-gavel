@@ -2,7 +2,7 @@
  * pi_leads.test.js — PI / Civil Rights lead marketplace
  *
  * Tests:
- *   piLeadFee() — fee tier calculation (4 tiers: minor/moderate/serious/catastrophic)
+ *   piLeadFee() — flat fee per lead type (severity never changes the price)
  *   POST /pi-lead/submit — auth enforcement, required field validation,
  *                          lead creation, correct fee assignment
  *   GET  /pi-leads — listing with city/state/case_type filters
@@ -20,15 +20,8 @@ const SECRET = process.env.JWT_SECRET;
 const tok = (id = 1, role = 'user') => jwt.sign({ id, role }, SECRET, { expiresIn: '1h' });
 const exp = () => jwt.sign({ id: 1 }, SECRET, { expiresIn: '-1s' });
 
-// ── Pure function under test — mirrors billing/pi_leads.js piLeadFee() ──────
-function piLeadFee(caseType, severity) {
-  if (caseType === 'Civil Rights') return 9999;
-  if (!severity) return 5000;
-  if (severity === 'minor')        return 4999;
-  if (severity === 'moderate')     return 14999;
-  if (severity === 'serious')      return 29999;
-  return 49999; // catastrophic
-}
+// ── Real fee function (single source of truth) ───────────────────────────────
+import { attorneyLeadFeeCents as piLeadFee, PI_LEAD_FEE_CENTS } from '../routes/billing/attorneyLeadFee.js';
 
 async function buildSchema(db) {
   await db.exec(`
@@ -121,47 +114,28 @@ function buildApp(db) {
 // ══════════════════════════════════════════════════════════════════════════════
 // piLeadFee() — pure function, no DB
 // ══════════════════════════════════════════════════════════════════════════════
-describe('piLeadFee() — fee tier calculation', () => {
-  test('Civil Rights always returns 9999 regardless of severity', () => {
-    expect(piLeadFee('Civil Rights', 'minor')).toBe(9999);
-    expect(piLeadFee('Civil Rights', 'catastrophic')).toBe(9999);
-    expect(piLeadFee('Civil Rights', undefined)).toBe(9999);
+describe('piLeadFee() — flat fee per lead type', () => {
+  test('personal injury is a flat $200 for every severity', () => {
+    expect(PI_LEAD_FEE_CENTS).toBe(20000);
+    for (const sv of ['minor', 'moderate', 'serious', 'catastrophic', null, undefined]) {
+      expect(piLeadFee('Personal Injury', sv)).toBe(20000);
+    }
   });
 
-  test('minor severity → 4999', () => {
-    expect(piLeadFee('Personal Injury', 'minor')).toBe(4999);
+  test('medical malpractice uses the personal-injury fee', () => {
+    expect(piLeadFee('Medical', 'catastrophic')).toBe(20000);
   });
 
-  test('moderate severity → 14999', () => {
-    expect(piLeadFee('Personal Injury', 'moderate')).toBe(14999);
+  test('other lead types are flat and ignore severity', () => {
+    expect(piLeadFee('Civil Rights', 'minor')).toBe(20000);
+    expect(piLeadFee('Civil Rights', 'catastrophic')).toBe(20000);
+    expect(piLeadFee('Employment', 'serious')).toBe(10000);
+    expect(piLeadFee('employment', 'minor')).toBe(10000);
+    expect(piLeadFee('ice_detention', 'serious')).toBe(7500);
   });
 
-  test('serious severity → 29999', () => {
-    expect(piLeadFee('Employment', 'serious')).toBe(29999);
-  });
-
-  test('catastrophic severity → 49999', () => {
-    expect(piLeadFee('Personal Injury', 'catastrophic')).toBe(49999);
-  });
-
-  test('null/undefined severity → 5000 (default)', () => {
-    expect(piLeadFee('Personal Injury', null)).toBe(5000);
-    expect(piLeadFee('Employment', undefined)).toBe(5000);
-  });
-
-  test('all fee values are positive integers', () => {
-    const cases = [
-      ['Civil Rights', 'minor'],
-      ['Personal Injury', 'minor'],
-      ['Personal Injury', 'moderate'],
-      ['Personal Injury', 'serious'],
-      ['Personal Injury', 'catastrophic'],
-    ];
-    cases.forEach(([ct, sv]) => {
-      const fee = piLeadFee(ct, sv);
-      expect(Number.isInteger(fee)).toBe(true);
-      expect(fee).toBeGreaterThan(0);
-    });
+  test('unknown type falls back to the personal-injury fee', () => {
+    expect(piLeadFee('Something Else', 'minor')).toBe(20000);
   });
 });
 
@@ -214,22 +188,22 @@ describe('POST /billing/pi-lead/submit', () => {
     expect(r.body.lead).toHaveProperty('id');
   });
 
-  test('lead gets correct fee for moderate severity', async () => {
+  test('personal injury lead gets the flat $200 fee (moderate)', async () => {
     const r = await request(app)
       .post('/billing/pi-lead/submit')
       .set('Authorization', `Bearer ${tok()}`)
       .send({ case_type: 'Personal Injury', description: 'Car accident', severity: 'moderate' });
     expect(r.status).toBe(201);
-    expect(r.body.lead.lead_fee_cents).toBe(14999);
+    expect(r.body.lead.lead_fee_cents).toBe(20000);
   });
 
-  test('Civil Rights lead gets fixed 9999 fee', async () => {
+  test('Civil Rights lead gets the flat $200 fee', async () => {
     const r = await request(app)
       .post('/billing/pi-lead/submit')
       .set('Authorization', `Bearer ${tok()}`)
       .send({ case_type: 'Civil Rights', description: 'Police brutality', severity: 'serious' });
     expect(r.status).toBe(201);
-    expect(r.body.lead.lead_fee_cents).toBe(9999);
+    expect(r.body.lead.lead_fee_cents).toBe(20000);
   });
 
   test('lead status defaults to open', async () => {

@@ -6,7 +6,7 @@ import logger from '../utils/logger.js';
  *
  *  1. Checks opt-out list before any send
  *  2. Finds matching bondsmen in the arrest county
- *  3. Sends SMS lead offer: "New booking — $30k bail — reply YES for $75"
+ *  3. Sends SMS lead offer: "New booking — $30k bail — reply YES for $100"
  *     (flat lead fee from routes/billing/leadFee.js — never scaled to bail)
  *  4. Finds matching attorneys in the county
  *  5. Sends email lead offer with county arrest summary

@@ -213,11 +213,11 @@ describe('5. outbound_bot.js — Lead + Payment Link', () => {
     expect(makeKey('sms_lead', 42, 9981)).toBe('sms_lead:42:9981');
     expect(makeKey('email', 1, 5).split(':').length).toBe(3);
   });
-  test('5-05: SMS references $30k bail + $75 offer', async () => {
+  test('5-05: SMS references $30k bail + $100 offer', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/outbound_bot.js', 'utf8');
     expect(src).toContain('$30k bail');
-    expect(src).toContain('$75');
+    expect(src).toContain('$100');
   });
 });
 
