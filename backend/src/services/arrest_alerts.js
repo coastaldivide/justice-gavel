@@ -15,6 +15,7 @@ import logger from '../utils/logger.js';
  */
 
 import { getDb } from '../db/index.js';
+import { realArrestSql } from '../utils/arrestVisibility.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -137,6 +138,7 @@ export async function sendArrestAlerts(options = {}) {
     `SELECT id, name, booking_date, charges, bail_amount, county, state, jail_location, has_attorney, alert_sent
      FROM arrest_records
      WHERE alert_sent = 0
+       AND ${realArrestSql()}   -- never alert on sample/seed or taken-down rows
        AND created_at >= (NOW() - INTERVAL '24 hours')
      ORDER BY booking_date DESC
      LIMIT 1000`

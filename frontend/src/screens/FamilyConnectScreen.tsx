@@ -1,4 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
+import { SampleRecordBadge } from '../components/SampleRecordBadge';
 import { useHaptics } from '../hooks/useHaptics';
 import { useToast } from '../components/ToastProvider';
 import { HapticButton } from '../components/HapticButton';
@@ -133,6 +134,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   const [searchName, setSearchName] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState(false);   // a search has completed (drives the empty state)
   const [selectedArrest, setSelectedArrest] = useState<any>(null);
 
   // Step 2: family info
@@ -165,14 +167,15 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           const res = await api.get('/arrests/search', {
         params: { name: searchName.trim(), limit: 10 }
       });
-      setSearchResults(res.data?.records || []);
-      if ((res.data?.records || []).length === 0) {
-        showToast('We don\'t have a record matching that name yet. You can still connect with attorneys and bail agents by continuing without an arrest record.');
-      }
+      const records: any[] = Array.isArray(res.data?.records) ? res.data?.records : [];
+      setSearchResults(records);
+      setSearched(true);
     } catch (e: any) {
+      setSearchResults([]);
       showToast('Could not search right now. Check your connection and try again.');
     } finally {
       setSearching(false);
+      setLoading(false);
     }
   };
 
@@ -277,6 +280,7 @@ if (submitting) return;
                   activeOpacity={0.8}
                 >
                   <View style={{ flex: 1 }}>
+                    <SampleRecordBadge row={r} />
                     <Text maxFontSizeMultiplier={1.4} style={styles.arrestResultName}>{r.name}</Text>
                     <Text maxFontSizeMultiplier={1.4} style={styles.arrestResultDetail}>
                       {r.county ? `${r.county} County` : ''}{r.state ? `, ${r.state}` : ''}{r.booking_date ? `  ·  ${new Date(r.booking_date).toLocaleDateString()}` : ''}
@@ -297,6 +301,14 @@ if (submitting) return;
               ))}
             </View>
           )}
+          {searched && !searching && searchResults.length === 0 && (
+            <View testID="arrest-search-empty" style={styles.emptyResults}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyResultsTitle}>No matching record found</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyResultsText}>
+                That's okay -- you can still connect with attorneys and bail agents. Continue without an arrest record below.
+              </Text>
+            </View>
+          )}
           <TouchableOpacity accessibilityRole="button" style={styles.skipBtn} onPress={skipToStep2}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.skipBtnText}>
@@ -311,6 +323,7 @@ if (submitting) return;
         <View style={styles.section}>
           {selectedArrest && (
             <View style={styles.arrestSummary}>
+              <SampleRecordBadge row={selectedArrest} />
               <Text maxFontSizeMultiplier={1.4} style={styles.arrestSummaryTitle}>For: {selectedArrest.name}</Text>
               {selectedArrest.county && (
                 <Text maxFontSizeMultiplier={1.4} style={styles.arrestSummaryDetail}>
@@ -543,6 +556,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
   skipBtn: { paddingVertical: 12, alignItems: 'center', marginTop: 8 },
   skipBtnText: { fontSize: 12, lineHeight: 20, color: colors.blue, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 
+  emptyResults: { backgroundColor: COLORS.bgSubtle, borderRadius: 12, padding: 16, marginBottom: 8 },
+  emptyResultsTitle: { fontSize: 14, fontWeight: '700', color: COLORS.navy, marginBottom: 4 },
+  emptyResultsText: { fontSize: 12, lineHeight: 18, color: colors.steel },
   arrestSummary: { backgroundColor: COLORS.bgSubtle, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: COLORS.steel },
   arrestSummaryTitle: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 4 },
   arrestSummaryDetail: { fontSize: 12, lineHeight: 20, color: colors.blue, marginBottom: 4 },

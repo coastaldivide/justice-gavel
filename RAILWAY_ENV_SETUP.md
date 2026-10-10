@@ -55,6 +55,13 @@ ATTACHMENTS_BUCKET=case-documents        Supabase Storage bucket for attachments
 ATTACHMENTS_STORAGE=off|local|supabase   force a backend; "off" → attachment upload returns 503
                                           storage_unavailable
 HEALTH_CACHE_MS=5000                     /health caches its DB probe this long (default 5 s)
+SHOW_SAMPLE_ARRESTS=false                default false — leave unset in production. The database
+                                          ships 600 GENERATED arrest rows (source seed_v1); they are
+                                          hidden from every API response, alert, bot message and lead
+                                          sale. "true" (demos only) shows them in read-only arrest
+                                          views, flagged is_sample:true and labelled "Sample record"
+                                          in the app; they are still never alerted on, messaged
+                                          about or sold.
 ```
 
 ## Verify a deploy

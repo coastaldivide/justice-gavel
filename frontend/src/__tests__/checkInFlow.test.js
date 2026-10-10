@@ -28,51 +28,25 @@ describe('CheckIn GPS validation', () => {
   });
 });
 
-describe('Bail fee calculation', () => {
-  // leadFeeLabel logic: $25 min, tiered by bail amount
-  const leadFeeLabel = (bailAmount) => {
-    if (!bailAmount || bailAmount <= 0) return '$25';
-    if (bailAmount < 5000)   return '$25';
-    if (bailAmount < 15000)  return '$50';
-    if (bailAmount < 50000)  return '$100';
-    if (bailAmount < 100000) return '$150';
-    return '$300';
-  };
+describe('Bondsman lead fee (flat, never scaled to bail)', () => {
+  const { leadFeeLabel, BONDSMAN_LEAD_FEE_CENTS, BONDSMAN_LEAD_FEE_DISPLAY } = require('../constants/leadFee');
 
-  it('returns $25 for zero bail amount', () => {
-    expect(leadFeeLabel(0)).toBe('$25');
+  it('is a flat $75', () => {
+    expect(BONDSMAN_LEAD_FEE_CENTS).toBe(7500);
+    expect(BONDSMAN_LEAD_FEE_DISPLAY).toBe('$75');
   });
 
-  it('returns $25 for null bail amount', () => {
-    expect(leadFeeLabel(null)).toBe('$25');
-  });
-
-  it('returns $25 for bail under $5,000', () => {
-    expect(leadFeeLabel(4999)).toBe('$25');
-  });
-
-  it('returns $50 for bail between $5k and $15k', () => {
-    expect(leadFeeLabel(10000)).toBe('$50');
-  });
-
-  it('returns $100 for bail between $15k and $50k', () => {
-    expect(leadFeeLabel(25000)).toBe('$100');
-  });
-
-  it('returns $150 for bail between $50k and $100k', () => {
-    expect(leadFeeLabel(75000)).toBe('$150');
-  });
-
-  it('returns $300 for bail $100k+', () => {
-    expect(leadFeeLabel(100000)).toBe('$300');
-  });
-
-  it('never returns NaN or undefined', () => {
-    [0, null, undefined, NaN, -1, 500, 10000, 999999].forEach(amount => {
-      const result = leadFeeLabel(amount);
-      expect(result).not.toBe('NaN');
-      expect(result).not.toBeUndefined();
-      expect(result.startsWith('$')).toBe(true);
+  it('is the same for every bail amount', () => {
+    [0, null, undefined, NaN, -1, 500, 4999, 10000, 25000, 75000, 100000, 999999].forEach(bail => {
+      expect(leadFeeLabel({ bail_amount: bail })).toBe('$75');
     });
+    expect(leadFeeLabel(null)).toBe('$75');
+    expect(leadFeeLabel(undefined)).toBe('$75');
+  });
+
+  it('prefers the server-provided fee', () => {
+    expect(leadFeeLabel({ lead_fee_display: '$80' })).toBe('$80');
+    expect(leadFeeLabel({ lead_fee_cents: 8000 })).toBe('$80');
+    expect(leadFeeLabel({ lead_fee_cents: NaN })).toBe('$75');
   });
 });

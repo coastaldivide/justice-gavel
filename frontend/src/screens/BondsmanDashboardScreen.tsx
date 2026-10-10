@@ -15,7 +15,8 @@ import { FlashList } from '@shopify/flash-list';
  *
  * Shows incoming arrest leads sorted by bail amount.
  * One-tap accept charges the bondsman's card and reveals full contact info.
- * Lead fee is tiered by bail amount ($25-$300).
+ * Lead fee is a flat fee per accepted lead (same for every bail amount); the
+ * amount comes from the server (backend/src/routes/billing/leadFee.js).
  */
 
 import React, { useCallback, useEffect, useState, useMemo} from 'react';
@@ -27,15 +28,10 @@ import { ScreenCapture, hapticImpact, hapticNotification, hapticSelection } from
 import * as secureStorage from '../utils/secureStorage';
 import { useAuthGate } from '../components/AuthGate';
 import { t } from '../i18n';
+import { leadFeeLabel } from '../constants/leadFee';
+import { SampleRecordBadge } from '../components/SampleRecordBadge';
 
-// ── Lead fee display helper ───────────────────────────────────────────────────
-function leadFeeLabel(bailAmount: number): string {
-  if (!bailAmount || bailAmount <= 0) return '$25';
-  if (bailAmount < 5000)   return '$25';
-  if (bailAmount < 25000)  return '$75';
-  if (bailAmount < 100000) return '$150';
-  return '$300';
-}
+// Lead fee: FLAT, from the server (lead.lead_fee_display) — see constants/leadFee.ts.
 
 function bailTier(bailAmount: number): { label: string; color: string; bg: string } {
   if (!bailAmount || bailAmount <= 0) return { label: 'Bail TBD', color: COLORS.textMuted, bg: COLORS.bg };
@@ -68,6 +64,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
       {/* Top row */}
       <View style={styles.cardTop}>
         <View style={{ flex: 1 }}>
+          <SampleRecordBadge row={lead} />
           <Text testID="lead-defendant-name" numberOfLines={1} ellipsizeMode="tail" maxFontSizeMultiplier={1.4} style={styles.leadName}>{lead.name}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.leadLocation}>
             {lead.county ? `${lead.county} County` : ''}{lead.state ? `, ${lead.state}` : ''}
@@ -138,7 +135,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
               activeOpacity={0.85}
             >
               <Text maxFontSizeMultiplier={1.4} style={styles.acceptBtnText}>
-                Accept Lead -- {leadFeeLabel(lead.bail_amount)}
+                Accept Lead -- {leadFeeLabel(lead)}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.acceptBtnSub}>
                 Reveals full name, contact info, case details
@@ -148,7 +145,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
         </View>
       )}
       <Text maxFontSizeMultiplier={1.4} style={styles.expandHint}>
-        {expanded ? '▲ Less' : `▼ Details  ·  Lead fee: ${leadFeeLabel(lead.bail_amount)}`}
+        {expanded ? '▲ Less' : `▼ Details  ·  Lead fee: ${leadFeeLabel(lead)}`}
       </Text>
     </TouchableOpacity>
   );
@@ -261,6 +258,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
           <Text maxFontSizeMultiplier={1.4} style={styles.confirmTitle}>Accept This Lead?</Text>
 
           <View style={styles.confirmDetail}>
+            <SampleRecordBadge row={lead} />
             <Text maxFontSizeMultiplier={1.4} style={styles.confirmName}>{lead.name}</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.confirmCharges}>{lead.charges}</Text>
             <View style={styles.confirmRow}>
@@ -275,12 +273,12 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
             </View>
             <View style={[styles.confirmRow, styles.feeRow]}>
               <Text maxFontSizeMultiplier={1.4} style={styles.feeLabel}>Lead fee charged now</Text>
-              <Text testID="lead-bail-amount" maxFontSizeMultiplier={1.4} style={styles.feeAmount}>{leadFeeLabel(lead.bail_amount)}</Text>
+              <Text testID="lead-bail-amount" maxFontSizeMultiplier={1.4} style={styles.feeAmount}>{leadFeeLabel(lead)}</Text>
             </View>
           </View>
 
           <Text maxFontSizeMultiplier={1.4} style={styles.confirmNote}>
-            Your card on file will be charged {leadFeeLabel(lead.bail_amount)}.
+            Your card on file will be charged {leadFeeLabel(lead)}.
             Full contact info revealed immediately.
           </Text>
 
@@ -298,7 +296,7 @@ function AcceptModal({ lead, visible, onClose, onConfirm, loading }: any) {
             >
               {loading
                 ? <ActivityIndicator color={COLORS.bgCard} size="small" />
-                : <Text maxFontSizeMultiplier={1.4} style={styles.confirmAcceptText}>Charge {leadFeeLabel(lead.bail_amount)}</Text>
+                : <Text maxFontSizeMultiplier={1.4} style={styles.confirmAcceptText}>Charge {leadFeeLabel(lead)}</Text>
               }
             </TouchableOpacity>
           </View>
@@ -576,7 +574,7 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
                   <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsTitle}>How leads work</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• Leads appear when someone is arrested in your counties</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• Set your counties in ⚙️ Profile to receive relevant leads</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• Tap a lead → pay fee → get full contact info</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• Tap a lead → pay the flat lead fee → get full contact info</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• New leads arrive within minutes of arrest booking</Text>
                 </View>
               )}

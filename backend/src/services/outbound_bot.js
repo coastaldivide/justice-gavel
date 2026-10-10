@@ -7,6 +7,7 @@ import logger from '../utils/logger.js';
  *  1. Checks opt-out list before any send
  *  2. Finds matching bondsmen in the arrest county
  *  3. Sends SMS lead offer: "New booking — $30k bail — reply YES for $75"
+ *     (flat lead fee from routes/billing/leadFee.js — never scaled to bail)
  *  4. Finds matching attorneys in the county
  *  5. Sends email lead offer with county arrest summary
  *
@@ -26,24 +27,43 @@ import logger from '../utils/logger.js';
 
 import { getDb as getAppDb } from '../db/index.js';
 import { normalizePhone } from '../utils/sanitize.js';
-const sendSms = async () => null; // SMS not used — push notifications and Resend email handle delivery
+// SMS is not wired up (push notifications and Resend email handle delivery).
+// The stub reports a non-delivery instead of returning null, which made every
+// `result.error` read throw a TypeError.
+const sendSms = async () => ({ error: 'sms_not_configured', skipped: true });
 import { sendEmail } from './email.js';
 import { createPaymentLink, calcStripeFee, STRIPE_LIVE } from '../payments/stripe.js';
+import { bondsmanLeadFeeCents, formatLeadFee } from '../routes/billing/leadFee.js';
+import { realArrestSql } from '../utils/arrestVisibility.js';
 
+// Arrest columns the bot reads. Every lookup goes through realArrestSql(): the
+// bot must never message or bill anyone because of a sample/seed or taken-down row.
+const ARREST_COLS = 'id, name, booking_date, charges, bail_amount, county, state, jail_location, has_attorney, alert_sent, case_number, court_date';
 
-// ── Lead fee tiers ────────────────────────────────────────────────────────────
-function calcLeadFee(bailAmount) {
-  if (!bailAmount || bailAmount <= 0) return 2500;
-  if (bailAmount < 5000)   return 2500;
-  if (bailAmount < 25000)  return 7500;
-  if (bailAmount < 100000) return 15000;
-  return 30000;
+/** Unsent, real arrests from the last 24h with bail set and no attorney. */
+export async function selectActionableArrests(db) {
+  return db.all(
+    `SELECT ${ARREST_COLS}
+       FROM arrest_records
+      WHERE alert_sent = 0
+        AND ${realArrestSql()}
+        AND bail_amount > 0
+        AND has_attorney = 0
+        AND created_at >= (NOW() - INTERVAL '24 hours')
+      ORDER BY bail_amount DESC
+      LIMIT 500`
+  );
 }
 
-function formatLeadFee(bailAmount) {
-  return `$${(calcLeadFee(bailAmount) / 100).toFixed(0)}`;
+/** One real (non-sample, non-suppressed) arrest by id, or undefined. */
+export async function getRealArrest(db, arrestId) {
+  return db.get(`SELECT ${ARREST_COLS} FROM arrest_records WHERE id = ? AND ${realArrestSql()}`, [arrestId]);
 }
 
+
+// ── Lead fee ─────────────────────────────────────────────────────────────────
+// FLAT fee from the billing source of truth (routes/billing/leadFee.js). It is
+// never scaled to the bail amount (runner-capper / barratry statutes).
 // ── TCPA quiet hours check (8am–9pm recipient's estimated local time) ─────────
 function isQuietHours() {
   const hour = new Date().getHours(); // Server time (Central configured)
@@ -102,10 +122,10 @@ async function alreadySent(db, idempotencyKey) {
 }
 
 // ── Build SMS message for bondsman lead offer ─────────────────────────────────
-function buildBondsmanSms(arrest) {
+export function buildBondsmanSms(arrest) {
   const bail   = arrest.bail_amount > 0 ? `$${arrest.bail_amount.toLocaleString()}` : 'TBD';
   const county = arrest.county || 'your county';
-  const fee    = formatLeadFee(arrest.bail_amount);
+  const fee    = formatLeadFee(bondsmanLeadFeeCents(arrest));
   const charges = arrest.charges ? arrest.charges.substring(0, 60) : 'Not specified';
 
   return [
@@ -280,16 +300,10 @@ export async function runOutboundBot(options = {}) {
 
   try {
     // ── Get unsent arrests from last 24h with bail set and no attorney ────────
-    const arrests = await db.all(
-      `SELECT id, name, booking_date, charges, bail_amount, county, state, jail_location, has_attorney, alert_sent, case_number, court_date
-       FROM arrest_records
-       WHERE alert_sent = 0
-       AND bail_amount > 0
-       AND has_attorney = 0
-       AND created_at >= (NOW() - INTERVAL '24 hours')
-       ORDER BY bail_amount DESC
-       LIMIT 500`
-    ).catch(() => []);
+    const arrests = await selectActionableArrests(db).catch((e) => {
+      errors.push(`arrest query failed: ${e.message}`);
+      return [];
+    });
 
     stats.arrestsFound = arrests.length;
     logger.info(`[bot] ${arrests.length} actionable arrests (bail set, no attorney)`);
@@ -398,7 +412,7 @@ export async function sendPaymentLink({ phone, arrestId, recipientType, recipien
   const db = await getDb();
   try {
     // Get arrest
-    const arrest = await db.get('SELECT id, name, booking_date, charges, bail_amount, county, state, jail_location, has_attorney, alert_sent, case_number, court_date FROM arrest_records WHERE id = ?', [arrestId]);
+    const arrest = await getRealArrest(db, arrestId);
     if (!arrest) {
       logger.error('[bot] sendPaymentLink: arrest not found', arrestId);
       return { error: 'arrest_not_found' };
@@ -414,7 +428,7 @@ export async function sendPaymentLink({ phone, arrestId, recipientType, recipien
       return { error: 'already_purchased' };
     }
 
-    const feeCents    = calcLeadFee(arrest.bail_amount);
+    const feeCents    = bondsmanLeadFeeCents(arrest);
     const description = `Lead: ${arrest.county} County — Bail $${(arrest.bail_amount || 0).toLocaleString()} — ${(arrest.charges || '').substring(0, 40)}`;
 
     // Create Stripe payment link (2hr expiry)
@@ -438,7 +452,7 @@ export async function sendPaymentLink({ phone, arrestId, recipientType, recipien
     const smsBody = [
       `✅ Justice Gavel — Lead reserved for 2 hours`,
       ``,
-      `Pay ${formatLeadFee(arrest.bail_amount)} to unlock:`,
+      `Pay ${formatLeadFee(feeCents)} to unlock:`,
       linkResult.url,
       ``,
       `After payment, full contact info delivered instantly.`,
@@ -461,7 +475,7 @@ export async function sendPaymentLink({ phone, arrestId, recipientType, recipien
       errorMsg: smsResult.error,
     }).catch(() => {});
 
-    logger.info(`[bot] Payment link sent to ${phone} for arrest ${arrestId} — ${formatLeadFee(arrest.bail_amount)}`);
+    logger.info(`[bot] Payment link sent to ${phone} for arrest ${arrestId} — ${formatLeadFee(feeCents)}`);
     return { success: true, linkUrl: linkResult.url, feeCents, mock: linkResult.mock };
 
   } catch (err) {
@@ -475,7 +489,7 @@ export async function sendPaymentLink({ phone, arrestId, recipientType, recipien
 export async function deliverLead({ phone, arrestId, stripeLinkId, stripePaymentIntentId }) {
   const db = await getDb();
   try {
-    const arrest = await db.get('SELECT id, name, booking_date, charges, bail_amount, county, state, jail_location, has_attorney, alert_sent, case_number, court_date FROM arrest_records WHERE id = ?', [arrestId]);
+    const arrest = await getRealArrest(db, arrestId);
     if (!arrest) return { error: 'arrest_not_found' };
 
     // Mark payment link as paid
@@ -485,7 +499,7 @@ export async function deliverLead({ phone, arrestId, stripeLinkId, stripePayment
     ).catch(() => {});
 
     // Log revenue
-    const feeCents   = calcLeadFee(arrest.bail_amount);
+    const feeCents   = bondsmanLeadFeeCents(arrest);
     const stripeFee  = calcStripeFee(feeCents);
     const netCents   = feeCents - stripeFee;
 

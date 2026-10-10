@@ -4,13 +4,14 @@ import { validate, schemas } from '../../validation/schemas.js';
  * Part of the billing module. Mounted at /api/billing by billing/index.js
  */
 import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer,
-         BONDSMAN_TIERS, bondsTierFromPriceId, generateIdempotencyKey }
+         BONDSMAN_TIERS, bondsTierFromPriceId, generateIdempotencyKey,
+         BONDSMAN_LEAD_FEE_CENTS, formatLeadFee, bondsmanLeadFeeInfo }
   from './_shared.js';
+import { visibleArrestSql, realArrestSql, isSampleColumnSql } from '../../utils/arrestVisibility.js';
 
-// Flat lead fee — $75 regardless of bail amount.
-// Per-lead fees scaled to bail amount implicate runner-capper statutes
-// (TX §38.12, FL §877.02). See billing/_shared.js for the removed calcLeadFee.
-const FLAT_LEAD_FEE_CENTS = 7500; // $75.00
+// Flat lead fee (same amount regardless of bail) — single source of truth is
+// ./leadFee.js. Bail-scaled fees implicate runner-capper statutes (TX §38.12,
+// FL §877.02).
 import { err400, BUSINESS_CONSTANTS, err401, err403, err404, err409,
          err422, err500, err502,
          safeInt, safeFloat, sanitizeStr, validateEmail } from '../../utils/routeHelpers.js';
@@ -67,6 +68,7 @@ router.get('/leads', authRequired, async (req, res) => {
 
     // Build query for recent arrests without attorney, with bail set
     const conditions = [
+      visibleArrestSql('ar'),          // no seed/sample rows unless SHOW_SAMPLE_ARRESTS=true
       `ar.has_attorney = 0`,
       `ar.bail_amount > 0`,
       `ar.created_at >= (NOW() - INTERVAL '${safeInt(hours)} hours')`
@@ -80,6 +82,7 @@ router.get('/leads', authRequired, async (req, res) => {
       `SELECT
         ar.id, ar.name, ar.booking_date, ar.charges, ar.bail_amount,
         ar.county, ar.state, ar.jail_location,
+        ${isSampleColumnSql('ar')},
         lp.id as already_purchased
        FROM arrest_records ar
        LEFT JOIN lead_purchases lp ON lp.arrest_id = ar.id AND lp.bondsman_id = ? AND lp.status = 'charged'
@@ -92,14 +95,14 @@ router.get('/leads', authRequired, async (req, res) => {
     // Add computed lead fee and mask contact info for unpurchased
     const leads = records.map(r => ({
       ...r,
-      lead_fee_cents: FLAT_LEAD_FEE_CENTS,
-      lead_fee_display: `$${(FLAT_LEAD_FEE_CENTS / 100).toFixed(0)}`,
+      lead_fee_cents: BONDSMAN_LEAD_FEE_CENTS,
+      lead_fee_display: formatLeadFee(),
       purchased: !!r.already_purchased,
       // Only reveal full name and contact if purchased
       name: r.already_purchased ? r.name : r.name.split(' ')[0] + ' ' + (r.name.split(' ')[1]?.[0] || '') + '.',
     }));
 
-    res.json({ leads, count: leads.length, mock: !LIVE });
+    res.json({ leads, count: leads.length, lead_fee: bondsmanLeadFeeInfo(), mock: !LIVE });
   } catch (e) {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }
@@ -116,7 +119,8 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
     await db.exec("BEGIN IMMEDIATE");  // Atomic: charge + record together
 
     // Get arrest record
-    const arrest = await db.get('SELECT id, name, booking_date, charges, bail_amount, county, state, jail_location, has_attorney FROM arrest_records WHERE id = ? LIMIT 1', [arrestId]);
+    // Sample/seed or taken-down rows can never be sold, even with SHOW_SAMPLE_ARRESTS=true.
+    const arrest = await db.get(`SELECT id, name, booking_date, charges, bail_amount, county, state, jail_location, has_attorney FROM arrest_records WHERE id = ? AND ${realArrestSql()} LIMIT 1`, [arrestId]);
     if (!arrest) return err404(res, 'Arrest record not found');
     if (!arrest.bail_amount || arrest.bail_amount <= 0) return err400(res, 'No bail set on this record');
 
@@ -127,7 +131,7 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
     );
     if (existing) return res.status(409).json({ error: 'Already purchased this lead', arrest });
 
-    const feeCents = FLAT_LEAD_FEE_CENTS;
+    const feeCents = BONDSMAN_LEAD_FEE_CENTS;
 
     if (!LIVE) {
       // Demo mode — mock purchase
@@ -140,9 +144,9 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
       return res.json({
         success: true,
         mock: true,
-        fee_charged: `$${(feeCents / 100).toFixed(0)}`,
+        fee_charged: formatLeadFee(feeCents),
         arrest,  // Full record revealed
-        message: `Lead accepted (demo). In production, $${(feeCents/100).toFixed(0)} would be charged to your card.`
+        message: `Lead accepted (demo). In production, ${formatLeadFee(feeCents)} would be charged to your card.`
       });
     }
 
@@ -175,7 +179,7 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
     );
     await db.run('UPDATE bondsman_profiles SET leads_accepted = leads_accepted + 1 WHERE user_id = ?', [req.user.id]);
     await db.exec('COMMIT');
-    res.json({ success: true, fee_charged: `$${(feeCents/100).toFixed(0)}`, arrest });
+    res.json({ success: true, fee_charged: formatLeadFee(feeCents), arrest });
   } catch (e) {
     if (db) try { await db.run('ROLLBACK'); } catch (_) { logger?.warn?.("[bondsman] suppressed:", _?.message); }
     logger.error('[billing] accept lead error:', e.message);
@@ -331,7 +335,7 @@ router.get('/bondsman/tiers', async (req, res) => {
     annual_display: `$${(t.annual_cents / 100).toFixed(0)}/yr`,
     annual_savings: `Save $${((t.monthly_cents * 12 - t.annual_cents) / 100).toFixed(0)}/yr`,
   }));
-  res.json({ tiers, recommended: 'pro' });
+  res.json({ tiers, recommended: 'pro', lead_fee: bondsmanLeadFeeInfo() });
 });
 
 // GET /api/billing/bondsman/subscription — current tier status

@@ -311,11 +311,11 @@ describe('6. BondsmanDashboardScreen — Arrest Lead Feed', () => {
     expect(src).toContain('useFocusEffect');
   });
 
-  test('6-03: tiered lead fee $25–$300 by bail amount', async () => {
+  test('6-03: flat lead fee (no bail-scaled $25–$300 tiers — runner-capper risk)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('$25');
-    expect(src).toContain('$300');
+    expect(src).not.toMatch(/return '\$(25|150|300)'/);
+    expect(src).toContain("from '../constants/leadFee'");
   });
 
 });

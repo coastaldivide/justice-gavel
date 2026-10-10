@@ -1,4 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
+import { BONDSMAN_LEAD_FEE_DISPLAY } from '../constants/leadFee';
 import { useToast } from '../components/ToastProvider';
 import { useHaptics } from '../hooks/useHaptics';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -365,8 +366,8 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
       <View style={styles.bondsCTA}>
         <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTATitle}>🔓 Bail Bondsman?</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTAText}>
-          Bondsmen use our pay-per-lead system -- no monthly fee.
-          Accept individual leads for $25-$300 based on bail amount.
+          Bondsmen accept only the leads they want, for a flat {BONDSMAN_LEAD_FEE_DISPLAY} per
+          lead -- the same fee whatever the bail amount.
         </Text>
         <TouchableOpacity
           accessibilityRole="button"

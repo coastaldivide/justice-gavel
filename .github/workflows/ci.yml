@@ -125,6 +125,15 @@ jobs:
           DATABASE_URL: ${{ env.CI_DATABASE_URL }}
         run: node scripts/smoke-test.mjs "http://localhost:${API_PORT}" --anthropic-mock "${ANTHROPIC_MOCK_PORT}"
 
+      - name: Sample-arrest filter + flat lead fee on real Postgres (jest)
+        # Runs the real arrests / billing routers and outbound-bot / alert services
+        # against the migrated database (600 seed_v1 rows): seeds never come back
+        # by default, come back flagged with SHOW_SAMPLE_ARRESTS=true, and are never
+        # alerted on, messaged about or sold. Skipped in the in-memory jest run below.
+        env:
+          TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}
+        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci src/__tests__/arrest_visibility.test.js
+
       - name: Stop API server
         if: always()
         run: |

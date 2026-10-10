@@ -265,12 +265,13 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
                 marginBottom: 12,
               }}
               accessibilityLabel="Unlock county arrest analytics">
-              {/* Blurred stat row */}
+              {/* Locked stat row — placeholders only. Never show invented arrest
+                  counts here (the seeded arrest rows are sample data). */}
               <View style={{ flexDirection: 'row', gap: 12, marginBottom: 10 }}>
                 {[
-                  { label: 'Arrests this month', value: '847' },
-                  { label: 'Top charge', value: 'DUI' },
-                  { label: 'Avg bail', value: '$2,400' },
+                  { label: 'Arrests this month', value: '•••' },
+                  { label: 'Top charge', value: '•••' },
+                  { label: 'Avg bail', value: '•••' },
                 ].map(stat => (
                   <View key={stat.label}
                     style={{ flex: 1, backgroundColor: colors.bgCard, borderRadius: 10,

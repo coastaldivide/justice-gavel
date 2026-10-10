@@ -226,6 +226,28 @@ async function main() {
     });
   }
 
+  await check('arrest search hides seeded sample records (SHOW_SAMPLE_ARRESTS off)', async () => {
+    // Migration 01 seeds 600 generated rows (source seed_v1) in these counties.
+    let seen = 0;
+    for (const [county, state] of [['Harris', 'TX'], ['Hillsborough', 'FL'], ['Hamilton', 'TN']]) {
+      const r = await call('GET', `/api/arrests/search?county=${county}&state=${state}&limit=100`, { token });
+      assert(r.status === 200 && Array.isArray(r.json?.records), `search failed: ${brief(r)}`);
+      assert(r.json.records.every(x => x.is_sample === false), `sample record returned: ${brief(r)}`);
+      seen += r.json.records.length;
+    }
+    const recent = await call('GET', '/api/arrests/recent?hours=8760&state=TX', { token });
+    assert(recent.status === 200 && recent.json.records.every(x => x.is_sample === false), `recent leaked samples: ${brief(recent)}`);
+    const seedRows = await q("SELECT count(*)::int AS n FROM arrest_records WHERE source = 'seed_v1'");
+    return seedRows ? `${seedRows[0].n} seed rows kept in DB, ${seen} returned` : `${seen} returned`;
+  });
+
+  await check('bondsman pricing quotes the flat lead fee', async () => {
+    const r = await call('GET', '/api/billing/bondsman/tiers');
+    assert(r.status === 200, `tiers failed: ${brief(r)}`);
+    assert(r.json?.lead_fee?.cents === 7500 && r.json.lead_fee.model === 'flat', `unexpected lead_fee: ${brief(r)}`);
+    return r.json.lead_fee.display;
+  });
+
   let caseId = null;
   await check('POST /api/cases → persisted', async () => {
     const r = await call('POST', '/api/cases', {

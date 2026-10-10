@@ -136,10 +136,14 @@ export interface BondsmanLead {
   created_at?:  string;
   contact_name?: string;
   contact_phone?: string;
+  lead_fee_cents?: number;  // flat fee — same for every lead (backend billing/leadFee.js)
+  lead_fee_display?: string;
+  is_sample?: boolean;      // generated demo row (only sent when SHOW_SAMPLE_ARRESTS=true)
 }
 
 export interface LeadsResponse {
   leads: BondsmanLead[];
+  lead_fee?: { cents: number; display: string; model: 'flat'; note?: string };
 }
 
 // ── Check-In ──────────────────────────────────────────────────────────────────
@@ -221,6 +225,7 @@ export interface ArrestRecord {
   state?:       string;
   bail_amount?: number;
   status?:      string;
+  is_sample?:   boolean;   // generated demo row — show "Sample record" (SHOW_SAMPLE_ARRESTS=true only)
 }
 
 export interface ArrestMonitor {

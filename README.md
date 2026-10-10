@@ -45,7 +45,7 @@ Revenue Tiers
 ├── Advisor:      $24.99/mo  ($199/yr)
 ├── Legal Pro:    $34.99/mo  ($299/yr)
 ├── Esquire:      $49.00/mo  ($410/yr)
-└── Bondsman:     $49/mo badge + per-lead fees ($15–$1,000)
+└── Bondsman:     $49/mo badge + flat $75 per accepted lead (never scaled to bail)
 ```
 
 
@@ -66,8 +66,9 @@ the B2B product. The 1.3M licensed US attorneys — especially 350,000 solo prac
 with poor tooling — are the fundable market. At $49/mo, 1,000 attorneys = $49,000 MRR.
 
 **Bondsman (high-margin supplemental)**
-Bail bondsmen pay $49/mo plus $15–$1,000 per qualified lead by bail amount. 
-Lead pipeline runs separately from consumer subscriptions.
+Bail bondsmen pay $49/mo plus a flat $75 per accepted lead — the same fee whatever the bail
+amount (bail-scaled lead fees implicate runner-capper statutes; the amount is defined once in
+backend/src/routes/billing/leadFee.js). Lead pipeline runs separately from consumer subscriptions.
 
 **What we do NOT do**
 - No referral program. Acquisition through content marketing and word of mouth.

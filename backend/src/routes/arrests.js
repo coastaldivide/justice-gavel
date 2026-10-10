@@ -17,6 +17,8 @@ import { validate, schemas } from '../validation/schemas.js';
 import { escapeLike } from '../utils/routeHelpers.js';
 import { authRequired as authMiddleware } from '../middleware/auth.js';
 import { sendArrestAlerts } from '../services/arrest_alerts.js';
+// Sample (seeded) rows are hidden unless SHOW_SAMPLE_ARRESTS=true; see utils/arrestVisibility.js
+import { visibleArrestSql, isSampleColumnSql, sampleArrestsEnabled } from '../utils/arrestVisibility.js';
 const alertsPipelineLimiter = makeUserLimiter({ windowMs: 60_000, max: 20 });
 
 
@@ -40,7 +42,7 @@ router.get('/search', authMiddleware, async (req, res) => {
 
   try {
     const db = await getDb();
-    const conditions = [];
+    const conditions = [visibleArrestSql()];
     const params = [];
 
     if (name) {
@@ -60,10 +62,11 @@ router.get('/search', authMiddleware, async (req, res) => {
       params.push(String(state).toUpperCase().slice(0, 2));
     }
 
-    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+    const where = 'WHERE ' + conditions.join(' AND ');
     const records = await db.all(
       `SELECT id, name, booking_date, charges, bail_amount, court_date,
-              has_attorney, jail_location, county, state, case_number
+              has_attorney, jail_location, county, state, case_number,
+              ${isSampleColumnSql()}
        FROM arrest_records
        ${where}
        ORDER BY booking_date DESC NULLS LAST
@@ -76,7 +79,8 @@ router.get('/search', authMiddleware, async (req, res) => {
       params
     );
 
-    res.json({ records, total: total?.n ?? 0, limit: safeInt(limit), offset: safeInt(offset) });
+    res.json({ records, total: Number(total?.n ?? 0), limit: safeInt(limit), offset: safeInt(offset),
+               sample_mode: sampleArrestsEnabled() });
   } catch (e) {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
@@ -87,7 +91,7 @@ router.get('/recent', authMiddleware, async (req, res) => {
 
   try {
     const db = await getDb();
-    const conditions = [`created_at >= (NOW() - INTERVAL '${Math.min(Math.max(safeInt(hours, 24), 1), 24 * 365)} hours')`];
+    const conditions = [visibleArrestSql(), `created_at >= (NOW() - INTERVAL '${Math.min(Math.max(safeInt(hours, 24), 1), 24 * 365)} hours')`];
     const params = [];
 
     if (county) { conditions.push('LOWER(county) = LOWER(?)'); params.push(county); }
@@ -96,7 +100,8 @@ router.get('/recent', authMiddleware, async (req, res) => {
     if (has_bail === 'true')    { conditions.push('bail_amount > 0'); }
 
     const records = await db.all(
-      `SELECT id, name, booking_date, charges, bail_amount, status, city, county, state, has_attorney, source
+      `SELECT id, name, booking_date, charges, bail_amount, status, city, county, state, has_attorney, source,
+              ${isSampleColumnSql()}
        FROM arrest_records
        WHERE ${conditions.join(' AND ')}
        ORDER BY booking_date DESC NULLS LAST
@@ -105,7 +110,7 @@ router.get('/recent', authMiddleware, async (req, res) => {
     );
 
     res.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=300');
-    res.json({ records, count: records.length, window_hours: safeInt(hours) });
+    res.json({ records, count: records.length, window_hours: safeInt(hours), sample_mode: sampleArrestsEnabled() });
   } catch (e) {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
@@ -127,6 +132,7 @@ router.get('/stats/county/:county', authMiddleware, async (req, res) => {
         MAX(bail_amount) as max_bail
        FROM arrest_records
        WHERE LOWER(county) = LOWER(?)
+       AND ${visibleArrestSql()}
        AND created_at >= (NOW() - (? || ' days')::interval)`,
       [county, String(Math.min(Math.max(safeInt(days, 7), 1), 3650))]
     );
@@ -212,7 +218,7 @@ router.get('/warrant-check', authMiddleware, async (req, res) => {
     const safeName  = sanitizeStr(name, 200).trim();
     const safeState = (state || '').toUpperCase().slice(0, 2);
 
-    const conditions = ["name ILIKE ?"];
+    const conditions = [visibleArrestSql(), "name ILIKE ?"];
     const params     = [`%${escapeLike(safeName)}%`];
 
     if (safeState) { conditions.push('state = ?'); params.push(safeState); }
@@ -220,7 +226,7 @@ router.get('/warrant-check', authMiddleware, async (req, res) => {
     // Check arrest_records for active warrants
     const activeWarrants = await db.all(
       `SELECT id, name, booking_date, charges, bail_amount, county, state,
-              court_date, case_number, status
+              court_date, case_number, status, ${isSampleColumnSql()}
        FROM arrest_records
        WHERE ${conditions.join(' AND ')}
          AND (status = 'warrant_active' OR charges ILIKE '%warrant%' OR charges ILIKE '%failure to appear%')
@@ -281,7 +287,9 @@ router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const db = await getDb();
     const record = await db.get(
-      'SELECT id, name, booking_date, charges, bail_amount, status, city, county, state, has_attorney, source FROM arrest_records WHERE id = ?',
+      `SELECT id, name, booking_date, charges, bail_amount, status, city, county, state, has_attorney, source,
+              ${isSampleColumnSql()}
+         FROM arrest_records WHERE id = ? AND ${visibleArrestSql()}`,
       [safeInt(req.params.id)]
     );
     if (!record) return err404(res, 'Record not found');

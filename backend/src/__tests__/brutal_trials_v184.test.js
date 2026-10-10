@@ -123,12 +123,14 @@ describe('BOT. Outbound Lead Bot', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/services/outbound_bot.js','utf8');
     expect(src).toContain('isQuietHours');
   });
-  test('BOT-04: calcLeadFee handles zero/negative bail gracefully', async () => {
+  test('BOT-04: lead fee is the flat billing fee for any bail (incl. zero/negative)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/outbound_bot.js','utf8');
-    // function calcLeadFee(bailAmount) { if (!bailAmount || bailAmount <= 0) return 2500; ...
-    expect(src).toContain('calcLeadFee');
-    expect(src).toMatch(/!bailAmount|bailAmount <= 0|bailAmount < 1/);
+    // Bail-scaled calcLeadFee was removed: the bot uses billing/leadFee.js.
+    expect(src).not.toContain('calcLeadFee');
+    expect(src).toContain('bondsmanLeadFeeCents');
+    const { bondsmanLeadFeeCents } = await import('../routes/billing/leadFee.js');
+    for (const bail of [0, -1, null, undefined, NaN, 1e6]) expect(bondsmanLeadFeeCents(bail)).toBe(7500);
   });
 });
 

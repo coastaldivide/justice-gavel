@@ -205,6 +205,9 @@ export async function getOrCreateStripeCustomer(user) {
 
 export { stripe, LIVE, TIERS, billingLimiter };
 
+// Flat bondsman lead fee — defined once in ./leadFee.js, re-exported for billing routers.
+export { BONDSMAN_LEAD_FEE_CENTS, bondsmanLeadFeeCents, formatLeadFee, bondsmanLeadFeeInfo } from './leadFee.js';
+
 /**
  * generateIdempotencyKey — creates a unique key per charge attempt.
  * Prevents duplicate charges if the client retries a request.

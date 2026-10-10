@@ -1,7 +1,7 @@
 # Justice Gavel — Bondsman Outreach Package
 **Goal:** 10 paying bondsmen → Marcus Okafor VC condition  
 **Target market:** Tennessee (local first, then TX, FL, GA)  
-**Monthly fee:** $49/month Verified Badge + pay-per-lead ($15–$400/lead by bail amount)
+**Monthly fee:** $49/month Verified Badge + flat $75 per accepted lead (same fee whatever the bail amount)
 
 ---
 
@@ -105,7 +105,7 @@ Here's the short version:
 
 **What happens:** Someone gets arrested in [County] County. Before they make a single phone call, they open our app, see their bail amount, and request a bondsman. You get a notification with their name, bail amount, charges, and jail.
 
-**What it costs:** $49/month Verified Badge (top of search results for your counties) + $15–$250 per lead you accept, based on bail amount. You only pay for the ones you want.
+**What it costs:** $49/month Verified Badge (top of search results for your counties) + a flat $75 per lead you accept, whatever the bail amount. You only pay for the ones you want.
 
 **Why now:** We're onboarding the first 20 bondsmen in Tennessee. The first bondsman in each county gets preferred placement until we reach capacity.
 
@@ -160,11 +160,11 @@ Use this to track your 10:
 | Active paid bondsmen | 10 | 50 |
 | Monthly badge revenue | $490 | $2,450 |
 | Leads accepted/bondsman/month | 2 | 5 |
-| Avg lead fee | $100 | $125 |
-| Lead revenue/month | $2,000 | $31,250 |
-| **Total MRR** | **$2,490** | **$33,700** |
+| Lead fee (flat) | $75 | $75 |
+| Lead revenue/month | $1,500 | $18,750 |
+| **Total MRR** | **$1,990** | **$21,200** |
 
-At 50 bondsmen statewide: **$400K/year run rate**, before expanding to TX, FL, GA.
+At 50 bondsmen statewide: **~$254K/year run rate**, before expanding to TX, FL, GA.
 
 ---
 

@@ -186,6 +186,7 @@ configured in Railway (or your deployment environment) as needed.
 |----------|----------|-------------|
 | `EXTRA_ORIGINS` | Optional | Comma-separated additional CORS origins |
 | `JUDYRECORDS_API_KEY` | Optional | JudyRecords API key for arrest record lookup |
+| `SHOW_SAMPLE_ARRESTS` | Optional (default `false`) | Demos only. `true` shows the seeded sample arrest rows (source `seed_v1`) in read-only arrest views, flagged `is_sample: true` / "Sample record". They are never alerted on, messaged about or sold. See RAILWAY_ENV_SETUP.md |
 
 
 ## Additional Variables (Integrations & Admin)

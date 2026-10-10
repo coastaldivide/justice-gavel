@@ -62,6 +62,11 @@ const OPTIONAL_FEATURES = {
   GOOGLE_PLACES_KEY:     'Google Places fallback disabled',
   SUPABASE_URL:          'Supabase storage/auth helpers disabled',
   OPENAI_API_KEY:        'Whisper transcription disabled',
+  // Default (unset/false) is the safe production setting. "true" is for demos only:
+  // seeded sample arrest rows (source seed_v1 etc.) then appear in read-only arrest
+  // views flagged is_sample:true / labelled "Sample record" in the app. They are
+  // never alerted on, messaged about or sold, whatever this is set to.
+  SHOW_SAMPLE_ARRESTS:   'Sample (seeded) arrest records are hidden from users (set SHOW_SAMPLE_ARRESTS=true only for demos)',
 };
 
 /**
@@ -76,8 +81,13 @@ export function validateEnv({ exit = true } = {}) {
     if (exit) process.exit(1);
   }
   for (const [key, msg] of Object.entries(OPTIONAL_FEATURES)) {
-    const present = key === 'STRIPE_SECRET_KEY' ? stripeConfigured() : !!process.env[key];
+    const present = key === 'STRIPE_SECRET_KEY' ? stripeConfigured()
+      : key === 'SHOW_SAMPLE_ARRESTS' ? String(process.env[key] || '').trim().toLowerCase() === 'true'
+      : !!process.env[key];
     if (!present) console.warn(`[config] ${key} not set — ${msg}`);
+  }
+  if (IS_PROD && String(process.env.SHOW_SAMPLE_ARRESTS || '').trim().toLowerCase() === 'true') {
+    console.warn('[config] ⚠️  SHOW_SAMPLE_ARRESTS=true in production — generated sample arrest records are visible to users (labelled "Sample record"). Use for demos only.');
   }
   return { missing };
 }
@@ -221,6 +231,9 @@ export const ALL_ENV_VARS = {
   REFRESH_CRON:             process.env.REFRESH_CRON               || '0 3 * * *',
   REFRESH_TZ:               process.env.REFRESH_TZ                 || 'America/Chicago',
   HEALTH_SCAN_CRON:         process.env.HEALTH_SCAN_CRON           || '0 2 * * *',
+
+  // ── Demo data ────────────────────────────────────────────────────────────
+  SHOW_SAMPLE_ARRESTS:      process.env.SHOW_SAMPLE_ARRESTS        || 'false', // see utils/arrestVisibility.js
 
   // ── Logging ──────────────────────────────────────────────────────────────
   LOG_LEVEL:                process.env.LOG_LEVEL                  || 'info',

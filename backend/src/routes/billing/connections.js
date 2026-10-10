@@ -14,6 +14,7 @@ import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger             from '../../utils/logger.js';
 import { calcStripeFee }  from '../../payments/stripe.js';
+import { realArrestSql }  from '../../utils/arrestVisibility.js';
 
 const router = Router();
 
@@ -28,7 +29,8 @@ router.post('/family/connect', billingLimiter, authRequired, async (req, res) =>
     // Get arrest (if provided) or use a default county
     let arrest = null;
     if (arrest_id) {
-      arrest = await db.get('SELECT id, name, booking_date, charges, bail_amount, county, state, jail_location, has_attorney FROM arrest_records WHERE id = ? LIMIT 1', [arrest_id]);
+      // Paid path: sample/seed or taken-down rows are never attached to a purchase.
+      arrest = await db.get(`SELECT id, name, booking_date, charges, bail_amount, county, state, jail_location, has_attorney FROM arrest_records WHERE id = ? AND ${realArrestSql()} LIMIT 1`, [arrest_id]);
     }
 
     const county = arrest?.county || 'davidson';
@@ -59,7 +61,7 @@ router.post('/family/connect', billingLimiter, authRequired, async (req, res) =>
       const connection = await db.run(
         `INSERT INTO family_connections (arrest_id, family_name, family_phone, family_email, status, attorneys_sent, agents_sent, stripe_pi_id)
          VALUES (?,?,?,?,?,?,?,?)`,
-        [arrest_id || null, family_name, family_phone, family_email || null, 'paid',
+        [arrest?.id || null, family_name, family_phone, family_email || null, 'paid',
          JSON.stringify(attorneys.map(a => a.id)),
          JSON.stringify(agents.map(a => a.id)),
          'pi_mock_family']
@@ -91,7 +93,7 @@ router.post('/family/connect', billingLimiter, authRequired, async (req, res) =>
       payment_method: payment_method_id,
       automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
       description: `Justice Gavel — Emergency Connection for ${family_name}`,
-      metadata: { family_name, arrest_id: String(arrest_id || 'unknown') }
+      metadata: { family_name, arrest_id: String(arrest?.id || 'unknown') }
     });
 
     if (pi.status !== 'succeeded') {
@@ -101,7 +103,7 @@ router.post('/family/connect', billingLimiter, authRequired, async (req, res) =>
     const connection = await db.run(
       `INSERT INTO family_connections (arrest_id, family_name, family_phone, family_email, status, attorneys_sent, agents_sent, stripe_pi_id)
        VALUES (?,?,?,?,?,?,?,?)`,
-      [arrest_id || null, family_name, family_phone, family_email || null, 'paid',
+      [arrest?.id || null, family_name, family_phone, family_email || null, 'paid',
        JSON.stringify(attorneys.map(a => a.id)),
        JSON.stringify(agents.map(a => a.id)),
        pi.id]

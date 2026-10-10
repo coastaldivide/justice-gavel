@@ -30,17 +30,19 @@
 --   dui_laws                  51 rows / 51 states
 --   drug_penalties           153 rows / 52 jurisdictions
 --
--- PLACEHOLDER DATA — replace or clear before launch:
+-- PLACEHOLDER DATA (kept, but hidden from users):
 --   arrest_records           600 rows, but only 9 states and 413 distinct
 --                          names, with generic repeats ("James Taylor" x5).
 --                          This is GENERATED TEST DATA, not real booking
---                          records. routes/arrests.js serves it to users at
---                          GET /api/arrests.
+--                          records. Every row has source = 'seed_v1'.
 --
---                          These render as though they were real bookings.
---                          Either point routes/arrests.js at a county booking
---                          feed, or clear the table and hide the feature:
---                              DELETE FROM arrest_records;
+--                          The API never shows, alerts on, messages about or
+--                          sells these rows: backend/src/utils/arrestVisibility.js
+--                          filters every arrest read. SHOW_SAMPLE_ARRESTS=true
+--                          (demos only) shows them in read-only views, flagged
+--                          is_sample:true and labelled "Sample record" in the app.
+--                          To remove them entirely:
+--                              DELETE FROM arrest_records WHERE source = 'seed_v1';
 --
 -- BAR VERIFICATION STATUS:
 --   bar_verified defaults to false on all 2,055 records. Verification is a
@@ -7768,3 +7770,24 @@ INSERT INTO "recovery_agents" (id, source_id, name, city, state, phone, address,
   (596,'google_ra_ChIJJW1Cye8JsYkROzdTIlMfo2M','The Elite Force LLC','Richmond','VA','+18047787720','7621 Staples Mill Rd, Henrico, VA 23228, USA',37.6201188,-77.5007083,'https://www.theeliteforcellc.com/',NULL,NULL,0,0,4.8,25,NULL,NULL,'google',1,0,'Monday: 9:00 AM – 5:00 PM | Tuesday: 9:00 AM – 5:00 PM | Wednesday: 9:00 AM – 5:00 PM | Thursday: 9:00 AM – 5:00 PM | Friday: 9:00 AM – 5:00 PM | Saturday: 9:00 AM – 5:00 PM | Sunday: 9:00 AM – 5:00 PM',NULL,'2026-05-02 19:22:57','2026-05-02 19:22:57'),
   (597,'google_ra_ChIJD5AhkU0rT4gRlqT3hnj6iG8','Bond Investigations - West Virginia','Charleston','WV',NULL,'3501 MacCorkle Ave SE, Charleston, WV 25304, USA',38.3278974,-81.5982174,'https://bondinvestigations.com/',NULL,NULL,0,0,0.0,0,NULL,NULL,'google',1,1,'Monday: Open 24 hours | Tuesday: Open 24 hours | Wednesday: Open 24 hours | Thursday: Open 24 hours | Friday: Open 24 hours | Saturday: Open 24 hours | Sunday: Open 24 hours',NULL,'2026-05-02 19:23:11','2026-05-02 19:23:11')
 ON CONFLICT DO NOTHING;
+
+-- ── Sequence alignment ─────────────────────────────────────────────────────
+-- The INSERTs above use explicit ids, which do not advance the BIGSERIAL
+-- sequences. Without this, the first application INSERT into any of these
+-- tables (e.g. arrest ingestion into arrest_records) fails with a duplicate
+-- primary key. Moves each sequence to MAX(id); never touches row data.
+-- Idempotent (setval to the current max is a no-op on re-run).
+DO $$
+DECLARE t text; seq text; mx bigint;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['arrest_records','bail_agents','bail_schedules','courthouses','drug_penalties',
+                           'dui_laws','federal_courts','law_school_clinics','lawyers','lessons',
+                           'probation_offices','recovery_agents','resources','specialty_courts',
+                           'state_bar_complaints','statute_of_limitations','victim_compensation'] LOOP
+    IF to_regclass('public.' || t) IS NULL THEN CONTINUE; END IF;
+    seq := pg_get_serial_sequence('public.' || t, 'id');
+    IF seq IS NULL THEN CONTINUE; END IF;
+    EXECUTE format('SELECT MAX(id) FROM public.%I', t) INTO mx;
+    IF mx IS NOT NULL THEN PERFORM setval(seq, mx, true); END IF;
+  END LOOP;
+END $$;
