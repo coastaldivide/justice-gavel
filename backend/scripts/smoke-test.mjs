@@ -241,6 +241,18 @@ async function main() {
     return seedRows ? `${seedRows[0].n} seed rows kept in DB, ${seen} returned` : `${seen} returned`;
   });
 
+  await check('arrest search reports honest feed coverage (feeds_configured)', async () => {
+    // With ARREST_FEED_URLS unset the API must say so, so the app can show
+    // "No public arrest feeds configured" instead of implying live coverage.
+    const expected = !!process.env.ARREST_FEED_URLS;
+    const r = await call('GET', '/api/arrests/search?name=smoketest', { token });
+    assert(r.status === 200, `search failed: ${brief(r)}`);
+    assert(r.json?.feeds_configured === expected, `feeds_configured should be ${expected}: ${brief(r)}`);
+    const recent = await call('GET', '/api/arrests/recent?hours=24', { token });
+    assert(recent.status === 200 && recent.json?.feeds_configured === expected, `recent feeds_configured: ${brief(recent)}`);
+    return `feeds_configured=${r.json.feeds_configured}`;
+  });
+
   await check('bondsman pricing quotes the flat lead fee', async () => {
     const r = await call('GET', '/api/billing/bondsman/tiers');
     assert(r.status === 200, `tiers failed: ${brief(r)}`);

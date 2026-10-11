@@ -158,14 +158,16 @@ describe('M19. FE Components → ≥20 Hits (6 components)', () => {
     // ScreenHeader: reusable header with back button + title
     // JTBLogo: animated Justice Gavel gavel icon
   });
-  test('M19-02: PlaceholderIllustration + MotionTypeBadge + CaseStatusBadge', async () => {
+  test('M19-02: Illustrations + MotionTypeBadge + CaseStatusBadge', async () => {
     const fs=await import('fs'); const path=await import('path');
     const base=__REPO + '/frontend/src/components';
-    for (const name of ['PlaceholderIllustration','MotionTypeBadge','CaseStatusBadge']) {
-      const s=fs.readFileSync(path.join(base,`${name}.tsx`),'utf8');
+    for (const name of ['IllustrationRights','MotionTypeBadge','CaseStatusBadge']) {
+      const file = name === 'IllustrationRights' ? 'Illustrations' : name;
+      const s=fs.readFileSync(path.join(base,`${file}.tsx`),'utf8');
       expect(s).toContain(name);
     }
-    // PlaceholderIllustration: empty-state artwork (scales/gavel/handshake)
+    // Illustrations: finished SVG empty-state artwork (PlaceholderIllustration
+    //   was retired in step 6 — it drew a dashed "design placeholder" circle)
     // MotionTypeBadge: colored chip — Motion to Suppress, MTD, etc.
     // CaseStatusBadge: open/discovery/trial/closed colored chips
   });

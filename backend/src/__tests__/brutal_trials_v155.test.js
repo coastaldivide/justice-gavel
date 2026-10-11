@@ -119,14 +119,15 @@ describe('M19b. FE Components → ≥20 Hits (5 remaining)', () => {
     expect(s).toContain('ScreenHeader');
     expect(s.length).toBeGreaterThan(2000);
   });
-  test('M19b-03: JTBLogo + PlaceholderIllustration', async () => {
+  test('M19b-03: JTBLogo + Illustrations (PlaceholderIllustration retired in step 6)', async () => {
     const fs=await import('fs');
     const jtb=fs.readFileSync(__REPO + '/frontend/src/components/JTBLogo.tsx','utf8');
-    const ph=fs.readFileSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx','utf8');
+    const ill=fs.readFileSync(__REPO + '/frontend/src/components/Illustrations.tsx','utf8');
     expect(jtb).toContain('JTBLogo');
-    expect(ph).toContain('PlaceholderIllustration');
+    expect(ill).toContain('IllustrationRights');
+    expect(fs.existsSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx')).toBe(false);
     // JTBLogo: animated Justice Gavel™ brand mark
-    // PlaceholderIllustration: scales/gavel/handshake empty-state
+    // Illustrations: finished SVG empty-state artwork (used by JustArrested)
   });
   test('M19b-04: MotionTypeBadge — motion classification chip', async () => {
     const fs=await import('fs');

@@ -191,7 +191,10 @@ describe('S6. Screens — 15-19 Hit Range', () => {
   test('S6-03: BondsmanDashboardScreen — expanded accordion + useFocusEffect + /billing/leads', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/BondsmanDashboardScreen.tsx', 'utf8');
-    expect(src).toContain('Real-time lead feed for bail bondsmen');
+    // Step 6: the docblock no longer claims a "real-time" feed — leads come
+    // from the public arrest feeds configured via ARREST_FEED_URLS.
+    expect(src).toContain('lead dashboard for bail bondsmen');
+    expect(src).toContain('ARREST_FEED_URLS');
     expect(src).toContain('expanded');
     expect(src).toContain('useFocusEffect');
     expect(src).toContain('/billing/leads');

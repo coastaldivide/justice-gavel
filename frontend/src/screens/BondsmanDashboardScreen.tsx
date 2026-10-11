@@ -6,7 +6,8 @@ import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Linking, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView, LayoutAnimation, InteractionManager } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 /**
- * BondsmanDashboardScreen -- Real-time lead feed for bail bondsmen
+ * BondsmanDashboardScreen -- lead dashboard for bail bondsmen (leads come from
+ * the public arrest feeds configured server-side via ARREST_FEED_URLS)
  *
  * Shows incoming arrest leads sorted by bail amount.
  * One-tap accept charges the bondsman's card and reveals full contact info.
@@ -366,7 +367,12 @@ function BondsmanDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
       });
       setLeads(res.data?.leads || []);
       if ((res.data?.leads || []).length === 0) {
-        setStatusMsg('No new leads in the last ' + filterHours + ' hours.');
+        // feeds_configured === false means no public arrest feed is wired up,
+        // so an empty list is missing coverage — say so instead of implying
+        // a live feed that is quiet right now.
+        setStatusMsg(res.data?.feeds_configured === false
+          ? 'No public arrest feeds configured for your area yet.'
+          : 'No new leads in the last ' + filterHours + ' hours.');
       }
     } catch {
       setStatusMsg('Could not load leads. Pull down to retry.');
@@ -581,10 +587,9 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
               {!statusMsg && (
                 <View style={styles.howLeadsWork}>
                   <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsTitle}>How leads work</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• Leads appear when someone is arrested in your counties</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• Leads come from the public arrest feeds connected for your counties</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• Set your counties in ⚙️ Profile to receive relevant leads</Text>
                   <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• Tap a lead → pay the flat lead fee → get full contact info</Text>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.howLeadsItem}>• New leads arrive within minutes of arrest booking</Text>
                 </View>
               )}
             </View>

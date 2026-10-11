@@ -41,7 +41,7 @@ const MONTHLY_TIERS = [
     trial: '30-day free trial', highlight: true, badge: 'Most Popular',
     features: [
       'Everything in Advisor +',
-      '24/7 arrest monitoring -- push alerts when someone is booked',
+      'Arrest monitoring -- push alerts when a watched name appears in ingested public records',
       'Priority lawyer search results',
       'AI Lawyer Match report',
     ],
@@ -52,7 +52,7 @@ const MONTHLY_TIERS = [
     cents: 1999, icon: '📊', color: COLORS.blue, bg: COLORS.bgSubtle,
     trial: '30-day free trial', highlight: false,
     features: [
-      'Real-time arrest monitoring alerts',
+      'Arrest monitoring alerts from ingested public records',
       'County arrest analytics dashboard',
       'Weekly Legal Radar intelligence report',
       'Charge trend & bail amount data',

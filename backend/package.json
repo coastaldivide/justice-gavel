@@ -63,7 +63,6 @@
     "@supabase/supabase-js": "2.106.1",
     "axios": "^1.12.2",
     "bcryptjs": "2.4.3",
-    "body-parser": "^2.3.0",
     "bullmq": "^5.80.9",
     "compression": "^1.8.1",
     "cors": "2.8.5",
@@ -82,7 +81,6 @@
     "node-cache": "^5.1.2",
     "node-cron": "^4.6.0",
     "node-fetch": "3.3.2",
-    "p-queue": "8.0.1",
     "pdfkit": "0.18.0",
     "pg": "^8.21.0",
     "resend": "^6.12.4",
@@ -95,7 +93,7 @@
     "yargs": "17.7.2",
     "zod": "^4.4.3"
   },
-  "description": "Justice Gavel — Backend API",
+  "description": "Justice Gavel \u2014 Backend API",
   "devDependencies": {
     "@eslint/js": "9.39.5",
     "better-sqlite3": "^12.11.1",

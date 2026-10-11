@@ -1,23 +1,36 @@
 /**
  * FlashListCompat — FlatList drop-in powered by FlashList
- * Accepts all FlatList props; strips incompatible ones before passing to FlashList.
+ * Accepts all FlashList props plus the FlatList-only virtualization props
+ * screens still pass; strips the incompatible ones before rendering FlashList.
  */
 import React from 'react';
-import { FlashList } from '@shopify/flash-list';
+import type { FlatListProps } from 'react-native';
+import { FlashList, FlashListProps } from '@shopify/flash-list';
 
-export function FlashListCompat(props: any) {
+/** FlatList-only props FlashList does not accept — stripped before render. */
+type FlatListOnlyProps<T> = Partial<Pick<FlatListProps<T>,
+  | 'getItemLayout'
+  | 'removeClippedSubviews'
+  | 'maxToRenderPerBatch'
+  | 'windowSize'
+  | 'initialNumToRender'
+  | 'updateCellsBatchingPeriod'
+>>;
+
+export type FlashListCompatProps<T> = FlashListProps<T> & FlatListOnlyProps<T>;
+
+export function FlashListCompat<T>(props: FlashListCompatProps<T>): React.JSX.Element {
   const {
     getItemLayout: _a,
     removeClippedSubviews: _b,
     maxToRenderPerBatch: _c,
     windowSize: _d,
     initialNumToRender: _e,
-    keyboardShouldPersistTaps: _f,
-    updateCellsBatchingPeriod: _g,
+    updateCellsBatchingPeriod: _f,
     estimatedItemSize = 80,
     ...rest
   } = props;
-  return <FlashList estimatedItemSize={estimatedItemSize} {...rest} />;
+  return <FlashList<T> estimatedItemSize={estimatedItemSize} {...rest} />;
 }
 
 export default FlashListCompat;

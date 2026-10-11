@@ -4,6 +4,7 @@
  */
 import { stripe, LIVE, billingLimiter, getOrCreateStripeCustomer, BONDSMAN_TIERS, generateIdempotencyKey, BONDSMAN_LEAD_FEE_CENTS, formatLeadFee, bondsmanLeadFeeInfo } from './_shared.js';
 import { visibleArrestSql, realArrestSql, isSampleColumnSql } from '../../utils/arrestVisibility.js';
+import { arrestFeedsConfigured } from '../../services/arrest_ingest.js';
 
 // Flat lead fee (same amount regardless of bail) — single source of truth is
 // ./leadFee.js. Bail-scaled fees implicate runner-capper statutes (TX §38.12,
@@ -96,7 +97,11 @@ router.get('/leads', authRequired, async (req, res) => {
       name: r.already_purchased ? r.name : r.name.split(' ')[0] + ' ' + (r.name.split(' ')[1]?.[0] || '') + '.',
     }));
 
-    res.json({ leads, count: leads.length, lead_fee: bondsmanLeadFeeInfo(), mock: !LIVE });
+    res.json({ leads, count: leads.length, lead_fee: bondsmanLeadFeeInfo(), mock: !LIVE,
+               // Honest coverage flag: false = no public arrest feed is
+               // configured (ARREST_FEED_URLS unset), so an empty lead list
+               // reflects missing coverage, not a quiet market.
+               feeds_configured: arrestFeedsConfigured() });
   } catch {
     res.status(500).json({ error: 'Server error. Please try again.' });
   }

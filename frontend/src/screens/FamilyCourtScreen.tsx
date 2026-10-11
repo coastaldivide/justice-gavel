@@ -14,7 +14,8 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React from 'react';
 
-import { View, Text, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, LayoutAnimation } from 'react-native';
+import type { ScreenProps } from '../types/navigation';
 import {  useTheme, RADIUS, COLORS } from '../constants/theme';
 import { InfoTabs } from '../components/InfoTabs';
 
@@ -128,7 +129,7 @@ const SUPPORT_SECTIONS = [
   },
 ];
 
-function FamilyCourtScreen(): React.JSX.Element {
+function FamilyCourtScreen({ navigation }: ScreenProps): React.JSX.Element {
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -161,6 +162,20 @@ function FamilyCourtScreen(): React.JSX.Element {
           onChange={k => setTab(k as 'custody' | 'orders' | 'support')}
         />
       </View>
+
+      {/* Child-support estimator CTA (support tab only) */}
+      {tab === 'support' && (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Open the child support estimator"
+          style={[styles.cta, { backgroundColor: colors.navy, marginHorizontal: 12 }]}
+          onPress={() => navigation.navigate('ChildSupport')}
+        >
+          <Text maxFontSizeMultiplier={1.4} style={[styles.ctaText, { color: colors.textOnNavy }]}>
+            🧮 Estimate your child support →
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Section cards */}
       {allSections?.length === 0 ? (

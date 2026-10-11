@@ -192,13 +192,14 @@ describe('S7. Components — Prop Interface Depth', () => {
     expect(src).toContain("'sm' | 'md'");
     expect(src).toContain('React.memo');
   });
-  test('S7-03: PlaceholderIllustration props: type(IllustrationType)+size?+color?', async () => {
+  test('S7-03: Illustrations props: width?/height? (PlaceholderIllustration retired in step 6)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
-    expect(src).toContain('IllustrationType');
-    expect(src).toContain('size?');
-    expect(src).toContain('color?');
-    expect(src).toContain('React.memo');
+    expect(fs.existsSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/frontend/src/components/Illustrations.tsx', 'utf8');
+    expect(src).toContain('IllustrationProps');
+    expect(src).toContain('width');
+    expect(src).toContain('height');
+    expect(src).toContain('memo');
   });
   test('S7-04: MotionTypeBadge props: motionType string', async () => {
     const fs = await import('fs');

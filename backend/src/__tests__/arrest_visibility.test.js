@@ -248,7 +248,9 @@ describePg('sample arrests on Postgres (real routes)', () => {
           WHERE alert_sent = 0 AND created_at >= NOW() - INTERVAL '24 hours' AND ${realArrestSql()}`);
       if (pending.n === 0) {
         const res = await alerts.sendArrestAlerts();
-        expect(res).toEqual({ alerts_sent: 0 });
+        // Step 6 added user-monitor checking to the same run, so the result
+        // also reports monitors_checked / monitor_matches.
+        expect(res).toMatchObject({ alerts_sent: 0, monitor_matches: 0 });
         const row = await db.get('SELECT alert_sent FROM arrest_records WHERE id = ?', [ids.seed]);
         expect(Number(row.alert_sent)).toBe(0);   // never processed
       }

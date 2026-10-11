@@ -195,7 +195,6 @@ export const LIMITS = {
 
 export const API_URLS = {
   ANTHROPIC:    ANTHROPIC_MESSAGES_URL,
-  JUDYRECORDS:  'https://api.judyrecords.com/v1',
   GOOGLE_PLACES:'https://maps.googleapis.com/maps/api/place',
   CALENDLY:     'https://api.calendly.com/v2',
 };

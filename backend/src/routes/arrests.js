@@ -18,6 +18,7 @@ import { authRequired as authMiddleware } from '../middleware/auth.js';
 import { sendArrestAlerts } from '../services/arrest_alerts.js';
 // Sample (seeded) rows are hidden unless SHOW_SAMPLE_ARRESTS=true; see utils/arrestVisibility.js
 import { visibleArrestSql, isSampleColumnSql, sampleArrestsEnabled } from '../utils/arrestVisibility.js';
+import { arrestFeedsConfigured } from '../services/arrest_ingest.js';
 const alertsPipelineLimiter = makeUserLimiter({ windowMs: 60_000, max: 20 });
 
 
@@ -73,7 +74,10 @@ router.get('/search', authMiddleware, async (req, res) => {
     );
 
     res.json({ records, total: Number(total?.n ?? 0), limit: safeInt(limit), offset: safeInt(offset),
-               sample_mode: sampleArrestsEnabled() });
+               sample_mode: sampleArrestsEnabled(),
+               // Honest coverage flag: false = no public arrest feed is wired
+               // up (ARREST_FEED_URLS unset), so missing records are expected.
+               feeds_configured: arrestFeedsConfigured() });
   } catch (e) {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
@@ -103,7 +107,8 @@ router.get('/recent', authMiddleware, async (req, res) => {
     );
 
     res.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=300');
-    res.json({ records, count: records.length, window_hours: safeInt(hours), sample_mode: sampleArrestsEnabled() });
+    res.json({ records, count: records.length, window_hours: safeInt(hours), sample_mode: sampleArrestsEnabled(),
+               feeds_configured: arrestFeedsConfigured() });
   } catch (e) {
     logger.error({ msg: '[arrests]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
@@ -158,7 +163,7 @@ router.get('/monitors', authMiddleware, async (req, res) => {
   try {
     const db = await getDb();
     const rows = await db.all(
-      'SELECT id, user_id, COALESCE(watch_name, name) AS watch_name, name, county, state, notify_email, notify_sms, active, created_at FROM arrest_monitors WHERE user_id=? AND COALESCE(active, 1) = 1 ORDER BY id DESC',
+      'SELECT id, user_id, COALESCE(watch_name, name) AS watch_name, name, county, state, notify_email, notify_sms, active, last_checked, last_result, created_at FROM arrest_monitors WHERE user_id=? AND COALESCE(active, 1) = 1 ORDER BY id DESC',
       [req.user.id]
     );
     res.json({ monitors: rows, count: rows.length });

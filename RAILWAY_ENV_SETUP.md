@@ -55,6 +55,17 @@ ATTACHMENTS_BUCKET=case-documents        Supabase Storage bucket for attachments
 ATTACHMENTS_STORAGE=off|local|supabase   force a backend; "off" → attachment upload returns 503
                                           storage_unavailable
 HEALTH_CACHE_MS=5000                     /health caches its DB probe this long (default 5 s)
+ARREST_FEED_URLS=[...]                   JSON array of public arrest feeds to ingest, e.g.
+                                          [{"id":"davidson_tn","url":"https://example.gov/bookings.json",
+                                          "state":"TN","county":"Davidson"}]. Each url must be https and
+                                          return a JSON array (or {records:[...]}) of
+                                          {name, booking_date, charges, bail_amount, court_date, county,
+                                          state, jail_location, has_attorney, case_number}. Rows are
+                                          validated/sanitized and stored with source=feed_<id>.
+                                          UNSET (default) = no arrest coverage: POST /api/arrests/ingest
+                                          ingests nothing and the app shows "no public arrest feeds
+                                          configured" empty states. Never point this at a non-public or
+                                          unverified source.
 SHOW_SAMPLE_ARRESTS=false                default false — leave unset in production. The database
                                           ships 600 GENERATED arrest rows (source seed_v1); they are
                                           hidden from every API response, alert, bot message and lead

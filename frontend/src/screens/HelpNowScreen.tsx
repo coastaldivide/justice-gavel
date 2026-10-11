@@ -609,7 +609,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
           paddingVertical:10, paddingHorizontal:16, gap:6 }}
       >
         <Text maxFontSizeMultiplier={1.2} style={{ fontSize:11, color:colors.textPrimary }}>
-          ⚖️ Attorney or bondsman? Get real-time arrest alerts →
+          ⚖️ Attorney or bondsman? Get arrest record alerts →
         </Text>
       </TouchableOpacity>
       </ScrollView>

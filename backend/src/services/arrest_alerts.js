@@ -90,6 +90,70 @@ function buildBailAgentAlert(agent, arrests) {
   };
 }
 
+// ── User arrest monitors (Pro tier, routes/arrests.js /monitors) ──────────────
+/**
+ * monitorMatches — does an arrest record match a user's monitor?
+ * Name: every word of the watched name must appear in the record's name
+ * (case-insensitive), so "John Smith" matches "SMITH, JOHN A" but not
+ * "John Doe". County/state filters apply when the monitor sets them
+ * ('All' county = any).
+ */
+export function monitorMatches(monitor, arrest) {
+  const watch = String(monitor.watch_name || '').toLowerCase().split(/\s+/).filter(Boolean);
+  if (!watch.length) return false;
+  const name = String(arrest.name || '').toLowerCase();
+  if (!watch.every(w => name.includes(w))) return false;
+  const mCounty = String(monitor.county || '').trim().toLowerCase();
+  if (mCounty && mCounty !== 'all' &&
+      mCounty !== String(arrest.county || '').trim().toLowerCase()) return false;
+  const mState = String(monitor.state || '').trim().toUpperCase();
+  if (mState && arrest.state && mState !== String(arrest.state).toUpperCase()) return false;
+  return true;
+}
+
+/**
+ * checkArrestMonitors — match every active user monitor against the new
+ * arrest records of this run, push-notify owners of matches, and record
+ * last_checked / last_result so the app can show them honestly.
+ */
+async function checkArrestMonitors(db, newArrests, { dryRun = false } = {}) {
+  const monitors = await db.all(
+    `SELECT id, user_id, COALESCE(watch_name, name) AS watch_name, county, state
+       FROM arrest_monitors WHERE COALESCE(active, 1) = 1`
+  ).catch(e => { logger.warn('[alerts] monitor query failed:', e?.message); return []; });
+
+  let matched = 0;
+  for (const m of monitors) {
+    const hits = newArrests.filter(a => monitorMatches(m, a));
+    if (hits.length) {
+      matched++;
+      if (!dryRun) {
+        try {
+          const { sendPushToUser } = await import('./pushDelivery.js');
+          await sendPushToUser(m.user_id, {
+            title: '🔔 Arrest monitor match',
+            body: `A new public arrest record matches "${m.watch_name}"${hits[0].county ? ` in ${hits[0].county} County` : ''}. Open Arrest Monitor to review.`,
+            data: { screen: 'ArrestMonitor' },
+            channelId: 'case_updates',
+          });
+        } catch (e) {
+          logger.warn('[alerts] monitor push failed (non-fatal):', e?.message);
+        }
+      }
+    }
+    if (!dryRun) {
+      await db.run(
+        `UPDATE arrest_monitors SET last_checked = NOW(), last_result = ? WHERE id = ?`,
+        [hits.length ? 'found' : 'none', m.id]
+      ).catch(e => logger.warn('[alerts] monitor update failed:', e?.message));
+    }
+  }
+  if (monitors.length) {
+    logger.info(`[alerts] ${monitors.length} monitors checked, ${matched} matched`);
+  }
+  return { monitors_checked: monitors.length, monitor_matches: matched };
+}
+
 function detectAreas(charges) {
   if (!charges) return ['General'];
   const found = [];
@@ -144,7 +208,9 @@ export async function sendArrestAlerts(options = {}) {
 
   if (!newArrests.length) {
     logger.info('[alerts] No new arrests to alert on');
-    return { alerts_sent: 0 };
+    // Still stamp user monitors so the app shows an honest "Last checked".
+    const monitorStats = await checkArrestMonitors(db, [], options);
+    return { alerts_sent: 0, ...monitorStats };
   }
 
   logger.info(`[alerts] ${newArrests.length} new arrests to process`);
@@ -208,6 +274,9 @@ export async function sendArrestAlerts(options = {}) {
     if (sent) alertsSent++;
   }
 
+  // ── User arrest monitors (push alerts + last_checked bookkeeping) ──
+  const monitorStats = await checkArrestMonitors(db, newArrests, options);
+
   // Mark all processed arrests as alerted
   const ids = newArrests.map(a => a.id);
   if (ids.length && !options.dryRun) {
@@ -218,5 +287,5 @@ export async function sendArrestAlerts(options = {}) {
   }
 
   logger.info(`[alerts] ✅ ${alertsSent} alerts sent, ${newArrests.length} arrests marked`);
-  return { alerts_sent: alertsSent, arrests_processed: newArrests.length };
+  return { alerts_sent: alertsSent, arrests_processed: newArrests.length, ...monitorStats };
 }

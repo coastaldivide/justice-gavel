@@ -111,15 +111,17 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
           <AppIcon name="notifications-outline" size={20} color={COLORS.navy} />
           <Text maxFontSizeMultiplier={1.4} style={styles.upsellTitle}>Arrest Monitoring</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.upsellBody}>
-            Get an instant alert the moment someone you care about is booked into any jail in the US.{'\n\n'}
-            Monitor up to 5 names across any county -- 24 hours a day, 7 days a week.
+            Get a push alert when a name you watch appears in the public arrest
+            records we ingest.{'\n\n'}
+            Monitor up to 5 names. Coverage depends on the public booking feeds
+            connected for your area.
           </Text>
           <View style={styles.upsellFeatures}>
             {[
-              '24/7 arrest record scanning',
-              'Instant push notification on match',
+              'Nightly check of ingested arrest records',
+              'Push notification on a new match',
               'Up to 5 names monitored',
-              'Any county in the US',
+              'Covers connected public booking feeds',
               'Includes full Pro plan features',
             ].map(f => (
               <View key={f} style={styles.upsellFeatureRow}>
@@ -180,7 +182,7 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>👁</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>No monitors yet</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>
-                Add a name below -- we'll alert you the moment they appear in arrest records.
+                Add a name below -- we'll alert you when it appears in the arrest records we ingest.
               </Text>
             </View>
           ) : (
@@ -237,7 +239,6 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                     onChangeText={setCounty}
           returnKeyType="next"
           blurOnSubmit
-        keyboardType="numeric"
         />
                   <TextInput
           accessibilityLabel="State"
@@ -287,9 +288,12 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
           <View style={styles.infoCard}>
             <Text maxFontSizeMultiplier={1.4} style={styles.infoTitle}>How it works</Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.infoText}>
-              Every night at 3am, we scan arrest records across the US for any name on your list.
-              If we find a match, you get an instant push notification with the booking details.{'\n\n'}
-              Monitors run for as long as your Pro subscription is active.
+              Every night we check the names on your list against the public arrest
+              records in our database. On a new match you get a push notification
+              with the booking details.{'\n\n'}
+              Coverage depends on the public booking feeds connected for your area --
+              a monitor can only match records from those feeds. Monitors run for as
+              long as your Pro subscription is active.
             </Text>
           </View>
 

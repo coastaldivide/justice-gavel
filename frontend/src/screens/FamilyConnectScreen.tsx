@@ -127,6 +127,9 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);   // a search has completed (drives the empty state)
+  // Server-reported arrest coverage: false = no public arrest feed is
+  // configured, so the empty state must not imply live coverage.
+  const [feedsConfigured, setFeedsConfigured] = useState(true);
   const [selectedArrest, setSelectedArrest] = useState<any>(null);
 
   // Step 2: family info
@@ -160,6 +163,7 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       });
       const records: any[] = Array.isArray(res.data?.records) ? res.data?.records : [];
       setSearchResults(records);
+      setFeedsConfigured(res.data?.feeds_configured !== false);
       setSearched(true);
     } catch {
       setSearchResults([]);
@@ -293,9 +297,13 @@ function FamilyConnectScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           )}
           {searched && !searching && searchResults.length === 0 && (
             <View testID="arrest-search-empty" style={styles.emptyResults}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.emptyResultsTitle}>No matching record found</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyResultsTitle}>
+                {feedsConfigured ? 'No matching record found' : 'No public arrest feeds configured for your area yet'}
+              </Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.emptyResultsText}>
-                That's okay -- you can still connect with attorneys and bail agents. Continue without an arrest record below.
+                {feedsConfigured
+                  ? "That's okay -- you can still connect with attorneys and bail agents. Continue without an arrest record below."
+                  : "Our arrest-record search doesn't cover your area yet, so not finding a record here is expected. You can still connect with attorneys and bail agents -- continue without a record below."}
               </Text>
             </View>
           )}

@@ -481,7 +481,10 @@ router.get('/:caseId', authRequired, async (req, res, next) => {
       if (m.attachment_id) m.attachment_url = `/api/messages/attachment/${m.attachment_id}`;
       return m;
     });
-    return res.json({ messages, realtime_channel: `case:${cid}` });
+    // No realtime channel is advertised: clients poll this endpoint
+    // (frontend hooks/useCaseMessages.ts) — Supabase Realtime would require
+    // shipping the anon key, and RLS has no policies.
+    return res.json({ messages });
   } catch (e) {
     logger.warn('[messages/list]', e?.message);
     return err400(res, 'Failed to load messages');
@@ -526,7 +529,7 @@ router.post('/:caseId', authRequired, async (req, res, next) => {
       meta: { length: safeBody.length }, req });
 
     notifyCaseMessage(db, { cas: acc.cas, senderType: acc.senderType, senderId: req.user.id, text: safeBody });
-    return res.json({ message: decryptMessage(msg), channel: `case:${acc.cas.id}` });
+    return res.json({ message: decryptMessage(msg) });
   } catch (e) {
     logger.warn('[messages/send]', e?.message);
     return err400(res, 'Failed to send message');

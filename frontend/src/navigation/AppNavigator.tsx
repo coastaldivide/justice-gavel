@@ -133,7 +133,7 @@ const FirmAcquisitionScreen = withSuspense(React.lazy(() => import('../screens/F
 const MatterIntelligenceScreen = withSuspense(React.lazy(() => import('../screens/MatterIntelligenceScreen')));
 const HagueContactScreen = withSuspense(React.lazy(() => import('../screens/HagueContactScreen')));
 const AttorneyPrivacyScreen = withSuspense(React.lazy(() => import('../screens/AttorneyPrivacyScreen')));
-// ChildSupportScreen is intentionally not registered (orphaned route removed in v8.6.3).
+const ChildSupportScreen = withSuspense(React.lazy(() => import('../screens/ChildSupportScreen')));
 const OfflineStatusScreen = withSuspense(React.lazy(() => import('../screens/OfflineStatusScreen')));
 
 
@@ -224,6 +224,7 @@ function MoreNavigator() {
           options={{ title: '🌐 Hague Convention' }} />
       <MoreStack.Screen name="MentalHealthDiversion" component={DiversionScreen} options={{ title: '🧠 Mental Health & Law' }} />
       <MoreStack.Screen name="FamilyCourt"           component={FamilyCourtScreen}           options={{ title: '👨‍👩‍👧 Family Court' }} />
+      <MoreStack.Screen name="ChildSupport"          component={ChildSupportScreen}          options={{ title: '🧮 Support Calculator' }} />
       <MoreStack.Screen name="ImmigrationConsequences" component={ImmigrationConsequencesScreen} options={{ title: '🌎 Immigration Consequences' }} />
       <MoreStack.Screen name="HousingRights"         component={HousingRightsScreen}         options={{ title: '🏘️ Housing Rights' }} />
       <MoreStack.Screen name="AttorneyDashboard"     component={AttorneyDashboardScreen}     options={{ title: '⚖️ Attorney Dashboard' }} />

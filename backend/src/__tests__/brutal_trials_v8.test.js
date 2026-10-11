@@ -391,43 +391,29 @@ describe('4. MotionTypeBadge — Motion Color Model', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5. PlaceholderIllustration — 6 types, emoji icons
+// 5. Illustrations — real SVG artwork (PlaceholderIllustration was retired in
+//    step 6: its dashed "design placeholder" circle rendered in the live
+//    JustArrested flow; the screen now uses the finished IllustrationRights)
 // ═══════════════════════════════════════════════════════════════════════════
-describe('5. PlaceholderIllustration — Onboarding Illustrations', () => {
+describe('5. Illustrations — finished SVG artwork', () => {
 
-  test('5-01: 6 illustration types defined', async () => {
+  test('5-01: PlaceholderIllustration is gone — no screen renders placeholder art', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
-    const TYPES = ['gavel', 'shield', 'lawyer', 'phone', 'check', 'lock'];
-    for (const t of TYPES) {
-      expect(src).toContain(`'${t}'`);
-    }
+    expect(fs.existsSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx')).toBe(false);
   });
 
-  test('5-02: IllustrationType union covers exactly 6 values', async () => {
+  test('5-02: JustArrested renders the finished IllustrationRights artwork', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
-    expect(src).toContain("'gavel' | 'shield' | 'lawyer' | 'phone' | 'check' | 'lock'");
+    const src = fs.readFileSync(__REPO + '/frontend/src/screens/JustArrestedScreen.tsx', 'utf8');
+    expect(src).toContain('IllustrationRights');
+    expect(src).not.toContain('PlaceholderIllustration');
   });
 
-  test('5-03: gavel type uses justice scale emoji ⚖️', async () => {
+  test('5-03: Illustrations.tsx exports the artwork JustArrested uses', async () => {
     const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
-    expect(src).toContain('⚖️');
-  });
-
-  test('5-04: Props has size (optional) and color (optional)', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
-    expect(src).toContain('size?:');
-    expect(src).toContain('color?:');
-  });
-
-  test('5-05: PlaceholderIllustration uses ICONS map for emoji lookup', async () => {
-    const fs  = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
-    expect(src).toContain('ICONS');
-    expect(src).toContain('IllustrationType');
+    const src = fs.readFileSync(__REPO + '/frontend/src/components/Illustrations.tsx', 'utf8');
+    expect(src).toContain('export function IllustrationRights');
+    expect(src).toContain('Svg');
   });
 });
 
@@ -504,12 +490,16 @@ describe('7. types/navigation.ts — Navigation Type Contracts', () => {
     expect(src).toContain('RouteProp');
   });
 
-  test('7-04: ScreenProps has navigation and optional route', async () => {
+  test('7-04: ScreenProps has navigation and REQUIRED route', async () => {
+    // Step 5 (strict TypeScript) made route required: react-navigation always
+    // passes it, and an optional route breaks ComponentType assignability
+    // under strictFunctionTypes.
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('ScreenProps');
     expect(src).toContain('navigation: AppNavigation');
-    expect(src).toContain('route?:');
+    expect(src).toMatch(/route:\s+AppRoute<T>;/);
+    expect(src).not.toContain('route?:');
   });
 
   test('7-05: ScreenProps uses wildcard key [key: string]: unknown', async () => {

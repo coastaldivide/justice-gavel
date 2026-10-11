@@ -127,7 +127,9 @@ describe('3. types/navigation.ts — Navigation Types', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/types/navigation.ts', 'utf8');
     expect(src).toContain('ScreenProps');
     expect(src).toContain('navigation: AppNavigation');
-    expect(src).toContain('route?');
+    // Step 5 (strict TypeScript) made route REQUIRED: react-navigation always
+    // passes it, and an optional route breaks ComponentType assignability.
+    expect(src).toMatch(/route:\s+AppRoute<T>;/);
   });
   test('3-04: avoids explicit any types on all screens (design rationale)', async () => {
     const fs = await import('fs');

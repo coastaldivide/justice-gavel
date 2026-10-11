@@ -56,7 +56,7 @@ const STEPS = [
   },
 ];
 
-import { PlaceholderIllustration } from '../components/PlaceholderIllustration';
+import { IllustrationRights } from '../components/Illustrations';
 function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
   const { colors, isDark } = useTheme();
@@ -125,7 +125,9 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-      <PlaceholderIllustration type="shield" size={80} />
+      <View style={{ alignItems: 'center' }}>
+        <IllustrationRights width={110} height={99} />
+      </View>
 
 
         {/* Body text */}

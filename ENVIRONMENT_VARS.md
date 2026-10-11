@@ -184,7 +184,7 @@ configured in Railway (or your deployment environment) as needed.
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `EXTRA_ORIGINS` | Optional | Comma-separated additional CORS origins |
-| `JUDYRECORDS_API_KEY` | Optional | JudyRecords API key for arrest record lookup |
+| `ARREST_FEED_URLS` | Optional | JSON array of public arrest feeds to ingest, e.g. `[{"id":"davidson_tn","url":"https://example.gov/bookings.json","state":"TN","county":"Davidson"}]`. Each `url` must be `https` and return a JSON array (or `{records:[...]}`) of `{name, booking_date, charges, bail_amount, court_date, county, state, jail_location, has_attorney, case_number}`. Records are validated/sanitized before insert and stored with `source = feed_<id>`. **Unset (the default) means no arrest coverage**: `POST /api/arrests/ingest` ingests nothing and the app shows "no public arrest feeds configured" empty states. |
 | `SHOW_SAMPLE_ARRESTS` | Optional (default `false`) | Demos only. `true` shows the seeded sample arrest rows (source `seed_v1`) in read-only arrest views, flagged `is_sample: true` / "Sample record". They are never alerted on, messaged about or sold. See RAILWAY_ENV_SETUP.md |
 
 

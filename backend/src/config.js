@@ -63,6 +63,9 @@ const OPTIONAL_FEATURES = {
   GOOGLE_PLACES_KEY:     'Google Places fallback disabled',
   SUPABASE_URL:          'Supabase storage/auth helpers disabled',
   OPENAI_API_KEY:        'Whisper transcription disabled',
+  // JSON array of public arrest-feed objects ({id,url,state,county}); see
+  // services/arrest_ingest.js and ENVIRONMENT_VARS.md for the exact shape.
+  ARREST_FEED_URLS:      'Arrest ingestion disabled — POST /api/arrests/ingest has no feed to pull and arrest coverage is empty',
   // Default (unset/false) is the safe production setting. "true" is for demos only:
   // seeded sample arrest rows (source seed_v1 etc.) then appear in read-only arrest
   // views flagged is_sample:true / labelled "Sample record" in the app. They are
@@ -232,6 +235,9 @@ export const ALL_ENV_VARS = {
   REFRESH_CRON:             process.env.REFRESH_CRON               || '0 3 * * *',
   REFRESH_TZ:               process.env.REFRESH_TZ                 || 'America/Chicago',
   HEALTH_SCAN_CRON:         process.env.HEALTH_SCAN_CRON           || '0 2 * * *',
+
+  // ── Arrest data ──────────────────────────────────────────────────────────
+  ARREST_FEED_URLS:         process.env.ARREST_FEED_URLS           || '', // see services/arrest_ingest.js
 
   // ── Demo data ────────────────────────────────────────────────────────────
   SHOW_SAMPLE_ARRESTS:      process.env.SHOW_SAMPLE_ARRESTS        || 'false', // see utils/arrestVisibility.js

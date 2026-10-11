@@ -257,10 +257,12 @@ describe('S7. Components — Behavioral Depth (4 ~-hit components)', () => {
     expect(src).toContain('React.memo');
     expect(src).toContain('not legal advice');
   });
-  test('S7-03: PlaceholderIllustration is memo-ized SVG placeholder', async () => {
+  test('S7-03: Illustrations exports memo-friendly finished SVG artwork (PlaceholderIllustration retired in step 6)', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx', 'utf8');
-    expect(src).toContain('React.memo');
+    expect(fs.existsSync(__REPO + '/frontend/src/components/PlaceholderIllustration.tsx')).toBe(false);
+    const src = fs.readFileSync(__REPO + '/frontend/src/components/Illustrations.tsx', 'utf8');
+    expect(src).toContain('memo');
+    expect(src).toContain('IllustrationRights');
   });
   test('S7-04: ScreenHeader uses COLORS + SHADOW from theme, has action slot', async () => {
     const fs = await import('fs');

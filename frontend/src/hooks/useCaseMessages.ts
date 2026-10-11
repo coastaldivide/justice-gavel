@@ -1,0 +1,137 @@
+/**
+ * hooks/useCaseMessages.ts — case message thread with polling updates.
+ *
+ * Loads the thread from GET /messages/:caseId and refreshes it every
+ * MESSAGE_POLL_MS while the app is in the foreground. This deliberately
+ * does NOT use Supabase Realtime: subscribing from the app would require
+ * shipping the Supabase anon key in the bundle, and the database has no
+ * row-level-security policies, so that key must never ship. Authenticated
+ * REST polling delivers the same messages a few seconds later with no new
+ * attack surface.
+ *
+ * Usage:
+ *   const { messages, loading, error, sending, sendMessage, refresh } =
+ *     useCaseMessages(caseId);
+ */
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { AppState } from 'react-native';
+import { api, apiErrorMessage } from '../services/api';
+
+/** How often the open thread checks for new messages (foreground only). */
+export const MESSAGE_POLL_MS = 8_000;
+
+export interface CaseMessage {
+  id:              number;
+  sender_id:       number;
+  sender_type:     'user' | 'attorney' | 'system';
+  sender_name:     string | null;
+  body:            string;
+  message_type?:   'chat' | 'note' | 'attachment';
+  sent_at:         string;
+  read_at:         string | null;
+  attachment_id?:   number | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size?: number | null;
+  attachment_url?:  string | null;
+}
+
+/** Union by id (newer data wins), ordered by sent_at then id. */
+function mergeById(prev: CaseMessage[], incoming: CaseMessage[]): CaseMessage[] {
+  const byId = new Map<number, CaseMessage>();
+  for (const m of prev) byId.set(m.id, m);
+  for (const m of incoming) byId.set(m.id, m);
+  return [...byId.values()].sort((a, b) =>
+    a.sent_at === b.sent_at ? a.id - b.id : a.sent_at < b.sent_at ? -1 : 1
+  );
+}
+
+export function useCaseMessages(caseId: number | string | null | undefined) {
+  const [messages, setMessages] = useState<CaseMessage[]>([]);
+  const [loading,  setLoading]  = useState(false);
+  const [sending,  setSending]  = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
+
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Guards against a slow response for a previous case landing in a new thread.
+  const caseIdRef = useRef(caseId);
+  useEffect(() => {
+    caseIdRef.current = caseId;
+    setMessages([]);
+    setError(null);
+  }, [caseId]);
+
+  const load = useCallback(async (opts: { silent?: boolean } = {}) => {
+    const cid = caseId;
+    if (!cid) return;
+    if (!opts.silent) { setLoading(true); setError(null); }
+    try {
+      const res = await api.get(`/messages/${cid}`);
+      if (!mountedRef.current || caseIdRef.current !== cid) return;
+      const list: CaseMessage[] = Array.isArray(res.data?.messages) ? res.data.messages : [];
+      setMessages(prev => mergeById(opts.silent ? prev : [], list));
+      setError(null);
+    } catch (e) {
+      if (!mountedRef.current || caseIdRef.current !== cid) return;
+      // A failed background poll keeps the thread as-is and tries again later.
+      if (!opts.silent) setError(apiErrorMessage(e, 'Could not load messages.'));
+    } finally {
+      if (mountedRef.current && !opts.silent && caseIdRef.current === cid) setLoading(false);
+    }
+  }, [caseId]);
+
+  // Initial load + foreground polling with cleanup.
+  useEffect(() => {
+    if (!caseId) return;
+    load();
+    const timer = setInterval(() => {
+      if (AppState.currentState === 'active') load({ silent: true });
+    }, MESSAGE_POLL_MS);
+    return () => clearInterval(timer);
+  }, [caseId, load]);
+
+  /**
+   * Send a message in the thread. Returns true when the server accepted it,
+   * so callers can keep the draft in the input on failure.
+   */
+  const sendMessage = useCallback(async (
+    body: string,
+    type: 'chat' | 'note' = 'chat'
+  ): Promise<boolean> => {
+    const cid  = caseId;
+    const text = body.trim();
+    if (!cid || !text) return false;
+    const maxLen = type === 'note' ? 50_000 : 10_000;
+    if (text.length > maxLen) {
+      setError(`Message is longer than the ${maxLen.toLocaleString()}-character limit.`);
+      return false;
+    }
+    setSending(true);
+    setError(null);
+    try {
+      const res = await api.post(`/messages/${cid}`, { body: text, message_type: type });
+      if (mountedRef.current && caseIdRef.current === cid && res.data?.message) {
+        const msg = res.data.message as CaseMessage;
+        setMessages(prev => mergeById(prev, [msg]));
+      }
+      return true;
+    } catch (e) {
+      if (mountedRef.current && caseIdRef.current === cid) {
+        setError(apiErrorMessage(e, 'Message not sent. Check your connection and try again.'));
+      }
+      return false;
+    } finally {
+      if (mountedRef.current) setSending(false);
+    }
+  }, [caseId]);
+
+  const clearError = useCallback(() => setError(null), []);
+
+  return { messages, loading, sending, error, sendMessage, refresh: load, clearError };
+}

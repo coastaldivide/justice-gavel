@@ -152,13 +152,16 @@ function CourtLocatorScreen(): React.JSX.Element {
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign: 'center', margin: 20 }}>{error}</Text>
         <TouchableOpacity accessibilityRole="button" onPress={() => doSearch('Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:colors.textOnNavy,fontWeight:'700'}}>Retry</Text></TouchableOpacity>
       </>) : null}
+      {/* FlashList only supports padding/background in contentContainerStyle,
+          so the centered max-width column lives on a wrapper View instead. */}
+      <View style={{ flex: 1, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%' }}>
       <FlashList
           onRefresh={onRefresh}
         refreshing={refreshing}
         estimatedItemSize={80}
           data={results}
         keyExtractor={(i: Courthouse) => String(i.id)}
-        contentContainerStyle={{ padding: 16, paddingTop: 4, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
+        contentContainerStyle={{ padding: 16, paddingTop: 4 }}
         ListEmptyComponent={
           !loading ? (
             <Text maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginTop: 40 }}>
@@ -272,6 +275,7 @@ function CourtLocatorScreen(): React.JSX.Element {
           );
         }}
       />
+      </View>
     </View>
     </KeyboardAvoidingView>
   );
