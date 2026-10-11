@@ -216,7 +216,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
           }
           contentContainerStyle={{ padding: 12, paddingBottom: 40}}
           ListEmptyComponent={
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
               No lessons found. Check your connection.
             </Text>
           }
@@ -239,32 +239,32 @@ const makeStyles = (colors: any) => StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: colors.legal, borderRadius: 4 },
   progressSub: { color: COLORS.bgSubtle, fontSize: 12, marginTop: 6 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  emptyText: { color: colors.steel, fontSize: 14,
+  emptyText: { color: colors.info, fontSize: 14,
     lineHeight: 21, },
-  card: { backgroundColor: COLORS.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 4 },
+  card: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 4 },
   cardDone: { borderWidth: 1, borderColor: colors.legal },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   doneCircle: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.textMuted, alignItems: 'center', justifyContent: 'center' },
   doneCircleDone: { backgroundColor: colors.legal, borderColor: colors.legal },
-  doneCheck: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_900Black', fontWeight: '900' },
-  cardTitle: { fontSize: 15, lineHeight: 22, fontWeight: '800', color: COLORS.navy, marginBottom: 4 },
-  cardTitleDone: { color: colors.steel },
+  doneCheck: { color: colors.textOnAccent, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_900Black', fontWeight: '900' }, // design-audit-ignore: rendered only when done (legal fill)
+  cardTitle: { fontSize: 15, lineHeight: 22, fontWeight: '800', color: colors.textBrand, marginBottom: 4 },
+  cardTitleDone: { color: colors.info },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   catBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, borderWidth: 1 },
   catText: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   ptsText: { fontSize: 12, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  chevron: { fontSize: 12, color: colors.steel, marginLeft: 4 },
+  chevron: { fontSize: 12, color: colors.info, marginLeft: 4 },
   contentArea: { marginTop: 12, borderTopWidth: 1, borderTopColor: COLORS.bg, paddingTop: 10 },
-  contentText: { fontSize: 14, color: colors.bgCard, lineHeight: 22, marginBottom: 14 },
+  contentText: { fontSize: 14, color: colors.textPrimary, lineHeight: 22, marginBottom: 14 },
   completeBtn: { backgroundColor: colors.legal, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
-  completeBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
+  completeBtnText: { color: colors.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
   completedLabel: { textAlign: 'center', color: colors.legal, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   lifeCard: {
-    backgroundColor: COLORS.bgSubtle, borderRadius: 14, padding: 16,
+    backgroundColor: colors.bgSubtle, borderRadius: 14, padding: 16,
     margin: 12, borderWidth: 1, borderColor: COLORS.bgSubtle,
   },
-  lifeTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 4 },
-  lifeSub:   { fontSize: 12, color: colors.steel, lineHeight: 17 },
+  lifeTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 4 },
+  lifeSub:   { fontSize: 12, color: colors.info, lineHeight: 17 },
   lifeBtn:   { backgroundColor: COLORS.navy, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 16 },
   lifeBtnText: { color: COLORS.bgCard, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   streakBanner: { flexDirection: 'row', alignItems: 'center', gap: 12,

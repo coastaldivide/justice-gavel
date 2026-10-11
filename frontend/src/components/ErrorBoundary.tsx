@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react-native';
+import { COLORS } from '../constants/theme';
 /**
  * ErrorBoundary — catches unhandled render errors in the React tree.
  *
@@ -50,12 +51,12 @@ export class ErrorBoundary extends Component<Props, State> {
 }
 
 const styles = StyleSheet.create({
-  container: { flex:1, justifyContent:'center', alignItems:'center', backgroundColor:'#042C53', padding:24 },
+  container: { flex:1, justifyContent:'center', alignItems:'center', backgroundColor:COLORS.navy, padding:24 },
   icon:      { fontSize:48, marginBottom:16 },
-  title:     { color:'#FFFFFF', fontSize:20, fontWeight:'900', marginBottom:8, textAlign:'center' },
-  sub:       { color:'#9AADC7', fontSize:13, textAlign:'center', marginBottom:24, lineHeight:19 },
-  btn:       { backgroundColor:'#185FA5', borderRadius:12, paddingVertical:13, paddingHorizontal:32 },
-  btnText:   { color:'#FFFFFF', fontWeight:'800', fontSize:15 },
+  title:     { color:COLORS.white, fontSize:20, fontWeight:'900', marginBottom:8, textAlign:'center' },
+  sub:       { color:COLORS.steel, fontSize:13, textAlign:'center', marginBottom:24, lineHeight:19 },
+  btn:       { backgroundColor:COLORS.blue, borderRadius:12, paddingVertical:13, paddingHorizontal:32 },
+  btnText:   { color:COLORS.white, fontWeight:'800', fontSize:15 },
 });
 
 export default ErrorBoundary;

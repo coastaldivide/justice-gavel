@@ -371,7 +371,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
           {phase !== 'history' && (
             <TouchableOpacity accessibilityRole="button"
           accessibilityHint="Double-tap to activate" onPress={loadHistory} accessibilityLabel="History">
-              <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
+              <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
             </TouchableOpacity>
           )}
           {phase === 'result' && (
@@ -381,12 +381,12 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
               onPress={() => {
               setPhase('upload'); setFile(null); setAnalysis(null); setDocType('');
             }}>
-              <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
+              <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
             </TouchableOpacity>
           )}
         </View>
       ) });
-  }, [phase, loadHistory, navigation]);
+  }, [colors.textBrand, phase, loadHistory, navigation]);
 
   const openHistoryItem = useCallback(async (item: Record<string,unknown>) => {
     try {
@@ -744,7 +744,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
       <View style={{ backgroundColor:colors.bgCard, borderRadius:10,
         borderLeftWidth:4, borderLeftColor:colors.warn,
         padding:12, marginTop:12 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:'#555', fontStyle:'italic', lineHeight:16 }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:colors.textSecond, fontStyle:'italic', lineHeight:16 }}>
           ⚖️ AI document analysis is not legal advice. Analysis may miss key issues or
           misinterpret jurisdiction-specific rules. Have an attorney review all documents.
         </Text>

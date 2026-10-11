@@ -82,7 +82,7 @@ function CritRow({ label, met }: { label: string; met: boolean }) {
       <Text maxFontSizeMultiplier={1.4} style={[styles.critIcon, { color: met ? COLORS.legalDark : COLORS.emergencyDark }]}>
         {met ? '✓' : '✗'}
       </Text>
-      <Text maxFontSizeMultiplier={1.4} style={[styles.critLabel, { color: COLORS.textSecond }]}>{label}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={[styles.critLabel, { color: colors.textMuted }]}>{label}</Text>
     </View>
   );
 }
@@ -116,13 +116,14 @@ function JourneyBar({ level }: { level: GavelLevel }) {
 // ── Criteria section for one level ───────────────────────────────────────────
 function CriteriaSection({ title, progress, criteria, earned }:
   { title: string; progress: Progress; criteria: Record<string, unknown>; earned: boolean }) {
+  const { colors } = useTheme();
   if (!criteria) return null;
   const { user_type: ut } = progress;
 
   return (
-    <View style={[styles.critSection, { borderColor: earned ? COLORS.legal : COLORS.border }]}>
+    <View style={[styles.critSection, { borderColor: earned ? colors.legal : colors.border }]}>
       <View style={styles.critSectionHeader}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.critSectionTitle, { color: COLORS.textPrimary }]}>{title}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.critSectionTitle, { color: colors.textPrimary }]}>{title}</Text>
         {earned && <Text maxFontSizeMultiplier={1.4} style={styles.earnedTag}>✓ Earned</Text>}
       </View>
 
@@ -259,7 +260,7 @@ function GoldenGavelScreen(): React.JSX.Element {
           </Text>
         )}
         {level === 3 && (
-          <Text maxFontSizeMultiplier={1.4} style={[styles.nextHint, { color: colors.gold }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.nextHint, { color: colors.goldText }]}>
             🏆 You have reached the highest level
           </Text>
         )}
@@ -403,7 +404,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   critSection:       { borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
   critSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   critSectionTitle:  { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  earnedTag:         { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.legal, backgroundColor: colors.legal, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
+  earnedTag:         { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.legal, backgroundColor: colors.legalBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
   critRow:           { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.bg },
   critIcon:          { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_900Black', fontWeight: '900', width: 18, marginTop: 1 },
   critLabel:         { fontSize: 12, flex: 1, lineHeight: 18 },

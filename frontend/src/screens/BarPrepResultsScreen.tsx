@@ -13,13 +13,14 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/NavigationTypes';
-import { COLORS, FONTS, RADIUS } from '../constants/theme';
+import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BarPrepResults'>;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function ScoreRing({ pct }: { pct: number }) {
+  const { colors } = useTheme();
   const passing = pct >= 65;
   const color   = pct >= 80 ? COLORS.legal : pct >= 65 ? COLORS.steel : COLORS.bail;
   const verdict = pct >= 75 ? 'Excellent' : pct >= 65 ? 'Passing' : 'Keep Studying';
@@ -32,8 +33,8 @@ function ScoreRing({ pct }: { pct: number }) {
         <Text style={styles.ringLabel}>{verdict}</Text>
       </View>
       {passing
-        ? <Text style={[styles.passBadge, { color: COLORS.legal }]}>✓ Bar-passing territory</Text>
-        : <Text style={[styles.passBadge, { color: COLORS.bail }]}>Review and retry</Text>}
+        ? <Text style={[styles.passBadge, { color: colors.legal }]}>✓ Bar-passing territory</Text>
+        : <Text style={[styles.passBadge, { color: colors.bail }]}>Review and retry</Text>}
     </View>
   );
 }
@@ -46,6 +47,7 @@ function AnswerRow({
   isCorrect: boolean;
   index: number;
 }) {
+  const { colors } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const correctLetter = q.correct_answer?.toUpperCase();
   const correctText   = q[`option_${q.correct_answer?.toLowerCase()}`] ?? correctLetter;
@@ -96,7 +98,7 @@ function AnswerRow({
         {/* Supplemental study disclaimer */}
         <Text
           maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: '#888', textAlign: 'center',
+          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
           For supplemental study only. Not endorsed by any state bar or the NCBE.
@@ -185,7 +187,7 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
-          <Text style={[styles.statNum, { color: COLORS.steel }]}>{total}</Text>
+          <Text style={[styles.statNum, { color: COLORS.info }]}>{total}</Text>
           <Text style={styles.statLabel}>Total</Text>
         </View>
       </View>
@@ -237,7 +239,7 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: '#020E1C' },
+  root:    { flex: 1, backgroundColor: COLORS.navy },
   content: { padding: 20 },
 
   header:   { alignItems: 'center', marginBottom: 24 },
@@ -250,17 +252,17 @@ const styles = StyleSheet.create({
     width: 140, height: 140, borderRadius: 70,
     borderWidth: 6, justifyContent: 'center', alignItems: 'center',
     backgroundColor: COLORS.bgCard,
-    ...Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }, android: { elevation: 6 } }),
+    ...Platform.select({ ios: { shadowColor: COLORS.black, shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }, android: { elevation: 6 } }),
   },
   ringPct:    { ...FONTS.bold, fontSize: 38, fontVariant: ['tabular-nums'] },
-  ringLabel:  { ...FONTS.regular, fontSize: 13, color: COLORS.steel, marginTop: 2 },
+  ringLabel:  { ...FONTS.regular, fontSize: 13, color: COLORS.info, marginTop: 2 },
   passBadge:  { ...FONTS.bold, fontSize: 14, marginTop: 12 },
 
   // Stats row
   statsRow:    { flexDirection: 'row', backgroundColor: COLORS.bgCard, borderRadius: RADIUS?.md ?? 12, marginBottom: 20, padding: 16 },
   statBox:     { flex: 1, alignItems: 'center' },
   statNum:     { ...FONTS.bold, fontSize: 28, fontVariant: ['tabular-nums'] },
-  statLabel:   { ...FONTS.regular, fontSize: 12, color: COLORS.steel, marginTop: 2 },
+  statLabel:   { ...FONTS.regular, fontSize: 12, color: COLORS.info, marginTop: 2 },
   statDivider: { width: 1, backgroundColor: 'rgba(133,183,235,0.15)', marginVertical: 4 },
 
   // CTAs
@@ -268,8 +270,8 @@ const styles = StyleSheet.create({
   ctaBtn:               { borderRadius: RADIUS?.md ?? 12, paddingVertical: 14, alignItems: 'center' },
   ctaPrimary:           { backgroundColor: COLORS.legal },
   ctaSecondary:         { backgroundColor: COLORS.bgCard, borderWidth: 1, borderColor: COLORS.steel },
-  ctaBtnTextPrimary:    { ...FONTS.bold, fontSize: 15, color: '#fff' },
-  ctaBtnTextSecondary:  { ...FONTS.bold, fontSize: 15, color: COLORS.steel },
+  ctaBtnTextPrimary:    { ...FONTS.bold, fontSize: 15, color: COLORS.white },
+  ctaBtnTextSecondary:  { ...FONTS.bold, fontSize: 15, color: COLORS.info },
 
   // Section label
   sectionLabel: { ...FONTS.bold, fontSize: 16, color: COLORS.surface, marginBottom: 4 },
@@ -277,8 +279,8 @@ const styles = StyleSheet.create({
 
   // Answer rows
   ansRow:     { borderRadius: RADIUS?.md ?? 10, marginBottom: 8, overflow: 'hidden' },
-  ansCorrect: { backgroundColor: COLORS.legalBg ?? '#0D2010', borderLeftWidth: 3, borderLeftColor: COLORS.legal },
-  ansWrong:   { backgroundColor: COLORS.bailBg  ?? '#2C1500', borderLeftWidth: 3, borderLeftColor: COLORS.bail },
+  ansCorrect: { backgroundColor: COLORS.legalBg ?? COLORS.legalBg, borderLeftWidth: 3, borderLeftColor: COLORS.legal },
+  ansWrong:   { backgroundColor: COLORS.bailBg  ?? COLORS.bailBg, borderLeftWidth: 3, borderLeftColor: COLORS.bail },
 
   ansHeader:  { flexDirection: 'row', alignItems: 'flex-start', padding: 12, gap: 8 },
   ansIcon:    { ...FONTS.bold, fontSize: 16, width: 20, textAlign: 'center', color: COLORS.surface, marginTop: 1 },

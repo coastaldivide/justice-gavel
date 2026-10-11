@@ -346,7 +346,7 @@ if (phase === 'ready') return (
           onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action failed. Please try again.', 'error'))}
         >
           <View style={[styles.crisisIcon, { backgroundColor: colors.bgSubtle }]}>
-            <AppIcon name="call-outline" size={20} color="#1B5E20" />
+            <AppIcon name="call-outline" size={20} color={colors.legal} />
           </View>
           <View style={styles.crisisInfo}>
             <Text maxFontSizeMultiplier={1.4} style={styles.crisisName}>988 Suicide & Crisis Lifeline</Text>
@@ -437,7 +437,7 @@ if (phase === 'ready') return (
   // ── Error ──────────────────────────────────────────────────────────────────
   if (phase === 'error') return (
     <View style={styles.center}>
-      <AppIcon name="warning-outline" size={20} color="#E65100" />
+      <AppIcon name="warning-outline" size={20} color={colors.warn} />
       <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Could not send</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity
@@ -566,15 +566,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
     backgroundColor: COLORS.emergency, borderRadius: RADIUS.xl,
     padding: 20, marginBottom: 16, ...SHADOW.md },
   heroTitle: { fontSize: 20, ...FONTS.black, color: COLORS.bgCard, marginBottom: 6 },
-  heroSub:   { fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 18 },
+  heroSub:   { fontSize: 12, color: colors.textOnNavy, lineHeight: 18 },
 
   noContactsCard: {
     backgroundColor: COLORS.warnBg, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
     borderWidth: 1, borderColor: COLORS.steelMid },
-  noContactsTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.warn, marginBottom: 6 },
+  noContactsTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textOnGold, marginBottom: 6 },
   noContactsBody:  { fontSize: 12, lineHeight: 20, color: COLORS.textSecond, marginBottom: 12 },
   addContactsBtn:  { backgroundColor: COLORS.warn, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center' },
-  addContactsBtnText: { color: COLORS.bgCard, ...FONTS.heavy, fontSize: 12 },
+  addContactsBtnText: { color: colors.textOnGold, ...FONTS.heavy, fontSize: 12 },
 
   contactsList:  { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.border, ...SHADOW.sm },
   contactsLabel: { fontSize: 12, ...FONTS.heavy, color: COLORS.textMuted, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
@@ -591,25 +591,25 @@ const makeStyles = (colors: any) => StyleSheet.create({
   goBtnText:     { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
 
   editContactsLink: { alignItems: 'center', paddingVertical: 12 },
-  editContactsText: { fontSize: 12, lineHeight: 20, color: COLORS.steel, ...FONTS.semi },
+  editContactsText: { fontSize: 12, lineHeight: 20, color: colors.info, ...FONTS.semi },
 
-  statusText: { marginTop: 16, fontSize: 14, lineHeight: 21, color: COLORS.textMuted, textAlign: 'center' },
+  statusText: { marginTop: 16, fontSize: 14, lineHeight: 21, color: colors.textMuted, textAlign: 'center' },
   errorIcon:  { fontSize: 48, marginBottom: 12 },
-  errorTitle: { fontSize: 18, ...FONTS.heavy, color: COLORS.emergency, marginBottom: 8 },
-  errorBody:  { fontSize: 14, color: COLORS.textSecond, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
+  errorTitle: { fontSize: 18, ...FONTS.heavy, color: colors.emergency, marginBottom: 8 },
+  errorBody:  { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
   retryBtn:   { backgroundColor: COLORS.navy, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 28 },
   retryBtnText: { color: COLORS.bgCard, ...FONTS.heavy },
 
   doneIcon:  { fontSize: 72, marginBottom: 8 },
-  doneTitle: { fontSize: 22, ...FONTS.black, color: COLORS.legal, marginBottom: 4 },
-  doneSub:   { fontSize: 12, lineHeight: 20, color: COLORS.textMuted, marginBottom: 24 },
+  doneTitle: { fontSize: 22, ...FONTS.black, color: colors.legal, marginBottom: 4 },
+  doneSub:   { fontSize: 12, lineHeight: 20, color: colors.textMuted, marginBottom: 24 },
   doneBtn:   { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 16, paddingHorizontal: 40, alignItems: 'center' },
   doneBtnText: { color: COLORS.bgCard, ...FONTS.black, fontSize: 15,
     lineHeight: 22 },
 
   confirmHeader: { backgroundColor: COLORS.emergency, borderRadius: RADIUS.xl, padding: 16, marginBottom: 14, ...SHADOW.md },
   confirmTitle:  { fontSize: 20, ...FONTS.black, color: COLORS.bgCard, marginBottom: 2 },
-  confirmSub:    { fontSize: 12, color: 'rgba(255,255,255,0.8)' },
+  confirmSub:    { fontSize: 12, color: colors.textOnNavy },
 
   messagePreview: {
     backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
@@ -626,9 +626,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   sendBtn:     { backgroundColor: COLORS.emergency, borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', marginTop: 8, ...SHADOW.md },
   sendBtnText: { color: COLORS.bgCard, fontSize: 18, ...FONTS.black },
-  sendBtnSub:  { color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 3 },
+  sendBtnSub:  { color: colors.textOnNavy, fontSize: 11, marginTop: 3 },
   cancelBtn:   { alignItems: 'center', paddingVertical: 16, marginTop: 4 },
-  cancelBtnText: { fontSize: 14, lineHeight: 21, color: COLORS.textMuted, ...FONTS.semi },
+  cancelBtnText: { fontSize: 14, lineHeight: 21, color: colors.textMuted, ...FONTS.semi },
   crisisSection: {
     marginHorizontal: 0,
     marginTop: 24,
@@ -679,17 +679,17 @@ const makeStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 8,
     marginBottom: 4 },
   quickExitBtn: {
-    backgroundColor: '#EF5350',
+    backgroundColor: colors.emergency,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8 },
   quickExitBtnText: {
-    color: COLORS.bgCard,
+    color: colors.textOnAccent,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.3 },
   quickExitHint: {
     fontSize: 11,
-    color: colors.steel,
+    color: colors.info,
     fontStyle: 'italic' } });
 export default React.memo(EmergencyShareScreen);

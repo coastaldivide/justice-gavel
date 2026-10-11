@@ -69,7 +69,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
     <View style={{ flex: 1, backgroundColor: bg }} testID="specialty-courts-screen">
       {/* Hero */}
       <View style={{ backgroundColor: colors.blue, padding: 16 }}>
-        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, fontWeight: '800', fontSize: 17 }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textOnNavy, fontWeight: '800', fontSize: 17 }}>
           ⚖️ Specialty Courts
         </Text>
         <Text maxFontSizeMultiplier={1.4} style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 4 }}>
@@ -128,7 +128,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
         borderLeftWidth: 4, borderLeftColor: colors.warn,
         padding: 12, marginTop: 16, marginBottom: 8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
-          color: '#555', fontStyle: 'italic' }}>
+          color: colors.textSecond, fontStyle: 'italic' }}>
           ⚖️ General legal information only -- not legal advice. Laws vary by
           jurisdiction and change frequently. Consult a licensed attorney for
           advice specific to your situation.
@@ -197,7 +197,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
                     <View style={{ backgroundColor: ct.bg, borderRadius: 8, padding: 10 }}>
                       <Text maxFontSizeMultiplier={1.4} style={{ color: ct.color, fontWeight: '700', fontSize: 11,
                         marginBottom: 4 }}>WHO QUALIFIES</Text>
-                      <Text maxFontSizeMultiplier={1.4} style={{ color: isDark ? text : '#333', fontSize: 12,
+                      <Text maxFontSizeMultiplier={1.4} style={{ color: isDark ? text : colors.textSecond, fontSize: 12,
                         lineHeight: 18 }}>{item.eligibility}</Text>
                     </View>
 
@@ -226,7 +226,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
                         accessibilityLabel="HOW TO GET IN"
                         onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => showToast('Action failed. Please try again.', 'error'))}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <AppIcon name="call-outline" size={20} color="#1B5E20" />
+                        <AppIcon name="call-outline" size={20} color={colors.legal} />
                         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontSize: 13,
                           fontWeight: '600' }}>{item.phone}</Text>
                       </TouchableOpacity>

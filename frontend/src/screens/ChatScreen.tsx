@@ -766,7 +766,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
             padding: 12, margin: 12,
             borderLeftWidth: 3, borderLeftColor: colors.gold,
           }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.gold, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12, marginBottom: 4 }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.goldText, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12, marginBottom: 4 }}>
             ⚠️ AI Legal Information -- Not Legal Advice
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textSecond, fontSize: 11, lineHeight: 16 }}>
@@ -816,7 +816,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
             />
           )}
           ListEmptyComponent={
-            <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.textFaint, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
               Start a conversation. Ask any legal question.
             </Text>
           }
@@ -885,7 +885,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
           onPress={() => send(input)}
           disabled={!input.trim() || loading}
         >
-          <Text maxFontSizeMultiplier={1.4} style={styles.sendBtnText}>↑</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.sendBtnText, (!input.trim() || loading) && styles.sendBtnTextDisabled]}>↑</Text>
         </TouchableOpacity>
       </View>
 
@@ -910,7 +910,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   messageList:      { padding: 12, paddingBottom: 4 },
   emptyState:       { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyIcon:        { fontSize: 48, marginBottom: 12 },
-  emptyTitle:       { fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 8 },
+  emptyTitle:       { fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 8 },
   emptySub:         { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
   promptCatRow:     { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: COLORS.bgSubtle, marginBottom: 8 },
   promptCatBtn:     { paddingHorizontal: 10, paddingVertical: 8, marginRight: 2, borderBottomWidth: 2, borderBottomColor: 'transparent' },
@@ -934,14 +934,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   upgradeCta:       { marginTop: 10, backgroundColor: COLORS.bgSubtle, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: COLORS.bgSubtle },
   upgradeCtaText:   { fontSize: 12, lineHeight: 20, color: COLORS.navy, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   typingRow:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingBottom: 8 },
-  typingBubble:     { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bgCard, borderRadius: 16, padding: 10, gap: 8, elevation: 1 },
+  typingBubble:     { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderRadius: 16, padding: 10, gap: 8, elevation: 1 },
   typingText:       { fontSize: 12, lineHeight: 20, color: colors.textMuted },
   inputBar:         { flexDirection: 'row', alignItems: 'flex-end', padding: 10, paddingBottom: Platform.OS === 'ios' ? 10 : 10, backgroundColor: COLORS.bgCard, borderTopWidth: 1, borderTopColor: colors.border, gap: 8 },
   textInput:        { flex: 1, backgroundColor: COLORS.bg, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, lineHeight: 21, color: colors.bgCard, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
   sendBtn:          { width: 52, height: 52, borderRadius: 20, backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center' },
-  sendBtnDisabled:  { backgroundColor: COLORS.bgSubtle },
-  sendBtnText:      { color: COLORS.bgCard, fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', lineHeight: 22 },
-  disclaimer:       { textAlign: 'center', fontSize: 11, color: colors.textMuted, paddingVertical: 10, backgroundColor: COLORS.bgCard },
+  sendBtnDisabled:  { backgroundColor: colors.bgSubtle },
+  sendBtnText:      { color: colors.textOnNavy, fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', lineHeight: 22 },
+  sendBtnTextDisabled: { color: colors.textMuted },
+  disclaimer:       { textAlign: 'center', fontSize: 11, color: colors.textMuted, paddingVertical: 10, backgroundColor: colors.bgCard },
   defenderBanner:    { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.12)' },
   defenderBannerText:{ color: COLORS.bgCard, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   defenderBannerSub: { color: 'rgba(255,255,255,0.65)', fontSize: 11, marginTop: 2 },

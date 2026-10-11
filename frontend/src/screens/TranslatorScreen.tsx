@@ -381,7 +381,7 @@ showToast(apiErrorMessage(e, 'Check your connection.'), 'error');
           blurOnSubmit
         />
         {!!joinError && (
-          <Text maxFontSizeMultiplier={1.4} style={[styles.joinError, { color: COLORS.emergency }]}>{joinError}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.joinError, { color: colors.emergency }]}>{joinError}</Text>
         )}
         <TouchableOpacity
           accessibilityRole="button" activeOpacity={0.6}
@@ -735,7 +735,7 @@ const makeStyles = () => StyleSheet.create({
   msgInput:      { flex: 1, borderWidth: 1.5, borderRadius: 20,
     paddingHorizontal: 16, paddingTop: 9, paddingBottom: 9,
     fontSize: 14, maxHeight: 90, lineHeight: 19 },
-  sendBtn:       { width: 40, height: 40, borderRadius: 20,
+  sendBtn:       { width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center' },
   sendBtnText:   { color: COLORS.bgCard, fontSize: 18, fontWeight: '300' },
 });

@@ -108,13 +108,13 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
 
       {!!error && (
         <View style={{ backgroundColor: colors.emergencyBg, borderRadius: 8, padding: 12, margin: 16, borderWidth: 1, borderColor: colors.emergencyBg }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, fontSize: 12 }}>⚠️  {error}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: 12 }}>⚠️  {error}</Text>
           <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate" onPress={() => { setError(''); setQuote(null); }}
             accessibilityLabel="Retry →"
           >
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 }}>Retry →</Text>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 }}>Retry →</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -138,7 +138,7 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
       <View style={{ backgroundColor:colors.bgCard, borderRadius:10,
         borderLeftWidth:4, borderLeftColor:colors.warn,
         padding:12, marginTop:12, marginBottom:8 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:'#555', fontStyle:'italic', lineHeight:16 }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:colors.textSecond, fontStyle:'italic', lineHeight:16 }}>
           ⚖️ General information only -- not insurance or legal advice. Coverage terms
           vary by policy. Review your policy documents and consult a licensed insurance
           professional for advice specific to your situation.
@@ -164,7 +164,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   radioDot: { width: 11, height: 11, borderRadius: 8 },
   featuresCard: { backgroundColor: COLORS.bgCard, borderRadius: 14, padding: 16, marginBottom: 14, elevation: 1 },
   featRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.bg },
-  featLabel: { flex: 2, fontSize: 12, color: colors.steel, lineHeight: 16 },
+  featLabel: { flex: 2, fontSize: 12, color: colors.info, lineHeight: 16 },
   featHeader: { flex: 1, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textAlign: 'center' },
   featCheck: { flex: 1, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textAlign: 'center' },
   featYes: { color: colors.legal },
@@ -172,11 +172,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   quoteBtn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginBottom: 14 },
   quoteBtnText: { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   quoteResult: { backgroundColor: COLORS.bgCard, borderRadius: 16, padding: 20, borderWidth: 1.5, alignItems: 'center', marginBottom: 10 },
-  quoteLabel: { fontSize: 12, color: colors.steel, fontWeight: '600', marginBottom: 4 },
+  quoteLabel: { fontSize: 12, color: colors.info, fontWeight: '600', marginBottom: 4 },
   quotePrice: { fontSize: 44, fontFamily: 'Inter_900Black', fontWeight: '900' },
   quoteMo: { fontSize: 18, fontWeight: '400' },
-  quoteProvider: { fontSize: 12, lineHeight: 20, color: colors.steel, marginTop: 4, marginBottom: 6 },
-  quoteLegal: { fontSize: 11, color: colors.steel, textAlign: 'center', lineHeight: 16, marginBottom: 12 },
+  quoteProvider: { fontSize: 12, lineHeight: 20, color: colors.info, marginTop: 4, marginBottom: 6 },
+  quoteLegal: { fontSize: 11, color: colors.info, textAlign: 'center', lineHeight: 16, marginBottom: 12 },
   enrollBtn: { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28 },
   enrollBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21 } });

@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     ...FONTS.black,
-    color: '#FFFFFF',
+    color: COLORS.white,
     letterSpacing: 0.2,
   },
   subtitle: {
@@ -83,9 +83,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   actionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(133,183,235,0.15)',
     alignItems: 'center',
     justifyContent: 'center',

@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { COLORS } from '../constants/theme';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { storage, storageReady } from '../utils/storage';
 import { useTheme } from '../constants/theme';
@@ -87,7 +88,7 @@ export function AIDisclaimer({ variant = 'banner', feature = 'AI Legal Analysis'
             >
               <Text style={styles.ackButtonText}>I Understand — Continue</Text>
             </TouchableOpacity>
-            <Text style={[styles.modalFooter, { color: colors.textFaint }]}>
+            <Text style={[styles.modalFooter, { color: colors.textMuted }]}>
               This notice appears once per device. Review our Terms for full disclaimer.
             </Text>
           </View>
@@ -115,11 +116,11 @@ export function AIDisclaimer({ variant = 'banner', feature = 'AI Legal Analysis'
   // Default: banner variant
   return (
     <View
-      style={[styles.banner, { backgroundColor: colors.navyLight ?? (colors as any).surfaceAlt }]}
+      style={[styles.banner, { backgroundColor: colors.bgSubtle, borderTopColor: colors.border }]}
       accessibilityRole="text"
       accessibilityLabel="Legal information disclaimer"
     >
-      <Text style={[styles.bannerText, { color: colors.textMuted }]}>
+      <Text style={[styles.bannerText, { color: colors.textSecond }]}>
         ⚖️ This is legal information, not legal advice. Not a substitute for an attorney.
       </Text>
     </View>
@@ -132,11 +133,11 @@ const styles = StyleSheet.create({
   inlineBanner:  { margin: 12, padding: 10, borderRadius: 8, borderWidth: 1, flexDirection: 'row' },
   inlineText:    { fontSize: 12, flex: 1, lineHeight: 17 },
   modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 },
-  modalCard:     { borderRadius: 16, padding: 24, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
+  modalCard:     { borderRadius: 16, padding: 24, shadowColor: COLORS.black, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
   modalTitle:    { fontSize: 20, fontWeight: '800', marginBottom: 16, textAlign: 'center' },
   modalBody:     { fontSize: 14, lineHeight: 22 },
   ackButton:     { marginTop: 20, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  ackButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  ackButtonText: { color: COLORS.white, fontSize: 15, fontWeight: '700' },
   modalFooter:   { fontSize: 10, textAlign: 'center', marginTop: 12 },
 });
 

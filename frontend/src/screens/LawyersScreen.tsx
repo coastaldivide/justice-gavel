@@ -222,7 +222,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, isSelected
         <DistanceBadge distanceKm={item.distanceKm} />
         {item.free_consultation && <View style={[styles.badge, styles.greenBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.legal }]}>Free Consult</Text></View>}
         {item.pro_bono         && <View style={[styles.badge, styles.purpleBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.blue }]}>Pro Bono</Text></View>}
-        {item.sliding_scale    && <View style={[styles.badge, styles.tealBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.legalDark }]}>Sliding Scale</Text></View>}
+        {item.sliding_scale    && <View style={[styles.badge, styles.tealBadge]}><Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.legal }]}>Sliding Scale</Text></View>}
         {item.jtb_verified && (
           <TouchableOpacity
           accessibilityRole="button"
@@ -257,7 +257,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, isSelected
               </Text>
               {item.data_verified === 0 && (
                 <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 10,
-                  color: COLORS.steel, fontStyle: 'italic' }}>
+                  color: COLORS.info, fontStyle: 'italic' }}>
                   Unverified listing
                 </Text>
               )}
@@ -798,10 +798,10 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               }}
               accessibilityLabel="Upgrade to Legal Pro for verified credentials and response times">
               <Text maxFontSizeMultiplier={1.2}
-                style={{ fontSize: 12, color: colors.navy, flex: 1 }}>
+                style={{ fontSize: 12, color: colors.textBrand, flex: 1 }}>
                 ⭐ Pro: verified credentials, response time, and client reviews
               </Text>
-              <Text style={{ fontSize: 11, color: colors.navy, fontWeight: '600' }}>
+              <Text style={{ fontSize: 11, color: colors.textBrand, fontWeight: '600' }}>
                 Upgrade →
               </Text>
             </TouchableOpacity>
@@ -986,7 +986,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
               onPress={() => setShowBadgeInfo(false)}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700',
+              <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnNavy, fontWeight:'700',
                 fontSize:14, lineHeight:21 }}>Got it</Text>
             </TouchableOpacity>
           </View>
@@ -1005,7 +1005,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700',
+          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnNavy, fontWeight:'700',
             fontSize:15, lineHeight:22 }}>
             Contact {selected.length} Attorney{selected.length !== 1 ? 's' : ''}
           </Text>
@@ -1105,12 +1105,12 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderBottomWidth: 2, borderBottomColor: COLORS.navy,
     ...SHADOW.sm },
   heading:       { fontSize: 22, ...FONTS.black, color: COLORS.navy },
-  locationLabel: { fontSize: 12, color: COLORS.steel, marginTop: 2 },
-  refreshGps:    { color: COLORS.warn, fontSize: 11 },
+  locationLabel: { fontSize: 12, color: COLORS.info, marginTop: 2 },
+  refreshGps:    { color: COLORS.info, fontSize: 11 },
 
   headingRow:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
   resultBadge:  { backgroundColor: colors.legal, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
-  resultBadgeText: { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  resultBadgeText: { color: colors.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   filterPill: {
     paddingHorizontal: 16, paddingVertical: 8,
     borderRadius: RADIUS.pill,
@@ -1122,14 +1122,14 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   centerBlock:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   loadingText:  { marginTop: 14, color: COLORS.textMuted, fontSize: 14, lineHeight: 21, ...FONTS.medium },
-  statusMsg:    { padding: 16, color: COLORS.textMuted, textAlign: 'center', fontSize: 14,
+  statusMsg:    { padding: 16, color: colors.textMuted, textAlign: 'center', fontSize: 14,
     lineHeight: 21 },
   listContent:  { padding: 12, paddingBottom: 40 },
-  resultCount:  { textAlign: 'center', color: COLORS.textSecond, fontSize: 12, padding: 16 },
+  resultCount:  { textAlign: 'center', color: colors.textMuted, fontSize: 12, padding: 16 },
 
   emptyBlock:  { alignItems: 'center', padding: 40 },
   emptyIcon:   { fontSize: 40, marginBottom: 12 },
-  emptyText:   { fontSize: 15, lineHeight: 22, color: COLORS.textMuted, marginBottom: 16, textAlign: 'center' },
+  emptyText:   { fontSize: 15, lineHeight: 22, color: colors.textMuted, marginBottom: 16, textAlign: 'center' },
   emptyBtn:    { backgroundColor: COLORS.navy, borderRadius: RADIUS.md, paddingVertical: 10, paddingHorizontal: 20 },
   emptyBtnText:{ color: COLORS.bgCard, ...FONTS.bold },
 
@@ -1142,15 +1142,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   cardName:     { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: COLORS.navy, flex: 1 },
   cardAddress:  { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
   ratingBlock:  { flexDirection: 'row', alignItems: 'center', marginLeft: 8 },
-  ratingNum:    { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.warn },
-  ratingStar:   { fontSize: 14, lineHeight: 21, color: COLORS.warn, marginLeft: 1 },
+  ratingNum:    { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textOnGold },
+  ratingStar:   { fontSize: 14, lineHeight: 21, color: colors.textOnGold, marginLeft: 1 },
   reviewCount:  { fontSize: 11, color: COLORS.textSecond, marginLeft: 2 },
   metaRow:      { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 4 },
   badge:        { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, borderWidth: 1 },
   badgeText:    { fontSize: 11, ...FONTS.semi },
   greenBadge:   { backgroundColor: COLORS.legalBg, borderColor: colors.legal },
   purpleBadge:  { backgroundColor: COLORS.bgSubtle, borderColor: COLORS.steel },
-  tealBadge:    { backgroundColor: colors.legal, borderColor: colors.legal },
+  tealBadge:    { backgroundColor: colors.legalBg, borderColor: colors.legal },
   verifiedBadge:{ backgroundColor: COLORS.bgSubtle, borderColor: COLORS.steel },
   goldenGavelBadge: { backgroundColor: COLORS.steelMid, borderColor: COLORS.steelMid },
   tagRow:       { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6, gap: 4 },
@@ -1222,10 +1222,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flex: 1, backgroundColor: 'rgba(2,14,28,0.82)',
     justifyContent: 'center', alignItems: 'center', padding: 20 },
   needSheet: {
-    backgroundColor: COLORS.bgCard, borderRadius: 24,
+    backgroundColor: colors.bgCard, borderRadius: 24,
     padding: 24, width: '100%', maxWidth: 400 },
-  needTitle: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy, textAlign: 'center', marginBottom: 4 },
-  needSub:   { fontSize: 14, lineHeight: 21, color: colors.steel, textAlign: 'center', marginBottom: 20 },
+  needTitle: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand, textAlign: 'center', marginBottom: 4 },
+  needSub:   { fontSize: 14, lineHeight: 21, color: colors.info, textAlign: 'center', marginBottom: 20 },
   needGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   needBtn: {
     width: '47%', paddingVertical: 16, paddingHorizontal: 12,
@@ -1259,7 +1259,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   savedHeaderBtn:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12,
     paddingVertical: 10, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.warn + '60',
     backgroundColor: COLORS.warn + '10' },
-  savedHeaderBtnText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.warn },
+  savedHeaderBtnText: { fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.warnDark },
   conflictNote: { fontSize: 11, lineHeight: 16, paddingHorizontal: 2, marginBottom: 10, fontStyle: 'italic' },
   needBtnLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.textPrimary, textAlign: 'center' },
   conflictNoteBox: { borderRadius: 8, borderWidth: 1, padding: 10, marginBottom: 10 } });

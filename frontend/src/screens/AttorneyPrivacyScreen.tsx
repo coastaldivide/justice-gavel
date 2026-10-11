@@ -80,7 +80,7 @@ function AttorneyPrivacyScreen({ navigation }: { navigation?: { navigate: (name:
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: COLORS.bg }}
+      style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={s.container}
     >
       {/* Header */}
@@ -185,7 +185,7 @@ const s = StyleSheet.create({
   container:        { padding: 0, paddingBottom: 24 },
   header:           { padding: 28, paddingTop: 52, alignItems: 'center' },
   headerIcon:       { fontSize: 40, marginBottom: 12 },
-  headerTitle:      { fontSize: 22, fontWeight: '800', color: '#fff', textAlign: 'center', marginBottom: 8 },
+  headerTitle:      { fontSize: 22, fontWeight: '800', color: COLORS.white, textAlign: 'center', marginBottom: 8 },
   headerSub:        { fontSize: 14, color: 'rgba(255,255,255,0.82)', textAlign: 'center', lineHeight: 20 },
   effectiveBadge:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, marginHorizontal: 0 },
   effectiveText:    { fontSize: 12 },
@@ -202,6 +202,6 @@ const s = StyleSheet.create({
   contactBody:      { fontSize: 14, lineHeight: 20, marginBottom: 16 },
   contactBtn:       { paddingVertical: 13, borderRadius: 10, alignItems: 'center', marginBottom: 10 },
   contactBtnOutline:{ backgroundColor: 'transparent', borderWidth: 1.5 },
-  contactBtnText:   { color: '#fff', fontSize: 14, fontWeight: '700' },
+  contactBtnText:   { color: COLORS.white, fontSize: 14, fontWeight: '700' },
 });
 export default React.memo(AttorneyPrivacyScreen);

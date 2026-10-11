@@ -46,6 +46,8 @@ function timeAgo(dateStr: string): string {
 
 // ── Lead card ─────────────────────────────────────────────────────────────────
 function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () => void }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { showToast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const tier = bailTier(lead.bail_amount);
@@ -82,7 +84,7 @@ function LeadCard({ lead, onAccept }: { lead: Record<string,any>; onAccept: () =
         </View>
         {lead.purchased && (
           <View style={[styles.badge, styles.purchasedBadge]}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: COLORS.legalDark }]}>✓ Purchased</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.badgeText, { color: colors.legal }]}>✓ Purchased</Text>
           </View>
         )}
       </View>
@@ -618,26 +620,26 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
 const makeStyles = (colors: any) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'transparent' },
 
-  header: { backgroundColor: colors.emergency, paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40, paddingBottom: 16, flexDirection: 'row', alignItems: 'flex-end' },
-  heading: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.bgCard },
+  header: { backgroundColor: colors.emergencyBg, paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40, paddingBottom: 16, flexDirection: 'row', alignItems: 'flex-end' },
+  heading: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textPrimary },
   subheading: { fontSize: 12, lineHeight: 20, color: colors.emergency, marginTop: 2 },
   profileBtn: { padding: 8 },
   checkInMgrBtn: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  checkInMgrBtnText: { color: COLORS.bgCard, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  checkInMgrBtnText: { color: colors.textPrimary, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   profileBtnText: { fontSize: 22 },
 
-  statsStrip: { backgroundColor: COLORS.bgCard, flexDirection: 'row', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.bg, elevation: 1 },
+  statsStrip: { backgroundColor: colors.bgCard, flexDirection: 'row', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: COLORS.bg, elevation: 1 },
   statBlock: { flex: 1, alignItems: 'center' },
-  statNum: { fontSize: 28, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy },
+  statNum: { fontSize: 28, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand },
   statLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600', marginTop: 2 },
   statDivider: { width: 1, backgroundColor: COLORS.bgSubtle, marginVertical: 4 },
 
-  filterStrip: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bgCard, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.bg, gap: 8 },
+  filterStrip: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.bg, gap: 8 },
   filterLabel: { fontSize: 12, color: colors.textMuted, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   filterChip: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5, borderColor: colors.surface, backgroundColor: COLORS.bgCard },
-  filterChipActive: { borderColor: colors.emergency, backgroundColor: '#EF5350' },
-  filterChipText: { fontSize: 12, color: colors.textMuted, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  filterChipTextActive: { color: colors.emergency },
+  filterChipActive: { borderColor: colors.emergency, backgroundColor: colors.emergency },
+  filterChipText: { fontSize: 12, color: COLORS.textMuted, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  filterChipTextActive: { color: colors.textOnAccent },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: Platform.OS === 'ios' ? 60 : 48 },
   loadingText: { marginTop: 12, color: colors.textMuted, fontSize: 14,
@@ -646,27 +648,27 @@ const makeStyles = (colors: any) => StyleSheet.create({
   emptyText: { fontSize: 15, lineHeight: 22, color: colors.textMuted, fontFamily: 'Inter_600SemiBold', fontWeight: '600', textAlign: 'center' },
   emptyHint: { fontSize: 12, color: colors.textMuted, marginTop: 8, textAlign: 'center' },
 
-  card: { backgroundColor: COLORS.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+  card: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
   cardPurchased: { borderWidth: 1.5, borderColor: colors.legal },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-  leadName: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy },
+  leadName: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand },
   leadLocation: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   bailBlock: { alignItems: 'flex-end', marginLeft: 8 },
   bailAmount: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.emergency },
   bailLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, backgroundColor: COLORS.bg },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, backgroundColor: colors.bg },
   badgeText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: colors.textMuted },
-  purchasedBadge: { backgroundColor: colors.legal },
-  charges: { fontSize: 12, color: colors.steel, marginBottom: 4, lineHeight: 16 },
+  purchasedBadge: { backgroundColor: colors.legalBg },
+  charges: { fontSize: 12, color: colors.info, marginBottom: 4, lineHeight: 16 },
   expandedSection: { marginTop: 10, borderTopWidth: 1, borderTopColor: COLORS.bg, paddingTop: 10 },
   detailRow: { fontSize: 12, color: colors.textMuted, marginBottom: 4, lineHeight: 18 },
-  revealedBlock: { backgroundColor: colors.legal, borderRadius: 8, padding: 12, marginTop: 8 },
+  revealedBlock: { backgroundColor: colors.legalBg, borderRadius: 8, padding: 12, marginTop: 8 },
   revealedTitle: { fontSize: 12, lineHeight: 20, fontWeight: '700', color: colors.legal, marginBottom: 6 },
   revealedPhone: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.legal, marginBottom: 4 },
   revealedName: { fontSize: 12, lineHeight: 20, color: colors.legal },
-  acceptBtn: { backgroundColor: colors.emergency, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 10 },
-  acceptBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 15,
+  acceptBtn: { backgroundColor: colors.emergencyBg, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 10 },
+  acceptBtnText: { color: colors.textPrimary, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 15,
     lineHeight: 22},
   acceptBtnSub: { color: colors.emergency, fontSize: 11, marginTop: 3 },
   expandHint: { fontSize: 12, color: colors.textMuted, textAlign: 'right', marginTop: 8 },
@@ -675,42 +677,42 @@ const makeStyles = (colors: any) => StyleSheet.create({
     backgroundColor: COLORS.navy, flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.navy},
   badgeBannerTitle:  { color: COLORS.steel, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
-  badgeBannerSub:    { color: colors.blue, fontSize: 11, marginTop: 1 },
-  badgeBannerCancel: { color: '#EF5350', fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  badgeBannerSub:    { color: colors.textOnNavy, fontSize: 11, marginTop: 1 },
+  badgeBannerCancel: { color: colors.textOnNavy, fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   badgeBannerPromo: {
-    backgroundColor: COLORS.steelMid, flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.infoBg, flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: COLORS.steelMid},
-  badgeBannerPromoTitle:  { color: COLORS.steelMid, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
+  badgeBannerPromoTitle:  { color: colors.info, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
   badgeBannerPromoSub:    { color: colors.textMuted, fontSize: 11, marginTop: 1 },
-  badgeBannerPromoArrow:  { fontSize: 18, color: COLORS.steelMid, fontFamily: 'Inter_900Black', fontWeight: '900' },
+  badgeBannerPromoArrow:  { fontSize: 18, color: colors.info, fontFamily: 'Inter_900Black', fontWeight: '900' },
 
-  howLeadsWork: { backgroundColor: COLORS.steelMid, borderRadius: 12, padding: 16, margin: 16, borderWidth: 1, borderColor: COLORS.steelMid, alignSelf: 'stretch' },
-  howLeadsTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.steelMid, marginBottom: 8, textAlign: 'center' },
-  howLeadsItem:  { fontSize: 12, color: colors.steel, lineHeight: 20 },
+  howLeadsWork: { backgroundColor: colors.infoBg, borderRadius: 12, padding: 16, margin: 16, borderWidth: 1, borderColor: COLORS.steelMid, alignSelf: 'stretch' },
+  howLeadsTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info, marginBottom: 8, textAlign: 'center' },
+  howLeadsItem:  { fontSize: 12, color: colors.info, lineHeight: 20 },
   // Profile modal
-  modalContainer: { flex: 1, backgroundColor: COLORS.bg },
+  modalContainer: { flex: 1, backgroundColor: colors.bg },
   modalHeader: { backgroundColor: colors.emergency, padding: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   modalTitle: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.bgCard },
-  modalClose: { fontSize: 20, color: COLORS.bgCard, fontWeight: '600' },
+  modalClose: { fontSize: 20, color: colors.bgCard, fontWeight: '600' },
   modalBody: { padding: 20 },
-  fieldLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.bgCard, marginBottom: 6, marginTop: 14 },
+  fieldLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textPrimary, marginBottom: 6, marginTop: 14 },
   input: { backgroundColor: COLORS.bgCard, borderRadius: 8, borderWidth: 1.5, borderColor: colors.surface, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, color: colors.bgCard },
   helpText: { fontSize: 12, color: colors.textMuted, marginTop: 4, lineHeight: 16 },
   saveBtn: { backgroundColor: colors.emergency, borderRadius: 12, paddingVertical: 15, alignItems: 'center', marginTop: 24 },
-  saveBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 16,
+  saveBtnText: { color: colors.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 16,
     lineHeight: 24},
 
   // Accept confirm modal
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 20 },
-  confirmCard: { backgroundColor: COLORS.bgCard, borderRadius: 20, padding: 24, width: '100%', maxWidth: 400 },
-  confirmTitle: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy, marginBottom: 16, textAlign: 'center' },
-  confirmDetail: { backgroundColor: COLORS.bg, borderRadius: 12, padding: 16, marginBottom: 14 },
-  confirmName: { fontSize: 16, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.bgCard, marginBottom: 4 },
+  confirmCard: { backgroundColor: colors.bgCard, borderRadius: 20, padding: 24, width: '100%', maxWidth: 400 },
+  confirmTitle: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand, marginBottom: 16, textAlign: 'center' },
+  confirmDetail: { backgroundColor: colors.bg, borderRadius: 12, padding: 16, marginBottom: 14 },
+  confirmName: { fontSize: 16, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textPrimary, marginBottom: 4 },
   confirmCharges: { fontSize: 12, color: colors.textMuted, marginBottom: 10, lineHeight: 16 },
   confirmRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   confirmLabel: { fontSize: 12, lineHeight: 20, color: colors.textMuted },
-  confirmValue: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.bgCard },
+  confirmValue: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textPrimary },
   feeRow: { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.bgSubtle },
   feeLabel: { fontSize: 14, lineHeight: 21, fontWeight: '700', color: colors.emergency },
   feeAmount: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.emergency },
@@ -719,7 +721,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   confirmCancel: { flex: 1, paddingVertical: 16, borderRadius: 12, borderWidth: 1.5, borderColor: colors.surface, alignItems: 'center' },
   confirmCancelText: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textMuted },
   confirmAccept: { flex: 1.5, paddingVertical: 16, borderRadius: 12, backgroundColor: colors.emergency, alignItems: 'center' },
-  confirmAcceptText: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.bgCard },
+  confirmAcceptText: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.bgCard },
   licenseBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: colors.legal, borderRadius: 8, padding: 10,

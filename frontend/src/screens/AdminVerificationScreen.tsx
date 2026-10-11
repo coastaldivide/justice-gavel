@@ -129,7 +129,7 @@ confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.'
 
       {!loading && pending.length === 0 && (
         <View style={[styles.empty, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
+          <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
           <Text maxFontSizeMultiplier={1.4} style={[styles.emptyTitle, { color: colors.textPrimary }]}>No pending verifications</Text>
           <Text maxFontSizeMultiplier={1.4} style={[styles.emptySub, { color: colors.textSecond }]}>
             All bar number submissions have been reviewed.
@@ -148,7 +148,7 @@ confirm(`Reject ${name}?`,'Their submission will be cleared. They can resubmit.'
               <Text maxFontSizeMultiplier={1.4} style={[styles.attyEmail, { color: colors.textMuted }]}>{atty.email}</Text>
             </View>
             <View style={[styles.barBadge, { backgroundColor: colors.bgElevated }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.barNum, { color: colors.steel }]}>{atty.bar_number}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.barNum, { color: colors.info }]}>{atty.bar_number}</Text>
             </View>
           </View>
 
@@ -197,7 +197,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   header:        { borderRadius: RADIUS.lg, padding: 16, marginBottom: 14, alignItems: 'center' },
   headerTitle:   { color: COLORS.bgCard, fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 4 },
   headerSub:     { color: colors.steel, fontSize: 12 },
-  errorBox:      { borderRadius: RADIUS.md, borderWidth: 1, padding: 12, marginBottom: 12, backgroundColor: '#EF5350' },
+  errorBox:      { borderRadius: RADIUS.md, borderWidth: 1, padding: 12, marginBottom: 12, backgroundColor: colors.emergencyBg },
   empty:         { borderRadius: RADIUS.lg, borderWidth: 1, padding: 32, alignItems: 'center', marginTop: 8 },
   emptyIcon:     { fontSize: 40, marginBottom: 12 },
   emptyTitle:    { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 6 },
@@ -211,8 +211,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
   office:        { fontSize: 12, marginBottom: 10 },
   actions:       { flexDirection: 'row', gap: 8, marginTop: 4 },
   approveBtn:    { flex: 1, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center', backgroundColor: colors.legal },
-  approveBtnText:{ color: COLORS.bgCard, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  approveBtnText:{ color: colors.bgCard, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   rejectBtn:     { flex: 1, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center', borderWidth: 1, backgroundColor: 'transparent' },
-  rejectBtnText: { color: '#EF5350', fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  rejectBtnText: { color: colors.textSecond, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 });
 export default React.memo(AdminVerificationScreen);

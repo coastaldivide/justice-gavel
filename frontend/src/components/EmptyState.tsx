@@ -16,6 +16,7 @@
  */
 
 import React from 'react';
+import { COLORS } from '../constants/theme';
 import {
   View, Text, TouchableOpacity, StyleSheet,
 } from 'react-native';
@@ -42,17 +43,17 @@ export function EmptyState({ icon, title, subtitle, action, style }: EmptyStateP
       {icon ? (
         <Text style={styles.icon}>{icon}</Text>
       ) : null}
-      <Text style={[styles.title, { color: colors?.text ?? '#1C1C1E' }]}>
+      <Text style={[styles.title, { color: colors?.text ?? colors.textPrimary }]}>
         {title}
       </Text>
       {subtitle ? (
-        <Text style={[styles.subtitle, { color: (colors as any)?.subtext ?? colors?.text ?? '#6B7280' }]}>
+        <Text style={[styles.subtitle, { color: (colors as any)?.subtext ?? colors?.text ?? colors.textMuted }]}>
           {subtitle}
         </Text>
       ) : null}
       {action ? (
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors?.primary ?? '#3B82F6' }]}
+          style={[styles.button, { backgroundColor: colors?.primary ?? colors.blue }]}
           onPress={action.onPress}
           accessibilityRole="button"
           accessibilityLabel={action.label}
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
     borderRadius:      24,
   },
   buttonText: {
-    color:      '#fff',
+    color:      COLORS.white,
     fontSize:   15,
     fontWeight: '600',
   },

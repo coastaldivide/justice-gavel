@@ -156,7 +156,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
         accessibilityLabel="Call 988 Suicide and Crisis Lifeline"
         accessibilityHint="Opens your phone to call the free 24/7 crisis line"
       >
-        <AppIcon name="call-outline" size={20} color="#1B5E20" />
+        <AppIcon name="call-outline" size={20} color={colors.legal} />
         <View style={styles.primaryBtnText}>
           <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnTitle}>{t('crisis_988_label')}</Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnSub}>
@@ -198,7 +198,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityHint={line.forWhom ?? line.desc}
         >
           <View style={[styles.lineDot, { backgroundColor: line.bg ?? COLORS.bgSubtle }]}>
-            <AppIcon name="call-outline" size={20} color="#1B5E20" />
+            <AppIcon name="call-outline" size={20} color={colors.legal} />
           </View>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.lineName, { color: colors.textPrimary }]}>{line.name}</Text>
@@ -222,11 +222,11 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
           accessibilityHint={r.description || undefined}
         >
           <View style={[styles.lineDot, { backgroundColor: COLORS.bgSubtle }]}>
-            <AppIcon name="call-outline" size={20} color="#1B5E20" />
+            <AppIcon name="call-outline" size={20} color={colors.legal} />
           </View>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={[styles.lineName, { color: colors.textPrimary }]}>{r.name}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.lineNumber, { color: COLORS.blue }]}>{r.phone}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.lineNumber, { color: colors.textBrand }]}>{r.phone}</Text>
             {!!r.description && (
               <Text maxFontSizeMultiplier={1.4} style={[styles.lineFor, { color: colors.textMuted }]}>{r.description}</Text>
             )}
@@ -279,10 +279,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   header: { marginBottom: 20 },
   headerTitle: {
-    fontSize: 28, ...FONTS.black, color: COLORS.navy, marginBottom: 8,
+    fontSize: 28, ...FONTS.black, color: colors.textBrand, marginBottom: 8,
   },
   headerSub: {
-    fontSize: 14, color: COLORS.textSecond, lineHeight: 21,
+    fontSize: 14, color: colors.textMuted, lineHeight: 21,
   },
 
   // 988 primary button -- the whole point of the screen
@@ -305,7 +305,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   primaryBtnArrow: { fontSize: 28, color: 'rgba(255,255,255,0.6)', ...FONTS.medium },
 
   primaryNote: {
-    fontSize: 11, color: COLORS.textMuted, textAlign: 'center',
+    fontSize: 11, color: colors.textMuted, textAlign: 'center',
     marginBottom: 20, lineHeight: 16, paddingHorizontal: 8,
   },
 
@@ -315,7 +315,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.border, ...SHADOW.sm,
   },
   groundingLabel: {
-    fontSize: 11, ...FONTS.black, color: COLORS.textMuted,
+    fontSize: 11, ...FONTS.black, color: colors.textMuted,
     textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 12,
   },
   groundingRow: {

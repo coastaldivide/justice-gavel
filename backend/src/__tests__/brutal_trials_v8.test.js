@@ -345,7 +345,8 @@ describe('4. MotionTypeBadge — Motion Color Model', () => {
   test('4-02: MOTION_COLORS has 8 entries', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
-    const entries = src.match(/^\s+\w+:\s*\{ bg:/gm) || [];
+    // entries now spread shared TINTS pairs from the theme (…TINTS.pink etc.)
+    const entries = src.match(/^\s+\w+:\s*\{ \.\.\.TINTS\./gm) || [];
     expect(entries.length).toBe(8);
   });
 
@@ -363,8 +364,7 @@ describe('4. MotionTypeBadge — Motion Color Model', () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
     expect(src).toContain('??');
-    expect(src).toContain('#F5F5F5'); // neutral gray fallback
-    expect(src).toContain('#424242'); // neutral text
+    expect(src).toContain('TINTS.gray'); // neutral gray fallback (bg #F5F5F5 / text #424242 in theme)
   });
 
   test('4-05: suppress motion uses red/crimson color (high stakes)', async () => {
@@ -372,8 +372,7 @@ describe('4. MotionTypeBadge — Motion Color Model', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
     const suppressIdx = src.indexOf('suppress:');
     const suppressSection = src.slice(suppressIdx, suppressIdx + 100);
-    expect(suppressSection).toContain('#FCE4EC'); // light red bg
-    expect(suppressSection).toContain('#880E4F'); // dark red text
+    expect(suppressSection).toContain('TINTS.pink'); // light red bg #FCE4EC / dark red text #880E4F
   });
 
   test('4-06: dismiss motion uses green color (positive outcome)', async () => {
@@ -381,8 +380,7 @@ describe('4. MotionTypeBadge — Motion Color Model', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/components/MotionTypeBadge.tsx', 'utf8');
     const dismissIdx = src.indexOf('dismiss:');
     const dismissSection = src.slice(dismissIdx, dismissIdx + 100);
-    expect(dismissSection).toContain('#E8F5E9'); // light green bg
-    expect(dismissSection).toContain('#1B5E20'); // dark green text
+    expect(dismissSection).toContain('TINTS.green'); // light green bg #E8F5E9 / dark green text #1B5E20
   });
 
   test('4-07: MotionTypeBadge accepts motionType string prop', async () => {

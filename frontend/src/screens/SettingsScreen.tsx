@@ -99,14 +99,14 @@ const makeStyles = (colors: any) => StyleSheet.create({
   version:    { fontSize: 12 },
 
   // Sign out
-  logoutBtn:  { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', borderWidth: 1.5, borderColor: '#EF5350' },
-  logoutText: { color: '#EF5350', fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  logoutBtn:  { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', borderWidth: 1.5, borderColor: colors.emergency },
+  logoutText: { color: colors.textSecond, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   row:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border },
   rowLeft:      { flexDirection: 'row', alignItems: 'center', flex: 1 },
   rowIcon:      { fontSize: 18, marginRight: 12, width: 24, textAlign: 'center' },
   rowLabel:     { fontSize: 15, color: colors.textPrimary, fontFamily: 'Inter_500Medium' },
   rowSub:       { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  rowArrow:     { fontSize: 16, color: colors.textFaint, marginLeft: 8 },
+  rowArrow:     { fontSize: 16, color: colors.textMuted, marginLeft: 8 },
   navRow:       { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border },
   navRowLabel:  { flex: 1, fontSize: 15, color: colors.textPrimary },
   navRowArrow:  { fontSize: 16, color: colors.textFaint },
@@ -278,7 +278,7 @@ function SettingsScreen({ navigation }: any) {
       <Text maxFontSizeMultiplier={1.4} style={styles.infoIcon}>{icon}</Text>
       <View style={{ flex: 1 }}>
         <Text maxFontSizeMultiplier={1.4} style={[styles.infoLabel, { color: colors.textMuted }]}>{label}</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.infoValue, { color: colors.bgCard }]}>{value || '--'}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.infoValue, { color: colors.textPrimary }]}>{value || '--'}</Text>
       </View>
     </View>
   );
@@ -291,7 +291,7 @@ function SettingsScreen({ navigation }: any) {
   }) => (
     <View style={[styles.switchRow, { opacity: disabled ? 0.45 : 1 }]}>
       <View style={{ flex: 1 }}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.switchLabel, { color: colors.bgCard }]}>{label}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.switchLabel, { color: colors.textPrimary }]}>{label}</Text>
         {hint && <Text maxFontSizeMultiplier={1.4} style={[styles.switchHint, { color: colors.textMuted }]}>{hint}</Text>}
       </View>
       <Switch
@@ -301,8 +301,6 @@ function SettingsScreen({ navigation }: any) {
         trackColor={{ true: trackOn, false: colors.surface }}
         thumbColor={value ? colors.bg : colors.bg}
         accessibilityLabel={label}
-        accessibilityRole="switch"
-        accessibilityState={{ checked: value }}
       />
     </View>
   );
@@ -313,7 +311,7 @@ function SettingsScreen({ navigation }: any) {
   return (
     <ScrollView
       testID="settings-screen"
-      style={[styles.screen, { backgroundColor: COLORS.bg }]}
+      style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={styles.scroll}
       showsVerticalScrollIndicator={false}
     
@@ -359,10 +357,10 @@ function SettingsScreen({ navigation }: any) {
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
         <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
         <View style={{ flex:1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, ...FONTS.semiBold, color:COLORS.textPrimary }}>Official Court Forms</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, ...FONTS.regular, color:COLORS.textMuted }}>Government forms -- all 50 states</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, ...FONTS.semiBold, color:colors.textBrand }}>Official Court Forms</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, ...FONTS.regular, color:colors.textMuted }}>Government forms -- all 50 states</Text>
         </View>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, color:COLORS.textMuted }}>›</Text>
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize:18, color:colors.textMuted }}>›</Text>
       </TouchableOpacity>
       </View>
 
@@ -403,7 +401,7 @@ function SettingsScreen({ navigation }: any) {
         {/* Dark / Light Mode Toggle */}
         <View style={styles.switchRow}>
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.switchLabel, { color: colors.bgCard }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.switchLabel, { color: colors.textPrimary }]}>
               {isDark ? 'Dark Mode' : 'Light Mode'}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.switchHint, { color: colors.textMuted }]}>
@@ -419,8 +417,7 @@ function SettingsScreen({ navigation }: any) {
             thumbColor={isDark ? COLORS.steel : colors.bg}
             ios_backgroundColor={colors.surface}
             accessibilityLabel="Toggle dark or light mode"
-            accessibilityRole="switch"
-          accessibilityState={{ checked: isDark }}/>
+          />
         </View>
 
       </View>
@@ -437,16 +434,16 @@ function SettingsScreen({ navigation }: any) {
               key={l.code}
               style={[
                 styles.langChip,
-                { borderColor: colors.surface, backgroundColor: COLORS.bg },
-                language === l.code && { borderColor: COLORS.navy, backgroundColor: isDark ? COLORS.bgElevated : COLORS.bgSubtle },
+                { borderColor: colors.border, backgroundColor: colors.bgSubtle },
+                language === l.code && { borderColor: colors.borderFocus, backgroundColor: colors.bgElevated },
               ]}
               onPress={() => toggleLang(l.code)}
               accessibilityLabel={`Switch language to ${l.label}`}
               accessibilityState={{ selected: language === l.code }}>
               <Text maxFontSizeMultiplier={1.4} style={[
                 styles.langChipText,
-                { color: colors.steel },
-                language === l.code && { color: COLORS.navy, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+                { color: colors.textSecond },
+                language === l.code && { color: colors.textBrand, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
               ]}>{l.label}</Text>
             </TouchableOpacity>
           ))}
@@ -545,7 +542,7 @@ function SettingsScreen({ navigation }: any) {
         accessibilityLabel="Send a test push notification"
           accessibilityHint="Double-tap to activate"
       >
-        <Text maxFontSizeMultiplier={1.4} style={[styles.testPushText, { color: colors.textMuted }]}>Send test notification →</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.testPushText, { color: colors.textOnNavy }]}>Send test notification →</Text>
       </TouchableOpacity>
 
       {/* Referral program removed (empty placeholder card) */}
@@ -581,7 +578,7 @@ function SettingsScreen({ navigation }: any) {
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.menuIcon}>{item.icon}</Text>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.menuLabel, { color: colors.bgCard }]}>{item.label}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.menuLabel, { color: colors.textPrimary }]}>{item.label}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.menuHint, { color: colors.textMuted }]}>{item.hint}</Text>
             </View>
             <Text maxFontSizeMultiplier={1.4} style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
@@ -600,7 +597,7 @@ function SettingsScreen({ navigation }: any) {
               onPress={() => navigation.navigate('MoreTab', { screen: 'AdminVerification' })}
               accessibilityLabel="Bar verification queue"
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.navRowLabel, { color: colors.bgCard }]}>⚖️  Bar Verification Queue</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.navRowLabel, { color: colors.textPrimary }]}>⚖️  Bar Verification Queue</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.navRowArrow, { color: colors.textMuted }]}>›</Text>
             </TouchableOpacity>
           </View>
@@ -626,7 +623,7 @@ function SettingsScreen({ navigation }: any) {
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.menuIcon}>{item.icon}</Text>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.menuLabel, { color: colors.bgCard }]}>{item.label}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.menuLabel, { color: colors.textPrimary }]}>{item.label}</Text>
               {item.hint && <Text maxFontSizeMultiplier={1.4} style={[styles.menuHint, { color: colors.textMuted }]}>{item.hint}</Text>}
             </View>
             <Text maxFontSizeMultiplier={1.4} style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
@@ -651,13 +648,13 @@ function SettingsScreen({ navigation }: any) {
       {/* ── Danger Zone -- Account Deletion ──────────────────────────────── */}
       <View style={{ marginTop: 32, marginHorizontal: 16, marginBottom: 8 }}>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8,
-          textTransform: 'uppercase', color: '#EF5350',
+          textTransform: 'uppercase', color: colors.emergency,
           fontFamily: 'Inter_800ExtraBold', marginBottom: 12 }}>
           Danger Zone
         </Text>
         <View style={[{ borderRadius: 12, borderWidth: 1, padding: 16 },
-          { backgroundColor: '#EF5350', borderColor: '#EF5350' + '44' }]}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontFamily: 'Inter_700Bold', color: '#EF5350', marginBottom: 6 }}>
+          { backgroundColor: colors.emergencyBg, borderColor: colors.emergency + '44' }]}>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontFamily: 'Inter_700Bold', color: colors.emergency, marginBottom: 6 }}>
             Delete Account
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.textMuted, marginBottom: 16 }}>
@@ -665,7 +662,7 @@ function SettingsScreen({ navigation }: any) {
             This cannot be undone.
           </Text>
           <TouchableOpacity accessibilityRole="button"
-            style={{ backgroundColor: '#EF5350', borderRadius: 8,
+            style={{ backgroundColor: colors.emergencyDark, borderRadius: 8,
               paddingVertical: 12, alignItems: 'center' }}
             accessibilityLabel="Delete account permanently"
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -682,7 +679,7 @@ function SettingsScreen({ navigation }: any) {
                 });
             }}
           >
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontWeight: "600", color: "#fff" }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontWeight: "600", color: colors.white }}>
               Delete My Account
             </Text>
           </TouchableOpacity>
@@ -700,7 +697,7 @@ function SettingsScreen({ navigation }: any) {
               }
             }}
           >
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.blue,
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.textBrand,
               textDecorationLine: 'underline' }}>
               Export My Data (GDPR)
             </Text>

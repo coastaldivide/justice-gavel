@@ -125,7 +125,7 @@ function AdvocacyScreen(): React.JSX.Element {
         </>
       ) : null}
 
-        <Text style={{ fontSize: 11, color: '#888', textAlign: 'center', padding: 12, paddingBottom: 24 }}>⚖️ This content is for general educational purposes only and does not constitute legal advice. Laws vary by jurisdiction. Consult a licensed attorney for advice specific to your situation.</Text>
+        <Text style={{ fontSize: 11, color: colors.textSecond, textAlign: 'center', padding: 12, paddingBottom: 24 }}>⚖️ This content is for general educational purposes only and does not constitute legal advice. Laws vary by jurisdiction. Consult a licensed attorney for advice specific to your situation.</Text>
         </ScrollView>
   );
 }
@@ -136,26 +136,26 @@ const makeStyles = (colors: any) => StyleSheet.create({
   header: { backgroundColor: COLORS.navy, borderRadius: 16, padding: 16, marginBottom: 16 },
   heading: { color: COLORS.bgCard, fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900' },
   sub: { color: COLORS.bgSubtle, fontSize: 12, lineHeight: 20, marginTop: 4 },
-  sectionTitle: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.steel, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, marginTop: 4 },
+  sectionTitle: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, marginTop: 4 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  statCard: { width: '47%', backgroundColor: COLORS.bgCard, borderRadius: 14, padding: 16, alignItems: 'center', elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 4 },
+  statCard: { width: '47%', backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, alignItems: 'center', elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 4 },
   statIcon: { fontSize: 22, marginBottom: 6 },
   statValue: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', marginBottom: 2 },
-  statLabel: { fontSize: 11, color: colors.steel, fontWeight: '600', textAlign: 'center' },
-  coverageCard: { backgroundColor: COLORS.bgCard, borderRadius: 14, padding: 16, marginBottom: 16, elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 4 },
+  statLabel: { fontSize: 11, color: colors.info, fontWeight: '600', textAlign: 'center' },
+  coverageCard: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 16, elevation: 1, shadowColor: COLORS.bg, shadowOpacity: 0.05, shadowRadius: 4 },
   coverageRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
   coverageRowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.bg },
-  coverageCity: { width: 130, fontSize: 12, color: colors.bgCard, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  coverageCity: { width: 130, fontSize: 12, color: colors.textPrimary, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   coverageBar: { flex: 1, height: 6, backgroundColor: COLORS.bgSubtle, borderRadius: 4, overflow: 'hidden' },
   coverageFill: { height: '100%', backgroundColor: COLORS.navy, borderRadius: 4 },
-  coverageCount: { width: 60, fontSize: 11, color: colors.steel, textAlign: 'right' },
+  coverageCount: { width: 60, fontSize: 11, color: colors.info, textAlign: 'right' },
   missionCard: { backgroundColor: COLORS.bgSubtle, borderRadius: 14, padding: 16, borderLeftWidth: 4, borderLeftColor: COLORS.navy },
   missionTitle: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 8 },
-  missionText: { fontSize: 12, color: colors.bgCard, lineHeight: 21 },
-  errorCard: { backgroundColor: '#EF5350', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 20 },
-  errorText: { color: '#EF5350', fontSize: 14, lineHeight: 21, textAlign: 'center', marginBottom: 12 },
-  retryBtn: { backgroundColor: '#EF5350', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 20 },
-  retryText: { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
+  missionText: { fontSize: 12, color: colors.textOnGold, lineHeight: 21 },
+  errorCard: { backgroundColor: colors.emergencyBg, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 20 },
+  errorText: { color: colors.emergency, fontSize: 14, lineHeight: 21, textAlign: 'center', marginBottom: 12 },
+  retryBtn: { backgroundColor: colors.emergency, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 20 },
+  retryText: { color: colors.textOnAccent, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
 });
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)

@@ -37,7 +37,7 @@ const CAT_COLORS: Record<string, { bg: string; border: string; text: string }> =
   EXPUNGEMENT:        { bg: COLORS.bgCard, border: COLORS.legalDark, text: COLORS.legalDark },
   IMMIGRATION_COURT:  { bg: COLORS.infoBg, border: COLORS.blue, text: COLORS.blue },
   COURT_PAYMENT:      { bg: COLORS.legalBg, border: COLORS.legalDark, text: COLORS.legalDark },
-  VICTIM_COMPENSATION:{ bg: COLORS.bgCard, border: COLORS.warn, text: COLORS.warnDark },
+  VICTIM_COMPENSATION:{ bg: COLORS.bgCard, border: COLORS.warnDark, text: COLORS.warnDark },
   LAW_CLINIC:         { bg: COLORS.legalBg, border: COLORS.legalDark, text: COLORS.legalDark },
   PROBATION:          { bg: COLORS.bgSubtle, border: COLORS.textSecond, text: COLORS.textSecond },
   ATTORNEY_COMPLAINT: { bg: COLORS.emergencyBg, border: COLORS.emergencyDark, text: COLORS.emergencyDark },
@@ -149,7 +149,7 @@ function ResourcesScreen(): React.JSX.Element {
               key={cat.key}
               onPress={() => setCategory(cat.key)}
               style={{
-                backgroundColor: active ? cc.border : card,
+                backgroundColor: active ? cc.border : cc.bg,
                 borderWidth:1.5, borderColor: cc.border,
                 borderRadius:20, paddingHorizontal:12, paddingVertical:7,
                 marginRight:8, flexDirection:'row', alignItems:'center', gap:5,
@@ -157,7 +157,7 @@ function ResourcesScreen(): React.JSX.Element {
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13 }}>{cat.icon}</Text>
               <Text maxFontSizeMultiplier={1.4} style={{
                 fontSize:12, fontWeight:'600',
-                color: active ? colors.bgCard : cc.text,
+                color: active ? COLORS.white : cc.text,
               }}>{cat.label}</Text>
             </TouchableOpacity>
           );
@@ -232,7 +232,7 @@ function ResourcesScreen(): React.JSX.Element {
                         paddingHorizontal:6, paddingVertical:2,
                         alignSelf:'flex-start', marginTop:4,
                       }}>
-                        <Text maxFontSizeMultiplier={1.4} style={{ color:colors.legalDark, fontSize:10, fontWeight:'700' }}>FREE</Text>
+                        <Text maxFontSizeMultiplier={1.4} style={{ color:colors.legal, fontSize:10, fontWeight:'700' }}>FREE</Text>
                       </View>
                     )}
                   </View>
@@ -250,7 +250,7 @@ function ResourcesScreen(): React.JSX.Element {
                         <TouchableOpacity accessibilityRole="button"
                           onPress={() => Linking.openURL(`tel:${item.phone.replace(/[^\d+]/g,'')}`).catch(() => showToast('Action failed. Please try again.', 'error'))}
                           style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
-                          <AppIcon name="call-outline" size={20} color="#1B5E20" />
+                          <AppIcon name="call-outline" size={20} color={colors.legal} />
                           <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary, fontWeight:'600', fontSize:14 }}>
                             {item.phone}
                           </Text>
@@ -283,7 +283,7 @@ function ResourcesScreen(): React.JSX.Element {
                       ) : null}
                       {item.income_limit ? (
                         <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
-                          <AppIcon name="cash-outline" size={20} color="#1B5E20" />
+                          <AppIcon name="cash-outline" size={20} color={colors.legal} />
                           <Text maxFontSizeMultiplier={1.4} style={{ color:sub, fontSize:13 }}>Eligibility: {item.income_limit}</Text>
                         </View>
                       ) : null}

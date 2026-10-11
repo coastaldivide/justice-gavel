@@ -242,7 +242,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
         {/* Bar prep disclaimer */}
         <Text
           maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: '#888', textAlign: 'center',
+          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
           For supplemental study only. Not endorsed by any state bar or the NCBE.
@@ -254,7 +254,7 @@ export default function BarPrepProgressScreen({ navigation }: ScreenProps<'BarPr
 
 function makeStyles(colors: any) {
   return StyleSheet.create({
-    container:     { flex: 1, backgroundColor: colors.background },
+    container:     { flex: 1, backgroundColor: colors.bg },
     center:        { justifyContent: 'center', alignItems: 'center' },
     scroll:        { flex: 1 },
     scrollContent: { paddingBottom: 40 },
@@ -303,6 +303,6 @@ function makeStyles(colors: any) {
       marginHorizontal: 16, marginTop: 24, paddingVertical: 15,
       borderRadius: RADIUS.lg, alignItems: 'center', ...SHADOW.sm,
     },
-    ctaBtnText:    { fontSize: 16, ...FONTS.bold, color: '#fff' },
+    ctaBtnText:    { fontSize: 16, ...FONTS.bold, color: colors.textOnAccent },
   });
 }

@@ -5,6 +5,7 @@
  * Matches the App.tsx biometric lock aesthetic.
  */
 import React from 'react';
+import { COLORS } from '../constants/theme';
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
@@ -39,7 +40,7 @@ export const BiometricLockView = React.memo(function BiometricLockView({ onUnloc
         activeOpacity={0.85}
       >
         {unlocking
-          ? <ActivityIndicator color="#fff" size="small" />
+          ? <ActivityIndicator color={colors.white} size="small" />
           : <Text maxFontSizeMultiplier={1.4} style={styles.btnText}>
               Unlock
             </Text>
@@ -56,5 +57,5 @@ const styles = StyleSheet.create({
   sub:     { fontSize:15, lineHeight:23, textAlign:'center', marginBottom:36 },
   btn:     { borderRadius:14, paddingHorizontal:40, paddingVertical:16,
              minWidth:160, alignItems:'center' },
-  btnText: { color:'#fff', fontSize:16, lineHeight:24, fontWeight:'700' },
+  btnText: { color:COLORS.white, fontSize:16, lineHeight:24, fontWeight:'700' },
 });

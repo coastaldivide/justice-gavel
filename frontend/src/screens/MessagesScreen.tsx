@@ -129,8 +129,9 @@ function MarkdownText({ text, style }: { text: string; style?: object }) {
 
 // ── Message bubble (research thread) ─────────────────────────────────────────
 function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithAI?: (content: string) => void }) {
+  const { colors } = useTheme();
   const { showToast } = useToast();
-  const styles = makeStyles();
+  const styles = makeStyles(colors);
   const isUser = msg.role === 'user';
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -224,7 +225,8 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
 
 // ── Paywall screen ────────────────────────────────────────────────────────────
 function PaywallView({ onSubscribe, loading }: any) {
-  const styles = makeStyles();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <ScrollView contentContainerStyle={styles.paywallScroll}>
       <View style={[styles.paywallCard, {
@@ -303,7 +305,7 @@ function PaywallView({ onSubscribe, loading }: any) {
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-const makeStyles = () => StyleSheet.create({
+const makeStyles = (colors: any = COLORS) => StyleSheet.create({
   screen:  { flex: 1 },
   centreWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyTitle: { fontSize: 18, ...FONTS.heavy, marginBottom: 16 },
@@ -326,7 +328,7 @@ const makeStyles = () => StyleSheet.create({
   featureText:   { flex: 1, fontSize: 12, lineHeight: 18 },
   subscribeBtn:  { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center',
     marginBottom: 8, ...SHADOW.sm },
-  subscribeBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
+  subscribeBtnText: { color: colors.textOnNavy, fontSize: 14, lineHeight: 21, ...FONTS.black },
   annualBtn:     { borderRadius: RADIUS.md, borderWidth: 1.5, paddingVertical: 11, alignItems: 'center', marginBottom: 10 },
   annualBtnText: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   paywallDisclaimer: { fontSize: 11, textAlign: 'center', lineHeight: 16 },
@@ -376,10 +378,10 @@ const makeStyles = () => StyleSheet.create({
     fontSize: 14, maxHeight: 120, lineHeight: 20,
   },
   searchBtn: {
-    width: 42, height: 42, borderRadius: 21,
+    width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center',
   },
-  searchBtnText: { color: COLORS.bgCard, fontSize: 20, fontWeight: '300' },
+  searchBtnText: { color: colors.bgCard, fontSize: 20, fontWeight: '300' },
 
   // History
   histRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: RADIUS.lg,
@@ -391,7 +393,7 @@ const makeStyles = () => StyleSheet.create({
   // New search button
   newSearchBtn:     { borderRadius: RADIUS.lg, paddingVertical: 13, paddingHorizontal: 24,
     alignItems: 'center', marginTop: 12 },
-  newSearchBtnText: { color: COLORS.bgCard, fontSize: 14, lineHeight: 21, ...FONTS.black },
+  newSearchBtnText: { color: colors.textPrimary, fontSize: 14, lineHeight: 21, ...FONTS.black },
   cutoffBanner:  { borderRadius: 8, borderWidth: 1, padding: 8, marginBottom: 10 },
   cutoffText:    { fontSize: 11, lineHeight: 16 },
 });
@@ -404,7 +406,7 @@ function LegalResearchScreen({ route, navigation }: ScreenProps) {
   React.useEffect(() => { hasValidConsent().then(ok => { if (!ok) setDisclaimerVisible(true); }).catch(() => {}); }, []);
 
   const { colors, isDark } = useTheme();
-  const styles = makeStyles();
+  const styles = makeStyles(colors);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
   const { initialQuery, caseContext } = (route?.params as import('../types/api').RouteParams) ?? {};
 
@@ -519,7 +521,7 @@ showToast(msg, 'error');
       headerRight: () => hasAccess && phase !== 'paywall' ? (
         <View style={{ flexDirection: 'row', gap: 16, marginRight: 14 }}>
           <TouchableOpacity accessibilityRole="button" onPress={loadHistory} accessibilityLabel="History">
-            <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
           </TouchableOpacity>
           {phase === 'thread' && (
             <TouchableOpacity
@@ -528,13 +530,13 @@ showToast(msg, 'error');
                 setMessages([]); setSessionId(null); setQuery(''); setPhase('home');
               }}
             >
-              <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
+              <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>New</Text>
             </TouchableOpacity>
           )}
         </View>
       ) : null,
     });
-  }, [phase, hasAccess, loadHistory, navigation]);
+  }, [colors.textBrand, phase, hasAccess, loadHistory, navigation]);
 
   // Auto-search once if an initial query was provided (when access is known).
   const autoSearchedRef = useRef(false);
@@ -700,7 +702,7 @@ showToast(msg, 'error');
       <View style={{ backgroundColor:colors.bgCard, borderRadius:10,
         borderLeftWidth:4, borderLeftColor:colors.warn,
         padding:12, marginTop:12 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:'#555', fontStyle:'italic', lineHeight:16 }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:colors.textSecond, fontStyle:'italic', lineHeight:16 }}>
           ⚖️ AI legal research is not legal advice. Analysis may miss key issues or
           misinterpret jurisdiction-specific rules. Have an attorney review all documents.
         </Text>

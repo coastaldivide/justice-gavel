@@ -269,9 +269,9 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           accessibilityHint="Double-tap to activate"
               onPress={() => (navigation as any).navigate('MoreTab', { screen: 'ConsumerSubscription' })}
               style={{
-                backgroundColor: colors.navy + '08',
+                backgroundColor: colors.bgCard,
                 borderRadius: 16, padding: 16,
-                borderWidth: 1, borderColor: colors.navy + '20',
+                borderWidth: 1, borderColor: colors.border,
                 marginBottom: 12,
               }}
               accessibilityLabel="Unlock county arrest analytics">
@@ -285,21 +285,21 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
                 ].map(stat => (
                   <View key={stat.label}
                     style={{ flex: 1, backgroundColor: colors.bgCard, borderRadius: 10,
-                      padding: 10, alignItems: 'center', opacity: 0.4 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: colors.navy }}>
+                      padding: 10, alignItems: 'center', opacity: 0.85 }}>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textBrand }}>
                       {stat.value}
                     </Text>
-                    <Text style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center' }}>
+                    <Text style={{ fontSize: 10, color: colors.textSecond, textAlign: 'center' }}>
                       {stat.label}
                     </Text>
                   </View>
                 ))}
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12, color: colors.navy, flex: 1 }}>
+                <Text style={{ fontSize: 12, color: colors.textBrand, flex: 1 }}>
                   🔒 Unlock county arrest analytics — Intel tier
                 </Text>
-                <Text style={{ fontSize: 11, color: colors.navy, fontWeight: '600' }}>
+                <Text style={{ fontSize: 11, color: colors.textBrand, fontWeight: '600' }}>
                   $19.99/mo →
                 </Text>
               </View>
@@ -463,7 +463,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         <View style={styles.footerCard}>
           <JTBLogo size={32} />
           <View style={{ marginLeft: 12, flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '800', color: colors.navy, marginBottom: 2 }}>
+            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '800', color: colors.textOnNavy, marginBottom: 2 }}>
               ⚖️ Innocent until proven guilty.
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.footerTitle}>Your Legal Connection</Text>
@@ -478,7 +478,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-          style={{ backgroundColor: COLORS.steelMid, borderBottomWidth: 1, borderBottomColor: COLORS.steelMid,
+          style={{ backgroundColor: colors.infoBg, borderBottomWidth: 1, borderBottomColor: COLORS.steelMid,
             flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
           onPress={() => Alert.alert(
               'Offline Mode',
@@ -490,14 +490,14 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14 }}>📡</Text>
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.steelMid }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.info }}>
               No internet connection
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color: colors.textMuted, lineHeight: 16 }}>
               Rights card, deadline calculator, and guides still work offline
             </Text>
           </View>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.steelMid, fontSize: 12 }}>See what works →</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.info, fontSize: 12 }}>See what works →</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -506,7 +506,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
 }
 
 const makeStyles = (colors: any) => StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: colors.bg },
 
   header: {
     backgroundColor: COLORS.navy,
@@ -515,7 +515,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderBottomWidth: 2, borderBottomColor: COLORS.steel },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   logoMark: { width: 42, height: 42, borderRadius: RADIUS.sm, overflow: 'hidden' },
-  brand: { fontSize: 20, ...FONTS.black, color: colors.bg, letterSpacing: 0.3 },
+  brand: { fontSize: 20, ...FONTS.black, color: colors.textOnNavy, letterSpacing: 0.3 },
   welcome: { fontSize: 12, ...FONTS.medium, color: COLORS.steel, marginTop: 1 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   helpNowBtn: {
@@ -523,7 +523,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 10,
     borderRadius: 8, borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.3)' },
-  helpNowBtnText: { color: colors.bg, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 0.5 },
+  helpNowBtnText: { color: colors.textOnNavy, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', letterSpacing: 0.5 },
   settingsBtn: { padding: 6 },
   settingsIcon: { fontSize: 20 },
 
@@ -542,13 +542,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center', justifyContent: 'center' },
   emergencyIcon: { fontSize: 22 },
-  emergencyTitle: { color: colors.bg, ...FONTS.heavy, fontSize: 15,
+  emergencyTitle: { color: colors.textOnNavy, ...FONTS.heavy, fontSize: 15,
     lineHeight: 22 },
-  emergencySub:   { color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 },
+  emergencySub:   { color: colors.textOnNavy, fontSize: 11, marginTop: 2 },
   emergencyArrow: { color: colors.bg, fontSize: 28, ...FONTS.medium },
 
   sectionLabel: {
-    fontSize: 11, ...FONTS.black, color: COLORS.textMuted,
+    fontSize: 11, ...FONTS.black, color: colors.textSecond,
     textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
   tile: {
@@ -572,10 +572,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   quickConnectLeft:  { flex: 1 },
   quickConnectTag:   { fontSize: 11, ...FONTS.black, color: COLORS.steel, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 },
-  quickConnectTitle: { fontSize: 20, ...FONTS.black, color: colors.bg, marginBottom: 2 },
+  quickConnectTitle: { fontSize: 20, ...FONTS.black, color: colors.textOnNavy, marginBottom: 2 },
   quickConnectSub:   { fontSize: 12, ...FONTS.medium, color: COLORS.steel },
   quickConnectRight: { alignItems: 'center', marginLeft: 16 },
-  quickConnectPrice: { fontSize: 36, ...FONTS.black, color: colors.bg, lineHeight: 40 },
+  quickConnectPrice: { fontSize: 36, ...FONTS.black, color: colors.textOnNavy, lineHeight: 40 },
   quickConnectPriceSub: { fontSize: 11, color: COLORS.steel, ...FONTS.medium },
   footerCard: {
     backgroundColor: COLORS.navy,
@@ -594,9 +594,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowColor: COLORS.navy, shadowOpacity: 0.05,
     shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
   tipLeft:  { flex: 1 },
-  tipLabel: { fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.steel, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 3 },
-  tipText:  { fontSize: 12, color: COLORS.textPrimary, lineHeight: 18, fontFamily: 'Inter_500Medium', fontWeight: '500' },
-  tipArrow: { fontSize: 20, color: COLORS.steel, fontWeight: '300' },
+  tipLabel: { fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.info, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 3 },
+  tipText:  { fontSize: 12, color: colors.textBrand, lineHeight: 18, fontFamily: 'Inter_500Medium', fontWeight: '500' },
+  tipArrow: { fontSize: 20, color: colors.info, fontWeight: '300' },
   nudgeCard: {
     backgroundColor: colors.bg,
     borderRadius: 14, padding: 16, marginBottom: 12,
@@ -605,22 +605,22 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowColor: COLORS.navy, shadowOpacity: 0.06,
     shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   nudgeIcon:  { fontSize: 22 },
-  nudgeTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 2 },
-  nudgeSub:   { fontSize: 11, color: colors.steel },
-  nudgeArrow: { fontSize: 22, color: COLORS.navy, fontWeight: '300' },
-  footerTitle: { fontSize: 12, lineHeight: 20, ...FONTS.bold, color: colors.bg },
+  nudgeTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 2 },
+  nudgeSub:   { fontSize: 11, color: colors.info },
+  nudgeArrow: { fontSize: 22, color: colors.textBrand, fontWeight: '300' },
+  footerTitle: { fontSize: 12, lineHeight: 20, ...FONTS.bold, color: colors.textOnNavy },
   footerSub:   { fontSize: 11, color: COLORS.steel, marginTop: 2 },
   courtCountdown: {
     borderRadius: RADIUS.xl, padding: 16, marginBottom: 14,
     flexDirection: 'row', alignItems: 'center', gap: 16,
     borderWidth: 1.5, ...SHADOW.md },
   courtCountdownLeft: { alignItems: 'center', minWidth: 44 },
-  courtCountdownNum:  { fontSize: 32, ...FONTS.black, color: colors.bg, lineHeight: 34 },
-  courtCountdownUnit: { fontSize: 11, ...FONTS.bold, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase' },
-  courtCountdownTitle:{ fontSize: 12, lineHeight: 20, ...FONTS.black, color: colors.bg, marginBottom: 2 },
-  courtCountdownCase: { fontSize: 11, color: 'rgba(255,255,255,0.75)' },
-  courtCountdownArrow:{ fontSize: 28, color: 'rgba(255,255,255,0.6)', ...FONTS.medium },
-  tileUnreadBadge:     { position: 'absolute', top: -4, right: -4, backgroundColor: '#EF5350',
+  courtCountdownNum:  { fontSize: 32, ...FONTS.black, color: colors.textOnNavy, lineHeight: 34 },
+  courtCountdownUnit: { fontSize: 11, ...FONTS.bold, color: colors.textOnNavy, textTransform: 'uppercase' },
+  courtCountdownTitle:{ fontSize: 12, lineHeight: 20, ...FONTS.black, color: colors.textOnNavy, marginBottom: 2 },
+  courtCountdownCase: { fontSize: 11, color: colors.textOnNavy },
+  courtCountdownArrow:{ fontSize: 28, color: colors.textOnNavy, ...FONTS.medium },
+  tileUnreadBadge:     { position: 'absolute', top: -4, right: -4, backgroundColor: colors.emergency,
     borderRadius: 8, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 3 },
   tileUnreadBadgeText: { color: colors.bg, fontSize: 11, fontFamily: 'Inter_900Black', fontWeight: '900' },

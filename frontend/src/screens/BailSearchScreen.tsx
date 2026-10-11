@@ -309,6 +309,7 @@ function BailSearchScreen(): React.JSX.Element {
             </View>
           )}
       <FlashList testID="bail-agent-list"
+          focusable
           keyExtractor={(item, index) => String(item?.id ?? item?.booking_number ?? index)}
           estimatedItemSize={80}
           keyboardShouldPersistTaps="handled"
@@ -327,7 +328,7 @@ function BailSearchScreen(): React.JSX.Element {
           }
           contentContainerStyle={{ padding: 12, paddingBottom: 40}}
           ListEmptyComponent={
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
               No bail agents found nearby. Try expanding your search area or call 911 for immediate help.
             </Text>
           }
@@ -430,7 +431,7 @@ function BailSearchScreen(): React.JSX.Element {
               backgroundColor:colors.infoBg, borderRadius:20, marginTop:6 }}
           >
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize:14 }}>📍</Text>
-            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color:colors.blue, fontWeight:'600' }}>Use My Location</Text>
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color:colors.textBrand, fontWeight:'600' }}>Use My Location</Text>
           </TouchableOpacity>
           <View style={styles.cityList}>
             {filteredCities.map(city => (
@@ -476,8 +477,8 @@ function BailSearchScreen(): React.JSX.Element {
       )}
     </View>
       {/* Legal accuracy disclaimer — required on all bail search results */}
-      <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-        <Text style={{ fontSize: 11, color: '#888', lineHeight: 16, textAlign: 'center' }}>
+      <View style={{ paddingHorizontal: 16, paddingBottom: 8, paddingTop: 6, backgroundColor: colors.bg }}>
+        <Text style={{ fontSize: 11, color: colors.textSecond, lineHeight: 16, textAlign: 'center' }}>
           Bail amounts are typical ranges only. Actual bail is set by a judge based on charge, 
           criminal history, and other factors. This is general information, not legal advice.
           Consult a licensed attorney before making any legal decisions.
@@ -516,24 +517,24 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
 
   screen: { flex: 1, backgroundColor: COLORS.bg },
-  header: { backgroundColor: colors.emergency, padding: 20, paddingTop: 16 },
+  header: { backgroundColor: colors.emergencyBg, padding: 20, paddingTop: 16 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   countPill: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
-  countPillText: { color: COLORS.bgCard, fontSize: 12, fontWeight: '800' },
-  heading: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.bgCard },
+  countPillText: { color: colors.textPrimary, fontSize: 12, fontWeight: '800' },
+  heading: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textPrimary },
   sub: { color: colors.emergency, fontSize: 12, marginTop: 3 },
-  searchBtn: { flexDirection: 'row', backgroundColor: colors.emergency, margin: 12, borderRadius: 14, paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
-  searchBtnText: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  searchBtn: { flexDirection: 'row', backgroundColor: colors.emergencyDark, margin: 12, borderRadius: 14, paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
+  searchBtnText: { color: colors.white, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   statusText: { textAlign: 'center', color: colors.textMuted, fontSize: 12, lineHeight: 20, paddingHorizontal: 16, marginBottom: 8 },
-  card: { backgroundColor: COLORS.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6 },
+  card: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6 },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
   cardName: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.emergency, marginBottom: 4 },
   cardAddress: { fontSize: 12, color: colors.textMuted, marginBottom: 6 },
-  distBadge: { backgroundColor: COLORS.steelMid, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, alignSelf: 'flex-start', borderWidth: 1, borderColor: COLORS.steelMid },
-  distText: { fontSize: 11, color: COLORS.steelMid, fontWeight: '700' },
+  distBadge: { backgroundColor: COLORS.infoBg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, alignSelf: 'flex-start', borderWidth: 1, borderColor: COLORS.steelMid },
+  distText: { fontSize: 11, color: COLORS.info, fontWeight: '700' },
   ratingBlock: { flexDirection: 'row', alignItems: 'center' },
-  ratingNum: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.steelMid },
-  ratingStar: { fontSize: 14, lineHeight: 21, color: COLORS.steelMid, marginLeft: 1 },
+  ratingNum: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info },
+  ratingStar: { fontSize: 14, lineHeight: 21, color: colors.info, marginLeft: 1 },
   actionRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   actionBtn: { flex: 1, paddingVertical: 16, borderRadius: 8, alignItems: 'center' },
   callBtn: { backgroundColor: colors.emergency },
@@ -548,22 +549,22 @@ const makeStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center', marginBottom: 8,
     shadowColor: colors.legal, shadowOpacity: 0.3,
     shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4},
-  callBtnBigText: { color: COLORS.bgCard, fontFamily: 'Inter_900Black', fontWeight: '900', fontSize: 15, lineHeight: 22, letterSpacing: 0.3 },
-  noPhoneBox: { backgroundColor: COLORS.bg, borderRadius: 8, padding: 12, marginBottom: 8, alignItems: 'center' },
+  callBtnBigText: { color: colors.bgCard, fontFamily: 'Inter_900Black', fontWeight: '900', fontSize: 15, lineHeight: 22, letterSpacing: 0.3 },
+  noPhoneBox: { backgroundColor: colors.bg, borderRadius: 8, padding: 12, marginBottom: 8, alignItems: 'center' },
   noPhoneText: { color: colors.textMuted, fontSize: 12 },
-  dirBtn: { backgroundColor: COLORS.steelMid, borderRadius: 8, paddingVertical: 10, alignItems: 'center', marginBottom: 6 },
-  dirBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
-  cityFallback: { padding: 16, backgroundColor: COLORS.bgCard, marginBottom: 2 },
+  dirBtn: { backgroundColor: COLORS.steelDark, borderRadius: 8, paddingVertical: 10, alignItems: 'center', marginBottom: 6 },
+  dirBtnText: { color: COLORS.white, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
+  cityFallback: { padding: 16, backgroundColor: colors.bgCard, marginBottom: 2 },
   cityFallbackTitle: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.emergency, marginBottom: 10 },
   citySearchInput: {
     borderWidth: 1.5, borderColor: colors.emergency, borderRadius: 12,
     paddingHorizontal: 16, paddingVertical: 12,
-    fontSize: 15, lineHeight: 22, color: colors.bgCard, backgroundColor: colors.emergency, marginBottom: 8},
+    fontSize: 15, lineHeight: 22, color: colors.inputText, backgroundColor: colors.inputBg, marginBottom: 8},
   cityList: { gap: 2 },
   cityRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingVertical: 12, paddingHorizontal: 8,
-    borderRadius: 8, backgroundColor: colors.emergency, marginBottom: 4,
+    borderRadius: 8, backgroundColor: colors.emergencyBg, marginBottom: 4,
     borderWidth: 1, borderColor: 'rgba(191,54,12,0.13)'},
   cityRowIcon: { fontSize: 14 },
   cityRowText: { fontSize: 14, lineHeight: 21, color: colors.emergency, fontFamily: 'Inter_700Bold', fontWeight: '700', flex: 1 },
@@ -574,15 +575,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   verifiedBadgeText: { color: COLORS.steel, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   emptyState:    { alignItems: 'center', padding: 24 },
   emptyIcon:     { fontSize: 36, marginBottom: 8 },
-  emptyTitle:    { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 4 },
+  emptyTitle:    { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 4 },
   emptyHint:     { fontSize: 12, lineHeight: 20, color: colors.textMuted, marginBottom: 12 },
   nearbyCities:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 16 },
   nearbyCityBtn: { backgroundColor: COLORS.bgSubtle, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.bgSubtle },
   nearbyCityText:{ fontSize: 12, lineHeight: 20, color: COLORS.navy, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   pickCityBtn:   { backgroundColor: COLORS.navy, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 },
   pickCityBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
-  hoursBadge: { backgroundColor: colors.legal, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginTop: 3, alignSelf: 'flex-start' },
+  hoursBadge: { backgroundColor: colors.legalBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginTop: 3, alignSelf: 'flex-start' },
   hoursText: { fontSize: 11, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  licensePill: { backgroundColor: colors.legal, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 6, alignSelf: 'flex-start' },
+  licensePill: { backgroundColor: colors.legalBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 6, alignSelf: 'flex-start' },
   licensePillText: { fontSize: 11, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' }});
 export default React.memo(BailSearchScreen);

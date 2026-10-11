@@ -187,6 +187,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
 
 
   const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const incomingCaseId = (route?.params as import('../types/api').RouteParams)?.case_id;
 
   const [step, setStep]         = useState<'form'|'result'>('form');
@@ -307,10 +308,10 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
           and forms below apply to adult criminal records only.{' '}
           For juvenile records, contact your{' '}
           <Text maxFontSizeMultiplier={1.4}
-            style={{ color: colors.blue, textDecorationLine: 'underline' }}
+            style={{ color: colors.textBrand, textDecorationLine: 'underline' }}
             onPress={() => Linking.openURL('https://www.juvenilelaw.org/find-help').catch(() => {})}
           >
-            state\'s juvenile public defender or juvenile court clerk
+            state's juvenile public defender or juvenile court clerk
           </Text>
           {' '}directly.
         </Text>
@@ -324,7 +325,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
           testID="expungement-state-picker"
           accessibilityLabel={stateError} onPress={() => setShowStatePicker(p => !p)}
         >
-      {!!stateError && <Text testID="expungement-state-error" style={{ color: COLORS.emergency, fontSize: 12, marginTop: 4, marginLeft: 4 }}>{stateError}</Text>}
+      {!!stateError && <Text testID="expungement-state-error" style={{ color: colors.emergency, fontSize: 12, marginTop: 4, marginLeft: 4 }}>{stateError}</Text>}
         <Text maxFontSizeMultiplier={1.4} style={styles.stateBtnText}>{state}  ▾</Text>
       </TouchableOpacity>
       {showStatePicker && (
@@ -336,7 +337,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
               style={[styles.stateRow, state === st && styles.stateRowActive]}
               onPress={() => { setState(st); setShowStatePicker(false); }}
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.stateRowText, state === st && { color: COLORS.navy, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }]}>{st}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.stateRowText, state === st && { color: colors.textBrand, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }]}>{st}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -475,7 +476,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                     onPress={() => setShowPetition(false)}
                     >
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 16,
-                      color: colors.navy }}>← Close</Text>
+                      color: colors.textBrand }}>← Close</Text>
                   </TouchableOpacity>
                   <Text maxFontSizeMultiplier={1.4} style={{ flex: 1, fontSize: 16,
                     fontWeight: '700', color: colors.textPrimary }}>
@@ -492,7 +493,7 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
  accessibilityLabel="Share petition draft"
                   >
                     <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14,
-                      color: colors.navy, fontWeight: '600' }}>Share</Text>
+                      color: colors.textBrand, fontWeight: '600' }}>Share</Text>
                   </TouchableOpacity>
                 </View>
                 <ScrollView style={{ flex: 1, padding: 16 }}>
@@ -520,9 +521,9 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: 3 }}>
                   {atty.jtb_verified  && <View style={{ backgroundColor:colors.legalBg, borderRadius:20, paddingHorizontal:8, paddingVertical:2 }}><Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color:colors.legal, fontWeight:'800' }}>✅ JTB Verified</Text></View>}
-                  {!atty.jtb_verified && atty.bar_verified && <View style={{ backgroundColor:colors.bgElevated, borderRadius:20, paddingHorizontal:8, paddingVertical:2 }}><Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color:colors.steel, fontWeight:'800' }}>✓ Bar Verified</Text></View>}
-                  {atty.gavel_level >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, fontWeight:'800', color:colors.gold }}>🏆</Text>}
-                  {atty.rating != null && <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, color:colors.warn, fontWeight:'700' }}>★ {isNaN(Number(atty.rating)) ? "N/A" : Number(atty.rating).toFixed(1)}</Text>}
+                  {!atty.jtb_verified && atty.bar_verified && <View style={{ backgroundColor:colors.bgElevated, borderRadius:20, paddingHorizontal:8, paddingVertical:2 }}><Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color:colors.info, fontWeight:'800' }}>✓ Bar Verified</Text></View>}
+                  {atty.gavel_level >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, fontWeight:'800', color:colors.textPrimary }}>🏆</Text>}
+                  {atty.rating != null && <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, color:colors.textPrimary, fontWeight:'700' }}>★ {isNaN(Number(atty.rating)) ? "N/A" : Number(atty.rating).toFixed(1)}</Text>}
                 </View>
               </View>
               {atty.free_consultation && (
@@ -609,56 +610,56 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
   );
 }
 
-const makeStyles = () => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: any = COLORS) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.bg },
   scroll: { padding: 16 },
 
   hero: {
-    backgroundColor: COLORS.navy, borderRadius: RADIUS.xl,
+    backgroundColor: colors.navy, borderRadius: RADIUS.xl,
     padding: 20, marginBottom: 20, alignItems: 'center', ...SHADOW.md,
   },
   heroEmoji: { fontSize: 40, marginBottom: 8 },
-  heroTitle: { fontSize: 20, ...FONTS.black, color: COLORS.bgCard, textAlign: 'center', marginBottom: 8 },
-  heroSub:   { fontSize: 12, color: COLORS.steel, textAlign: 'center', lineHeight: 18 },
+  heroTitle: { fontSize: 20, ...FONTS.black, color: colors.textOnNavy, textAlign: 'center', marginBottom: 8 },
+  heroSub:   { fontSize: 12, color: colors.steel, textAlign: 'center', lineHeight: 18 },
 
-  fieldLabel: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: COLORS.navy, marginBottom: 8, marginTop: 16 },
+  fieldLabel: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: colors.textBrand, marginBottom: 8, marginTop: 16 },
 
   stateBtn: {
-    backgroundColor: COLORS.bgCard, borderWidth: 1.5, borderColor: COLORS.navy,
+    backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.navy,
     borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 11, alignSelf: 'flex-start',
   },
-  stateBtnText: { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: COLORS.navy },
+  stateBtnText: { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: colors.textBrand },
   stateDropdown: {
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.md, borderWidth: 1,
-    borderColor: COLORS.border, maxHeight: 200, marginBottom: 4, ...SHADOW.md,
+    backgroundColor: colors.bgCard, borderRadius: RADIUS.md, borderWidth: 1,
+    borderColor: colors.border, maxHeight: 200, marginBottom: 4, ...SHADOW.md,
   },
   stateRow:       { paddingVertical: 10, paddingHorizontal: 16 },
-  stateRowActive: { backgroundColor: COLORS.bg },
-  stateRowText:   { fontSize: 14, lineHeight: 21, color: COLORS.textPrimary },
+  stateRowActive: { backgroundColor: colors.bg },
+  stateRowText:   { fontSize: 14, lineHeight: 21, color: colors.textPrimary },
 
   statusRow:  { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 4 },
   statusChip: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: RADIUS.pill,
-    borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.bgCard,
+    borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.bgCard,
   },
-  statusChipActive:     { borderColor: COLORS.navy, backgroundColor: COLORS.navy },
-  statusChipText:       { fontSize: 12, lineHeight: 20, color: COLORS.textSecond, ...FONTS.semi },
-  statusChipTextActive: { color: COLORS.bgCard },
+  statusChipActive:     { borderColor: colors.navy, backgroundColor: colors.navy },
+  statusChipText:       { fontSize: 12, lineHeight: 20, color: colors.textSecond, ...FONTS.semi },
+  statusChipTextActive: { color: colors.textOnNavy },
 
   chargeChips:        { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 10 },
-  chargeChip:         { paddingHorizontal: 12, paddingVertical: 10, borderRadius: RADIUS.pill, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.bgCard },
-  chargeChipActive:   { borderColor: COLORS.navy, backgroundColor: COLORS.bgSubtle },
-  chargeChipText:     { fontSize: 12, color: COLORS.textSecond, ...FONTS.semi },
-  chargeChipTextActive: { color: COLORS.navy, ...FONTS.heavy },
+  chargeChip:         { paddingHorizontal: 12, paddingVertical: 10, borderRadius: RADIUS.pill, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.bgCard },
+  chargeChipActive:   { borderColor: colors.navy, backgroundColor: colors.bgSubtle },
+  chargeChipText:     { fontSize: 12, color: colors.textSecond, ...FONTS.semi },
+  chargeChipTextActive: { color: colors.textBrand, ...FONTS.heavy },
   chargeInput: {
-    backgroundColor: COLORS.bgCard, borderWidth: 1.5, borderColor: COLORS.border,
+    backgroundColor: colors.bgCard, borderWidth: 1.5, borderColor: colors.border,
     borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 11,
-    fontSize: 12, lineHeight: 20, color: COLORS.textPrimary, marginBottom: 16,
+    fontSize: 12, lineHeight: 20, color: colors.textPrimary, marginBottom: 16,
   },
 
-  checkBtn:     { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', ...SHADOW.md },
-  checkBtnText: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
-  disclaimerNote: { fontSize: 11, color: COLORS.textMuted, textAlign: 'center', marginTop: 12, lineHeight: 16 },
+  checkBtn:     { backgroundColor: colors.navy, borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', ...SHADOW.md },
+  checkBtnText: { color: colors.textOnNavy, fontSize: 16, lineHeight: 24, ...FONTS.black },
+  disclaimerNote: { fontSize: 11, color: colors.textMuted, textAlign: 'center', marginTop: 12, lineHeight: 16 },
 
   // Result
   verdictCard: {
@@ -667,43 +668,41 @@ const makeStyles = () => StyleSheet.create({
   },
   verdictEmoji: { fontSize: 48, marginBottom: 6 },
   verdictLabel: { fontSize: 22, ...FONTS.black, marginBottom: 4 },
-  verdictState: { fontSize: 12, color: COLORS.textMuted, marginBottom: 8 },
+  verdictState: { fontSize: 12, color: colors.textMuted, marginBottom: 8 },
   verdictWait:  { fontSize: 12, lineHeight: 20, ...FONTS.semi, marginBottom: 6 },
-  verdictNote:  { fontSize: 12, color: COLORS.textSecond, textAlign: 'center', lineHeight: 18 },
+  verdictNote:  { fontSize: 12, color: colors.textSecond, textAlign: 'center', lineHeight: 18 },
 
   explainCard: {
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16,
-    borderWidth: 1, borderColor: COLORS.border, ...SHADOW.sm,
+    backgroundColor: colors.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: colors.border, ...SHADOW.sm,
   },
-  explainTitle: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: COLORS.navy, marginBottom: 10 },
-  explainItem:  { fontSize: 12, color: COLORS.textSecond, lineHeight: 22 },
+  explainTitle: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: colors.textBrand, marginBottom: 10 },
+  explainItem:  { fontSize: 12, color: colors.textSecond, lineHeight: 22 },
 
-  partnersTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.navy, marginBottom: 10 },
+  partnersTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.textBrand, marginBottom: 10 },
   partnerCard: {
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 12,
-    borderWidth: 1, borderColor: COLORS.border, ...SHADOW.sm,
+    backgroundColor: colors.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 12,
+    borderWidth: 1, borderColor: colors.border, ...SHADOW.sm,
   },
-  partnerName:     { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: COLORS.navy, marginBottom: 4 },
-  partnerDesc:     { fontSize: 12, color: COLORS.textSecond, lineHeight: 18, marginBottom: 10 },
+  partnerName:     { fontSize: 16, lineHeight: 24, ...FONTS.heavy, color: colors.textBrand, marginBottom: 4 },
+  partnerDesc:     { fontSize: 12, color: colors.textSecond, lineHeight: 18, marginBottom: 10 },
   partnerFeeRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  partnerFeeLabel: { fontSize: 12, color: COLORS.textMuted },
-  partnerFeeValue: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.legal },
-  partnerBtn:      { backgroundColor: COLORS.navy, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center' },
-  partnerBtnText:  { color: COLORS.bgCard, ...FONTS.heavy, fontSize: 14,
+  partnerFeeLabel: { fontSize: 12, color: colors.textMuted },
+  partnerFeeValue: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: colors.legal },
+  partnerBtn:      { backgroundColor: colors.navy, borderRadius: RADIUS.md, paddingVertical: 13, alignItems: 'center' },
+  partnerBtnText:  { color: colors.textOnNavy, ...FONTS.heavy, fontSize: 14,
     lineHeight: 21, },
 
   notEligibleCard: {
-    backgroundColor: COLORS.emergencyBg, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16,
-    borderWidth: 1, borderColor: '#EF5350',
+    backgroundColor: colors.emergencyBg, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: colors.emergency,
   },
-  notEligibleTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.emergency, marginBottom: 10 },
-  notEligibleItem:  { fontSize: 12, color: '#EF5350', lineHeight: 22, marginBottom: 2 },
+  notEligibleTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: colors.emergency, marginBottom: 10 },
+  notEligibleItem:  { fontSize: 12, color: colors.textSecond, lineHeight: 22, marginBottom: 2 },
 
-  partnerReturnNote: { fontSize: 11, color: COLORS.textMuted, textAlign: 'center', marginTop: 4 },
+  partnerReturnNote: { fontSize: 11, color: colors.textMuted, textAlign: 'center', marginTop: 4 },
   startOverBtn:  { alignItems: 'center', paddingVertical: 12, marginTop: 8 },
-  startOverText: { fontSize: 12, lineHeight: 20, color: COLORS.steel, ...FONTS.semi },
+  startOverText: { fontSize: 12, lineHeight: 20, color: colors.steel, ...FONTS.semi },
 });
 
-// Module-level fallback for helper components
-const styles = makeStyles();
 export default React.memo(ExpungementScreen);

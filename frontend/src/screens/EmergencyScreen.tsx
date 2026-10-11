@@ -214,7 +214,7 @@ function EmergencyScreen({ navigation }: ScreenProps) {
 
         {phase === 'sending' && (
           <>
-            <ActivityIndicator color="#fff" size="large" />
+            <ActivityIndicator color={colors.white} size="large" />
             <Text maxFontSizeMultiplier={1.4} style={[styles.panelTitle, { marginTop: 14 }]}>
               Sending alert…
             </Text>
@@ -324,7 +324,7 @@ const makeStyles = () => StyleSheet.create({
     paddingHorizontal: 32, marginTop: 4, width: '100%', alignItems: 'center',
   },
   sosBtnText: {
-    color: '#EF5350', fontSize: 18, fontWeight: '900',
+    color: COLORS.textSecond, fontSize: 18, fontWeight: '900',
   },
   shareBtn: {
     backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12,

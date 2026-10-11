@@ -99,7 +99,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
           {item.verified && <Text maxFontSizeMultiplier={1.4} style={styles.verifiedBadge}>✓ Verified</Text>}
           {item.gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={[styles.verifiedBadge, { backgroundColor: COLORS.bailBg, color: COLORS.bail }]}>🥉 Bronze Gavel</Text>}
           {item.gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={[styles.verifiedBadge, { backgroundColor: COLORS.bgSubtle, color: COLORS.textSecond }]}>🥈 Silver Gavel</Text>}
-          {item.gavel_level >= 3 && <Text maxFontSizeMultiplier={1.4} style={[styles.verifiedBadge, { backgroundColor: COLORS.warnBg, color: COLORS.gold, borderColor: COLORS.gold }]}>🏆 Golden Gavel</Text>}
+          {item.gavel_level >= 3 && <Text maxFontSizeMultiplier={1.4} style={[styles.verifiedBadge, { backgroundColor: COLORS.warnBg, color: COLORS.goldText, borderColor: COLORS.gold }]}>🏆 Golden Gavel</Text>}
         </View>
 
         {/* Specialties */}
@@ -186,7 +186,7 @@ function MatchCard({ item, rank }: { item: Record<string,any>; rank: number }) {
             <View style={[styles.msgSheet, { backgroundColor: COLORS.bgCard }]}>
               {msgSent ? (
                 <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                  <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
+                  <AppIcon name="checkmark-circle" size={20} color={COLORS.legal} />
                   <Text maxFontSizeMultiplier={1.4} style={[styles.msgSheetTitle, { color: COLORS.textPrimary }]}>Message sent</Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.msgSheetSub, { color: COLORS.textSecond }]}>
                     {item?.name} will contact you shortly.
@@ -488,56 +488,56 @@ const makeStyles = (colors: any) => StyleSheet.create({
   heading: { fontSize: 28, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.bgCard },
   subheading: { fontSize: 14, color: COLORS.bgSubtle, marginTop: 4, lineHeight: 20 },
   section: { backgroundColor: COLORS.bgCard, marginTop: 12, marginHorizontal: 12, borderRadius: 12, padding: 16, elevation: 1 },
-  sectionLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.bgCard, marginBottom: 8 },
+  sectionLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textOnGold, marginBottom: 8 },
   textArea: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14, lineHeight: 21, color: colors.bgCard, minHeight: 90, textAlignVertical: 'top' },
   pickerWrap: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden', backgroundColor: COLORS.bgCard },
   picker: { height: 44 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginTop: 12, backgroundColor: COLORS.bgCard, padding: 12, borderRadius: 12 },
   toggle: { width: 36, height: 20, borderRadius: 8, backgroundColor: colors.textMuted, marginRight: 10 },
   toggleOn: { backgroundColor: colors.blue },
-  toggleLabel: { fontSize: 12, lineHeight: 20, color: colors.bgCard },
+  toggleLabel: { fontSize: 12, lineHeight: 20, color: colors.textOnGold },
   searchBtn: { backgroundColor: COLORS.navy, margin: 12, marginTop: 16, padding: 16, borderRadius: 14, alignItems: 'center', elevation: 3 },
   searchBtnDisabled: { opacity: 0.6 },
   searchBtnText: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
-  locLabel: { textAlign: 'center', color: colors.blue, fontSize: 12, lineHeight: 20, marginTop: 4 },
-  statusMsg: { textAlign: 'center', color: COLORS.steelMid, padding: 12, fontSize: 14,
+  locLabel: { textAlign: 'center', color: colors.textBrand, fontSize: 12, lineHeight: 20, marginTop: 4 },
+  statusMsg: { textAlign: 'center', color: colors.info, padding: 12, fontSize: 14,
     lineHeight: 21, },
   resultsSection: { marginTop: 8 },
-  resultsHeading: { fontSize: 18, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginHorizontal: 12, marginBottom: 8 },
-  emptyMsg: { textAlign: 'center', color: colors.steel, padding: 24, fontSize: 14,
+  resultsHeading: { fontSize: 18, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginHorizontal: 12, marginBottom: 8 },
+  emptyMsg: { textAlign: 'center', color: colors.info, padding: 24, fontSize: 14,
     lineHeight: 21, },
 
   // Card
-  card: { marginHorizontal: 12, marginBottom: 14, borderRadius: 14, overflow: 'hidden', elevation: 3, shadowColor: COLORS.bg, shadowOpacity: 0.09, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, backgroundColor: COLORS.bgCard },
+  card: { marginHorizontal: 12, marginBottom: 14, borderRadius: 14, overflow: 'hidden', elevation: 3, shadowColor: COLORS.bg, shadowOpacity: 0.09, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, backgroundColor: colors.bgCard },
   rankBanner: { padding: 10, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   rankText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21, },
   rankDist: { color: 'rgba(255,255,255,0.85)', fontSize: 12 },
   cardBody: { padding: 14 },
   nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  name: { fontSize: 16, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, flex: 1 },
-  ratingPill: { backgroundColor: COLORS.steelMid, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: COLORS.steelMid },
-  ratingText: { color: COLORS.steelMid, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
-  address: { fontSize: 12, color: colors.steel, marginTop: 4, marginBottom: 8 },
+  name: { fontSize: 16, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, flex: 1 },
+  ratingPill: { backgroundColor: COLORS.infoBg, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: COLORS.steelMid },
+  ratingText: { color: COLORS.info, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
+  address: { fontSize: 12, color: colors.info, marginTop: 4, marginBottom: 8 },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  greenBadge: { backgroundColor: colors.legal, color: colors.legal, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', overflow: 'hidden', borderWidth: 1, borderColor: colors.legal },
+  greenBadge: { backgroundColor: colors.legalBg, color: colors.legal, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', overflow: 'hidden', borderWidth: 1, borderColor: colors.legal },
   purpleBadge: { backgroundColor: COLORS.bgSubtle, color: colors.blue, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', overflow: 'hidden', borderWidth: 1, borderColor: COLORS.steel },
-  tealBadge: { backgroundColor: colors.legal, color: colors.legal, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', overflow: 'hidden', borderWidth: 1, borderColor: colors.legal },
+  tealBadge: { backgroundColor: colors.legalBg, color: colors.legal, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', overflow: 'hidden', borderWidth: 1, borderColor: colors.legal },
   verifiedBadge: { backgroundColor: COLORS.bgSubtle, color: COLORS.navy, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontFamily: 'Inter_600SemiBold', fontWeight: '600', overflow: 'hidden', borderWidth: 1, borderColor: COLORS.steel },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 8 },
   specTag: { backgroundColor: COLORS.bgSubtle, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: COLORS.steel },
   specText: { fontSize: 11, color: COLORS.navy, fontFamily: 'Inter_500Medium', fontWeight: '500' },
-  languages: { fontSize: 12, color: colors.blue, marginBottom: 4 },
-  experience: { fontSize: 12, color: colors.steel, fontStyle: 'italic', marginBottom: 8 },
+  languages: { fontSize: 12, color: colors.textBrand, marginBottom: 4 },
+  experience: { fontSize: 12, color: colors.info, fontStyle: 'italic', marginBottom: 8 },
   reportBlock: { backgroundColor: COLORS.bg, borderRadius: 8, padding: 12, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: COLORS.navy },
   reportLabel: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.navy, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
-  reportText: { fontSize: 12, color: colors.bgCard, lineHeight: 20 },
+  reportText: { fontSize: 12, color: colors.textOnGold, lineHeight: 20 },
   actionRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   actionBtn: { flex: 1, paddingVertical: 11, borderRadius: 8, alignItems: 'center' },
-  callBtn: { backgroundColor: colors.legal },
-  dirBtn: { backgroundColor: COLORS.steelMid },
+  callBtn: { backgroundColor: colors.legalDark },
+  dirBtn: { backgroundColor: COLORS.steelDark },
   webBtn: { backgroundColor: colors.blue },
-  actionBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
+  actionBtnText: { color: COLORS.white, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
   smsBtn: { backgroundColor: colors.blue },
   leaveMessageBtn: {
     borderRadius: 8, paddingVertical: 11, alignItems: 'center',
@@ -565,7 +565,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     lineHeight: 22, },
   secureMsgBtn:  { borderColor: colors.legal, backgroundColor: colors.legal + '10', marginTop: 4 },
 
-  phoneDisplay: { textAlign: 'center', color: colors.steel, fontSize: 12, marginTop: 2 }
+  phoneDisplay: { textAlign: 'center', color: colors.info, fontSize: 12, marginTop: 2 }
 });
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)

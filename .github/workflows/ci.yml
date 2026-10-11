@@ -190,6 +190,9 @@ jobs:
       - name: Navigation targets resolve
         run: node scripts/check-nav-targets.mjs
 
+      - name: Design audit (contrast AA both themes, raw hex, a11y, touch targets)
+        run: node scripts/design-audit.mjs --ci
+
       - name: Jest (logic + render suites)
         run: npm test
 
@@ -214,11 +217,13 @@ jobs:
       - name: Export Android bundle
         run: npx expo export --platform android --output-dir dist-android
 
-      - name: Raw hex colours in screens (informational)
+      - name: Raw hex colours in screens (must stay at zero; print-CSS templates excluded)
         run: |
           VIOLATIONS=$(grep -rn "#[0-9A-Fa-f]\{6\}" src/screens/ \
-            --include="*.tsx" | grep -v "//\|COLORS\.\|theme\." | wc -l)
+            --include="*.tsx" | grep -v "//\|COLORS\.\|theme\." \
+            | grep -v "font-family\|font-size\|font-weight\|border-left\|border-bottom\|<style" | wc -l)
           echo "Hex color violations: $VIOLATIONS"
-          if [ "$VIOLATIONS" -gt 50 ]; then
-            echo "::warning::$VIOLATIONS raw hex colors found in screens — use COLORS.* tokens"
+          if [ "$VIOLATIONS" -gt 0 ]; then
+            echo "::error::$VIOLATIONS raw hex colors found in screens — use theme tokens"
+            exit 1
           fi

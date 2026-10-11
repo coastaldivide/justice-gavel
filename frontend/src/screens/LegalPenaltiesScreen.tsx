@@ -78,8 +78,8 @@ function LegalPenaltiesScreen({ navigation }: any) {
       </View>
 
       {/* Disclaimer */}
-      <View style={[styles.disclaimer, { backgroundColor: (colors as any).warningBg ?? '#FEF3C7' }]}>
-        <Text style={[styles.disclaimerText, { color: (colors as any).warning ?? '#92400E' }]}>
+      <View style={[styles.disclaimer, { backgroundColor: (colors as any).warningBg ?? colors.warnBg }]}>
+        <Text style={[styles.disclaimerText, { color: (colors as any).warning ?? colors.warnDark }]}>
           ⚠ Penalties vary by state and case circumstances. This is general information, not legal advice.
         </Text>
       </View>
@@ -198,7 +198,7 @@ function LegalPenaltiesScreen({ navigation }: any) {
                   <Text style={[styles.chargeName, { color: colors.text }]}>{item.charge}</Text>
                   <Text style={[styles.chargeClass, {
                     color: item.class === 'Felony' ? ((colors as any).error ?? COLORS.emergency) : ((colors as any).warn ?? COLORS.warn),
-                    backgroundColor: item.class === 'Felony' ? '#FEE2E2' : '#FEF3C7',
+                    backgroundColor: item.class === 'Felony' ? colors.emergencyBg : colors.warnBg,
                   }]}>
                     {item.class}
                   </Text>
@@ -233,7 +233,7 @@ function makeStyles() {
     scheduleLabel:{ fontSize: 15, fontWeight: '700', marginBottom: 4 },
     examples:     { fontSize: 13, lineHeight: 18, marginBottom: 10 },
     penaltyRow:   { flexDirection: 'row', gap: 16 },
-    penaltyItem:  { flex: 1, alignItems: 'center', backgroundColor: '#FEF2F2', borderRadius: 8, padding: 10 },
+    penaltyItem:  { flex: 1, alignItems: 'center', backgroundColor: COLORS.emergencyBg, borderRadius: 8, padding: 10 },
     penaltyValue: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
     penaltyLabel: { fontSize: 11 },
     factLabel:    { fontSize: 14, fontWeight: '700', marginBottom: 6 },

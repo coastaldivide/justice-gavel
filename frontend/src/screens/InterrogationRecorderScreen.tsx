@@ -327,7 +327,7 @@ showToast('Allow microphone access in Settings.', 'warning');
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
         <TouchableOpacity
           accessibilityRole="button"
-          style={[styles.emergencyBtn, { backgroundColor: colors.emergency }]}
+          style={[styles.emergencyBtn, { backgroundColor: colors.emergencyDark }]}
           accessibilityLabel="Call 911" onPress={() => Linking.openURL('tel:911').catch(() => showToast('Please dial 911.', 'error'))}
         >
           <Text maxFontSizeMultiplier={1.2} style={styles.emergencyBtnText}>🚨 CALL 911</Text>
@@ -365,13 +365,13 @@ showToast('Allow microphone access in Settings.', 'warning');
         <Text maxFontSizeMultiplier={1.3} style={[styles.rightsTitle, { color: colors.textPrimary }]}>
           Before you record -- say these words:
         </Text>
-        <Text maxFontSizeMultiplier={1.2} style={[styles.rightsScript, { color: colors.blue }]}>
+        <Text maxFontSizeMultiplier={1.2} style={[styles.rightsScript, { color: colors.textBrand }]}>
           "I am invoking my right to remain silent. I want a lawyer."
         </Text>
         <Text maxFontSizeMultiplier={1.3} style={[styles.rightsTitle, { color: colors.textPrimary, marginTop: 8 }]}>
           If they ask to search:
         </Text>
-        <Text maxFontSizeMultiplier={1.2} style={[styles.rightsScript, { color: colors.blue }]}>
+        <Text maxFontSizeMultiplier={1.2} style={[styles.rightsScript, { color: colors.textBrand }]}>
           "I do not consent to any searches."
         </Text>
       </View>
@@ -525,7 +525,7 @@ showToast('Allow microphone access in Settings.', 'warning');
         borderLeftWidth: 4, borderLeftColor: colors.warn,
         padding: 12, marginTop: 16, marginBottom: 8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
-          color: '#555', fontStyle: 'italic' }}>
+          color: colors.textSecond, fontStyle: 'italic' }}>
           ⚖️ General legal information only -- not legal advice. Laws vary by
           jurisdiction and change frequently. Consult a licensed attorney for
           advice specific to your situation.
@@ -540,9 +540,9 @@ showToast('Allow microphone access in Settings.', 'warning');
 const makeStyles = (colors: any) => StyleSheet.create({
   headerBox:     { borderRadius: 16, padding: 20, marginBottom: 16 },
   headerTitle:   { color: colors.bg, fontSize: 20, fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
-  headerSub:     { color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 19 },
+  headerSub:     { color: colors.textOnAccent, fontSize: 13, lineHeight: 19 },
   emergencyBtn:  { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  emergencyBtnText: { color: colors.bg, fontWeight: '900', fontSize: 14 },
+  emergencyBtnText: { color: colors.white, fontWeight: '900', fontSize: 14 },
   lawBox:        { borderRadius: 12, padding: 14, borderLeftWidth: 5, marginBottom: 16 },
   lawTitle:      { fontSize: 13, fontWeight: '800', marginBottom: 4 },
   lawNote:       { fontSize: 12, lineHeight: 17, marginBottom: 4 },
@@ -553,7 +553,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   recordBtn:     { backgroundColor: colors.emergency, borderRadius: 20, paddingVertical: 32, alignItems: 'center', marginBottom: 16, elevation: 4 },
   recordBtnIcon: { fontSize: 48, marginBottom: 8 },
   recordBtnText: { color: colors.bg, fontSize: 22, fontWeight: '900', letterSpacing: 1 },
-  recordBtnSub:  { color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 4 },
+  recordBtnSub:  { color: colors.textOnAccent, fontSize: 12, marginTop: 4 },
   recordingActive: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, padding: 18, marginBottom: 12 },
   recordingDot:  { width: 14, height: 14, borderRadius: 7, backgroundColor: colors.bg },
   recordingTime: { color: colors.bg, fontSize: 28, fontWeight: '900', fontVariant: ['tabular-nums'] },
@@ -569,8 +569,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
   retryBtn:      { backgroundColor: colors.emergency, borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
   retryBtnText:  { color: colors.bg, fontWeight: '800', fontSize: 15 },
   saveBtn:       { borderRadius: 16, paddingVertical: 20, alignItems: 'center', marginBottom: 20, elevation: 3 },
-  saveBtnText:   { color: colors.bg, fontSize: 18, fontWeight: '900' },
-  saveBtnSub:    { color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 4 },
+  saveBtnText:   { color: colors.textOnNavy, fontSize: 18, fontWeight: '900' },
+  saveBtnSub:    { color: colors.textOnNavy, fontSize: 11, marginTop: 4 },
   transcriptBox: { borderRadius: 14, padding: 16, marginBottom: 16 },
   transcriptHeader: { fontSize: 13, fontWeight: '800', letterSpacing: 1, marginBottom: 12 },
   dialogueLine:  { flexDirection: 'row', gap: 8, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 6, marginBottom: 4 },

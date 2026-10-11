@@ -633,8 +633,8 @@ describe('14. EmergencyStrip — Emergency Quick-Call', () => {
   test('14-04: 911 is red (#B71C1C), 988 is blue (#1565C0)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/EmergencyStrip.tsx', 'utf8');
-    expect(src).toContain('#B71C1C');
-    expect(src).toContain('#1565C0');
+    expect(src).toContain('COLORS.emergencyDark'); // #B71C1C
+    expect(src).toContain('COLORS.blue');          // blue 988 button
   });
 
   test('14-05: has compact prop for smaller form factor', async () => {
@@ -683,8 +683,8 @@ describe('15. JTBLogo — SVG Brand Mark', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/components/JTBLogo.tsx', 'utf8');
     expect(src).toContain('JUSTICE');
     expect(src).toContain('GAVEL');
-    expect(src).toContain('#FFFFFF');
-    expect(src).toContain('#F9A825');
+    expect(src).toContain('COLORS.white'); // #FFFFFF
+    expect(src).toContain('ART.amber');    // gold #F59E0B family
   });
 
   test('15-04: size prop controls square dimension (default 80px)', async () => {

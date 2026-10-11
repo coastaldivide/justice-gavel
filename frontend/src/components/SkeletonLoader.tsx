@@ -10,6 +10,7 @@
  */
 
 import React from 'react';
+import { COLORS } from '../constants/theme';
 import { View, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { usePulse } from '../utils/animations';
@@ -28,7 +29,7 @@ const SkeletonBox: React.FC<SkeletonBoxProps> = ({
   return (
     <Animated.View
       style={[
-        { width: width as number, height, borderRadius: radius, backgroundColor: '#E8E8E8' },
+        { width: width as number, height, borderRadius: radius, backgroundColor: COLORS.border },
         pulseStyle,
         style,
       ]}
@@ -112,7 +113,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: R.card,
     padding: S.card,
     marginBottom: S.sm,

@@ -101,7 +101,7 @@ function FirmDiscoveryScreen() {
         </Text>
       )}
       <View style={s.cardFooter}>
-        <Text style={[s.status, { color: item.accepting_clients ? '#0d7a3e' : '#9ca3af' }]}>
+        <Text style={[s.status, { color: item.accepting_clients ? colors.legal : colors.textFaint }]}>
           {item.accepting_clients ? '● Accepting clients' : '○ Not accepting clients'}
         </Text>
         <Text style={[s.arrow, { color: colors.textMuted }]}>›</Text>
@@ -129,7 +129,7 @@ function FirmDiscoveryScreen() {
           accessibilityRole="button"
         >
           {codeLoading
-            ? <ActivityIndicator color="#fff" size="small" />
+            ? <ActivityIndicator color={colors.white} size="small" />
             : <Text style={s.codeBtnText}>Find Firm</Text>}
         </TouchableOpacity>
       </View>
@@ -170,8 +170,8 @@ function FirmDiscoveryScreen() {
           ListEmptyComponent={
             <View style={s.empty}>
               <Text style={[s.emptyIcon]}>🏛️</Text>
-              <Text maxFontSizeMultiplier={1.3} style={[s.emptyTitle, { color: colors.textPrimary }]}>No firms found</Text>
-              <Text maxFontSizeMultiplier={1.3} style={[s.emptyBody, { color: colors.textMuted }]}>
+              <Text maxFontSizeMultiplier={1.3} style={[s.emptyTitle, { color: colors.textOnAccent }]}>No firms found</Text>
+              <Text maxFontSizeMultiplier={1.3} style={[s.emptyBody, { color: colors.textOnAccent }]}>
                 Try a different state or practice area, or ask your attorney for a referral code.
               </Text>
             </View>
@@ -193,8 +193,8 @@ const s = StyleSheet.create({
   card:        { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 12 },
   cardHeader:  { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   firmName:    { flex: 1, fontSize: 16, fontWeight: '700' },
-  badge:       { backgroundColor: '#E1F5EE', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeText:   { fontSize: 11, fontWeight: '600', color: '#0F6E56' },
+  badge:       { backgroundColor: COLORS.legalBg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  badgeText:   { fontSize: 11, fontWeight: '600', color: COLORS.legal },
   location:    { fontSize: 13, marginBottom: 4 },
   areas:       { fontSize: 13, marginBottom: 8 },
   cardFooter:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

@@ -387,7 +387,7 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
               >
                 <AppIcon name="document-outline" size={20} color={COLORS.navy} />
                 <Text maxFontSizeMultiplier={1.4} style={{ fontSize:12, lineHeight:18,
-                  color:colors.blue, fontWeight:'600' }}>
+                  color:colors.textBrand, fontWeight:'600' }}>
                   {generatingReceipt ? 'Generating…' : 'Download Receipt'}
                 </Text>
               </TouchableOpacity>
@@ -404,7 +404,7 @@ function PaymentsScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       <View style={{ backgroundColor:colors.bgCard, borderRadius:10,
         borderLeftWidth:4, borderLeftColor:colors.blue,
         padding:12, marginTop:12, marginBottom:8 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:'#555', lineHeight:16 }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:11, color:colors.textSecond, lineHeight:16 }}>
           💳 Payments are processed securely by Stripe. Subscriptions auto-renew unless cancelled.
           For billing questions or refund requests, contact support@justicegavel.app.
         </Text>
@@ -429,43 +429,43 @@ const makeStyles = (colors: any) => StyleSheet.create({
   purposeCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderWidth: 1.5, borderColor: COLORS.bgSubtle, borderRadius: 12, marginBottom: 8, backgroundColor: COLORS.bg },
   purposeCardSelected: { borderColor: COLORS.navy, backgroundColor: COLORS.bgSubtle },
   purposeIcon: { fontSize: 22, marginRight: 12 },
-  purposeLabel: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.bgCard },
+  purposeLabel: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textOnGold },
   purposeLabelSelected: { color: COLORS.navy },
-  purposeSub: { fontSize: 12, color: colors.steel, marginTop: 2 },
+  purposeSub: { fontSize: 12, color: COLORS.info, marginTop: 2 },
   radio: { width: 20, height: 20, borderRadius: 8, borderWidth: 2, borderColor: colors.textMuted, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   radioSelected: { borderColor: COLORS.navy },
   radioDot: { width: 10, height: 10, borderRadius: 4, backgroundColor: COLORS.navy },
 
-  amountRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: COLORS.bg },
-  currencySymbol: { fontSize: 22, fontWeight: '700', color: COLORS.navy, marginRight: 4 },
+  amountRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: colors.bg },
+  currencySymbol: { fontSize: 22, fontWeight: '700', color: colors.textBrand, marginRight: 4 },
   amountInput: { flex: 1, fontSize: 28, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, paddingVertical: 10 },
-  currencyCode: { fontSize: 14, lineHeight: 21, color: colors.steel, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  currencyCode: { fontSize: 14, lineHeight: 21, color: colors.info, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 
-  lastUsedBanner: { backgroundColor: colors.legal, borderRadius: 8, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: colors.legal },
+  lastUsedBanner: { backgroundColor: colors.legalBg, borderRadius: 8, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: colors.legal },
   lastUsedText: { fontSize: 12, lineHeight: 20, color: colors.legal, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 
   methodRow: { flexDirection: 'row', alignItems: 'center', padding: 16, borderWidth: 1.5, borderColor: COLORS.bgSubtle, borderRadius: 12, marginBottom: 8, backgroundColor: COLORS.bg },
   methodRowSelected: { borderColor: COLORS.navy, backgroundColor: COLORS.bgSubtle },
   methodIcon: { fontSize: 22, marginRight: 12 },
-  methodLabel: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.bgCard },
+  methodLabel: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textOnGold },
   methodLabelSelected: { color: COLORS.navy },
-  methodSub: { fontSize: 12, color: colors.steel, marginTop: 1 },
+  methodSub: { fontSize: 12, color: COLORS.info, marginTop: 1 },
   checkmark: { fontSize: 18, color: COLORS.navy, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginLeft: 4 },
   moreToggle: { alignItems: 'center', paddingVertical: 8 },
   moreToggleText: { fontSize: 12, lineHeight: 20, color: colors.blue, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 
-  summaryCard: { margin: 12, backgroundColor: COLORS.bgCard, borderRadius: 16, padding: 16, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.07, shadowRadius: 6 },
+  summaryCard: { margin: 12, backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.07, shadowRadius: 6 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  summaryLabel: { fontSize: 15, lineHeight: 22, fontWeight: '700', color: colors.bgCard },
-  summaryAmount: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy },
-  summaryMeta: { fontSize: 12, color: colors.steel },
+  summaryLabel: { fontSize: 15, lineHeight: 22, fontWeight: '700', color: colors.textPrimary },
+  summaryAmount: { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand },
+  summaryMeta: { fontSize: 12, color: colors.info },
   payBtn: { backgroundColor: colors.legal, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 14 },
   payBtnDisabled: { opacity: 0.6 },
-  payBtnText: { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  payBtnText: { color: colors.bgCard, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   statusText: { marginTop: 12, fontSize: 12, color: colors.legal, textAlign: 'center', lineHeight: 18 },
-  statusConfig: { color: COLORS.steelMid, backgroundColor: COLORS.steelMid, padding: 12, borderRadius: 8, marginTop: 10, lineHeight: 20 },
-  statusError: { color: '#EF5350' },
-  footerNote: { textAlign: 'center', color: colors.steel, fontSize: 12, marginTop: 8, paddingHorizontal: 24, lineHeight: 18 },
+  statusConfig: { color: COLORS.info, backgroundColor: COLORS.infoBg, padding: 12, borderRadius: 8, marginTop: 10, lineHeight: 20 },
+  statusError: { color: colors.emergency },
+  footerNote: { textAlign: 'center', color: colors.info, fontSize: 12, marginTop: 8, paddingHorizontal: 24, lineHeight: 18 },
 });
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)

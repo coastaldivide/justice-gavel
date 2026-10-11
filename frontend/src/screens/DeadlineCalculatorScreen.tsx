@@ -515,7 +515,7 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
                 borderWidth: 1, borderColor: COLORS.border,
                 backgroundColor: COLORS.bgCard, alignSelf: 'flex-start' }}
             >
-              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 18, color: COLORS.steel,
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 18, color: COLORS.info,
                 fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}>
                 + Calendar
               </Text>
@@ -623,7 +623,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
           blurOnSubmit
         />
         {!arrestDate && arrestInput.length > 0 && (
-          <Text maxFontSizeMultiplier={1.4} style={[styles.parseError, { color: COLORS.emergency }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.parseError, { color: colors.emergency }]}>
             Cannot parse date -- try format: March 10, 2025
           </Text>
         )}
@@ -699,7 +699,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
           accessibilityLabel="Share deadline results"
           accessibilityHint="Shares this information"
         >
-          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnNavy, fontWeight:'700', fontSize:14 }}>
             📤 Share Results
           </Text>
         </TouchableOpacity>
@@ -709,7 +709,7 @@ function DeadlineCalculatorScreen(): React.JSX.Element {
         borderLeftWidth: 4, borderLeftColor: colors.warn,
         padding: 12, marginTop: 16, marginBottom: 8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
-          color: '#555', fontStyle: 'italic' }}>
+          color: colors.textSecond, fontStyle: 'italic' }}>
           ⚖️ CRITICAL: Deadlines shown are general guidelines. DMV hearing
           deadlines and court deadlines vary by county and jurisdiction.
           Missing a deadline can permanently waive your rights. Verify every

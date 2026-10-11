@@ -6,6 +6,7 @@
  * Legal requirement: ABA Model Rule 5.5 / state UPL statutes.
  */
 import React from 'react';
+import { TINTS } from '../constants/theme';
 import { View, Text, StyleSheet } from 'react-native';
 
 interface Props {
@@ -41,11 +42,11 @@ export default function UPLDisclaimer({ compact, attorney }: Props) {
 }
 
 const s = StyleSheet.create({
-  banner:      { flexDirection: 'row', backgroundColor: '#FFF8E1', borderLeftWidth: 3, borderLeftColor: '#F9A825', padding: 12, margin: 12, marginTop: 0, borderRadius: 6 },
+  banner:      { flexDirection: 'row', backgroundColor: TINTS.amber.bg, borderLeftWidth: 3, borderLeftColor: TINTS.amber.border, padding: 12, margin: 12, marginTop: 0, borderRadius: 6 },
   icon:        { fontSize: 18, marginRight: 10, marginTop: 1 },
   textBlock:   { flex: 1 },
-  heading:     { fontSize: 12, fontWeight: '700', color: '#5D4037', marginBottom: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
-  body:        { fontSize: 11, color: '#5D4037', lineHeight: 16 },
-  compact:     { backgroundColor: '#FFF8E1', paddingHorizontal: 12, paddingVertical: 6, borderTopWidth: 1, borderTopColor: '#F9A825' },
-  compactText: { fontSize: 11, color: '#5D4037', textAlign: 'center' },
+  heading:     { fontSize: 12, fontWeight: '700', color: TINTS.amber.text, marginBottom: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
+  body:        { fontSize: 11, color: TINTS.amber.text, lineHeight: 16 },
+  compact:     { backgroundColor: TINTS.amber.bg, paddingHorizontal: 12, paddingVertical: 6, borderTopWidth: 1, borderTopColor: TINTS.amber.border },
+  compactText: { fontSize: 11, color: TINTS.amber.text, textAlign: 'center' },
 });

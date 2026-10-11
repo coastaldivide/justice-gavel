@@ -158,13 +158,13 @@ function RecoveryAgentsScreen(): React.JSX.Element {
         <View style={styles.ratingBox}>
           {item.rating > 0 && (
             <Text maxFontSizeMultiplier={1.2} style={[styles.rating,
-              { color: colors.gold }]}>
+              { color: colors.goldText }]}>
               ★ {item.rating.toFixed(1)}
             </Text>
           )}
           {item.reviews > 0 && (
             <Text maxFontSizeMultiplier={1.2} style={[styles.reviews,
-              { color: colors.textFaint }]}>
+              { color: colors.textMuted }]}>
               ({item.reviews})
             </Text>
           )}
@@ -176,7 +176,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
         {item.armed_certified ? (
           <View style={[styles.badge, { backgroundColor: colors.emergencyBg }]}>
             <Text maxFontSizeMultiplier={1.2} style={[styles.badgeText,
-              { color: colors.emergencyDark }]}>🔫 Armed Certified</Text>
+              { color: colors.emergency }]}>🔫 Armed Certified</Text>
           </View>
         ) : (
           <View style={[styles.badge, { backgroundColor: colors.bgSubtle }]}>
@@ -187,13 +187,13 @@ function RecoveryAgentsScreen(): React.JSX.Element {
         {item.license_number ? (
           <View style={[styles.badge, { backgroundColor: colors.legalBg }]}>
             <Text maxFontSizeMultiplier={1.2} style={[styles.badgeText,
-              { color: colors.legalDark }]}>✓ Licensed</Text>
+              { color: colors.legal }]}>✓ Licensed</Text>
           </View>
         ) : null}
         {item.available_24_7 ? (
           <View style={[styles.badge, { backgroundColor: colors.infoBg }]}>
             <Text maxFontSizeMultiplier={1.2} style={[styles.badgeText,
-              { color: colors.blue }]}>24/7</Text>
+              { color: colors.textBrand }]}>24/7</Text>
           </View>
         ) : null}
       </View>
@@ -241,7 +241,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2} style={[styles.webBtnText,
-              { color: colors.blue }]}>🌐 Website</Text>
+              { color: colors.textBrand }]}>🌐 Website</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -294,7 +294,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
             value={armedOnly}
             onValueChange={setArmedOnly}
             trackColor={{ false: colors.border, true: colors.emergencyDark }}
-            thumbColor="#fff"
+            thumbColor={colors.white}
           accessibilityState={{ checked: armedOnly }}
           />
         </View>
@@ -367,7 +367,7 @@ function RecoveryAgentsScreen(): React.JSX.Element {
       ) : error ? (
         <View style={styles.center}>
           <Text maxFontSizeMultiplier={1.3} style={[styles.errorText,
-            { color: colors.emergencyDark }]}>
+            { color: colors.emergency }]}>
             {error}
           </Text>
           <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.navy }]}

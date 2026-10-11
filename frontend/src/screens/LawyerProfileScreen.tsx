@@ -18,6 +18,7 @@ import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, RNShare } from '../utils/webCompat';
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
+  const { colors } = useTheme();
   const filled = Math.round(rating);
   return (
     <View style={{ flexDirection:'row', alignItems:'center', gap:4 }}>
@@ -29,7 +30,7 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
         ))}
       </View>
       <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, lineHeight:19,
-        color:COLORS.textMuted }}>
+        color:colors.textMuted }}>
         {rating.toFixed(1)} ({count} review{count!==1?'s':''})
       </Text>
     </View>
@@ -223,7 +224,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
           {lawyer.source && lawyer.source !== 'seed' && (
             <View style={[s.badge, { backgroundColor: colors.infoBg, flexDirection:'row', alignItems:'center', gap:4 }]}>
               <AppIcon name="search-outline" size={20} color={COLORS.navy} />
-              <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.blue }]}>Google Verified</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.textBrand }]}>Google Verified</Text>
             </View>
           )}
           {lawyer.bar_verified && (
@@ -233,7 +234,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
           )}
           {lawyer.jtb_verified && (
             <View style={[s.badge, { backgroundColor:colors.gold, borderColor:colors.warnDark }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color:colors.bg }]}>
+              <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color:colors.textOnGold }]}>
                 ⚖️ JTB Verified
               </Text>
             </View>
@@ -304,7 +305,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         )}
         {lawyer.free_consultation && (
           <View style={s.stat}>
-            <Text maxFontSizeMultiplier={1.4} style={[s.statValue, { color:colors.legalDark }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[s.statValue, { color:colors.legal }]}>
               Free
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={[s.statLabel, { color:colors.textMuted }]}>
@@ -394,7 +395,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
                     <TouchableOpacity key={n} accessibilityRole="button" accessibilityLabel={`${n} star${n > 1 ? 's' : ''}`}
                       accessibilityState={{ selected: userRating === n }} onPress={() => setUserRating(n)}
                       hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
-                      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 24, color: colors.gold }}>{n <= userRating ? '★' : '☆'}</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 24, color: colors.goldText }}>{n <= userRating ? '★' : '☆'}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -434,11 +435,11 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
                 borderColor:colors.border }]}>
                 <View style={{ flexDirection:'row', justifyContent:'space-between',
                   marginBottom:6 }}>
-                  <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color:colors.gold }}>
+                  <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color:colors.goldText }}>
                     {'★'.repeat(r.rating)}{'☆'.repeat(5-r.rating)}
                   </Text>
                   <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, lineHeight:16,
-                    color:colors.textFaint }}>
+                    color:colors.textMuted }}>
                     {new Date(r.created_at ?? 0).toLocaleDateString('en-US', { month:'short', year:'numeric' })}
                   </Text>
                 </View>
@@ -465,7 +466,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Opens a message thread with this attorney" style={[s.actionBtn, { backgroundColor:colors.legal }]}
+          accessibilityHint="Opens a message thread with this attorney" style={[s.actionBtn, { backgroundColor:colors.legalDark }]}
           accessibilityLabel="Send Message" onPress={handleMessage}
                   >
           <Text maxFontSizeMultiplier={1.4} style={s.actionBtnText}>💬 Send Message</Text>
@@ -508,27 +509,27 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
     
       {/* JTB Platform Section */}
       {jtbProfile?.is_jtb_registered === true && (
-        <View style={{ margin: 12, padding: 12, backgroundColor: '#F0FDF4',
-                       borderRadius: 10, borderWidth: 1, borderColor: '#BBF7D0' }}>
-          <Text style={{ fontSize: 11, fontWeight: '700', color: '#059669', letterSpacing: 0.5, marginBottom: 6 }}>
+        <View style={{ margin: 12, padding: 12, backgroundColor: colors.legalBg,
+                       borderRadius: 10, borderWidth: 1, borderColor: colors.legalBg }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.legal, letterSpacing: 0.5, marginBottom: 6 }}>
             {'✓ RESPONDS VIA JUSTICE GAVEL'}
           </Text>
           {!!jtbProfile.platform_rating && (
-            <Text style={{ fontSize: 13, color: '#374151', marginBottom: 2 }}>
+            <Text style={{ fontSize: 13, color: colors.textSecond, marginBottom: 2 }}>
               {'Platform rating: ' + jtbProfile.platform_rating.toFixed(1) + ' ★' +
                (jtbProfile.platform_review_count ? ' (' + jtbProfile.platform_review_count + ' consultations)' : '')}
             </Text>
           )}
           {!!jtbProfile.outcome_label && (
-            <Text style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>
+            <Text style={{ fontSize: 12, color: colors.textSecond, marginBottom: 4 }}>
               {jtbProfile.outcome_label}
             </Text>
           )}
           {(jtbProfile.next_slots?.length ?? 0) > 0 && (
             <View>
-              <Text style={{ fontSize: 11, color: '#6B7280', marginBottom: 4 }}>{'Next available:'}</Text>
+              <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4 }}>{'Next available:'}</Text>
               {(jtbProfile.next_slots as Array<{date:string;time:string;label:string}>).slice(0,3).map(sl => (
-                <Text key={sl.date + sl.time} style={{ fontSize: 12, color: '#059669', marginBottom: 2 }}>
+                <Text key={sl.date + sl.time} style={{ fontSize: 12, color: colors.legal, marginBottom: 2 }}>
                   {sl.label + ' at ' + sl.time}
                 </Text>
               ))}
@@ -567,5 +568,5 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
   actions:     { position:'absolute', bottom:0, left:0, right:0, padding:16, gap:10,
                  backgroundColor:C.bg, borderTopWidth:1, borderTopColor:C.border },
   actionBtn:   { borderRadius:RADIUS.md, paddingVertical:14, alignItems:'center' },
-  actionBtnText:{ fontSize:TYPE.base, lineHeight:21, ...FONTS.bold, color:COLORS.bgCard } });
+  actionBtnText:{ fontSize:TYPE.base, lineHeight:21, ...FONTS.bold, color:COLORS.white } });
 export default React.memo(LawyerProfileScreen);

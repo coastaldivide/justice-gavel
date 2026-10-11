@@ -230,7 +230,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
 
             <View style={styles.priceRow}>
               <View style={[styles.priceIcon, { backgroundColor: colors.bailBg }]}>
-                <AppIcon name="cash-outline" size={20} color="#1B5E20" />
+                <AppIcon name="cash-outline" size={20} color={colors.legal} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text maxFontSizeMultiplier={1.4} style={styles.priceItemLabel}>1 Bail Bondsman</Text>
@@ -366,7 +366,7 @@ function QuickConnectScreen({ navigation }: ScreenProps): React.JSX.Element {
 
       {/* Success header */}
       <View style={[styles.header, styles.headerSuccess]}>
-        <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
+        <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
         <Text maxFontSizeMultiplier={1.4} style={styles.heading}>You're connected!</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
           {result.mock ? 'Demo mode -- no real charge' : `${result.charged} charged`}
@@ -449,7 +449,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   headerSuccess: { backgroundColor: COLORS.legal },
   successIcon: { fontSize: 32, textAlign: 'center', marginBottom: 6 },
   heading:    { fontSize: 22, ...FONTS.black, color: COLORS.bgCard, textAlign: 'center' },
-  subheading: { fontSize: 12, lineHeight: 20, ...FONTS.medium, color: COLORS.steel, marginTop: 4, textAlign: 'center' },
+  subheading: { fontSize: 12, lineHeight: 20, ...FONTS.medium, color: colors.textOnNavy, marginTop: 4, textAlign: 'center' },
 
   preScroll:    { padding: 16 },
   resultsScroll:{ padding: 16 },
@@ -470,7 +470,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingTop: 6, paddingHorizontal: 2 },
   creditLabel: { fontSize: 12, lineHeight: 20, color: colors.legal, fontWeight: '600' },
-  creditAmount: { fontSize: 14, lineHeight: 21, color: colors.legal, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  creditAmount: { fontSize: 14, lineHeight: 21, color: colors.legalDark, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   totalRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingTop: 14, borderTopWidth: 2, borderTopColor: COLORS.navy,
@@ -500,9 +500,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   // Location status
   locRow:      { flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: RADIUS.md, marginBottom: 12 },
-  locText:     { fontSize: 12, lineHeight: 20, color: COLORS.textMuted },
+  locText:     { fontSize: 12, lineHeight: 20, color: colors.textMuted },
   locError:    { backgroundColor: COLORS.warnBg },
-  locErrorText:{ fontSize: 12, lineHeight: 20, color: COLORS.warn, ...FONTS.medium },
+  locErrorText:{ fontSize: 12, lineHeight: 20, color: colors.textOnGold, ...FONTS.medium },
   locReady:    { backgroundColor: COLORS.legalBg },
   locReadyText:{ fontSize: 12, lineHeight: 20, color: COLORS.legal, ...FONTS.bold },
 
@@ -536,10 +536,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   practiceAreaWrap: { backgroundColor: COLORS.bgCard, borderRadius: 14, marginBottom: 14, overflow: 'hidden' },
   accountNote: { fontSize: 11, color: COLORS.textMuted, textAlign: 'center', marginTop: 6, marginBottom: -6, fontStyle: 'italic' },
-  footerNote: { textAlign: 'center', color: COLORS.textSecond, fontSize: 11, lineHeight: 17, marginTop: 4 },
+  footerNote: { textAlign: 'center', color: colors.textMuted, fontSize: 11, lineHeight: 17, marginTop: 4 },
 
   // Results
-  callPrompt: { fontSize: 15, ...FONTS.bold, color: COLORS.textPrimary, textAlign: 'center', marginBottom: 16, lineHeight: 21 },
+  callPrompt: { fontSize: 15, ...FONTS.bold, color: colors.textBrand, textAlign: 'center', marginBottom: 16, lineHeight: 21 },
 
   resultCard: {
     backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg,
@@ -551,34 +551,34 @@ const makeStyles = (colors: any) => StyleSheet.create({
   priceBadgeText:{ fontSize: 14, lineHeight: 21, ...FONTS.black },
   contactName:   { fontSize: 18, ...FONTS.heavy, color: COLORS.textPrimary, marginBottom: 3 },
   contactAddress:{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6, lineHeight: 16 },
-  contactRating: { fontSize: 12, color: COLORS.warn, ...FONTS.bold, marginBottom: 6 },
+  contactRating: { fontSize: 12, color: colors.textOnGold, ...FONTS.bold, marginBottom: 6 },
   tagRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 8 },
   tag:           { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
   tagText:       { fontSize: 11, ...FONTS.medium },
   freeConsultBadge: { backgroundColor: COLORS.legalBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, alignSelf: 'flex-start', marginBottom: 10 },
   freeConsultText:  { color: COLORS.legal, fontSize: 12, ...FONTS.bold },
   callBtn: { borderRadius: RADIUS.lg, paddingVertical: 16, alignItems: 'center', marginBottom: 8 },
-  callBtnText:  { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black, letterSpacing: 1 },
+  callBtnText:  { color: colors.textOnGold, fontSize: 16, lineHeight: 24, ...FONTS.black, letterSpacing: 1 },
   callBtnPhone: { color: 'rgba(255,255,255,0.8)', fontSize: 12, lineHeight: 20, ...FONTS.medium, marginTop: 3 },
   dirBtn:       { backgroundColor: COLORS.bg, borderWidth: 1.5, borderColor: COLORS.border, borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center' },
   dirBtnText:   { fontSize: 12, lineHeight: 20, ...FONTS.bold, color: COLORS.textSecond },
 
   noResult: { backgroundColor: COLORS.warnBg, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.warn + '33' },
-  noResultText: { fontSize: 12, color: COLORS.warn, ...FONTS.medium, lineHeight: 19 },
+  noResultText: { fontSize: 12, color: colors.textOnGold, ...FONTS.medium, lineHeight: 19 },
 
   // Receipt
   receiptCard: { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14 },
-  receiptTitle: { fontSize: 11, ...FONTS.black, color: COLORS.steel, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 },
+  receiptTitle: { fontSize: 11, ...FONTS.black, color: COLORS.info, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 },
   receiptRow:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  receiptItem: { fontSize: 12, lineHeight: 20, color: COLORS.bgCard, ...FONTS.medium },
-  receiptPrice:{ fontSize: 12, lineHeight: 20, color: COLORS.steel, ...FONTS.bold },
+  receiptItem: { fontSize: 12, lineHeight: 20, color: colors.textOnGold, ...FONTS.medium },
+  receiptPrice:{ fontSize: 12, lineHeight: 20, color: COLORS.info, ...FONTS.bold },
   receiptTotal:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: COLORS.steel + '30', paddingTop: 12, marginTop: 4 },
-  receiptTotalLabel:  { fontSize: 14, lineHeight: 21, color: COLORS.bgCard, ...FONTS.bold },
-  receiptTotalAmount: { fontSize: 22, color: COLORS.bgCard, ...FONTS.black },
-  receiptMock: { fontSize: 11, color: COLORS.steel, textAlign: 'center', marginTop: 8 },
+  receiptTotalLabel:  { fontSize: 14, lineHeight: 21, color: colors.textOnGold, ...FONTS.bold },
+  receiptTotalAmount: { fontSize: 22, color: colors.textOnGold, ...FONTS.black },
+  receiptMock: { fontSize: 11, color: COLORS.info, textAlign: 'center', marginTop: 8 },
 
   homeBtn: { alignItems: 'center', paddingVertical: 16 },
-  homeBtnText: { fontSize: 14, lineHeight: 21, color: COLORS.steel, ...FONTS.bold } });
+  homeBtnText: { fontSize: 14, lineHeight: 21, color: colors.info, ...FONTS.bold } });
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)
 const styles = makeStyles(COLORS);

@@ -14,6 +14,7 @@
  */
 
 import React from 'react';
+import { COLORS } from '../constants/theme';
 import { Text, StyleSheet, Animated } from 'react-native';
 import { useNetwork } from '../store';
 
@@ -41,7 +42,7 @@ export function OfflineBanner() {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor:  '#1C1C1E',
+    backgroundColor:  COLORS.textPrimary,
     flexDirection:    'row',
     alignItems:       'center',
     justifyContent:   'center',
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   icon: { fontSize: 14 },
-  text: { color: '#fff', fontSize: 13, fontWeight: '500', flex: 1 },
+  text: { color: COLORS.white, fontSize: 13, fontWeight: '500', flex: 1 },
 });
 
 export default OfflineBanner;

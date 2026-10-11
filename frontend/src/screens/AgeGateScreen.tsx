@@ -94,10 +94,10 @@ function AgeGateScreen({ navigation, onVerified }: AgeGateProps) {
         style={{ backgroundColor: COLORS.bail, borderRadius: 10, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
       >
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>🚨 Need help right now?</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 2 }}>Emergency access — no setup required</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: COLORS.white, fontWeight: '700', fontSize: 15 }}>🚨 Need help right now?</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: COLORS.textOnNavy, fontSize: 12, marginTop: 2 }}>Emergency access — no setup required</Text>
         </View>
-        <Text style={{ color: '#fff', fontSize: 20 }}>→</Text>
+        <Text style={{ color: COLORS.white, fontSize: 20 }}>→</Text>
       </TouchableOpacity>
 
       <View style={styles.centered}>

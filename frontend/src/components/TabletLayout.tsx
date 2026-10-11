@@ -17,6 +17,7 @@
  */
 
 import React from 'react';
+import { COLORS } from '../constants/theme';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 
@@ -71,7 +72,7 @@ const s = StyleSheet.create({
   center:  { flex: 1, alignItems: 'center', width: '100%' },
   phone:   { flex: 1 },
   row:     { flex: 1, flexDirection: 'row' },
-  sidebar: { width: 320, borderRightWidth: 0.5, borderRightColor: '#E5E7EB' },
+  sidebar: { width: 320, borderRightWidth: 0.5, borderRightColor: COLORS.border },
   main:    { flex: 1, paddingHorizontal: 24 },
 });
 

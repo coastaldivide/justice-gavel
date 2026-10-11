@@ -284,12 +284,12 @@ function TermsOfServiceScreen(): React.JSX.Element {
           accessibilityLabel="Email legal@justicegavel.app"
         >
           <Text maxFontSizeMultiplier={1.3} style={[styles.footerBtnText,
-            { color: colors.blue }]}>
+            { color: colors.textBrand }]}>
             📧 {CONTACT_EMAIL}
           </Text>
         </TouchableOpacity>
         <Text maxFontSizeMultiplier={1.3} style={[styles.footerCopy,
-          { color: colors.textFaint }]}>
+          { color: colors.textMuted }]}>
           © {new Date().getFullYear()} {COMPANY}. All rights reserved.{'\n'}
           Innocent until proven guilty.
         </Text>

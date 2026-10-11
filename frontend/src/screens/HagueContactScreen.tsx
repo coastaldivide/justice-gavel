@@ -165,7 +165,7 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
       <ScrollView keyboardShouldPersistTaps='handled' style={s.container} contentContainerStyle={s.content}
         testID="hague-contact-screen">
         <View style={s.successBanner}>
-          <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
+          <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
           <Text maxFontSizeMultiplier={1.4} style={s.successTitle}>Intake Recorded</Text>
           <Text maxFontSizeMultiplier={1.4} style={s.successSub}>Attached to your case for tracking</Text>
         </View>
@@ -282,7 +282,7 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
           disabled={submitting}
         >
           {submitting
-            ? <ActivityIndicator color="#fff" />
+            ? <ActivityIndicator color={colors.white} />
             : <Text maxFontSizeMultiplier={1.4} style={s.btnPrimaryText}>Record Intake</Text>}
         </TouchableOpacity>
 
@@ -307,7 +307,7 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
         
           {QUICK_COUNTRIES.length === 0 && (
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ color: '#888', fontSize: 14 }}>No results yet.</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 14 }}>No results yet.</Text>
             </View>
           )}
 {QUICK_COUNTRIES.map(c => (
@@ -474,21 +474,21 @@ function HagueContactScreen({ navigation, route }: HagueContactScreenProps) {
 }
 
 const styles = (colors: any) => StyleSheet.create({
-  container:          { flex: 1, backgroundColor: colors.background, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%',},
+  container:          { flex: 1, backgroundColor: colors.bg, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%',},
   content:            { padding: 16, paddingBottom: 60 },
   heading:            { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 6 },
   subheading:         { fontSize: 14, color: colors.textMuted, marginBottom: 16, lineHeight: 20 },
-  caseBadge:          { backgroundColor: colors.primaryLight, borderRadius: 8, padding: 10, marginBottom: 16 },
+  caseBadge:          { backgroundColor: colors.infoBg, borderRadius: 8, padding: 10, marginBottom: 16 },
   caseBadgeText:      { fontSize: 14, color: colors.primary, fontWeight: '600' },
   card:               { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 14 },
   emergencyCard:      { borderWidth: 1.5, borderColor: colors.emergency },
-  emergencyTitle:     { fontSize: 16, fontWeight: '700', color: colors.emergency, marginBottom: 14 },
+  emergencyTitle:     { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 14 },
   sectionTitle:       { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
   contactRow:         { marginBottom: 10 },
   contactInfo:        { flex: 1 },
   contactName:        { fontSize: 15, fontWeight: '600', color: colors.text },
   contactSub:         { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  contactDetail:      { fontSize: 13, color: colors.primary, marginTop: 4 },
+  contactDetail:      { fontSize: 13, color: colors.textBrand, marginTop: 4 },
   divider:            { height: 1, backgroundColor: colors.border, marginVertical: 10 },
   reportRow:          { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
   reportIcon:         { fontSize: 20, marginRight: 12, marginTop: 2 },
@@ -496,14 +496,14 @@ const styles = (colors: any) => StyleSheet.create({
   reportTitle:        { fontSize: 15, fontWeight: '600', color: colors.text },
   reportSub:          { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   countryBtn:         { backgroundColor: colors.card, borderRadius: 10, padding: 13, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
-  countryBtnActive:   { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  countryBtnActive:   { borderColor: colors.primary, backgroundColor: colors.infoBg },
   countryBtnText:     { fontSize: 15, color: colors.text },
   countryBtnTextActive: { color: colors.primary, fontWeight: '600' },
   countryTag:         { backgroundColor: colors.card, borderRadius: 8, padding: 10, marginBottom: 14, borderWidth: 1, borderColor: colors.border },
   countryTagText:     { fontSize: 14, color: colors.text },
   authName:           { fontSize: 14, fontWeight: '600', color: colors.text, marginTop: 8 },
   noteText:           { fontSize: 13, marginBottom: 8, lineHeight: 18 },
-  linkText:           { fontSize: 13, color: colors.primary, textDecorationLine: 'underline', marginBottom: 14 },
+  linkText:           { fontSize: 13, color: colors.textBrand, textDecorationLine: 'underline', marginBottom: 14 },
   successBanner:      { alignItems: 'center', marginBottom: 24 },
   successIcon:        { fontSize: 40, marginBottom: 8 },
   successTitle:       { fontSize: 20, fontWeight: '700', color: colors.legal },

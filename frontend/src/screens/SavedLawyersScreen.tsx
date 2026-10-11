@@ -124,13 +124,13 @@ function SavedCard({
             </Text>
           )}
           {lawyer.rating != null && (
-            <Text maxFontSizeMultiplier={1.4} style={[styles.cardRating, { color: COLORS.warn }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.cardRating, { color: COLORS.goldText }]}>
               ★ {lawyer.rating.toFixed(1)}
             </Text>
           )}
           {(lawyer as import('../types/api').Lawyer).gavel_level === 1 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.bail, marginTop: 3 }}>🥉 Bronze Gavel</Text>}
           {(lawyer as import('../types/api').Lawyer).gavel_level === 2 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.textSecond, marginTop: 3 }}>🥈 Silver Gavel</Text>}
-          {((lawyer as import('../types/api').Lawyer).gavel_level ?? 0) >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.gold, marginTop: 3 }}>🏆 Golden Gavel</Text>}
+          {((lawyer as import('../types/api').Lawyer).gavel_level ?? 0) >= 3 && <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.goldText, marginTop: 3 }}>🏆 Golden Gavel</Text>}
         </View>
         <TouchableOpacity accessibilityRole="button"
           style={styles.removeBtn}
@@ -342,7 +342,7 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       {error ? (
         <View style={styles.center}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.errorText, { color: COLORS.emergency }]}>{error}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.errorText, { color: colors.emergency }]}>{error}</Text>
           <TouchableOpacity
           accessibilityRole="button" style={styles.retryBtn} accessibilityLabel="Try Again" onPress={() => load()}
             >
@@ -382,7 +382,7 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
             />
           }
           ListEmptyComponent={
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
               💼 No saved attorneys. Browse attorneys and tap ⭐ to save them here.
             </Text>
           }

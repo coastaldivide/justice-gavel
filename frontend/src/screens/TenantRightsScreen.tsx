@@ -132,7 +132,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 32 }}>🏘️</Text>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.bgCard }]}>Tenant Rights</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>Tenant Rights</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>Housing & landlord-tenant law</Text>
       </View>
 
@@ -177,7 +177,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
           <View style={[styles.rightsCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             {guidance.rights.map(r => (
               <View key={r} style={styles.rightsRow}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.rightsBullet, { color: COLORS.legal }]}>✓</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.rightsBullet, { color: colors.legal }]}>✓</Text>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.rightsText, { color: colors.textSecond }]}>{r}</Text>
               </View>
             ))}
@@ -197,7 +197,7 @@ function TenantRightsScreen({ navigation }: ScreenProps): React.JSX.Element {
 
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimer, { color: colors.textFaint }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimer, { color: colors.textMuted }]}>
           This information is for general education only and is not legal advice.
           Laws vary by state. Consult a licensed attorney for advice about your situation.
         </Text>
@@ -223,7 +223,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   deadlineBanner: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', margin: 16, marginTop: 8, borderRadius: RADIUS.lg, borderWidth: 2, padding: 12 },
   deadlineIcon:   { fontSize: 20 },
-  deadlineText:   { flex: 1, fontSize: 12, color: '#EF5350', fontFamily: 'Inter_700Bold', fontWeight: '700', lineHeight: 18 },
+  deadlineText:   { flex: 1, fontSize: 12, color: colors.textSecond, fontFamily: 'Inter_700Bold', fontWeight: '700', lineHeight: 18 },
 
   stepRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', marginHorizontal: 16, marginBottom: 8, borderRadius: RADIUS.md, borderWidth: 1, padding: 12 },
   stepNum: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

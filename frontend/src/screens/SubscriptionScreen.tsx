@@ -365,7 +365,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
           <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTABtnText}>Open Lead Dashboard →</Text>
         </TouchableOpacity>
 
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:10, color:colors.steel,
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:10, color:colors.textMuted,
           textAlign:'center', fontStyle:'italic', marginTop:8, paddingHorizontal:16 }}>
           Subscriptions auto-renew unless cancelled at least 24 hours before renewal date.
           Manage or cancel in Settings at any time.
@@ -386,7 +386,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
         onPress={() => navigation.goBack()}
         style={{ paddingVertical: 16, alignItems: 'center', marginBottom: 4 }}
       >
-        <Text maxFontSizeMultiplier={1.3} style={{ color: '#6B7280', fontSize: 13, textDecorationLine: 'underline' }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textSecond, fontSize: 13, textDecorationLine: 'underline' }}>
           Continue with free plan · 15 AI messages · 5 cases · no credit card
         </Text>
       </TouchableOpacity>
@@ -404,57 +404,57 @@ const makeStyles = (colors: any) => StyleSheet.create({
   heading: { fontSize: 28, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.bgCard },
   subheading: { color: COLORS.bgSubtle, fontSize: 12, marginTop: 3, lineHeight: 18 },
 
-  activeBanner: { backgroundColor: colors.legal, margin: 12, borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center' },
-  activeBannerTitle: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
+  activeBanner: { backgroundColor: colors.legalBg, margin: 12, borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center' },
+  activeBannerTitle: { color: colors.textPrimary, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21, },
   activeBannerSub: { color: colors.legal, fontSize: 12, marginTop: 2 },
   cancelLink: { color: colors.danger, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 
-  toggleBlock: { backgroundColor: COLORS.bgCard, margin: 12, marginBottom: 0, borderRadius: 12, padding: 14 },
-  toggleTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.steel, marginBottom: 8 },
+  toggleBlock: { backgroundColor: colors.bgCard, margin: 12, marginBottom: 0, borderRadius: 12, padding: 14 },
+  toggleTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.info, marginBottom: 8 },
   toggleRow: { flexDirection: 'row', gap: 10 },
   toggleChip: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', backgroundColor: COLORS.bgCard },
   toggleChipActive: { borderColor: COLORS.navy, backgroundColor: COLORS.bgSubtle },
-  toggleChipText: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.steel },
+  toggleChipText: { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.info },
   toggleChipTextActive: { color: COLORS.navy },
 
-  tierCard: { margin: 12, marginBottom: 0, backgroundColor: COLORS.bgCard, borderRadius: 16, padding: 16, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6, borderWidth: 1.5, borderColor: 'transparent' },
+  tierCard: { margin: 12, marginBottom: 0, backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6, borderWidth: 1.5, borderColor: 'transparent' },
   tierCardHighlight: { borderColor: colors.blue, elevation: 4 },
   tierBadge: { position: 'absolute', top: -1, right: 16, backgroundColor: colors.blue, paddingHorizontal: 10, paddingVertical: 10, borderBottomLeftRadius: 8, borderBottomRightRadius: 8 },
   tierBadgeText: { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   tierHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   tierIcon: { fontSize: 28, marginRight: 12 },
   tierLabel: { fontSize: 16, fontWeight: '800' },
-  tierPrice: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy, marginTop: 1 },
-  activeBadge: { backgroundColor: colors.legal, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 20 },
+  tierPrice: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand, marginTop: 1 },
+  activeBadge: { backgroundColor: colors.legalBg, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 20 },
   activeBadgeText: { color: colors.legal, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   featureList: { marginBottom: 16 },
   featureRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
   featureCheck: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginRight: 8, marginTop: 1 },
-  featureText: { fontSize: 12, color: colors.steel, flex: 1, lineHeight: 18 },
+  featureText: { fontSize: 12, color: colors.info, flex: 1, lineHeight: 18 },
   subscribeBtn: { borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
   subscribeBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 15,
     lineHeight: 22, },
   subscribeBtnSub: { color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 },
-  activeBlock: { backgroundColor: colors.legal, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  activeBlock: { backgroundColor: colors.legalBg, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
   activeText: { color: colors.legal, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21, },
 
-  intelCard: { margin: 12, marginBottom: 0, backgroundColor: COLORS.bgCard, borderRadius: 14, padding: 16, elevation: 1 },
+  intelCard: { margin: 12, marginBottom: 0, backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, elevation: 1 },
   intelHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   intelIcon: { fontSize: 22, marginRight: 10 },
-  intelLabel: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.steel },
-  intelPrice: { fontSize: 12, lineHeight: 20, color: colors.steel, marginTop: 1 },
-  intelDesc: { fontSize: 12, color: colors.steel, lineHeight: 18, marginBottom: 12 },
+  intelLabel: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info },
+  intelPrice: { fontSize: 12, lineHeight: 20, color: colors.info, marginTop: 1 },
+  intelDesc: { fontSize: 12, color: colors.info, lineHeight: 18, marginBottom: 12 },
 
-  bondsCTA: { margin: 12, backgroundColor: COLORS.steelMid, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.steelMid },
-  bondsCTATitle: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.emergency, marginBottom: 6 },
-  bondsCTAText: { fontSize: 12, color: colors.steel, lineHeight: 18, marginBottom: 12 },
-  bondsCTABtn: { backgroundColor: COLORS.steelMid, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  bondsCTABtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
+  bondsCTA: { margin: 12, backgroundColor: colors.infoBg, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.steelMid },
+  bondsCTATitle: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 6 },
+  bondsCTAText: { fontSize: 12, color: colors.textSecond, lineHeight: 18, marginBottom: 12 },
+  bondsCTABtn: { backgroundColor: COLORS.steelDark, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  bondsCTABtnText: { color: COLORS.white, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21, },
 
-  footer: { fontSize: 11, color: colors.steel, textAlign: 'center', paddingHorizontal: 24, lineHeight: 16, marginTop: 16 },
+  footer: { fontSize: 11, color: colors.info, textAlign: 'center', paddingHorizontal: 24, lineHeight: 16, marginTop: 16 },
 });
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)

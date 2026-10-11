@@ -227,7 +227,7 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
                 renderItem={({ item }) => (
                   <View style={styles.historyRow}>
                     <Text maxFontSizeMultiplier={1.4} style={[styles.historyStatus,
-                      item.status === 'submitted' ? { color: COLORS.legal } : { color: COLORS.warn }
+                      item.status === 'submitted' ? { color: COLORS.legal } : { color: COLORS.goldText }
                     ]}>
                       {item.status === 'submitted' ? '✓' : '⚠'}
                     </Text>
@@ -445,7 +445,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-end',
   },
   heading:    { fontSize: 22, ...FONTS.black, color: COLORS.bgCard },
-  subheading: { fontSize: 12, color: colors.emergency, marginTop: 2 },
+  subheading: { fontSize: 12, color: colors.textOnNavy, marginTop: 2 },
   enrollBtn:  {
     backgroundColor: COLORS.bgCard, borderRadius: RADIUS.md,
     paddingHorizontal: 16, paddingVertical: 8,
@@ -505,7 +505,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     fontSize: 12, color: COLORS.legal, marginBottom: 16, lineHeight: 17,
     borderWidth: 1, borderColor: colors.legal,
   },
-  feeBreakdown: { backgroundColor: colors.legal, borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: colors.legal },
+  feeBreakdown: { backgroundColor: colors.legalBg, borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: colors.legal },
   feeBreakdownTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.legal, marginBottom: 6 },
   feeBreakdownItem:  { fontSize: 12, color: colors.legal, lineHeight: 19 },
   fieldLabel: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },

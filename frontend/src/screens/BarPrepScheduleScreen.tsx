@@ -244,7 +244,7 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
                       </Text>
                     )}
                   </View>
-                  <Text style={[styles.calendarLabel, (day as any).is_today && { color: colors.primary, ...FONTS.bold }]}>
+                  <Text style={[styles.calendarLabel, (day as any).is_today && { color: colors.textBrand, ...FONTS.bold }]}>
                     {label}
                   </Text>
                 </View>
@@ -265,15 +265,16 @@ export default function BarPrepScheduleScreen({ navigation }: ScreenProps<'BarPr
 }
 
 function LegendDot({ color, label }: { color: string; label: string }) {
+  const { colors } = useTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
-      <Text style={{ fontSize: 11, color: '#888' }}>{label}</Text>
+      <Text style={{ fontSize: 11, color: colors.textMuted }}>{label}</Text>
 
         {/* Bar prep disclaimer */}
         <Text
           maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: '#888', textAlign: 'center',
+          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
           For supplemental study only. Not endorsed by any state bar or the NCBE.
@@ -284,7 +285,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 
 function makeStyles(colors: any) {
   return StyleSheet.create({
-    container:       { flex: 1, backgroundColor: colors.background },
+    container:       { flex: 1, backgroundColor: colors.bg },
     center:          { justifyContent: 'center', alignItems: 'center' },
     scroll:          { flex: 1 },
     scrollContent:   { paddingBottom: 40 },
@@ -300,21 +301,21 @@ function makeStyles(colors: any) {
       paddingHorizontal: 20, paddingVertical: 10,
       borderRadius: RADIUS.md, justifyContent: 'center',
     },
-    saveBtnText:     { fontSize: 14, ...FONTS.bold, color: '#fff' },
+    saveBtnText:     { fontSize: 14, ...FONTS.bold, color: colors.textOnAccent },
     countdownRow:    { flexDirection: 'row', alignItems: 'baseline', marginTop: 14 },
     countdownNum:    { fontSize: 36, ...FONTS.bold },
     countdownLabel:  { fontSize: 15, color: colors.textMuted },
     goalCard:        { marginHorizontal: 16, marginTop: 4, padding: 16, borderRadius: RADIUS.lg, ...SHADOW.sm },
     goalHeader:      { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
     goalTitle:       { fontSize: 15, ...FONTS.bold, color: colors.text },
-    goalFraction:    { fontSize: 15, ...FONTS.bold, color: colors.primary },
+    goalFraction:    { fontSize: 15, ...FONTS.bold, color: colors.textBrand },
     goalTrack:       { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden', marginBottom: 10 },
     goalFill:        { height: '100%', borderRadius: 4 },
     goalMeta:        { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
     goalMetaText:    { fontSize: 12, color: colors.textMuted },
-    overdueText:     { fontSize: 12, color: COLORS.bail, ...FONTS.semiBold },
+    overdueText:     { fontSize: 12, color: colors.bail, ...FONTS.semiBold },
     startBtn:        { paddingVertical: 13, borderRadius: RADIUS.lg, alignItems: 'center' },
-    startBtnText:    { fontSize: 15, ...FONTS.bold, color: '#fff' },
+    startBtnText:    { fontSize: 15, ...FONTS.bold, color: colors.textOnAccent },
     sectionTitle:    {
       fontSize: 13, ...FONTS.bold, color: colors.text,
       marginTop: 20, marginBottom: 10, marginHorizontal: 16,
@@ -327,7 +328,7 @@ function makeStyles(colors: any) {
     recommendRank:   {
       width: 24, height: 24, borderRadius: 12,
       backgroundColor: COLORS.primary, textAlign: 'center',
-      fontSize: 12, ...FONTS.bold, color: '#fff',
+      fontSize: 12, ...FONTS.bold, color: colors.white,
       lineHeight: 24,
     },
     recommendName:   { fontSize: 14, color: colors.text, ...FONTS.medium },
@@ -338,7 +339,7 @@ function makeStyles(colors: any) {
       width: 36, height: 36, borderRadius: 8,
       justifyContent: 'center', alignItems: 'center',
     },
-    calendarCount:   { fontSize: 11, ...FONTS.bold, color: '#fff' },
+    calendarCount:   { fontSize: 11, ...FONTS.bold, color: colors.white },
     calendarLabel:   { fontSize: 9, color: colors.textMuted, marginTop: 3, textAlign: 'center' },
     calendarLegendRow: {
       flexDirection: 'row', justifyContent: 'center', gap: 16,

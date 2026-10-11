@@ -203,16 +203,16 @@ function JuvenileJusticeScreen(): React.JSX.Element {
       showsVerticalScrollIndicator={false}
     >
 {/* Heightened disclaimer for content involving minors */}
-<View style={{ backgroundColor: '#E8F5E9', borderLeftWidth: 3, borderLeftColor: '#4CAF50', padding: 12, margin: 12, borderRadius: 6 }}>
-  <Text style={{ fontSize: 11, color: '#1B5E20', fontWeight: '700', marginBottom: 3 }} maxFontSizeMultiplier={1.4}>CONTENT INVOLVING MINORS</Text>
-  <Text style={{ fontSize: 11, color: '#1B5E20', lineHeight: 16 }} maxFontSizeMultiplier={1.4}>
+<View style={{ backgroundColor: colors.legalBg, borderLeftWidth: 3, borderLeftColor: colors.legal, padding: 12, margin: 12, borderRadius: 6 }}>
+  <Text style={{ fontSize: 11, color: colors.legal, fontWeight: '700', marginBottom: 3 }} maxFontSizeMultiplier={1.4}>CONTENT INVOLVING MINORS</Text>
+  <Text style={{ fontSize: 11, color: colors.legal, lineHeight: 16 }} maxFontSizeMultiplier={1.4}>
     This information is for general education only. Juvenile law outcomes depend heavily on jurisdiction, individual circumstances, and judicial discretion. Never rely on this information for a specific child's case. Consult a licensed juvenile defense attorney.
   </Text>
 </View>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.bgCard }]}>Juvenile Justice</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>Juvenile Justice</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>Rights in the juvenile system</Text>
       </View>
 
@@ -261,7 +261,7 @@ function JuvenileJusticeScreen(): React.JSX.Element {
       {tab === 'sealing' && SEALING_DATA.map(row => (
         <View key={row.state} style={[styles.sealingRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={[styles.stateBadge, { backgroundColor: colors.bgSubtle }]}>
-            <Text maxFontSizeMultiplier={1.2} style={[styles.stateBadgeText, { color: colors.navy }]}>{row.state}</Text>
+            <Text maxFontSizeMultiplier={1.2} style={[styles.stateBadgeText, { color: colors.textBrand }]}>{row.state}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.sealingRowTop}>
@@ -280,7 +280,7 @@ function JuvenileJusticeScreen(): React.JSX.Element {
 
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerText, { color: colors.textFaint }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerText, { color: colors.textMuted }]}>
           This information is for general education only and is not legal advice.
           Laws vary by state. Consult a licensed attorney for advice about your situation.
         </Text>

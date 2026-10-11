@@ -16,6 +16,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { TOAST_ACCENTS, COLORS as THEME_COLORS } from '../constants/theme';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -40,10 +41,10 @@ export function useToast() {
 }
 
 const COLORS: Record<ToastType, string> = {
-  success: '#22C55E',
-  error:   '#EF4444',
-  warning: '#F59E0B',
-  info:    '#3B82F6',
+  success: TOAST_ACCENTS.success,
+  error:   TOAST_ACCENTS.error,
+  warning: TOAST_ACCENTS.warning,
+  info:    TOAST_ACCENTS.info,
 };
 
 const ICONS: Record<ToastType, string> = {
@@ -70,7 +71,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
         <Text style={styles.icon}>{ICONS[toast.type]}</Text>
       </View>
       <Text style={styles.message} numberOfLines={3}>{toast.message}</Text>
-      <TouchableOpacity onPress={() => onDismiss(toast.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Dismiss notification" onPress={() => onDismiss(toast.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
         <Text style={styles.close}>✕</Text>
       </TouchableOpacity>
     </Animated.View>
@@ -115,12 +116,12 @@ const styles = StyleSheet.create({
   toast: {
     flexDirection:  'row',
     alignItems:     'center',
-    backgroundColor:'#1C1C1E',
+    backgroundColor: THEME_COLORS.textPrimary,
     borderRadius:   12,
     paddingVertical:12,
     paddingLeft:    0,
     paddingRight:   12,
-    shadowColor:    '#000',
+    shadowColor:    THEME_COLORS.black,
     shadowOffset:   { width: 0, height: 4 },
     shadowOpacity:  0.18,
     shadowRadius:   12,
@@ -136,13 +137,13 @@ const styles = StyleSheet.create({
     marginRight:    12,
   },
   icon: {
-    color:      '#fff',
+    color:      THEME_COLORS.white,
     fontSize:   14,
     fontWeight: '700',
   },
   message: {
     flex:       1,
-    color:      '#fff',
+    color:      THEME_COLORS.white,
     fontSize:   14,
     lineHeight: 20,
   },

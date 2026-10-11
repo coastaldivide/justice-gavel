@@ -224,7 +224,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
                         style={{ fontSize:14, lineHeight:21, color: colors.textPrimary, flex:1 }}>
                         {q}
                       </Text>
-                      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, fontSize:18 }}>›</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize:18 }}>›</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -289,7 +289,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
                     </Text>
                   )}
                 </View>
-                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, fontSize:18 }}>›</Text>
+                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize:18 }}>›</Text>
               </TouchableOpacity>
             ))}
           </View>

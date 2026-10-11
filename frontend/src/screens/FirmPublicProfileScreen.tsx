@@ -95,7 +95,7 @@ function FirmPublicProfileScreen() {
 
   if (error || !firm) return (
     <View style={[s.center, { backgroundColor: colors.primary }]}>
-      <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textPrimary, fontSize: 16, textAlign: 'center', padding: 24 }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnAccent, fontSize: 16, textAlign: 'center', padding: 24 }}>
         {error || 'Firm not found'}
       </Text>
       <TouchableOpacity
@@ -128,13 +128,13 @@ function FirmPublicProfileScreen() {
         )}
         <View style={s.badges}>
           {firm.accepting_clients && (
-            <View style={[s.badge, { backgroundColor: '#E1F5EE' }]}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: '#0F6E56' }}>● Accepting clients</Text>
+            <View style={[s.badge, { backgroundColor: colors.legalBg }]}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.legal }}>● Accepting clients</Text>
             </View>
           )}
           {firm.free_consultation && (
-            <View style={[s.badge, { backgroundColor: '#E6F1FB' }]}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.blue }}>Free consultation</Text>
+            <View style={[s.badge, { backgroundColor: colors.infoBg }]}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textBrand }}>Free consultation</Text>
             </View>
           )}
         </View>
@@ -182,7 +182,7 @@ function FirmPublicProfileScreen() {
       <View style={s.actions}>
         {firm.phone && (
           <TouchableOpacity
-            style={[s.btn, { backgroundColor: '#0d7a3e', flex: 1 }]}
+            style={[s.btn, { backgroundColor: colors.legalDark, flex: 1 }]}
             onPress={callFirm}
             accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
@@ -227,13 +227,13 @@ const s = StyleSheet.create({
   body:        { fontSize: 14, lineHeight: 21 },
   attRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8,
                  borderTopWidth: 0.5, borderTopColor: 'rgba(0,0,0,0.08)' },
-  avatar:      { width: 36, height: 36, borderRadius: 18, backgroundColor: '#E6F1FB',
+  avatar:      { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.infoBg,
                  alignItems: 'center', justifyContent: 'center' },
   avatarText:  { fontSize: 15, fontWeight: '700', color: COLORS.blue },
   attName:     { fontSize: 14, fontWeight: '600' },
   actions:     { flexDirection: 'row', gap: 10, marginTop: 8 },
   btn:         { paddingVertical: 14, paddingHorizontal: 12, borderRadius: 10,
                  alignItems: 'center', justifyContent: 'center', minHeight: 48 },
-  btnText:     { color: COLORS.bg, fontWeight: '700', fontSize: 14 },
+  btnText:     { color: COLORS.white, fontWeight: '700', fontSize: 14 },
 });
 export default React.memo(FirmPublicProfileScreen);

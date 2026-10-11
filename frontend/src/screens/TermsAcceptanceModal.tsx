@@ -145,7 +145,7 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
           
           {SUMMARY_POINTS.length === 0 && (
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ color: '#888', fontSize: 14 }}>No results yet.</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 14 }}>No results yet.</Text>
             </View>
           )}
 {SUMMARY_POINTS.map((pt, i) => (
@@ -243,7 +243,7 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
             accessibilityLabel="I Agree — accept Terms of Service"
             accessibilityState={{ disabled: !canAccept || submitting }}>
             {submitting
-              ? <ActivityIndicator color="#fff" />
+              ? <ActivityIndicator color={colors.white} />
               : <Text maxFontSizeMultiplier={1.4} style={s.acceptBtnText}>I Agree — Continue to Justice Gavel</Text>
             }
           </TouchableOpacity>
@@ -257,35 +257,35 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
 }
 
 const styles = (colors: any, TYPE: Record<string, number>, FONT: Record<string, string>) => StyleSheet.create({
-  container:          { flex: 1, backgroundColor: colors.background, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%',},
+  container:          { flex: 1, backgroundColor: colors.bg, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%',},
   header:             { paddingTop: 20, paddingHorizontal: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerTitle:        { fontSize: 22, fontFamily: FONT.bold, color: colors.textPrimary, marginBottom: 6 },
-  headerSub:          { fontSize: 13, color: colors.subtext, lineHeight: 18 },
+  headerSub:          { fontSize: 13, color: colors.textSecond, lineHeight: 18 },
   scroll:             { flex: 1 },
   scrollContent:      { paddingHorizontal: 20, paddingTop: 16 },
-  sectionLabel:       { fontSize: 12, fontFamily: FONT.bold, color: colors.gold, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 },
+  sectionLabel:       { fontSize: 12, fontFamily: FONT.bold, color: colors.goldText, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 },
   point:              { flexDirection: 'row', marginBottom: 16, alignItems: 'flex-start' },
   pointIcon:          { fontSize: 22, marginRight: 12, marginTop: 2 },
   pointBody:          { flex: 1 },
   pointTitle:         { fontSize: 14, fontFamily: FONT.bold, color: colors.textPrimary, marginBottom: 3 },
-  pointText:          { fontSize: 13, color: colors.subtext, lineHeight: 19 },
+  pointText:          { fontSize: 13, color: colors.textSecond, lineHeight: 19 },
   fullTosLink:        { marginTop: 8, marginBottom: 16, alignItems: 'center', padding: 12, borderWidth: 1, borderColor: colors.gold, borderRadius: 8 },
-  fullTosLinkText:    { fontSize: 13, color: colors.gold, fontFamily: FONT.bold },
+  fullTosLinkText:    { fontSize: 13, color: colors.goldText, fontFamily: FONT.bold },
   scrollHint:         { alignItems: 'center', paddingVertical: 8 },
-  scrollHintText:     { fontSize: 12, color: colors.subtext, opacity: 0.7 },
+  scrollHintText:     { fontSize: 12, color: colors.textSecond, opacity: 0.7 },
   footer:             { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
   checkRow:           { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
-  checkbox:           { width: 22, height: 22, borderRadius: 4, borderWidth: 2, borderColor: colors.subtext, alignItems: 'center', justifyContent: 'center', marginRight: 10, marginTop: 1, flexShrink: 0 },
+  checkbox:           { width: 22, height: 22, borderRadius: 4, borderWidth: 2, borderColor: colors.textSecond, alignItems: 'center', justifyContent: 'center', marginRight: 10, marginTop: 1, flexShrink: 0 },
   checkboxChecked:    { backgroundColor: colors.gold, borderColor: colors.gold },
-  checkmark:          { color: colors.bg, fontSize: 13, fontFamily: FONT.bold },
+  checkmark:          { color: colors.textOnGold, fontSize: 13, fontFamily: FONT.bold }, // design-audit-ignore: rendered only when checked (gold fill)
   checkLabel:         { flex: 1, fontSize: 13, color: colors.textPrimary, lineHeight: 19 },
-  link:               { color: colors.gold, textDecorationLine: 'underline' },
+  link:               { color: colors.goldText, textDecorationLine: 'underline' },
   bold:               { fontFamily: FONT.bold },
-  scrollToUnlock:     { fontSize: 12, color: colors.subtext, textAlign: 'center', marginBottom: 10 },
-  errorText:          { fontSize: 12, color: colors.emergency, textAlign: 'center', marginBottom: 8 },
+  scrollToUnlock:     { fontSize: 12, color: colors.textSecond, textAlign: 'center', marginBottom: 10 },
+  errorText:          { fontSize: 12, color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },
   acceptBtn:          { backgroundColor: colors.gold, borderRadius: 10, paddingVertical: 15, alignItems: 'center', marginBottom: 10 },
   acceptBtnDisabled:  { opacity: 0.4 },
-  acceptBtnText:      { color: colors.bg, fontSize: 15, fontFamily: FONT.bold },
-  versionNote:        { fontSize: 10, color: colors.subtext, textAlign: 'center', opacity: 0.7 },
+  acceptBtnText:      { color: colors.textOnGold, fontSize: 15, fontFamily: FONT.bold },
+  versionNote:        { fontSize: 10, color: colors.textSecond, textAlign: 'center', opacity: 0.7 },
 });
 export default React.memo(TermsAcceptanceModal);

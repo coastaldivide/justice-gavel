@@ -3,6 +3,7 @@
  * Extracted from LawyersScreen to reduce file size and enable reuse.
  */
 import React from 'react';
+import { COLORS } from '../constants/theme';
 import {
   View, Text, TouchableOpacity, Linking,
 } from 'react-native';
@@ -80,13 +81,13 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
           {!!lawyer.jtb_verified && (
             <View style={{ backgroundColor: colors.navy, borderRadius: 6,
               paddingHorizontal: 7, paddingVertical: 2 }}>
-              <Text style={{ fontSize: 9, color: '#fff', fontWeight: '700' }}>JTB ✓</Text>
+              <Text style={{ fontSize: 9, color: COLORS.white, fontWeight: '700' }}>JTB ✓</Text>
             </View>
           )}
           {!!lawyer.bar_verified && (
-            <View style={{ backgroundColor: '#1B5E20', borderRadius: 6,
+            <View style={{ backgroundColor: COLORS.legal, borderRadius: 6,
               paddingHorizontal: 7, paddingVertical: 2 }}>
-              <Text style={{ fontSize: 9, color: '#fff', fontWeight: '700' }}>BAR ✓</Text>
+              <Text style={{ fontSize: 9, color: COLORS.white, fontWeight: '700' }}>BAR ✓</Text>
             </View>
           )}
         </View>
@@ -109,10 +110,10 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
           </Text>
         )}
         {!!lawyer.free_consultation && (
-          <Text style={{ fontSize: 12, color: '#1B5E20' }}>Free consult</Text>
+          <Text style={{ fontSize: 12, color: colors.legal }}>Free consult</Text>
         )}
         {!!lawyer.pro_bono && (
-          <Text style={{ fontSize: 12, color: '#0D47A1' }}>Pro bono</Text>
+          <Text style={{ fontSize: 12, color: colors.info }}>Pro bono</Text>
         )}
       </View>
 
@@ -128,7 +129,7 @@ export const LawyerCard = React.memo(function LawyerCard({ lawyer, colors, onPre
           }}
           accessibilityRole="button"
           accessibilityLabel={`Call ${lawyer.name}`}>
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>
+          <Text style={{ color: COLORS.white, fontWeight: '700', fontSize: 14 }}>
             📞 Call now
           </Text>
         </TouchableOpacity>

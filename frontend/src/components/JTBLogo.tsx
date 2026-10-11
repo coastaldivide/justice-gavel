@@ -8,6 +8,7 @@
  * size prop controls the square dimension in pixels.
  */
 import React from 'react';
+import { ART, COLORS } from '../constants/theme';
 import { View } from 'react-native';
 import Svg, {
   Polygon, Rect, Text as SvgText, Line
@@ -27,13 +28,13 @@ function JTBLogo({ size = 80 }: Props) {
     <View style={{ width: s, height: s }}>
       <Svg width={s} height={s} viewBox="0 0 680 680">
         {/* Background */}
-        <Rect x={0} y={0} width={680} height={680} fill="#042C53" />
+        <Rect x={0} y={0} width={680} height={680} fill={COLORS.navy} />
 
         {/* Outer octagon — navy fill, gold stroke */}
         <Polygon
           points={oct}
-          fill="#042C53"
-          stroke="#F9A825"
+          fill={COLORS.navy}
+          stroke={ART.amber}
           strokeWidth={8}
         />
 
@@ -41,7 +42,7 @@ function JTBLogo({ size = 80 }: Props) {
         <Polygon
           points={octInner}
           fill="none"
-          stroke="#185FA5"
+          stroke={COLORS.blue}
           strokeWidth={3}
           transform="scale(0.88) translate(46,46)"
         />
@@ -54,12 +55,12 @@ function JTBLogo({ size = 80 }: Props) {
           fontFamily="Georgia, serif"
           fontSize={72}
           fontWeight="700"
-          fill="#FFFFFF"
+          fill={COLORS.white}
           letterSpacing={6}
         >JUSTICE</SvgText>
 
         {/* Gold rule */}
-        <Line x1={180} y1={340} x2={500} y2={340} stroke="#F9A825" strokeWidth={2.5} />
+        <Line x1={180} y1={340} x2={500} y2={340} stroke={ART.amber} strokeWidth={2.5} />
 
         {/* GAVEL */}
         <SvgText
@@ -69,7 +70,7 @@ function JTBLogo({ size = 80 }: Props) {
           fontFamily="Georgia, serif"
           fontSize={72}
           fontWeight="700"
-          fill="#F9A825"
+          fill={ART.amber}
           letterSpacing={6}
         >GAVEL</SvgText>
       </Svg>

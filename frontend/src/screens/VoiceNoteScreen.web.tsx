@@ -83,7 +83,7 @@ function VoiceNoteScreen(): React.JSX.Element {
 
       <View style={{ alignItems:'center', paddingVertical:32, gap:20 }}>
         {recording && (
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize:36, fontWeight:'700', color: colors.navy, fontVariant:['tabular-nums'] as any }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontSize:36, fontWeight:'700', color: colors.textBrand, fontVariant:['tabular-nums'] as any }}>
             {fmt(seconds)}
           </Text>
         )}
@@ -93,7 +93,7 @@ function VoiceNoteScreen(): React.JSX.Element {
           onPress={recording ? stopAndTranscribe : startRecording}
           style={{
             width:80, height:80, borderRadius:40,
-            backgroundColor: recording ? '#C62828' : colors.navy,
+            backgroundColor: recording ? colors.emergency : colors.navy,
             alignItems:'center', justifyContent:'center',
           }}
         >
@@ -113,8 +113,8 @@ function VoiceNoteScreen(): React.JSX.Element {
       )}
 
       {error ? (
-        <View style={{ backgroundColor:'#FFEBEE', borderRadius:12, padding:16 }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ color:'#C62828', fontSize:14 }}>{error}</Text>
+        <View style={{ backgroundColor:colors.emergencyBg, borderRadius:12, padding:16 }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ color:colors.emergency, fontSize:14 }}>{error}</Text>
         </View>
       ) : null}
 

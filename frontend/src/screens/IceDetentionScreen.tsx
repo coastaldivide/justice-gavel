@@ -350,7 +350,7 @@ function IceDetentionScreen(): React.JSX.Element {
       </View>
 
       {/* Rights */}
-      <Text style={[s.sectionLabel, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>YOUR RIGHTS / SUS DERECHOS</Text>
+      <Text style={[s.sectionLabel, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>YOUR RIGHTS / SUS DERECHOS</Text>
       {L.rights.map((r, i) => (
         <View key={`rights-${i}`} style={[s.rightCard, { backgroundColor: r.bg, borderColor: r.color }]}>
           <View style={s.rightTop}>
@@ -364,7 +364,7 @@ function IceDetentionScreen(): React.JSX.Element {
       ))}
 
       {/* Steps */}
-      <Text style={[s.sectionLabel, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>{L.stepsTitle}</Text>
+      <Text style={[s.sectionLabel, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{L.stepsTitle}</Text>
       {L.steps.map((step, i) => (
         <View key={`steps-${i}`} style={[s.stepRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={s.stepBubble}>
@@ -375,7 +375,7 @@ function IceDetentionScreen(): React.JSX.Element {
       ))}
 
       {/* Detainee locator */}
-      <Text style={[s.sectionLabel, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>{L.locateTitle}</Text>
+      <Text style={[s.sectionLabel, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{L.locateTitle}</Text>
       <View style={[s.locatorCard, { backgroundColor: colors.bgCard, borderColor: COLORS.legal }]}>
         <Text style={[s.locatorDesc, { color: colors.textSecond }]} maxFontSizeMultiplier={1.4}>{L.locateDesc}</Text>
         <TouchableOpacity
@@ -390,7 +390,7 @@ function IceDetentionScreen(): React.JSX.Element {
       </View>
 
       {/* Legal resources */}
-      <Text style={[s.sectionLabel, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>{L.legalTitle}</Text>
+      <Text style={[s.sectionLabel, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>{L.legalTitle}</Text>
       {L.resources.map((r, i) => (
         <View key={`resource-${i}`} style={[
           s.resourceCard,
@@ -445,7 +445,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   langRow:    { flexDirection: 'row', justifyContent: 'flex-end', padding: 12, paddingBottom: 0 },
   langBtn:    { backgroundColor: COLORS.navy, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
-  langBtnTxt: { color: colors.bg, fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  langBtnTxt: { color: colors.textOnNavy, fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   header:      { backgroundColor: STATUS.errorDark, padding: 24, paddingTop: 12, alignItems: 'center', gap: 6 },
   headerEmoji: { fontSize: 44 },
@@ -466,13 +466,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8, borderRadius: RADIUS.md, borderWidth: 1, padding: 12 },
   stepBubble:    { width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.navy,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  stepBubbleTxt: { color: colors.bg, fontSize: 13, fontFamily: 'Inter_900Black', fontWeight: '900' },
+  stepBubbleTxt: { color: colors.textOnNavy, fontSize: 13, fontFamily: 'Inter_900Black', fontWeight: '900' },
   stepTxt:       { flex: 1, fontSize: 13, lineHeight: 20 },
 
   locatorCard: { marginHorizontal: 16, marginBottom: 10, borderRadius: RADIUS.lg, borderWidth: 2, padding: 16 },
   locatorDesc: { fontSize: 13, lineHeight: 19, marginBottom: 14 },
   locatorBtn:  { backgroundColor: COLORS.legal, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
-  locatorBtnTxt: { color: colors.bg, fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  locatorBtnTxt: { color: colors.textOnNavy, fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   resourceCard:  { marginHorizontal: 16, marginBottom: 10, borderRadius: RADIUS.lg, borderWidth: 1.5, padding: 14 },
   resourceName:  { fontSize: 14, fontFamily: 'Inter_700Bold', fontWeight: '700', lineHeight: 20, marginBottom: 3 },
@@ -486,7 +486,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   shareBtn:    { marginHorizontal: 16, marginVertical: 16, backgroundColor: COLORS.navy,
     borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center' },
-  shareBtnTxt: { color: colors.bg, fontSize: 15, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  shareBtnTxt: { color: colors.textOnNavy, fontSize: 15, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   disclaimer:    { marginHorizontal: 16, borderRadius: RADIUS.md, borderWidth: 1, padding: 14 },
   disclaimerTxt: { fontSize: 11, lineHeight: 17 },

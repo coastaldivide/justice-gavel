@@ -45,8 +45,8 @@ import LegalDisclaimerScreen from '../screens/LegalDisclaimerScreen';
 function ScreenFallback() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center',
-                   backgroundColor: '#fff' }}>
-      <ActivityIndicator size="large" color="#1a3a6e" />
+                   backgroundColor: COLORS.white }}>
+      <ActivityIndicator size="large" color={COLORS.navyMid} />
     </View>
   );
 }
@@ -148,8 +148,8 @@ const Tab        = createBottomTabNavigator();
 
 // ── Shared header style ────────────────────────────────────────────────────────
 const HDR = {
-  headerStyle:     { backgroundColor: COLORS.navy || '#020E1C' },
-  headerTintColor: '#fff',
+  headerStyle:     { backgroundColor: COLORS.navy },
+  headerTintColor: COLORS.white,
   headerTitleStyle:{ fontWeight: '700' as const },
   headerBackTitle: 'Back',
 };
@@ -195,16 +195,16 @@ function MoreNavigator() {
       <MoreStack.Screen name="QuickConnect"          component={QuickConnectScreen}          options={{ title: '⚡ Quick Connect' }} />
       <MoreStack.Screen name="ConsumerSubscription"  component={ConsumerSubscriptionScreen}  options={{ title: '📋 Choose Your Plan' }} />
       <MoreStack.Screen name="ArrestMonitor"         component={ArrestMonitorScreen}         options={{ title: '🔔 Arrest Monitor' }} />
-      <MoreStack.Screen name="HelpNow"               component={HelpNowScreen}               options={{ title: '🚨 Get Help Now', headerStyle: { backgroundColor: '#B71C1C' }, headerTintColor: '#fff' }} />
+      <MoreStack.Screen name="HelpNow"               component={HelpNowScreen}               options={{ title: '🚨 Get Help Now', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="Booking"               component={BookingScreen}               options={{ title: '📅 Book a Consultation' }} />
       <MoreStack.Screen name="RightsCard"            component={RightsCardScreen}            options={{ title: '📋 Know Your Rights Card' }} />
-      <MoreStack.Screen name="CheckIn"               component={CheckInScreen}               options={{ title: '✓ Daily Check-In', headerStyle: { backgroundColor: COLORS.navy }, headerTintColor: '#fff' }} />
+      <MoreStack.Screen name="CheckIn"               component={CheckInScreen}               options={{ title: '✓ Daily Check-In', headerStyle: { backgroundColor: COLORS.navy }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CheckInManager"        component={CheckInManagerScreen}        options={{ title: '📋 Check-In Manager' }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: '📋 Clear My Record' }} />
       <MoreStack.Screen name="AttorneyInbox"         component={AttorneyInboxScreen}         options={{ headerTitle: "Attorney Inbox" }} />
         <MoreStack.Screen name="WhatHappensNext"       component={JustArrestedScreen}       options={{ title: '⚖️ What Happens Next' }} />
-      <MoreStack.Screen name="EmergencyShare"        component={EmergencyShareScreen}        options={{ title: '🚨 Emergency Share', headerStyle: { backgroundColor: '#B71C1C' }, headerTintColor: '#fff' }} />
-      <MoreStack.Screen name="CrisisResources"       component={CrisisResourcesScreen}       options={{ title: '💙 Crisis Support', headerStyle: { backgroundColor: '#1565C0' }, headerTintColor: '#fff' }} />
+      <MoreStack.Screen name="EmergencyShare"        component={EmergencyShareScreen}        options={{ title: '🚨 Emergency Share', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="CrisisResources"       component={CrisisResourcesScreen}       options={{ title: '💙 Crisis Support', headerStyle: { backgroundColor: COLORS.blue }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="Diversion"             component={DiversionScreen}             options={{ title: '🤝 Diversion Eligibility' }} />
       <MoreStack.Screen name="Translator"            component={TranslatorScreen}            options={{ title: '🗣 Interpreter' }} />
       <MoreStack.Screen name="Discovery"             component={DiscoveryScreen}             options={{ title: '📄 Discovery AI' }} />
@@ -215,8 +215,8 @@ function MoreNavigator() {
       <MoreStack.Screen name="SavedLawyers"          component={SavedLawyersScreen}          options={{ title: '⭐ Saved Lawyers' }} />
       <MoreStack.Screen name="DeadlineCalculator"    component={DeadlineCalculatorScreen}    options={{ title: '⏰ Deadline Calculator' }} />
       <MoreStack.Screen name="PILead"                component={PILeadScreen}                options={{ title: '⚖️ Submit Your Case' }} />
-      <MoreStack.Screen name="TenantRights"          component={TenantRightsScreen}          options={{ title: '🏠 Tenant Rights', headerStyle: { backgroundColor: '#00796B' }, headerTintColor: '#fff' }} />
-      <MoreStack.Screen name="IceDetention"          component={IceDetentionScreen}          options={{ title: '✈️ ICE Detention Help', headerStyle: { backgroundColor: '#B71C1C' }, headerTintColor: '#fff' }} />
+      <MoreStack.Screen name="TenantRights"          component={TenantRightsScreen}          options={{ title: '🏠 Tenant Rights', headerStyle: { backgroundColor: COLORS.legalDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="IceDetention"          component={IceDetentionScreen}          options={{ title: '✈️ ICE Detention Help', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="JuvenileJustice"       component={JuvenileJusticeScreen}       options={{ title: '🧒 Juvenile Justice' }} />
         <MoreStack.Screen name="HagueContact"
           component={HagueContactScreen}
@@ -231,9 +231,9 @@ function MoreNavigator() {
       <MoreStack.Screen name="SpecialtyCourts"       component={SpecialtyCourtsScreen}       options={{ title: '⚖️ Specialty Courts' }} />
       <MoreStack.Screen name="CourtLocator"          component={CourtLocatorScreen}          options={{ title: '🏛️ Court Locator' }} />
       <MoreStack.Screen name="BailCalculator"        component={BailCalculatorScreen}        options={{ title: '💰 Bail Calculator' }} />
-      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: '🚨 Just Arrested — What To Do', headerStyle: { backgroundColor: '#B71C1C' }, headerTintColor: '#fff' }} />
+      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: '🚨 Just Arrested — What To Do', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CourtForms"            component={CourtFormsScreen}            options={{ title: '📝 Court Forms' }} />
-      <MoreStack.Screen name="InterrogationRecorder" component={InterrogationRecorderScreen} options={{ title: '🎙 Encounter Recorder', headerStyle: { backgroundColor: '#B71C1C' }, headerTintColor: '#fff' }} />
+      <MoreStack.Screen name="InterrogationRecorder" component={InterrogationRecorderScreen} options={{ title: '🎙 Encounter Recorder', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="DocumentScanner"       component={DocumentScannerScreen}       options={{ title: '📷 Document Scanner' }} />
       <MoreStack.Screen name="LawyerProfile"         component={LawyerProfileScreen}         options={{ title: 'Attorney Profile' }} />
       <MoreStack.Screen name="Search"                component={SearchScreen}                options={{ title: '🔍 Search' }} />
@@ -278,17 +278,21 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor:    COLORS.navy || '#020E1C',
-        tabBarInactiveTintColor:  '#999',
+        tabBarActiveTintColor:    COLORS.tabActive,
+        tabBarInactiveTintColor:  COLORS.tabInactive,
         tabBarStyle: {
-          backgroundColor: '#fff',
-          borderTopColor:  '#88888840',
+          backgroundColor: COLORS.tabBg,
+          borderTopColor:  COLORS.tabBorder,
           borderTopWidth:  1.5,
           height:          62,
           paddingBottom:   8,
           paddingTop:      4,
         },
         tabBarLabelStyle: { fontSize: 10, fontWeight: '700' },
+        // On web the default tab button is an <a role="link">, which breaks the
+        // tablist's required children (axe aria-required-children). A Touchable
+        // keeps the accessibilityRole="tab" + selected state the item passes in.
+        tabBarButton: (props: any) => <TouchableOpacity {...props} />,
       }}>
       <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarButton: (props: any) => <TouchableOpacity testID="home-tab" {...props} />, tabBarLabel: 'Home', tabBarTestID: 'home-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> } as any} />
       <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: 'AI Help',  tabBarIcon: ({ focused }) => <TabIcon emoji="💬" focused={focused} /> }} />
@@ -326,18 +330,18 @@ function GuestNavigator() {
 function SplashScreen() {
   return (
     <ErrorBoundary>
-    <View style={{ flex: 1, backgroundColor: '#020E1C', alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center' }}>
       <JTBLogo size={110} />
-      <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff', letterSpacing: 1.5, marginBottom: 4, marginTop: 24 }}>
+      <Text style={{ fontSize: 26, fontWeight: '900', color: COLORS.white, letterSpacing: 1.5, marginBottom: 4, marginTop: 24 }}>
         JUSTICE GAVEL
       </Text>
-      <Text style={{ fontSize: 10, fontWeight: '600', color: '#85B7EB', letterSpacing: 5, marginBottom: 8 }}>
+      <Text style={{ fontSize: 10, fontWeight: '600', color: COLORS.steel, letterSpacing: 5, marginBottom: 8 }}>
         YOUR LEGAL CONNECTION
       </Text>
-      <Text style={{ fontSize: 13, fontWeight: '600', color: 'rgba(133,183,235,0.75)', letterSpacing: 0.5, marginBottom: 36, textAlign: 'center', paddingHorizontal: 40 }}>
+      <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.steel, letterSpacing: 0.5, marginBottom: 36, textAlign: 'center', paddingHorizontal: 40 }}>
         Innocent until proven guilty.
       </Text>
-      <ActivityIndicator color="#85B7EB" size="large" />
+      <ActivityIndicator color={COLORS.steel} size="large" />
     </View>
     </ErrorBoundary>
   );

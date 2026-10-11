@@ -176,12 +176,12 @@ function CourtFormsScreen(): React.JSX.Element | null {
       <View style={s.stateBadges}>
         {item.fillablePdf && (
           <View style={[s.badge, { backgroundColor: colors.legalBg }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.legalDark }]}>Fillable PDF</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.legal }]}>Fillable PDF</Text>
           </View>
         )}
         {item.eFiling && (
           <View style={[s.badge, { backgroundColor: colors.bgSubtle }]}>
-            <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.blue }]}>E-File</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[s.badgeText, { color: colors.textBrand }]}>E-File</Text>
           </View>
         )}
       </View>
@@ -264,7 +264,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
           
           {FORM_CATEGORIES.length === 0 && (
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ color: '#888', fontSize: 14 }}>No results yet.</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 14 }}>No results yet.</Text>
             </View>
           )}
 {FORM_CATEGORIES.map(cat => (
@@ -294,7 +294,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
               The forms above apply to adult criminal records only. For juvenile records,
               contact your state juvenile court clerk or visit{' '}
               <Text maxFontSizeMultiplier={1.4}
-                style={{ color: colors.blue, textDecorationLine: 'underline' }}
+                style={{ color: colors.textBrand, textDecorationLine: 'underline' }}
                 onPress={() => Linking.openURL('https://www.juvenilelaw.org/find-help').catch(() => showToast('Action failed. Please try again.', 'error'))}
               >
                 juvenilelaw.org/find-help
@@ -390,7 +390,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
                 <Text maxFontSizeMultiplier={1.4} style={s.formLinkSource}>Plain-language guides and instructions</Text>
               </View>
               <View style={[s.govBadge, { backgroundColor: colors.bgSubtle }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[s.govBadgeText, { color: colors.blue }]}>Self-Help</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[s.govBadgeText, { color: colors.textBrand }]}>Self-Help</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -408,7 +408,7 @@ function CourtFormsScreen(): React.JSX.Element | null {
               <Text maxFontSizeMultiplier={1.4} style={s.formLinkSource}>Administrative Office of the U.S. Courts</Text>
             </View>
             <View style={[s.govBadge, { backgroundColor: colors.bgSubtle }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[s.govBadgeText, { color: colors.blue }]}>Federal</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[s.govBadgeText, { color: colors.textBrand }]}>Federal</Text>
             </View>
           </TouchableOpacity>
 
@@ -588,7 +588,7 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
   formLinkUrl:     { fontSize: 11, fontFamily: F.regular, color: C.blue, marginBottom: 2 },
   formLinkSource:  { fontSize: 11, fontFamily: F.regular, color: C.textMuted },
   formLinkSub:     { fontSize: 12, fontFamily: F.regular, color: C.textMuted, marginTop: 2 },
-  govBadge:        { backgroundColor: COLORS.legal, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  govBadge:        { backgroundColor: COLORS.legalBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   govBadgeText:    { fontSize: 11, fontFamily: F.bold, color: COLORS.legal },
   aiGuideBtn:      { flexDirection: 'row', alignItems: 'center', backgroundColor: C.navy, borderRadius: 12, padding: 16, gap: 12, marginBottom: 10 },
   aiGuideBtnIcon:  { fontSize: 22 },
@@ -601,9 +601,9 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
     lineHeight: 21, fontFamily: F.bold, color: C.textPrimary, marginBottom: 8 },
   filingReminderText: { fontSize: 12, fontFamily: F.regular, color: C.textSecond, lineHeight: 22 },
   link:            { color: C.blue, textDecorationLine: 'underline' },
-  aiDisclaimerBanner: { backgroundColor: COLORS.steelMid, borderRadius: 8, padding: 16, borderLeftWidth: 3, borderLeftColor: COLORS.steelMid, marginBottom: 16 },
+  aiDisclaimerBanner: { backgroundColor: COLORS.infoBg, borderRadius: 8, padding: 16, borderLeftWidth: 3, borderLeftColor: COLORS.steelMid, marginBottom: 16 },
   aiDisclaimerTitle: { fontSize: 12, fontFamily: F.bold, color: COLORS.emergency, marginBottom: 4 },
-  aiDisclaimerText: { fontSize: 12, fontFamily: F.regular, color: COLORS.steelMid, lineHeight: 18 },
+  aiDisclaimerText: { fontSize: 12, fontFamily: F.regular, color: COLORS.info, lineHeight: 18 },
   loadingBox:      { alignItems: 'center', paddingVertical: 40, gap: 12 },
   loadingText:     { fontSize: 14,
     lineHeight: 21, fontFamily: F.regular, color: C.textMuted },

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { api } from '../services/api';
 import { useToast } from './Toast';
+import { COLORS } from '../constants/theme';
 
 interface Props {
   screen: string;   // current screen name for logging
@@ -95,7 +96,7 @@ export default function FeedbackButton({ screen }: Props) {
                 accessibilityLabel="Submit feedback"
               >
                 {loading
-                  ? <ActivityIndicator color="#fff" size="small" />
+                  ? <ActivityIndicator color={COLORS.white} size="small" />
                   : <Text style={styles.submitText}>Send Feedback</Text>
                 }
               </TouchableOpacity>
@@ -109,21 +110,21 @@ export default function FeedbackButton({ screen }: Props) {
 
 const styles = StyleSheet.create({
   fab:        { position: 'absolute', bottom: 80, right: 16, width: 44, height: 44,
-                borderRadius: 22, backgroundColor: '#042C53', alignItems: 'center',
+                borderRadius: 22, backgroundColor: COLORS.navy, alignItems: 'center',
                 justifyContent: 'center', zIndex: 999, elevation: 4 },
-  fabText:    { color: '#fff', fontSize: 22, fontWeight: '700', lineHeight: 24 },
+  fabText:    { color: COLORS.white, fontSize: 22, fontWeight: '700', lineHeight: 24 },
   overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modal:      { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+  modal:      { backgroundColor: COLORS.white, borderTopLeftRadius: 20, borderTopRightRadius: 20,
                 padding: 24, paddingBottom: 40 },
-  title:      { fontSize: 18, fontWeight: '700', color: '#042C53', marginBottom: 4 },
-  subtitle:   { fontSize: 12, color: '#9ca3af', marginBottom: 16 },
-  input:      { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12,
+  title:      { fontSize: 18, fontWeight: '700', color: COLORS.navy, marginBottom: 4 },
+  subtitle:   { fontSize: 12, color: COLORS.textSecond, marginBottom: 16 },
+  input:      { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 12,
                 fontSize: 14, minHeight: 100, marginBottom: 12 },
   buttons:    { flexDirection: 'row', gap: 12 },
-  cancel:     { flex: 1, padding: 14, borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db',
+  cancel:     { flex: 1, padding: 14, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border,
                 alignItems: 'center' },
-  cancelText: { fontSize: 15, color: '#374151' },
-  submit:     { flex: 2, padding: 14, borderRadius: 8, backgroundColor: '#042C53',
+  cancelText: { fontSize: 15, color: COLORS.textSecond },
+  submit:     { flex: 2, padding: 14, borderRadius: 8, backgroundColor: COLORS.navy,
                 alignItems: 'center' },
-  submitText: { fontSize: 15, color: '#fff', fontWeight: '700' },
+  submitText: { fontSize: 15, color: COLORS.white, fontWeight: '700' },
 });

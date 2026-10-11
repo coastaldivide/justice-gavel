@@ -239,7 +239,7 @@ function MatterIntelligenceScreen({ route }: any) {
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         {NEGATIVE_INDICATOR_TYPES.has(ind.type) && (
-                          <AppIcon name="warning-outline" size={20} color="#E65100" />
+                          <AppIcon name="warning-outline" size={20} color={colors.warn} />
                         )}
                         <Text maxFontSizeMultiplier={1.4} style={s.indLabel}>{ind.label}</Text>
                       </View>

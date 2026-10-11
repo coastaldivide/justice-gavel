@@ -558,10 +558,10 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
   accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           style={{ marginRight: 14 }} accessibilityLabel="History" onPress={() => loadHistory()}>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: COLORS.navy, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textBrand, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700' }}>History</Text>
         </TouchableOpacity>
       ) : null });
-  }, [phase, navigation, loadHistory]);
+  }, [colors.textBrand, phase, navigation, loadHistory]);
 
 
 
@@ -707,10 +707,10 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
     <ScrollView>
       <View style={{ backgroundColor: colors.warnBg, borderRadius: 8, padding: 12, margin: 12,
         marginBottom: 0, borderLeftWidth: 4, borderLeftColor: colors.gold }}>
-        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.gold, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12, marginBottom: 4 }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.goldText, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12, marginBottom: 4 }}>
           ⚖️ AI-Generated Drafts -- Attorney Review Required
         </Text>
-        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, fontSize: 11, lineHeight: 16 }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 11, lineHeight: 16 }}>
           These motions are AI-generated drafts. They are NOT legal advice and have not been
           reviewed by a licensed attorney. Always have a lawyer review before filing with a court.
         </Text>
@@ -733,7 +733,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
       <Text maxFontSizeMultiplier={1.4} style={[styles.pageTitle, { color: colors.textPrimary }]}>Motion Library</Text>
       <Text maxFontSizeMultiplier={1.4} style={[styles.pageSub, { color: colors.textMuted }]}>
         AI-generated court-ready drafts. Fill in the case details,
-        we write the motion. Review, edit, and file. <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_700Bold', fontWeight: '700', color: COLORS.navy }}>$9.99 per motion.</Text>
+        we write the motion. Review, edit, and file. <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textBrand }}>$9.99 per motion.</Text>
       </Text>
 
       {/* Value prop banner */}
@@ -954,7 +954,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
                   }}
                   disabled={!attorneyReviewed}
                   accessibilityState={{ disabled: !attorneyReviewed }}>
-                  <Text maxFontSizeMultiplier={1.4} style={egStyles.exportBtnText}>Export Motion</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[egStyles.exportBtnText, !attorneyReviewed && egStyles.exportBtnTextDisabled]}>Export Motion</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1014,7 +1014,7 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button"
 
-            style={[styles.resultAction, { backgroundColor: COLORS.steel }]}
+            style={[styles.resultAction, { backgroundColor: COLORS.blue }]}
             onPress={shareMotion}
             accessibilityLabel="Share motion"
           accessibilityHint="Shares this information"
@@ -1298,7 +1298,7 @@ const makeStyles = () => StyleSheet.create({
   resultScroll:    { padding: 16, paddingBottom: 40 },
   resultActionBar: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   resultAction:    { flex: 1, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center' },
-  resultActionText:{ color: COLORS.bgCard, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  resultActionText:{ color: COLORS.textOnNavy, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   editChip:        { borderRadius: RADIUS.md, borderWidth: 1, padding: 10, marginBottom: 12 },
   editChipText:    { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_500Medium', fontWeight: '500' },
   draftInput:      { borderWidth: 1, borderRadius: RADIUS.lg, padding: 20,
@@ -1341,22 +1341,23 @@ const egStyles = StyleSheet.create({
   overlay:    { flex:1, backgroundColor:'rgba(0,0,0,0.6)', justifyContent:'center', alignItems:'center', padding:20 },
   card:       { backgroundColor:COLORS.bgCard, borderRadius:16, padding:20, width:'100%', maxWidth:420 },
   title:      { fontSize:18, fontWeight:'700', color:COLORS.navy, marginBottom:12, textAlign:'center' },
-  body:       { fontSize:13, color:COLORS.steel, lineHeight:20, marginBottom:12 },
-  bold:       { fontWeight:'700', color:COLORS.bg },
+  body:       { fontSize:13, color:COLORS.info, lineHeight:20, marginBottom:12 },
+  bold:       { fontWeight:'700', color:COLORS.textOnGold },
   reviewBtn:  { backgroundColor:COLORS.bgSubtle, borderRadius:8, padding:12, alignItems:'center', marginBottom:16 },
   reviewBtnText: { fontSize:13, fontWeight:'600', color:COLORS.blue },
   checkRow:   { flexDirection:'row', alignItems:'flex-start', gap:10, marginBottom:16 },
   checkBox:   { marginTop:2, flexShrink:0 },
   checkInner: { width:22, height:22, borderRadius:4, borderWidth:2, borderColor:COLORS.textMuted, alignItems:'center', justifyContent:'center' },
   checkInnerChecked: { backgroundColor:COLORS.navy, borderColor:COLORS.navy },
-  checkMark:  { color:COLORS.bgCard, fontSize:13, fontWeight:'700' },
-  checkLabel: { flex:1, fontSize:12, color:COLORS.steel, lineHeight:18 },
+  checkMark:  { color:COLORS.textOnNavy, fontSize:13, fontWeight:'700' }, // design-audit-ignore: rendered only when checked (navy fill)
+  checkLabel: { flex:1, fontSize:12, color:COLORS.info, lineHeight:18 },
   btnRow:     { flexDirection:'row', gap:10 },
   cancelBtn:  { flex:1, borderRadius:10, borderWidth:1, borderColor:COLORS.border, padding:12, alignItems:'center' },
   cancelBtnText: { fontSize:14,
-    lineHeight: 21, color:COLORS.steel, fontWeight:'500' },
+    lineHeight: 21, color:COLORS.info, fontWeight:'500' },
   exportBtn:  { flex:1, borderRadius:10, backgroundColor:COLORS.navy, padding:12, alignItems:'center' },
   exportBtnDisabled: { backgroundColor:COLORS.border },
   exportBtnText: { fontSize:14,
-    lineHeight: 21, color:COLORS.bgCard, fontWeight:'700' } });
+    lineHeight: 21, color:COLORS.textOnNavy, fontWeight:'700' },
+  exportBtnTextDisabled: { color:COLORS.textSecond } });
 export default React.memo(MotionLibraryScreen);

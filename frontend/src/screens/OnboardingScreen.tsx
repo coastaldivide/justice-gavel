@@ -109,14 +109,14 @@ function OnboardingScreen({ navigation }: ScreenProps) {
           accessibilityHint="Opens emergency screen without requiring sign up"
         >
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.bg, fontWeight: '700', fontSize: 16 }}>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnNavy, fontWeight: '700', fontSize: 16 }}>
               🚨 Just arrested or detained?
             </Text>
-            <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 2 }}>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnNavy, fontSize: 13, marginTop: 2 }}>
               Get immediate help — no sign-up required
             </Text>
           </View>
-          <Text style={{ color: colors.bg, fontSize: 22 }}>→</Text>
+          <Text style={{ color: colors.textOnNavy, fontSize: 22 }}>→</Text>
         </TouchableOpacity>
 <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, lineHeight:24,
             color:colors.textMuted, textAlign:'center', marginBottom:32 }}>
@@ -209,10 +209,10 @@ function OnboardingScreen({ navigation }: ScreenProps) {
 
         {/* ── Crisis resource footer ───────────────────────────────────────── */}
         <View style={{ marginTop: 24, paddingTop: 16, borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.15)' }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, textAlign: 'center', marginBottom: 4 }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textPrimary, fontSize: 11, textAlign: 'center', marginBottom: 4 }}>
             Need free legal help right now?
           </Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: COLORS.steel, fontSize: 13, textAlign: 'center', fontWeight: '600' }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.info, fontSize: 13, textAlign: 'center', fontWeight: '600' }}>
             Public Defender Project: 1-800-341-0059 · ACLU: 1-212-549-2500
           </Text>
         </View>
@@ -223,7 +223,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
         gap:16, paddingHorizontal:20, marginBottom:8,
       }}>
         <View style={{ alignItems:'center' }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, fontWeight:'900', color:colors.gold }}>★★★★★</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, fontWeight:'900', color:colors.textPrimary }}>★★★★★</Text>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>4.9 App Store</Text>
         </View>
         <View style={{ width:1, height:28, backgroundColor:colors.border }} />
@@ -286,7 +286,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
 {activeIndex === 0 ? t('onboard_browse_1') : activeIndex === 1 ? t('onboard_browse_2') : activeIndex === 2 ? t('onboard_browse_3') : t('onboard_browse_4')}
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.browseBtnSub}>{t('onboard_browse_sub')}</Text>
-        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, textAlign: 'center', lineHeight: 16, paddingHorizontal: 24, marginTop: 6, color: 'rgba(133,183,235,0.7)' }}>
+        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, textAlign: 'center', lineHeight: 16, paddingHorizontal: 24, marginTop: 6, color: colors.textOnAccent, opacity: 0.9 }}>
           {'By continuing you agree to our '}
           <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}
             onPress={() => navigation.navigate('TermsOfService')}>
@@ -324,7 +324,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
 
 const makeStyles = (colors: any) => StyleSheet.create({
   screen: {
-    flex: 1, backgroundColor: COLORS.bg,
+    flex: 1, backgroundColor: colors.bg,
     alignItems: 'center', paddingBottom: 32 },
   logoWrap: {
     marginTop: 56, width: 54, height: 54,
@@ -341,10 +341,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1.5, marginBottom: 24 },
   slideIcon:  { fontSize: 50 },
   slideTitle: {
-    fontSize: 30, ...FONTS.black, color: COLORS.bgCard,
+    fontSize: 30, ...FONTS.black, color: colors.textPrimary,
     textAlign: 'center', lineHeight: 38, marginBottom: 14 },
   slideBody: {
-    fontSize: 16, ...FONTS.medium, color: COLORS.textMuted,
+    fontSize: 16, ...FONTS.medium, color: colors.textMuted,
     textAlign: 'center', lineHeight: 26 },
   dotsRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -360,8 +360,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1, borderColor: colors.legal,
     ...SHADOW.md, shadowColor: colors.legal },
-  browseBtnText: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black, letterSpacing: 0.2 },
-  browseBtnSub:  { color: 'rgba(255,255,255,0.65)', fontSize: 11, marginTop: 3, ...FONTS.medium },
+  browseBtnText: { color: colors.textOnAccent, fontSize: 16, lineHeight: 24, ...FONTS.black, letterSpacing: 0.2 },
+  browseBtnSub:  { color: colors.textOnAccent, fontSize: 11, marginTop: 3, ...FONTS.medium },
 
   secondaryRow: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
   nextBtn: {
@@ -369,10 +369,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
     borderRadius: RADIUS.md,
     borderWidth: 1.5, borderColor: COLORS.border,
     alignItems: 'center', backgroundColor: 'rgba(133,183,235,0.08)' },
-  nextBtnText: { color: COLORS.steel, fontSize: 14, lineHeight: 21, ...FONTS.bold },
+  nextBtnText: { color: colors.info, fontSize: 14, lineHeight: 21, ...FONTS.bold },
 
   loginBtn: {
     flex: 1.5, paddingVertical: 16,
     borderRadius: RADIUS.md, alignItems: 'center' },
-  loginBtnText: { color: COLORS.textMuted, fontSize: 12, lineHeight: 20, ...FONTS.medium } });
+  loginBtnText: { color: colors.textMuted, fontSize: 12, lineHeight: 20, ...FONTS.medium } });
 export default React.memo(OnboardingScreen);

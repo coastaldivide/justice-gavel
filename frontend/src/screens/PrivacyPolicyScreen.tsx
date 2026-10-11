@@ -427,7 +427,7 @@ function PrivacyPolicyScreen(): React.JSX.Element {
           © {new Date().getFullYear()} {COMPANY}. All rights reserved.
         </Text>
         <Text maxFontSizeMultiplier={1.3} style={[styles.footerText,
-          { color: colors.textFaint, marginTop: 4 }]}>
+          { color: colors.textMuted, marginTop: 4 }]}>
           We believe in your rights -- including the right to your own data.
         </Text>
       </View>

@@ -1065,10 +1065,12 @@ describe('13. CaseStatusBadge — Status Color Model', () => {
   test('13-02: every status has both bg and text colors defined', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/CaseStatusBadge.tsx', 'utf8');
-    const bgCount   = (src.match(/bg:/g) || []).length;
-    const textCount = (src.match(/text:/g) || []).length;
-    expect(bgCount).toBeGreaterThanOrEqual(6);
-    expect(textCount).toBeGreaterThanOrEqual(6);
+    // statuses now reference shared TINTS pairs ({ bg, text }) from the theme
+    const tintRefs = (src.match(/TINTS\.\w+/g) || []).length;
+    expect(tintRefs).toBeGreaterThanOrEqual(6);
+    const theme = fs.readFileSync(__REPO + '/frontend/src/constants/theme.ts', 'utf8');
+    expect(theme).toMatch(/TINTS = \{[\s\S]*bg: '#/);
+    expect(theme).toMatch(/TINTS = \{[\s\S]*text: '#/);
   });
 
   test('13-03: Won and Acquitted share favorable color (green family)', async () => {
@@ -1084,9 +1086,8 @@ describe('13. CaseStatusBadge — Status Color Model', () => {
   test('13-04: Open status uses blue tones (active/attention)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/CaseStatusBadge.tsx', 'utf8');
-    // Open → bg: '#E3F2FD' (light blue), text: '#0D47A1' (dark blue)
-    expect(src).toContain('#E3F2FD');
-    expect(src).toContain('#0D47A1');
+    // Open → TINTS.blue (bg #E3F2FD light blue / text #0D47A1 dark blue in theme)
+    expect(src).toContain('Open:      TINTS.blue');
   });
 
   test('13-05: CaseStatusBadge accepts size prop sm | md', async () => {

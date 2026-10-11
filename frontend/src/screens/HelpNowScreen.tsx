@@ -36,7 +36,7 @@ function openDir(lat: number, lng: number, name: string, onError?: () => void) {
 
 function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'bail' | 'lawyer' }) {
   const isBail  = type === 'bail';
-  const color   = isBail ? COLORS.bail   : COLORS.legal;
+  const color   = isBail ? COLORS.bail   : COLORS.legal; // static light accents: dark enough for white text in both modes
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { showToast } = useToast();
@@ -59,7 +59,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
         >
           <AppIcon name="flash" size={20} color={COLORS.emergency} />
-          <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '900', fontSize: 14, color: COLORS.emergency }}>CALL 911</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '900', fontSize: 14, color: colors.textPrimary }}>CALL 911</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
@@ -70,7 +70,7 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>💙</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '900', fontSize: 14, color: COLORS.navy }}>CRISIS 988</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontWeight: '900', fontSize: 14, color: colors.textBrand }}>CRISIS 988</Text>
         </TouchableOpacity>
       </View>
 
@@ -113,8 +113,8 @@ function ContactCard({ contact, type }: { contact: Record<string,any>; type: 'ba
           <Text maxFontSizeMultiplier={1.4} style={styles.callBtnPhone}>{contact.phone}</Text>
         </TouchableOpacity>
       ) : (
-        <View style={[styles.callBtn, { backgroundColor: COLORS.textFaint }]}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>{t('help_now_no_phone')}</Text>
+        <View style={[styles.callBtn, { backgroundColor: colors.bgSubtle }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.callBtnText, { color: colors.textMuted }]}>{t('help_now_no_phone')}</Text>
         </View>
       )}
 
@@ -335,7 +335,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
   if (phase === 'error') {
     return (
       <View style={styles.loadingScreen}>
-        <AppIcon name="warning-outline" size={20} color="#E65100" />
+        <AppIcon name="warning-outline" size={20} color={colors.warn} />
         <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{errorMsg}</Text>
         <TouchableOpacity accessibilityRole="button" style={styles.retryBtn} onPress={fetchBoth}
           accessibilityLabel="Try Again"
@@ -475,18 +475,18 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
           {courthouse && (
             <View style={[styles.contactCard, { borderLeftColor: colors.navy, borderLeftWidth: 5 }]}>
               <View style={[styles.contactTypeBadge, { backgroundColor: colors.bgSubtle }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeText, { color: colors.navy }]}>🏛️ NEAREST COURTHOUSE</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeText, { color: colors.textBrand }]}>🏛️ NEAREST COURTHOUSE</Text>
               </View>
               <Text maxFontSizeMultiplier={1.4} style={styles.contactName}>{courthouse.name}</Text>
               {courthouse.address ? (
                 <TouchableOpacity
           accessibilityRole="button" onPress={() => openDir(courthouse.lat, courthouse.lng, courthouse.name)}
                 >
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.contactAddress, { color: colors.navy }]}>{courthouse.address}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.contactAddress, { color: colors.textBrand }]}>{courthouse.address}</Text>
                 </TouchableOpacity>
               ) : null}
               {courthouse.phone ? (
-                <TouchableOpacity accessibilityRole="button" style={styles.callBtn} accessibilityLabel={"\ud83d\udcde {courthouse.phone}"} onPress={() => callPhone(courthouse.phone)}
+                <TouchableOpacity accessibilityRole="button" style={[styles.callBtn, { backgroundColor: colors.navy }]} accessibilityLabel={`Call courthouse ${courthouse.phone}`} onPress={() => callPhone(courthouse.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {courthouse.phone}</Text>
                 </TouchableOpacity>
@@ -497,20 +497,20 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
             </View>
           )}
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Find more courthouses on map" style={[styles.noResultsBtn,{backgroundColor:colors.navy,marginTop:8,marginBottom:4}]} onPress={()=>navigation.navigate('CourtLocator')}>
-            <Text style={[styles.noResultsBtnText, { color: colors.bg }]}>Find Courthouses Near You →</Text>
+            <Text style={[styles.noResultsBtnText, { color: colors.textOnNavy }]}>Find Courthouses Near You →</Text>
           </TouchableOpacity>
       <TouchableOpacity
         accessibilityRole="button"
         onPress={() => navigation.navigate('BailCalculator')}
         style={{ marginTop: 8, padding: 12, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
-        <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 14 }}>💰 Bail Amount Calculator</Text>
+        <Text style={{ color: colors.textBrand, fontWeight: '700', fontSize: 14 }}>💰 Bail Amount Calculator</Text>
         <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>See typical bail ranges by charge type</Text>
       </TouchableOpacity>
           {/* Public Defender */}
           {publicDefender && (
             <View style={[styles.contactCard, { borderLeftColor: colors.blue, borderLeftWidth: 5 }]}>
               <View style={[styles.contactTypeBadge, { backgroundColor: colors.infoBg }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeText, { color: colors.blue }]}>⚖️ PUBLIC DEFENDER (FREE)</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeText, { color: colors.textBrand }]}>⚖️ PUBLIC DEFENDER (FREE)</Text>
               </View>
               <Text maxFontSizeMultiplier={1.4} style={styles.contactName}>{publicDefender.title}</Text>
               {publicDefender.body ? (
@@ -518,7 +518,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
               ) : null}
               {publicDefender.phone ? (
                 <TouchableOpacity
-          accessibilityRole="button" style={styles.callBtn} accessibilityLabel={"\ud83d\udcde {publicDefender.phone}"} onPress={() => callPhone(publicDefender.phone)}
+          accessibilityRole="button" style={[styles.callBtn, { backgroundColor: colors.navy }]} accessibilityLabel={`Call public defender ${publicDefender.phone}`} onPress={() => callPhone(publicDefender.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {publicDefender.phone}</Text>
                 </TouchableOpacity>
@@ -530,12 +530,12 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
           {crisisLine && (
             <View style={[styles.contactCard, { borderLeftColor: colors.emergencyDark, borderLeftWidth: 5 }]}>
               <View style={[styles.contactTypeBadge, { backgroundColor: colors.emergencyBg }]}>
-                <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeText, { color: colors.emergencyDark }]}>🆘 CRISIS SUPPORT (24/7)</Text>
+                <Text maxFontSizeMultiplier={1.4} style={[styles.contactTypeText, { color: colors.emergency }]}>🆘 CRISIS SUPPORT (24/7)</Text>
               </View>
               <Text maxFontSizeMultiplier={1.4} style={styles.contactName}>{crisisLine.title}</Text>
               {crisisLine.phone ? (
                 <TouchableOpacity
-          accessibilityRole="button" style={styles.callBtn} accessibilityLabel={"\ud83d\udcde {crisisLine.phone}"} onPress={() => callPhone(crisisLine.phone)}
+          accessibilityRole="button" style={[styles.callBtn, { backgroundColor: colors.navy }]} accessibilityLabel={`Call crisis line ${crisisLine.phone}`} onPress={() => callPhone(crisisLine.phone)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.callBtnText}>📞 {crisisLine.phone}</Text>
                 </TouchableOpacity>
@@ -567,7 +567,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
             onPress={() => navigation.navigate('MoreTab', { screen: 'Bail' })}
           activeOpacity={0.85}
           >
-            <AppIcon name="cash-outline" size={20} color="#1B5E20" />
+            <AppIcon name="cash-outline" size={20} color={colors.legal} />
             <Text maxFontSizeMultiplier={1.4} style={styles.moreBtnText}>{t('help_now_more_bail').split('\n')[0]}Bail Agents</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -608,7 +608,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
         style={{ flexDirection:'row', alignItems:'center', justifyContent:'center',
           paddingVertical:10, paddingHorizontal:16, gap:6 }}
       >
-        <Text maxFontSizeMultiplier={1.2} style={{ fontSize:11, color:'rgba(255,255,255,0.6)' }}>
+        <Text maxFontSizeMultiplier={1.2} style={{ fontSize:11, color:colors.textPrimary }}>
           ⚖️ Attorney or bondsman? Get real-time arrest alerts →
         </Text>
       </TouchableOpacity>
@@ -620,45 +620,45 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
 const makeStyles = (colors: any) => StyleSheet.create({
   screen:        { flex: 1, backgroundColor: colors.bgCard },
   loadingScreen: { flex: 1, backgroundColor: COLORS.bg, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  loadingText:   { fontSize: 16, lineHeight: 24, ...FONTS.bold, color: colors.bgCard, marginTop: 16, textAlign: 'center' },
-  loadingSub:    { fontSize: 12, color: COLORS.steel, marginTop: 6 },
+  loadingText:   { fontSize: 16, lineHeight: 24, ...FONTS.bold, color: colors.textOnGold, marginTop: 16, textAlign: 'center' },
+  loadingSub:    { fontSize: 12, color: COLORS.info, marginTop: 6 },
   errorIcon:     { fontSize: 40, marginBottom: 12 },
-  errorText:     { color: colors.errorBg, fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: 20 },
+  errorText:     { color: colors.textOnGold, fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: 20 },
   retryBtn:      { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 13, paddingHorizontal: 28 },
-  retryBtnText:  { color: colors.bgCard, ...FONTS.bold, fontSize: 14,
+  retryBtnText:  { color: colors.textOnNavy, ...FONTS.bold, fontSize: 14,
     lineHeight: 21 },
 
   header: {
-    backgroundColor: '#EF5350',
+    backgroundColor: colors.emergency,
     paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 52 : 40, paddingBottom: 16,
     borderBottomWidth: 2, borderBottomColor: 'rgba(239,154,154,0.33)' },
   heading:    { fontSize: 28, ...FONTS.black, color: COLORS.bgCard },
-  subheading: { fontSize: 12, lineHeight: 20, color: 'rgba(255,255,255,0.75)', marginTop: 3 },
+  subheading: { fontSize: 12, lineHeight: 20, color: colors.textOnAccent, marginTop: 3 },
 
   scroll: { padding: 16 },
 
   contactCard: {
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.xl,
+    backgroundColor: colors.bgCard, borderRadius: RADIUS.xl,
     padding: 16, marginBottom: 14, ...SHADOW.md },
   contactTypeBadge: { paddingHorizontal: 10, paddingVertical: 10, borderRadius: RADIUS.pill, alignSelf: 'flex-start', marginBottom: 8 },
   contactTypeText:  { fontSize: 12, ...FONTS.black },
-  contactName:      { fontSize: 18, ...FONTS.heavy, color: COLORS.textPrimary, marginBottom: 3 },
-  contactAddress:   { fontSize: 12, color: COLORS.textMuted, marginBottom: 4, lineHeight: 16 },
-  contactRating:    { fontSize: 12, color: COLORS.warn, ...FONTS.bold, marginBottom: 10 },
+  contactName:      { fontSize: 18, ...FONTS.heavy, color: colors.textBrand, marginBottom: 3 },
+  contactAddress:   { fontSize: 12, color: colors.textMuted, marginBottom: 4, lineHeight: 16 },
+  contactRating:    { fontSize: 12, color: colors.goldText, ...FONTS.bold, marginBottom: 10 },
 
   callBtn: { borderRadius: RADIUS.lg, paddingVertical: 15, alignItems: 'center', marginBottom: 8 },
-  callBtnText:  { color: colors.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black, letterSpacing: 0.8 },
+  callBtnText:  { color: colors.white, fontSize: 16, lineHeight: 24, ...FONTS.black, letterSpacing: 0.8 },
   callBtnPhone: { color: 'rgba(255,255,255,0.8)', fontSize: 12, lineHeight: 20, marginTop: 3 },
   dirBtn:       { borderWidth: 1.5, borderRadius: RADIUS.md, paddingVertical: 10, alignItems: 'center' },
   dirBtnText:   { fontSize: 12, lineHeight: 20, ...FONTS.bold },
 
   noResults:     { alignItems: 'center', padding: 40 },
   noResultsIcon: { fontSize: 40, marginBottom: 12 },
-  noResultsText: { fontSize: 15, color: COLORS.textMuted, textAlign: 'center', lineHeight: 22 },
+  noResultsText: { fontSize: 15, color: colors.textMuted, textAlign: 'center', lineHeight: 22 },
 
   divider:     { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
-  dividerText: { fontSize: 11, ...FONTS.bold, color: COLORS.textMuted, marginHorizontal: 12, letterSpacing: 1 },
+  dividerText: { fontSize: 11, ...FONTS.bold, color: colors.textMuted, marginHorizontal: 12, letterSpacing: 1 },
 
   moreRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   moreBtn: {
@@ -669,17 +669,17 @@ const makeStyles = (colors: any) => StyleSheet.create({
   moreBtnText: { fontSize: 12, ...FONTS.heavy, color: COLORS.textSecond, textAlign: 'center', lineHeight: 15 },
 
   cityOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  citySheet:   { backgroundColor: COLORS.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 40 },
-  cityTitle:   { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: COLORS.navy, marginBottom: 4 },
-  citySub:     { fontSize: 12, lineHeight: 20, color: colors.steel, marginBottom: 14 },
+  citySheet:   { backgroundColor: colors.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 40 },
+  cityTitle:   { fontSize: 20, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand, marginBottom: 4 },
+  citySub:     { fontSize: 12, lineHeight: 20, color: colors.info, marginBottom: 14 },
   cityInput:   { borderWidth: 1.5, borderColor: COLORS.navy, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, lineHeight: 22, marginBottom: 10 },
   cityRow:     { paddingVertical: 16, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: COLORS.bg },
-  cityRowText: { fontSize: 15, lineHeight: 22, color: COLORS.navy, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  noResultsBtn: { backgroundColor: colors.emergency, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 20, marginTop: 10, alignItems: 'center' },
-  noResultsBtnText: { color: colors.bgCard, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
+  cityRowText: { fontSize: 15, lineHeight: 22, color: colors.textBrand, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  noResultsBtn: { backgroundColor: colors.emergencyDark, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 20, marginTop: 10, alignItems: 'center' },
+  noResultsBtnText: { color: colors.white, fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12 },
   refreshBtn:     { alignItems: 'center', paddingVertical: 16 },
-  refreshBtnText: { fontSize: 14, lineHeight: 21, color: COLORS.steel, ...FONTS.semi },
-  licensePill: { backgroundColor: colors.legal, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8, alignSelf: 'flex-start' },
+  refreshBtnText: { fontSize: 14, lineHeight: 21, color: colors.info, ...FONTS.semi },
+  licensePill: { backgroundColor: colors.legalBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8, alignSelf: 'flex-start' },
   licensePillText: { fontSize: 11, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   missingCard:     { borderRadius: 12, borderWidth: 1.5, padding: 12, marginBottom: 12 },
   missingCardText: { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },

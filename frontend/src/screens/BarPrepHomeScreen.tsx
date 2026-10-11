@@ -217,7 +217,7 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
           {/* ── Stats Banner ─────────────────────────────────────────── */}
           {dashboard && (
             <View style={styles.statsBanner}>
-              <StatPill label="🔥 Streak" value={`${dashboard.streak_days}d`} />
+              <StatPill label="🔥 Streak" value={`${dashboard.streak_days ?? 0}d`} />
               <StatPill label="📊 Pass Prob" value={`${dashboard.pass_probability}%`} accent />
               <StatPill label="👥 Top" value={`${dashboard.peer_percentile}%`} />
               <StatPill label="📬 Due" value={String(dashboard.questions_due)} />
@@ -367,15 +367,16 @@ export default function BarPrepHomeScreen({ navigation }: ScreenProps<'BarPrepHo
 }
 
 function StatPill({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  const { colors } = useTheme();
   return (
     <View style={[pillStyles.pill, accent && pillStyles.accent]}>
-      <Text style={pillStyles.label}>{label}</Text>
-      <Text style={[pillStyles.value, accent && pillStyles.accentText]}>{value}</Text>
+      <Text style={[pillStyles.label, { color: colors.textMuted }]}>{label}</Text>
+      <Text style={[pillStyles.value, { color: colors.textPrimary }, accent && { color: colors.textBrand }]}>{value}</Text>
 
         {/* Bar prep disclaimer */}
         <Text
           maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: '#888', textAlign: 'center',
+          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
           For supplemental study only. Not endorsed by any state bar or the NCBE.
@@ -394,7 +395,7 @@ const pillStyles = StyleSheet.create({
 
 function makeStyles(colors: any) {
   return StyleSheet.create({
-    container:     { flex: 1, backgroundColor: colors.background },
+    container:     { flex: 1, backgroundColor: colors.bg },
     center:        { justifyContent: 'center', alignItems: 'center' },
     scroll:        { flex: 1 },
     scrollContent: { paddingBottom: 40 },
@@ -416,7 +417,7 @@ function makeStyles(colors: any) {
     },
     subjectCardActive: { borderColor: colors.primary },
     subjectName:       { fontSize: 14, ...FONTS.semiBold, color: colors.text },
-    subjectNameActive: { color: colors.primary },
+    subjectNameActive: { color: colors.textBrand },
     subjectMeta:       { fontSize: 11, color: colors.textMuted, marginTop: 2 },
     progressBar:       {
       height: 4, backgroundColor: colors.border, borderRadius: 2,
@@ -442,7 +443,7 @@ function makeStyles(colors: any) {
     modeBtnActive:     { borderColor: colors.primary, backgroundColor: colors.primary + '10' },
     modeBtnText:       { fontSize: 14, ...FONTS.semiBold, color: colors.text },
     modeBtnTextActive: { color: colors.primary },
-    modeSubtext:       { fontSize: 11, color: colors.textMuted, marginTop: 4 },
+    modeSubtext:       { fontSize: 11, color: colors.textSecond, marginTop: 4 },
     countRow:          { flexDirection: 'row', paddingHorizontal: 12, gap: 10 },
     countBtn:          {
       flex: 1, paddingVertical: 12, borderRadius: RADIUS.md,
@@ -458,7 +459,7 @@ function makeStyles(colors: any) {
       alignItems: 'center', ...SHADOW.md,
     },
     startBtnDisabled:  { opacity: 0.4 },
-    startBtnText:      { fontSize: 16, ...FONTS.bold, color: '#fff' },
+    startBtnText:      { fontSize: 16, ...FONTS.bold, color: colors.textOnAccent },
     footerLinks:       {
       flexDirection: 'row', justifyContent: 'center', gap: 24,
       marginTop: 20, paddingBottom: 10,

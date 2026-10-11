@@ -87,7 +87,7 @@ export function HapticButton({
       activeOpacity={0.82}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={variant === 'secondary' || variant === 'ghost' ? COLORS.navy : '#fff'} />
+        <ActivityIndicator size="small" color={variant === 'secondary' || variant === 'ghost' ? COLORS.navy : COLORS.white} />
       ) : (
         <>
           {icon && iconPosition === 'left' && (
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   primary:   { backgroundColor: COLORS.navy },
   secondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: COLORS.navy },
   danger:    { backgroundColor: COLORS.emergency },
-  success:   { backgroundColor: '#1B5E20' },
+  success:   { backgroundColor: COLORS.legal },
   ghost:     { backgroundColor: 'transparent' },
 });
 
@@ -140,10 +140,10 @@ const sizes = StyleSheet.create({
 });
 
 const textStyles = StyleSheet.create({
-  primary:   { color: '#fff'         },
+  primary:   { color: COLORS.white         },
   secondary: { color: COLORS.navy    },
-  danger:    { color: '#fff'         },
-  success:   { color: '#fff'         },
+  danger:    { color: COLORS.white         },
+  success:   { color: COLORS.white         },
   ghost:     { color: COLORS.navy    },
 });
 

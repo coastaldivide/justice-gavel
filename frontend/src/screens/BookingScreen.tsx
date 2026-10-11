@@ -149,15 +149,15 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
         },
         appearance: {
           colors: {
-            primary: '#0A1628',
-            background: '#FFFFFF',
-            componentBackground: '#F9FAFB',
-            componentBorder: '#E5E7EB',
-            componentDivider: '#E5E7EB',
-            primaryText: '#111827',
-            secondaryText: '#6B7280',
-            componentText: '#111827',
-            placeholderText: '#9CA3AF',
+            primary: colors.navy,
+            background: colors.white,
+            componentBackground: colors.bg,
+            componentBorder: colors.border,
+            componentDivider: colors.border,
+            primaryText: colors.textPrimary,
+            secondaryText: colors.textMuted,
+            componentText: colors.textPrimary,
+            placeholderText: colors.textFaint,
           },
         },
       });
@@ -222,7 +222,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   if (step === 'confirmed') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.confirmedWrap}>
-        <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
+        <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>Consultation booked!</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedSub, { color: colors.textSecond }]}>
           {selDay.label} at {selTime} · {duration.label}
@@ -263,7 +263,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
   if (step === 'callback_sent') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.confirmedWrap}>
-        <AppIcon name="call-outline" size={20} color="#1B5E20" />
+        <AppIcon name="call-outline" size={20} color={colors.legal} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedTitle, { color: colors.textPrimary }]}>Callback requested</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.confirmedSub, { color: colors.textSecond }]}>
           {lawyerName || 'The attorney'} will call you at {callbackPhone} to schedule a time.
@@ -321,7 +321,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
                 </View>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.durSub, { color: colors.textMuted }]}>{d.sub}</Text>
               </View>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.durFee, { color: COLORS.navy }]}>{d.fee}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.durFee, { color: colors.textBrand }]}>{d.fee}</Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity
@@ -432,7 +432,7 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={[styles.summaryLine, { color: colors.textSecond }]}>
               {selDay.label} · {selTime} · {duration.label}
             </Text>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.summaryFee, { color: COLORS.navy }]}>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.summaryFee, { color: colors.textBrand }]}>
               Platform fee: {duration.fee}
             </Text>
           </View>

@@ -41,7 +41,7 @@ function FloatingSOSButton({ onPress, sending }: { onPress: () => void; sending?
       accessibilityRole="button"
       accessibilityHint="Activates emergency mode" activeOpacity={0.85} disabled={sending}>
           {sending
-            ? <ActivityIndicator color='#FFFFFF' size="small" />
+            ? <ActivityIndicator color={COLORS.white} size="small" />
             : <>
                 <Text style={styles.label}>SOS</Text>
                 <Text style={styles.sub}>HOLD</Text>
@@ -64,8 +64,8 @@ const styles = StyleSheet.create({
     shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 12,
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)',
   },
-  label: { color: '#FFFFFF', fontFamily: 'Inter_900Black', fontWeight: '900', fontSize: 14, lineHeight: 21, letterSpacing: 1.5 },
-  sub:   { color: 'rgba(255,255,255,0.65)', fontWeight: '700', fontSize: 11, letterSpacing: 2, marginTop: 1 },
+  label: { color: COLORS.white, fontFamily: 'Inter_900Black', fontWeight: '900', fontSize: 14, lineHeight: 21, letterSpacing: 1.5 },
+  sub:   { color: COLORS.textOnNavy, fontWeight: '700', fontSize: 11, letterSpacing: 2, marginTop: 1 },
 });
 
 export default React.memo(FloatingSOSButton);

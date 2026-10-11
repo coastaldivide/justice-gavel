@@ -209,13 +209,13 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel="Find a criminal defense lawyer"
-        style={{ backgroundColor: '#1a3a6e', borderRadius: 12, padding: 14,
+        style={{ backgroundColor: colors.navyMid, borderRadius: 12, padding: 14,
                  marginTop: 12, flexDirection: 'row', alignItems: 'center',
                  justifyContent: 'center', gap: 10 }}
         onPress={() => navigation.navigate('LawyersTab')}
       >
         <Text style={{ fontSize: 18 }}>⚖️</Text>
-        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
+        <Text style={{ color: colors.white, fontWeight: '700', fontSize: 15 }}>
           Find a Criminal Defense Lawyer
         </Text>
       </TouchableOpacity>
@@ -225,7 +225,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         borderLeftWidth: 4, borderLeftColor: colors.warn,
         padding: 12, marginTop: 16, marginBottom: 8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
-          color: '#555', fontStyle: 'italic' }}>
+          color: colors.textSecond, fontStyle: 'italic' }}>
           ⚖️ Information only -- not legal advice -- not legal advice. Laws vary by
           jurisdiction and change frequently. Consult a licensed attorney for
           advice specific to your situation.
@@ -268,7 +268,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         style={{
           flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
           gap: 8, paddingVertical: 11, paddingHorizontal: 16, marginTop: 8,
-          backgroundColor: '#25D366', borderRadius: 10,
+          backgroundColor: colors.legal, borderRadius: 10,
         }}
         onPress={() => {
           // Pre-written message in the device's current language
@@ -290,7 +290,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
         }}
       >
         <Text style={{ fontSize: 18 }}>💬</Text>
-        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>
+        <Text style={{ color: colors.textOnAccent, fontWeight: '700', fontSize: 14 }}>
           Alert Family via WhatsApp
         </Text>
       </TouchableOpacity>

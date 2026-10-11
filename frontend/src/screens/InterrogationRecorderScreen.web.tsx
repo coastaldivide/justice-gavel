@@ -144,7 +144,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       <View style={{ alignItems: 'center', paddingVertical: 24, gap: 16 }}>
         {step === 'recording' && (
           <Text maxFontSizeMultiplier={1.3} style={{
-            fontSize: 40, fontWeight: '700', color: '#C62828',
+            fontSize: 40, fontWeight: '700', color: colors.emergency,
             fontVariant: ['tabular-nums'] as any,
           }}>
             {fmt(seconds)}
@@ -158,10 +158,10 @@ function InterrogationRecorderScreen(): React.JSX.Element {
             onPress={step === 'idle' ? startRecording : stopAndProcess}
             style={{
               width: 88, height: 88, borderRadius: 44,
-              backgroundColor: step === 'recording' ? '#C62828' : colors.navy,
+              backgroundColor: step === 'recording' ? colors.emergency : colors.navy,
               alignItems: 'center', justifyContent: 'center',
               borderWidth: step === 'recording' ? 3 : 0,
-              borderColor: '#FF5252',
+              borderColor: colors.emergency,
             }}
           >
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 36 }}>
@@ -185,12 +185,12 @@ function InterrogationRecorderScreen(): React.JSX.Element {
       )}
 
       {error ? (
-        <View style={{ backgroundColor: '#FFEBEE', borderRadius: 12, padding: 16, gap: 8 }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: '#C62828', fontSize: 14, fontWeight: '600' }}>Error</Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: '#B71C1C', fontSize: 13 }}>{error}</Text>
+        <View style={{ backgroundColor: colors.emergencyBg, borderRadius: 12, padding: 16, gap: 8 }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.emergency, fontSize: 14, fontWeight: '600' }}>Error</Text>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.emergency, fontSize: 13 }}>{error}</Text>
           <TouchableOpacity onPress={reset} accessibilityRole="button"
           accessibilityHint="Double-tap to activate" accessibilityLabel="Try again">
-            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.navy, fontSize: 13, fontWeight: '600' }}>Try again →</Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textBrand, fontSize: 13, fontWeight: '600' }}>Try again →</Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -222,7 +222,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
             accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
           >
-            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.bg, fontWeight: '600' }}>Record another</Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textOnNavy, fontWeight: '600' }}>Record another</Text>
           </TouchableOpacity>
         </View>
       ) : null}

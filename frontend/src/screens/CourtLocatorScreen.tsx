@@ -150,7 +150,7 @@ function CourtLocatorScreen(): React.JSX.Element {
       )}
       {error ? (<>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign: 'center', margin: 20 }}>{error}</Text>
-        <TouchableOpacity accessibilityRole="button" onPress={() => doSearch('Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:colors.bg,fontWeight:'700'}}>Retry</Text></TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" onPress={() => doSearch('Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:colors.textOnNavy,fontWeight:'700'}}>Retry</Text></TouchableOpacity>
       </>) : null}
       <FlashList
           onRefresh={onRefresh}
@@ -226,7 +226,7 @@ function CourtLocatorScreen(): React.JSX.Element {
                       accessibilityRole="button"
                       onPress={() => openPhone(item.phone)}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <AppIcon name="call-outline" size={20} color="#1B5E20" />
+                      <AppIcon name="call-outline" size={20} color={colors.legal} />
                       <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>
                         {item.phone}
                       </Text>

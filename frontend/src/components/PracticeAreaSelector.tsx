@@ -21,29 +21,29 @@ export interface PracticeArea {
 
 export const PRACTICE_AREAS: PracticeArea[] = [
   // ── Criminal (core product) ──────────────────────────────────────────────
-  { key: 'DUI',               label: 'DUI / DWI',           icon: '🚗', color: '#B71C1C', bg: '#FFEBEE' },
-  { key: 'Drug Offenses',     label: 'Drug Charges',        icon: '💊', color: '#185FA5', bg: '#EEF2F8' },
-  { key: 'Assault',           label: 'Assault / Battery',   icon: '⚠️', color: '#E65100', bg: '#FFF3E0' },
-  { key: 'Domestic Violence', label: 'Domestic Violence',   icon: '🏠', color: '#C62828', bg: '#FFEBEE' },
-  { key: 'Theft',             label: 'Theft / Robbery',     icon: '🔓', color: '#185FA5', bg: '#EEF2F8' },
-  { key: 'Weapons Charges',   label: 'Weapons',             icon: '🔫', color: '#3D4F63', bg: '#EEF2F8' },
-  { key: 'Federal Crimes',    label: 'Federal',             icon: '🏛️', color: '#042C53', bg: '#EEF2F8' },
-  { key: 'Murder/Homicide',   label: 'Murder / Homicide',   icon: '⚖️', color: '#C62828', bg: '#FFEBEE' },
-  { key: 'Sex Offenses',      label: 'Sex Offenses',        icon: '🛡️', color: '#BF360C', bg: '#FBE9E7' },
-  { key: 'Juvenile Defense',  label: 'Juvenile',            icon: '👶', color: '#2E7D32', bg: '#E8F5E9' },
-  { key: 'Expungement',       label: 'Expungement',         icon: '📄', color: '#185FA5', bg: '#EEF2F8' },
-  { key: 'White Collar',      label: 'White Collar',        icon: '💼', color: '#2E7D32', bg: '#E8F5E9' },
+  { key: 'DUI',               label: 'DUI / DWI',           icon: '🚗', color: COLORS.emergencyDark, bg: COLORS.emergencyBg },
+  { key: 'Drug Offenses',     label: 'Drug Charges',        icon: '💊', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'Assault',           label: 'Assault / Battery',   icon: '⚠️', color: COLORS.warn, bg: COLORS.warnBg },
+  { key: 'Domestic Violence', label: 'Domestic Violence',   icon: '🏠', color: COLORS.emergency, bg: COLORS.emergencyBg },
+  { key: 'Theft',             label: 'Theft / Robbery',     icon: '🔓', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'Weapons Charges',   label: 'Weapons',             icon: '🔫', color: COLORS.textSecond, bg: COLORS.bgSubtle },
+  { key: 'Federal Crimes',    label: 'Federal',             icon: '🏛️', color: COLORS.navy, bg: COLORS.bgSubtle },
+  { key: 'Murder/Homicide',   label: 'Murder / Homicide',   icon: '⚖️', color: COLORS.emergency, bg: COLORS.emergencyBg },
+  { key: 'Sex Offenses',      label: 'Sex Offenses',        icon: '🛡️', color: COLORS.bail, bg: COLORS.bailBg },
+  { key: 'Juvenile Defense',  label: 'Juvenile',            icon: '👶', color: COLORS.legalDark, bg: COLORS.legalBg },
+  { key: 'Expungement',       label: 'Expungement',         icon: '📄', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'White Collar',      label: 'White Collar',        icon: '💼', color: COLORS.legalDark, bg: COLORS.legalBg },
   // ── Civil & Family ────────────────────────────────────────────────────────
-  { key: 'Family Law',        label: 'Family Law',          icon: '👨‍👩‍👧', color: '#185FA5', bg: '#EEF2F8' },
-  { key: 'Divorce',           label: 'Divorce',             icon: '💔', color: '#C62828', bg: '#FFEBEE' },
-  { key: 'Child Custody',     label: 'Child Custody',       icon: '👶', color: '#185FA5', bg: '#EEF2F8' },
-  { key: 'Immigration',       label: 'Immigration',         icon: '✈️', color: '#185FA5', bg: '#EEF2F8' },
-  { key: 'Personal Injury',   label: 'Personal Injury',     icon: '🩹', color: '#E65100', bg: '#FBE9E7' },
-  { key: 'Employment',        label: 'Employment',          icon: '💼', color: '#1B5E20', bg: '#E8F5E9' },
-  { key: 'Bankruptcy',        label: 'Bankruptcy',          icon: '💳', color: '#3D4F63', bg: '#EEF2F8' },
-  { key: 'Real Estate',       label: 'Real Estate',         icon: '🏡', color: '#2E7D32', bg: '#E8F5E9' },
-  { key: 'Civil Rights',      label: 'Civil Rights',        icon: '✊', color: '#042C53', bg: '#EEF2F8' },
-  { key: 'Traffic',           label: 'Traffic',             icon: '🚦', color: '#F9A825', bg: '#2C1800' },
+  { key: 'Family Law',        label: 'Family Law',          icon: '👨‍👩‍👧', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'Divorce',           label: 'Divorce',             icon: '💔', color: COLORS.emergency, bg: COLORS.emergencyBg },
+  { key: 'Child Custody',     label: 'Child Custody',       icon: '👶', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'Immigration',       label: 'Immigration',         icon: '✈️', color: COLORS.blue, bg: COLORS.bgSubtle },
+  { key: 'Personal Injury',   label: 'Personal Injury',     icon: '🩹', color: COLORS.warn, bg: COLORS.bailBg },
+  { key: 'Employment',        label: 'Employment',          icon: '💼', color: COLORS.legal, bg: COLORS.legalBg },
+  { key: 'Bankruptcy',        label: 'Bankruptcy',          icon: '💳', color: COLORS.textSecond, bg: COLORS.bgSubtle },
+  { key: 'Real Estate',       label: 'Real Estate',         icon: '🏡', color: COLORS.legalDark, bg: COLORS.legalBg },
+  { key: 'Civil Rights',      label: 'Civil Rights',        icon: '✊', color: COLORS.navy, bg: COLORS.bgSubtle },
+  { key: 'Traffic',           label: 'Traffic',             icon: '🚦', color: COLORS.gold, bg: COLORS.warnBg },
 ];
 
 interface Props {
@@ -105,7 +105,7 @@ function PracticeAreaSelector({ selected, onSelect, showAll = false }: Props) {
               <Text style={styles.chipIcon}>{area.icon}</Text>
               <Text style={[
                 styles.chipLabel,
-                { color: active ? '#FFFFFF' : area.color },
+                { color: active ? COLORS.white : area.color },
               ]}>
                 {area.label}
               </Text>
@@ -118,7 +118,7 @@ function PracticeAreaSelector({ selected, onSelect, showAll = false }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#FFFFFF', paddingVertical: 10 },
+  container: { backgroundColor: COLORS.white, paddingVertical: 10 },
   headerRow: {
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'center', paddingHorizontal: 14, marginBottom: 8,
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   chipAllActive: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
   chipIcon:  { fontSize: 14 },
   chipLabel: { fontSize: 12, ...FONTS.bold, flexShrink: 1 },
-  chipLabelActive: { color: '#FFFFFF' },
+  chipLabelActive: { color: COLORS.white },
 });
 
 export default React.memo(PracticeAreaSelector);

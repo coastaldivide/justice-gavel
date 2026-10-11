@@ -122,7 +122,7 @@ function ContactsScreen(): React.JSX.Element {
             onPress={() => removeContact(i)}
             style={{ padding: 8 }}
           >
-            <Text style={{ color: COLORS.emergency, fontSize: 18, fontWeight: '700' }}>✕</Text>
+            <Text style={{ color: colors.emergency, fontSize: 18, fontWeight: '700' }}>✕</Text>
           </TouchableOpacity>
           {!!typeHint(c.value) && <Text maxFontSizeMultiplier={1.4} style={styles.typeHint}>{typeHint(c.value)}</Text>}
         </View>
@@ -168,7 +168,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     lineHeight: 22, },
   numBadge: { width: 22, height: 22, borderRadius: 12, backgroundColor: COLORS.navy, color: COLORS.bgCard, textAlign: 'center', lineHeight: 22, fontSize: 12, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginRight: 10 },
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-  typeHint: { fontSize: 11, color: colors.blue, fontFamily: 'Inter_600SemiBold', fontWeight: '600', minWidth: 70 },
+  typeHint: { fontSize: 11, color: colors.textBrand, fontFamily: 'Inter_600SemiBold', fontWeight: '600', minWidth: 70 },
   saveBtn: { backgroundColor: COLORS.navy, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 12, marginBottom: 20 },
   saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },

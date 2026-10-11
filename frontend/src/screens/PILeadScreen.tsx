@@ -95,7 +95,7 @@ function PILeadScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   if (step === 'submitted') return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={styles.successWrap}>
-        <AppIcon name="checkmark-circle" size={20} color="#1B5E20" />
+        <AppIcon name="checkmark-circle" size={20} color={colors.legal} />
         <Text maxFontSizeMultiplier={1.4} style={[styles.successTitle, { color: colors.textPrimary }]}>Your case is in review</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.successSub, { color: colors.textSecond }]}>
           Attorneys in your area will review your case. When one accepts, you'll get their contact info -- at no cost to you. Attorneys pay a connection fee to reach you. There is no cost to you.

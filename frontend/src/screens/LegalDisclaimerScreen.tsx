@@ -98,7 +98,7 @@ if (loading) return;
         
           {DISCLAIMER_SECTIONS.length === 0 && (
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ color: '#888', fontSize: 14 }}>No results yet.</Text>
+              <Text style={{ color: COLORS.textSecond, fontSize: 14 }}>No results yet.</Text>
             </View>
           )}
 {DISCLAIMER_SECTIONS.map((sec, i) => (
@@ -148,7 +148,7 @@ if (loading) return;
             disabled={!agreed || accepting}
           >
             {accepting
-              ? <ActivityIndicator color="#fff" />
+              ? <ActivityIndicator color={COLORS.white} />
               : <Text style={s.acceptBtnText} maxFontSizeMultiplier={1.4}>I Understand and Accept</Text>
             }
           </TouchableOpacity>
@@ -165,33 +165,33 @@ if (loading) return;
 }
 
 const s = StyleSheet.create({
-  root:             { flex: 1, backgroundColor: '#0d1b2a' },
-  header:           { paddingHorizontal: 20, paddingTop: 52, paddingBottom: 16, backgroundColor: '#0d1b2a' },
-  headerTitle:      { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 6 },
+  root:             { flex: 1, backgroundColor: COLORS.navy },
+  header:           { paddingHorizontal: 20, paddingTop: 52, paddingBottom: 16, backgroundColor: COLORS.navy },
+  headerTitle:      { fontSize: 22, fontWeight: '800', color: COLORS.white, marginBottom: 6 },
   headerSub:        { fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 18 },
-  scroll:           { flex: 1, backgroundColor: '#f8fafc' },
+  scroll:           { flex: 1, backgroundColor: COLORS.bg },
   scrollContent:    { padding: 20, paddingBottom: 40 },
-  section:          { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12,
+  section:          { backgroundColor: COLORS.white, borderRadius: 12, padding: 16, marginBottom: 12,
                        shadowColor: COLORS.textPrimary, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
   sectionHeader:    { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   sectionIcon:      { fontSize: 20, marginRight: 10 },
-  sectionTitle:     { fontSize: 15, fontWeight: '700', color: '#1a1a2e' },
-  sectionBody:      { fontSize: 14, color: '#374151', lineHeight: 21 },
-  formalBlock:      { backgroundColor: '#fffbeb', borderRadius: 12, padding: 16, borderWidth: 1.5, borderColor: COLORS.steelMid },
-  formalText:       { fontSize: 13, color: '#78350f', lineHeight: 20 },
-  formalVersion:    { fontSize: 11, color: '#92400e', marginTop: 8 },
-  link:             { color: '#1d4ed8', textDecorationLine: 'underline' },
-  footer:           { backgroundColor: '#fff', padding: 16, paddingBottom: 32,
-                       borderTopWidth: 1, borderTopColor: '#e5e7eb' },
+  sectionTitle:     { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
+  sectionBody:      { fontSize: 14, color: COLORS.textSecond, lineHeight: 21 },
+  formalBlock:      { backgroundColor: COLORS.warnBg, borderRadius: 12, padding: 16, borderWidth: 1.5, borderColor: COLORS.steelMid },
+  formalText:       { fontSize: 13, color: COLORS.warnDark, lineHeight: 20 },
+  formalVersion:    { fontSize: 11, color: COLORS.warnDark, marginTop: 8 },
+  link:             { color: COLORS.blue, textDecorationLine: 'underline' },
+  footer:           { backgroundColor: COLORS.white, padding: 16, paddingBottom: 32,
+                       borderTopWidth: 1, borderTopColor: COLORS.border },
   checkRow:         { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
   checkbox:         { width: 22, height: 22, borderRadius: 5, borderWidth: 2, borderColor: COLORS.navy,
                        marginRight: 12, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   checkboxChecked:  { backgroundColor: COLORS.navy },
-  checkmark:        { color: '#fff', fontSize: 14, fontWeight: '800' },
-  checkLabel:       { flex: 1, fontSize: 13, color: '#374151', lineHeight: 19 },
+  checkmark:        { color: COLORS.textOnNavy, fontSize: 14, fontWeight: '800' }, // design-audit-ignore: rendered only when checked (navy fill)
+  checkLabel:       { flex: 1, fontSize: 13, color: COLORS.textSecond, lineHeight: 19 },
   acceptBtn:        { backgroundColor: COLORS.navy, paddingVertical: 15, borderRadius: 12, alignItems: 'center' },
   acceptBtnDisabled:{ opacity: 0.45 },
-  acceptBtnText:    { color: '#fff', fontSize: 15, fontWeight: '800' },
+  acceptBtnText:    { color: COLORS.white, fontSize: 15, fontWeight: '800' },
   scrollHint:       { backgroundColor: COLORS.navy, padding: 10, alignItems: 'center' },
   scrollHintText:   { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' },
 });

@@ -117,7 +117,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
     {scanError && (
       <View style={{margin:16,padding:14,backgroundColor:colors.surface,
         borderRadius:10,borderWidth:1,borderColor:colors.border}}>
-        <Text style={{color:colors.danger,fontWeight:'700',fontSize:14}}>⚠ {scanError}</Text>
+        <Text style={{color:colors.textPrimary,fontWeight:'700',fontSize:14}}>⚠ {scanError}</Text>
       </View>
     )}
         <Text maxFontSizeMultiplier={1.4} style={s.permIcon}>📷</Text>
@@ -140,7 +140,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
   // ── Preview captured photo ────────────────────────────────────────────────
   if (captured) {
     return (
-      <View style={[s.screen, { backgroundColor: colors.textPrimary }]}>
+      <View style={[s.screen, { backgroundColor: colors.navy }]}>
         <Image source={{ uri: captured }} style={s.preview} resizeMode="contain" accessibilityLabel="Scanned document preview" onError={() => setScanError("Could not display scanned image.")} />
 
         <View style={s.previewActions}>
@@ -162,7 +162,7 @@ function DocumentScannerScreen({ navigation, route }: ScreenProps): React.JSX.El
             accessibilityLabel={caseId ? 'Attach to case' : 'Use this photo'}
           >
             {uploading
-              ? <ActivityIndicator color={colors.bgCard} size="small" />
+              ? <ActivityIndicator color={colors.white} size="small" />
               : <Text maxFontSizeMultiplier={1.4} style={s.previewBtnText}>
                   {caseId ? '📎 Attach to Case' : '✓ Use Photo'}
                 </Text>
@@ -232,7 +232,7 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
   cornerTR:  { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 8 },
   cornerBL:  { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 8 },
   cornerBR:  { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 8 },
-  guideText: { position: 'absolute', top: '12%', alignSelf: 'center', color: 'rgba(255,255,255,0.85)',
+  guideText: { position: 'absolute', top: '12%', alignSelf: 'center', color: COLORS.textOnGold,
                fontSize: 13, lineHeight: 19, fontWeight: '600', textAlign: 'center',
                backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 12, paddingVertical: 6,
                borderRadius: 8 },
@@ -250,7 +250,7 @@ const styles = (C: Record<string, string>) => StyleSheet.create({
                   flexDirection: 'row', gap: 12, padding: 24, paddingBottom: 40,
                   backgroundColor: 'rgba(0,0,0,0.7)' },
   previewBtn:   { flex: 1, borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center' },
-  previewBtnText:{ color: COLORS.bgCard, fontSize: TYPE.base, lineHeight: 21, ...FONTS.bold },
+  previewBtnText:{ color: COLORS.white, fontSize: TYPE.base, lineHeight: 21, ...FONTS.bold },
   previewHint:  { position: 'absolute', top: 20, alignSelf: 'center',
                   color: 'rgba(255,255,255,0.7)', fontSize: 12, lineHeight: 18 } });
 export default React.memo(DocumentScannerScreen);

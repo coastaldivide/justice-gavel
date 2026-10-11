@@ -82,6 +82,7 @@ function DiversionScreen({ navigation }: any) {
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
           accessibilityHint="Double-tap to activate">
           <Text style={[styles.back, { color: colors.primary }]}>← Back</Text>
         </TouchableOpacity>
@@ -149,14 +150,14 @@ function DiversionScreen({ navigation }: any) {
         {/* Result */}
         {yesCount > 0 && (
           <View style={[styles.resultCard, {
-            backgroundColor: eligible ? '#DCFCE7' : maybeEligible ? '#FEF3C7' : '#FEE2E2',
+            backgroundColor: eligible ? colors.legalBg : maybeEligible ? colors.warnBg : colors.emergencyBg,
             borderColor: eligible ? COLORS.legal : maybeEligible ? COLORS.warn : COLORS.emergency,
           }]}>
             <Text style={[styles.resultIcon]}>
               {eligible ? '✅' : maybeEligible ? '⚠️' : '❌'}
             </Text>
             <Text style={[styles.resultTitle, {
-              color: eligible ? '#15803D' : maybeEligible ? '#92400E' : '#991B1B',
+              color: eligible ? colors.legal : maybeEligible ? colors.warnDark : colors.emergencyDark,
             }]}>
               {eligible     ? 'You may qualify for diversion' :
                maybeEligible? 'You may partially qualify — speak to an attorney' :

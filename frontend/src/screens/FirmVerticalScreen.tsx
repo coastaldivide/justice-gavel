@@ -412,7 +412,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
         <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 18, fontWeight: '700', color: colors?.primary ?? COLORS.navy, marginBottom: 8, textAlign: 'center' }}>
           Set Up Your Legal Vertical
         </Text>
-        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: colors?.textMuted ?? '#666', textAlign: 'center', marginBottom: 24 }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: colors?.textMuted ?? colors.textMuted, textAlign: 'center', marginBottom: 24 }}>
           Your firm hasn't configured a practice area yet. Contact your firm administrator to get started.
         </Text>
       </View>
@@ -594,7 +594,7 @@ confirm('Mark as Resolved?', `Mark "${name}" as resolved? This will archive the 
             accessibilityRole="button" accessibilityLabel="Submit verification request"
           accessibilityHint="Double-tap to activate">
                 {submittingMV
-                  ? <ActivityIndicator color="#fff" />
+                  ? <ActivityIndicator color={colors.white} />
                   : <Text maxFontSizeMultiplier={1.4} style={s.missionBtnText}>Submit verification request</Text>
                 }
               </TouchableOpacity>

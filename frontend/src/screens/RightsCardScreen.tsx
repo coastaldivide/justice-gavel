@@ -297,15 +297,14 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={styles.cardLegalNote}>{card.footer}</Text>
           </View>
 
+          {/* Blur overlay for non-subscribers — covers the card preview */}
+          {!isSubscriber && (
+            <View style={styles.blurOverlay} pointerEvents="none">
+              <Text maxFontSizeMultiplier={1.4} style={styles.blurOverlayText}>🔒 Subscribe to unlock full card + share</Text>
+            </View>
+          )}
         </View>
       ) : null}
-
-      {/* Blur overlay for non-subscribers */}
-      {!isSubscriber && card && (
-        <View style={styles.blurOverlay} pointerEvents="none">
-          <Text maxFontSizeMultiplier={1.4} style={styles.blurOverlayText}>🔒 Subscribe to unlock full card + share</Text>
-        </View>
-      )}
 
 
       {/* Emergency quick-call strip */}
@@ -317,7 +316,7 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
           onPress={() => Linking.openURL('tel:988').catch(() => showToast('Action unavailable.', 'error'))}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 13 }}>📞 988 Crisis</Text>
+          <Text style={{ color: colors.textOnNavy, fontWeight: '700', fontSize: 13 }}>📞 988 Crisis</Text>
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityRole="button"
@@ -406,7 +405,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   pageSub:   { fontSize: 12, color: COLORS.steel, lineHeight: 18 },
 
   stateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14, zIndex: 100 },
-  stateLabel: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: COLORS.navy },
+  stateLabel: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: colors.textBrand },
   statePicker: {
     borderWidth: 1.5, borderColor: COLORS.navy, borderRadius: RADIUS.md,
     paddingHorizontal: 16, paddingVertical: 8, backgroundColor: COLORS.bgCard },
@@ -422,7 +421,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   stateDropdownTextActive:{ ...FONTS.heavy, color: COLORS.navy },
 
   gateBanner: {
-    backgroundColor: COLORS.steelMid, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
+    backgroundColor: COLORS.infoBg, borderRadius: RADIUS.lg, padding: 16, marginBottom: 14,
     borderWidth: 1, borderColor: COLORS.steelMid },
   gateBannerTitle: { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },
   gateBannerBody:  { fontSize: 12, color: COLORS.textSecond, lineHeight: 18, marginBottom: 12 },
@@ -464,17 +463,18 @@ const makeStyles = (colors: any) => StyleSheet.create({
   rightBody:       { fontSize: 11, color: COLORS.textSecond, lineHeight: 16 },
 
   cardFooter: {
-    backgroundColor: COLORS.bg, padding: 16 },
-  emergencyLine:  { fontSize: 11, color: COLORS.steel, marginBottom: 3, ...FONTS.semi },
-  cardBrandLine:  { fontSize: 11, color: COLORS.textMuted, marginTop: 8, textAlign: 'center' },
-  cardLegalNote:  { fontSize: 11, color: colors.steel, marginTop: 4, textAlign: 'center', lineHeight: 13 },
+    backgroundColor: colors.bg, padding: 16 },
+  emergencyLine:  { fontSize: 11, color: colors.info, marginBottom: 3, ...FONTS.semi },
+  cardBrandLine:  { fontSize: 11, color: colors.textMuted, marginTop: 8, textAlign: 'center' },
+  cardLegalNote:  { fontSize: 11, color: colors.info, marginTop: 4, textAlign: 'center', lineHeight: 13 },
 
   blurOverlay: {
-    position: 'absolute', left: 16, right: 16,
-    backgroundColor: 'rgba(255,255,255,0.0)',
+    position: 'absolute', top: 0, bottom: 0, left: 0, right: 0,
+    backgroundColor: colors.overlay,
+    borderRadius: RADIUS.lg,
     alignItems: 'center', justifyContent: 'center',
     paddingVertical: 20 },
-  blurOverlayText: { fontSize: 12, lineHeight: 20, color: COLORS.navy, ...FONTS.heavy },
+  blurOverlayText: { fontSize: 12, lineHeight: 20, color: colors.white, ...FONTS.heavy },
 
   actions: { marginBottom: 16, gap: 8 },
   shareBtn: {
@@ -483,15 +483,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   shareBtnDisabled: { backgroundColor: COLORS.textMuted },
   shareBtnText:     { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black },
   textShareBtn:     { alignItems: 'center', paddingVertical: 10 },
-  textShareBtnText: { fontSize: 12, lineHeight: 20, color: COLORS.steel, ...FONTS.semi },
+  textShareBtnText: { fontSize: 12, lineHeight: 20, color: colors.info, ...FONTS.semi },
   stateChangeBtn:   { borderWidth: 1.5, borderColor: COLORS.border, borderRadius: RADIUS.md, paddingVertical: 12, alignItems: 'center' },
-  stateChangeBtnText: { fontSize: 14, lineHeight: 21, color: COLORS.textSecond, ...FONTS.semi },
+  stateChangeBtnText: { fontSize: 14, lineHeight: 21, color: colors.textMuted, ...FONTS.semi },
 
   tiktokCard: {
-    backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg,
+    backgroundColor: colors.bgCard, borderRadius: RADIUS.lg,
     padding: 16, marginBottom: 8, borderWidth: 1, borderColor: colors.bgCard },
-  tiktokTitle: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: COLORS.bgCard, marginBottom: 8 },
-  tiktokBody:  { fontSize: 12, color: colors.steel, lineHeight: 17, marginBottom: 6 },
+  tiktokTitle: { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: colors.textPrimary, marginBottom: 8 },
+  tiktokBody:  { fontSize: 12, color: colors.info, lineHeight: 17, marginBottom: 6 },
 
   disclaimer: {
     backgroundColor: COLORS.bgSubtle,

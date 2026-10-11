@@ -114,7 +114,7 @@ function HousingRightsScreen(): React.JSX.Element {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <AppIcon name="home-outline" size={20} color={COLORS.navy} />
-        <Text style={[styles.headerTitle, { color: colors.bgCard }]} maxFontSizeMultiplier={1.4}>Housing Rights</Text>
+        <Text style={[styles.headerTitle, { color: colors.textOnNavy }]} maxFontSizeMultiplier={1.4}>Housing Rights</Text>
         <Text style={[styles.headerSub, { color: colors.steel }]} maxFontSizeMultiplier={1.4}>Tenant rights & evictions</Text>
       </View>
 
@@ -138,7 +138,7 @@ function HousingRightsScreen(): React.JSX.Element {
 
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
-        <Text style={[styles.disclaimerText, { color: colors.textFaint }]} maxFontSizeMultiplier={1.4}>
+        <Text style={[styles.disclaimerText, { color: colors.textMuted }]} maxFontSizeMultiplier={1.4}>
           This information is for general education only and is not legal advice.
           Laws vary by state. Consult a licensed attorney for advice about your situation.
         </Text>

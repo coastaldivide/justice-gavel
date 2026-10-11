@@ -66,7 +66,7 @@ const MONTHLY_TIERS = [
     cents: 4900,
     icon: '⚖️',
     color: COLORS.navy,
-    bg: '#1a1a2e22',
+    bg: COLORS.borderSubtle,
     trial: null,
     annualKey: 'esquire_annual',
     annualPrice: '$399.00/yr',
@@ -424,7 +424,7 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
           onPress={() => navigation.canGoBack() ? navigation.goBack() : null}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityLabel="Continue with free features">
-          <Text style={{ fontSize: 13, color: colors.steel, textDecorationLine: 'underline' }}>
+          <Text style={{ fontSize: 13, color: colors.info, textDecorationLine: 'underline' }}>
             Continue with free features →
           </Text>
         </TouchableOpacity>
@@ -453,11 +453,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   freeLimitBadge:{ backgroundColor: COLORS.legalBg, borderRadius: RADIUS.pill, paddingHorizontal: 8, paddingVertical: 3 },
   freeLockBadge: { backgroundColor: COLORS.emergencyBg, borderRadius: RADIUS.pill, paddingHorizontal: 8, paddingVertical: 3 },
 
-  activeBanner: { backgroundColor: COLORS.legal, margin: 12, marginBottom: 4, borderRadius: RADIUS.lg, padding: 16, flexDirection: 'row', alignItems: 'center' },
-  activeBannerTitle: { color: COLORS.bgCard, ...FONTS.heavy, fontSize: 14,
+  activeBanner: { backgroundColor: COLORS.legalBg, margin: 12, marginBottom: 4, borderRadius: RADIUS.lg, padding: 16, flexDirection: 'row', alignItems: 'center' },
+  activeBannerTitle: { color: colors.textOnGold, ...FONTS.heavy, fontSize: 14,
     lineHeight: 21, },
-  activeBannerSub:   { color: colors.legal, fontSize: 12, marginTop: 2 },
-  cancelLink: { color: '#EF5350', fontSize: 12, lineHeight: 20, ...FONTS.semi },
+  activeBannerSub:   { color: colors.legalDark, fontSize: 12, marginTop: 2 },
+  cancelLink: { color: COLORS.emergency, fontSize: 12, lineHeight: 20, ...FONTS.semi },
 
   card: {
     margin: 12, marginBottom: 4,
@@ -505,7 +505,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   annualNoteText: { fontSize: 11, color: colors.blue, lineHeight: 16 },
   savingsBadgeText: { fontSize: 11, color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   tierPriceSub: { fontSize: 12, color: COLORS.legal, fontWeight: '700', marginTop: 1 },
-  footer: { fontSize: 11, color: COLORS.textMuted, textAlign: 'center', paddingHorizontal: 24, lineHeight: 16, marginTop: 16 },
+  footer: { fontSize: 11, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 24, lineHeight: 16, marginTop: 16 },
 });
 
 // Module-level styles for helper components (uses static COLORS, not dynamic theme)

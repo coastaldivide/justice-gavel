@@ -62,6 +62,7 @@ const DAY_LABELS: Record<string, string>  = { mon:'Mon',tue:'Tue',wed:'Wed',thu:
 const SLOT_LABELS: Record<string, string> = { morning:'AM',afternoon:'PM',evening:'Eve' };
 
 function AvailabilityGrid() {
+  const { colors } = useTheme();
   const { showToast } = useToast();
   const [schedule, setSchedule] = React.useState<Record<string, string[]>>({});
   const [note, setNote]         = React.useState('');
@@ -102,7 +103,7 @@ function AvailabilityGrid() {
   return (
     <View style={{ marginTop: 20 }}>
       <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22,
-        fontWeight: '700', color: COLORS.textPrimary, marginBottom: 12 }}>
+        fontWeight: '700', color: colors.textPrimary, marginBottom: 12 }}>
         📅 Weekly Availability
       </Text>
       {/* Grid */}
@@ -111,7 +112,7 @@ function AvailabilityGrid() {
         <View style={{ width: 36, paddingTop: 24 }}>
           {SLOTS.map(s => (
             <Text key={s} maxFontSizeMultiplier={1.4} style={{ fontSize: 10, lineHeight: 22,
-              color: COLORS.textMuted, height: 30, textAlignVertical: 'center' }}>
+              color: colors.textMuted, height: 30, textAlignVertical: 'center' }}>
               {SLOT_LABELS[s]}
             </Text>
           ))}
@@ -120,7 +121,7 @@ function AvailabilityGrid() {
         {DAYS.map(day => (
           <View key={day} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 10, lineHeight: 14,
-              color: COLORS.textMuted, fontWeight: '700', marginBottom: 4 }}>
+              color: colors.textMuted, fontWeight: '700', marginBottom: 4 }}>
               {DAY_LABELS[day]}
             </Text>
             {SLOTS.map(slot => {
@@ -131,9 +132,10 @@ function AvailabilityGrid() {
 
                 key={slot}
                   style={{ width: '100%', height: 28, borderRadius: 4,
-                    backgroundColor: active ? COLORS.navy : COLORS.bgSubtle,
-                    borderWidth: 1, borderColor: active ? COLORS.navy : COLORS.border }}
+                    backgroundColor: active ? colors.navy : colors.bgSubtle,
+                    borderWidth: 1, borderColor: active ? colors.navy : colors.border }}
                   onPress={() => toggle(day, slot)}
+                  hitSlop={{ top: 8, bottom: 8, left: 0, right: 0 }}
                   accessibilityState={{ checked: active }}
                   accessibilityLabel={`${DAY_LABELS[day]} ${SLOT_LABELS[slot]}`}
                 />
@@ -144,11 +146,11 @@ function AvailabilityGrid() {
       </View>
       {/* Note */}
       <TextInput
-        style={{ marginTop: 12, borderWidth: 1, borderColor: COLORS.inputBorder,
+        style={{ marginTop: 12, borderWidth: 1, borderColor: colors.inputBorder,
           borderRadius: 8, padding: 10, fontSize: 13, lineHeight: 19,
-          color: COLORS.inputText, backgroundColor: COLORS.inputBg }}
+          color: colors.inputText, backgroundColor: colors.inputBg }}
         placeholder="Availability note (e.g. 'Best to reach me Tuesday mornings')"
-        placeholderTextColor={COLORS.placeholder}
+        placeholderTextColor={colors.placeholder}
         value={note}
         onChangeText={(t) => { setNote(t); setSaved(false); }}
 
@@ -159,12 +161,12 @@ function AvailabilityGrid() {
       />
       <TouchableOpacity
   accessibilityRole="button"
-        style={{ marginTop: 10, backgroundColor: saving ? COLORS.bgSubtle : COLORS.navy,
+        style={{ marginTop: 10, backgroundColor: saving ? colors.bgSubtle : colors.navy,
           borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
         onPress={save} disabled={saving}
       
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-        <Text maxFontSizeMultiplier={1.4} style={{ color: saving ? COLORS.textMuted : COLORS.bgCard,
+        <Text maxFontSizeMultiplier={1.4} style={{ color: saving ? colors.textMuted : colors.textOnNavy,
           fontWeight: '700', fontSize: 13, lineHeight: 19 }}>
           {saved ? '✓ Saved' : saving ? 'Saving…' : 'Save Availability'}
         </Text>
@@ -183,6 +185,8 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
   }, []);
 
   const { colors } = useTheme();
+  // Themed styles (shadows the static module-level fallback used by helpers)
+  const styles = makeStyles(colors);
 
   // ── Role gate -- only attorneys and defenders can access this screen ──────────
   // Any authenticated user can navigate here via deep link or direct navigation.
@@ -354,7 +358,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             style={{ backgroundColor: colors.navy, paddingHorizontal: 12,
               paddingVertical: 7, borderRadius: 8 }}>
             <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '700',
-              color: colors.bg, letterSpacing: 0.3 }}>🧠 Intelligence</Text>
+              color: colors.textOnNavy, letterSpacing: 0.3 }}>🧠 Intelligence</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -392,7 +396,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
 
       {/* Attorney-client privilege notice */}
       <View style={{ backgroundColor: COLORS.navyLight, borderRadius: 8, padding: 10, margin: 12, marginBottom: 0 }}>
-        <Text style={{ fontSize: 11, color: COLORS.blue, lineHeight: 15 }}>
+        <Text style={{ fontSize: 11, color: colors.textOnNavy, lineHeight: 15 }}>
           🔏 All matter data is handled consistent with attorney-client privilege. Justice Gavel does not access, share, or use client data for any purpose other than delivering platform services to your firm.
         </Text>
       </View>
@@ -471,14 +475,14 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
                       onPress={() => navigation.navigate('Messages', { caseId: cas.id, caseTitle: cas.title })}
                       accessibilityLabel="Message client"
                     >
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseActionText, { color: colors.steel }]}>💬 Message</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseActionText, { color: colors.info }]}>💬 Message</Text>
                     </TouchableOpacity>
                     <TouchableOpacity accessibilityRole="button"
                       style={[styles.caseActionBtn, { borderColor: colors.border }]}
                       onPress={() => navigation.navigate('MotionLibrary', { caseId: cas.id })}
                       accessibilityLabel="Draft a motion for this case"
                     >
-                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseActionText, { color: colors.steel }]}>📋 Motion</Text>
+                      <Text maxFontSizeMultiplier={1.4} style={[styles.caseActionText, { color: colors.info }]}>📋 Motion</Text>
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -572,7 +576,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
         {tab === 'cle' && (
           <>
             <View style={[styles.cleHeader, { backgroundColor: colors.bgElevated, borderColor: colors.steel }]}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.cleHours, { color: colors.steel }]}>{cleTotal.toFixed(1)}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.cleHours, { color: colors.info }]}>{cleTotal.toFixed(1)}</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.cleHoursLabel, { color: colors.textMuted }]}>CLE hours earned on Justice Gavel</Text>
             </View>
 
@@ -643,7 +647,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               onPress={() => showToast(`${cleTotal.toFixed(1)} CLE hours earned on Justice Gavel.`, 'info')}
               accessibilityLabel="View CLE transcript"
             >
-              <Text maxFontSizeMultiplier={1.4} style={[styles.transcriptBtnText, { color: colors.steel }]}>View Full Transcript →</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.transcriptBtnText, { color: colors.info }]}>View Full Transcript →</Text>
             </TouchableOpacity>
           </>
         )}
@@ -745,7 +749,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
               ].map((s,i,arr) => (
                 <View key={s.label} style={[styles.statCell,
                   i < arr.length-1 && { borderRightWidth:1, borderRightColor: colors.border }]}>
-                  <Text maxFontSizeMultiplier={1.4} style={[styles.statValue, { color: colors.steel }]}>{s.value}</Text>
+                  <Text maxFontSizeMultiplier={1.4} style={[styles.statValue, { color: colors.info }]}>{s.value}</Text>
                   <Text maxFontSizeMultiplier={1.4} style={[styles.statLabel, { color: colors.textMuted }]}>{s.label}</Text>
                 </View>
               ))}
@@ -754,7 +758,7 @@ function AttorneyDashboardScreen({ navigation }: ScreenProps): React.JSX.Element
             {/* Gavel level */}
             {profile.gavel_level > 0 && (
               <View style={[styles.gavelBadge, { backgroundColor: colors.warnBg, borderColor: colors.gold }]}>
-                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.gold, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}>
+                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.goldText, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}>
                   {['','🥉 Bronze','🥈 Silver','🏆 Golden'][profile.gavel_level] || ''} Gavel Holder
                 </Text>
               </View>
@@ -872,7 +876,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   emptyTitle:       { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 6 },
   emptyBody:        { fontSize: 12, lineHeight: 19, textAlign: 'center', marginBottom: 16 },
   emptyBtn:         { borderRadius: RADIUS.md, paddingVertical: 11, paddingHorizontal: 20 },
-  emptyBtnText:     { color: COLORS.bg, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  emptyBtnText:     { color: colors.textOnGold, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   caseCard:         { borderRadius: RADIUS.md, borderWidth: 1, padding: 16, marginBottom: 10 },
   caseHeader:       { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
   caseTitle:        { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginBottom: 2 },
@@ -910,7 +914,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   cleDesc:          { fontSize: 12, lineHeight: 19, marginBottom: 10 },
   cleContent:       { fontSize: 12, lineHeight: 19, marginBottom: 12 },
   completeBtn:      { borderRadius: RADIUS.md, paddingVertical: 12, alignItems: 'center' },
-  completeBtnText:  { color: COLORS.bg, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  completeBtnText:  { color: colors.textOnGold, fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   completedBanner:  { borderRadius: RADIUS.sm, borderWidth: 1, padding: 10, alignItems: 'center' },
   transcriptBtn:    { borderRadius: RADIUS.md, borderWidth: 1, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
   transcriptBtnText:{ fontSize: 14, lineHeight: 21, fontFamily: 'Inter_700Bold', fontWeight: '700' },
@@ -922,7 +926,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   fieldLabel:       { fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6, marginTop: 14 },
   input:            { borderRadius: RADIUS.md, borderWidth: 1, padding: 12, fontSize: 14, lineHeight: 21, marginBottom: 4 },
   saveBtn:          { borderRadius: RADIUS.md, paddingVertical: 16, alignItems: 'center', marginTop: 16 },
-  saveBtnText:      { color: COLORS.bg, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
+  saveBtnText:      { color: colors.textOnGold, fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   outlineBtn:       { borderRadius: RADIUS.md, borderWidth: 1, paddingVertical: 12, alignItems: 'center', marginTop: 10 },
   outlineBtnText:   { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
 

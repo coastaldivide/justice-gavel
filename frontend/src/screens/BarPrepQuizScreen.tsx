@@ -315,7 +315,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
                 ]}>
                   <Text style={[
                     styles.optionLetterText,
-                    (isCorrect || isWrong) && { color: '#fff' },
+                    (isCorrect || isWrong) && { color: colors.white },
                   ]}>{letter}</Text>
                 </View>
                 <Text style={[
@@ -378,7 +378,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
         {/* Bar prep disclaimer */}
         <Text
           maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: '#888', textAlign: 'center',
+          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
           For supplemental study only. Not endorsed by any state bar or the NCBE.
@@ -390,7 +390,7 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
 
 function makeStyles(colors: any) {
   return StyleSheet.create({
-    container:          { flex: 1, backgroundColor: colors.background },
+    container:          { flex: 1, backgroundColor: colors.bg },
     header:             {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 20, paddingBottom: 12,
@@ -400,7 +400,7 @@ function makeStyles(colors: any) {
     headerCenter:       { alignItems: 'center' },
     counter:            { fontSize: 15, ...FONTS.semiBold, color: colors.text },
     timer:              { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-    timerLow:           { color: COLORS.bail, ...FONTS.bold },
+    timerLow:           { color: colors.bail, ...FONTS.bold },
     diffBadge:          { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
     diffText:           { fontSize: 11, ...FONTS.bold },
     progressTrack:      { height: 3, backgroundColor: colors.border },
@@ -419,8 +419,8 @@ function makeStyles(colors: any) {
       backgroundColor: colors.card, ...SHADOW.sm,
     },
     optionSelected:     { borderColor: colors.primary, backgroundColor: colors.primary + '10' },
-    optionCorrect:      { borderColor: COLORS.legal, backgroundColor: '#22c55e18' },
-    optionWrong:        { borderColor: COLORS.bail, backgroundColor: '#ef444418' },
+    optionCorrect:      { borderColor: COLORS.legal, backgroundColor: colors.legalBg },
+    optionWrong:        { borderColor: COLORS.bail, backgroundColor: colors.emergencyBg },
     optionLetter:       {
       width: 28, height: 28, borderRadius: 14, borderWidth: 2,
       borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
@@ -431,10 +431,10 @@ function makeStyles(colors: any) {
     optionLetterText:   { fontSize: 13, ...FONTS.bold, color: colors.text },
     optionText:         { flex: 1, fontSize: 15, color: colors.text, lineHeight: 22 },
     optionTextCorrect:  { color: COLORS.legal, ...FONTS.semiBold },
-    optionTextWrong:    { color: COLORS.bail },
+    optionTextWrong:    { color: colors.bail },
     explanationCard:    { marginTop: 20, padding: 16, borderRadius: RADIUS.lg, borderLeftWidth: 4 },
-    correctCard:        { backgroundColor: '#22c55e12', borderLeftColor: COLORS.legal },
-    wrongCard:          { backgroundColor: '#ef444412', borderLeftColor: COLORS.bail },
+    correctCard:        { backgroundColor: colors.legalBg, borderLeftColor: COLORS.legal },
+    wrongCard:          { backgroundColor: colors.emergencyBg, borderLeftColor: COLORS.bail },
     explanationIcon:    { fontSize: 14, ...FONTS.bold, color: colors.text, marginBottom: 8 },
     explanationText:    { fontSize: 14, color: colors.text, lineHeight: 21 },
     fullExplanationLink: { marginTop: 12 },
@@ -447,11 +447,11 @@ function makeStyles(colors: any) {
     bottomBar:          {
       position: 'absolute', bottom: 0, left: 0, right: 0,
       padding: 16, paddingBottom: Platform.OS === 'ios' ? 32 : 16,
-      backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border,
+      backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.border,
     },
     nextBtn:            { backgroundColor: colors.primary, paddingVertical: 15, borderRadius: RADIUS.lg, alignItems: 'center', ...SHADOW.sm },
-    submitBtn:          { backgroundColor: COLORS.legal, paddingVertical: 15, borderRadius: RADIUS.lg, alignItems: 'center', ...SHADOW.sm },
+    submitBtn:          { backgroundColor: colors.legal, paddingVertical: 15, borderRadius: RADIUS.lg, alignItems: 'center', ...SHADOW.sm },
     nextBtnDisabled:    { opacity: 0.4 },
-    nextBtnText:        { fontSize: 16, ...FONTS.bold, color: '#fff' },
+    nextBtnText:        { fontSize: 16, ...FONTS.bold, color: colors.textOnAccent },
   });
 }

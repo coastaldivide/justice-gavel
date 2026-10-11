@@ -79,7 +79,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, fontWeight: '800', fontSize: 18 }}>
             💰 Bail Amount Estimator
           </Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 4 }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textOnAccent, fontSize: 13, marginTop: 4 }}>
             Select a state and charge type to see typical bail ranges and bondsman costs.
             These are estimates -- actual bail is set by a judge.
           </Text>
@@ -261,7 +261,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
               🔓 Find a Bail Bondsman Near You
             </Text>
-            <Text maxFontSizeMultiplier={1.4} style={{ color:'rgba(255,255,255,0.8)', fontSize:11,
+            <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnAccent, fontSize:11,
               textAlign:'center', marginTop:4 }}>
               Bondsmen charge 10% (non-refundable). Find licensed agents in your city.
             </Text>
@@ -282,7 +282,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.2}
-              style={{ color: colors.bg, fontSize: 15, fontWeight: '800' }}>
+              style={{ color: colors.textOnNavy, fontSize: 15, fontWeight: '800' }}>
               ⚖️ Find Attorneys Near You
             </Text>
             <Text maxFontSizeMultiplier={1.3}
@@ -297,7 +297,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
         borderLeftWidth: 4, borderLeftColor: colors.warn,
         padding: 12, marginTop: 16, marginBottom: 8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
-          color: '#555', fontStyle: 'italic' }}>
+          color: colors.textSecond, fontStyle: 'italic' }}>
           ⚖️ General legal information only -- not legal advice. Laws vary by
           jurisdiction and change frequently. Consult a licensed attorney for
           advice specific to your situation.

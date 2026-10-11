@@ -282,7 +282,7 @@ showToast(res.data?.message, 'success');
                   <TouchableOpacity
                     accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-                    style={[s.upgradeBtn, { backgroundColor: colors.legal }]}
+                    style={[s.upgradeBtn, { backgroundColor: colors.legalDark }]}
                     onPress={() => requestUpgrade('enterprise')}
                     disabled={upgrading}
                   >
@@ -291,7 +291,7 @@ showToast(res.data?.message, 'success');
                   <TouchableOpacity
                     accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
-                    style={[s.upgradeBtn, { backgroundColor: colors.gold }]}
+                    style={[s.upgradeBtn, { backgroundColor: COLORS.warnDark }]}
                     onPress={() => requestUpgrade('mission')}
                     disabled={upgrading}
                   >
@@ -555,6 +555,6 @@ const styles = (c: any) => StyleSheet.create({
   upgradeTitle:   { fontSize: TYPE.base, fontFamily: FONT.semiBold, color: c.text, marginBottom: 4 },
   upgradeBody:    { fontSize: TYPE.sm, color: c.textMuted, lineHeight: 18 },
   upgradeBtn:     { flex: 1, paddingVertical: 10, borderRadius: RADIUS.sm, alignItems: 'center' },
-  upgradeBtnText: { fontSize: TYPE.sm, fontFamily: FONT.semiBold, color: COLORS.surface },
+  upgradeBtnText: { fontSize: TYPE.sm, fontFamily: FONT.semiBold, color: COLORS.white },
 });
 export default React.memo(FirmAcquisitionScreen);

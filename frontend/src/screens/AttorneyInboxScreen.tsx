@@ -225,7 +225,7 @@ export default function AttorneyInboxScreen() {
     return (
       <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.legal} />
-        <Text style={{ color: colors.steel, marginTop: 12 }}>Loading inbox…</Text>
+        <Text style={{ color: colors.info, marginTop: 12 }}>Loading inbox…</Text>
       </View>
     );
   }
@@ -243,7 +243,7 @@ export default function AttorneyInboxScreen() {
     >
       {/* ── Summary badges ──────────────────────────────────────────────── */}
       <View style={styles.summaryRow}>
-        <View style={[styles.badge, { backgroundColor: COLORS.navy }]}>
+        <View style={[styles.badge, { backgroundColor: colors.navy }]}>
           <Text style={styles.badgeNum}>{summary?.unread_messages ?? 0}</Text>
           <Text style={styles.badgeLbl}>Unread</Text>
         </View>
@@ -251,11 +251,11 @@ export default function AttorneyInboxScreen() {
           <Text style={styles.badgeNum}>{summary?.today_events ?? 0}</Text>
           <Text style={styles.badgeLbl}>Today</Text>
         </View>
-        <View style={[styles.badge, { backgroundColor: '#F59E0B' }]}>
+        <View style={[styles.badge, { backgroundColor: COLORS.warnDark }]}>
           <Text style={styles.badgeNum}>{summary?.pending_assignments ?? 0}</Text>
           <Text style={styles.badgeLbl}>Pending</Text>
         </View>
-        <View style={[styles.badge, { backgroundColor: COLORS.legal }]}>
+        <View style={[styles.badge, { backgroundColor: colors.legalDark }]}>
           <Text style={styles.badgeNum}>{summary?.urgent_count ?? 0}</Text>
           <Text style={styles.badgeLbl}>Urgent</Text>
         </View>
@@ -283,7 +283,7 @@ export default function AttorneyInboxScreen() {
                   disabled={accepting === a.assignment_id}
                 >
                   {accepting === a.assignment_id
-                    ? <ActivityIndicator size="small" color="#fff" />
+                    ? <ActivityIndicator size="small" color={colors.white} />
                     : <Text style={styles.btnPrimaryText}>Accept Case</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -412,7 +412,7 @@ export default function AttorneyInboxScreen() {
                     {c.client_name} · {c.state} · {c.status}
                   </Text>
                   {c.next_court_date && (
-                    <Text style={[styles.cardMeta, { color: '#F59E0B' }]}>
+                    <Text style={[styles.cardMeta, { color: colors.textSecond }]}>
                       Next: {fmtDate(c.next_court_date)}
                     </Text>
                   )}
@@ -452,25 +452,25 @@ const makeStyles = (colors: any) => StyleSheet.create({
   screen:      { flex: 1, backgroundColor: colors.bg },
   summaryRow:  { flexDirection: 'row', padding: 12, gap: 8 },
   badge:       { flex: 1, borderRadius: RADIUS.md, padding: 12, alignItems: 'center' },
-  badgeNum:    { fontSize: 22, fontWeight: '800', color: '#fff' },
-  badgeLbl:    { fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  badgeNum:    { fontSize: 22, fontWeight: '800', color: colors.white },
+  badgeLbl:    { fontSize: 10, color: colors.white, marginTop: 2 },
   section:     { marginTop: 4 },
-  sectionHeader: { fontSize: 13, fontWeight: '700', color: colors.steel,
+  sectionHeader: { fontSize: 13, fontWeight: '700', color: colors.info,
                    paddingHorizontal: 16, paddingVertical: 8, letterSpacing: 0.5 },
   card:        { backgroundColor: colors.bgCard, marginHorizontal: 12,
                  marginBottom: 8, borderRadius: RADIUS.md, padding: 14 },
-  cardUrgent:  { borderLeftWidth: 3, borderLeftColor: '#F59E0B' },
+  cardUrgent:  { borderLeftWidth: 3, borderLeftColor: colors.gold },
   cardToday:   { borderLeftWidth: 3, borderLeftColor: COLORS.legal },
   cardRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   cardTitle:   { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 2 },
-  cardMeta:    { fontSize: 12, color: colors.steel, marginBottom: 2 },
-  cardNotes:   { fontSize: 12, color: colors.steel, fontStyle: 'italic', marginTop: 4 },
-  cardBadgeText: { fontSize: 10, fontWeight: '700', color: COLORS.legal,
+  cardMeta:    { fontSize: 12, color: colors.info, marginBottom: 2 },
+  cardNotes:   { fontSize: 12, color: colors.info, fontStyle: 'italic', marginTop: 4 },
+  cardBadgeText: { fontSize: 10, fontWeight: '700', color: colors.legal,
                    letterSpacing: 0.8, marginBottom: 4 },
   cardActions: { flexDirection: 'row', gap: 8, marginTop: 10 },
   btn:         { flex: 1, paddingVertical: 9, borderRadius: RADIUS.sm, alignItems: 'center' },
   btnPrimary:  { backgroundColor: COLORS.navy },
-  btnPrimaryText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  btnPrimaryText: { color: colors.white, fontWeight: '700', fontSize: 13 },
   btnSecondary: { backgroundColor: colors.bgSubtle, borderWidth: 1, borderColor: colors.border },
   btnSecondaryText: { color: colors.text, fontWeight: '600', fontSize: 13 },
   unreadDot:   { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.legal,
@@ -478,11 +478,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   unreadBadge: { backgroundColor: COLORS.legal, borderRadius: 10,
                  minWidth: 20, height: 20, justifyContent: 'center', alignItems: 'center',
                  paddingHorizontal: 6, flexShrink: 0 },
-  unreadBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  unreadBadgeText: { color: colors.white, fontSize: 11, fontWeight: '700' },
   empty:       { flex: 1, alignItems: 'center', justifyContent: 'center',
                  paddingTop: 60, paddingHorizontal: 32 },
   emptyTitle:  { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 12 },
-  emptyBody:   { fontSize: 13, color: colors.steel, textAlign: 'center', marginTop: 6, lineHeight: 20 },
-  fetchedAt:   { textAlign: 'center', fontSize: 10, color: colors.steel,
+  emptyBody:   { fontSize: 13, color: colors.info, textAlign: 'center', marginTop: 6, lineHeight: 20 },
+  fetchedAt:   { textAlign: 'center', fontSize: 10, color: colors.info,
                  paddingTop: 12, paddingBottom: 4 },
 });

@@ -241,14 +241,14 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
     height: 24,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: '#CBD5E0',
+    borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
     flexShrink: 0,
   },
   checkMark: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -274,7 +274,7 @@ const styles = (C: any, F: typeof FONT) => StyleSheet.create({
   btnText: {
     fontSize: 16,
     fontFamily: F.bold,
-    color: '#FFFFFF',
+    color: COLORS.white,
     letterSpacing: 0.3,
   },
   btnTextDisabled: {

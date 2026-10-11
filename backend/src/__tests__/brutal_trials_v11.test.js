@@ -686,7 +686,7 @@ describe('10. LawyerSkeletonCard — Shimmer Animation', () => {
   test('10-07: shimmer bg uses colors.bgSubtle with fallback', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/components/LawyerSkeletonCard.tsx', 'utf8');
-    expect(src).toContain("colors?.bgSubtle || '#E8EEF4'");
+    expect(src).toContain("colors?.bgSubtle || COLORS.bgSubtle");
   });
 });
 

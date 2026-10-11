@@ -200,7 +200,7 @@ if (loading) return;
 }
 
 const makeStyles = (colors: any) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.bg },
+  screen: { flex: 1, backgroundColor: colors.bg },
   scroll: { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 40 },
 
   logoSection: { alignItems: 'center', paddingTop: 72, paddingBottom: 28 },
@@ -215,14 +215,14 @@ const makeStyles = (colors: any) => StyleSheet.create({
     letterSpacing: 1, marginBottom: 4,
   },
   tagline: {
-    fontSize: 11, ...FONTS.semi, color: COLORS.steel,
+    fontSize: 11, ...FONTS.semi, color: colors.info,
     letterSpacing: 5,
   },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
   dividerText: {
-    fontSize: 11, ...FONTS.bold, color: COLORS.steel,
+    fontSize: 11, ...FONTS.bold, color: colors.info,
     letterSpacing: 3, marginHorizontal: 16,
   },
 
@@ -244,15 +244,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   input: { flex: 1, paddingVertical: 16, fontSize: 15, lineHeight: 22, color: COLORS.bgCard, ...FONTS.medium },
   showBtn: { paddingLeft: 10, paddingVertical: 6 },
-  showBtnText: { fontSize: 12, lineHeight: 20, color: COLORS.steel, ...FONTS.semi },
+  showBtnText: { fontSize: 12, lineHeight: 20, color: COLORS.info, ...FONTS.semi },
 
   errorBox: {
-    backgroundColor: 'rgba(183, 28, 28, 0.15)',
+    backgroundColor: colors.emergencyBg,
     borderRadius: RADIUS.sm,
     borderWidth: 1, borderColor: 'rgba(183,28,28,0.3)',
     padding: 12, marginTop: 12,
   },
-  errorText: { color: '#EF5350', fontSize: 12, lineHeight: 20, ...FONTS.medium },
+  errorText: { color: colors.emergency, fontSize: 12, lineHeight: 20, ...FONTS.medium },
 
   primaryBtn: {
     backgroundColor: COLORS.navy,
@@ -267,7 +267,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
 
   registerLink: { alignItems: 'center', marginTop: 16 },
   registerText: { fontSize: 14, lineHeight: 21, color: COLORS.textMuted },
-  registerHighlight: { color: COLORS.steel, ...FONTS.bold },
+  registerHighlight: { color: COLORS.info, ...FONTS.bold },
 
   orRow:       { flexDirection: 'row', alignItems: 'center', marginVertical: 8 },
   orLine:      { flex: 1, height: 1, backgroundColor: 'rgba(133,183,235,0.2)' },
@@ -287,8 +287,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowColor: colors.legal, shadowOpacity: 0.3,
     shadowRadius: 8, elevation: 5,
   },
-  topBrowseBtnText: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900' },
-  topBrowseBtnSub:  { color: 'rgba(255,255,255,0.65)', fontSize: 11, marginTop: 3 },
-  privacy: { textAlign: 'center', color: COLORS.textMuted, fontSize: 11, marginTop: 28, letterSpacing: 0.5 },
+  topBrowseBtnText: { color: colors.bgCard, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900' },
+  topBrowseBtnSub:  { color: colors.textOnAccent, fontSize: 11, marginTop: 3 },
+  privacy: { textAlign: 'center', color: colors.textMuted, fontSize: 11, marginTop: 28, letterSpacing: 0.5 },
 });
 export default React.memo(LoginScreen);

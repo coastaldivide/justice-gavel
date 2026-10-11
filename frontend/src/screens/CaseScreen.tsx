@@ -107,7 +107,7 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
         style={[styles.shareBtn, { borderColor: 'rgba(133,183,235,0.33)', backgroundColor: COLORS.bgCard }]}
         onPress={() => onInvite(item)}
       >
-        <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: COLORS.steel }]}>👨‍👩‍👧  Invite Family</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: COLORS.info }]}>👨‍👩‍👧  Invite Family</Text>
       </TouchableOpacity>
       {hasDate && (
         <TouchableOpacity
@@ -800,7 +800,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               data={cases}
               keyExtractor={i => String(i.id)}
           ListEmptyComponent={
-            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textFaint, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40, paddingHorizontal: 24 }}>
               No cases yet. Tap + to start tracking your first case.
             </Text>
           }
@@ -870,7 +870,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         />
             {!!inviteError && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: 12, lineHeight: 20, marginBottom: 8 }}>⚠ {inviteError}</Text>}
             <TouchableOpacity accessibilityRole="button" activeOpacity={0.6}
-              style={[styles.emptyBtn, { backgroundColor: colors.steel, opacity: inviting ? 0.6 : 1 }]}
+              style={[styles.emptyBtn, { backgroundColor: colors.blue, opacity: inviting ? 0.6 : 1 }]}
               onPress={sendInvite}
               disabled={inviting || !inviteEmail.trim()}
               accessibilityLabel="Send invite"
@@ -1097,16 +1097,16 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           {/* Motions */}
           <TouchableOpacity
             accessibilityRole="button"
-            style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
+            style={[styles.toolCard, { backgroundColor: colors.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('MotionLibrary', {
               caseId: cases[0]?.id,
               caseTitle: cases[0]?.title})}
           >
-            <View style={[styles.toolCardIcon, { backgroundColor: '#EF5350' + '18' }]}>
+            <View style={[styles.toolCardIcon, { backgroundColor: colors.emergency + '18' }]}>
               <AppIcon name="document-outline" size={20} color={COLORS.navy} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: COLORS.bg }]}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>
                 Motion Library
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
@@ -1119,7 +1119,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           {/* Discovery */}
           <TouchableOpacity
             accessibilityRole="button"
-            style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
+            style={[styles.toolCard, { backgroundColor: colors.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('Discovery', {
               caseId:    (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
               caseTitle: (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
@@ -1128,7 +1128,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               <AppIcon name="search-outline" size={20} color={COLORS.navy} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: COLORS.bg }]}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>
                 Discovery AI
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
@@ -1141,7 +1141,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           {/* Legal Research */}
           <TouchableOpacity
             accessibilityRole="button"
-            style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
+            style={[styles.toolCard, { backgroundColor: colors.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('LegalResearch', {
               caseContext: (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status))?.title})}
           >
@@ -1149,7 +1149,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: COLORS.bg }]}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>
                 Legal Research
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
@@ -1161,7 +1161,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
 
           {/* Voice Notes */}
           <TouchableOpacity accessibilityRole="button"
-            style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
+            style={[styles.toolCard, { backgroundColor: colors.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('VoiceNote', {
               caseId:        (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status))?.id,
               caseTitle:     (cases ?? []).find((ca: any) => ['Open','Active'].includes(ca.status))?.title,
@@ -1171,7 +1171,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>🎙</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: COLORS.bg }]}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>
                 Voice Notes
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
@@ -1184,7 +1184,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           {/* Interpreter */}
           <TouchableOpacity
             accessibilityRole="button"
-            style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: colors.surface }]}
+            style={[styles.toolCard, { backgroundColor: colors.bgCard, borderColor: colors.surface }]}
             onPress={() => navigation.navigate('Translator')}
             accessibilityLabel="Attorney-client interpreter"
           >
@@ -1192,7 +1192,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>🗣</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: COLORS.bg }]}>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>
                 Interpreter
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
@@ -1205,19 +1205,19 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           {/* ⏰ Deadline Calculator */}
           <TouchableOpacity
             accessibilityRole="button"
-            style={[styles.toolCard, { backgroundColor: COLORS.bgCard, borderColor: COLORS.emergency + '40', borderWidth: 1.5 }]}
+            style={[styles.toolCard, { backgroundColor: colors.bgCard, borderColor: COLORS.emergency + '40', borderWidth: 1.5 }]}
             onPress={() => navigation.navigate('DeadlineCalculator')}
           >
             <View style={[styles.toolCardIcon, { backgroundColor: COLORS.emergency + '18' }]}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 22 }}>⏰</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: COLORS.bg }]}>Deadline Calculator</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardTitle, { color: colors.textPrimary }]}>Deadline Calculator</Text>
               <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardSub, { color: colors.textMuted }]}>
                 Arraignment · Appeal · AEDPA · Speedy Trial -- all critical deadlines
               </Text>
             </View>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardArrow, { color: COLORS.emergency }]}>›</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.toolCardArrow, { color: colors.emergency }]}>›</Text>
           </TouchableOpacity>
 
           {cases.length > 0 && (
@@ -1254,10 +1254,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
   addBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 12 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy, marginBottom: 8 },
+  emptyTitle: { fontSize: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand, marginBottom: 8 },
   emptySub: { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
-  emptyBtn: { backgroundColor: COLORS.navy, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 },
-  emptyBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
+  emptyBtn: { backgroundColor: colors.navy, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 },
+  emptyBtnText: { color: colors.textOnNavy, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 14,
     lineHeight: 21},
   card: { backgroundColor: COLORS.bgCard, borderRadius: 14, padding: 16, marginBottom: 10, elevation: 2, shadowColor: COLORS.bg, shadowOpacity: 0.06, shadowRadius: 6 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
@@ -1265,31 +1265,31 @@ const makeStyles = (colors: any) => StyleSheet.create({
   statusBadge: { paddingHorizontal: 10, paddingVertical: 10, borderRadius: 20, borderWidth: 1 },
   statusText: { fontSize: 11, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   courtDateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.bg, borderRadius: 8, padding: 8, marginBottom: 6 },
-  courtDateUrgent: { backgroundColor: COLORS.steelMid, borderWidth: 1, borderColor: COLORS.steelMid },
+  courtDateUrgent: { backgroundColor: COLORS.warnBg, borderWidth: 1, borderColor: COLORS.warnDark },
   courtDateIcon: { fontSize: 14,
     lineHeight: 21},
-  courtDateText: { fontSize: 12, color: colors.bgCard },
+  courtDateText: { fontSize: 12, color: COLORS.textSecond },
   cardNotes: { fontSize: 12, color: colors.textMuted, lineHeight: 18, marginBottom: 4 },
   cardCreated: { fontSize: 11, color: colors.textMuted },
-  modal: { flex: 1, backgroundColor: COLORS.bg },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: COLORS.bgCard, borderBottomWidth: 1, borderBottomColor: colors.surface },
+  modal: { flex: 1, backgroundColor: colors.bg },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.surface },
   modalClose: { fontSize: 18, color: colors.textMuted, padding: 4 },
-  modalTitle: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy },
-  modalSave: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.navy },
-  errorBanner: { backgroundColor: '#EF5350', margin: 16, borderRadius: 8, padding: 12 },
-  errorText: { color: '#EF5350', fontSize: 12 },
-  fieldLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.bgCard, marginTop: 16, marginHorizontal: 16, marginBottom: 2 },
+  modalTitle: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand },
+  modalSave: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textBrand },
+  errorBanner: { backgroundColor: colors.emergencyBg, margin: 16, borderRadius: 8, padding: 12 },
+  errorText: { color: colors.emergency, fontSize: 12 },
+  fieldLabel: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.textPrimary, marginTop: 16, marginHorizontal: 16, marginBottom: 2 },
   fieldHint: { fontSize: 12, color: colors.textMuted, marginHorizontal: 16, marginBottom: 6, lineHeight: 16 },
-  required: { color: '#EF5350' },
+  required: { color: colors.emergency },
   textInput: { borderWidth: 1.5, borderColor: colors.surface, borderRadius: 12, backgroundColor: COLORS.bgCard, padding: 12, fontSize: 14, lineHeight: 21, color: colors.bgCard, marginHorizontal: 16 },
   textArea: { minHeight: 100, textAlignVertical: 'top' },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginHorizontal: 16 },
   statusChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5, borderColor: colors.surface, backgroundColor: COLORS.bgCard },
-  statusChipText: { fontSize: 12, lineHeight: 20, color: colors.textMuted },
+  statusChipText: { fontSize: 12, lineHeight: 20, color: COLORS.textMuted },
   tabRow: { flexDirection: 'row', backgroundColor: COLORS.bgCard, borderBottomWidth: 1.5, borderBottomColor: colors.surface },
   tabBtn: { flex: 1, paddingVertical: 12, alignItems: 'center' },
   tabBtnActive: { borderBottomWidth: 2.5, borderBottomColor: COLORS.navy },
-  tabBtnText: { fontSize: 14, lineHeight: 21, fontWeight: '600', color: colors.textMuted },
+  tabBtnText: { fontSize: 14, lineHeight: 21, fontWeight: '600', color: COLORS.textMuted },
   tabBtnTextActive: { color: COLORS.navy, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   savedCard: {
@@ -1304,37 +1304,37 @@ const makeStyles = (colors: any) => StyleSheet.create({
   savedCallText:{ color: COLORS.bgCard, fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   reminderBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: COLORS.steelMid, padding: 12, marginHorizontal: 14, marginTop: 8,
+    backgroundColor: colors.infoBg, padding: 12, marginHorizontal: 14, marginTop: 8,
     borderRadius: 8, borderWidth: 1, borderColor: COLORS.steelMid},
   reminderBannerIcon:  { fontSize: 20 },
-  reminderBannerTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: COLORS.steelMid },
+  reminderBannerTitle: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.info },
   reminderBannerSub:   { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   expungeBtn: {
     marginTop: 8, paddingVertical: 9, paddingHorizontal: 12,
     backgroundColor: COLORS.bgSubtle, borderRadius: RADIUS.md,
     borderWidth: 1, borderColor: COLORS.bgSubtle},
-  expungeBtnText:  { fontSize: 12, color: COLORS.steel, fontWeight: '700' },
+  expungeBtnText:  { fontSize: 12, color: COLORS.info, fontWeight: '700' },
   familySection:     { paddingHorizontal: 16, paddingBottom: 8 },
   familySectionTitle:{ fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8, marginTop: 4 },
   familyCaseRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 8, borderWidth: 1, marginBottom: 8 },
   familyCaseTitle:   { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 2 },
   familyCaseSub:     { fontSize: 11 },
   shareBtn:        { marginTop: 8, paddingVertical: 9, paddingHorizontal: 12, backgroundColor: COLORS.bgCard, borderRadius: RADIUS.md, borderWidth: 1, borderColor: 'rgba(133,183,235,0.33)' },
-  shareBtnText:    { fontSize: 12, color: COLORS.steel, fontFamily: 'Inter_700Bold', fontWeight: '700' },
-  calendarBtn:     { marginTop: 8, paddingVertical: 9, paddingHorizontal: 12, backgroundColor: colors.legal, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.legal },
+  shareBtnText:    { fontSize: 12, color: COLORS.info, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  calendarBtn:     { marginTop: 8, paddingVertical: 9, paddingHorizontal: 12, backgroundColor: colors.legalBg, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.legal },
   calendarBtnText: { fontSize: 12, color: colors.legal, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   scanBtn:         { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16, padding: 16, borderRadius: RADIUS.md, backgroundColor: COLORS.navy, borderWidth: 1, borderColor: 'rgba(133,183,235,0.33)' },
   scanBtnIcon:     { fontSize: 22 },
-  scanBtnTitle:    { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.bgCard, marginBottom: 2 },
+  scanBtnTitle:    { fontSize: 14, lineHeight: 21, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', color: colors.textOnNavy, marginBottom: 2 },
   scanBtnSub:      { fontSize: 11, color: colors.steel },
   offlineBanner: {
-    backgroundColor: COLORS.steelMid, paddingVertical: 8, paddingHorizontal: 16,
+    backgroundColor: COLORS.infoBg, paddingVertical: 8, paddingHorizontal: 16,
     borderBottomWidth: 1, borderBottomColor: COLORS.steelMid},
-  offlineBannerText: { fontSize: 12, color: COLORS.steelMid, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  offlineBannerText: { fontSize: 12, color: COLORS.info, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   dateQuickRow:        { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   dateQuickChip:       { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: colors.surface, backgroundColor: COLORS.bg },
   dateQuickChipActive: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
-  dateQuickText:       { fontSize: 12, color: colors.steel, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  dateQuickText:       { fontSize: 12, color: COLORS.info, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
   dateQuickTextActive: { color: COLORS.bgCard },
   civilRightsBtn: {
     marginTop: 6, backgroundColor: COLORS.navy + '12',

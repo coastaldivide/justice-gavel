@@ -168,7 +168,7 @@ function ChildSupportScreen() {
               style={[s.childBtn, { borderColor: COLORS.border, backgroundColor: children === n ? COLORS.navy : COLORS.bgCard }]}
               accessibilityLabel={n} onPress={() => setChildren(n)}
             >
-              <Text style={{ color: children === n ? '#fff' : COLORS.textPrimary, fontWeight: '700' }} maxFontSizeMultiplier={1.4}>{n}</Text>
+              <Text style={{ color: children === n ? COLORS.white : COLORS.textPrimary, fontWeight: '700' }} maxFontSizeMultiplier={1.4}>{n}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -281,7 +281,7 @@ function ChildSupportScreen() {
 const s = StyleSheet.create({
   container:    { paddingBottom: 24 },
   header:       { padding: 28, paddingTop: 52 },
-  headerTitle:  { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 8 },
+  headerTitle:  { fontSize: 22, fontWeight: '800', color: COLORS.white, marginBottom: 8 },
   headerSub:    { fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 19 },
   form:         { padding: 16 },
   sectionLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 8, marginTop: 8 },
@@ -293,7 +293,7 @@ const s = StyleSheet.create({
   switchRow:    { flexDirection: 'row', alignItems: 'center', marginTop: 16, paddingVertical: 12, borderBottomWidth: 1 },
   switchLabel:  { fontSize: 15, fontWeight: '600' },
   calcBtn:      { marginTop: 24, paddingVertical: 15, borderRadius: 12, alignItems: 'center' },
-  calcBtnText:  { color: '#fff', fontSize: 16, fontWeight: '800' },
+  calcBtnText:  { color: COLORS.white, fontSize: 16, fontWeight: '800' },
   result:       { margin: 16, borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
   resultTitle:  { fontSize: 16, fontWeight: '700', padding: 16, paddingBottom: 12 },
   resultRow:    { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },

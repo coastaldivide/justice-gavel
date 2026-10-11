@@ -7,6 +7,7 @@
  * Usage: <PlaceholderIllustration type="gavel" size={160} />
  */
 import React from 'react';
+import { COLORS } from '../constants/theme';
 import { View, StyleSheet, Text } from 'react-native';
 
 type IllustrationType = 'gavel' | 'shield' | 'lawyer' | 'phone' | 'check' | 'lock';
@@ -35,7 +36,7 @@ const LABELS: Record<IllustrationType, string> = {
   lock:   'Private & Secure',
 };
 
-export const PlaceholderIllustration = React.memo(function PlaceholderIllustration({ type, size = 120, color = '#042C53' }: Props): React.JSX.Element {
+export const PlaceholderIllustration = React.memo(function PlaceholderIllustration({ type, size = 120, color = COLORS.navy }: Props): React.JSX.Element {
   return (
     <View style={[styles.container, { width: size, height: size, borderRadius: size / 2, borderColor: color }]}>
       <Text maxFontSizeMultiplier={1} style={[styles.icon, { fontSize: size * 0.38 }]}>

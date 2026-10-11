@@ -116,11 +116,7 @@ if (loading) return;
             </TouchableOpacity>
           </View>
 
-          <Text maxFontSizeMultiplier={1.4} style={[styles.label, { marginTop: 16 }]}>
-            Display name <Text maxFontSizeMultiplier={1.4} style={styles.optional}>(optional)</Text>
-          </Text>
-          <View style={styles.inputWrap}>
-                  {/* ── Account type selector ────────────────────────────────── */}
+{/* ── Account type selector ────────────────────────────────── */}
       <View style={{ flexDirection: 'row', marginBottom: 12, gap: 8 }}>
         <TouchableOpacity
           accessibilityRole="button"
@@ -128,11 +124,11 @@ if (loading) return;
           onPress={() => setIsAttorney(false)}
           style={{
             flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center',
-            backgroundColor: !isAttorney ? '#0A1628' : 'transparent',
-            borderWidth: 1, borderColor: !isAttorney ? '#0A1628' : '#D1D5DB',
+            backgroundColor: !isAttorney ? colors.navy : 'transparent',
+            borderWidth: 1, borderColor: !isAttorney ? colors.navy : colors.border,
           }}
         >
-          <Text style={{ color: !isAttorney ? '#fff' : '#6B7280', fontWeight: '700', fontSize: 13 }}>
+          <Text style={{ color: !isAttorney ? colors.white : COLORS.textSecond, fontWeight: '700', fontSize: 13 }}>
             ⚖️  I need legal help
           </Text>
         </TouchableOpacity>
@@ -142,11 +138,11 @@ if (loading) return;
           onPress={() => setIsAttorney(true)}
           style={{
             flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center',
-            backgroundColor: isAttorney ? '#0A1628' : 'transparent',
-            borderWidth: 1, borderColor: isAttorney ? '#0A1628' : '#D1D5DB',
+            backgroundColor: isAttorney ? colors.navy : 'transparent',
+            borderWidth: 1, borderColor: isAttorney ? colors.navy : colors.border,
           }}
         >
-          <Text style={{ color: isAttorney ? '#fff' : '#6B7280', fontWeight: '700', fontSize: 13 }}>
+          <Text style={{ color: isAttorney ? colors.white : COLORS.textSecond, fontWeight: '700', fontSize: 13 }}>
             👔  I am an attorney
           </Text>
         </TouchableOpacity>
@@ -160,7 +156,7 @@ if (loading) return;
             value={barNumber}
             onChangeText={setBarNumber}
             autoCapitalize="characters"
-            style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8,
+            style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
                      padding: 12, fontSize: 15 }}
           />
           <TextInput
@@ -170,7 +166,7 @@ if (loading) return;
             onChangeText={t => setBarState(t.toUpperCase().slice(0,2))}
             maxLength={2}
             autoCapitalize="characters"
-            style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8,
+            style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
                      padding: 12, fontSize: 15 }}
           />
           <TextInput
@@ -178,12 +174,17 @@ if (loading) return;
             placeholder="Firm name (optional)"
             value={firmName}
             onChangeText={setFirmName}
-            style={{ borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8,
+            style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
                      padding: 12, fontSize: 15 }}
           />
         </View>
       )}
-<TextInput
+
+          <Text maxFontSizeMultiplier={1.4} style={[styles.label, { marginTop: 16 }]}>
+            Display name <Text maxFontSizeMultiplier={1.4} style={styles.optional}>(optional)</Text>
+          </Text>
+          <View style={styles.inputWrap}>
+                  <TextInput
               ref={nameRef}
               style={styles.input}
               placeholder="How should we address you?"
@@ -236,7 +237,7 @@ if (loading) return;
         <Text maxFontSizeMultiplier={1.4} style={styles.privacy}>
           By creating an account you agree to our{' '}
             <Text maxFontSizeMultiplier={1.4}
-              style={{ color: COLORS.navy, textDecorationLine: 'underline' }}
+              style={{ color: colors.textBrand, textDecorationLine: 'underline' }}
               onPress={() => Linking.openURL('https://justicegavel.app/terms').catch(() => showToast('Action failed. Please try again.', 'error'))}
             >Terms of Service</Text>.{'\n'}We never sell your data.
         </Text>
@@ -246,7 +247,7 @@ if (loading) return;
 }
 
 const makeStyles = (colors: any) => StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.bg },
+  screen: { flex: 1, backgroundColor: colors.bg },
   scroll: { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 40 },
   logoSection: { alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 24 },
   logoWrap: {
@@ -255,7 +256,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 10,
   },
   wordmark: { fontSize: 28, ...FONTS.black, color: colors.textPrimary, letterSpacing: 0.5, marginBottom: 4 },
-  tagline: { fontSize: 12, ...FONTS.medium, color: COLORS.steel },
+  tagline: { fontSize: 12, ...FONTS.medium, color: colors.info },
   form: {
     backgroundColor: COLORS.bgCard, borderRadius: RADIUS.xxl,
     padding: 24, borderWidth: 1, borderColor: COLORS.border, ...SHADOW.lg,
@@ -270,12 +271,12 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   input: { flex: 1, paddingVertical: 16, fontSize: 15, lineHeight: 22, color: COLORS.bgCard, ...FONTS.medium },
   showBtn: { paddingLeft: 10, paddingVertical: 6 },
-  showBtnText: { fontSize: 12, lineHeight: 20, color: COLORS.steel, ...FONTS.semi },
+  showBtnText: { fontSize: 12, lineHeight: 20, color: COLORS.info, ...FONTS.semi },
   errorBox: {
     backgroundColor: 'rgba(183,28,28,0.15)', borderRadius: RADIUS.sm,
     borderWidth: 1, borderColor: 'rgba(183,28,28,0.3)', padding: 12, marginTop: 12,
   },
-  errorText: { color: '#EF5350', fontSize: 12, lineHeight: 20, ...FONTS.medium },
+  errorText: { color: COLORS.textPrimary, fontSize: 12, lineHeight: 20, ...FONTS.medium },
   primaryBtn: {
     backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 16,
     alignItems: 'center', marginTop: 24,
@@ -285,8 +286,8 @@ const makeStyles = (colors: any) => StyleSheet.create({
   primaryBtnText: { color: COLORS.bgCard, fontSize: 16, lineHeight: 24, ...FONTS.black, letterSpacing: 0.5 },
   loginLink: { alignItems: 'center', marginTop: 16 },
   loginText: { fontSize: 14, lineHeight: 21, color: COLORS.textMuted },
-  loginHighlight: { color: COLORS.steel, ...FONTS.bold },
-  privacy: { textAlign: 'center', color: COLORS.textMuted, fontSize: 11, marginTop: 24, lineHeight: 18 },
+  loginHighlight: { color: COLORS.info, ...FONTS.bold },
+  privacy: { textAlign: 'center', color: colors.textMuted, fontSize: 11, marginTop: 24, lineHeight: 18 },
 });
 
 // Module-level fallback for helper components

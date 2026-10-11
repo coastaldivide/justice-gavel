@@ -163,10 +163,10 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
       <AppIcon name="document-text-outline" size={20} color={COLORS.navy} />
-      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20, ...FONTS.black, color: COLORS.navy, textAlign: 'center', marginBottom: 8 }}>
+      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 20, ...FONTS.black, color: colors.textBrand, textAlign: 'center', marginBottom: 8 }}>
         Check-In Link Required
       </Text>
-      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: COLORS.textSecond, textAlign: 'center', lineHeight: 20, marginBottom: 24, paddingHorizontal: 24 }}>
+      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 24, paddingHorizontal: 24 }}>
         Your bail bondsman needs to enroll you in the check-in system and send you a personalized link.
       </Text>
       <View style={{ backgroundColor: COLORS.legalBg, borderRadius: RADIUS.lg, padding: 16, alignSelf: 'stretch', marginBottom: 24, borderWidth: 1, borderColor: colors.legal }}>
@@ -186,7 +186,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         onPress={() => navigation.navigate('BailTab')}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
       >
-        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, ...FONTS.heavy, fontSize: 14 }}>{t('checkin_find_bondsman')}</Text>
+        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textOnNavy, ...FONTS.heavy, fontSize: 14 }}>{t('checkin_find_bondsman')}</Text>
       </TouchableOpacity>
     </ScrollView>
     </KeyboardAvoidingView>
@@ -203,7 +203,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
   // ── Error ──────────────────────────────────────────────────────────────────
   if (phase === 'error') return (
     <View style={styles.center}>
-      <AppIcon name="warning-outline" size={20} color="#E65100" />
+      <AppIcon name="warning-outline" size={20} color={colors.warn} />
       <Text maxFontSizeMultiplier={1.4} style={styles.errorTitle}>Check-in unavailable</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.errorBody}>{errorMsg}</Text>
       <TouchableOpacity accessibilityRole="button"
@@ -449,7 +449,7 @@ function CheckInScreen({ route, navigation }: ScreenProps): React.JSX.Element | 
         borderLeftWidth: 4, borderLeftColor: colors.warn,
         padding: 12, marginTop: 16, marginBottom: 8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
-          color: '#555', fontStyle: 'italic' }}>
+          color: colors.textSecond, fontStyle: 'italic' }}>
           ⚖️ Check-in requirements are set by your specific court, probation officer, or bail conditions. This app cannot replace those official requirements. Always follow your official conditions of release.
         </Text>
       </View>
@@ -462,11 +462,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   scroll:  { padding: 16 },
   center:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
 
-  loadingText: { marginTop: 16, fontSize: 14, lineHeight: 21, color: COLORS.textMuted },
+  loadingText: { marginTop: 16, fontSize: 14, lineHeight: 21, color: colors.textMuted },
 
   errorIcon:  { fontSize: 48, marginBottom: 12 },
-  errorTitle: { fontSize: 18, ...FONTS.heavy, color: COLORS.navy, marginBottom: 8, textAlign: 'center' },
-  errorBody:  { fontSize: 14, color: COLORS.textSecond, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
+  errorTitle: { fontSize: 18, ...FONTS.heavy, color: colors.textBrand, marginBottom: 8, textAlign: 'center' },
+  errorBody:  { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
   retryBtn:   { backgroundColor: COLORS.navy, borderRadius: RADIUS.md, paddingVertical: 13, paddingHorizontal: 28 },
   retryBtnText: { color: COLORS.bgCard, ...FONTS.heavy, fontSize: 14,
     lineHeight: 21, },
@@ -477,7 +477,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   headerTitle: { fontSize: 22, ...FONTS.black, color: COLORS.bgCard, marginBottom: 2 },
   headerName:  { fontSize: 15, lineHeight: 22, color: COLORS.steel, marginBottom: 4, ...FONTS.semi },
-  headerSub:   { fontSize: 12, color: COLORS.textMuted },
+  headerSub:   { fontSize: 12, color: colors.textOnNavy },
 
   statsRow:  { flexDirection: 'row', backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, marginBottom: 14, ...SHADOW.sm, overflow: 'hidden' },
   statBlock: { flex: 1, alignItems: 'center', paddingVertical: 16 },
@@ -485,20 +485,20 @@ const makeStyles = (colors: any) => StyleSheet.create({
   statLabel: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
 
   courtWarning: {
-    backgroundColor: COLORS.steelMid, borderRadius: RADIUS.md, padding: 12, marginBottom: 14,
-    borderWidth: 1, borderColor: COLORS.steelMid,
+    backgroundColor: colors.warnBg, borderRadius: RADIUS.md, padding: 12, marginBottom: 14,
+    borderWidth: 1, borderColor: colors.warnDark,
   },
-  courtWarningText: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: COLORS.warn, textAlign: 'center' },
+  courtWarningText: { fontSize: 12, lineHeight: 20, ...FONTS.heavy, color: colors.warnDark, textAlign: 'center' },
 
   section:       { marginBottom: 14 },
-  sectionLabel:  { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: COLORS.navy, marginBottom: 6 },
-  optional:      { fontSize: 12, color: COLORS.textMuted, fontFamily: 'Inter_400Regular', fontWeight: '400' },
+  sectionLabel:  { fontSize: 14, lineHeight: 21, ...FONTS.heavy, color: colors.textBrand, marginBottom: 6 },
+  optional:      { fontSize: 12, color: colors.textMuted, fontFamily: 'Inter_400Regular', fontWeight: '400' },
   input: {
     backgroundColor: COLORS.bgCard, borderWidth: 1.5, borderColor: COLORS.border,
     borderRadius: RADIUS.md, paddingHorizontal: 16, paddingVertical: 12,
     fontSize: 14, lineHeight: 21, color: COLORS.textPrimary,
   },
-  gpsStatus: { fontSize: 11, color: COLORS.legal, marginTop: 4, ...FONTS.semi },
+  gpsStatus: { fontSize: 11, color: colors.legal, marginTop: 4, ...FONTS.semi },
 
   checkInBtn: {
     backgroundColor: COLORS.navy, borderRadius: RADIUS.xl,
@@ -508,13 +508,13 @@ const makeStyles = (colors: any) => StyleSheet.create({
   checkInBtnText: { fontSize: 22, ...FONTS.black, color: COLORS.bgCard },
   checkInBtnSub:  { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
 
-  legalNote: { fontSize: 11, color: COLORS.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 16 },
+  legalNote: { fontSize: 11, color: colors.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 16 },
 
   // Done / Already done
   doneHero:  { alignItems: 'center', paddingVertical: 28 },
   doneCheck: { fontSize: 72, marginBottom: 8 },
-  doneTitle: { fontSize: 22, ...FONTS.black, color: COLORS.legal, marginBottom: 4 },
-  doneSub:   { fontSize: 14, lineHeight: 21, color: COLORS.textMuted },
+  doneTitle: { fontSize: 22, ...FONTS.black, color: colors.legal, marginBottom: 4 },
+  doneSub:   { fontSize: 14, lineHeight: 21, color: colors.textMuted },
 
   enrollmentCard: {
     backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 16,
@@ -528,7 +528,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
     marginBottom: 14, borderWidth: 1, borderColor: colors.legal, alignSelf: 'stretch',
   },
   locationConfirmText: { fontSize: 12, color: COLORS.legal, textAlign: 'center' },
-  nextDue: { fontSize: 12, lineHeight: 20, color: COLORS.textMuted, textAlign: 'center', marginBottom: 20 },
+  nextDue: { fontSize: 12, lineHeight: 20, color: colors.textMuted, textAlign: 'center', marginBottom: 20 },
 
   helpBlock: {
     backgroundColor: COLORS.bg, borderRadius: RADIUS.lg, padding: 16,

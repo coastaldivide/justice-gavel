@@ -114,7 +114,7 @@ export default function BarPrepExplanationScreen({
         onBack={() => navigation.goBack()}
         rightAction={
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Share explanation" onPress={shareExplanation}>
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>↑ Share</Text>
+            <Text style={{ color: colors.white, fontWeight: '700', fontSize: 14 }}>↑ Share</Text>{/* design-audit-ignore: rendered inside the navy GradientHeader */}
           </TouchableOpacity>
         }
       />
@@ -169,7 +169,7 @@ export default function BarPrepExplanationScreen({
           <SectionCard
             title="🤖 AI Deep-Dive"
             colors={colors}
-            accent="#8b5cf6"
+            accent={colors.blue}
           >
             <Text style={styles.explanationText}>{data.ai_explanation}</Text>
           </SectionCard>
@@ -222,7 +222,7 @@ function SectionCard({
         {/* Bar prep disclaimer */}
         <Text
           maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 10, color: '#888', textAlign: 'center',
+          style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center',
             paddingHorizontal: 16, paddingVertical: 8, lineHeight: 14 }}
         >
           For supplemental study only. Not endorsed by any state bar or the NCBE.
@@ -242,7 +242,7 @@ const cardStyles = StyleSheet.create({
 
 function makeStyles(colors: any) {
   return StyleSheet.create({
-    container:     { flex: 1, backgroundColor: colors.background },
+    container:     { flex: 1, backgroundColor: colors.bg },
     center:        { justifyContent: 'center', alignItems: 'center' },
     scroll:        { flex: 1 },
     scrollContent: { paddingBottom: 40 },
@@ -265,7 +265,7 @@ function makeStyles(colors: any) {
       backgroundColor: COLORS.legal, paddingHorizontal: 10, paddingVertical: 4,
       borderRadius: 8, flexShrink: 0,
     },
-    correctBadgeText: { fontSize: 13, ...FONTS.bold, color: '#fff' },
+    correctBadgeText: { fontSize: 13, ...FONTS.bold, color: colors.white },
     correctAnswerText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
     ruleText:      { fontSize: 14, ...FONTS.semiBold, color: colors.text },
     citationText:  { fontSize: 13, color: colors.textMuted, marginTop: 8, fontStyle: 'italic' },
@@ -280,8 +280,8 @@ function makeStyles(colors: any) {
       alignItems: 'center', ...SHADOW.sm,
     },
     flagBtn:       { backgroundColor: colors.border },
-    flagBtnText:   { fontSize: 14, color: colors.textMuted, ...FONTS.medium },
+    flagBtnText:   { fontSize: 14, color: colors.textSecond, ...FONTS.medium },
     doneBtn:       { backgroundColor: colors.primary },
-    doneBtnText:   { fontSize: 14, color: '#fff', ...FONTS.bold },
+    doneBtnText:   { fontSize: 14, color: colors.textOnAccent, ...FONTS.bold },
   });
 }

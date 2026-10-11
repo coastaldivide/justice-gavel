@@ -130,7 +130,7 @@ export function useAuthGate(navigation: any, quickMode = false) {
               
           accessibilityRole="button">
                 {signupLoading
-                  ? <ActivityIndicator color='#FFFFFF' size="small" />
+                  ? <ActivityIndicator color={COLORS.white} size="small" />
                   : <Text style={styles.primaryBtnText}>Create Account & Pay</Text>
                 }
               </TouchableOpacity>
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     borderTopLeftRadius: RADIUS.xxl, borderTopRightRadius: RADIUS.xxl,
     padding: 28, paddingBottom: 44,
     ...SHADOW.lg,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15, alignItems: 'center', marginBottom: 10,
     ...SHADOW.sm,
   },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 16, lineHeight: 24, ...FONTS.black },
+  primaryBtnText: { color: COLORS.white, fontSize: 16, lineHeight: 24, ...FONTS.black },
   secondaryBtn: {
     borderWidth: 1.5, borderColor: COLORS.navy, borderRadius: RADIUS.lg,
     paddingVertical: 13, alignItems: 'center', marginBottom: 10,

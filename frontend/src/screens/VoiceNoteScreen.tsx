@@ -306,7 +306,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           style={styles.typeLink}
           accessibilityLabel={"\u270f\ufe0f  Type instead"} onPress={() => setPhase('text_input')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: colors.info }]}>
             ✏️  Type instead
           </Text>
         </TouchableOpacity>
@@ -407,7 +407,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           style={styles.typeLink}
           accessibilityLabel={"\u2190 Use voice instead"} onPress={() => setPhase('idle')}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>← Use voice instead</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: colors.info }]}>← Use voice instead</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -493,7 +493,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           } catch { /* ignore */ }
           }}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.shareNoteBtnText, { color: COLORS.navy }]}>↑  Share Note</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.shareNoteBtnText, { color: colors.textBrand }]}>↑  Share Note</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -502,7 +502,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
           style={styles.typeLink}
           accessibilityLabel={"\ud83c\udf99  Record another note"} onPress={() => { setPhase('idle'); setNote(null); setEditText(''); }}
         >
-          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: COLORS.steel }]}>🎙  Record another note</Text>
+          <Text maxFontSizeMultiplier={1.4} style={[styles.typeLinkText, { color: colors.info }]}>🎙  Record another note</Text>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />

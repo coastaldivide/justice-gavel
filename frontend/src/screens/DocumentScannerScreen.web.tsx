@@ -100,8 +100,8 @@ function DocumentScannerScreen(): React.JSX.Element {
       )}
 
       {error ? (
-        <View style={{ backgroundColor: '#FFEBEE', borderRadius: 12, padding: 16 }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: '#C62828', fontSize: 14 }}>{error}</Text>
+        <View style={{ backgroundColor: colors.emergencyBg, borderRadius: 12, padding: 16 }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ color: colors.emergency, fontSize: 14 }}>{error}</Text>
         </View>
       ) : null}
 

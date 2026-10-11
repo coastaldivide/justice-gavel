@@ -8,6 +8,7 @@ import React, {
   createContext, useContext, useState, useCallback,
   useRef, useEffect,
 } from 'react';
+import { TOAST_TINTS, COLORS as THEME_COLORS } from '../constants/theme';
 import {
   View, Text, Animated, StyleSheet, Platform,
   AccessibilityInfo,
@@ -34,12 +35,7 @@ export function useToast() {
   return useContext(ToastContext);
 }
 
-const COLORS: Record<ToastVariant, { bg: string; text: string; border: string }> = {
-  success: { bg: '#E1F5EE', text: '#0F6E56', border: '#1D9E75' },
-  error:   { bg: '#FCEBEB', text: '#A32D2D', border: '#E24B4A' },
-  info:    { bg: '#E6F1FB', text: '#185FA5', border: '#378ADD' },
-  warning: { bg: '#FAEEDA', text: '#854F0B', border: '#BA7517' },
-};
+const VARIANT_COLORS: Record<ToastVariant, { bg: string; text: string; border: string }> = TOAST_TINTS;
 
 const ICONS: Record<ToastVariant, string> = {
   success: '✓',
@@ -50,7 +46,7 @@ const ICONS: Record<ToastVariant, string> = {
 
 function ToastItem({ toast, onDone }: { toast: ToastMessage; onDone: (id: number) => void }) {
   const anim   = useRef(new Animated.Value(0)).current;
-  const colors = COLORS[toast.variant];
+  const variantColors = VARIANT_COLORS[toast.variant];
 
   useEffect(() => {
     // Announce to screen reader
@@ -67,7 +63,7 @@ function ToastItem({ toast, onDone }: { toast: ToastMessage; onDone: (id: number
     <Animated.View
       style={[
         s.toast,
-        { backgroundColor: colors.bg, borderLeftColor: colors.border },
+        { backgroundColor: variantColors.bg, borderLeftColor: variantColors.border },
         {
           opacity:   anim,
           transform: [{ translateY: anim.interpolate({ inputRange: [0,1], outputRange: [-20,0] }) }],
@@ -78,12 +74,12 @@ function ToastItem({ toast, onDone }: { toast: ToastMessage; onDone: (id: number
       accessibilityLiveRegion="assertive"
       accessibilityLabel={toast.message}
     >
-      <View style={[s.icon, { backgroundColor: colors.border }]}>
+      <View style={[s.icon, { backgroundColor: variantColors.text }]}>
         <Text style={s.iconText}>{ICONS[toast.variant]}</Text>
       </View>
       <Text
         maxFontSizeMultiplier={1.2}
-        style={[s.message, { color: colors.text }]}
+        style={[s.message, { color: variantColors.text }]}
         numberOfLines={3}
       >
         {toast.message}
@@ -140,7 +136,7 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     paddingRight:   16,
     gap:            10,
-    shadowColor:    '#000',
+    shadowColor:    THEME_COLORS.black,
     shadowOpacity:  0.08,
     shadowRadius:   8,
     shadowOffset:   { width: 0, height: 2 },
@@ -155,6 +151,6 @@ const s = StyleSheet.create({
     marginLeft:     10,
     flexShrink:     0,
   },
-  iconText:  { color: '#fff', fontSize: 14, fontWeight: '700' },
+  iconText:  { color: THEME_COLORS.white, fontSize: 14, fontWeight: '700' },
   message:   { flex: 1, fontSize: 14, fontWeight: '500', lineHeight: 20 },
 });

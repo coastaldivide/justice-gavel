@@ -204,7 +204,7 @@ confirm('Stop Monitoring?',"We'll stop alerts for this person. You can re-add an
                 </View>
                 <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate" style={styles.removeBtn} onPress={() => removeWatch(w.id)}
+          accessibilityHint="Double-tap to activate" style={styles.removeBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} onPress={() => removeWatch(w.id)}
                 >
                   <Text maxFontSizeMultiplier={1.4} style={styles.removeBtnText}>✕</Text>
                 </TouchableOpacity>
@@ -309,23 +309,23 @@ const makeStyles = (colors: any) => StyleSheet.create({
   // Upsell
   upsellCard:        { flex: 1, padding: 28, alignItems: 'center', justifyContent: 'center' },
   upsellIcon:        { fontSize: 48, marginBottom: 16 },
-  upsellTitle:       { fontSize: 22, ...FONTS.heavy, color: COLORS.navy, marginBottom: 10, textAlign: 'center' },
-  upsellBody:        { fontSize: 15, color: COLORS.textSecond, textAlign: 'center', lineHeight: 22, marginBottom: 20 },
+  upsellTitle:       { fontSize: 22, ...FONTS.heavy, color: colors.textBrand, marginBottom: 10, textAlign: 'center' },
+  upsellBody:        { fontSize: 15, color: colors.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: 20 },
   upsellFeatures:    { width: '100%', gap: 8, marginBottom: 24 },
   upsellFeatureRow:  { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  upsellCheck:       { color: COLORS.legal, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900', width: 18 },
-  upsellFeatureText: { fontSize: 14, lineHeight: 21, color: COLORS.textPrimary, flex: 1 },
+  upsellCheck:       { color: colors.legal, fontSize: 16, lineHeight: 24, fontFamily: 'Inter_900Black', fontWeight: '900', width: 18 },
+  upsellFeatureText: { fontSize: 14, lineHeight: 21, color: colors.textBrand, flex: 1 },
   upsellBtn:         { backgroundColor: COLORS.navy, borderRadius: RADIUS.lg, paddingVertical: 15, paddingHorizontal: 24, width: '100%', alignItems: 'center', ...SHADOW.md },
   upsellBtnText:     { color: COLORS.bgCard, fontSize: 15, lineHeight: 22, ...FONTS.heavy },
   upsellSkip:        { marginTop: 14 },
-  upsellSkipText:    { color: COLORS.textMuted, fontSize: 12 },
+  upsellSkipText:    { color: colors.textMuted, fontSize: 12 },
 
   // Status
   statusBar:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.legal, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 20 },
-  statusDot:    { color: COLORS.legal, fontSize: 11 },
-  statusText:   { fontSize: 12, ...FONTS.heavy, color: COLORS.legal },
-  statusCount:  { fontSize: 12, color: COLORS.textMuted, ...FONTS.semi },
+  statusBadge:  { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.legalBg, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 20 },
+  statusDot:    { color: colors.legal, fontSize: 11 },
+  statusText:   { fontSize: 12, ...FONTS.heavy, color: colors.legal },
+  statusCount:  { fontSize: 12, color: colors.textMuted, ...FONTS.semi },
 
   // Empty
   emptyCard:  { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.xl, padding: 32, alignItems: 'center', marginBottom: 12, ...SHADOW.sm },
@@ -337,10 +337,10 @@ const makeStyles = (colors: any) => StyleSheet.create({
   watchCard:    { backgroundColor: COLORS.bgCard, borderRadius: RADIUS.lg, padding: 16, marginBottom: 10, flexDirection: 'row', alignItems: 'center', ...SHADOW.sm, borderLeftWidth: 3, borderLeftColor: COLORS.navy },
   watchName:    { fontSize: 15, lineHeight: 22, ...FONTS.heavy, color: COLORS.textPrimary, marginBottom: 2 },
   watchLocation:{ fontSize: 12, color: COLORS.textMuted },
-  watchStatus:  { fontSize: 11, color: COLORS.steel, marginTop: 2 },
-  matchBadge:   { backgroundColor: COLORS.steelMid, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 10, marginTop: 6, borderWidth: 1, borderColor: COLORS.steelMid },
-  matchText:    { fontSize: 12, color: COLORS.steelMid, ...FONTS.bold },
-  removeBtn:    { width: 30, height: 30, borderRadius: 16, backgroundColor: COLORS.bg, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+  watchStatus:  { fontSize: 11, color: COLORS.info, marginTop: 2 },
+  matchBadge:   { backgroundColor: COLORS.infoBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 10, marginTop: 6, borderWidth: 1, borderColor: COLORS.steelMid },
+  matchText:    { fontSize: 12, color: COLORS.info, ...FONTS.bold },
+  removeBtn:    { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.bg, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   removeBtnText:{ fontSize: 12, lineHeight: 20, color: COLORS.textMuted, fontFamily: 'Inter_700Bold', fontWeight: '700' },
 
   // Add form

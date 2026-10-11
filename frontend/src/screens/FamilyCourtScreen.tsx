@@ -149,7 +149,7 @@ function FamilyCourtScreen(): React.JSX.Element {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.navy }]}>
         <AppIcon name="scale-outline" size={20} color={COLORS.navy} />
-        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.bgCard }]}>Family Court</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.headerTitle, { color: colors.textOnNavy }]}>Family Court</Text>
         <Text maxFontSizeMultiplier={1.4} style={[styles.headerSub, { color: colors.steel }]}>Custody, support & orders</Text>
       </View>
 
@@ -186,7 +186,7 @@ function FamilyCourtScreen(): React.JSX.Element {
 
       {/* Disclaimer */}
       <View style={[styles.disclaimer, { borderTopColor: colors.border }]}>
-        <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerText, { color: colors.textFaint }]}>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.disclaimerText, { color: colors.textMuted }]}>
           This information is for general education only and is not legal advice.
           Laws vary by state. Consult a licensed attorney for advice about your situation.
         </Text>
