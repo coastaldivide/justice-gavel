@@ -122,22 +122,13 @@ describe('Bondsman lead model', () => {
     expect(lead.location).toBeTruthy();
   });
 
-  test('lead fee tiers are correct per revenue model', () => {
-    // $15 per lead for bail < $10k, up to $1000 for > $500k
-    const getLeadFee = (bailAmount) => {
-      if (bailAmount <  10_000) return 15;
-      if (bailAmount <  50_000) return 50;
-      if (bailAmount < 100_000) return 150;
-      if (bailAmount < 250_000) return 350;
-      if (bailAmount < 500_000) return 600;
-      return 1000;
-    };
-    expect(getLeadFee(5000)).toBe(15);
-    expect(getLeadFee(25000)).toBe(50);
-    expect(getLeadFee(75000)).toBe(150);
-    expect(getLeadFee(200000)).toBe(350);
-    expect(getLeadFee(400000)).toBe(600);
-    expect(getLeadFee(750000)).toBe(1000);
+  test('lead fee is flat — never scaled to bail (runner-capper compliance)', async () => {
+    const { BONDSMAN_LEAD_FEE_CENTS, bondsmanLeadFeeCents } =
+      await import('../routes/billing/leadFee.js');
+    expect(BONDSMAN_LEAD_FEE_CENTS).toBe(10000); // $100 flat
+    for (const bail of [5000, 25000, 75000, 200000, 400000, 750000]) {
+      expect(bondsmanLeadFeeCents(bail)).toBe(BONDSMAN_LEAD_FEE_CENTS);
+    }
   });
 
   test('bondsman badge subscription is $49/mo', () => {

@@ -126,24 +126,20 @@ describe('Child support — crash-proof + no drift', () => {
   });
 });
 
-// ── Lead fee — never crashes ──────────────────────────────────────────────
-describe('Lead fee — all bail amounts', () => {
-  const calcLeadFee = (bail) => {
-    if (bail <= 0) return 0;
-    if (bail < 1000) return 1500; if (bail < 5000) return 3500;
-    if (bail < 25000) return 7500; if (bail < 100000) return 15000;
-    if (bail < 250000) return 25000; if (bail < 500000) return 40000;
-    if (bail < 1000000) return 60000; return 100000;
-  };
+// ── Lead fee — flat, never crashes ────────────────────────────────────────
+import { bondsmanLeadFeeCents, BONDSMAN_LEAD_FEE_CENTS } from '../routes/billing/leadFee.js';
 
-  test('$0 bail → $0 fee', () => { expect(calcLeadFee(0)).toBe(0); });
-  test('negative bail → $0 fee', () => { expect(calcLeadFee(-5000)).toBe(0); });
-  test('$500 → $1,500 fee', () => { expect(calcLeadFee(500)).toBe(1500); });
-  test('$1M+ → $1,000 fee cap', () => { expect(calcLeadFee(1500000)).toBe(100000); });
-  test('never returns NaN', () => { expect(isNaN(calcLeadFee(999))).toBe(false); });
-  test('never returns negative', () => {
-    for (const bail of [-1, 0, 100, 5000, 100000, 1000000]) {
-      expect(calcLeadFee(bail)).toBeGreaterThanOrEqual(0);
+describe('Lead fee — flat for all bail amounts', () => {
+  test('fee never scales with bail (runner-capper compliance)', () => {
+    for (const bail of [0, -5000, 500, 1000, 100000, 1500000]) {
+      expect(bondsmanLeadFeeCents(bail)).toBe(BONDSMAN_LEAD_FEE_CENTS);
+    }
+  });
+  test('never returns NaN or negative, even on adversarial input', () => {
+    for (const bail of [-1, 0, NaN, Infinity, -Infinity, null, undefined, 'text', 1000000]) {
+      const fee = bondsmanLeadFeeCents(bail);
+      expect(isNaN(fee)).toBe(false);
+      expect(fee).toBeGreaterThanOrEqual(0);
     }
   });
 });

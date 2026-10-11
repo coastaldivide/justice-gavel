@@ -32,17 +32,10 @@ const calcCS = (i1, i2, ch, cu = 70) => {
   const p2 = Math.round(base) - p1;
   return { base: Math.round(base), p1, p2, ok: p1 + p2 === Math.round(base) };
 };
-const calcLeadFee = (bail) => {
-  if (!bail || bail < 100 || !isFinite(bail) || isNaN(bail)) return 0;  // $100 minimum
-  if (bail < 1000)    return 1500;
-  if (bail < 5000)    return 3500;
-  if (bail < 25000)   return 7500;
-  if (bail < 100000)  return 15000;
-  if (bail < 250000)  return 25000;
-  if (bail < 500000)  return 40000;
-  if (bail < 1000000) return 60000;
-  return 100000;
-};
+// Lead fee is FLAT — never scaled to bail (runner-capper compliance).
+// Single source of truth: routes/billing/leadFee.js.
+import { bondsmanLeadFeeCents, BONDSMAN_LEAD_FEE_CENTS } from '../routes/billing/leadFee.js';
+const calcLeadFee = (bail) => bondsmanLeadFeeCents(bail);
 const EXP = {
   AL:{w:5,ok:['misdemeanor'],no:['violent','sexual','dui']},
   AK:{w:10,ok:['misdemeanor'],no:['violent','sexual','dui','felony']},
@@ -195,64 +188,20 @@ describe('K-01 Auth Boundary — JWT manipulation & token attacks', () => {
 
 
 // ── K-02: FINANCIAL EXACT BOUNDARIES ─────────────────────────────────────────
-describe('K-02 Financial Exact Boundaries — every tier edge of calcLeadFee', () => {
-  const TIERS_BAIL = [
-    { bail: 0,         expected: 0,      desc: '$0 bail — invalid' },
-    { bail: -1,        expected: 0,      desc: 'negative bail' },
-    { bail: 0.01,      expected: 0,      desc: '$0.01 bail — below $100 minimum' },
-    { bail: 99,        expected: 0,      desc: '$99 bail — still below $100 minimum' },
-    { bail: 100,       expected: 1500,   desc: '$100 bail — minimum viable lead' },
-    { bail: 999,       expected: 1500,   desc: '$999 — just below $1k tier' },
-    { bail: 999.99,    expected: 1500,   desc: '$999.99 — still below $1k' },
-    { bail: 1000,      expected: 3500,   desc: '$1000 exactly — crosses first tier' },
-    { bail: 1001,      expected: 3500,   desc: '$1001 — just above $1k' },
-    { bail: 4999,      expected: 3500,   desc: '$4999 — just below $5k' },
-    { bail: 5000,      expected: 7500,   desc: '$5000 exactly' },
-    { bail: 5001,      expected: 7500,   desc: '$5001 — just above $5k' },
-    { bail: 24999,     expected: 7500,   desc: '$24,999' },
-    { bail: 25000,     expected: 15000,  desc: '$25,000 exactly' },
-    { bail: 99999,     expected: 15000,  desc: '$99,999' },
-    { bail: 100000,    expected: 25000,  desc: '$100,000 exactly' },
-    { bail: 249999,    expected: 25000,  desc: '$249,999' },
-    { bail: 250000,    expected: 40000,  desc: '$250,000 exactly — crosses 5th tier' },
-    { bail: 499999,    expected: 40000,  desc: '$499,999' },
-    { bail: 500000,    expected: 60000,  desc: '$500,000 exactly' },
-    { bail: 999999,    expected: 60000,  desc: '$999,999' },
-    { bail: 1000000,   expected: 100000, desc: '$1,000,000 exactly — hits cap' },
-    { bail: 5000000,   expected: 100000, desc: '$5M — well above cap' },
-    { bail: Infinity,  expected: 0,      desc: 'Infinity bail — invalid' },
-    { bail: NaN,       expected: 0,      desc: 'NaN bail — invalid' },
-  ];
+describe('K-02 Financial Exact Boundaries — lead fee is flat at every bail amount', () => {
+  const BAILS = [0.01, 100, 999, 999.99, 1000, 1001, 4999, 5000, 5001, 24999,
+                 25000, 99999, 100000, 249999, 250000, 499999, 500000, 999999,
+                 1000000, 5000000];
 
-  test.each(TIERS_BAIL)('$desc: fee=$expected', ({ bail, expected }) => {
-    expect(calcLeadFee(bail)).toBe(expected);
+  test.each(BAILS.map((b) => [b]))('bail $%s -> flat $100 fee (never tiered)', (bail) => {
+    expect(calcLeadFee(bail)).toBe(BONDSMAN_LEAD_FEE_CENTS);
   });
 
-  test('fee is always a non-negative integer (never fractional cents)', () => {
-    const testBails = [1, 100, 999, 1000, 4999, 5000, 24999, 25000, 100000, 500000, 1000000, 9999999];
-    for (const bail of testBails) {
+  test('fee is a positive integer number of cents ($100.00)', () => {
+    for (const bail of BAILS) {
       const fee = calcLeadFee(bail);
-      expect(fee).toBeGreaterThanOrEqual(0);
       expect(Number.isInteger(fee)).toBe(true);
-      expect(isNaN(fee)).toBe(false);
-    }
-  });
-
-  test('fee never exceeds bail amount (bondsman fee < bail bond)', () => {
-    // A bondsman would never pay more for a lead than the bond itself
-    for (const bail of [100, 500, 1000, 5000, 25000, 100000]) {
-      const fee = calcLeadFee(bail);
-      expect(fee / 100).toBeLessThan(bail);  // fee in cents < bail amount
-    }
-  });
-
-  test('bail calculator: premium never equals total (fees always added)', () => {
-    const testCases = [500, 1000, 5000, 15000, 50000, 100000, 500000, 1000000];
-    for (const amt of testCases) {
-      const r = calcBail(amt);
-      if (r.error) continue;
-      expect(r.total).toBeGreaterThan(r.premium);
-      expect(r.ok).toBe(true);
+      expect(fee).toBe(10000);
     }
   });
 
@@ -262,9 +211,9 @@ describe('K-02 Financial Exact Boundaries — every tier edge of calcLeadFee', (
     expect(r.premium).toBe(1000);  // $10k * 10% = $1000 exactly
   });
 
-  test('idempotency: same bail amount always produces same fee', () => {
+  test('idempotency: same lead fee every time, whatever the bail', () => {
     for (let i = 0; i < 1000; i++) {
-      expect(calcLeadFee(50000)).toBe(15000);  // $50k < $100k → $15k fee
+      expect(calcLeadFee(50000)).toBe(BONDSMAN_LEAD_FEE_CENTS);
     }
   });
 });
@@ -849,64 +798,26 @@ describe('K-08 Court Date Math — DST ambiguity, leap year, federal holidays', 
 
 // ── K-09: BONDSMAN MARKETPLACE ATTACKS ───────────────────────────────────────
 describe('K-09 Bondsman Marketplace — boundary conditions & adversarial inputs', () => {
-  test('bail $0 → lead fee $0 (not error, not positive)', () => {
-    expect(calcLeadFee(0)).toBe(0);
-  });
-
-  test('bail $1 → fee $0 (below $100 minimum — not a viable lead)', () => {
-    // With $100 minimum bail guard: $1 is sub-threshold, returns 0
-    // Real court bail is never $1 — this handles invalid/test data gracefully
-    expect(calcLeadFee(1)).toBe(0);
-  });
-
-  test('bail $999.99 → fee $1500 (just below $1000 tier)', () => {
-    expect(calcLeadFee(999.99)).toBe(1500);
-  });
-
-  test('bail $1000.00 exactly → fee $3500 (crosses into next tier)', () => {
-    expect(calcLeadFee(1000)).toBe(3500);
-  });
-
-  test('bail $1000.01 → fee $3500 (just above tier boundary)', () => {
-    expect(calcLeadFee(1001)).toBe(3500);
-  });
-
-  test('bail Infinity → fee 0 (not Infinity, not NaN)', () => {
-    const fee = calcLeadFee(Infinity);
-    expect(fee).toBe(0);
-    expect(isFinite(fee)).toBe(true);
-    expect(isNaN(fee)).toBe(false);
-  });
-
-  test('bail NaN → fee 0', () => {
-    expect(calcLeadFee(NaN)).toBe(0);
-    expect(isNaN(calcLeadFee(NaN))).toBe(false);
-  });
-
-  test('bail negative → fee 0', () => {
-    expect(calcLeadFee(-50000)).toBe(0);
-    expect(calcLeadFee(-1)).toBe(0);
-  });
-
-  test('all 7 tier boundaries are correctly valued', () => {
-    expect(calcLeadFee(999)).toBe(1500);
-    expect(calcLeadFee(1000)).toBe(3500);
-    expect(calcLeadFee(5000)).toBe(7500);
-    expect(calcLeadFee(25000)).toBe(15000);
-    expect(calcLeadFee(100000)).toBe(25000);
-    expect(calcLeadFee(250000)).toBe(40000);
-    expect(calcLeadFee(500000)).toBe(60000);
-    expect(calcLeadFee(1000000)).toBe(100000);
-  });
-
-  test('fee is monotonically non-decreasing (higher bail never lower fee)', () => {
-    const testPoints = [0, 1, 500, 999, 1000, 4999, 5000, 24999, 25000, 99999, 100000, 249999, 250000, 499999, 500000, 999999, 1000000, 5000000];
-    let lastFee = 0;
-    for (const bail of testPoints) {
-      const fee = calcLeadFee(bail);
-      expect(fee).toBeGreaterThanOrEqual(lastFee);
-      lastFee = fee;
+  test('fee does not scale with bail — $0, $1, $999.99, $1M all quote the flat fee', () => {
+    for (const bail of [0, 1, 999.99, 1000, 1000000]) {
+      expect(calcLeadFee(bail)).toBe(BONDSMAN_LEAD_FEE_CENTS);
     }
+  });
+
+  test('adversarial inputs (Infinity, NaN, negative) still return the flat finite fee', () => {
+    for (const bail of [Infinity, -Infinity, NaN, -50000, -1]) {
+      const fee = calcLeadFee(bail);
+      expect(fee).toBe(BONDSMAN_LEAD_FEE_CENTS);
+      expect(isFinite(fee)).toBe(true);
+      expect(isNaN(fee)).toBe(false);
+    }
+  });
+
+  test('fee is constant (trivially monotonic) across all bail points', () => {
+    const testPoints = [0, 1, 500, 999, 1000, 4999, 5000, 24999, 25000, 99999,
+                        100000, 249999, 250000, 499999, 500000, 999999, 1000000, 5000000];
+    const fees = new Set(testPoints.map((b) => calcLeadFee(b)));
+    expect([...fees]).toEqual([BONDSMAN_LEAD_FEE_CENTS]);
   });
 
   test('bail calculator: premium math correct at $10k', () => {
