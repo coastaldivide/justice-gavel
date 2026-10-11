@@ -89,7 +89,7 @@ const r = await api.post('/insurance/quote', { plan, city: 'your area' });
         {FEATURES.map(f => (
           <View key={f.label} style={styles.featRow}>
             <Text maxFontSizeMultiplier={1.4} style={styles.featLabel}>{f.label}</Text>
-            {(['basic', 'legal_pro', 'family'] as const).map(k => (
+            {(['basic', 'pro', 'family'] as const).map(k => (
               <Text maxFontSizeMultiplier={1.4} key={k} style={[styles.featCheck, f[k] ? styles.featYes : styles.featNo]}>
                 {f[k] ? '✓' : '--'}
               </Text>

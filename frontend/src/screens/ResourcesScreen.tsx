@@ -186,7 +186,7 @@ function ResourcesScreen(): React.JSX.Element {
         <FlashList
           estimatedItemSize={80}
           data={filtered ?? []}
-          keyExtractor={i => String(i.id)}
+          keyExtractor={(i: { id: number | string }) => String(i.id)}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}
           contentContainerStyle={{ paddingHorizontal:16, paddingBottom:24 }}
           initialNumToRender={15}
@@ -195,7 +195,7 @@ function ResourcesScreen(): React.JSX.Element {
               🔍 No resources found{q ? ` for "${q}"` : ''}.
             </Text>
           }
-          renderItem={({ item }) => {
+          renderItem={({ item }: { item: any }) => {
             const isOpen = expanded === item.id;
             const cc = CAT_COLORS[item.category] || CAT_COLORS.textMuted;
             const cat = CATEGORIES.find(c => c.key === item.category);

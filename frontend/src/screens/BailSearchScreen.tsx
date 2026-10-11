@@ -157,7 +157,7 @@ function BailSearchScreen(): React.JSX.Element {
       }
 
       // Retry with exponential backoff (up to 3 attempts)
-      let res;
+      let res: { data?: BailAgent[] } | undefined;
       let attempt = 0;
       while (attempt < 3) {
         try {
@@ -176,8 +176,9 @@ function BailSearchScreen(): React.JSX.Element {
         }
       }
 
+      if (!res) throw new Error('Bail agent search failed after 3 attempts');
       setItems(res.data || []);
-      cacheBailAgents(res.data).catch(() => {});
+      cacheBailAgents(res.data || []).catch(() => {});
       setSearched(true);
       setRetryCount(0);
       setStatus(res.data?.length === 0 ? 'No bail agents found in this area. Try a nearby city.' : '');

@@ -105,8 +105,8 @@ function ConflictCheckScreen() {
             <FlashList
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => setRefreshing(false)} />}
               data={result.matches}
-              keyExtractor={(item, idx) => `conflict-${idx}`}
-              renderItem={({ item }) => (
+              keyExtractor={(item: ConflictResult['matches'][number], idx: number) => `conflict-${idx}`}
+              renderItem={({ item }: { item: ConflictResult['matches'][number] }) => (
                 <View style={styles.matchRow}>
                   <Text maxFontSizeMultiplier={1.3} style={styles.matchName}>{item.party_name}</Text>
                   <Text maxFontSizeMultiplier={1.3} style={styles.matchMatter}>{item.matter_title}</Text>

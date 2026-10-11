@@ -11,11 +11,11 @@ import { EmptyState } from '../components/EmptyState';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform,
 } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/NavigationTypes';
+import { ScreenParams } from '../navigation/NavigationTypes';
+import { ScreenProps } from '../types/navigation';
 import { COLORS, FONTS, RADIUS, useTheme } from '../constants/theme';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'BarPrepResults'>;
+type Props = ScreenProps<'BarPrepResults'>;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -116,7 +116,7 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
   const {
     score_pct, correct, total, mode,
     answers, questions, timed_out,
-  } = (route.params ?? {}) as Props['route']['params'];
+  } = (route.params ?? {}) as ScreenParams<'BarPrepResults'>;
 
   // Build a quick-lookup: question_id → answer data
   const answerMap = useMemo(() => {
@@ -135,7 +135,7 @@ export default function BarPrepResultsScreen({ route, navigation }: Props) {
   const handleRetryWrong = () => {
     if (wrongQuestions.length === 0) return;
     // Re-launch the quiz with only wrong questions as a practice session
-    (navigation as any).replace('BarPrepQuiz', {
+    navigation.replace('BarPrepQuiz', {
       session_id: 0,   // new session created server-side on first answer
       questions: wrongQuestions,
       mode: 'practice',

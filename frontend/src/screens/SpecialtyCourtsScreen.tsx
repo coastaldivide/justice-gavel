@@ -153,10 +153,10 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
       {!loading && !error && <FlashList
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load().catch(() => {}); setRefreshing(false); }} />}
           data={filtered}
-          keyExtractor={i => String(i.id)}
+          keyExtractor={(i: SpecialtyCourt) => String(i.id)}
           contentContainerStyle={{ padding: 16, paddingTop: 4 }}
           initialNumToRender={10}
-          renderItem={({ item }) => {
+          renderItem={({ item }: { item: SpecialtyCourt }) => {
             const open = expanded === item.id;
             const ct = COURT_TYPES.find(t => t.key === item.court_type) || COURT_TYPES[0];
             return (

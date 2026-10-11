@@ -59,7 +59,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
   const stopAndProcess = useCallback(async () => {
     if (!mediaRef.current) return;
     mediaRef.current.stop();
-    mediaRef.current.stream.getTracks().forEach(t => t.stop());
+    mediaRef.current.stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
     if (timerRef.current) clearInterval(timerRef.current);
     setStep('uploading');
 

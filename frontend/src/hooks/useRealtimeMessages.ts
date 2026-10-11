@@ -72,8 +72,8 @@ export function useRealtimeMessages(caseId: string | number | null) {
           table:  'case_messages',
           filter: `case_id=eq.${caseId}`,
         },
-        (payload) => {
-          const newMsg = payload.new as Message;
+        (payload: { new: Message }) => {
+          const newMsg = payload.new;
           setMessages(prev => {
             // Deduplicate
             if (prev.some(m => m.id === newMsg.id)) return prev;
@@ -83,7 +83,7 @@ export function useRealtimeMessages(caseId: string | number | null) {
           setUnread(prev => prev + 1);
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {
           // Realtime connected — clear any fallback polling
         }

@@ -7,6 +7,7 @@ import React from 'react';
 import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import type { RootStackParamList } from '../types/navigation';
 import { COLORS } from '../constants/theme';
 import ErrorBoundary from '../components/ErrorBoundary';
 import JTBLogo from '../components/JTBLogo';
@@ -142,9 +143,9 @@ const OfflineStatusScreen = withSuspense(React.lazy(() => import('../screens/Off
 // Deep link configuration lives in ./linking.ts (single source of truth).
 
 // ── Stack / Tab instances ─────────────────────────────────────────────────────
-const MoreStack  = createNativeStackNavigator();
-const GuestStack = createNativeStackNavigator();
-const Tab        = createBottomTabNavigator();
+const MoreStack  = createNativeStackNavigator<RootStackParamList>();
+const GuestStack = createNativeStackNavigator<RootStackParamList>();
+const Tab        = createBottomTabNavigator<RootStackParamList>();
 
 // ── Shared header style ────────────────────────────────────────────────────────
 const HDR = {
@@ -294,11 +295,11 @@ function MainTabs() {
         // keeps the accessibilityRole="tab" + selected state the item passes in.
         tabBarButton: (props: any) => <TouchableOpacity {...props} />,
       }}>
-      <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarButton: (props: any) => <TouchableOpacity testID="home-tab" {...props} />, tabBarLabel: 'Home', tabBarTestID: 'home-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> } as any} />
+      <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarButton: (props: any) => <TouchableOpacity testID="home-tab" {...props} />, tabBarLabel: 'Home', tabBarTestID: 'home-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> }} />
       <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: 'AI Help',  tabBarIcon: ({ focused }) => <TabIcon emoji="💬" focused={focused} /> }} />
       <Tab.Screen name="LawyersTab" component={LawyersScreen}   options={{ tabBarLabel: 'Lawyers',  tabBarIcon: ({ focused }) => <TabIcon emoji="⚖️" focused={focused} /> }} />
       <Tab.Screen name="BailTab"    component={BailSearchScreen}options={{ tabBarLabel: 'Bail Help',tabBarIcon: ({ focused }) => <TabIcon emoji="💰" focused={focused} /> }} />
-      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="more-tab" {...props} />, tabBarLabel: 'Resources', tabBarTestID: 'more-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="📚" focused={focused} /> } as any} />
+      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="more-tab" {...props} />, tabBarLabel: 'Resources', tabBarTestID: 'more-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="📚" focused={focused} /> }} />
     </Tab.Navigator>
     </ErrorBoundary>
   );

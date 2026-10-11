@@ -26,6 +26,8 @@ interface SearchResult {
   params: Record<string, unknown>;
 }
 
+type SearchSection = { type: string; items: SearchResult[] };
+
 const TYPE_ICONS: Record<string, string> = {
   case:    '📁',
   message: '💬',
@@ -128,7 +130,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
     const items = results.filter(r => r.type === type);
     if (items.length) acc.push({ type, items });
     return acc;
-  }, [] as { type: string; items: SearchResult[] }[]);
+  }, [] as SearchSection[]);
 
   const handleTap = (item: SearchResult) => {
     navigation?.navigate('MoreTab', {
@@ -170,7 +172,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
       <FlashList
         estimatedItemSize={80}
           data={grouped ?? []}
-        keyExtractor={item => item.type}
+        keyExtractor={(item: SearchSection) => item.type}
         contentContainerStyle={s.list}
           onRefresh={onRefresh}
         refreshing={refreshing}
@@ -261,7 +263,7 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
             </View>
           ) : null
         }
-        renderItem={({ item: section }) => (
+        renderItem={({ item: section }: { item: SearchSection }) => (
           <View style={s.section}>
             <Text maxFontSizeMultiplier={1.4}
               style={[s.sectionLabel, { color: colors.textMuted }]}>

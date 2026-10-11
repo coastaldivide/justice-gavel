@@ -325,6 +325,11 @@ export interface RouteParams {
   // Check-in
   enrollmentId?:    number | string;
 
+  // Matters / video consultation
+  matterId?:        number | string;
+  attorneyId?:      number | string;
+  topic?:           string;
+
   // Discovery / research / messages
   initialQuery?:    string;
   caseContext?:     string;

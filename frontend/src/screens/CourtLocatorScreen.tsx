@@ -157,7 +157,7 @@ function CourtLocatorScreen(): React.JSX.Element {
         refreshing={refreshing}
         estimatedItemSize={80}
           data={results}
-        keyExtractor={i => String(i.id)}
+        keyExtractor={(i: Courthouse) => String(i.id)}
         contentContainerStyle={{ padding: 16, paddingTop: 4, maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', width: '100%'}}
         ListEmptyComponent={
           !loading ? (
@@ -166,7 +166,7 @@ function CourtLocatorScreen(): React.JSX.Element {
             </Text>
           ) : null
         }
-        renderItem={({ item }) => {
+        renderItem={({ item }: { item: Courthouse }) => {
           const open = expanded === item.id;
           return (
             <TouchableOpacity

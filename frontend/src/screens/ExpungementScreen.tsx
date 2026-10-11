@@ -219,9 +219,12 @@ function ExpungementScreen({ route, navigation }: ScreenProps): React.JSX.Elemen
       // Fetch matched expungement attorneys for this state
       if (res.data?.eligibility && !res.data?.eligibility.notEligible) {
         setAttLoading(true);
-        (cachedGet as any)('/expungement/attorneys', { params: { state, limit: 5 } })
-          .then(r => setAttorneys(r.data?.attorneys || []))
-          .catch((e) => { __DEV__ && console.warn(e?.message); })
+        // Params go in the URL: cachedGet's cache is keyed by URL (a bare path
+        // would serve one state's attorneys to every state), and its second
+        // argument is the cache TTL, not an axios config.
+        cachedGet<{ attorneys?: any[] }>(`/expungement/attorneys?state=${encodeURIComponent(state)}&limit=5`)
+          .then((r) => setAttorneys(r.data?.attorneys || []))
+          .catch((e: any) => { __DEV__ && console.warn(e?.message); })
           .finally(() => setAttLoading(false));
       }
       setStep('result');

@@ -11,18 +11,17 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, LayoutAnim
 import { Linking } from 'react-native'; // open Daily.co session in system browser
 const openBrowserAsync = (url: string) => Linking.openURL(url);
 import { api, apiErrorMessage } from '../services/api';
+import { ScreenProps } from '../types/navigation';
+import { RouteParams } from '../types/api';
 
-interface Props {
-  route: { params?: { matterId?: string; attorneyId?: string; topic?: string } };
-  navigation: any;
-}
+type Props = ScreenProps<'VideoConsultation'>;
 
 function VideoConsultationScreen({ route, navigation }: Props) {
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
   const { showToast } = useToast();
-  const { matterId, attorneyId, topic } = route.params || {};
+  const { matterId, attorneyId, topic } = (route.params ?? {}) as RouteParams;
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 

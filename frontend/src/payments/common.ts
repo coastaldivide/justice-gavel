@@ -13,10 +13,17 @@ export interface PaymentSheetError {
   message: string;
 }
 
+// Type-only import: erased at build time, so the native-only Stripe module is
+// never resolved into the web bundle (index.web.tsx also uses this file).
+import type { PaymentSheet } from '@stripe/stripe-react-native';
+
+/** What screens pass to initPaymentSheet — Stripe's real SetupParams. */
+export type PaymentSheetSetupParams = PaymentSheet.SetupParams;
+
 export interface PaymentSheetApi {
   /** True when a real Stripe PaymentSheet can be presented on this device. */
   available: boolean;
-  initPaymentSheet: (params: Record<string, unknown>) => Promise<{ error?: PaymentSheetError }>;
+  initPaymentSheet: (params: PaymentSheetSetupParams) => Promise<{ error?: PaymentSheetError }>;
   presentPaymentSheet: () => Promise<{ error?: PaymentSheetError }>;
 }
 

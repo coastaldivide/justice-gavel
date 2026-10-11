@@ -163,7 +163,7 @@ function FirmDiscoveryScreen() {
         <FlashList
           estimatedItemSize={80}
           data={firms ?? []}
-          keyExtractor={item => String(item.id)}
+          keyExtractor={(item: Firm) => String(item.id)}
           renderItem={renderFirm}
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}

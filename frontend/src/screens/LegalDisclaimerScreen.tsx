@@ -37,10 +37,15 @@ const DISCLAIMER_SECTIONS = [
 ];
 
 interface Props {
-  onAccepted: () => void;
+  /** Set when rendered directly (e.g. a gate in App.tsx). Absent when mounted
+   *  by the guest navigator (deep link `legal-disclaimer`) — react-navigation
+   *  passes only route/navigation, so calling it unconditionally would crash. */
+  onAccepted?: () => void;
+  navigation?: import('../types/navigation').AppNavigation;
+  route?: import('../types/navigation').AppRoute;
 }
 
-function LegalDisclaimerScreen({ onAccepted }: Props) {
+function LegalDisclaimerScreen({ onAccepted, navigation }: Props) {
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
@@ -70,7 +75,12 @@ if (loading) return;
           } catch (_err) {
             if (__DEV__) console.error(_err);
           }
-      onAccepted();
+      if (onAccepted) {
+        onAccepted();
+      } else if (navigation?.canGoBack()) {
+        // Mounted via the guest navigator (deep link) — no callback to invoke.
+        navigation.goBack();
+      }
     } catch {
       showToast('Could not record your acceptance. Please check your connection and try again.');
     } finally {

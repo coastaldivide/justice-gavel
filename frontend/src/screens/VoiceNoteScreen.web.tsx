@@ -43,7 +43,7 @@ function VoiceNoteScreen(): React.JSX.Element {
   const stopAndTranscribe = async () => {
     if (!mediaRef.current) return;
     mediaRef.current.stop();
-    mediaRef.current.stream.getTracks().forEach(t => t.stop());
+    mediaRef.current.stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
     if (timerRef.current) clearInterval(timerRef.current);
     setRecording(false);
     setUploading(true);

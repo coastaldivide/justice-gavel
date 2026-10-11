@@ -8,13 +8,13 @@ import { View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndic
 import { api, apiErrorMessage } from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 
-interface Props {
-  route: { params?: { matterId?: string } };
-  navigation: any;
-}
+import { ScreenProps } from '../types/navigation';
+import { RouteParams } from '../types/api';
+
+type Props = ScreenProps<'Matter'>;
 
 function MatterScreen({ route, navigation }: Props) {
-  const matterId = route.params?.matterId;
+  const matterId = (route.params as RouteParams | undefined)?.matterId;
   const [matter, setMatter]   = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
