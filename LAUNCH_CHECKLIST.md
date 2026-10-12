@@ -79,8 +79,8 @@
       history); restrict the new key to the Places API + server IP
 - [ ] Review the data-refresh queue (`GET /api/admin/proposals`) after each
       refresh; scraped changes to existing providers are never applied automatically
-- [ ] Review pre-existing `source = 'state_bar'` lawyer rows — some are page
-      headings, not attorneys (e.g. "A Colorado Bar Association membership…",
-      "Layer"); deactivate by hand via `/api/admin/lawyers/:id` if confirmed
+- [x] Junk `state_bar` lawyer rows (scraped page headings "A Colorado Bar
+      Association membership…" and "Layer") removed by migration 016 and added to
+      `provider_suppressions` so a scrape can't re-add them — run 016 on production
 - [ ] EAS build submitted to App Store / Google Play
 - [ ] Legal action items in docs/LEGAL_ACTION_ITEMS.md resolved

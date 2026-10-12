@@ -122,7 +122,23 @@ export function buildIndex(table, rows) {
 async function loadIndex(db, table) {
   const cfg = tableConfig(table);
   const cols = ['id', 'source_id', 'name', 'city', 'state', ...new Set(cfg.proposable)];
-  return buildIndex(table, await db.all(`SELECT ${cols.join(', ')} FROM ${table}`));
+  const idx = buildIndex(table, await db.all(`SELECT ${cols.join(', ')} FROM ${table}`));
+  idx.suppressed = await loadSuppressions(db, table);
+  return idx;
+}
+
+/**
+ * source_ids the owner removed on purpose (migration 016 provider_suppressions).
+ * A scrape must never re-add them. Missing table (older schema) = none.
+ */
+export async function loadSuppressions(db, table) {
+  try {
+    const rows = await db.all('SELECT source_id FROM provider_suppressions WHERE table_name = ?', [table]);
+    return new Set(rows.map(r => sourceKey(r.source_id)).filter(Boolean));
+  } catch (e) {
+    if (/provider_suppressions/.test(String(e && e.message))) return new Set();
+    throw e;
+  }
 }
 
 // ── Record validation / shaping ─────────────────────────────────────────────
@@ -253,6 +269,9 @@ export function createProviderWriter(db, table, { runId = null, dryRun = false, 
     const prep = prepareRecord(table, raw);
     if (!prep.ok) return { result: 'skipped', reason: prep.reason };
     const rec = prep.rec;
+    if (rec.source_id && idx.suppressed && idx.suppressed.has(sourceKey(rec.source_id))) {
+      return { result: 'skipped', reason: 'suppressed' };
+    }
     const hit = idx.match(rec);
     if (!hit) {
       if (dryRun) {
