@@ -24,8 +24,20 @@ import { safeJson, asyncRoute, err400, escapeLike, err401, err404, safeInt, safe
  * GET    /api/admin/log/:table/:id       — update log for one record
  * GET    /api/admin/stats                — DB summary stats
  *
- * POST   /api/admin/refresh              — trigger data refresh (background)
- *   Body: { city?, type?, source? }
+ * POST   /api/admin/refresh              — trigger a provider refresh (in-process, background)
+ *   Body: { city?, type?, source?, dryRun? }  → 202 (started) | 200 (skipped: no API key)
+ * GET    /api/admin/refresh/runs         — scrape_runs log (every scraper / importer / scheduler run)
+ *
+ * Scraped changes to EXISTING providers are never written by a scraper; they
+ * wait here for a decision (migration 15, services/dataRefresh/proposals.js):
+ * GET    /api/admin/proposals            — list (?status=pending|applied|rejected|superseded|all,
+ *                                          table, field, record_id, run_id, limit, offset)
+ * POST   /api/admin/proposals/apply      — bulk apply   { ids: [...], note? }
+ * POST   /api/admin/proposals/reject     — bulk reject  { ids: [...], note? }
+ * POST   /api/admin/proposals/:id/apply  — apply one    { note?, force? } (409 if the row changed since)
+ * POST   /api/admin/proposals/:id/reject — reject one   { note? }
+ * Applying writes only the proposal's field (+ updated_at) and logs it to
+ * provider_update_log and audit_log.
  */
 
 import { runHealthScan }       from '../services/healthScan.js';
@@ -34,9 +46,9 @@ import { makeUserLimiter }    from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
 import { Router }        from 'express';
 import { authRequired }  from '../middleware/auth.js';
-import { spawn } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { runRefresh } from '../services/dataRefresh/scheduled.js';
+import { placesKeyConfigured } from '../services/dataRefresh/googlePlaces.js';
+import { listProposals, applyProposal, rejectProposal, bulkDecide, ProposalError } from '../services/dataRefresh/proposals.js';
 
 // ── Timing-safe admin key verification ───────────────────────────────────────
 import { timingSafeEqual } from 'crypto';
@@ -49,7 +61,6 @@ function verifyAdminKey(req) {
     return timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
   } catch { return false; }
 }
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Column and table safety — imported from routeHelpers.js (canonical, correct split on /\s*=\s*/)
 // Helper aliases
@@ -367,30 +378,94 @@ router.get('/stats', async (req, res) => {
     logger.error({ msg: '[admin]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' }); }
 });
 
-// ── Trigger refresh ───────────────────────────────────────────────────────────
+// ── Trigger refresh (in-process, main Postgres) ──────────────────────────────
 
-router.post('/refresh', authRequired, (req, res) => {
+router.post('/refresh', async (req, res) => {
   const { city, type = 'all', source = 'all', dryRun = false } = req.body || {};
-  const scriptPath = path.resolve(__dirname, '../scripts/refresh.js');
+  if (!['lawyers', 'bail', 'civil', 'all'].includes(type)) return err400(res, 'type must be lawyers, bail, civil or all');
+  if (!['google', 'yelp', 'all'].includes(source)) return err400(res, 'source must be google, yelp or all');
+  if (city !== undefined && city !== null && city !== '' && !/^[A-Za-z .'-]{2,60},\s*[A-Za-z]{2}$/.test(String(city))) {
+    return err400(res, 'city must look like "Nashville, TN"');
+  }
+  const opts = { city: city || undefined, type, source, dryRun: dryRun === true, trigger: 'admin' };
+  const wantsGoogle = source !== 'yelp' && placesKeyConfigured();
+  const wantsYelp = source !== 'google' && !!process.env.YELP_API_KEY;
+  try {
+    if (!wantsGoogle && !wantsYelp) {
+      const r = await runRefresh(opts);          // records a 'skipped' run, fetches nothing
+      return res.json({ ok: false, skipped: true, run_id: r.runId, message: r.message });
+    }
+    runRefresh(opts)
+      .then(r => logger.info(`[admin/refresh] run ${r.runId} ${r.status}`))
+      .catch(e => logger.error('[admin/refresh] run failed:', e.message));
+    res.status(202).json({
+      ok: true,
+      message: 'Refresh started in background. New providers are inserted; changes to existing providers are staged at /api/admin/proposals.',
+      runs: '/api/admin/refresh/runs',
+      params: { city: city || 'all metro cities', type, source, dryRun: opts.dryRun },
+    });
+  } catch (e) {
+    logger.error({ msg: '[admin/refresh]', error: e?.message });
+    res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
 
-  const args = ['--node-options=--experimental-vm-modules'];
-  if (city)   args.push('--city', city);
-  if (type)   args.push('--type', type);
-  if (source) args.push('--source', source);
-  if (dryRun) args.push('--dry-run');
+router.get('/refresh/runs', async (req, res) => {
+  try {
+    const db = await openDb();
+    const limit = Math.min(Math.max(safeInt(req.query.limit, 50), 1), 200);
+    const params = [];
+    let sql = `SELECT id, job, trigger, params, dry_run, status, started_at, finished_at, fetched, inserted, proposed,
+                      unchanged, updated, skipped, errors, message, error_sample
+                 FROM scrape_runs`;
+    if (req.query.job) { sql += ' WHERE job = ?'; params.push(String(req.query.job).slice(0, 60)); }
+    sql += ` ORDER BY started_at DESC, id DESC LIMIT ${limit}`;
+    res.json({ runs: await db.all(sql, params) });
+  } catch (e) {
+    logger.error({ msg: '[admin/refresh/runs]', error: e?.message }); res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+});
 
-  // Spawn detached so response returns immediately
-  const child = spawn('node', [scriptPath, ...args], {
-    detached: true, stdio: 'ignore',
-    env: { ...process.env }
-  });
-  child.unref();
+// ── Provider update proposals (staged scrape changes) ────────────────────────
 
-  res.json({
-    ok: true,
-    message: 'Refresh started in background',
-    params: { city: city || 'all cities', type, source, dryRun }
-  });
+function proposalError(res, e, tag) {
+  if (e instanceof ProposalError) return res.status(e.status).json({ error: e.message, code: e.code });
+  logger.error({ msg: `[admin/proposals${tag}]`, error: e?.message });
+  return res.status(500).json({ error: 'Server error. Please try again.' });
+}
+
+router.get('/proposals', async (req, res) => {
+  try {
+    res.json(await listProposals(await openDb(), req.query || {}));
+  } catch (e) { proposalError(res, e, ''); }
+});
+
+router.post('/proposals/apply', async (req, res) => {
+  try {
+    const { ids, note } = req.body || {};
+    res.json(await bulkDecide(await openDb(), ids, 'apply', { userId: req.user.id, note }));
+  } catch (e) { proposalError(res, e, '/apply'); }
+});
+
+router.post('/proposals/reject', async (req, res) => {
+  try {
+    const { ids, note } = req.body || {};
+    res.json(await bulkDecide(await openDb(), ids, 'reject', { userId: req.user.id, note }));
+  } catch (e) { proposalError(res, e, '/reject'); }
+});
+
+router.post('/proposals/:id/apply', async (req, res) => {
+  try {
+    const { note, force } = req.body || {};
+    res.json(await applyProposal(await openDb(), req.params.id, { userId: req.user.id, note, force: force === true }));
+  } catch (e) { proposalError(res, e, '/:id/apply'); }
+});
+
+router.post('/proposals/:id/reject', async (req, res) => {
+  try {
+    const { note } = req.body || {};
+    res.json(await rejectProposal(await openDb(), req.params.id, { userId: req.user.id, note }));
+  } catch (e) { proposalError(res, e, '/:id/reject'); }
 });
 
 // ─── HEALTH SCAN ENDPOINTS ─────────────────────────────────────────────────────

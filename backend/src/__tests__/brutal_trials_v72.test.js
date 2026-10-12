@@ -237,11 +237,13 @@ describe('SCR2. scrape_arrests.js — 97-City Arrest Record Scraper', () => {
     expect(src).toContain('name');
     expect(src).toContain('bail');
   });
-  test('SCR2-02: scrape_arrests.js is called by the nightly scheduler (job 2)', async () => {
+  test('SCR2-02: nightly job 2 ingests arrests from validated feeds; the roster scraper is operator-run only', async () => {
     const fs = await import('fs');
     const schedSrc = fs.readFileSync(__REPO + '/backend/src/services/scheduler.js', 'utf8');
-    expect(schedSrc).toContain('Arrest record harvest');
-    expect(schedSrc).toContain('97 cities');
+    const steps    = fs.readFileSync(__REPO + '/backend/src/services/dataRefresh/scheduled.js', 'utf8');
+    expect(schedSrc).toContain('Arrest ingestion from operator-configured feeds');
+    expect(steps).toContain('runIngestion');
+    expect(schedSrc + steps).not.toContain('scrape_arrests');   // heuristic roster parsing never runs unattended
   });
 });
 

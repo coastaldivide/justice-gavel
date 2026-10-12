@@ -103,9 +103,9 @@ describe('L11: Scripts at 3-4 Corpus Hits — Pushed', () => {
     const fc = fs.readFileSync(__REPO + '/backend/src/scripts/fact_check_monitor.js','utf8');
     const ra = fs.readFileSync(__REPO + '/backend/src/scripts/scrape_recovery_agents.js','utf8');
     expect(fc.length).toBeGreaterThan(19000);
-    expect(ra.length).toBeGreaterThan(13000);
     expect(fc).toContain('Legal Data Fact-Check Monitor');
-    expect(ra).toContain('fugitive recovery agents');
+    expect(ra).toContain('fugitive recovery');
+    expect(ra).toContain('recovery_agents');
     // fact_check_monitor: scans government sources, flags outdated data
     // scrape_recovery_agents: Google Places API for licensed bail enforcement
   });

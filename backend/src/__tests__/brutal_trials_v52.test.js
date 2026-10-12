@@ -145,12 +145,12 @@ describe('DB. ON DELETE CASCADE + SET NULL Patterns', () => {
 
 // ── SCHED. Scheduler Depth ─────────────────────────────────────────────────
 describe('SCHED. Scheduler — Pipeline Depth', () => {
-  test('SCHED-01: nightly job 2 is arrest record harvest from 97 cities', async () => {
+  test('SCHED-01: nightly job 2 is arrest ingestion from configured feeds', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/scheduler.js', 'utf8');
-    expect(src).toContain('97 cities');
+    expect(src).toContain('ARREST_FEED_URLS');
     expect(src).toContain('NIGHTLY');
-    expect(src).toContain('Arrest record harvest');
+    expect(src).toContain('Arrest ingestion from operator-configured feeds');
   });
   test('SCHED-02: nightly job 8 = docket deadlines (reminders + overdue webhooks)', async () => {
     const fs = await import('fs');

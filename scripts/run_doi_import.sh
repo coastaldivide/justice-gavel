@@ -2,7 +2,9 @@
 # ═══════════════════════════════════════════════════════════════════════════
 #  Justice Gavel — DOI Bail Agent License Import (all 50 states)
 #  Run from repo root: bash scripts/run_doi_import.sh
-#  Requires: SUPABASE_URL and SUPABASE_SERVICE_KEY in environment or .env
+#  Requires: DATABASE_URL (the main Postgres database) in environment or backend/.env
+#  Existing bail_agents rows are never overwritten: new licensees are inserted,
+#  differences are staged in provider_update_proposals (GET /api/admin/proposals).
 # ═══════════════════════════════════════════════════════════════════════════
 
 set -e
@@ -17,13 +19,12 @@ echo "States with commercial bail bonds (45): will import"
 echo "States without (IL/KY/OR/WI/DC):        automatically skipped"
 echo ""
 
-if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
-  if [ -f backend/.env ]; then
-    export $(grep -v '^#' backend/.env | xargs)
-  else
-    echo "❌ Set SUPABASE_URL and SUPABASE_SERVICE_KEY first."
-    exit 1
-  fi
+if [ -z "${DATABASE_URL:-}" ] && [ -f backend/.env ]; then
+  set -a; . backend/.env; set +a
+fi
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo "❌ Set DATABASE_URL (main Postgres) first, e.g. railway run bash scripts/run_doi_import.sh"
+  exit 1
 fi
 
 DOI_DIR="data/doi"
@@ -75,7 +76,7 @@ else
     if [ "$yn" = "y" ] || [ "$yn" = "Y" ]; then
       echo ""
       echo "Running with test data (data/doi_test/)..."
-      for f in data/doi_test/*.{txt,csv} 2>/dev/null; do
+      for f in data/doi_test/*.txt data/doi_test/*.csv; do
         [ -f "$f" ] || continue
         STATE=$(basename "$f" | grep -oE '^[a-zA-Z]{2}' | tr '[:lower:]' '[:upper:]')
         [ -n "$STATE" ] && \
@@ -98,4 +99,5 @@ echo "════════════════════════�
 node backend/src/scripts/import_doi_supabase.js --match-only --all-states
 
 echo ""
-echo "✅ Done. Check Supabase: SELECT state, COUNT(*), SUM(CASE WHEN license_number IS NOT NULL THEN 1 ELSE 0 END) FROM bail_agents GROUP BY state ORDER BY state;"
+echo "✅ Done. Review staged changes: GET /api/admin/proposals?table=bail_agents"
+echo "   Coverage: psql \"\$DATABASE_URL\" -c \"SELECT state, COUNT(*), COUNT(license_number) FROM bail_agents GROUP BY state ORDER BY state;\""

@@ -87,10 +87,15 @@ export function initSecuritySuite(opts = {}) {
   return ctx;
 }
 
-/** Checksum of the verified provider directory — must be identical before/after a suite. */
+/**
+ * Checksum of the verified provider directory — must be identical before/after a suite.
+ * Rows a test scrape inserts (source_id contains JGTEST, see __tests__/refresh/) are
+ * fixtures, not directory data, and are excluded so suites can run side by side.
+ */
 export async function providerChecksum(db) {
-  const l = await db.get(`SELECT COUNT(*) AS n, md5(string_agg(t::text, '' ORDER BY id)) AS h FROM lawyers t`);
-  const b = await db.get(`SELECT COUNT(*) AS n, md5(string_agg(t::text, '' ORDER BY id)) AS h FROM bail_agents t`);
+  const notFixture = `WHERE COALESCE(t.source_id, '') NOT ILIKE '%JGTEST%'`;
+  const l = await db.get(`SELECT COUNT(*) AS n, md5(string_agg(t::text, '' ORDER BY id)) AS h FROM lawyers t ${notFixture}`);
+  const b = await db.get(`SELECT COUNT(*) AS n, md5(string_agg(t::text, '' ORDER BY id)) AS h FROM bail_agents t ${notFixture}`);
   return { lawyers: `${l.n}:${l.h}`, bail_agents: `${b.n}:${b.h}` };
 }
 

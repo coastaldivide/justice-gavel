@@ -90,16 +90,17 @@ Go-live checklist: `backend/scripts/railway-checklist.md` +
 
 ## Operator data tools (optional)
 
-The Google-Places/state-bar scrapers, `import_csv.js`, `import_doi_bondsmen.js`,
-`fact_check_monitor.js` and `update_legal_data.js` under `backend/src/scripts/`
-(and the Windows `RUN_*.bat` wrappers) are operator-only tools from the SQLite
-era: they still write to a local SQLite file (`data/providers.sqlite` /
-`demo.db`), **not** to Postgres — don't expect them to populate the production
-directory. (The nightly scheduler runs the provider-refresh scrapers when
-`LIVE_REFRESH=true` and a Google/Yelp key is set; their output stays in that
-local file.) The exception is `import_doi_supabase.js`
-(`scripts/run_doi_import.sh`, see docs/DOI_IMPORT_GUIDE.md), which writes to
-the real database through Supabase with `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`.
+The data-refresh tools under `backend/src/scripts/` — Google Places / Yelp /
+state-bar scrapers (`refresh.js`, `scrape_providers_national.js`,
+`scrape_state_bars.js`, `scrape_recovery_agents.js`), importers
+(`import_csv.js`, `import_doi_bondsmen.js`, `import_doi_supabase.js`) and
+`update_legal_data.js` — write the **main Postgres database** (`DATABASE_URL`),
+the same one the app serves; the nightly scheduler runs the provider refresh
+when `LIVE_REFRESH=true`. New providers are inserted; changes to providers
+already listed are staged for admin review (`/api/admin/proposals`) and never
+written directly; nothing is deleted. Every script has `--dry-run`. Details:
+[RUNBOOK.md → Data refresh](./RUNBOOK.md#data-refresh-providers-arrests-legal-reference-data).
+Quick start: `cd backend && railway run bash scripts/run-all-scrapes.sh --dry-run`.
 
 ---
 

@@ -77,9 +77,13 @@ SENTRY_DSN=<https://...@sentry.io/...>   error tracking (SENTRY_ENVIRONMENT / SE
                                           / SENTRY_PROFILING optional tuning)
 OPENAI_API_KEY=<sk-...>                  Whisper transcription (else transcription 503)
 DAILY_API_KEY=<...>                      Daily.co video consultation rooms (else video 503)
-GOOGLE_PLACES_KEY=<AIza...>              provider-search fallback + scrapers
-YELP_API_KEY=<...>                       scraper business-data fallback
-SUPABASE_URL + SUPABASE_SERVICE_KEY      Supabase Storage (attachments) + DOI import script
+GOOGLE_PLACES_KEY=<AIza...>              data refresh: provider scrapers + nightly refresh (in-app
+                                          search reads Postgres and never calls Google). Unset →
+                                          those steps skip with a log line.
+GOOGLE_PLACES_MIN_INTERVAL_MS=150        data refresh: min ms between Places requests (rate limit)
+GOOGLE_PLACES_MAX_REQUESTS=5000          data refresh: Places request budget per run (cost cap)
+YELP_API_KEY=<...>                       data refresh: Yelp as a second business-data source
+SUPABASE_URL + SUPABASE_SERVICE_KEY      Supabase Storage (attachments) + RAG helpers
 EXPO_ACCESS_TOKEN=<...>                  Expo push notifications
 EXPO_PUSH_API_URL=<url>                  Expo push endpoint override (default https://exp.host/--/api/v2;
                                           point at a mock for staging/tests)
@@ -123,8 +127,10 @@ ATTACHMENTS_STORAGE=off|local|supabase   force a backend; "off" → attachment u
 ## Scheduler, alerts and admin
 
 ```
-LIVE_REFRESH=true                        enable the nightly scheduler (scrapers, alerts,
-                                          payment-link expiry, token cleanup). Off by default.
+LIVE_REFRESH=true                        enable the nightly scheduler (provider refresh into
+                                          Postgres, arrest-feed ingestion, alerts, payment-link
+                                          expiry, token cleanup). Off by default. See RUNBOOK.md
+                                          "Data refresh".
                                           Does NOT affect reminder delivery (below).
 REMINDERS_ENABLED=true                   court-date / user reminder delivery: every API process
                                           drains due scheduled_pushes each minute (push → email
@@ -221,9 +227,13 @@ integrations: Stripe is the only supported payment provider.
 ## Operator scripts and platform
 
 - `REPORT_DIR`: output directory for `src/scripts/fact_check_monitor.js` reports.
-- `PROVIDERS_DB`: local output file for the operator-only
-  `src/scripts/scrape_recovery_agents.js` (recovery agents are not shown in the app).
-- `SUPABASE_PUBLISHABLE_KEY`: fallback key for `src/scripts/import_doi_supabase.js`.
+- The data-refresh scripts in `src/scripts/` (`refresh.js`,
+  `scrape_providers_national.js`, `scrape_recovery_agents.js`,
+  `scrape_state_bars.js`, `import_csv.js`, `import_doi_*.js`,
+  `update_legal_data.js`) write the **main Postgres database** and need only
+  `DATABASE_URL` (plus `GOOGLE_PLACES_KEY` / `YELP_API_KEY` for the Google /
+  Yelp sources). They refuse to run without `DATABASE_URL`; there is no local
+  SQLite output any more. Run them on Railway with `railway run node src/scripts/<script>.js`.
 - Set by the platform, do not set by hand: `PORT` (default 4000 locally),
   `RAILWAY_ENVIRONMENT` (used as the Sentry environment / boot log label).
 

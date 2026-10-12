@@ -904,3 +904,139 @@ endpoint within 6 s (status sent, channel push).
 - Other screens' web `<Picker>` may share the contrast issue fixed in the bail calculator.
 - web-journeys needs a live backend + Chromium, so it is a documented script, not a CI step (like web-smoke).
 - Did NOT commit. Scratch DBs dropped and scratch servers stopped.
+
+# STEP 12 — operator data refresh moved from SQLite to the main Postgres DB
+
+## What was wrong
+Every scraper/importer in `backend/src/scripts/` (refresh, scrape_providers_national,
+scrape_state_bars, scrape_recovery_agents, import_csv, import_doi_bondsmen, scrape_arrests)
+wrote `backend/data/providers.sqlite` (sqlite3/sqlite), `update_legal_data.js` /
+`fact_check_monitor.js` used better-sqlite3 on `demo.db`, `import_doi_supabase.js` overwrote
+bail_agents rows through the Supabase REST client (fuzzy match → update, columns that don't
+exist), and the LIVE_REFRESH scheduler spawned those scripts — so a nightly run never reached
+what the app serves. Also found: the national scraper pushed its "missing states" city list
+into the *records* array; the scheduler passed `--type civil` (rejected by yargs);
+`update_legal_data.js` "SOL null fix" invented statute-of-limitations years (felony=3,
+misdemeanor=1); a real-looking Google API key hard-coded in the six Windows RUN_*.bat/.ps1
+wrappers; `scripts/run_doi_import.sh` had a bash syntax error; `data-pipeline/run_refresh.js`
+was an orphan that pip-installed sqlite3 into a non-existent `repo/` dir.
+
+## What changed
+- **`backend/src/services/dataRefresh/`** (new): `normalize.js` (phone/name/city/url keys,
+  lenient comparators), `providerStore.js` (the only write path to lawyers / bail_agents /
+  recovery_agents: match by Google place id/source_id → normalized phone (same state) →
+  normalized name+city+state; unmatched → INSERT active/unverified with source, source_id,
+  created_at/updated_at; matched → per-field proposals, never a row write; chunked
+  transactions with a SAVEPOINT per record; same-phone-other-city never proposes
+  address/lat/lng/hours), `proposals.js` (list/apply/reject/bulk; apply = row lock, stale
+  check (409 unless force), writes one column + updated_at, supersedes siblings, logs
+  provider_update_log + audit_log), `googlePlaces.js` (one client: injectable fetch,
+  GOOGLE_PLACES_MIN_INTERVAL_MS rate limit (150 ms), GOOGLE_PLACES_MAX_REQUESTS budget (5000),
+  retry/backoff on OVER_QUERY_LIMIT/5xx/429, REQUEST_DENIED aborts the run, missing key →
+  PlacesKeyMissingError), `runLog.js` (scrape_runs start/finish/skip, Postgres advisory lock
+  per job — one `provider_directory` lock shared by every writer of lawyers/bail_agents;
+  refuses the sql.js fallback), `providerRefresh.js` (Google/Yelp/bar fetchers; Yelp's listing
+  URL is never used as a website; bar parser needs person-like name + phone or bar number),
+  `recoveryRefresh.js`, `barCities.js` (121 deduped cities), `scheduled.js` (nightly steps +
+  admin `runRefresh`).
+- **Migration `00000000000015_provider_refresh_staging.sql`** (idempotent, RLS on):
+  `scrape_runs` (job/trigger/params/dry_run/status/counts/message/error_sample) and
+  `provider_update_proposals` (table/record/field/old/new/source/run/fetched_at/last_seen_at/
+  seen_count/status pending|applied|rejected|superseded/decided_by/at/note) with a partial
+  unique index on (table, record, field, md5(new_value)) WHERE status <> 'applied' → reruns
+  bump seen_count, a rejected value is never re-proposed, a superseded value is revived.
+- **Scripts rewritten onto the store** (all `--dry-run`, all refuse without DATABASE_URL, all
+  exit 0 with a clear message when their key is missing, all log a scrape_runs row; shared
+  `src/scripts/lib/refreshCli.js`): refresh.js, scrape_providers_national.js,
+  scrape_recovery_agents.js, scrape_state_bars.js, import_csv.js (state column / "City, ST"),
+  import_doi_bondsmen.js and import_doi_supabase.js (fuzzy match kept as a match *hint*;
+  `--reset` refused; no borrowed lat/lng), scrape_arrests.js (Postgres, insert-only,
+  normalizeRecord validation, source `roster_<key>`, **not** scheduled), update_legal_data.js
+  (Postgres; show / `--set field=value --source-url --verified-by [--dry-run]`, idempotent,
+  bail_min/max_cents kept in step, audit_log per field; SOL guessing removed),
+  fact_check_monitor.js (read-only Postgres staleness check). seed_providers.js stays a no-op.
+  New one-off `import_legacy_providers_sqlite.js` (dry run default, `--apply`).
+- **Scheduler**: steps run in-process on the shared pool (no spawn): step 1 provider refresh
+  (metros; civil on Sundays) or a logged skip without keys; step 2 arrest ingestion from
+  ARREST_FEED_URLS (logged as job arrest_feeds); Sunday step 6 bar listings + recovery agents.
+  `runRefresh` kept as an export (now in-process). healthScan/contentRefresh already used
+  Postgres — unchanged.
+- **Admin API** (`/api/admin`, auth + live DB role admin/super_admin + X-Admin-Key):
+  `GET /proposals`, `POST /proposals/:id/apply|reject`, `POST /proposals/apply|reject`
+  (bulk ≤500, per-id results), `POST /refresh` (in-process, 202 / 200 skipped, validated
+  input; was a detached `node refresh.js` spawn), `GET /refresh/runs`. openapi.json
+  regenerated (488 paths / 574 ops).
+- Small fixes: `/api/bail`, `/api/recovery-agents`, match fallback order `rating DESC NULLS
+  LAST` (unrated new rows no longer float to the top on Postgres).
+- **Deps**: removed `sqlite` (dep), `sqlite3` (optional), `better-sqlite3` (dev) + dead
+  `__tests__/setup.js` (only user of sqlite3); `sql.js` kept (db/index.js dev fallback,
+  tests, legacy import). Dockerfile comment updated. Removed env vars PROVIDERS_DB,
+  SUPABASE_PUBLISHABLE_KEY; added GOOGLE_PLACES_MIN_INTERVAL_MS / GOOGLE_PLACES_MAX_REQUESTS
+  (config ALL_ENV_VARS, both .env.example, RAILWAY_ENV_SETUP.md).
+- **Ops**: `backend/scripts/run-all-scrapes.sh` rewritten (flag parsing, Postgres-only,
+  --dry-run/--state, failing step reported, rest continue); `scripts/run_doi_import.sh` needs
+  DATABASE_URL (+ syntax fix); hard-coded Google key removed from the Windows wrappers (they
+  now require GOOGLE_PLACES_KEY + DATABASE_URL from the environment); npm scripts
+  `scrape:recovery[:dry]`, `import:doi`, `import:legacy-sqlite`, `legal:update`,
+  `pipeline:full|dry` → run-all-scrapes.sh; `data-pipeline/` deleted.
+- **Docs**: RUNBOOK "DATA REFRESH" section (rules, how to run, review endpoints, legacy
+  import result) + scheduled-jobs row; RAILWAY_ENV_SETUP, README (Data refresh), QUICKSTART,
+  FACT_CHECK_RUNBOOK, EXTERNAL_SERVICES_SETUP, docs/DOI_IMPORT_GUIDE, API_REFERENCE (admin
+  queue; stale "admin reads role from token" sentence fixed), LAUNCH_CHECKLIST (apply 15,
+  rotate the leaked key, review queue, junk state_bar rows).
+
+## Legacy providers.sqlite
+Read (not modified, not deleted) and compared under the same rules against a freshly migrated
+DB: lawyers 2,048, bail_agents 1,262, recovery_agents 531 → **0 to insert, 0 to propose**
+(all already in Postgres with identical tracked fields). `--apply` run is a verified no-op.
+
+## Tests added
+- `__tests__/data_refresh_unit.test.js` (in-memory run, 15): normalizers/comparators,
+  matching order incl. other-state/other-city phone, diff allowlist, Places client
+  retry/paging/fatal/budget/rate-limit, bar parser junk filter, sql.js refusal.
+- `__tests__/refresh/` (PG-gated, Places mocked, 22): data_refresh.int (new provider
+  inserted with provenance; verified lawyer + bail agent rows unchanged and a proposal created
+  instead; rerun = no dupes/no duplicate proposals (seen_count bump); name-match dedupe;
+  absent rows kept active; dry run writes only its log; list/apply/reject/bulk/stale 409;
+  plain user 403, no key 401, **demoted admin's valid token 403**; POST /refresh with no key
+  → logged skip; CLI scripts exit 0 without key; **md5 of all pre-existing lawyers /
+  bail_agents rows identical after every mocked scrape**), importers.int (CSV insert +
+  proposal + idempotent re-import, no-DATABASE_URL refusal, recovery agents, update_legal_data
+  read-only/dry-run/same-value/sourced write + audit + exact restore), scheduler_wiring.int
+  (LIVE_REFRESH=true → startScheduler registers runNightlyJob on REFRESH_CRON; invoking it
+  inserts a mocked provider in Postgres and logs scrape_runs providers ok + arrest_feeds
+  skipped; no key → skipped run, zero requests).
+- security/_world providerChecksum ignores `%JGTEST%` fixture rows; 24 stale source-text
+  assertions (file lengths, "Arrest record harvest (97 cities)", SOL guess SQL) updated to the
+  new behaviour. CI: new step "Data refresh suite on real Postgres (jest)" (`--runInBand
+  src/__tests__/refresh`) after the security step; valid YAML.
+
+## Gate
+1. Fresh DB, all **16** migrations ON_ERROR_STOP applied **twice** — OK; 191 base tables,
+   0 without RLS; lawyers 2,055 / bail_agents 1,265 / recovery_agents 531 md5 identical on the
+   fresh DB and on DBs after the PG suites, live replay and legacy `--apply`.
+2. Backend `npm ci` OK, `npm audit --omit=dev --audit-level=high` 0, lint 0/0, import smoke
+   OK; production boot (TZ=UTC, generated secrets, no Stripe, mock Anthropic) → smoke-test
+   **32/32**; LIVE_REFRESH=true production boot schedules cleanly. Live replay: admin
+   promotion picked up from DB (403 → 200 after the 60 s cache), /proposals 200, /refresh
+   without keys → 200 skipped + scrape_runs row, no X-Admin-Key 401, bad id 400.
+3. Full backend jest (in-memory): **324 suites passed / 23 PG-gated skipped; 27,921 passed /
+   191 skipped / 0 failed**. PG-gated on fresh DB: arrest_visibility+alerts_takedown_pg+
+   final_pass_fixes 3/40, integration 11/100, security 12/95, refresh 3/22 → **29 suites /
+   257 tests, 0 failed**.
+4. Frontend not touched.
+5. ci.yml updated (refresh suite step).
+
+## Not done / open
+- Nightly arrests come only from ARREST_FEED_URLS; the heuristic roster scraper stays a manual
+  tool (writing guessed names into arrest_records would feed alerts / outbound SMS).
+- Rating / review-count changes are proposals like any other field (one pending row per
+  field, superseded nightly) — the queue has no "auto-apply low-risk fields" option.
+- Two pre-existing `source='state_bar'` lawyer rows are page headings ("A Colorado Bar
+  Association membership…", "Layer") — not touched (owner rule), flagged in LAUNCH_CHECKLIST.
+- The removed Google key is still in git history → must be rotated (LAUNCH_CHECKLIST).
+- No admin UI for the proposals queue (API only). New rows carry NULL rating when the source
+  has none (never the schema's invented 4.0/4.5 default); 15 lawyers / 52 bail agents already
+  had NULL ratings and the frontend rating renders are null-guarded (checked LawyerCard,
+  LawyersScreen, SavedLawyers, QuickConnect, RecoveryAgents, BailSearch, Match).
+- Did NOT commit. Scratch DBs dropped, scratch servers stopped.

@@ -152,11 +152,11 @@ describe('3. scheduler.js — Automated Pipeline', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('Google/Yelp provider refresh');
   });
-  test('3-03: job 2 = arrest record harvest (97 cities)', async () => {
+  test('3-03: job 2 = arrest ingestion from configured feeds (ARREST_FEED_URLS)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/scheduler.js', 'utf8');
-    expect(src).toContain('Arrest record harvest');
-    expect(src).toContain('97 cities');
+    expect(src).toContain('Arrest ingestion from operator-configured feeds');
+    expect(src).toContain('ARREST_FEED_URLS');
   });
   test('3-04: job 4 = outbound bot (revenue engine)', async () => {
     const fs = await import('fs');
@@ -167,7 +167,7 @@ describe('3. scheduler.js — Automated Pipeline', () => {
   test('3-05: job 6 = state bar refresh on Sundays only', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/scheduler.js', 'utf8');
-    expect(src).toContain('State bar');
+    expect(src).toContain('State-bar listing refresh');
     expect(src).toContain('Sundays only');
   });
   test('3-06: EVERY 2 HOURS = expire payment links', async () => {

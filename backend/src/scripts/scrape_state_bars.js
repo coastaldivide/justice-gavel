@@ -20,6 +20,15 @@
  *   node src/scripts/scrape_state_bars.js --state TN --city Nashville
  *   node src/scripts/scrape_state_bars.js --list   (show all state configs)
  *
+ * Writes the MAIN Postgres database (DATABASE_URL) through services/dataRefresh:
+ *   - attorneys not yet in lawyers are inserted (source 'state_bar',
+ *     unverified — a heuristic page parse is not a verification);
+ *   - differences for attorneys already listed (phone, email, website,
+ *     bar number, ...) are staged in provider_update_proposals for review,
+ *     never written to the row; nothing is deleted or deactivated;
+ *   - a parsed entry needs a two-word name AND a phone or bar number to be
+ *     considered at all; each run is logged in scrape_runs.
+ *
  * IMPORTANT: This hits public government websites. Be respectful:
  *   - Delays are built in (1-3 seconds between requests)
  *   - User-Agent identifies the app honestly
@@ -29,15 +38,13 @@
 
 import 'dotenv/config';
 import { randomInt } from 'crypto';
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.resolve(__dirname, '../../data/providers.sqlite');
+import { createProviderWriter } from '../services/dataRefresh/providerStore.js';
+import { DIRECTORY_LOCK, NOT_A_PERSON } from '../services/dataRefresh/providerRefresh.js';
+import { startRun, finishRun, withJobLock, newCounts } from '../services/dataRefresh/runLog.js';
+import { splitCityState } from '../services/dataRefresh/normalize.js';
+import { openRefreshDb, printRunSummary, runCli } from './lib/refreshCli.js';
 const UA = 'Justice Gavel/1.0 (legal-aid app; public directory access; contact: admin@justicegavel.app)';
 
 const argv = yargs(hideBin(process.argv))
@@ -566,48 +573,29 @@ async function fetchTier2(stateCode, config, city, limit) {
   }
 }
 
-// ── DB upsert ─────────────────────────────────────────────────────────────────
-async function upsertAttorney(db, atty, dryRun) {
-  if (dryRun) {
-    console.log(`    [DRY] ${atty.name} | ${atty.city} | ${atty.phone || 'no phone'}`);
-    return 'dry-run';
-  }
-  try {
-    const existing = atty.barNumber
-      ? await db.get('SELECT id FROM lawyers WHERE bar_number=?', [atty.barNumber])
-      : await db.get('SELECT id FROM lawyers WHERE LOWER(name)=LOWER(?) AND city=?', [atty.name, atty.city]);
-
-    if (existing) {
-      await db.run(
-        `UPDATE lawyers SET phone=COALESCE(phone,?), email=COALESCE(email,?),
-         website=COALESCE(website,?), bar_number=COALESCE(bar_number,?),
-         verified=1, updated_at=NOW() WHERE id=?`,
-        [atty.phone, atty.email, atty.website, atty.barNumber, existing.id]
-      );
-      return 'updated';
-    }
-
-    await db.run(
-      `INSERT INTO lawyers (city, name, phone, address, lat, lng, website, email,
-       bar_number, verified, pro_bono, specialties, languages, source, source_id, active, updated_at)
-       VALUES (?,?,?,?,NULL,NULL,?,?,?,1,0,?,?,?,?,1,NOW())`,
-      [
-        atty.city, atty.name, atty.phone, atty.address,
-        atty.website, atty.email, atty.barNumber,
-        JSON.stringify(['Criminal Law']),
-        JSON.stringify(['English']),
-        atty.source, atty.sourceId,
-      ]
-    );
-    return 'inserted';
-  } catch (e) {
-    if (e.message?.includes('UNIQUE')) return 'skipped';
-    throw e;
-  }
+// ── Scraped entry → provider record (quality gate) ──────────────────────────
+function toRecord(atty) {
+  const { city, state } = splitCityState(atty.city);
+  const name = String(atty.name || '').trim();
+  if (!city || !state || name.split(/\s+/).length < 2 || name.split(/\s+/).length > 6 || NOT_A_PERSON.test(name)) return null;
+  if (!atty.phone && !atty.barNumber) return null;
+  return {
+    type: 'lawyers', source: 'state_bar',
+    source_id: atty.barNumber ? `bar_${atty.barNumber}` : atty.sourceId,
+    name, city, state,
+    phone: atty.phone || null,
+    email: atty.email || null,
+    website: atty.website || null,
+    // the parser falls back to "City, ST" — that is not an address
+    address: /\d/.test(atty.address || '') ? atty.address : null,
+    bar_number: atty.barNumber || null,
+    bar_state: state,
+    specialties: ['Criminal Law'],
+  };
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-(async () => {
+runCli(async () => {
   // --list mode: show all states
   if (argv.list) {
     console.log('\n50-State Coverage Map\n');
@@ -618,13 +606,13 @@ async function upsertAttorney(db, atty, dryRun) {
     console.log(`\n  🟢 Tier 1: ${Object.values(STATES).filter(s => s.tier===1).length} states — direct API/JSON`);
     console.log(`  🔵 Tier 2: ${Object.values(STATES).filter(s => s.tier===2).length} states — HTML scrape`);
     console.log(`  🔴 Tier 3: ${Object.values(STATES).filter(s => s.tier===3).length} states — no public online DB`);
-    process.exit(0);
+    return 0;
   }
 
   if (!argv.state) {
     console.error('--state is required. Use --state all or --state TN or --state TN,GA,TX');
     console.error('Use --list to see all available states.');
-    process.exit(1);
+    return 1;
   }
 
   // Determine target states
@@ -640,14 +628,17 @@ async function upsertAttorney(db, atty, dryRun) {
     targetCodes = targetCodes.filter(c => STATES[c]?.tier === argv.tier);
   }
 
-  const db = await open({ filename: DB_PATH, driver: sqlite3.Database });
-  await db.run('PRAGMA journal_mode=WAL');
-
-  let totalInserted = 0, totalUpdated = 0, totalSkipped = 0, totalErrors = 0;
-
-  console.log(`\n🇺🇸 Justice Gavel 50-State Bar Scraper`);
+  const db = await openRefreshDb();
+  const dryRun = argv['dry-run'];
+  console.log(`\n🇺🇸 Justice Gavel 50-State Bar Scraper → Postgres`);
   console.log(`   States: ${targetCodes.join(', ')}`);
-  console.log(`   Dry run: ${argv['dry-run']}\n`);
+  console.log(`   Dry run: ${dryRun}\n`);
+
+  const locked = await withJobLock(db, DIRECTORY_LOCK, async () => {
+  const counts = newCounts();
+  const errorSamples = [];
+  const runId = await startRun(db, { job: 'state_bars', trigger: 'manual', params: { states: targetCodes, city: argv.city || null, limit: argv.limit }, dryRun });
+  const writer = createProviderWriter(db, 'lawyers', { runId, dryRun, counts, errorSamples });
 
   for (const code of targetCodes) {
     const config = STATES[code];
@@ -676,37 +667,29 @@ async function upsertAttorney(db, atty, dryRun) {
         }
       } catch (e) {
         console.log(`  ✗ Failed: ${e.message}`);
-        totalErrors++;
+        counts.errors++;
+        errorSamples.push(`${code} ${city}: ${e.message}`);
         continue;
       }
 
-      console.log(`  Found: ${attorneys.length} attorneys`);
-
-      for (const atty of attorneys) {
-        try {
-          const r = await upsertAttorney(db, atty, argv['dry-run']);
-          if (r === 'inserted') totalInserted++;
-          else if (r === 'updated') totalUpdated++;
-          else totalSkipped++;
-        } catch (e) {
-          totalErrors++;
-          if (!e.message?.includes('UNIQUE')) console.warn(`  ✗ ${atty.name}: ${e.message}`);
-        }
-      }
+      const records = attorneys.map(toRecord).filter(Boolean);
+      counts.fetched += attorneys.length;
+      counts.skipped += attorneys.length - records.length;
+      console.log(`  Found: ${attorneys.length} entries, ${records.length} usable`);
+      if (dryRun) records.forEach(r => console.log(`    [DRY] ${r.name} | ${r.city}, ${r.state} | ${r.phone || 'no phone'}`));
+      await writer.writeAll(records);
 
       await sleep(1000); // polite delay between cities
     }
   }
 
-  console.log(`\n${'='.repeat(50)}`);
-  console.log(`✅ Scrape complete`);
-  console.log(`   Inserted: ${totalInserted} | Updated: ${totalUpdated} | Skipped: ${totalSkipped} | Errors: ${totalErrors}`);
-
-  if (!argv['dry-run']) {
-    const lCount = await db.get(`SELECT COUNT(*) as n FROM lawyers WHERE active=1`);
-    const bCount = await db.get(`SELECT COUNT(*) as n FROM bail_agents WHERE active=1`);
-    console.log(`   DB totals: ${lCount.n} active lawyers, ${bCount.n} active bail agents`);
+  const status = await finishRun(db, runId, counts, { errorSamples });
+  return { runId, status, counts };
+  });
+  if (!locked.locked) {
+    console.log('ℹ️  Another provider-directory run is in progress — try again later.');
+    return 0;
   }
-
-  await db.close();
-})().catch(e => { console.error('Scraper failed:', e); process.exit(1); });
+  printRunSummary('State bar scrape', { ...locked.result, dryRun });
+  return locked.result.status === 'failed' ? 1 : 0;
+});

@@ -72,5 +72,15 @@
 - [ ] Test full payment flow in Stripe test mode (when enabling payments)
 - [ ] Legal consultant sign-off on state rule accuracy
 - [ ] Configure `ARREST_FEED_URLS` (or accept honest empty arrest states)
+- [ ] Apply `supabase/migrations/00000000000015_provider_refresh_staging.sql`
+      (scrape_runs + provider_update_proposals) before enabling `LIVE_REFRESH`
+- [ ] **Rotate the Google Places key** that was hard-coded in the Windows
+      `backend/RUN_*.bat` / `.ps1` wrappers (removed in step 12, still in git
+      history); restrict the new key to the Places API + server IP
+- [ ] Review the data-refresh queue (`GET /api/admin/proposals`) after each
+      refresh; scraped changes to existing providers are never applied automatically
+- [ ] Review pre-existing `source = 'state_bar'` lawyer rows — some are page
+      headings, not attorneys (e.g. "A Colorado Bar Association membership…",
+      "Layer"); deactivate by hand via `/api/admin/lawyers/:id` if confirmed
 - [ ] EAS build submitted to App Store / Google Play
 - [ ] Legal action items in docs/LEGAL_ACTION_ITEMS.md resolved

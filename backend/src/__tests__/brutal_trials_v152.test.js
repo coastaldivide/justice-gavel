@@ -443,7 +443,9 @@ describe('M23. Scripts → ≥10 Hits (10 scripts)', () => {
                    'scrape_recovery_agents','scrape_state_bars'];
     for (const s of scripts) {
       const src=fs.readFileSync(path.join(base,`${s}.js`),'utf8');
-      expect(src.length).toBeGreaterThan(10000);
+      // step 12: every scraper writes the main Postgres DB (no local SQLite file)
+      expect(src).toContain('openRefreshDb');
+      expect(src).not.toMatch(/from 'sqlite3?'|better-sqlite3|providers\.sqlite'/);
     }
     // scrape_arrests: 39K — 97-city arrest harvester
     // scrape_providers_national: 41K — national attorney scraper
@@ -456,9 +458,10 @@ describe('M23. Scripts → ≥10 Hits (10 scripts)', () => {
     const id=fs.readFileSync(__REPO + '/backend/src/scripts/import_doi_bondsmen.js','utf8');
     const ul=fs.readFileSync(__REPO + '/backend/src/scripts/update_legal_data.js','utf8');
     expect(fc).toContain('Legal Data Fact-Check Monitor');
-    expect(ic.length).toBeGreaterThan(10000);
-    expect(id.length).toBeGreaterThan(12000);
-    expect(ul.length).toBeGreaterThan(5000);
+    for (const src of [fc, ic, id, ul]) expect(src).not.toMatch(/from 'sqlite3?'|better-sqlite3/);
+    expect(ic).toContain('createProviderWriter');
+    expect(id).toContain('createProviderWriter');
+    expect(ul).toContain('reference_data_update');
     // fact_check_monitor: validates government data sources
     // import_doi_bondsmen: DOI licensed bondsmen data import
     // update_legal_data: refreshes state statute tables

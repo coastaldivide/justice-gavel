@@ -51,10 +51,10 @@ shows these as `bearer` + `x-staff-only`).
   all of that user's sessions (`401 token_reuse`). Without a `refreshToken`,
   a still-valid access token in `Authorization: Bearer` is exchanged for a
   fresh pair (the mobile app's path). `POST /api/auth/logout` revokes.
-- Staff-only routes are flagged `x-staff-only: true` in the spec. Takedown
-  review, dispositions and research indexing re-read the user's role **from
-  the database**; other role checks (including `/api/admin/*`) read the role
-  claim in the access token, and `/api/admin/*` also requires `X-Admin-Key`.
+- Staff-only routes are flagged `x-staff-only: true` in the spec. Every role
+  check — including `/api/admin/*` — uses the role read from the database
+  (above), never a role claim in the token; `/api/admin/*` also requires
+  `X-Admin-Key`.
 
 ## Errors
 
@@ -135,7 +135,7 @@ The spec's `tags` mirror the mount points. The main groups:
 | **Bar prep** | `/api/bar-prep`, `/api/admin/bar-prep` | question bank, sessions, spaced repetition, admin import |
 | **Checkins & pretrial** | `/api/checkins`, `/api/pretrial`, `/api/bondsman` | pretrial check-ins, bondsman CRM |
 | **Push & notifications** | `/api/push`, `/api/webpush` | Expo push + web push (VAPID) |
-| **Admin & ops** | `/api/admin`, `/api/bot`, `/api/audit`, `/health`, `/metrics` | staff console (bearer with admin role + admin key), bot console (admin key), health probe (DB round-trip, cached `HEALTH_CACHE_MS`; reports `version`), JSON/Prometheus metrics |
+| **Admin & ops** | `/api/admin`, `/api/bot`, `/api/audit`, `/health`, `/metrics` | staff console (bearer with admin role + admin key) incl. the data-refresh review queue — `GET /api/admin/proposals`, `POST /api/admin/proposals/{id}/apply|reject`, bulk `POST /api/admin/proposals/apply|reject`, `POST /api/admin/refresh`, `GET /api/admin/refresh/runs` (see RUNBOOK.md "Data refresh"); bot console (admin key), health probe (DB round-trip, cached `HEALTH_CACHE_MS`; reports `version`), JSON/Prometheus metrics |
 
 ## Webhooks
 

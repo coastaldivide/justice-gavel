@@ -7,12 +7,15 @@ const JOB_LAST_RUN = new Map(); // prevents duplicate runs within same window
  * ─────────────────────────────────────────────────────
  *
  *  NIGHTLY (3 AM Central):
- *    1. Google/Yelp provider refresh
- *    2. Arrest record harvest (97 cities)
+ *    1. Google/Yelp provider refresh → main Postgres via services/dataRefresh
+ *       (new providers inserted; changes to existing rows staged in
+ *       provider_update_proposals for admin review — never written directly;
+ *       nothing deleted). Skipped with a log line when no key is set.
+ *    2. Arrest ingestion from operator-configured feeds (ARREST_FEED_URLS)
  *    3. Attorney/bail agent platform alerts (app subscribers)
  *    4. Outbound bot — SMS to bondsmen, email to attorneys (revenue engine)
  *    5. Expire old payment links (nightly run)
- *    6. State bar national provider refresh (Sundays only)
+ *    6. State-bar listing refresh + recovery-agent refresh (Sundays only)
  *    7. Golden Gavel eligibility sweep (all active subscribers)
  *    8. Docket deadline reminders + overdue webhook dispatch
  *
@@ -21,6 +24,7 @@ const JOB_LAST_RUN = new Map(); // prevents duplicate runs within same window
  *
  * Requires LIVE_REFRESH=true to activate cron jobs.
  * Manual trigger: POST /api/bot/run  or  POST /api/admin/refresh
+ * Every data-refresh step records a scrape_runs row (status + counts).
  *
  * LIVE_REFRESH semantics: it gates ONLY the data-refresh / outbound pipeline
  * above (scrapers, arrest harvest, outbound bot, nightly sweeps, health scan).
@@ -31,10 +35,8 @@ const JOB_LAST_RUN = new Map(); // prevents duplicate runs within same window
  */
 
 import cron from 'node-cron';
-import { spawn } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { CONFIG } from '../config.js';
+import { runRefresh, runScheduledDataRefresh } from './dataRefresh/scheduled.js';
 import { sendArrestAlerts }                    from './arrest_alerts.js';
 import { runOutboundBot, expireOldPaymentLinks } from './outbound_bot.js';
 import { processGoldenGavelAward }              from '../routes/golden_gavel.js';
@@ -43,8 +45,6 @@ import { startHealthScanScheduler, stopHealthScanScheduler } from './healthScan.
 import { archiveCompletedDocketEntries, checkAccountInactivity } from './retention.js';
 import { startReminderDispatcher, stopReminderDispatcher } from './reminderDispatcher.js';
 import { escapeHtml } from '../utils/sanitize.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ── Lazy Expo singleton for docket push notifications ─────────────────────────
 let _schedExpo = null;
@@ -55,48 +55,14 @@ async function getSchedExpo() {
   return _schedExpo;
 }
 
-const SCRIPTS = {
-  refresh:         path.resolve(__dirname, '../scripts/refresh.js'),
-  scrapeArrests:   path.resolve(__dirname, '../scripts/scrape_arrests.js'),
-  scrapeProviders: path.resolve(__dirname, '../scripts/scrape_providers_national.js'),
-};
-
 let nightlyTask = null;
 let linkExpiryTask = null;
 let reminderInterval = null;
 let tokenCleanupTask = null;
 
-// ── Spawn a Node script with streamed output ──────────────────────────────────
-function runScript(scriptPath, args = []) {
-  return new Promise((resolve) => {
-    const child = spawn('node', [scriptPath, ...args], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env },
-    });
-    let out = '';
-    child.stdout?.on('data', d => { out += d; });
-    child.stderr?.on('data', d => { out += d; });
-    child.on('close', code => {
-      const tag = `[scheduler:${path.basename(scriptPath, '.js')}]`;
-      logger.info(`${tag} exit ${code}`);
-      if (out.trim()) out.trim().split('\n').slice(-5).forEach(l => logger.info(`${tag} ${l}`));
-      resolve({ code, output: out });
-    });
-    child.on('error', err => {
-      logger.error(`[scheduler] spawn error: ${err.message}`);
-      resolve({ code: 1, output: err.message });
-    });
-  });
-}
-
-// Exported for admin route manual trigger
-export function runRefresh(options = {}) {
-  const args = [];
-  if (options.city)   args.push('--city',   options.city);
-  if (options.type)   args.push('--type',   options.type);
-  if (options.source) args.push('--source', options.source);
-  return runScript(SCRIPTS.refresh, args);
-}
+// Data-refresh steps live in services/dataRefresh/scheduled.js (Postgres only);
+// runRefresh is re-exported for the admin console and existing callers.
+export { runRefresh, runScheduledDataRefresh };
 
 // ── Step 8: Docket deadline reminders + overdue dispatch ─────────────────────
 // Runs on the nightly pipeline. Checks for:
@@ -370,33 +336,13 @@ async function runNightlyJob() {
   logger.info(`[scheduler] Nightly pipeline — ${now}`);
   logger.info(`[scheduler] ════════════════════════════════════`);
 
-  // Step 1: Google/Yelp provider refresh — criminal + civil attorneys
-  // Declare isSunday here — used by Step 1b AND Step 6 (bar scrape).
-  // Must be outside the hasGoogle/hasYelp block so Step 6 can always read it.
-  const isSunday  = nowDate.getDay() === 0;
-  const hasGoogle = !!process.env.GOOGLE_PLACES_KEY;
-  const hasYelp   = !!process.env.YELP_API_KEY;
-  if (hasGoogle || hasYelp) {
-    logger.info('[scheduler] Step 1a/8 — Criminal attorney refresh');
-    await runScript(SCRIPTS.refresh, ['--type', 'lawyers'])
-      .catch(e => logger.error('[scheduler] criminal refresh error:', e.message));
-
-    // Civil attorney refresh — runs weekly (Sundays) to avoid rate limits
-    if (isSunday) {
-      logger.info('[scheduler] Step 1b/8 — Civil attorney refresh (weekly, Sunday)');
-      await runScript(SCRIPTS.refresh, ['--type', 'civil'])
-        .catch(e => logger.error('[scheduler] civil refresh error:', e.message));
-    } else {
-      logger.info('[scheduler] Step 1b/8 — Civil refresh skipped (runs Sundays)');
-    }
-  } else {
-    logger.info('[scheduler] Step 1/8 — skipped (no API keys)');
+  // Steps 1, 2 and (Sundays) 6: data refresh into the main Postgres database
+  const isSunday = nowDate.getDay() === 0;
+  try {
+    await runScheduledDataRefresh({ isSunday });
+  } catch (e) {
+    logger.error('[scheduler] data refresh error:', e.message);
   }
-
-  // Step 2: Arrest harvest
-  logger.info('[scheduler] Step 2/8 — Arrest harvest (97 cities)');
-  await runScript(SCRIPTS.scrapeArrests, ['--since', '24h'])
-    .catch(e => logger.error('[scheduler] scrape error:', e.message));
 
   // Step 3: Platform alerts (app subscribers)
   logger.info('[scheduler] Step 3/8 — Platform subscriber alerts');
@@ -427,15 +373,6 @@ async function runNightlyJob() {
     if (r.expired > 0) logger.info(`[scheduler] Expired ${r.expired} payment links`);
   } catch (e) {
     logger.error('[scheduler] Expiry error:', e.message);
-  }
-
-  // Step 6: Sunday — state bar provider refresh (reuses isSunday from Step 1b above)
-  if (isSunday) {
-    logger.info('[scheduler] Step 6/8 — Sunday bar directory refresh');
-    await runScript(SCRIPTS.scrapeProviders, ['--source', 'bar'])
-      .catch(e => logger.error('[scheduler] bar scrape error:', e.message));
-  } else {
-    logger.info('[scheduler] Step 6/8 — skipped (runs Sundays only)');
   }
 
   // Step 7: Golden Gavel eligibility sweep (all active subscribers)

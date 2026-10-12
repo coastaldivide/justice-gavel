@@ -22,6 +22,8 @@
     "scrape:providers:national:google": "node src/scripts/scrape_providers_national.js --source google",
     "scrape:providers:lawyers": "node src/scripts/scrape_providers_national.js --type lawyers",
     "scrape:providers:bail": "node src/scripts/scrape_providers_national.js --type bail",
+    "scrape:recovery": "node src/scripts/scrape_recovery_agents.js",
+    "scrape:recovery:dry": "node src/scripts/scrape_recovery_agents.js --dry-run",
     "scrape:arrests": "node src/scripts/scrape_arrests.js",
     "scrape:arrests:dry": "node src/scripts/scrape_arrests.js --dry-run",
     "scrape:arrests:list": "node src/scripts/scrape_arrests.js --list",
@@ -31,8 +33,11 @@
     "alerts:send": "node -e \"import('./src/services/arrest_alerts.js').then(m=>m.sendArrestAlerts())\"",
     "import:csv": "node src/scripts/import_csv.js",
     "import:csv:template": "node src/scripts/import_csv.js --template",
-    "pipeline:full": "npm run seed:providers && npm run scrape:arrests:national && npm run alerts:send",
-    "pipeline:dry": "npm run scrape:arrests:dry && npm run scrape:providers:national:dry",
+    "import:doi": "node src/scripts/import_doi_bondsmen.js",
+    "import:legacy-sqlite": "node src/scripts/import_legacy_providers_sqlite.js",
+    "legal:update": "node src/scripts/update_legal_data.js",
+    "pipeline:full": "bash scripts/run-all-scrapes.sh",
+    "pipeline:dry": "bash scripts/run-all-scrapes.sh --dry-run",
     "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --config jest.config.js",
     "test:coverage": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --config jest.config.js --coverage",
     "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --config jest.config.js --watch",
@@ -88,7 +93,6 @@
     "resend": "^6.12.4",
     "response-time": "^2.3.4",
     "sql.js": "1.12.0",
-    "sqlite": "5.1.1",
     "stripe": "14.25.0",
     "unzipper": "0.12.3",
     "web-push": "^3.6.7",
@@ -98,7 +102,6 @@
   "description": "Justice Gavel — Backend API",
   "devDependencies": {
     "@eslint/js": "9.39.5",
-    "better-sqlite3": "^12.11.1",
     "eslint": "9.39.5",
     "eslint-plugin-n": "17.24.0",
     "eslint-plugin-security": "3.0.1",
@@ -118,8 +121,5 @@
     "tar": ">=7.5.11",
     "@tootallnate/once": ">=2.0.1",
     "make-fetch-happen": ">=11.0.0"
-  },
-  "optionalDependencies": {
-    "sqlite3": "^6.0.1"
   }
 }

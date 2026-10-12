@@ -59,8 +59,9 @@ describe('SCRP. scripts/ — Operational Data Pipeline (15 scripts)', () => {
   test('SCRP-03: scrape_providers_national.js — 40K national attorney scraper', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/scripts/scrape_providers_national.js','utf8');
-    expect(src).toContain('National Attorney');
-    expect(src.length).toBeGreaterThan(38000);
+    expect(src).toMatch(/national attorney/i);
+    expect(src).toContain('runProviderRefresh');          // shared Postgres pipeline (step 12)
+    expect(src).toContain('ALL_BAR_CITIES');
     // Pulls verified attorney data from 50 state bar APIs
   });
   test('SCRP-04: scrape_state_bars.js — 50-state attorney data harvester', async () => {
@@ -80,8 +81,9 @@ describe('SCRP. scripts/ — Operational Data Pipeline (15 scripts)', () => {
   test('SCRP-09: refresh.js — unified provider data refresh pipeline', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/scripts/refresh.js','utf8');
-    expect(src).toContain('Unified provider data refresh');
-    expect(src.length).toBeGreaterThan(10000);
+    expect(src).toContain('provider refresh');
+    expect(src).toContain('runProviderRefresh');
+    expect(src).toContain('--dry-run');
     // Pulls fresh attorney + provider data from all sources
   });
   test('SCRP-10: validate-i18n.js + import_csv.js + scrape_recovery_agents.js', async () => {
@@ -91,7 +93,7 @@ describe('SCRP. scripts/ — Operational Data Pipeline (15 scripts)', () => {
     const ra = fs.readFileSync(__REPO + '/backend/src/scripts/scrape_recovery_agents.js','utf8');
     expect(v.length).toBeGreaterThan(100); // validate-i18n script
     expect(ic).toContain('CSV');
-    expect(ra).toContain('fugitive recovery agents');
+    expect(ra).toContain('fugitive recovery');
     // validate-i18n: checks all translation files have same key count as en.json
   });
 });

@@ -2,7 +2,16 @@
  * import_doi_bondsmen.js — Import real bail bondsman data from State DOI exports
  * ─────────────────────────────────────────────────────────────────────────────
  * Ingests state Department of Insurance licensee CSV/TXT exports and upserts
- * real, verified bail bondsman records into providers.sqlite.
+ * licensed bail bondsman records into the MAIN Postgres database (DATABASE_URL)
+ * through services/dataRefresh:
+ *   - licensees not yet in bail_agents are inserted (source 'doi_import',
+ *     doi_verified = 1, license number / type, timestamps);
+ *   - for bondsmen already listed (matched by source id, phone, or
+ *     name + city + state) the DOI values (license number, phone, email,
+ *     address, doi_verified) are staged in provider_update_proposals for
+ *     admin review — an existing row is never overwritten;
+ *   - nothing is deleted (the old --reset flag is gone); runs are logged in
+ *     scrape_runs.
  *
  * USAGE:
  *   node src/scripts/import_doi_bondsmen.js --file tn_producers.txt --state TN
@@ -44,28 +53,27 @@
  *     Covers all 50 states through one interface
  *     Free individual lookups, bulk export requires account
  *
- * RESULT: Records inserted with source='doi_import', verified=1
- *         These permanently replace seed records for same city/name.
+ * RESULT: new licensees inserted with source='doi_import', doi_verified=1;
+ *         differences for existing rows staged for review (never applied here).
  */
 
 import 'dotenv/config';
-import sqlite3   from 'sqlite3';
-import { open }  from 'sqlite';
 import path      from 'path';
 import fs        from 'fs';
 import { parse } from 'csv-parse/sync';
-import { fileURLToPath } from 'url';
 import yargs     from 'yargs';
 import { hideBin } from 'yargs/helpers';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH   = path.resolve(__dirname, '../../data/providers.sqlite');
+import { createProviderWriter } from '../services/dataRefresh/providerStore.js';
+import { DIRECTORY_LOCK } from '../services/dataRefresh/providerRefresh.js';
+import { startRun, finishRun, withJobLock, newCounts } from '../services/dataRefresh/runLog.js';
+import { splitCityState } from '../services/dataRefresh/normalize.js';
+import { openRefreshDb, printRunSummary, runCli } from './lib/refreshCli.js';
 
 const argv = yargs(hideBin(process.argv))
   .option('file',    { type: 'string',  required: true, describe: 'Path to DOI export file' })
   .option('state',   { type: 'string',  required: true, describe: 'Two-letter state code (TN, TX, FL...)' })
   .option('dry-run', { type: 'boolean', default: false })
-  .option('reset',   { type: 'boolean', default: false, describe: 'Remove existing doi_import records for this state first' })
+  .option('reset',   { type: 'boolean', default: false, hidden: true })
   .argv;
 
 // ── State-specific column mappings ──────────────────────────────────────────
@@ -218,13 +226,18 @@ function titleCase(str) {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-(async () => {
+runCli(async () => {
+  if (argv.reset) {
+    console.error('--reset is no longer supported: imports never delete bail_agents rows. '
+      + 'Re-run without it — existing rows are matched and changes staged for review.');
+    return 1;
+  }
   const stateCode = argv.state.toUpperCase();
   const filePath  = path.resolve(argv.file);
 
   if (!fs.existsSync(filePath)) {
     console.error(`File not found: ${filePath}`);
-    process.exit(1);
+    return 1;
   }
 
   const parser = STATE_PARSERS[stateCode] || STATE_PARSERS.DEFAULT;
@@ -245,78 +258,50 @@ function titleCase(str) {
       rows = parse(raw, { delimiter: '|', columns: true, skip_empty_lines: true, trim: true });
     } catch {
       console.error('Could not parse file. Check format and delimiter.');
-      process.exit(1);
+      return 1;
     }
   }
 
   console.log(`Parsed ${rows.length} rows from ${path.basename(filePath)}`);
-
   const filtered = rows.filter(parser.filter);
   console.log(`Bail bondsmen after filter: ${filtered.length}`);
 
-  if (argv['dry-run']) {
-    console.log('\nDRY RUN — first 5 records:');
-    filtered.slice(0, 5).forEach(row => console.log(JSON.stringify(parser.extract(row), null, 2)));
-    return;
-  }
-
-  const db = await open({ filename: DB_PATH, driver: sqlite3.Database });
-  await db.run('PRAGMA journal_mode=WAL');
-
-  if (argv.reset) {
-    const deleted = await db.run(
-      "DELETE FROM bail_agents WHERE source='doi_import' AND state=?", [stateCode]
-    );
-    console.log(`Removed ${deleted.changes} existing doi_import records for ${stateCode}`);
-  }
-
-  let inserted = 0, updated = 0, skipped = 0;
-
+  const records = [];
+  let unusable = 0;
   for (const row of filtered) {
     const data = parser.extract(row);
-    if (!data.name.trim()) { skipped++; continue; }
-    if (!data.city.trim().replace(`, ${stateCode}`, '')) { skipped++; continue; }
-
-    const sid = `doi_${stateCode}_${(data.license_number || data.npn || data.name).replace(/\W/g, '_').toLowerCase()}`;
-
-    const existing = await db.get('SELECT id FROM bail_agents WHERE source_id=?', [sid]);
-    if (existing) {
-      await db.run(
-        `UPDATE bail_agents SET name=?,phone=?,address=?,email=?,
-         license_number=?,updated_at=NOW() WHERE source_id=?`,
-        [data.name, data.phone, data.address, data.email, data.license_number, sid]
-      );
-      updated++;
-    } else {
-      // Try to match to an existing city in our DB to get lat/lng
-      const cityRow = await db.get(
-        'SELECT lat, lng FROM bail_agents WHERE city=? AND lat IS NOT NULL LIMIT 1',
-        [data.city]
-      );
-
-      await db.run(
-        `INSERT INTO bail_agents
-         (source_id,city,name,phone,address,lat,lng,state,email,
-          license_number,bond_rate,payment_plans,hours,verified,active,
-          source,available_24_7,fee_percent,bio,created_at,updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,10,1,"24/7",1,1,?,1,10,?,
-                 NOW(),NOW())`,
-        [sid, data.city, data.name, data.phone, data.address,
-         cityRow?.lat || null, cityRow?.lng || null, stateCode, data.email,
-         data.license_number, 'doi_import',
-         `Licensed bail bondsman in ${data.city}. State license: ${data.license_number}.`]
-      );
-      inserted++;
-    }
+    const { city } = splitCityState(data.city, stateCode);
+    if (!data.name.trim() || !city) { unusable++; continue; }
+    const key = (data.license_number || data.npn || data.name).replace(/\W/g, '_').toLowerCase();
+    records.push({
+      type: 'bail_agents', source: 'doi_import',
+      source_id: `doi_${stateCode}_${key}`,
+      name: data.name, company: data.business_name || null,
+      city, state: stateCode,
+      phone: data.phone || null, email: data.email || null, address: data.address || null,
+      license_number: data.license_number || null,
+      license_type: 'state DOI bail license',
+      doi_verified: 1,
+      bio: data.license_number ? `Licensed bail bondsman (${stateCode} license ${data.license_number}).` : null,
+    });
   }
 
-  console.log(`\n✅ Import complete for ${stateCode}:`);
-  console.log(`   Inserted: ${inserted}`);
-  console.log(`   Updated:  ${updated}`);
-  console.log(`   Skipped:  ${skipped}`);
-  console.log(`   Total active bail agents in DB: ${
-    (await db.get('SELECT COUNT(*) as n FROM bail_agents WHERE active=1')).n
-  }`);
-
-  await db.close();
-})().catch(e => { console.error('Import failed:', e); process.exit(1); });
+  const db = await openRefreshDb();
+  const dryRun = argv['dry-run'];
+  const locked = await withJobLock(db, DIRECTORY_LOCK, async () => {
+    const counts = newCounts();
+    counts.fetched = filtered.length;
+    counts.skipped = unusable;
+    const errorSamples = [];
+    const runId = await startRun(db, { job: 'doi_import', trigger: 'manual', params: { state: stateCode, file: path.basename(filePath) }, dryRun });
+    await createProviderWriter(db, 'bail_agents', { runId, dryRun, counts, errorSamples }).writeAll(records);
+    const status = await finishRun(db, runId, counts, { errorSamples });
+    return { runId, status, counts };
+  });
+  if (!locked.locked) {
+    console.log('ℹ️  Another provider-directory run is in progress — try again later.');
+    return 0;
+  }
+  printRunSummary(`DOI import (${stateCode})`, { ...locked.result, dryRun });
+  return locked.result.status === 'failed' ? 1 : 0;
+});

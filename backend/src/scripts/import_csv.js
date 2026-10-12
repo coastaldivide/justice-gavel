@@ -30,21 +30,29 @@
  *   lat          — Latitude (optional, will be null if omitted)
  *   lng          — Longitude (optional, will be null if omitted)
  *
+ *   state        — 2-letter state (or put "City, ST" in city / --city)
+ *
  * Template CSV: run with --template to print a blank CSV header
+ *
+ * Writes the MAIN Postgres database (DATABASE_URL) through
+ * services/dataRefresh: rows for providers not yet listed are inserted
+ * (source 'csv'); for providers already listed (matched by phone or
+ * name + city + state) the CSV's differing values are staged in
+ * provider_update_proposals for admin review — an existing row is never
+ * overwritten, and nothing is deleted. Each import is logged in scrape_runs.
  */
 
 import 'dotenv/config';
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import readline from 'readline';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.resolve(__dirname, '../../data/providers.sqlite');
+import { createProviderWriter } from '../services/dataRefresh/providerStore.js';
+import { DIRECTORY_LOCK } from '../services/dataRefresh/providerRefresh.js';
+import { startRun, finishRun, withJobLock, newCounts } from '../services/dataRefresh/runLog.js';
+import { splitCityState } from '../services/dataRefresh/normalize.js';
+import { openRefreshDb, printRunSummary, runCli } from './lib/refreshCli.js';
 
 const argv = yargs(hideBin(process.argv))
   .option('file',     { type: 'string',  describe: 'Path to CSV file' })
@@ -56,13 +64,13 @@ const argv = yargs(hideBin(process.argv))
 
 // ── CSV template ──────────────────────────────────────────────────────────────
 if (argv.template) {
-  const lawyerCols = 'name,phone,address,city,email,website,bar_number,specialties,languages,pro_bono,sliding_scale,free_consultation,years_experience,bio,verified,lat,lng';
-  const bailCols   = 'name,phone,address,city,email,website,hours,verified,lat,lng';
+  const lawyerCols = 'name,phone,address,city,state,email,website,bar_number,specialties,languages,pro_bono,sliding_scale,free_consultation,years_experience,bio,verified,lat,lng';
+  const bailCols   = 'name,phone,address,city,state,email,website,hours,verified,lat,lng';
   const cols = argv.type === 'bail' ? bailCols : lawyerCols;
   console.log(cols);
   console.log(`# Paste your data below this line. Remove this comment row before importing.`);
   console.log(`# Example (lawyers):`);
-  console.log(`Jane Smith Esq.,615-555-0100,"123 Main St, Nashville, TN","Nashville, TN",jane@smithlaw.com,https://smithlaw.com,TN012345,"DUI, Drug Offenses","English, Spanish",yes,yes,yes,12,Former public defender. Free consultations.,yes,36.1627,-86.7816`);
+  console.log(`Jane Smith Esq.,615-555-0100,"123 Main St, Nashville, TN",Nashville,TN,jane@smithlaw.com,https://smithlaw.com,TN012345,"DUI, Drug Offenses","English, Spanish",yes,yes,yes,12,Former public defender. Free consultations.,yes,36.1627,-86.7816`);
   process.exit(0);
 }
 
@@ -119,158 +127,90 @@ async function readCSV(filePath) {
 }
 
 // ── Value normalizers ─────────────────────────────────────────────────────────
-function normalizePhone(s) {
-  if (!s) return null;
-  const digits = s.replace(/\D/g, '');
-  if (digits.length === 10) return '+1' + digits;
-  if (digits.length === 11 && digits[0] === '1') return '+' + digits;
-  return digits.length >= 7 ? s.trim() : null;
-}
-
 function normalizeBool(s) {
   if (!s) return 0;
   return /^(yes|true|1|y)$/i.test(String(s).trim()) ? 1 : 0;
 }
 
-function normalizeSpecialties(s) {
-  if (!s) return JSON.stringify([]);
-  return JSON.stringify(s.split(',').map(x => x.trim()).filter(Boolean));
+function splitList(s, fallback) {
+  const list = String(s || '').split(',').map(x => x.trim()).filter(Boolean);
+  return list.length ? list : fallback;
 }
 
-function normalizeLanguages(s) {
-  if (!s) return JSON.stringify(['English']);
-  const langs = s.split(',').map(x => x.trim()).filter(Boolean);
-  return JSON.stringify(langs.length ? langs : ['English']);
-}
-
-function normalizeUrl(s) {
-  if (!s) return null;
-  const u = s.trim();
-  return u.startsWith('http') ? u : u ? 'https://' + u : null;
-}
-
-// ── DB upsert ─────────────────────────────────────────────────────────────────
-async function upsertRow(db, row, type, defaultCity, dryRun) {
+/** One CSV row → provider record (validation happens in providerStore). */
+function toRecord(row, type, defaultCity) {
   const name = row.name?.trim();
-  if (!name || name.length < 2) return 'skipped';
-
-  const city = (row.city?.trim() || defaultCity || '').trim();
-  if (!city) { console.warn(`  ⚠ Skipping "${name}" — no city. Use --city flag or add city column.`); return 'skipped'; }
-
-  const phone   = normalizePhone(row.phone);
-  const address = row.address?.trim() || city;
-  const email   = row.email?.trim() || null;
-  const website = normalizeUrl(row.website);
-  const lat     = row.lat ? parseFloat(row.lat) || null : null;
-  const lng     = row.lng ? parseFloat(row.lng) || null : null;
-  const verified = normalizeBool(row.verified || row.verified_);
-  const sourceId = `csv_${name.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 40)}_${city.replace(/\W/g, '').toLowerCase().substring(0, 10)}`;
-
-  if (dryRun) {
-    console.log(`    [DRY-RUN] ${type}: ${name} | ${city} | ${phone || 'no phone'} | ${email || 'no email'}`);
-    return 'dry-run';
-  }
-
-  if (type === 'lawyers') {
-    const existing = await db.get(
-      'SELECT id FROM lawyers WHERE LOWER(name)=LOWER(?) AND city=?',
-      [name, city]
-    );
-    if (existing) {
-      await db.run(
-        `UPDATE lawyers SET phone=COALESCE(phone,?), address=COALESCE(address,?),
-         email=COALESCE(email,?), website=COALESCE(website,?),
-         bar_number=COALESCE(bar_number,?), verified=MAX(verified,?),
-         lat=COALESCE(lat,?), lng=COALESCE(lng,?), updated_at=NOW()
-         WHERE id=?`,
-        [phone, address, email, website, row.bar_number || null, verified, lat, lng, existing.id]
-      );
-      return 'updated';
-    }
-    await db.run(
-      `INSERT INTO lawyers (city, name, phone, address, lat, lng, website, email,
-       bar_number, verified, pro_bono, sliding_scale, free_consultation,
-       years_experience, bio, specialties, languages, source, source_id, active, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,NOW())`,
-      [
-        city, name, phone, address, lat, lng, website, email,
-        row.bar_number || null,
-        verified,
-        normalizeBool(row.pro_bono),
-        normalizeBool(row.sliding_scale),
-        normalizeBool(row.free_consultation),
-        row.years_experience ? parseInt(row.years_experience) || null : null,
-        row.bio?.trim() || null,
-        normalizeSpecialties(row.specialties),
-        normalizeLanguages(row.languages),
-        'csv', sourceId,
-      ]
-    );
-    return 'inserted';
+  const { city, state } = splitCityState(row.city?.trim() || defaultCity || '', row.state);
+  if (!name || !city || !state) return { skip: `"${name || '?'}" — needs name, city and a 2-letter state (state column or "City, ST")` };
+  const rec = {
+    type: type === 'bail' ? 'bail_agents' : 'lawyers',
+    source: 'csv',
+    source_id: `csv_${name.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 40)}_${city.replace(/\W/g, '').toLowerCase().substring(0, 16)}_${state.toLowerCase()}`,
+    name, city, state,
+    phone: row.phone || null,
+    address: row.address?.trim() || null,
+    email: row.email?.trim() || null,
+    website: row.website || null,
+    lat: row.lat || null, lng: row.lng || null,
+    // operator-asserted on NEW rows only; never changes an existing row
+    verified: normalizeBool(row.verified || row.verified_),
+  };
+  if (rec.type === 'lawyers') {
+    Object.assign(rec, {
+      bar_number: row.bar_number || null,
+      pro_bono: normalizeBool(row.pro_bono),
+      sliding_scale: normalizeBool(row.sliding_scale),
+      free_consultation: normalizeBool(row.free_consultation),
+      years_experience: row.years_experience ? parseInt(row.years_experience, 10) || null : null,
+      bio: row.bio?.trim() || null,
+      specialties: splitList(row.specialties, ['Criminal Defense']),
+      languages: splitList(row.languages, ['English']),
+    });
   } else {
-    const existing = await db.get(
-      'SELECT id FROM bail_agents WHERE LOWER(name)=LOWER(?) AND city=?',
-      [name, city]
-    );
-    if (existing) {
-      await db.run(
-        `UPDATE bail_agents SET phone=COALESCE(phone,?), email=COALESCE(email,?),
-         website=COALESCE(website,?), hours=COALESCE(hours,?),
-         lat=COALESCE(lat,?), lng=COALESCE(lng,?), updated_at=NOW()
-         WHERE id=?`,
-        [phone, email, website, row.hours || null, lat, lng, existing.id]
-      );
-      return 'updated';
-    }
-    await db.run(
-      `INSERT INTO bail_agents (city, name, phone, address, lat, lng, website, email,
-       hours, verified, source, source_id, active, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,NOW())`,
-      [city, name, phone, address, lat, lng, website, email, row.hours || null, verified, 'csv', sourceId]
-    );
-    return 'inserted';
+    rec.hours = row.hours || null;
   }
+  return { rec };
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-(async () => {
+runCli(async () => {
   if (!fs.existsSync(argv.file)) {
     console.error(`File not found: ${argv.file}`);
-    process.exit(1);
+    return 1;
   }
-
-  console.log(`\n📂 Importing ${argv.type} from ${argv.file}`);
-  if (argv['dry-run']) console.log('   DRY RUN — no changes will be made\n');
+  const dryRun = argv['dry-run'];
+  console.log(`\n📂 Importing ${argv.type} from ${argv.file} → Postgres`);
+  if (dryRun) console.log('   DRY RUN — no changes will be made\n');
 
   const rows = await readCSV(argv.file);
   console.log(`   ${rows.length} rows found\n`);
-
-  const db = await open({ filename: DB_PATH, driver: sqlite3.Database });
-  await db.run('PRAGMA journal_mode=WAL');
-
-  let inserted = 0, updated = 0, skipped = 0, errors = 0;
-
+  const records = [];
+  let unusable = 0;
   for (const row of rows) {
-    try {
-      const result = await upsertRow(db, row, argv.type, argv.city, argv['dry-run']);
-      if (result === 'inserted') { inserted++; process.stdout.write(`  ✓ Added:    ${row.name}\n`); }
-      else if (result === 'updated') { updated++; process.stdout.write(`  ↻ Updated:  ${row.name}\n`); }
-      else if (result === 'skipped') skipped++;
-      // result === 'dry-run': nothing to count
-    } catch (e) {
-      errors++;
-      console.error(`  ✗ Error on "${row.name}": ${e.message}`);
-    }
+    const r = toRecord(row, argv.type, argv.city);
+    if (r.skip) { unusable++; console.warn(`  ⚠ Skipping ${r.skip}`); continue; }
+    records.push(r.rec);
   }
 
-  console.log(`\n✅ Import complete`);
-  console.log(`   Inserted: ${inserted} | Updated: ${updated} | Skipped: ${skipped} | Errors: ${errors}`);
-
-  if (!argv['dry-run']) {
-    const lCount = await db.get('SELECT COUNT(*) as n FROM lawyers WHERE active=1');
-    const bCount = await db.get('SELECT COUNT(*) as n FROM bail_agents WHERE active=1');
-    console.log(`   DB totals: ${lCount.n} active lawyers, ${bCount.n} active bail agents`);
+  const db = await openRefreshDb();
+  const table = argv.type === 'bail' ? 'bail_agents' : 'lawyers';
+  const locked = await withJobLock(db, DIRECTORY_LOCK, async () => {
+    const counts = newCounts();
+    counts.fetched = rows.length;
+    counts.skipped = unusable;
+    const errorSamples = [];
+    const runId = await startRun(db, { job: 'csv_import', trigger: 'manual', params: { type: table, file: path.basename(argv.file) }, dryRun });
+    await createProviderWriter(db, table, {
+      runId, dryRun, counts, errorSamples,
+      onResult: (o) => { if (o.result === 'error') console.error(`  ✗ ${o.error}`); },
+    }).writeAll(records);
+    const status = await finishRun(db, runId, counts, { errorSamples });
+    return { runId, status, counts };
+  });
+  if (!locked.locked) {
+    console.log('ℹ️  Another provider-directory run is in progress — try again later.');
+    return 0;
   }
-
-  await db.close();
-})().catch(e => { console.error('Import failed:', e); process.exit(1); });
+  printRunSummary(`CSV import (${table})`, { ...locked.result, dryRun });
+  return locked.result.status === 'failed' ? 1 : 0;
+});

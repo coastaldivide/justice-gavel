@@ -1,99 +1,87 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════════════════════
-# Justice Gavel — Full Data Pipeline
-# Runs all scrapes and seeds in the correct order.
+# Justice Gavel — manual data refresh (operator run)
 #
-# Prerequisites:
-#   DATABASE_URL, GOOGLE_PLACES_KEY, ANTHROPIC_API_KEY set in environment
-#   (These are already set in Railway — run via: railway run bash scripts/run-all-scrapes.sh)
+# Every step writes the MAIN Postgres database (DATABASE_URL) through
+# backend/src/services/dataRefresh — the same code the nightly scheduler runs
+# when LIVE_REFRESH=true:
+#   * providers not yet listed are INSERTED (source / source_id / timestamps);
+#   * changes for providers already listed are STAGED in
+#     provider_update_proposals for admin review (GET /api/admin/proposals,
+#     POST /api/admin/proposals/:id/apply|reject) — never written directly;
+#   * nothing is deleted or deactivated; every step logs a scrape_runs row
+#     (GET /api/admin/refresh/runs).
 #
-# Runtime: ~2-4 hours for full national scrape
-# Usage:
-#   Full run:          bash scripts/run-all-scrapes.sh
-#   Quick seed only:   bash scripts/run-all-scrapes.sh --seed-only
-#   One state:         bash scripts/run-all-scrapes.sh --state TN
-#   Dry run:           bash scripts/run-all-scrapes.sh --dry-run
+# Prerequisites: DATABASE_URL (required). GOOGLE_PLACES_KEY / YELP_API_KEY are
+# optional — a step whose key is missing is skipped with a message.
+#   Railway:  railway run bash scripts/run-all-scrapes.sh
+#
+# Usage (from backend/):
+#   bash scripts/run-all-scrapes.sh                 # everything, all states
+#   bash scripts/run-all-scrapes.sh --dry-run       # fetch + match, write only the run log
+#   bash scripts/run-all-scrapes.sh --state TN      # one state
+#   bash scripts/run-all-scrapes.sh --dry-run --state TN
+#
+# Not run here on purpose:
+#   * DOI / CSV imports — need an input file (see RUNBOOK.md "Data refresh")
+#   * arrest roster scraping — heuristic; run src/scripts/scrape_arrests.js
+#     --dry-run by hand and review. The scheduler ingests arrests only from
+#     ARREST_FEED_URLS feeds.
+#   * legal reference corrections — src/scripts/update_legal_data.js, one
+#     sourced record at a time.
+# Runtime: up to a few hours for a full national run (Google rate limits).
 # ══════════════════════════════════════════════════════════════════════════════
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-STATE="${2:-}"
-DRY_RUN="${1:-}"
-SEED_ONLY="${1:-}"
+DRY_RUN=""
+STATE=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run)  DRY_RUN="--dry-run"; shift ;;
+    --state)    STATE="${2:-}"; shift 2 ;;
+    --seed-only) echo "--seed-only is gone: provider rows are seeded by supabase/migrations."; exit 0 ;;
+    *) echo "Unknown option: $1" >&2; exit 2 ;;
+  esac
+done
+if [ -n "$STATE" ] && ! [[ "$STATE" =~ ^[A-Za-z]{2}$ ]]; then
+  echo "--state needs a 2-letter code" >&2; exit 2
+fi
 
 echo "╔══════════════════════════════════════════════════════════════════╗"
-echo "║  Justice Gavel — Data Pipeline                                 ║"
+echo "║  Justice Gavel — Data Refresh → Postgres                        ║"
 echo "╚══════════════════════════════════════════════════════════════════╝"
-echo ""
-echo "DATABASE_URL:      ${DATABASE_URL:+SET} ${DATABASE_URL:-NOT SET}"
-echo "GOOGLE_PLACES_KEY: ${GOOGLE_PLACES_KEY:+SET} ${GOOGLE_PLACES_KEY:-NOT SET}"
+echo "DATABASE_URL:      ${DATABASE_URL:+set}${DATABASE_URL:-NOT SET}"
+echo "GOOGLE_PLACES_KEY: ${GOOGLE_PLACES_KEY:+set}${GOOGLE_PLACES_KEY:-not set (Google steps skipped)}"
+echo "YELP_API_KEY:      ${YELP_API_KEY:+set}${YELP_API_KEY:-not set (Yelp skipped)}"
+echo "Mode:              ${DRY_RUN:-write}${STATE:+ | state $STATE}"
 echo ""
 
-if [ -z "$DATABASE_URL" ]; then
+if [ -z "${DATABASE_URL:-}" ]; then
   echo "❌ DATABASE_URL not set. Run via: railway run bash scripts/run-all-scrapes.sh"
   exit 1
 fi
 
-# ── STEP 1: Seed foundational provider data ───────────────────────────────────
-echo "STEP 1/6: Seeding foundational attorney & bail agent data (all 50 states)..."
-if [ -n "$STATE" ]; then
-  node src/scripts/seed_providers.js --state "$STATE"
-else
-  node src/scripts/seed_providers.js
+STATE_ARGS=()
+[ -n "$STATE" ] && STATE_ARGS=(--state "$STATE")
+FAILED=0
+step() {   # step <label> <command...> — a failing step is reported, the rest still run
+  local label="$1"; shift
+  echo ""; echo "── $label"
+  if "$@"; then echo "✅ $label"; else echo "❌ $label failed (exit $?)"; FAILED=1; fi
+}
+
+step "1/3 National attorney & bail-agent refresh (state bar + Google + Yelp)" \
+  node src/scripts/scrape_providers_national.js ${STATE_ARGS[@]+"${STATE_ARGS[@]}"} $DRY_RUN
+step "2/3 Recovery agents (Google Places)" \
+  node src/scripts/scrape_recovery_agents.js ${STATE_ARGS[@]+"${STATE_ARGS[@]}"} $DRY_RUN
+step "3/3 State bar directories (verified-licensee pages)" \
+  node src/scripts/scrape_state_bars.js --state "${STATE:-all}" $DRY_RUN
+
+echo ""
+if [ "$FAILED" -ne 0 ]; then
+  echo "Finished with failures — see the run log: GET /api/admin/refresh/runs"
+  exit 1
 fi
-echo "✅ Step 1 complete"
-
-if [ "$SEED_ONLY" = "--seed-only" ]; then
-  echo "Seed-only mode — stopping here."
-  exit 0
-fi
-
-# ── STEP 2: Import DOI bondsmen database ─────────────────────────────────────
-echo ""
-echo "STEP 2/6: Importing DOI bondsmen database..."
-node src/scripts/import_doi_bondsmen.js
-echo "✅ Step 2 complete"
-
-# ── STEP 3: National provider scrape (Google Places) ─────────────────────────
-echo ""
-echo "STEP 3/6: National attorney & bail agent scrape via Google Places..."
-if [ -z "$GOOGLE_PLACES_KEY" ]; then
-  echo "⏭️  Skipping — GOOGLE_PLACES_KEY not set"
-else
-  if [ -n "$STATE" ]; then
-    node src/scripts/scrape_providers_national.js --state "$STATE" ${DRY_RUN:+--dry-run}
-  else
-    node src/scripts/scrape_providers_national.js ${DRY_RUN:+--dry-run}
-  fi
-  echo "✅ Step 3 complete"
-fi
-
-# ── STEP 4: Recovery agents scrape ───────────────────────────────────────────
-echo ""
-echo "STEP 4/6: Scraping recovery agents (bail enforcement)..."
-node src/scripts/scrape_recovery_agents.js ${DRY_RUN:+--dry-run}
-echo "✅ Step 4 complete"
-
-# ── STEP 5: Update legal data ─────────────────────────────────────────────────
-echo ""
-echo "STEP 5/6: Updating legal data (DUI laws, expungement rules, etc)..."
-node src/scripts/update_legal_data.js
-echo "✅ Step 5 complete"
-
-# ── STEP 6: State bar scrape ──────────────────────────────────────────────────
-echo ""
-echo "STEP 6/6: State bar directory scrape (verified licensed attorneys)..."
-if [ -n "$STATE" ]; then
-  node src/scripts/scrape_state_bars.js --state "$STATE" ${DRY_RUN:+--dry-run}
-else
-  node src/scripts/scrape_state_bars.js ${DRY_RUN:+--dry-run}
-fi
-echo "✅ Step 6 complete"
-
-echo ""
-echo "╔══════════════════════════════════════════════════════════════════╗"
-echo "║  DATA PIPELINE COMPLETE                                        ║"
-echo "╚══════════════════════════════════════════════════════════════════╝"
-echo ""
-echo "Run verify-deployment.sh to confirm database is populated."
+echo "DATA REFRESH COMPLETE. Review staged changes: GET /api/admin/proposals"

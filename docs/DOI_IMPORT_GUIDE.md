@@ -130,6 +130,10 @@ The script auto-detects the state from the filename.
 
 ## Running the Import
 
+The importer writes the **main Postgres database** through `DATABASE_URL`
+(run it on Railway with `railway run ...`). It does not use the Supabase REST
+client any more, and it never overwrites or deletes a `bail_agents` row.
+
 ```bash
 # NIPR bulk file (fastest — covers 42 states)
 bash scripts/run_doi_import.sh
@@ -154,18 +158,22 @@ node backend/src/scripts/import_doi_supabase.js --match-only --all-states
 
 Each DOI record is matched to an existing bail_agents record using:
 
-1. **Phone exact match** → score 1.0 → HIGH confidence → auto-apply
+1. **Phone exact match** → score 1.0 → HIGH confidence → matched
 2. **Name similarity** (Jaccard on normalized word sets) **+ city + zip**
-   - ≥ 0.90 → HIGH → auto-apply, `license_status = 'License verified'`
-   - 0.75–0.89 → MEDIUM → apply, `license_status = 'License on file'`
-   - 0.60–0.74 → BORDERLINE → logged for review, NOT applied
-   - < 0.60 → no match → new record inserted from DOI
+   - ≥ 0.75 → HIGH / MEDIUM → matched
+   - 0.60–0.74 → BORDERLINE → logged for review, skipped
+   - < 0.60 → no match → new record inserted (`source = 'doi_import'`,
+     `doi_verified = 1`, license number / type)
 3. **Minimum name length guard** — names with fewer than 2 meaningful words
    (after stripping "bail", "bonds", "company", etc.) are skipped
-4. **doi_verified records never overwritten** — a previously verified license
-   number cannot be replaced by a later lower-confidence match
+4. **A matched row is never written.** The DOI's license number,
+   `doi_verified`, phone, email and address — where they differ from the row —
+   are staged in `provider_update_proposals` for an admin to apply or reject
+   (`GET /api/admin/proposals?table=bail_agents`, see RUNBOOK.md "Data
+   refresh"). Re-running the same file stages nothing new.
 
-Confidence metadata stored in DB: `doi_match_confidence`, `doi_match_factors`
+Each state run is logged in `scrape_runs` (job `doi_import`).
+
 
 ---
 

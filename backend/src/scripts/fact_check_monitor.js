@@ -29,10 +29,9 @@
 import fetch   from 'node-fetch';
 import path    from 'path';
 import fs      from 'fs';
-import Database from 'better-sqlite3';
+import { getDb, closeDb } from '../db/index.js';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
-const DEMO_DB   = path.join(__dirname, '../../../demo.db');
 const REPORT_DIR= path.join(__dirname, '../../reports');
 
 if (!fs.existsSync(REPORT_DIR)) fs.mkdirSync(REPORT_DIR, { recursive: true });
@@ -263,9 +262,11 @@ async function main() {
   }
 
   // ── Database staleness check ───────────────────────────────────────────────
-  console.log('\n  ── DATABASE STALENESS CHECK ──');
-  try {
-    const db   = new Database(DEMO_DB);
+  console.log('\n  ── DATABASE STALENESS CHECK (main Postgres, read-only) ──');
+  if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
+    console.log('  DATABASE_URL not set — database staleness check skipped.');
+  } else try {
+    const db   = await getDb();
     const now  = Date.now();
     const tables = [
       { name: 'dui_laws',                  max_age_days: 90,  critical: true  },
@@ -284,7 +285,8 @@ async function main() {
         continue;
       }
       try {
-        const row = db.prepare(`SELECT MAX(created_at) as latest FROM ${t.name}`).get();
+        // newest of updated_at / created_at — update_legal_data.js stamps updated_at
+        const row = await db.get(`SELECT MAX(COALESCE(updated_at, created_at)) AS latest FROM ${t.name}`);
         if (row?.latest) {
           const lastUpdate = new Date(row.latest);
           const ageDays    = Math.floor((now - lastUpdate) / 86400000);
@@ -300,10 +302,10 @@ async function main() {
         console.log('  ' + t.name.padEnd(40) + ' ⚠️  could not check: ' + e.message);
       }
     }
-    db.close();
   } catch (e) {
     console.log('  Database check error:', e.message);
   }
+  await closeDb().catch(() => {});
 
   // ── Summary ────────────────────────────────────────────────────────────────
   console.log('\n' + '='.repeat(65));

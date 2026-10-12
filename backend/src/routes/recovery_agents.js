@@ -139,7 +139,7 @@ router.get('/', authRequired, apiLimiter, directorySuspended, async (req, res) =
     const where = 'WHERE ' + conditions.join(' AND ');
 
     // If lat/lng provided — sort by proximity
-    let orderBy = 'ORDER BY rating DESC, reviews DESC';
+    let orderBy = 'ORDER BY rating DESC NULLS LAST, reviews DESC NULLS LAST';
     if (lat && lng) {
       const la = parseFloat(lat), ln = parseFloat(lng);
       if (!isNaN(la) && !isNaN(ln) && la >= -90 && la <= 90 && ln >= -180 && ln <= 180) {

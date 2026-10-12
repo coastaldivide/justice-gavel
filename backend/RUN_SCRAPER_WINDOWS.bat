@@ -2,7 +2,8 @@
 :: ── Justice Gavel Provider Scraper ──────────────────────────────────────────
 cd /d "%~dp0"
 
-set GOOGLE_PLACES_KEY=AIzaSyDs4EqwD_SgeRVhQk-FdbbHEjabu7TsQwI
+if "%GOOGLE_PLACES_KEY%"=="" (echo ERROR: set GOOGLE_PLACES_KEY in your environment first - keys are never stored in this file. && pause && exit /b 1)
+if "%DATABASE_URL%"=="" (echo ERROR: set DATABASE_URL to the main Postgres database - the scrapers write it directly, new providers inserted, changes staged for admin review. && pause && exit /b 1)
 
 echo ============================================
 echo  Justice Gavel - Provider Data Scraper

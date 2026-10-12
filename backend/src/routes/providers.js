@@ -57,7 +57,7 @@ const searchLimiter = makeUserLimiter({ windowMs: 60_000, max: 60, message: 'Pro
 
 // ── Module-level singleton — one providers.sqlite connection per process ───────
 // Re-opening on every request causes file descriptor leaks under load.
-// Redirected to use main sql.js DB (no native sqlite3 required)
+// (Formerly a separate providers.sqlite file; now the main database.)
 async function openDb() {
   const { getDb } = await import('../db/index.js');
   return getDb();

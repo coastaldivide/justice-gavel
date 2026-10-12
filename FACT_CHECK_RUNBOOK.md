@@ -1,11 +1,13 @@
 # Justice Gavel — Legal Data Fact-Check Runbook
 
-> **Scope caveat:** `fact_check_monitor.js` and `update_legal_data.js` are
-> operator-only CLI tools left over from the SQLite era — they read/write the
-> **local** `demo.db` / `data/providers.sqlite`, not the production Postgres
-> database. Use them to *verify sources*; apply any resulting data corrections
-> to production with `psql "$DATABASE_URL"` (and, for anything that should
-> survive a rebuild, a new idempotent file in `supabase/migrations/`).
+> **Database:** `fact_check_monitor.js` reads the main Postgres database
+> (`DATABASE_URL`, read-only staleness check; skipped when unset) and
+> `update_legal_data.js` corrects reference rows there — one sourced record at
+> a time (`--set field=value --source-url URL --verified-by NAME`, `--dry-run`
+> first). Every correction is idempotent and logged (`scrape_runs` job
+> `legal_data` + one `audit_log` row per field). For a change that must also
+> survive a fresh database, add it to a new idempotent file in
+> `supabase/migrations/`.
 
 ## How to run
 
@@ -89,10 +91,10 @@ When the CCRC page shows a new state, update `STATE_RULES` in
 - **DC** — February 2025 revised sealing law, court capacity constraints
 
 ## Scheduling
-Run the checks from an operator machine (weekly `--quick`, monthly `--full`),
-not as Railway cron — inside the container the tool would check sources
-against the throwaway local SQLite file and its findings would vanish on the
-next deploy.
+Run the checks weekly (`--quick`) and monthly (`--full`) from an operator
+machine or `railway run` with `DATABASE_URL` set. The JSON report is written
+to `REPORT_DIR` (default `./reports`) — keep it outside the container, or it
+is lost on the next deploy.
 
 ## Record of verifications
 

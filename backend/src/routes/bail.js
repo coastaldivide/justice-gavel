@@ -55,7 +55,7 @@ router.get('/nearby', async (req, res) => {
       return err400(res, 'lat and lng are required');
     }
     const db = await getDb();
-    const agents = await db.all('SELECT id,name,phone,address,lat,lng,city,state,rating,reviews,verified,fee_percent,available_24_7,active FROM bail_agents WHERE active != 0 ORDER BY rating DESC LIMIT 300');
+    const agents = await db.all('SELECT id,name,phone,address,lat,lng,city,state,rating,reviews,verified,fee_percent,available_24_7,active FROM bail_agents WHERE active != 0 ORDER BY rating DESC NULLS LAST LIMIT 300');
     const list = agents
       .map(a => ({ ...a, distanceKm: haversine(lat, lng, a.lat, a.lng) }))
       .filter(a => a.distanceKm <= radiusKm)

@@ -316,7 +316,7 @@ router.get('/lawyers', authRequired, perUserAiLimit, async (req, res) => {
         const fallback = await db.all(
           city
             ? `SELECT ${LAWYERS_COLS} FROM lawyers WHERE LOWER(city) = LOWER(?) ORDER BY rating DESC NULLS LAST LIMIT 3`
-            : `SELECT ${LAWYERS_COLS} FROM lawyers ORDER BY rating DESC LIMIT 3`,
+            : `SELECT ${LAWYERS_COLS} FROM lawyers ORDER BY rating DESC NULLS LAST LIMIT 3`,
           city ? [city] : []
         );
         return res.json(fallback.map((l, i) => formatLawyer(l, i + 1, null, null)));

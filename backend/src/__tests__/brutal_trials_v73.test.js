@@ -161,8 +161,10 @@ describe('REF. scripts/refresh.js — Live Provider Data Refresh', () => {
   test('REF-01: refresh.js is the unified provider data refresh pipeline', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/scripts/refresh.js', 'utf8');
-    expect(src).toContain('provider data refresh pipeline');
-    expect(src).toContain('Google Pl');
+    expect(src).toContain('provider refresh');
+    expect(src).toContain('Google Places');
+    expect(src).toContain('provider_update_proposals');   // changes to listed providers are staged, not written
+    expect(src).not.toMatch(/from 'sqlite3?'/);
   });
   test('REF-02: refresh.js only runs when LIVE_REFRESH=true (safe by default)', () => {
     expect(CONFIG.LIVE_REFRESH).toBe(false);
@@ -176,8 +178,9 @@ describe('ULD. scripts/update_legal_data.js — Legal Data Patcher', () => {
   test('ULD-01: update_legal_data.js runs manual updates after fact-check reviews', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/scripts/update_legal_data.js', 'utf8');
-    expect(src).toContain('Legal Data Update Scripts');
+    expect(src).toContain('legal reference data in Postgres');
     expect(src).toContain('fact-check');
+    expect(src).toContain('--source-url');               // every correction is sourced
   });
 });
 

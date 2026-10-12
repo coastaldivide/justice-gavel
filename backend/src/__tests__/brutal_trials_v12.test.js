@@ -484,7 +484,7 @@ describe('6. scheduler.js — Nightly Automation Pipeline', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/services/scheduler.js', 'utf8');
     const jobs = [
       'Google/Yelp provider refresh',
-      'Arrest record harvest',
+      'Arrest ingestion from operator-configured feeds',
       'Outbound bot',
       'Expire old payment links',
       'Golden Gavel eligibility sweep',

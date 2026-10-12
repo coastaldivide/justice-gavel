@@ -4,8 +4,9 @@
 # ── Stage 1: install production dependencies (native builds allowed) ──────────
 FROM node:22-alpine AS deps
 WORKDIR /app
-# Toolchain only lives in this stage (native optional deps such as sqlite3,
-# used by the offline scraper scripts, may need to compile on musl).
+# Toolchain only lives in this stage, in case a native dependency (e.g.
+# @sentry/profiling-node without a musl prebuild) has to compile. The scraper
+# scripts no longer use SQLite; they write the main Postgres database.
 RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force

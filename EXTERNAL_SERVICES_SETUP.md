@@ -178,15 +178,18 @@ EXPO_ACCESS_TOKEN=<expo access token>
 ---
 
 ### 6. Google Places API
-Used only by the operator scrapers (`backend/src/scripts/refresh.js`,
-`scrape_providers_national.js`), which the nightly scheduler runs when
-`LIVE_REFRESH=true`. In-app search reads the Postgres directory and never calls
-Google. Note: those scrapers still write a local SQLite file, not Postgres
-(see QUICKSTART.md, "Operator data tools").
+Used only by the data refresh (`backend/src/scripts/refresh.js`,
+`scrape_providers_national.js`, `scrape_recovery_agents.js`, and the nightly
+scheduler when `LIVE_REFRESH=true`). In-app search reads the Postgres directory
+and never calls Google. The refresh writes the main Postgres database: new
+providers are inserted, changes to listed providers are staged for admin review
+(see RUNBOOK.md, "Data refresh"). Without the key those steps are skipped with
+a log line. Rate limit / cost cap: `GOOGLE_PLACES_MIN_INTERVAL_MS` (default
+150 ms between requests) and `GOOGLE_PLACES_MAX_REQUESTS` (default 5000 per run).
 
 **Steps:**
 1. `console.cloud.google.com` → Select/create project
-2. APIs & Services → Library → Enable: **Places API (New)**, **Geocoding API**
+2. APIs & Services → Library → Enable: **Places API** (the refresh uses the Text Search + Place Details endpoints), **Geocoding API**
 3. APIs & Services → Credentials → Create API Key
 4. Optional but recommended: Restrict the key to your server's IP
 

@@ -43,10 +43,11 @@ describe('DISC62. S0 Final — 4 Items', () => {
     const fs = await import('fs');
     const ra = fs.readFileSync(__REPO + '/backend/src/scripts/scrape_recovery_agents.js','utf8');
     const sb = fs.readFileSync(__REPO + '/backend/src/scripts/scrape_state_bars.js','utf8');
-    expect(ra).toContain('fugitive recovery agents');
+    expect(ra).toContain('fugitive recovery');
     expect(sb).toContain('50-State Attorney Data Harvester');
-    expect(ra.length).toBeGreaterThan(13000);
-    expect(sb.length).toBeGreaterThan(28000);
+    // step 12: both write Postgres through services/dataRefresh (insert new, stage changes)
+    expect(ra).toContain('runRecoveryAgentRefresh');
+    expect(sb).toContain('createProviderWriter');
   });
 });
 

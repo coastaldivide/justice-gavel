@@ -82,8 +82,8 @@ describe('SCHED. scheduler.js — Full Pipeline Architecture', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('Google/Yelp provider refresh');
-    expect(src).toContain('Arrest record harvest');
-    expect(src).toContain('97 cities');
+    expect(src).toContain('Arrest ingestion from operator-configured feeds');
+    expect(src).toContain('ARREST_FEED_URLS');
     expect(src).toContain('Outbound bot');
     expect(src).toContain('Golden Gavel eligibility sweep');
     expect(src).toContain('Docket deadline reminders');

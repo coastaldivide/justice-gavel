@@ -160,6 +160,19 @@ jobs:
           TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}
         run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci src/__tests__/security
 
+      - name: Data refresh suite on real Postgres (jest)
+        # Scrapers / importers / scheduler write the main database through
+        # services/dataRefresh (Google Places mocked, no network): new providers
+        # inserted, changes to existing lawyers / bail agents staged as
+        # proposals (never written), reruns idempotent, absent rows kept, admin
+        # apply/reject guarded by live role + X-Admin-Key, missing key = logged
+        # skip, LIVE_REFRESH scheduler wiring, pre-existing provider rows
+        # byte-identical (md5). Runs in band, after the suites above, because it
+        # inserts (and removes) fixture providers in the shared database.
+        env:
+          TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}
+        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci --runInBand src/__tests__/refresh
+
       - name: Stop API server
         if: always()
         run: |

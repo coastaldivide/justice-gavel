@@ -176,7 +176,7 @@ switches to human-readable.
 |---|---|---|
 | Reminder delivery (court dates + user-set reminders: push via Expo, email fallback) | every 60 s in each API process; re-plans missing court reminders every 6 h | always on; `REMINDERS_ENABLED=false` turns it off for a process |
 | Check-in reminder blast `POST /api/checkins/remind-all` | external cron | staff token **or** `X-Admin-Key` |
-| Nightly refresh (scrapers, arrest alerts, payment-link expiry, token cleanup) | `REFRESH_CRON` (default 3 am `REFRESH_TZ`) | `LIVE_REFRESH=true` |
+| Nightly pipeline: provider refresh → Postgres (Google/Yelp; civil attorneys, state-bar listings and recovery agents on Sundays), arrest-feed ingestion, arrest alerts, payment-link expiry, token cleanup | `REFRESH_CRON` (default 3 am `REFRESH_TZ`) | `LIVE_REFRESH=true`; provider steps also need `GOOGLE_PLACES_KEY` and/or `YELP_API_KEY` (else skipped + logged) |
 | Health scan | `HEALTH_SCAN_CRON` (default 2 am) | scheduler on |
 | Bar re-verification sweep | daily tick, re-verifies attorneys whose verification is > 90 days old | scheduler on |
 | Bar-prep reminders (`bar-daily-7am`, `bar-streak-3pm`, `bar-countdown-8am`) | daily | `REDIS_URL` (BullMQ) |
@@ -185,6 +185,68 @@ Manual bar-verification sweep: `POST /api/admin/bar-verification/sweep`
 (bearer token of a user whose role is `admin`, plus the `X-Admin-Key` header —
 the `/api/admin` guard applies to every `/api/admin/*` path). Manual nightly run:
 `node -e "import('./src/services/barVerification.js').then(m=>m.runNightlyVerification())"`.
+
+---
+
+## DATA REFRESH (providers, arrests, legal reference data)
+
+Every scraper, importer and scheduler step writes the **main Postgres
+database** (`DATABASE_URL`) through `backend/src/services/dataRefresh/`. Nothing
+writes `backend/data/providers.sqlite` any more (the file is kept, read-only,
+for the one-off import below). Owner rule — `lawyers` / `bail_agents` (and
+`recovery_agents`) rows are real, verified data:
+
+- a provider **not yet listed** (matched by Google place id / `source_id`, then
+  normalized phone, then normalized name + city + state) is **inserted** —
+  active, unverified, with `source`, `source_id`, `created_at`, `updated_at`;
+- a **difference** for a provider already listed (phone, hours, address,
+  website, rating, reviews, lat/lng, email, bar / license number) is **never
+  written to the row** — it is staged in `provider_update_proposals` as
+  `pending` for an admin to apply or reject;
+- rows a scrape does not return are never deleted, deactivated or hidden;
+- re-running is idempotent (no duplicate rows, no duplicate proposals; a
+  rejected value is never proposed again). Writers share one advisory lock,
+  so two refreshes never run against the directory at once.
+- every run writes a `scrape_runs` row: job, trigger (scheduler / manual /
+  admin), status (`ok` / `partial` / `failed` / `skipped`) and counts
+  fetched / inserted / proposed / unchanged / updated / skipped / errors.
+
+**Run a refresh**
+
+| What | How |
+|---|---|
+| Nightly (automatic) | `LIVE_REFRESH=true` + `GOOGLE_PLACES_KEY` (and/or `YELP_API_KEY`). No key → the step logs `provider refresh skipped` and records a `skipped` run. |
+| From the admin console | `POST /api/admin/refresh` `{ "city"?: "Nashville, TN", "type"?: "lawyers|bail|civil|all", "source"?: "google|yelp|all", "dryRun"?: true }` → 202 (runs in the API process) or 200 `skipped` when no key is set |
+| Everything, by hand | `railway run bash scripts/run-all-scrapes.sh [--dry-run] [--state TN]` (from `backend/`) |
+| One script | `railway run node src/scripts/refresh.js --city "Nashville, TN" --dry-run` · `scrape_providers_national.js --state TX` · `scrape_recovery_agents.js` · `scrape_state_bars.js --state TN` |
+| Import a file | `import_csv.js --file x.csv --type lawyers|bail` · `import_doi_bondsmen.js --file tn.txt --state TN` · `bash ../scripts/run_doi_import.sh` (NIPR / per-state DOI files) |
+| Legal reference fix | `update_legal_data.js --type dui --state TN --set field=value --source-url https://… --verified-by JD [--dry-run]` (idempotent; audit-logged) |
+| Arrest rosters | not scheduled (heuristic page parsing). `scrape_arrests.js --dry-run` first, review, then run; insert-only, validated. The scheduler ingests arrests only from `ARREST_FEED_URLS`. |
+
+Every script supports `--dry-run` (fetch + match, write only the run log) and
+exits 0 with a clear message when its API key is missing.
+
+**Review staged changes** (admin role, read live from the DB, + `X-Admin-Key`):
+
+```
+GET  /api/admin/proposals?status=pending&table=lawyers&field=phone&limit=50
+POST /api/admin/proposals/:id/apply    { "note"?: "...", "force"?: false }
+POST /api/admin/proposals/:id/reject   { "note"?: "..." }
+POST /api/admin/proposals/apply        { "ids": [1,2,3] }      # bulk, ≤ 500, per-id results
+POST /api/admin/proposals/reject       { "ids": [4,5] }
+GET  /api/admin/refresh/runs?job=providers
+```
+
+Applying writes only that one column (+ `updated_at`), refuses with 409
+`stale` if the row changed since the proposal was made (re-check, or pass
+`force: true`), supersedes other pending proposals for the same field, and
+logs to `provider_update_log` (who / old / new) and `audit_log`.
+
+**One-off legacy import.** `node src/scripts/import_legacy_providers_sqlite.js`
+(dry run by default, `--apply` to write) compares the old SQLite file with
+Postgres under the same rules. Against the migrated seed: 2,048 lawyers,
+1,262 bail agents and 531 recovery agents — every one already in Postgres with
+identical tracked fields (0 to insert, 0 to propose).
 
 ---
 

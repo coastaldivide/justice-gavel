@@ -137,6 +137,18 @@ variables and verification: [RAILWAY_ENV_SETUP.md](./RAILWAY_ENV_SETUP.md)
 and `backend/scripts/railway-checklist.md`. Mobile builds ship through EAS
 (`eas build` / `eas submit`); web exports with `npx expo export --platform web`.
 
+## Data refresh
+
+Provider scrapers (Google Places, Yelp, public state-bar listings), the DOI /
+CSV importers and the legal-reference updater write the main Postgres
+database through `backend/src/services/dataRefresh/` — nightly when
+`LIVE_REFRESH=true`, or by hand (`cd backend && railway run bash
+scripts/run-all-scrapes.sh --dry-run`). New providers are inserted; changes to
+providers already listed are staged in `provider_update_proposals` for an
+admin to apply or reject (`/api/admin/proposals`) — a scrape never overwrites,
+hides or deletes a lawyer / bail-agent row. Each run is logged in
+`scrape_runs`. How-to: [RUNBOOK.md → Data refresh](./RUNBOOK.md#data-refresh-providers-arrests-legal-reference-data).
+
 ## Documentation map
 
 | Doc | What it is |
@@ -144,7 +156,7 @@ and `backend/scripts/railway-checklist.md`. Mobile builds ship through EAS
 | [RAILWAY_ENV_SETUP.md](./RAILWAY_ENV_SETUP.md) | **The** environment-variable reference + Railway deploy settings |
 | [API_REFERENCE.md](./API_REFERENCE.md) / [openapi.json](./openapi.json) | API overview / generated full spec |
 | [QUICKSTART.md](./QUICKSTART.md) | Local setup + seeded-data overview |
-| [RUNBOOK.md](./RUNBOOK.md) | Incident response, monitoring, backups |
+| [RUNBOOK.md](./RUNBOOK.md) | Incident response, monitoring, backups, scheduled jobs, data refresh |
 | [LAUNCH_CHECKLIST.md](./LAUNCH_CHECKLIST.md) | Pre-launch security/ops checklist |
 | [EXTERNAL_SERVICES_SETUP.md](./EXTERNAL_SERVICES_SETUP.md) | Per-service signup/config walkthroughs |
 | [UPTIME_MONITORING.md](./UPTIME_MONITORING.md) | `/health` contract + uptime monitor setup |

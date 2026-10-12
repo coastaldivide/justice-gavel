@@ -37,7 +37,7 @@ describe('DISC24. Discrepancy Fixes — 4 items', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/scheduler.js','utf8');
     expect(src).toContain('NIGHTLY (3 AM Central)');
-    expect(src).toContain('Arrest record harvest (97 cities)');
+    expect(src).toContain('Arrest ingestion from operator-configured feeds (ARREST_FEED_URLS)');
     expect(src).toContain('Golden Gavel eligibility sweep');
     expect(src).toContain('EVERY 2 HOURS');
   });

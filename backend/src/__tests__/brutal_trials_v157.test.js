@@ -27,14 +27,15 @@ describe('GPLACES. Google Places Key Confirmed', () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/backend/src/scripts/scrape_providers_national.js','utf8');
     expect(src).toContain('GOOGLE_PLACES_KEY');
-    expect(src.length).toBeGreaterThan(40000);
+    const client=fs.readFileSync(__REPO + '/backend/src/services/dataRefresh/googlePlaces.js','utf8');
+    expect(client).toContain('process.env.GOOGLE_PLACES_KEY');   // one rate-limited Places client
     // 404 cities × 2 queries (attorney + bondsman) = ~808 API calls = ~$14
   });
   test('GPLACES-03: scrape_recovery_agents.js also uses the key', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/backend/src/scripts/scrape_recovery_agents.js','utf8');
     expect(src).toContain('GOOGLE_PLACES_KEY');
-    expect(src.length).toBeGreaterThan(13000);
+    expect(src).toContain('placesKeyConfigured');            // missing key → clean exit 0
     // Real fugitive recovery agents — replaces seed data
   });
 });

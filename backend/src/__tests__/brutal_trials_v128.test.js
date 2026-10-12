@@ -93,8 +93,9 @@ describe('CSV. Data Import Scripts — CSV + DOI', () => {
   test('CSV-03: scrape_providers_national.js — 40K multi-source scraper', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/scripts/scrape_providers_national.js','utf8');
-    expect(src).toContain('National Attorney');
-    expect(src.length).toBeGreaterThan(38000);
+    expect(src).toMatch(/national attorney/i);
+    expect(src).toContain('runProviderRefresh');          // shared Postgres pipeline (step 12)
+    expect(src).toContain('ALL_BAR_CITIES');
     // Combines state bar APIs, Google Places, court directories
   });
 });

@@ -151,14 +151,14 @@ describe('SCH. Scheduler — 9 Pipeline Jobs Verified', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/services/scheduler.js', 'utf8');
     expect(src).toContain('3 AM Central');
     expect(src).toContain('NIGHTLY');
-    expect(src).toContain('Arrest record harvest');
+    expect(src).toContain('Arrest ingestion from operator-configured feeds');   // step 12: validated feeds, not roster scraping
   });
   test('SCH-02: scheduler job list includes all 8 nightly + 1 hourly', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/services/scheduler.js', 'utf8');
     // 8 nightly jobs
     expect(src).toContain('Google/Yelp provider refresh');
-    expect(src).toContain('Arrest record harvest (97 cities)');
+    expect(src).toContain('Arrest ingestion from operator-configured feeds (ARREST_FEED_URLS)');
     expect(src).toContain('platform alerts');
     expect(src).toContain('Outbound bot');
     expect(src).toContain('Expire old payment links');

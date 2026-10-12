@@ -80,7 +80,7 @@ describe('SCH. scheduler.js — Full Automated Pipeline', () => {
     const src=fs.readFileSync(__REPO + '/backend/src/services/scheduler.js','utf8');
     expect(src).toContain('NIGHTLY (3 AM Central)');
     expect(src).toContain('1. Google/Yelp provider refresh');
-    expect(src).toContain('2. Arrest record harvest (97 cities)');
+    expect(src).toContain('2. Arrest ingestion from operator-configured feeds');
     expect(src).toContain('3. Attorney/bail agent platform alerts');
     expect(src).toContain('4. Outbound bot');
   });
@@ -88,7 +88,7 @@ describe('SCH. scheduler.js — Full Automated Pipeline', () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/backend/src/services/scheduler.js','utf8');
     expect(src).toContain('5. Expire old payment links');
-    expect(src).toContain('6. State bar national provider refresh');
+    expect(src).toContain('6. State-bar listing refresh + recovery-agent refresh');
     expect(src).toContain('7. Golden Gavel eligibility sweep');
     expect(src).toContain('8. Docket deadline reminders');
   });

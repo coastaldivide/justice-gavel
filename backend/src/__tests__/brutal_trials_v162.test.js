@@ -96,13 +96,15 @@ describe('OAS. OpenAPI 3.0 Spec Generated', () => {
 
 // ── SOL null fix ─────────────────────────────────────────────────
 describe('SOL. Statute of Limitations Fix Script', () => {
-  test('SOL-01: update_legal_data.js has SOL null fix SQL', async () => {
+  test('SOL-01: update_legal_data.js no longer guesses missing statute-of-limitations years', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/scripts/update_legal_data.js','utf8');
     expect(src).toContain('statute_of_limitations');
-    expect(src).toContain('UPDATE statute_of_limitations');
-    expect(src).toContain('years IS NULL');
-    // Sets felony=3yr, misdemeanor=1yr; skips murder/homicide (no limit intentional)
+    expect(src).not.toContain('UPDATE statute_of_limitations');
+    expect(src).toContain('legal misinformation');
+    // step 12: the old "SOL null fix" filled NULL years with guessed defaults (felony=3,
+    // misdemeanor=1) — a NULL means not researched / no limit; corrections are now
+    // one sourced record at a time (--source-url, --verified-by).
   });
 });
 

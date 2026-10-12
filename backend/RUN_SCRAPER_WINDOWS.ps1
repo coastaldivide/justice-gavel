@@ -1,7 +1,8 @@
 # Justice Gavel - Provider Data Scraper
 # Right-click -> Run with PowerShell
 
-$env:GOOGLE_PLACES_KEY = "AIzaSyDs4EqwD_SgeRVhQk-FdbbHEjabu7TsQwI"
+if (-not $env:GOOGLE_PLACES_KEY) { Write-Host "Set GOOGLE_PLACES_KEY in your environment first (keys are never stored in this file)." -ForegroundColor Red; Read-Host; exit 1 }
+if (-not $env:DATABASE_URL) { Write-Host "Set DATABASE_URL to the main Postgres database first: new providers are inserted, changes are staged for admin review." -ForegroundColor Red; Read-Host; exit 1 }
 
 Write-Host "Justice Gavel - Provider Data Scraper" -ForegroundColor Cyan
 Write-Host "Runtime ~2 hours | Cost ~$14" -ForegroundColor Cyan

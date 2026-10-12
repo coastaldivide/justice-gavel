@@ -2,6 +2,19 @@
 /**
  * import_doi_supabase.js — Import bail agent license data from all 50 state DOIs
  * ──────────────────────────────────────────────────────────────────────────────
+ * (Name kept for existing runbooks: it no longer uses the Supabase REST client.
+ *  It writes the MAIN Postgres database through DATABASE_URL and
+ *  services/dataRefresh, like every other importer.)
+ *
+ * SAFETY (lawyers / bail_agents rows are real, verified data):
+ *   - a DOI licensee that matches an existing bail agent (fuzzy name/city/phone
+ *     match below, high or medium confidence; or source id / phone / name)
+ *     never overwrites it — license number, doi_verified, phone, email and
+ *     address differences are staged in provider_update_proposals for review;
+ *   - borderline matches are skipped and listed for manual review;
+ *   - unmatched licensees are inserted (source 'doi_import', doi_verified = 1);
+ *   - nothing is deleted (--reset is refused); each state run is logged in
+ *     scrape_runs.
  * Supports all 45 states with commercial bail bonding (IL/KY/OR/WI/DC excluded —
  * those states abolished commercial bail bonds).
  *
@@ -105,13 +118,16 @@
  */
 
 import 'dotenv/config';
-import { createClient }   from '@supabase/supabase-js';
 import fs                 from 'fs';
 import path               from 'path';
 import { parse }          from 'csv-parse/sync';
 import { fileURLToPath }  from 'url';
 import yargs              from 'yargs';
 import { hideBin }        from 'yargs/helpers';
+import { createProviderWriter } from '../services/dataRefresh/providerStore.js';
+import { DIRECTORY_LOCK } from '../services/dataRefresh/providerRefresh.js';
+import { startRun, finishRun, withJobLock, newCounts } from '../services/dataRefresh/runLog.js';
+import { openRefreshDb, printRunSummary, runCli } from './lib/refreshCli.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -266,12 +282,8 @@ for (const code of BAIL_STATES) {
   if (!STATE_PARSERS[code]) STATE_PARSERS[code] = NIPR_STANDARD;
 }
 
-// ── Supabase client ───────────────────────────────────────────────────────────
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY,
-  { auth: { persistSession: false } }
-);
+// ── Database (main Postgres; opened in main) ─────────────────────────────────
+let db = null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function normalizePhone(raw) {
@@ -376,11 +388,10 @@ async function importState(stateCode, filePath, options = {}) {
     return { state: stateCode, skipped: 0, matched: 0, inserted: 0, reason: 'unsupported' };
   }
 
-  // Load existing DB records for this state
-  const { data: existing, error: fetchErr } = await supabase
-    .from('bail_agents').select('id,name,company,phone,city,state,zip,license_number,doi_verified')
-    .eq('state', stateCode);
-  if (fetchErr) { console.error(`  ${stateCode}: DB fetch failed: ${fetchErr.message}`); return; }
+  // Load existing DB records for this state (read-only — used for matching)
+  const existing = await db.all(
+    'SELECT id, name, company, phone, city, state, license_number, doi_verified FROM bail_agents WHERE state = ?',
+    [stateCode]);
 
   if (matchOnly) {
     const licensed = existing.filter(a => a.license_number).length;
@@ -411,54 +422,40 @@ async function importState(stateCode, filePath, options = {}) {
 
   const filtered = rows.filter(parser.filter);
   if (dryRun) {
-    console.log(`  ${stateCode}: ${filtered.length} bail agents (dry run — first 3):`);
+    console.log(`  ${stateCode}: ${filtered.length} bail agents (dry run — first 3, nothing written):`);
     filtered.slice(0,3).forEach(r => {
       const d = parser.extract(r, stateCode);
       console.log(`    ${d.license_number} | ${d.name.substring(0,25).padEnd(25)} | ${d.city}`);
     });
-    return;
   }
 
-  let matched = 0, inserted = 0, skipped = 0;
+  const records = [];
+  let borderline = 0, unusable = 0;
   for (const row of filtered) {
     const data = parser.extract(row, stateCode);
-    if (!data.name.trim() || !data.license_number) { skipped++; continue; }
-
-    const { match, score, tier, factors } = findBestMatch(data, existing, threshold);
-
-    if (match && (tier === 'high' || tier === 'medium')) {
-      const { error } = await supabase.from('bail_agents').update({
-        license_number:       data.license_number,
-        license_status:       tier === 'high' ? 'License verified' : 'License on file',
-        doi_verified:         true,
-        doi_verified_at:      new Date().toISOString(),
-        email:                data.email || undefined,
-        npn:                  data.npn   || undefined,
-        zip:                  data.zip   || undefined,
-        doi_match_confidence: parseFloat(score.toFixed(3)),
-        doi_match_factors:    factors.join(','),
-        updated_at:           new Date().toISOString(),
-      }).eq('id', match.id);
-      if (!error) { matched++; match.doi_verified = true; match.license_number = data.license_number; }
-      else { skipped++; }
-    } else if (tier !== 'borderline') {
-      const sourceId = `doi_${stateCode}_${data.license_number.replace(/\W/g,'_')}`;
-      const { error } = await supabase.from('bail_agents').insert({
-        source_id: sourceId, name: data.name, company: data.company || data.name,
-        phone: data.phone, email: data.email, address: data.address,
-        city: data.city, state: stateCode, zip: data.zip,
-        license_number: data.license_number, license_status: 'License on file',
-        npn: data.npn || null, verified: 1, doi_verified: true,
-        doi_verified_at: new Date().toISOString(), source: 'doi_import',
-        available_now: true, payment_plan: false, rate_pct: 10, rating: null,
-      });
-      if (!error || error.code === '23505') inserted++;
-      else skipped++;
-    }
+    if (!data.name.trim() || !data.license_number) { unusable++; continue; }
+    const { match, tier } = findBestMatch(data, existing, threshold);
+    if (tier === 'borderline') { borderline++; continue; }
+    records.push({
+      type: 'bail_agents', source: 'doi_import',
+      source_id: `doi_${stateCode}_${data.license_number.replace(/\W/g, '_')}`,
+      matchId: match && (tier === 'high' || tier === 'medium') ? match.id : null,
+      name: data.name, company: data.company || null,
+      phone: data.phone || null, email: data.email || null, address: data.address || null,
+      city: data.city, state: stateCode,
+      license_number: data.license_number, license_type: 'state DOI bail license', doi_verified: 1,
+    });
   }
 
-  console.log(`  ${stateCode}: matched=${matched} inserted=${inserted} skipped=${skipped}`);
-  return { state: stateCode, matched, inserted, skipped };
+  const counts = newCounts();
+  counts.fetched = filtered.length;
+  counts.skipped = unusable + borderline;
+  const errorSamples = [];
+  const runId = await startRun(db, { job: 'doi_import', trigger: 'manual', params: { state: stateCode, file: path.basename(filePath), threshold }, dryRun });
+  await createProviderWriter(db, 'bail_agents', { runId, dryRun, counts, errorSamples }).writeAll(records);
+  const status = await finishRun(db, runId, counts, { errorSamples, message: borderline ? `${borderline} borderline matches skipped for manual review` : null });
+  console.log(`  ${stateCode}: run #${runId} ${status} — inserted=${counts.inserted} proposed=${counts.proposed} unchanged=${counts.unchanged} skipped=${counts.skipped} errors=${counts.errors}`);
+  return { state: stateCode, runId, status, ...counts };
 }
 
 // ── NIPR all-states mode ──────────────────────────────────────────────────────
@@ -509,33 +506,39 @@ async function importAllStates(options) {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-(async () => {
-  console.log('\n🏛️  DOI Import — Justice Gavel');
-  console.log(`   Supabase: ${process.env.SUPABASE_URL}`);
+runCli(async () => {
+  if (argv.reset) {
+    console.error('--reset is no longer supported: imports never delete bail_agents rows.');
+    return 1;
+  }
+  console.log('\n🏛️  DOI Import — Justice Gavel → Postgres');
   console.log(`   Supported states: ${[...BAIL_STATES].sort().join(', ')}`);
   console.log(`   Excluded (no commercial bail): ${[...NO_BAIL_STATES].sort().join(', ')}\n`);
 
   const options = { dryRun: argv['dry-run'], matchOnly: argv['match-only'], threshold: argv.threshold };
-
-  if (argv['nipr-all']) {
-    await importNiprAll(path.resolve(argv.file), options);
-  } else if (argv['all-states']) {
-    const results = await importAllStates(options);
-    const totals  = results.reduce((a, r) => ({
-      matched: a.matched + (r.matched||0),
-      inserted: a.inserted + (r.inserted||0),
-      skipped: a.skipped + (r.skipped||0),
-    }), { matched: 0, inserted: 0, skipped: 0 });
-    console.log(`\n✅ All-states import complete:`);
-    console.log(`   Total matched:  ${totals.matched}`);
-    console.log(`   Total inserted: ${totals.inserted}`);
-    console.log(`   Total skipped:  ${totals.skipped}`);
-  } else {
-    const stateCode = argv.state.toUpperCase();
-    if (NO_BAIL_STATES.has(stateCode)) {
-      console.error(`❌ ${stateCode} has abolished commercial bail bonds — no import needed.`);
-      process.exit(0);
+  db = await openRefreshDb();
+  const locked = await withJobLock(db, DIRECTORY_LOCK, async () => {
+    if (argv['nipr-all']) {
+      await importNiprAll(path.resolve(argv.file), options);
+    } else if (argv['all-states']) {
+      const results = await importAllStates(options);
+      const totals  = results.reduce((a, r) => ({
+        inserted: a.inserted + (r.inserted || 0),
+        proposed: a.proposed + (r.proposed || 0),
+        skipped:  a.skipped + (r.skipped || 0),
+        errors:   a.errors + (r.errors || 0),
+      }), { inserted: 0, proposed: 0, skipped: 0, errors: 0 });
+      printRunSummary('DOI import (all states)', { status: totals.errors ? 'partial' : 'ok', counts: totals, dryRun: options.dryRun });
+    } else {
+      const stateCode = argv.state.toUpperCase();
+      if (NO_BAIL_STATES.has(stateCode)) {
+        console.error(`❌ ${stateCode} has abolished commercial bail bonds — no import needed.`);
+        return;
+      }
+      const r = await importState(stateCode, argv.file ? path.resolve(argv.file) : null, options);
+      if (r?.runId) printRunSummary(`DOI import (${stateCode})`, { runId: r.runId, status: r.status, counts: r, dryRun: options.dryRun });
     }
-    await importState(stateCode, argv.file ? path.resolve(argv.file) : null, options);
-  }
-})().catch(e => { console.error('Import failed:', e.message); process.exit(1); });
+  });
+  if (!locked.locked) console.log('ℹ️  Another provider-directory run is in progress — try again later.');
+  return 0;
+});

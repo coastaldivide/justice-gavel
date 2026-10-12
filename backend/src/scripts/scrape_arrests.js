@@ -18,21 +18,30 @@
  *   node src/scripts/scrape_arrests.js --since 24h          # last 24 hours only
  *   node src/scripts/scrape_arrests.js --list               # show all sources
  *
+ * Writes arrest_records in the MAIN Postgres database (DATABASE_URL). This is
+ * an operator tool, NOT part of the nightly pipeline: the scheduler ingests
+ * arrests only from operator-configured, validated feeds
+ * (ARREST_FEED_URLS → services/arrest_ingest.js). Roster pages are parsed
+ * heuristically, so:
+ *   - a row is written only when it has a name AND a parseable booking date
+ *     (the same normalizeRecord() validation the feed ingester uses);
+ *   - existing rows are never modified — re-running skips a booking already
+ *     stored (same name, county, state, booking date);
+ *   - rows carry source 'roster_<city key>' so they can be audited / removed
+ *     as a batch; run a --dry-run first and review its output;
+ *   - each run is logged in scrape_runs (job 'arrest_rosters').
+ *
  * LEGAL: Accesses public government records only. No direct contact with
  * arrestees. Data used solely to alert subscribed attorneys/bail agents.
  */
 
 import 'dotenv/config';
 import { randomInt } from 'crypto';
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.resolve(__dirname, '../../data/providers.sqlite');
+import { normalizeRecord } from '../services/arrest_ingest.js';
+import { startRun, finishRun, withJobLock, newCounts } from '../services/dataRefresh/runLog.js';
+import { openRefreshDb, printRunSummary, runCli } from './lib/refreshCli.js';
 const UA = 'JusticeGavel/1.0 (public record access; legal services app; admin@justicegavel.app)';
 
 const argv = yargs(hideBin(process.argv))
@@ -738,51 +747,33 @@ async function fetchSource(key, config, since, limit) {
   }
 }
 
-// ── DB upsert ─────────────────────────────────────────────────────────────────
-async function upsertArrest(db, arrest, dryRun) {
+// ── DB insert (insert-only, validated) ───────────────────────────────────────
+async function insertArrest(db, raw, sourceKey, dryRun) {
+  const norm = normalizeRecord({ ...raw, has_attorney: raw.has_attorney || raw.has_esquire }, { source: `roster_${sourceKey}`, state: raw.state, county: raw.county });
+  if (!norm || !norm.county || !norm.state) return 'skipped';
   if (dryRun) {
-    const atty = arrest.has_attorney ? '(atty)' : '(NO ATTY)';
-    const bail = arrest.bail_amount ? `$${Number(arrest.bail_amount).toLocaleString()}` : 'no bail';
-    console.log(`    [DRY] ${arrest.name} | ${arrest.county}, ${arrest.state} | ${bail} ${atty}`);
-    return 'dry';
+    console.log(`    [DRY] ${norm.name} | ${norm.county}, ${norm.state} | booked ${norm.booking_date} | ${norm.bail_amount ? '$' + norm.bail_amount.toLocaleString() : 'no bail'}`);
+    return 'inserted';
   }
-
   const existing = await db.get(
     `SELECT id FROM arrest_records
-     WHERE LOWER(name)=LOWER(?) AND county=? AND state=? AND booking_date=?`,
-    [arrest.name, arrest.county, arrest.state, arrest.booking_date]
-  );
-
-  if (existing) {
-    await db.run(
-      `UPDATE arrest_records SET
-        bail_amount=COALESCE(?,bail_amount),
-        court_date=COALESCE(?,court_date),
-        attorney_of_record=COALESCE(?,attorney_of_record),
-        has_attorney=?,
-        updated_at=NOW()
-       WHERE id=?`,
-      [arrest.bail_amount, arrest.court_date, arrest.attorney_of_record,
-       arrest.has_attorney ? 1 : 0, existing.id]
-    );
-    return 'updated';
-  }
-
+      WHERE LOWER(name) = LOWER(?) AND LOWER(COALESCE(county,'')) = LOWER(?) AND state = ? AND booking_date::date = ?::date
+      LIMIT 1`,
+    [norm.name, norm.county, norm.state, norm.booking_date]);
+  if (existing) return 'unchanged';
   await db.run(
     `INSERT INTO arrest_records
-      (name,booking_date,charges,bail_amount,court_date,attorney_of_record,
-       has_attorney,case_number,jail_location,county,state,source,alert_sent,
-       created_at,updated_at)
+       (name, booking_date, charges, bail_amount, court_date, attorney_of_record, has_attorney,
+        case_number, jail_location, county, state, source, alert_sent, created_at, updated_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,NOW(),NOW())`,
-    [arrest.name, arrest.booking_date, arrest.charges, arrest.bail_amount,
-     arrest.court_date, arrest.attorney_of_record, arrest.has_attorney ? 1 : 0,
-     arrest.case_number, arrest.jail_location, arrest.county, arrest.state, arrest.source]
-  );
+    [norm.name, norm.booking_date, norm.charges, norm.bail_amount, norm.court_date,
+      raw.attorney_of_record || null, norm.has_attorney, norm.case_number, norm.jail_location,
+      norm.county, norm.state, norm.source]);
   return 'inserted';
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-(async () => {
+runCli(async () => {
   if (argv.list) {
     const byState = {};
     for (const [, v] of Object.entries(SOURCES)) {
@@ -797,39 +788,8 @@ async function upsertArrest(db, arrest, dryRun) {
     }
     console.log(`\n  Tier 1 (JSON API):  ${Object.values(SOURCES).filter(s=>s.tier===1).length} cities`);
     console.log(`  Tier 2 (HTML):      ${Object.values(SOURCES).filter(s=>s.tier===2).length} cities`);
-    process.exit(0);
+    return 0;
   }
-
-  const db = await open({ filename: DB_PATH, driver: sqlite3.Database });
-  await db.run('PRAGMA journal_mode=WAL');
-
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS arrest_records (
-      id                 INTEGER PRIMARY KEY AUTOINCREMENT,
-      name               TEXT NOT NULL,
-      booking_date       TEXT,
-      charges            TEXT,
-      bail_amount        REAL,
-      court_date         TEXT,
-      attorney_of_record TEXT,
-      has_attorney       INTEGER DEFAULT 0,
-      case_number        TEXT,
-      jail_location      TEXT,
-      county             TEXT,
-      state              TEXT,
-      source             TEXT,
-      alert_sent         INTEGER DEFAULT 0,
-      created_at         TEXT DEFAULT (NOW()),
-      updated_at         TEXT DEFAULT (NOW())
-    );
-    CREATE INDEX IF NOT EXISTS idx_ar_state   ON arrest_records(state);
-    CREATE INDEX IF NOT EXISTS idx_ar_county  ON arrest_records(county);
-    CREATE INDEX IF NOT EXISTS idx_ar_date    ON arrest_records(booking_date);
-    CREATE INDEX IF NOT EXISTS idx_ar_atty    ON arrest_records(has_attorney);
-    CREATE INDEX IF NOT EXISTS idx_ar_alert   ON arrest_records(alert_sent);
-    CREATE INDEX IF NOT EXISTS idx_ar_name    ON arrest_records(name);
-    CREATE INDEX IF NOT EXISTS idx_ar_bail    ON arrest_records(bail_amount);
-  `);
 
   // Filter targets
   let targets = Object.entries(SOURCES);
@@ -856,43 +816,34 @@ async function upsertArrest(db, arrest, dryRun) {
   console.log(`   Cities: ${targets.length} | Unique counties: ${deduped.length}`);
   console.log(`   Window: ${argv.since} | Dry run: ${argv['dry-run']}\n`);
 
-  let inserted = 0, updated = 0, skipped = 0, failed = 0;
-
-  for (const [key, config] of deduped) {
-    console.log(`\n📍 ${config.city}, ${config.state} (${config.county} County) [Tier ${config.tier}]`);
-
-    const arrests = await fetchSource(key, config, argv.since, argv.limit);
-    console.log(`   Found: ${arrests.length} records`);
-
-    for (const a of arrests) {
-      try {
-        const r = await upsertArrest(db, a, argv['dry-run']);
-        if (r === 'inserted') inserted++;
-        else if (r === 'updated') updated++;
-        else skipped++;
-      } catch (e) {
-        if (!e.message?.includes('UNIQUE')) failed++;
+  const db = await openRefreshDb();
+  const dryRun = argv['dry-run'];
+  const locked = await withJobLock(db, 'arrest_rosters', async () => {
+    const counts = newCounts();
+    const errorSamples = [];
+    const runId = await startRun(db, { job: 'arrest_rosters', trigger: 'manual', params: { state: argv.state, county: argv.county, tier: argv.tier || null, since: argv.since }, dryRun });
+    for (const [key, config] of deduped) {
+      console.log(`\n📍 ${config.city}, ${config.state} (${config.county} County) [Tier ${config.tier}]`);
+      const arrests = await fetchSource(key, config, argv.since, argv.limit);
+      counts.fetched += arrests.length;
+      console.log(`   Found: ${arrests.length} records`);
+      for (const a of arrests) {
+        try {
+          const r = await insertArrest(db, a, key, dryRun);
+          counts[r] = (counts[r] || 0) + 1;
+        } catch (e) {
+          counts.errors++;
+          errorSamples.push(`${config.city}: ${e.message}`);
+        }
       }
     }
+    const status = await finishRun(db, runId, counts, { errorSamples });
+    return { runId, status, counts };
+  });
+  if (!locked.locked) {
+    console.log('ℹ️  Another roster scrape is in progress — try again later.');
+    return 0;
   }
-
-  if (!argv['dry-run']) {
-    const stats = await db.get(`
-      SELECT COUNT(*) as total,
-        SUM(CASE WHEN has_attorney=0 THEN 1 ELSE 0 END) as no_attorney,
-        SUM(CASE WHEN bail_amount>0 THEN 1 ELSE 0 END) as has_bail,
-        SUM(CASE WHEN alert_sent=0 THEN 1 ELSE 0 END) as pending_alerts,
-        COUNT(DISTINCT state) as states,
-        COUNT(DISTINCT county) as counties
-      FROM arrest_records
-    `);
-    console.log(`\n${'═'.repeat(55)}`);
-    console.log(`✅ Harvest complete`);
-    console.log(`   This run:   +${inserted} new | ${updated} updated | ${skipped} skipped | ${failed} errors`);
-    console.log(`   DB totals:  ${stats.total} arrests | ${stats.states} states | ${stats.counties} counties`);
-    console.log(`   No esquire: ${stats.no_attorney} | Has bail: ${stats.has_bail}`);
-    console.log(`   Pending alerts: ${stats.pending_alerts}`);
-  }
-
-  await db.close();
-})().catch(e => { console.error('Harvester failed:', e); process.exit(1); });
+  printRunSummary('Arrest roster scrape', { ...locked.result, dryRun });
+  return locked.result.status === 'failed' ? 1 : 0;
+});

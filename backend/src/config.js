@@ -237,6 +237,8 @@ export const ALL_ENV_VARS = {
 
   // ── Google / Maps ────────────────────────────────────────────────────────
   GOOGLE_PLACES_KEY:        process.env.GOOGLE_PLACES_KEY          || '',
+  GOOGLE_PLACES_MIN_INTERVAL_MS: process.env.GOOGLE_PLACES_MIN_INTERVAL_MS || '150',  // data refresh: min ms between Places requests
+  GOOGLE_PLACES_MAX_REQUESTS:    process.env.GOOGLE_PLACES_MAX_REQUESTS    || '5000', // data refresh: Places request budget per run
   YELP_API_KEY:             process.env.YELP_API_KEY               || '',
 
   // ── Push (Expo + web push) ───────────────────────────────────────────────
@@ -280,10 +282,9 @@ export const ALL_ENV_VARS = {
   APP_SSO_REDIRECT:              process.env.APP_SSO_REDIRECT              || '',
   APP_OAUTH_REDIRECT:            process.env.APP_OAUTH_REDIRECT            || '',
 
-  // ── Supabase (attachments storage, RAG, DOI import script) ───────────────
+  // ── Supabase (attachments storage, RAG) ─────────────────────────────────
   SUPABASE_URL:             process.env.SUPABASE_URL               || '',
   SUPABASE_SERVICE_KEY:     process.env.SUPABASE_SERVICE_KEY       || '',
-  SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY   || '',    // DOI import fallback only
 
   // ── Error tracking (instrument.js) ───────────────────────────────────────
   SENTRY_DSN:                  process.env.SENTRY_DSN                  || '',
@@ -295,7 +296,6 @@ export const ALL_ENV_VARS = {
 
   // ── Infrastructure ───────────────────────────────────────────────────────
   REDIS_URL:                process.env.REDIS_URL                  || '',
-  PROVIDERS_DB:             process.env.PROVIDERS_DB               || '',
   REPORT_DIR:               process.env.REPORT_DIR                 || '/tmp/reports',
   RATE_LIMIT_PER_MIN:       process.env.RATE_LIMIT_PER_MIN         || '200', // global per-IP limit (app.js)
   CORS_ORIGIN:              process.env.CORS_ORIGIN                || '',
