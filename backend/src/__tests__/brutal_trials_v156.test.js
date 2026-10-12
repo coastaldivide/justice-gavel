@@ -104,14 +104,18 @@ describe('TODO3H. legaldata.js — probation_offices in TABLE_MAP', () => {
 
 // ── ENVIRONMENT_VARS.md ───────────────────────────────────────────────────
 describe('DOCS. ENVIRONMENT_VARS.md Created', () => {
-  test('DOCS-01: ENVIRONMENT_VARS.md exists with all required vars', async () => {
+  test('DOCS-01: env reference documents all required vars (RAILWAY_ENV_SETUP.md; ENVIRONMENT_VARS.md points to it)', async () => {
     const fs=await import('fs');
-    const src=fs.existsSync(__REPO + '/ENVIRONMENT_VARS.md') ? fs.readFileSync(__REPO + '/ENVIRONMENT_VARS.md','utf8') : '';
+    // Step 10: RAILWAY_ENV_SETUP.md became the single env reference and
+    // ENVIRONMENT_VARS.md is a thin pointer to it.
+    const src=fs.readFileSync(__REPO + '/RAILWAY_ENV_SETUP.md','utf8');
     expect(src).toContain('ANTHROPIC_API_KEY');
     expect(src).toContain('STRIPE_SECRET');
     expect(src).toContain('JWT_SECRET');
     expect(src).toContain('GOOGLE_PLACES_KEY');
     expect(src.length).toBeGreaterThan(2000);
+    const ptr=fs.readFileSync(__REPO + '/ENVIRONMENT_VARS.md','utf8');
+    expect(ptr).toContain('RAILWAY_ENV_SETUP.md');
   });
 });
 

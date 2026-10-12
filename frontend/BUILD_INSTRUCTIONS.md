@@ -17,9 +17,11 @@ eas login
 # Enter your expo.dev credentials (account: justicegavel)
 ```
 
-Or with token (non-interactive):
+Or with a token (non-interactive) — create one at expo.dev → Account →
+Access Tokens, and never commit it (the token that used to be printed here
+is burned; revoke it if it is still active):
 ```bash
-export EXPO_TOKEN=fmzCkOL9lNXn64DT8FiguRvOWhsEpTot9zGI9oKW
+export EXPO_TOKEN=<your-expo-access-token>
 ```
 
 ---

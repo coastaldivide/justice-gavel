@@ -105,7 +105,9 @@ describe('LOG. logger.js — Structured Logging System', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain('SERVICE_META');
     expect(src).toContain("'justice-gavel-api'");
-    expect(src).toContain('npm_package_version');
+    // Version now comes from package.json via utils/version.js (step 10) —
+    // npm_package_version is unset under `node src/server.js` / Docker.
+    expect(src).toContain('APP_VERSION');
   });
   test('LOG-05: 77 routes use logger.error (only expungement routes use err500 helpers instead)', async () => {
     const fs   = await import('fs');

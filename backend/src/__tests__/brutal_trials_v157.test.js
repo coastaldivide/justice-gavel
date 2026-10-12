@@ -102,7 +102,7 @@ describe('ENV. .env Completeness', () => {
 describe('TODO. Data Completeness Gaps Documented', () => {
   test('TODO-01: 12 incomplete TODO items tracked', async () => {
     const fs=await import('fs');
-    const todo=fs.readFileSync(__REPO + '/TODO.md','utf8');
+    const todo=fs.readFileSync(__REPO + '/docs/archive/TODO.md'   /* archived in step 10 */,'utf8');
     const incomplete=(todo.match(/❌/g)||[]).length;
     const complete=(todo.match(/✅/g)||[]).length;
     console.log(`TODO: ${complete} complete, ${incomplete} remaining`);
@@ -112,7 +112,7 @@ describe('TODO. Data Completeness Gaps Documented', () => {
   });
   test('TODO-02: data scorecard — 13/20 categories at 100%', async () => {
     const fs=await import('fs');
-    const todo=fs.readFileSync(__REPO + '/TODO.md','utf8');
+    const todo=fs.readFileSync(__REPO + '/docs/archive/TODO.md'   /* archived in step 10 */,'utf8');
     const green=(todo.match(/✅/g)||[]).length;
     const warn=(todo.match(/⚠️/g)||[]).length;
     console.log(`Scorecard: ${green} green, ${warn} warning`);

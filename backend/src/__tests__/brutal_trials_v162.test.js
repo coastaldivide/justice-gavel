@@ -69,7 +69,10 @@ describe('OAS. OpenAPI 3.0 Spec Generated', () => {
     expect(fs.existsSync(__REPO + '/openapi.json')).toBe(true);
     const spec = JSON.parse(fs.readFileSync(__REPO + '/openapi.json','utf8'));
     expect(spec.openapi).toBe('3.0.3');
-    expect(spec.info.version).toBe('5.89.11');
+    // The spec is regenerated from the mounted routes (scripts/generate-openapi.mjs)
+    // and its version tracks backend/package.json — openapi_drift.test.js pins it.
+    const pkg = JSON.parse(fs.readFileSync(__REPO + '/backend/package.json','utf8'));
+    expect(spec.info.version).toBe(pkg.version);
     expect(Object.keys(spec.paths).length).toBeGreaterThan(360);
     console.log(`OpenAPI paths: ${Object.keys(spec.paths).length}`);
   });
@@ -123,7 +126,7 @@ describe('GG. GoldenGavelScreen Error State', () => {
 describe('TODO4. Priority 4 Items Code-Complete', () => {
   test('TODO4-01: Attorney claiming + Stripe + Anthropic marked CODE COMPLETE', async () => {
     const fs = await import('fs');
-    const todo = fs.readFileSync(__REPO + '/TODO.md','utf8');
+    const todo = fs.readFileSync(__REPO + '/docs/archive/TODO.md'   /* archived in step 10 */,'utf8');
     expect(true).toBe(true);
     expect(todo).toContain('CODE COMPLETE — needs STRIPE_SECRET');
     expect(todo).toContain('CODE COMPLETE — needs API key only');
@@ -131,7 +134,7 @@ describe('TODO4. Priority 4 Items Code-Complete', () => {
   });
   test('TODO4-02: 0 incomplete (❌) items remain', async () => {
     const fs = await import('fs');
-    const todo = fs.readFileSync(__REPO + '/TODO.md','utf8');
+    const todo = fs.readFileSync(__REPO + '/docs/archive/TODO.md'   /* archived in step 10 */,'utf8');
     expect((todo.match(/❌/g)||[]).length).toBe(0);
   });
 });
@@ -153,7 +156,9 @@ describe('QS. QUICKSTART.md Updated', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/QUICKSTART.md','utf8');
     expect(src).toContain('openapi.json');
-    expect(src).toContain('5.89.11');
+    // Version is aligned with backend/package.json (step 10).
+    const pkg = JSON.parse(fs.readFileSync(__REPO + '/backend/package.json','utf8'));
+    expect(src).toContain(pkg.version);
   });
 });
 

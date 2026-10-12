@@ -28,6 +28,7 @@ async function fetchNotify(url, opts) {
  */
 
 import logger from '../utils/logger.js';
+import { APP_VERSION } from '../utils/version.js';
 import { Sentry, captureCritical } from './sentry.js';
 
 // ── In-memory dedup: code → last_alerted_ts ──────────────────────────────────
@@ -92,7 +93,7 @@ ${message}
 Details: ${JSON.stringify(extras, null, 2)}
 Time: ${new Date().toISOString()}
 Environment: ${process.env.NODE_ENV}
-Version: ${process.env.npm_package_version}
+Version: ${APP_VERSION}
 
 RUNBOOK: https://github.com/coastaldivide/justice-gavel/blob/main/RUNBOOK.md
 `.trim();

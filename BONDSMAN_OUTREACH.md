@@ -168,4 +168,4 @@ At 50 bondsmen statewide: **~$329K/year run rate**, before expanding to TX, FL, 
 
 ---
 
-*Last updated: v8.7.35 — July 2026*
+*Last updated: v8.7.60 — October 2026 (flat $100 lead fee confirmed)*

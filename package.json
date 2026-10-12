@@ -1,6 +1,6 @@
 {
   "name": "justice-gavel",
-  "version": "1.0.0",
+  "version": "8.7.60",
   "private": true,
   "description": "Justice Gavel monorepo root — the API lives in backend/, the app in frontend/",
   "scripts": {

@@ -221,7 +221,7 @@ describe('C. Data — All TODO Items Resolved', () => {
 
   test('C-06: 0 incomplete items in TODO.md', async () => {
     const fs=await import('fs');
-    const todo=fs.readFileSync(__REPO + '/TODO.md','utf8');
+    const todo=fs.readFileSync(__REPO + '/docs/archive/TODO.md'   /* archived in step 10 */,'utf8');
     const incomplete=(todo.match(/❌/g)||[]).length;
     expect(incomplete).toBe(0);
   });
@@ -272,9 +272,10 @@ describe('E. Config & Docs — Complete', () => {
     expect(vars.size).toBeGreaterThanOrEqual(80);
   });
 
-  test('E-02: ENVIRONMENT_VARS.md documents all required keys', async () => {
+  test('E-02: the env reference (RAILWAY_ENV_SETUP.md) documents all required keys', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/ENVIRONMENT_VARS.md','utf8');
+    // Step 10: ENVIRONMENT_VARS.md is now a pointer to RAILWAY_ENV_SETUP.md.
+    const src=fs.readFileSync(__REPO + '/RAILWAY_ENV_SETUP.md','utf8');
     for(const k of ['ANTHROPIC_API_KEY','STRIPE_SECRET','JWT_SECRET','GOOGLE_PLACES_KEY'])
       expect(src).toContain(k);
   });
@@ -283,7 +284,9 @@ describe('E. Config & Docs — Complete', () => {
   test('E-04: QUICKSTART.md is current version', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/QUICKSTART.md','utf8');
-    expect(src).toContain('5.89.11');
+    // The quick start must carry the aligned version from backend/package.json.
+    const pkg=JSON.parse(fs.readFileSync(__REPO + '/backend/package.json','utf8'));
+    expect(src).toContain(pkg.version);
   });
 
   test('E-05: DEMO_MODE safe defaults — all LIVE flags off', () => {

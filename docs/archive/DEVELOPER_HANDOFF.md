@@ -1,3 +1,5 @@
+> **ARCHIVED — historical document, no longer accurate.** Kept for history only (moved here in the step-10 documentation pass, Oct 2026). Versions, counts, architecture claims and process steps in here are out of date — see the repo README.md, RAILWAY_ENV_SETUP.md and RUNBOOK.md for current information.
+
 # Justice Gavel — Developer Handoff
 **Version:** 7.2.0 | **Date:** June 2026 | **Prepared for:** Russell Allen (russelltallen@gmail.com)
 

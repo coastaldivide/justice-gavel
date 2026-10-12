@@ -12,6 +12,7 @@
 import './instrument.js';
 import { validateEnv } from './config.js';
 import logger from './utils/logger.js';
+import { APP_VERSION } from './utils/version.js';
 
 validateEnv();   // exits(1) in production when JWT/ENCRYPTION/DATABASE_URL are missing
 
@@ -161,7 +162,7 @@ server.on('listening', () => {
     msg: '[server] Justice Gavel API started',
     port: addr.port || PORT,
     env: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'local',
-    version: process.env.npm_package_version || '8.7.50',
+    version: APP_VERSION,
   });
   logger.info(`[server] Mode: ${process.env.DEMO_MODE === 'true' ? 'DEMO' : 'LIVE'}`);
   if (process.send) process.send('ready');   // PM2 wait_ready

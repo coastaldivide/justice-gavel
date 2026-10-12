@@ -247,7 +247,7 @@ describe('DATA. Seed & Schema Completeness', () => {
   });
   test('DATA-04: TODO.md 0 incomplete items', async () => {
     const fs=await import('fs');
-    const todo=fs.readFileSync(__REPO + '/TODO.md','utf8');
+    const todo=fs.readFileSync(__REPO + '/docs/archive/TODO.md'   /* archived in step 10 */,'utf8');
     expect((todo.match(/❌/g)||[]).length).toBe(0);
   });
 });

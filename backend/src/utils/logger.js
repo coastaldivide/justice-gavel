@@ -11,6 +11,8 @@
  *        logger.error('[db] Connection failed', err);
  */
 
+import { APP_VERSION } from './version.js';
+
 const LEVEL_ORDER = { debug: 0, info: 1, warn: 2, error: 3 };
 const MIN_LEVEL   = LEVEL_ORDER[process.env.LOG_LEVEL?.toLowerCase()] ?? 1; // default: info
 // One-line JSON when LOG_FORMAT=json. Production defaults to JSON (Railway /
@@ -20,7 +22,7 @@ const JSON_FORMAT = process.env.LOG_FORMAT === 'json'
 
 const SERVICE_META = {
   service: 'justice-gavel-api',
-  version: process.env.npm_package_version || '2.8.0',
+  version: APP_VERSION,   // real version from package.json — see utils/version.js
   env:     process.env.NODE_ENV || 'development',
 };
 

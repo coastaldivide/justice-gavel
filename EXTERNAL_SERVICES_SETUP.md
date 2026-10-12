@@ -1,27 +1,28 @@
 # Justice Gavel — External Services Setup
 ### The complete checklist for everything the app needs from the outside world
 
-> **Current state of the codebase:** Everything internal is built, tested, and working.
-> The app runs in safe demo mode for all external services until you plug in real credentials.
-> This document is the only thing standing between the codebase and production.
+> **How it works:** every external service is gated on its own API key. With a
+> key absent, that one feature degrades gracefully (a "feature disabled" line
+> is logged at boot) and everything else keeps working. Full variable
+> reference: [RAILWAY_ENV_SETUP.md](./RAILWAY_ENV_SETUP.md).
 
 ---
 
-## How Demo Mode Works
+## Behaviour without keys
 
-Every external service has a graceful fallback:
-
-| Service | `LIVE_*=false` behavior |
+| Service | Behavior while the key is absent |
 |---|---|
-| Stripe | All payments return `{ demo: true }`. No charges. |
-| SendGrid | Emails logged to console. Never sent. |
+| Stripe | Every billing endpoint returns `503 payments_unavailable`; the app shows "Payments are not available yet". Setting the keys re-enables payments automatically. |
+| Resend (email) | Emails are logged to the server log. Never sent. |
 | Expo Push | Push tokens accepted and stored. Delivery logged only. |
-| AI (Anthropic) | **No fallback** — key required for AI features to work. |
-| Google Places | Returns empty results with a warning log. |
+| AI (Anthropic) | AI endpoints return `503 ai_unavailable` — key required for AI features. |
+| Google Places | Fallback search returns empty results with a warning log. |
 | Integrations (Clio, etc.) | Demo data returned. No live API calls. |
+| Redis | AI jobs run in-process instead of BullMQ. |
 
-Set `LIVE_EMAIL=true`, `LIVE_SMS=true`, `LIVE_PAYMENTS=true`, `LIVE_REFRESH=true`
-as you activate each service. The `DEMO_MODE=false` flag sets them all at once.
+There is no payment/email "demo bypass": features are off until their real
+keys exist. `LIVE_REFRESH=true` is the one activation flag that matters
+operationally — it enables the nightly scheduler.
 
 ---
 
@@ -85,7 +86,7 @@ Subscription billing for all three user types: firms, attorneys, consumers.
 | Pro Plan | Annual | `STRIPE_LEGAL_PRO_ANNUAL_ID` |
 | Attorney Plan | Monthly | `STRIPE_ESQUIRE_PRICE_ID` |
 | Attorney Plan | Annual | `STRIPE_ESQUIRE_ANNUAL_ID` |
-| Consumer Intelligence | One-time | `STRIPE_LEGAL_RADAR_ID` |
+| Legal Radar | Monthly | `STRIPE_LEGAL_RADAR_ID` |
 
 4. Set up Stripe Webhook:
    - `dashboard.stripe.com` → Webhooks → Add endpoint
@@ -96,7 +97,7 @@ Subscription billing for all three user types: firms, attorneys, consumers.
    - Copy Signing Secret (`whsec_...`) → `STRIPE_WEBHOOK_SECRET`
 
 ```env
-STRIPE_SECRET=sk_live_...
+STRIPE_SECRET_KEY=sk_live_...        # STRIPE_SECRET accepted as alias
 STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_ADVISOR_PRICE_ID=price_...
 STRIPE_LEGAL_PRO_PRICE_ID=price_...
@@ -107,8 +108,10 @@ STRIPE_ESQUIRE_ANNUAL_ID=price_...
 STRIPE_LEGAL_RADAR_ID=price_...
 STRIPE_SUCCESS_URL=https://yourdomain.com/success
 STRIPE_CANCEL_URL=https://yourdomain.com/cancel
-LIVE_PAYMENTS=true
 ```
+
+Until these are set, billing deliberately returns `503 payments_unavailable`
+— the rest of the app is unaffected.
 
 **Cost:** 2.9% + 30¢ per successful charge. No monthly fee.
 
@@ -116,43 +119,29 @@ LIVE_PAYMENTS=true
 
 ## 🟠 IMPORTANT — Major features missing without these
 
-### 4. SendGrid (Email)
+### 4. Resend (Email)
 Transactional email for: welcome messages, password resets, ToS acceptance
 confirmations, subscription lapse notices, health scan CRITICAL alerts,
-attorney match notifications, inactivity warnings.
+attorney match notifications, ops alerts. Without the key, every email is
+logged instead of sent.
 
 **Steps:**
-1. `app.sendgrid.com` → Settings → API Keys → Create API Key
-2. Give it full access or at minimum "Mail Send" permission
-3. **Verify sender domain:** Settings → Sender Authentication → Domain Authentication
-   (Without this, emails go to spam. Takes 5 minutes with DNS access.)
+1. `resend.com` → API Keys → Create API Key
+2. **Verify the sender domain:** Domains → add `justicegavel.app` and set the
+   DNS records it gives you (without this, emails go to spam)
 
 ```env
-SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxxxx
-SENDGRID_FROM=noreply@justicegavel.app
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxx
+EMAIL_FROM=noreply@justicegavel.app
 ALERT_EMAIL_FROM=alerts@justicegavel.app
 ADMIN_ALERT_EMAIL=admin@yourfirm.com
-LIVE_EMAIL=true
 ```
 
-**Cost:** Free: 100 emails/day. Essentials: $19.95/mo for 50,000/mo.
+**Cost:** Free: 3,000 emails/mo. Pro: $20/mo for 50,000/mo.
 
----
-
-SMS for: health scan CRITICAL+HIGH findings, subscription lapse alerts,
-crisis escalation notifications to attorneys.
-
-**Steps:**
-2. Phone Numbers → Buy a Number (choose a local or toll-free number)
-3. For production: complete carrier registration for A2P 10DLC
-   (required by US carriers for business SMS — 1-2 day approval)
-
-```env
-ADMIN_ALERT_SMS=+15551234567
-LIVE_SMS=true
-```
-
-**Cost:** $1.15/mo per number + $0.0079/SMS outbound.
+> **SMS:** no SMS provider is wired up — the SMS senders in the code are
+> no-op stubs and `ADMIN_ALERT_SMS` is informational. Critical alerts go out
+> via email + the Slack webhook (`ALERT_WEBHOOK_URL`).
 
 ---
 
@@ -313,16 +302,17 @@ MYCASE_CLIENT_SECRET=...
 
 ## ⚪ OPTIONAL
 
-### PostgreSQL (for multi-instance or high-volume deployments)
-SQLite is the default and works for single-server deployments.
-Postgres is needed for horizontal scaling, read replicas, or managed backups.
+### PostgreSQL — **required in production** (listed here only because it's
+"external"). The server refuses to start in production without `DATABASE_URL`;
+the in-memory SQLite fallback exists for local development only. Apply
+`supabase/migrations/*.sql` in filename order with psql before first boot.
 
 ```
 Railway: railway.app → New Project → PostgreSQL → Connect
 Supabase: supabase.com → New Project → Settings → Database → Connection string
 ```
 ```env
-POSTGRES_URL=postgresql://user:pass@host:5432/dbname
+DATABASE_URL=postgresql://user:pass@host:5432/dbname   # POSTGRES_URL accepted as alias
 ```
 
 ### Yelp (attorney/bondsman ratings)
@@ -345,24 +335,26 @@ OPENAI_API_KEY=sk-...
 Copy this block into your Railway / Fly.io / Heroku environment:
 
 ```
-# ── Security (generate all three with: openssl rand -hex 32) ──
+# ── Security (generate all four with: openssl rand -hex 32) ──
 JWT_SECRET=
+JWT_REFRESH_SECRET=
 ENCRYPTION_KEY=
 ADMIN_KEY=
 JWT_EXPIRES_IN=30d
 
 # ── App ──
 NODE_ENV=production
-PORT=4000
+DATABASE_URL=
 BASE_URL=https://api.yourdomain.com
+APP_URL=https://yourdomain.com
 CORS_ORIGIN=https://yourdomain.com
 APP_OAUTH_REDIRECT=https://yourdomain.com/settings/integrations
 
 # ── AI ──
 ANTHROPIC_API_KEY=
 
-# ── Payments ──
-STRIPE_SECRET=
+# ── Payments (optional — billing returns 503 payments_unavailable until set) ──
+STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 STRIPE_ADVISOR_PRICE_ID=
 STRIPE_LEGAL_PRO_PRICE_ID=
@@ -373,18 +365,12 @@ STRIPE_ESQUIRE_ANNUAL_ID=
 STRIPE_LEGAL_RADAR_ID=
 STRIPE_SUCCESS_URL=https://yourdomain.com/success
 STRIPE_CANCEL_URL=https://yourdomain.com/cancel
-LIVE_PAYMENTS=true
 
-# ── Email ──
-SENDGRID_API_KEY=
-SENDGRID_FROM=noreply@yourdomain.com
+# ── Email (Resend) ──
+RESEND_API_KEY=
+EMAIL_FROM=noreply@yourdomain.com
 ALERT_EMAIL_FROM=alerts@yourdomain.com
 ADMIN_ALERT_EMAIL=admin@yourfirm.com
-LIVE_EMAIL=true
-
-# ── SMS ──
-ADMIN_ALERT_SMS=+1XXXXXXXXXX
-LIVE_SMS=true
 
 # ── Push (mobile) ──
 EXPO_ACCESS_TOKEN=
@@ -422,7 +408,7 @@ DEMO_MODE=false
 ```bash
 cd frontend
 npm run electron:build
-# Output: electron-dist/Justice Gavel-5.85.0.dmg
+# Output: electron-dist/Justice Gavel-<version>.dmg (version from frontend/package.json)
 ```
 Requires: macOS or CI with macOS runner. For notarization (required for Gatekeeper):
 `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` in env.
@@ -430,7 +416,7 @@ Requires: macOS or CI with macOS runner. For notarization (required for Gatekeep
 ### Windows Installer
 ```bash
 npm run electron:build -- --win
-# Output: electron-dist/Justice Gavel Setup 5.85.0.exe
+# Output: electron-dist/Justice Gavel Setup <version>.exe
 ```
 For code signing: EV certificate from DigiCert or Sectigo (~$300/year).
 Without signing: Windows SmartScreen shows a warning on first run.
@@ -468,5 +454,5 @@ Google Play: requires Google Play Developer account ($25 one-time).
 
 ---
 
-*Generated: May 11, 2026 — v5.85.0*
+*Last verified against the code: October 2026 — v8.7.60.*
 *Update this document when adding new external services.*

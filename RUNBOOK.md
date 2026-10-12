@@ -1,6 +1,7 @@
 # Justice Gavel — Incident Runbook
 
-**Version:** 6.3.0 | **Last updated:** 2026-01-01 | **On-call contact:** engineering@justicegavel.app
+**App version:** 8.7.60 (all packages aligned; `/health` reports it) |
+**On-call contact:** engineering@justicegavel.app
 
 ---
 
@@ -9,10 +10,14 @@
 | Service | URL | Dashboard |
 |---------|-----|-----------|
 | Production API | https://api.justicegavel.app | Railway |
-| Health check | https://api.justicegavel.app/health | Auto |
+| Health check | https://api.justicegavel.app/health | 200 = DB round-trip OK, 503 = degraded |
+| Metrics | https://api.justicegavel.app/metrics | JSON (or `?format=prometheus`) — memory, AI queue, pg pool |
 | Sentry errors | https://sentry.io | Sentry dashboard |
-| Database | Supabase | https://app.supabase.com |
-| Uptime | BetterUptime | BetterUptime dashboard |
+| Database | Supabase / Railway Postgres | provider dashboard |
+| Uptime | BetterUptime (see UPTIME_MONITORING.md) | BetterUptime dashboard |
+
+Environment variables: **RAILWAY_ENV_SETUP.md** is the single reference —
+this document no longer duplicates the list.
 
 ---
 
@@ -29,381 +34,170 @@
 
 ## RUNBOOK: SEV-1 — Database Down
 
-**Symptoms:** `/health` returns `{"db": "error"}`, all API calls fail
+**Symptoms:** `/health` returns 503 with `{"db": "error"}`, all API calls fail
 
-1. Check Supabase status: https://status.supabase.com
+1. Check provider status: https://status.supabase.com (or Railway status)
 2. Check Railway logs: `railway logs --service justice-gavel-api`
 3. Verify `DATABASE_URL` env var is set: `railway variables --service justice-gavel-api`
-4. If Supabase issue: wait for resolution, tweet status update
+4. If provider issue: wait for resolution, post a status update
 5. If Railway issue: redeploy from last stable commit
-6. Run post-recovery check: `node scripts/check-env.js`
+6. Post-recovery: `node scripts/check-env.js` and `node scripts/smoke-test.mjs https://api.justicegavel.app`
 
-**Recovery test:** `curl https://api.justicegavel.app/health | jq .db`
+Note: `/health` caches its DB probe for `HEALTH_CACHE_MS` (default 5 s), so
+recovery shows up within one cache window.
+
+**Recovery test:** `curl -s https://api.justicegavel.app/health | jq .db`
 
 ---
 
 ## RUNBOOK: SEV-2 — Anthropic AI Down
 
-**Symptoms:** All /chat, /motions, /research endpoints return 503
+**Symptoms:** `/chat`, `/motions`, `/research` endpoints return 503
+`ai_unavailable` or time out; `/metrics` queue `failed` climbing
 
-1. Check circuit breaker: `/health` will show `circuit_breakers.anthropic: "OPEN"`
+1. Check `/health` → `features.ai` — `false` means the key is missing/unset,
+   which is configuration, not an outage
 2. Check Anthropic status: https://status.anthropic.com
-3. Circuit breaker auto-recovers after 30 seconds once Anthropic is back
-4. Manual reset if needed: restart Railway service (triggers SIGTERM graceful shutdown)
+3. AI calls have a per-job timeout (`AI_JOB_TIMEOUT_MS`, default 45 s); queued
+   jobs drain on restart (`AI_DRAIN_TIMEOUT_MS`)
+4. If stuck: restart the Railway service (SIGTERM → graceful shutdown drains
+   the AI queue before exit)
 
-**User communication:** Post status update noting AI features are temporarily unavailable.
-Non-AI features (bail calculator, rights cards, attorney matching) remain fully operational.
+**User communication:** AI features temporarily unavailable. Non-AI features
+(bail calculator, rights cards, attorney search) remain fully operational.
 
 ---
 
 ## RUNBOOK: SEV-2 — Stripe Payment Failures
 
-**Symptoms:** Subscription attempts failing, `invoice.payment_failed` webhook firing
+**Symptoms:** Subscription attempts failing, `invoice.payment_failed` webhooks firing
 
+0. First check `/health` → `features.payments`. `false` = Stripe keys not
+   configured — billing deliberately returns `503 payments_unavailable`
+   (expected state until keys are set; not an incident)
 1. Check Stripe status: https://status.stripe.com
-2. Check webhook signature: `STRIPE_WEBHOOK_SECRET` env var matches Stripe dashboard
-3. Check webhook endpoint is receiving: Stripe Dashboard → Developers → Webhooks
-4. Run test webhook: `stripe trigger invoice.payment_failed` (Stripe CLI)
-5. Check `past_due` users in DB: `SELECT count(*) FROM users WHERE subscription_status='past_due'`
+2. Check webhook signature: `STRIPE_WEBHOOK_SECRET` matches the Stripe dashboard
+3. Check the endpoint is receiving: Stripe Dashboard → Developers → Webhooks
+   (endpoint is `POST /webhooks/stripe`, raw-body, signature-verified)
+4. Test: `stripe trigger invoice.payment_failed` (Stripe CLI)
+5. Check `past_due` users: `SELECT count(*) FROM users WHERE subscription_status='past_due'`
 
-**Note:** Users in `past_due` status retain full access during grace period (subscription state machine handles this automatically).
+**Note:** `past_due` users retain access during the grace period (subscription
+state machine handles this automatically).
 
 ---
 
 ## RUNBOOK: SEV-1 — JWT Secret Compromised
 
-**Symptoms:** Unauthorized access, unusual login patterns, security report
-
 1. **IMMEDIATELY** rotate `JWT_SECRET` in Railway env vars
-2. **IMMEDIATELY** rotate `JWT_REFRESH_SECRET`  
+2. **IMMEDIATELY** rotate `JWT_REFRESH_SECRET`
 3. Run: `DELETE FROM refresh_tokens;` (invalidates all sessions)
-4. All users will need to re-login (expected behavior — communicate to users)
-5. Check audit_log for unusual access: `SELECT * FROM audit_log WHERE action='user.login' ORDER BY created_at DESC LIMIT 100`
-6. Check `/health` — `jwt_secure` should return `true` after rotation
+4. All users must re-login (expected — communicate it)
+5. Check audit_log for unusual access:
+   `SELECT * FROM audit_log WHERE action='user.login' ORDER BY created_at DESC LIMIT 100`
+
+Also note: secrets that were ever committed (an old revision of
+`backend/scripts/railway-checklist.md` embedded real values) are burned —
+if they were ever deployed, rotate them now.
 
 ---
 
 ## DEPLOY PROCESS
 
 ```bash
-# Normal deploy
-git push origin main      # Railway auto-deploys
-
-# Rollback
+git push origin main      # Railway auto-deploys (root directory: backend)
 railway rollback          # Railway dashboard → Deployments → Roll back
-
-# Force restart (clears in-memory circuit breakers)
-railway restart           # Railway dashboard → Settings → Restart service
+railway restart           # Settings → Restart service
 ```
 
 **Pre-deploy checklist:**
 - [ ] `node scripts/check-env.js` passes
-- [ ] All tests pass: `npm test`
-- [ ] TypeScript compiles: `npx tsc --noEmit`
-- [ ] No high+ vulnerabilities: `npm audit`
+- [ ] Backend tests pass: `npm run lint && npm test` (in backend/)
+- [ ] Frontend compiles: `npx tsc --noEmit` (in frontend/)
+- [ ] No high+ production vulnerabilities: `npm audit --omit=dev --audit-level=high`
+- [ ] If routes changed: `node scripts/generate-openapi.mjs` and commit openapi.json
+- [ ] New migrations applied to the production DB with psql **before** deploy
 
 ---
 
 ## DATABASE BACKUP
 
-Supabase takes daily backups automatically. Point-in-time recovery available on Pro plan.
+Supabase takes daily backups automatically (point-in-time recovery on Pro).
+Manual: Supabase Dashboard → Project → Backups → Download.
 
-**Manual backup:** Supabase Dashboard → Project → Backups → Download
-
-**Critical tables to verify after incidents:**
-- `users` — registration data
-- `audit_log` — compliance trail (append-only, never delete)
-- `user_disclaimer_acceptance` — legal consent trail
-- `refresh_tokens` — auth tokens
-- `subscriptions` — billing state
+**Critical tables to verify after incidents:** `users`, `audit_log`
+(append-only, never delete), `user_disclaimer_acceptance`, `refresh_tokens`,
+`subscriptions`.
 
 ---
 
-## AUTOMATED MONITORING — HOW IT WORKS
+## AUTOMATED MONITORING — WHAT ACTUALLY RUNS
 
-### What gets monitored automatically
-
-| Monitor | Frequency | Action on failure |
+| Monitor | Frequency | Action |
 |---------|-----------|-------------------|
-| Memory watchdog | Every 30s | Warn at 384MB, attempt GC + cache clear at 512MB, restart at 600MB |
-| DB health check | Every 60s | Auto-reconnect with exponential backoff (5 attempts), then SEV-1 alert |
-| Circuit breakers | Every 15s | SEV-2 Slack alert when Anthropic/Stripe opens |
-| Stale job locks | Every 15min | Auto-clear locks older than 30 minutes |
-| Uncaught exceptions | Immediate | SEV-1 email + SMS before process restart |
-| Payment failures | Per event | SEV-2 email on invoice.payment_failed webhook |
+| Memory watchdog (**RSS**, thresholds from `MEMORY_LIMIT_MB`, default 512) | 30 s | warn at 72% (368 MB) → force GC + SEV-2 at 85% (435 MB) → graceful restart at 93% (476 MB) |
+| DB health check | 60 s | logs unhealthy state; `/health` turns 503 so the uptime monitor pages |
+| Stale job locks | 15 min | auto-clear locks older than 30 min |
+| Uncaught exception / unhandled rejection | immediate | SEV-1 notify, then process exit → Railway restarts |
+| `invoice.payment_failed` webhook | per event | subscription state machine + SEV-2 notify |
+| Slow queries | per query | WARN log when > `SLOW_QUERY_MS` (default 500 ms; SQL text only, never bind values) |
 
-### Alert channels by severity
+There are **no circuit breakers** (removed — dead code) and **no SMS alerts**
+(no SMS provider is wired; `ADMIN_ALERT_SMS` is informational only).
 
-| Severity | Channel | Response time |
-|----------|---------|---------------|
-| SEV-1 (fatal) | Email + SMS to ONCALL_PHONE + Slack webhook | 15 minutes |
-| SEV-2 (error) | Email to engineering + Slack webhook | 1 hour |
-| SEV-3 (warn) | Audit log + Sentry warning | Daily review |
+### Alert channels
 
-### Alert dedup throttle
+| Severity | Channel |
+|----------|---------|
+| SEV-1 (critical) | Email to `ONCALL_EMAIL` (+ `ONCALL_EMAIL_2`) + Slack `ALERT_WEBHOOK_URL` + Sentry |
+| SEV-2 (error) | Email + Slack webhook + Sentry |
+| SEV-3 (warn) | Log + Sentry warning, daily review |
 
-The same alert code is suppressed for **5 minutes** after first fire.
-This prevents alert storms during incident (e.g., 1,000 requests hitting a
-broken endpoint won't send 1,000 emails — just one every 5 minutes).
+Dedup: the same alert code is suppressed for **5 minutes** after first fire,
+so an incident can't send thousands of emails.
 
-### To set up alert channels
+Setup: Slack incoming webhook → `ALERT_WEBHOOK_URL`; `RESEND_API_KEY` must be
+set for alert email to actually send (otherwise alerts are logged only);
+`SENTRY_DSN` for error tracking.
 
-1. **Slack**: Create incoming webhook in Slack App settings → set `ALERT_WEBHOOK_URL`
-2. **SMS**: Set `ONCALL_PHONE=+1XXXXXXXXXX` in Railway env vars
-3. **Email**: `SENDGRID_API_KEY` already required — alerts sent from alerts@justicegavel.app
-4. **Sentry**: Set `SENTRY_DSN` — get from sentry.io project settings
+### Production logs
 
-### Self-healing behaviors
-
-**Database goes down:**
-```
-DB fails → auto-retry (200ms, 400ms, 800ms, 1.6s, 3.2s)
-  → recovers → notifyRecovery() logged, alert cleared
-  → fails 5x → notifyCritical('Database unreachable') → SEV-1 email + SMS
-```
-
-**AI (Anthropic) goes down:**
-```
-API call fails → circuit breaker opens after 5 failures
-  → fast 503 returned to all requests (no 120s hangs)
-  → notifyError('Circuit breaker OPEN: anthropic') → SEV-2 alert
-  → auto-recovery test after 30s
-  → recovers → notifyRecovery() → alert cleared
-```
-
-**Memory leak:**
-```
-heap > 384MB → notifyWarn logged
-heap > 512MB → GC forced + caches cleared
-  → if heap drops below 384MB: no further action
-  → if heap stays above 512MB → notifyError email
-heap > 600MB → notifyCritical + graceful restart
-  → Railway restarts container (< 30 second downtime)
-```
-
-**CI pipeline fails on main branch:**
-```
-Test fails → GitHub Actions workflow fails
-  → notify-failure job runs
-  → Email to engineering@justicegavel.app
-  → Deploy to production is blocked (main fails = no deploy)
-```
-
-
-## Environment Variables (Complete Reference)
-
-Generated from codebase scan. All variables with no default will cause startup failure if missing.
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `ADMIN_ALERT_EMAIL` | NO | See config.js — admin_alert_email setting |
-| `ADMIN_ALERT_SMS` | NO | See config.js — admin_alert_sms setting |
-| `ADMIN_EMAIL` | NO | Admin notification email |
-| `ADMIN_KEY` | YES | Admin API key for /api/admin routes |
-| `ADMIN_PANEL_URL` | NO | URL to admin dashboard |
-| `AI_CONCURRENCY` | NO | Max concurrent AI requests (default: 5) |
-| `ALERT_EMAIL` | NO | See config.js — alert_email setting |
-| `ALERT_EMAIL_FROM` | NO | See config.js — alert_email_from setting |
-| `ALERT_WEBHOOK_URL` | NO | Slack webhook URL for SEV-1 alerts |
-| `AMAZON_PAY_PUBLIC_KEY_ID` | NO | See config.js — amazon_pay_public_key_id setting |
-| `ANTHROPIC_API_KEY` | YES | Claude API key for AI chat |
-| `APP_OAUTH_REDIRECT` | NO | See config.js — app_oauth_redirect setting |
-| `APP_SSO_REDIRECT` | NO | See config.js — app_sso_redirect setting |
-| `APP_URL` | NO | See config.js — app_url setting |
-| `AUTHORIZE_NET_API_LOGIN_ID` | NO | See config.js — authorize_net_api_login_id setting |
-| `BASE_URL` | NO | See config.js — base_url setting |
-| `BITPAY_TOKEN` | NO | See config.js — bitpay_token setting |
-| `BOT_WEBHOOK_BASE_URL` | NO | See config.js — bot_webhook_base_url setting |
-| `BRAINTREE_MERCHANT_ID` | NO | See config.js — braintree_merchant_id setting |
-| `CLIO_CLIENT_ID` | NO | See config.js — clio_client_id setting |
-| `CLIO_CLIENT_SECRET` | NO | See config.js — clio_client_secret setting |
-| `COINBASE_COMMERCE_API_KEY` | NO | See config.js — coinbase_commerce_api_key setting |
-| `CORS_ORIGIN` | NO | See config.js — cors_origin setting |
-| `COURTLISTENER_ENABLED` | NO | See config.js — courtlistener_enabled setting |
-| `COURTLISTENER_TOKEN` | NO | See config.js — courtlistener_token setting |
-| `DAILY_API_KEY` | YES | Daily.co API key for video sessions |
-| `DATABASE_URL` | YES | Supabase PostgreSQL connection URL |
-| `DEMO_MODE` | NO | See config.js — demo_mode setting |
-| `ENCRYPTION_KEY` | YES | 32-byte AES key for sensitive field encryption |
-| `EXPO_ACCESS_TOKEN` | YES | Expo push notification token |
-| `EXTRA_ORIGINS` | NO | See config.js — extra_origins setting |
-| `FRONTEND_URL` | NO | See config.js — frontend_url setting |
-| `GOOGLE_CALENDAR_CLIENT_ID` | NO | See config.js — google_calendar_client_id setting |
-| `GOOGLE_CALENDAR_CLIENT_SECRET` | NO | See config.js — google_calendar_client_secret setting |
-| `GOOGLE_CLIENT_ID` | NO | Google OAuth client ID (calendar sync) |
-| `GOOGLE_CLIENT_SECRET` | NO | Google OAuth secret (calendar sync) |
-| `GOOGLE_PLACES_KEY` | NO | See config.js — google_places_key setting |
-| `HEALTH_SCAN_CRON` | NO | See config.js — health_scan_cron setting |
-| `IMANAGE_CLIENT_ID` | NO | See config.js — imanage_client_id setting |
-| `IMANAGE_CLIENT_SECRET` | NO | See config.js — imanage_client_secret setting |
-| `JWT_EXPIRES_IN` | NO | See config.js — jwt_expires_in setting |
-| `JWT_REFRESH_EXPIRES_IN` | NO | See config.js — jwt_refresh_expires_in setting |
-| `JWT_REFRESH_SECRET` | YES | Signs refresh tokens — 256-bit random |
-| `JWT_SECRET` | YES | Signs access tokens — 256-bit random |
-| `LIVE_EMAIL` | NO | See config.js — live_email setting |
-| `LIVE_PAYMENTS` | NO | See config.js — live_payments setting |
-| `LIVE_REFRESH` | NO | See config.js — live_refresh setting |
-| `LIVE_SMS` | NO | See config.js — live_sms setting |
-| `LOG_FORMAT` | NO | See config.js — log_format setting |
-| `LOG_LEVEL` | NO | See config.js — log_level setting |
-| `MYCASE_CLIENT_ID` | NO | See config.js — mycase_client_id setting |
-| `MYCASE_CLIENT_SECRET` | NO | See config.js — mycase_client_secret setting |
-| `NETDOCUMENTS_CLIENT_ID` | NO | See config.js — netdocuments_client_id setting |
-| `NETDOCUMENTS_CLIENT_SECRET` | NO | See config.js — netdocuments_client_secret setting |
-| `NODE_ENV` | YES | production | development | test |
-| `NOWPAYMENTS_KEY` | NO | See config.js — nowpayments_key setting |
-| `ONCALL_EMAIL` | NO | See config.js — oncall_email setting |
-| `ONCALL_EMAIL_2` | NO | See config.js — oncall_email_2 setting |
-| `OPENAI_API_KEY` | NO | See config.js — openai_api_key setting |
-| `OUTLOOK_CLIENT_ID` | NO | See config.js — outlook_client_id setting |
-| `OUTLOOK_CLIENT_SECRET` | NO | See config.js — outlook_client_secret setting |
-| `PAYPAL_CLIENT_ID` | NO | See config.js — paypal_client_id setting |
-| `PAYPAL_SECRET` | NO | See config.js — paypal_secret setting |
-| `PORT` | NO | HTTP port (default: 3000) |
-| `POSTGRES_URL` | NO | See config.js — postgres_url setting |
-| `PRACTICEPANTHER_CLIENT_ID` | NO | See config.js — practicepanther_client_id setting |
-| `PRACTICEPANTHER_CLIENT_SECRET` | NO | See config.js — practicepanther_client_secret setting |
-| `PROVIDERS_DB` | NO | See config.js — providers_db setting |
-| `RAILWAY_ENVIRONMENT` | NO | See config.js — railway_environment setting |
-| `REDIS_URL` | NO | See config.js — redis_url setting |
-| `REFRESH_CRON` | NO | See config.js — refresh_cron setting |
-| `REFRESH_TZ` | NO | See config.js — refresh_tz setting |
-| `REPORT_DIR` | NO | See config.js — report_dir setting |
-| `RESEND_API_KEY` | YES | Resend email API key |
-| `SCAN_QUIET` | NO | See config.js — scan_quiet setting |
-| `SECRET` | NO | See config.js — secret setting |
-| `SENDGRID_API_KEY` | NO | See config.js — sendgrid_api_key setting |
-| `SENDGRID_FROM_EMAIL` | NO | See config.js — sendgrid_from_email setting |
-| `SENTRY_DSN` | NO | See config.js — sentry_dsn setting |
-| `SQUARE_ACCESS_TOKEN` | NO | See config.js — square_access_token setting |
-| `STRIPE_ACH_ENABLED` | NO | See config.js — stripe_ach_enabled setting |
-| `STRIPE_ADVISOR_ANNUAL_ID` | NO | See config.js — stripe_advisor_annual_id setting |
-| `STRIPE_ADVISOR_PRICE_ID` | NO | See config.js — stripe_advisor_price_id setting |
-| `STRIPE_CANCEL_URL` | NO | See config.js — stripe_cancel_url setting |
-| `STRIPE_ESQUIRE_ANNUAL_ID` | NO | See config.js — stripe_esquire_annual_id setting |
-| `STRIPE_ESQUIRE_PRICE_ID` | NO | See config.js — stripe_esquire_price_id setting |
-| `STRIPE_LEGAL_PRO_ANNUAL_ID` | NO | See config.js — stripe_legal_pro_annual_id setting |
-| `STRIPE_LEGAL_PRO_PRICE_ID` | NO | See config.js — stripe_legal_pro_price_id setting |
-| `STRIPE_LEGAL_RADAR_ID` | NO | See config.js — stripe_legal_radar_id setting |
-| `STRIPE_SECRET` | NO | See config.js — stripe_secret setting |
-| `STRIPE_SUCCESS_URL` | NO | See config.js — stripe_success_url setting |
-| `STRIPE_WEBHOOK_SECRET` | NO | See config.js — stripe_webhook_secret setting |
-| `SUPABASE_PUBLISHABLE_KEY` | NO | See config.js — supabase_publishable_key setting |
-| `SUPABASE_SERVICE_KEY` | NO | See config.js — supabase_service_key setting |
-| `SUPABASE_URL` | YES | Supabase project URL |
-| `UPLOAD_DIR` | NO | See config.js — upload_dir setting |
-| `VAPID_PRIVATE_KEY` | NO | See config.js — vapid_private_key setting |
-| `VAPID_PUBLIC_KEY` | NO | See config.js — vapid_public_key setting |
-| `YELP_API_KEY` | NO | See config.js — yelp_api_key setting |
+One JSON object per line (Railway/Datadog-friendly). HTTP lines log the path
+**without the query string** (search params can carry PII). `LOG_FORMAT=text`
+switches to human-readable.
 
 ---
-## API Response Schema
 
-All endpoints return a consistent envelope:
+## SCHEDULED JOBS
 
-### Success
-```json
-{ "data": <result> }
-{ "data": [...], "meta": { "total": 100, "count": 20 } }
-```
+| Job | When | Requires |
+|---|---|---|
+| Nightly refresh (scrapers, arrest alerts, payment-link expiry, token cleanup) | `REFRESH_CRON` (default 3 am `REFRESH_TZ`) | `LIVE_REFRESH=true` |
+| Health scan | `HEALTH_SCAN_CRON` (default 2 am) | scheduler on |
+| Bar re-verification sweep | daily tick, re-verifies attorneys whose verification is > 90 days old | scheduler on |
+| Bar-prep reminders (`bar-daily-7am`, `bar-streak-3pm`, `bar-countdown-8am`) | daily | `REDIS_URL` (BullMQ) |
 
-### Error
-```json
-{ "error": "Human-readable message" }
-```
-
-### HTTP Status Codes
-- `200` Success
-- `201` Created
-- `400` Bad request / validation error
-- `401` Unauthenticated
-- `403` Forbidden (wrong tier or ownership)
-- `404` Not found
-- `429` Rate limited (`Retry-After` header set)
-- `500` Internal server error (logged to Sentry)
-
-
-## Calendly Integration
-
-Not integrated. There is no `/api/calendly/*` route and no Calendly service in
-the backend (the unused `services/calendly.js` stub was removed in step 3);
-consultation slots come from each attorney's in-app availability schedule
-(`/api/consultations/slots/:lawyerId`).
-
-## Attorney Bar Verification
-
-```env
-ADMIN_ALERT_EMAIL=admin@justicegavel.app  # Gets notified on status changes
-```
-
-### Nightly Job (Railway Cron):
-```
-0 2 * * * node -e "import('./src/services/barVerification.js').then(m=>m.runNightlyVerification())"
-```
-
-### Manual sweep:
-```
-POST /api/admin/bar-verification/sweep  (admin role required)
-```
-
-### Supported state bars: CA, NY, TX, FL (API/scrape)
-### Fallback: mark as needs_manual_review for other states
+Manual bar-verification sweep: `POST /api/admin/bar-verification/sweep`
+(staff role, checked in the database). Manual nightly run:
+`node -e "import('./src/services/barVerification.js').then(m=>m.runNightlyVerification())"`.
 
 ---
-## Bar Prep Feature
 
-### Environment Variables
-```env
-# No new env vars required — uses existing ANTHROPIC_API_KEY and REDIS_URL
-```
+## API RESPONSE SHAPE (for quick triage)
 
-### Database Migrations (apply in order)
-```sql
--- 20260717000001_bar_prep_schema.sql
--- Creates: quiz_questions, quiz_sessions, quiz_answers, spaced_repetition_state,
---          study_streaks, bar_prep_progress, quiz_question_flags, bar_subjects
--- Views:   user_bar_performance, subject_accuracy_breakdown
--- Triggers: trg_question_count (denorm), trg_update_badge
-```
+Errors are `{ "error": "message" }`; validation errors add `fields`.
+Status codes: 400 validation, 401 unauthenticated, 403 forbidden, 404, 429
+(`Retry-After` set), 500 (Sentry-logged), 503 deliberate feature-off
+(`payments_unavailable` / `ai_unavailable` / `storage_unavailable`).
+Full reference: API_REFERENCE.md + openapi.json.
 
-### Cron Jobs (auto-scheduled via BullMQ at startup)
-```
-7am  daily: bar-daily-7am      — send daily question reminders
-3pm  daily: bar-streak-3pm     — streak warning if goal not met
-8am  daily: bar-countdown-8am  — exam date countdown notifications
-```
+---
 
-### Content Import (add questions via CSV)
-```
-POST /api/admin/bar-prep/import
-{
-  "subject_code": "criminal_law",
-  "questions": [
-    {
-      "stem": "Question text...",
-      "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...",
-      "correct_answer": "A",
-      "explanation": "Why A is correct...",
-      "rule": "Miranda v. Arizona (1966)",
-      "case_citation": "384 U.S. 436",
-      "difficulty": "medium",
-      "category": "fifth_amendment"
-    }
-  ]
-}
-```
+## BAR PREP FEATURE (ops notes)
 
-### Admin Endpoints
-```
-GET  /api/admin/bar-prep/questions?subject=criminal_law&flagged=true
-PUT  /api/admin/bar-prep/questions/:id
-POST /api/admin/bar-prep/import
-GET  /api/admin/bar-prep/flags
-PATCH /api/admin/bar-prep/flags/:id/resolve
-```
-
-### Subscription Tiers for Bar Prep
-```
-free          → 10 sample questions only (hard-gated)
-legal_radar+  → full question bank, all features
-```
+- Uses existing `ANTHROPIC_API_KEY` + `REDIS_URL`; no extra env vars.
+- Schema ships in `supabase/migrations/00000000000004_bar_prep_schema.sql`
+  and `..05_bar_prep_questions.sql` (applied with the rest).
+- Content import: `POST /api/admin/bar-prep/import` (staff);
+  question/flag admin under `/api/admin/bar-prep/*`.
+- Free tier is hard-gated to 10 sample questions; paid tiers get the full bank.

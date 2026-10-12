@@ -1,7 +1,7 @@
 // Justice Gavel Service Worker — v2.4.0
 // Cache-first strategy for static assets, network-first for API calls
 
-const CACHE_NAME = 'justice-gavel-v8.7.59'; // bump with package.json version to drop old caches
+const CACHE_NAME = 'justice-gavel-v8.7.60'; // bump with package.json version to drop old caches
 const STATIC_ASSETS = [
   '/',
   '/index.html',

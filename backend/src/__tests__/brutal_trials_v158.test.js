@@ -153,7 +153,7 @@ describe('TODO_3B. SOL Null Records Fix Script', () => {
 describe('FINAL_158. Complete Quality Gate', () => {
   test('FINAL-02: TODO.md — 0 incomplete items (❌)', async () => {
     const fs=await import('fs');
-    const todo=fs.readFileSync(__REPO + '/TODO.md','utf8');
+    const todo=fs.readFileSync(__REPO + '/docs/archive/TODO.md'   /* archived in step 10 */,'utf8');
     const incomplete=(todo.match(/❌/g)||[]).length;
     console.log(`TODO incomplete: ${incomplete}`);
     expect(incomplete).toBe(0);

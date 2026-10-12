@@ -1,3 +1,5 @@
+> **ARCHIVED — historical document, no longer accurate.** Kept for history only (moved here in the step-10 documentation pass, Oct 2026). Versions, counts, architecture claims and process steps in here are out of date — see the repo README.md, RAILWAY_ENV_SETUP.md and RUNBOOK.md for current information.
+
 # i18n Legal Terminology Review — Justice Gavel
 # Generated: automated audit of 707 translation keys
 # Action required: human review by native-speaking legal translator

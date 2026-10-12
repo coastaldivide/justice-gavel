@@ -1,6 +1,6 @@
 {
   "name": "justicegavel",
-  "version": "8.7.59",
+  "version": "8.7.60",
   "private": true,
   "main": "index.js",
   "scripts": {

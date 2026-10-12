@@ -5,20 +5,31 @@
 2. URL: https://api.justicegavel.app/health
 3. Check interval: 1 minute
 4. Alert after: 2 failures (avoid flapping)
-5. Alert to: your phone + legal@justicegavel.app
+5. Alert to: your phone + engineering@justicegavel.app
 
-## What the /health endpoint checks
-- Database connectivity (SELECT 1)
-- Stripe API key present
-- Anthropic API key present
+`/health` is exempt from rate limiting and caches its DB probe for
+`HEALTH_CACHE_MS` (default 5 s), so a 1-minute poller costs at most one
+`SELECT 1` per window.
 
-## Expected response
+## What /health checks
+- Database connectivity: a real `SELECT 1` — **200 only when it succeeds, 503 otherwise**
+- Feature configuration (informational): `features.ai` (Anthropic key),
+  `features.payments` (Stripe key), `features.email` (Resend key)
+
+## Expected response (200)
 ```json
-{"status":"ok","version":"6.0.0","uptime":12345,"checks":{"db":"ok","stripe":"configured","ai":"configured"}}
+{
+  "ok": true, "status": "ok", "db": "ok",
+  "version": "8.7.60", "uptime_s": 12345,
+  "features": { "ai": true, "payments": false, "email": false }
+}
 ```
+(plus `ts`, `latency_ms`, `db_checked_at`, `db_cached`, `queue`. `version`
+comes from backend/package.json.)
 
-## Incident runbook
-1. /health returns 503 → Check Railway logs immediately
-2. db=error → Supabase status page, check connection string in env vars
-3. stripe=missing_key → STRIPE_SECRET not set in Railway env
-4. ai=missing_key → ANTHROPIC_API_KEY not set in Railway env
+## Incident response
+1. 503 → `{"db":"error"}` → follow RUNBOOK.md "SEV-1 — Database Down"
+2. `features.payments: false` → `STRIPE_SECRET_KEY` not set — **expected**
+   until payments launch, not an incident
+3. `features.ai: false` → `ANTHROPIC_API_KEY` not set in Railway env
+4. Deeper metrics (memory, AI queue, pg pool): https://api.justicegavel.app/metrics

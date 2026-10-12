@@ -64,7 +64,7 @@ const OPTIONAL_FEATURES = {
   SUPABASE_URL:          'Supabase storage/auth helpers disabled',
   OPENAI_API_KEY:        'Whisper transcription disabled',
   // JSON array of public arrest-feed objects ({id,url,state,county}); see
-  // services/arrest_ingest.js and ENVIRONMENT_VARS.md for the exact shape.
+  // services/arrest_ingest.js and RAILWAY_ENV_SETUP.md for the exact shape.
   ARREST_FEED_URLS:      'Arrest ingestion disabled — POST /api/arrests/ingest has no feed to pull and arrest coverage is empty',
   // Default (unset/false) is the safe production setting. "true" is for demos only:
   // seeded sample arrest rows (source seed_v1 etc.) then appear in read-only arrest
@@ -172,11 +172,24 @@ export const ALL_ENV_VARS = {
 
   // ── Authentication ──────────────────────────────────────────────────────
   JWT_SECRET:               process.env.JWT_SECRET                 || '',
+  JWT_REFRESH_SECRET:       process.env.JWT_REFRESH_SECRET         || '',
   ENCRYPTION_KEY:           process.env.ENCRYPTION_KEY             || '',
+  JWT_EXPIRES_IN:           process.env.JWT_EXPIRES_IN             || '30d',
+  JWT_REFRESH_EXPIRES_IN:   process.env.JWT_REFRESH_EXPIRES_IN     || '60d',
+  AUTH_RATE_LIMIT:          process.env.AUTH_RATE_LIMIT            || '10',  // logins / 15 min
+  REGISTER_RATE_LIMIT:      process.env.REGISTER_RATE_LIMIT        || '5',   // registrations / hour
+
+  // ── Database ─────────────────────────────────────────────────────────────
+  DATABASE_URL:             process.env.DATABASE_URL               || '',    // POSTGRES_URL accepted as alias
+  PGSSL:                    process.env.PGSSL                      || '',    // 'false' disables TLS to Postgres
+  DB_LOG_ERRORS:            process.env.DB_LOG_ERRORS              || 'false',
 
   // ── AI ──────────────────────────────────────────────────────────────────
   ANTHROPIC_API_KEY:        process.env.ANTHROPIC_API_KEY          || '',
-  OPENAI_API_KEY:           process.env.OPENAI_API_KEY             || '',   // fallback provider
+  CLAUDE_MODEL:             process.env.CLAUDE_MODEL               || 'claude-sonnet-4-6', // utils/ai.js
+  ANTHROPIC_BASE_URL:       process.env.ANTHROPIC_BASE_URL         || '',    // test/mock override only
+  AI_JOB_TIMEOUT_MS:        process.env.AI_JOB_TIMEOUT_MS          || '45000',
+  OPENAI_API_KEY:           process.env.OPENAI_API_KEY             || '',   // Whisper transcription
 
   // ── Admin ────────────────────────────────────────────────────────────────
   ADMIN_KEY:                process.env.ADMIN_KEY                  || '',
@@ -200,18 +213,24 @@ export const ALL_ENV_VARS = {
   STRIPE_ESQUIRE_ANNUAL_ID:(process.env.STRIPE_ESQUIRE_ANNUAL_ID || 'price_1Tb1l32XUfNqC3X4BRSRCuQa'),
   STRIPE_LEGAL_RADAR_ID: (process.env.STRIPE_LEGAL_RADAR_ID || 'price_1Tb1vn2XUfNqC3X4U1jojSNW'),
 
-        
-  // ── SendGrid ─────────────────────────────────────────────────────────────
-  RESEND_API_KEY:         process.env.RESEND_API_KEY           || null,  // null disables email
+  // ── Email (Resend) ───────────────────────────────────────────────────────
+  RESEND_API_KEY:           process.env.RESEND_API_KEY             || null,  // null disables email (logged instead)
+  EMAIL_FROM:               process.env.EMAIL_FROM                 || 'noreply@justicegavel.app',
   ALERT_EMAIL_FROM:         process.env.ALERT_EMAIL_FROM           || 'alerts@justicegavel.app',
+  ALERT_EMAIL:              process.env.ALERT_EMAIL                || '',    // ops alert recipient
+  ALERT_WEBHOOK_URL:        process.env.ALERT_WEBHOOK_URL          || '',    // Slack incoming webhook
+  ONCALL_EMAIL:             process.env.ONCALL_EMAIL               || '',
+  ONCALL_EMAIL_2:           process.env.ONCALL_EMAIL_2             || '',
 
   // ── Google / Maps ────────────────────────────────────────────────────────
   GOOGLE_PLACES_KEY:        process.env.GOOGLE_PLACES_KEY          || '',
   YELP_API_KEY:             process.env.YELP_API_KEY               || '',
 
-  // ── Expo Push ────────────────────────────────────────────────────────────
+  // ── Push (Expo + web push) ───────────────────────────────────────────────
   EXPO_ACCESS_TOKEN:        process.env.EXPO_ACCESS_TOKEN          || '',
   VAPID_PUBLIC_KEY:         process.env.VAPID_PUBLIC_KEY           || '',
+  VAPID_PRIVATE_KEY:        process.env.VAPID_PRIVATE_KEY          || '',
+  VAPID_EMAIL:              process.env.VAPID_EMAIL                || '',
 
   // ── Alternative Payment Providers (all no-op without keys) ───────────────
   PAYPAL_CLIENT_ID:         process.env.PAYPAL_CLIENT_ID           || '',
@@ -230,6 +249,16 @@ export const ALL_ENV_VARS = {
   PROVIDERS_DB:             process.env.PROVIDERS_DB               || '',
   REPORT_DIR:               process.env.REPORT_DIR                 || '/tmp/reports',
   BOT_WEBHOOK_BASE_URL:     process.env.BOT_WEBHOOK_BASE_URL       || '',
+  RATE_LIMIT_PER_MIN:       process.env.RATE_LIMIT_PER_MIN         || '200', // global per-IP limit (app.js)
+  CORS_ORIGIN:              process.env.CORS_ORIGIN                || '',
+  EXTRA_ORIGINS:            process.env.EXTRA_ORIGINS              || '',
+  FRONTEND_URL:             process.env.FRONTEND_URL               || '',
+  APP_URL:                  process.env.APP_URL                    || '',    // deep-link base for emails/redirects
+  // Message attachments: local dir, Supabase Storage, or disabled
+  ATTACHMENTS_STORAGE:      process.env.ATTACHMENTS_STORAGE        || '',    // off | local | supabase (auto when unset)
+  ATTACHMENTS_DIR:          process.env.ATTACHMENTS_DIR            || '',    // default <app>/data/attachments
+  ATTACHMENTS_BUCKET:       process.env.ATTACHMENTS_BUCKET         || 'case-documents',
+  DAILY_API_KEY:            process.env.DAILY_API_KEY              || '',    // Daily.co video rooms (503 without)
 
   // ── Scheduler / Cron ─────────────────────────────────────────────────────
   REFRESH_CRON:             process.env.REFRESH_CRON               || '0 3 * * *',

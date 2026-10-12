@@ -165,4 +165,4 @@ final lawyers = jsonDecode(response.body);
 | `/api/checkins/submit` | POST | Defendant GPS check-in |
 | `/api/translate/message` | POST | Live translation (14 languages) |
 
-Full spec: `openapi.json` (394 documented endpoints)
+Full spec: `openapi.json` (generated from the mounted routes — currently 559 operations; regenerate with `node scripts/generate-openapi.mjs`)

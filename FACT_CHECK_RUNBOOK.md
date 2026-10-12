@@ -1,5 +1,12 @@
 # Justice Gavel — Legal Data Fact-Check Runbook
 
+> **Scope caveat:** `fact_check_monitor.js` and `update_legal_data.js` are
+> operator-only CLI tools left over from the SQLite era — they read/write the
+> **local** `demo.db` / `data/providers.sqlite`, not the production Postgres
+> database. Use them to *verify sources*; apply any resulting data corrections
+> to production with `psql "$DATABASE_URL"` (and, for anything that should
+> survive a rebuild, a new idempotent file in `supabase/migrations/`).
+
 ## How to run
 
 ```bash
@@ -27,8 +34,9 @@ node src/scripts/fact_check_monitor.js --state=TN
 ## What to do when something is flagged
 
 ### If a URL redirects
-The official source moved. Update the URL in the database:
+The official source moved. Update the URL in the **production** database:
 ```sql
+-- psql "$DATABASE_URL"
 UPDATE victim_compensation SET url='new_url', updated_at='2026-06-01', source_url='new_url'
 WHERE state='TN';
 ```
@@ -48,17 +56,17 @@ The page content changed. That may mean the law changed.
 ## Update commands
 
 ```bash
-# See current data for a state before updating
+# See current (local-tool) data for a state before updating
 node src/scripts/update_legal_data.js --type=dui --state=TN
 node src/scripts/update_legal_data.js --type=victim_comp --state=CA
 node src/scripts/update_legal_data.js --type=state_bar --state=TX
 
-# After reviewing, update directly in SQLite
-sqlite3 backend/demo.db
-> UPDATE dui_laws SET dmv_hearing_deadline=15, updated_at='2026-06-01',
+# After reviewing, apply the correction to PRODUCTION Postgres:
+psql "$DATABASE_URL" -c "UPDATE dui_laws SET dmv_hearing_deadline=15,
+    updated_at='2026-06-01',
     source_url='https://www.tn.gov/safety/driver-services/driverimprovement/dui.html',
     verified_by='YOUR_NAME'
-  WHERE state='TN';
+  WHERE state='TN';"
 ```
 
 ## Expungement updates (highest volatility)
@@ -79,12 +87,11 @@ When the CCRC page shows a new state, update `expungement.js STATE_RULES`:
 - **Oklahoma** — 2025 automatic expungement, county rollout uneven
 - **DC** — February 2025 revised sealing law, court capacity constraints
 
-## Scheduling on Railway
-In Railway Dashboard → Your Service → Settings → Cron Jobs:
-- Weekly quick check: `0 9 * * 1` (every Monday 9am UTC)
-- Monthly full check: `0 9 1 * *` (1st of every month 9am UTC)
-
-Command: `node src/scripts/fact_check_monitor.js --quick`
+## Scheduling
+Run the checks from an operator machine (weekly `--quick`, monthly `--full`),
+not as Railway cron — inside the container the tool would check sources
+against the throwaway local SQLite file and its findings would vanish on the
+next deploy.
 
 ## Record of verifications
 

@@ -1,36 +1,33 @@
 # Railway Deployment Checklist — Justice Gavel
 
-Run through this top to bottom. Each section has a ✅ when done.
-The entire setup takes about 45 minutes.
+Run through this top to bottom. Full variable reference:
+[../../RAILWAY_ENV_SETUP.md](../../RAILWAY_ENV_SETUP.md).
 
 ---
 
-## STEP 1 — Generate Secrets (already done ✅)
+## STEP 1 — Generate secrets
 
-These were generated and are pre-filled in `setup-railway.sh`:
+Generate fresh values locally and keep them in a password manager — never
+commit them (an earlier revision of this checklist embedded real values;
+those are burned — do not reuse them, and rotate them if they were ever
+deployed):
 
-| Secret | Value |
-|--------|-------|
-| JWT_SECRET | `cf572f238accb8a37194b3d2a110412789c308639765511fe1b59ec2df2c67e0` |
-| JWT_REFRESH_SECRET | `ce0315eb76f661cd6b4a03f766f20234edac427786eb3ca09fa7d9004f68ec41` |
-| ENCRYPTION_KEY | `0c9a3213ff36a3c1170a81756532a1dcdef7031d9c38e533b1d9b23136ed4b12` |
-| ADMIN_KEY | `d9f53ea794ee9b62adc6d37c7e62056e664a41f3dac1ce5fe24caa7118a14dff` |
-| VAPID_PUBLIC_KEY | `8v9AfIU9KFaNO_7wpyurO9ySJrQ-z76TMQ7FW1nQOlgHvH-Ts9QzOFHdly4VMNn_Rhq6KkYLINX4kT8UVoGABw` |
-| VAPID_PRIVATE_KEY | `tHETLTl0KZjBIDJmiUfmMjN5NClLCIN-DYgD80nx7rQ` |
-
-> ⚠️  Save these somewhere secure (password manager). Losing ENCRYPTION_KEY
-> makes all encrypted data permanently unreadable.
+```bash
+openssl rand -hex 32    # JWT_SECRET
+openssl rand -hex 32    # JWT_REFRESH_SECRET (different value)
+openssl rand -hex 32    # ENCRYPTION_KEY — losing it makes encrypted data unreadable
+openssl rand -hex 32    # ADMIN_KEY
+npx web-push generate-vapid-keys   # VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY
+```
 
 ---
 
-## STEP 2 — Supabase (5 min)
+## STEP 2 — Postgres (Supabase or Railway Postgres, 5 min)
 
-[ ] Go to supabase.com → your project `yjeplvvnlennyxixwxfq`
-[ ] Settings → API → copy these 3 values into setup-railway.sh:
-    - `SUPABASE_ANON_KEY`    (anon / public)
-    - `SUPABASE_SERVICE_KEY` (service_role / secret)
-[ ] Settings → Database → Connection string → **Transaction** mode
-    - Copy into `DATABASE_URL`
+[ ] Supabase → Settings → Database → Connection string (**Transaction** mode)
+    → `DATABASE_URL`
+[ ] (If using Supabase Storage for attachments) Settings → API →
+    `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`
 [ ] Run migrations: apply every `supabase/migrations/*.sql` file in filename order
     (`psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f <file>`); the API never runs DDL itself
 
@@ -38,116 +35,99 @@ These were generated and are pre-filled in `setup-railway.sh`:
 
 ## STEP 3 — Anthropic (2 min)
 
-[ ] Go to console.anthropic.com
-[ ] API Keys → Create Key → copy into `ANTHROPIC_API_KEY`
-[ ] ⚠️  This is the only service with NO demo fallback — required for AI features
+[ ] console.anthropic.com → API Keys → Create Key → `ANTHROPIC_API_KEY`
+[ ] Without it the server still runs; AI endpoints return `503 ai_unavailable`
 
 ---
 
-## STEP 4 — Stripe (15 min)
+## STEP 4 — Stripe (15 min, can be deferred)
 
-[ ] dashboard.stripe.com → Developers → API Keys
-    - Copy Secret Key (`sk_live_...`) → `STRIPE_SECRET_KEY`
-[ ] Create Products in Stripe dashboard:
+Payments stay cleanly disabled (`503 payments_unavailable`) until these are
+set — everything else works without them.
+
+[ ] dashboard.stripe.com → Developers → API Keys → Secret Key → `STRIPE_SECRET_KEY`
+[ ] Create Products in the Stripe dashboard:
 
 | Plan | Billing | Monthly Price | Annual Price |
 |------|---------|---------------|--------------|
-| Legal Radar | One-time or monthly | $19.99 | — |
+| Legal Radar | Monthly | $19.99 | — |
 | Advisor | Monthly | $24.99 | $199/yr |
 | Legal Pro | Monthly | $34.99 | $299/yr |
 | Esquire | Monthly | $49.00 | $410/yr |
+| Bondsman | Monthly | $49.00 | — (leads billed flat $100 each) |
 
-[ ] For each product, copy the `price_...` ID into setup-railway.sh
-[ ] Set up Webhook:
-    - Webhooks → Add endpoint
-    - URL: `https://api.justicegavel.app/webhooks/stripe`
+[ ] Copy each `price_...` id into the matching `STRIPE_*_PRICE_ID` /
+    `STRIPE_*_ANNUAL_ID` variable
+[ ] Webhooks → Add endpoint
+    - URL: `https://<your-api-host>/webhooks/stripe`
     - Events: `checkout.session.completed`, `customer.subscription.updated`,
       `customer.subscription.deleted`, `invoice.payment_failed`,
       `invoice.payment_succeeded`
-    - Copy Signing Secret (`whsec_...`) → `STRIPE_WEBHOOK_SECRET`
+    - Signing Secret (`whsec_...`) → `STRIPE_WEBHOOK_SECRET`
 
 ---
 
-## STEP 5 — SendGrid (5 min)
+## STEP 5 — Resend email (5 min)
 
-[ ] app.sendgrid.com → Settings → API Keys → Create → Full Access
-    Copy → `SENDGRID_API_KEY`
-[ ] Settings → Sender Authentication → Domain Authentication
-    - Domain: `justicegavel.app`
-    - Add the 3 DNS records it gives you (takes 5 min in your DNS provider)
-    - Without this, ALL emails go to spam
-
----
-
-
-[ ] Phone Numbers → Buy a Number (local Tennessee number recommended)
-[ ] For production: Messaging → Senders → A2P 10DLC Registration
-    (Takes 1-2 days, required by US carriers for business SMS)
+[ ] resend.com → API Keys → Create → `RESEND_API_KEY`
+    (without it, emails are logged to the server log instead of sent)
+[ ] Domains → add `justicegavel.app` and set the DNS records it gives you —
+    without domain verification mail lands in spam
+[ ] Set `EMAIL_FROM` / `ALERT_EMAIL_FROM` to addresses on the verified domain
 
 ---
 
-## STEP 7 — Google Places (3 min)
+## STEP 6 — Google Places (3 min, optional)
 
-[ ] console.cloud.google.com
-[ ] APIs & Services → Library → Enable:
-    - Places API (New)
-    - Geocoding API
-[ ] Credentials → Create API Key
-    Copy → `GOOGLE_PLACES_KEY`
-[ ] (Recommended) Restrict key to your Railway server IP
+[ ] console.cloud.google.com → enable Places API (New) + Geocoding API
+[ ] Credentials → Create API Key → `GOOGLE_PLACES_KEY`
+[ ] (Recommended) restrict the key to your Railway egress IP
 
 ---
 
-## STEP 8 — Sentry (5 min)
+## STEP 7 — Sentry (5 min, optional)
 
-[ ] sentry.io → New Project → Node.js
-    Copy DSN → `SENTRY_DSN`
-[ ] In Sentry: Alerts → Create Alert Rule
-    - "First occurrence of new error" → email notification
-    - "Error rate > 10/min" → email notification
+[ ] sentry.io → New Project → Node.js → DSN → `SENTRY_DSN`
+[ ] Alerts: "first occurrence of new error" + "error rate > 10/min" → email
 
 ---
 
-## STEP 9 — Monitoring Alerts (2 min)
+## STEP 8 — Monitoring alerts (2 min)
 
-[ ] Create Slack incoming webhook:
-    - api.slack.com/apps → Create App → Incoming Webhooks
-    - Add to workspace → copy URL → `ALERT_WEBHOOK_URL`
-[ ] Set `ONCALL_PHONE` to your mobile number (receives SEV-1 SMS alerts only)
-[ ] Set up BetterUptime (betteruptime.com):
-    - New monitor → `https://api.justicegavel.app/health`
-    - Check every 60 seconds
-    - Alert via email + SMS on failure
+[ ] Slack incoming webhook → `ALERT_WEBHOOK_URL`
+[ ] `ALERT_EMAIL` / `ONCALL_EMAIL` (+ `ONCALL_EMAIL_2`) for SEV-1/SEV-2 email
+[ ] Uptime monitor (BetterUptime or similar) on `https://<your-api-host>/health`,
+    60 s interval, alert after 2 failures
 
 ---
 
-## STEP 10 — Run setup-railway.sh
+## STEP 9 — Railway service
 
-[ ] Fill in all values in `setup-railway.sh`
-[ ] Install Railway CLI: `npm install -g @railway/cli`
-[ ] `railway login`
-[ ] `railway link` (select the justice-gavel project)
-[ ] `bash scripts/setup-railway.sh`
+[ ] Service **Root Directory = `backend`** (uses backend/railway.json + Dockerfile,
+    health-checks `GET /health`)
+[ ] Set every variable from the steps above (Railway → Variables), plus:
+    `NODE_ENV=production`, `APP_URL`, `BASE_URL`, `CORS_ORIGIN`
+[ ] Optional: `bash scripts/setup-railway.sh` pushes a filled-in variable set
+    through the Railway CLI (fill YOUR values in first — it ships empty)
 
 ---
 
-## STEP 11 — Verify deployment
+## STEP 10 — Verify deployment
 
-[ ] `curl https://api.justicegavel.app/health` → should return `{"status":"healthy"}`
-[ ] `curl https://api.justicegavel.app/health` → check `jwt_secure: true`
+[ ] `curl https://<your-api-host>/health` → `{"ok":true,"status":"ok","db":"ok",...}`
+    with the current version string, and `features` showing which keys are live
+[ ] `cd backend && node scripts/smoke-test.mjs https://<your-api-host>` — all checks pass
 [ ] Test Stripe webhook: `stripe trigger invoice.payment_succeeded` (Stripe CLI)
-[ ] Send yourself a test email via the /api/auth/forgot-password endpoint
-[ ] Check Sentry dashboard — should show the server starting
+[ ] Trigger `/api/auth/forgot-password` for a test account → email arrives
+[ ] Sentry dashboard shows the server start (if configured)
 
 ---
 
-## STEP 12 — Go live
+## STEP 11 — Go live
 
-[ ] `DEMO_MODE=false` (set in setup-railway.sh already)
-[ ] `LIVE_PAYMENTS=true`
-[ ] `LIVE_EMAIL=true`
-[ ] `LIVE_SMS=true`
-[ ] Run health check one more time
+[ ] `DEMO_MODE` unset or `false`
+[ ] `LIVE_REFRESH=true` if the nightly scheduler should run
+[ ] Re-run the smoke test one more time
 [ ] 🚀 Ship it
 
 ---
@@ -155,10 +135,9 @@ These were generated and are pre-filled in `setup-railway.sh`:
 ## Optional integrations (add later)
 
 - `COURTLISTENER_TOKEN` — RECAP federal docket monitoring
-- `CLIO_CLIENT_ID` / `CLIO_CLIENT_SECRET` — Clio Manage integration
-- `GOOGLE_CALENDAR_CLIENT_ID` — Calendar sync
-- `OPENAI_API_KEY` — AI fallback if Anthropic is down
-
----
-
-*Checklist generated for Justice Gavel v6.9.0*
+- `CLIO_CLIENT_ID` / `CLIO_CLIENT_SECRET` (and the other practice-management
+  OAuth pairs) — live integrations instead of demo data
+- `GOOGLE_CALENDAR_CLIENT_ID` / `OUTLOOK_CLIENT_ID` — calendar sync
+- `OPENAI_API_KEY` — Whisper transcription
+- `DAILY_API_KEY` — video consultations
+- `REDIS_URL` — durable AI job queue

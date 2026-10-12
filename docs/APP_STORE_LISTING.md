@@ -98,7 +98,7 @@ Test credentials for reviewer: test@justicegavel.app / TestReview2025!
 **Title:** Justice Gavel – Ayuda Legal
 **Subtitle:** Encuentra un Abogado. Conoce tus Derechos.
 **Short Description:** [TRANSLATOR: Translate the English short description]
-**Full Description:** [TRANSLATOR: Full Spanish translation needed — see i18n_legal_audit.md for flagged legal terms]
+**Full Description:** [TRANSLATOR: Full Spanish translation needed — see docs/archive/i18n_legal_audit.md (historical audit) for flagged legal terms]
 
 ### Portuguese (pt) — Markets: Brazil, Portugal
 **Title:** Justice Gavel – Ajuda Jurídica
@@ -110,7 +110,7 @@ Test credentials for reviewer: test@justicegavel.app / TestReview2025!
 **Title:** Justice Gavel – Hỗ Trợ Pháp Lý
 **Subtitle:** Tìm Luật Sư. Biết Quyền Của Bạn.
 **Short Description:** [TRANSLATOR: Vietnamese translation needed]
-**Full Description:** [TRANSLATOR: Note that some US legal terms have no direct Vietnamese equivalent — see i18n_legal_audit.md]
+**Full Description:** [TRANSLATOR: Note that some US legal terms have no direct Vietnamese equivalent — see docs/archive/i18n_legal_audit.md (historical audit)]
 
 ## App Review Response Templates
 If Apple or Google rejects the app, use these templates:

@@ -82,7 +82,8 @@ describe('LGR. logger.js — ISO Timestamp + JSON + Silence Levels', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/utils/logger.js', 'utf8');
     expect(src).toContain("service: 'justice-gavel-api'");
-    expect(src).toContain('npm_package_version');
+    // Version comes from package.json via utils/version.js (step 10).
+    expect(src).toContain('APP_VERSION');
     expect(src).toContain('NODE_ENV');
   });
   test('LGR-04: logger has debug/info/warn/error methods (all guarded by MIN_LEVEL)', async () => {

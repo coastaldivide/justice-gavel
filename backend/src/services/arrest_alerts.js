@@ -164,7 +164,7 @@ function detectAreas(charges) {
   return found.length ? found : ['General'];
 }
 
-// ── Send alert (email via SendGrid / push notification) ───────────────────────
+// ── Send alert (email via Resend / push notification) ────────────────────────
 async function sendAlert(recipient, message, type, db) {
   logger.info(`  📧 ${type} alert → ${recipient.name} (${recipient.email || 'no email'})`);
 

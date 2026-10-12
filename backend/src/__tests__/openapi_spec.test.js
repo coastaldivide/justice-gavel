@@ -39,9 +39,11 @@ describe('OpenAPI spec — structure', () => {
     console.log(`  Documented paths: ${pathCount}`);
   });
 
-  test('all paths start with /api/', () => {
+  test('all paths are /api/ or a documented ops endpoint (/health, /metrics, /webhooks)', () => {
     spec = spec || JSON.parse(readFileSync(SPEC_PATH, 'utf-8'));
-    const nonApi = Object.keys(spec.paths).filter(p => !p.startsWith('/api/') && !p.startsWith('/health'));
+    const nonApi = Object.keys(spec.paths).filter(p =>
+      !p.startsWith('/api/') && !p.startsWith('/health')
+      && !p.startsWith('/metrics') && !p.startsWith('/webhooks/'));
     expect(nonApi).toHaveLength(0);
   });
 });

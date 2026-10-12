@@ -1,53 +1,69 @@
 # Justice Gavel — Pre-Launch Security Checklist
+*(claims verified against the code at v8.7.60)*
 
 ## Authentication ✅
-- [x] JWT access tokens expire in 15m
-- [x] Refresh tokens: single-use, 7-day, DB-stored
+- [x] JWT access tokens: `JWT_EXPIRES_IN` default **30d** (the mobile app
+      refreshes tokens older than 25 days — keep ≥ 30d)
+- [x] Refresh tokens: single-use, rotated, DB-stored (`JWT_REFRESH_EXPIRES_IN` default 60d)
 - [x] bcrypt rounds = 12
-- [x] Ghost session protection (user existence check)
-- [x] Admin routes guarded by super_admin role
-- [x] Password reset rate-limited (3/hr per IP+email)
+- [x] Ghost-session protection (user existence check on every auth)
+- [x] Staff/admin routes check the role **in the database**, never the token
+- [x] Login rate-limited (10/15 min), registration (5/hr), password reset (5/hr)
 
 ## Transport Security ✅
 - [x] helmet.js: HSTS, CSP, X-Frame-Options, noSniff, referrer policy
-- [x] CORS locked to production domain
+- [x] CORS locked to production domains (+ localhost dev origins)
 - [x] TLS handled by Railway (auto-renewed)
 
 ## Data ✅
-- [x] Cases soft-deleted (deleted_at)
-- [x] Audit log on sensitive operations
-- [x] Input validation with Zod on all critical routes
-- [x] FK constraints on all user_id columns
-- [x] Performance indexes on queried columns
+- [x] Cases soft-deleted (`deleted_at`)
+- [x] Audit log on sensitive operations (append-only)
+- [x] Input validation (zod schemas + per-route checks) on critical routes
+- [x] Postgres RLS enabled **deny-all** on all tables (no policies; the
+      backend is the only DB client — anon/authenticated PostgREST roles get nothing)
+- [x] Performance indexes on hot query paths (migration 12)
+- [x] Production logs: one-line JSON, query strings stripped (PII), no tokens/bodies
 
 ## AI / Legal ✅
-- [x] UPL disclaimer on all AI-generating screens
-- [x] Prompt injection detection (INJECTION_PATTERNS)
-- [x] Disclaimer versioning (CURRENT_DISCLAIMER_VERSION)
+- [x] UPL disclaimer on all AI-generating screens; disclaimer versioning
 - [x] Crisis hotlines verified Jan 2026
 - [x] Minor-specific content disclaimers
-- [x] Attorney-client privilege notice on attorney platform
+- [x] Attorney-client privilege notice on the attorney platform
+- [x] Sample (seeded) arrest records hidden from all user-facing, alerting and
+      billing paths; takedown requests reviewed by staff
+- [x] Lead fees flat (bondsman $100, PI/civil-rights $200, employment $100,
+      ICE $75) — never scaled to bail or case value; enforced by
+      `lead_fee_consistency.test.js`
 
-## Payments ✅
-- [x] Stripe webhook signature verified (constructEvent)
-- [x] Idempotency keys on all Stripe create calls
-- [x] Subscription state machine (trialing→active→past_due→canceled)
-- [x] Dunning emails on payment failure
-- [x] calcLeadFee: NaN/negative guards
+## Payments ✅ (dormant until Stripe keys are set)
+- [x] Without `STRIPE_SECRET_KEY`: billing returns `503 payments_unavailable`,
+      app shows a friendly message; setting keys re-enables everything
+- [x] Stripe webhook signature verified (raw body, `constructEvent`)
+- [x] Idempotency keys on Stripe create calls (incl. bondsman lead purchase)
+- [x] Subscription state machine (trialing→active→past_due→canceled), grace
+      period on `past_due`
+- [x] No TEST_MODE/DEMO_MODE payment bypasses; demo subscriptions excluded
+      from every payment gate
 
 ## Operations ✅
-- [x] Sentry error monitoring
-- [x] /health endpoint: DB + Stripe + AI checks
-- [x] Graceful shutdown on SIGTERM (10s drain)
-- [x] Circuit breaker: Anthropic, Stripe, Resend
-- [x] Refresh token cleanup scheduled job
-- [x] GDPR/CCPA data export endpoint
+- [x] Sentry error monitoring (`SENTRY_DSN`)
+- [x] `/health`: real `SELECT 1` (cached `HEALTH_CACHE_MS`), feature flags, version
+- [x] `/metrics`: memory, AI queue, pg pool (JSON + Prometheus)
+- [x] Graceful shutdown on SIGTERM: AI queue drained (`AI_DRAIN_TIMEOUT_MS`,
+      force-exit at 25 s)
+- [x] Memory watchdog on RSS (72%/85%/93% of `MEMORY_LIMIT_MB`)
+- [x] Refresh-token cleanup scheduled job
+- [x] GDPR/CCPA export (`GET /api/auth/export`) + account deletion
+- [x] `openapi.json` regenerated from mounted routes; drift fails CI
 
 ## ⚠️ PENDING BEFORE LAUNCH
-- [ ] Set all Railway env vars (see RAILWAY_ENV_SETUP.md)
+- [ ] Set all Railway env vars (see RAILWAY_ENV_SETUP.md) — **rotate any
+      secret that ever appeared in git history**
 - [ ] Configure Sentry DSN
-- [ ] Configure BetterUptime monitor on /health
-- [ ] Set STRIPE_WEBHOOK_SECRET from Stripe dashboard
+- [ ] Configure uptime monitor on /health (UPTIME_MONITORING.md)
+- [ ] Set STRIPE_WEBHOOK_SECRET from the Stripe dashboard (when enabling payments)
+- [ ] Test full payment flow in Stripe test mode (when enabling payments)
 - [ ] Legal consultant sign-off on state rule accuracy
-- [ ] Test full payment flow in Stripe test mode
+- [ ] Configure `ARREST_FEED_URLS` (or accept honest empty arrest states)
 - [ ] EAS build submitted to App Store / Google Play
+- [ ] Legal action items in docs/LEGAL_ACTION_ITEMS.md resolved

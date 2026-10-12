@@ -1,6 +1,7 @@
 # Justice Gavel — Phase 2 Expansion Roadmap
 
-> **Status: DO NOT BUILD YET**
+> **Status: DO NOT BUILD YET** *(decision record from the v5.82.0 audit;
+> checklist refreshed in the v8.7.60 documentation pass)*
 > This document captures the territory identified for future expansion.
 > The decision as of v5.82.0: **perfect what we have before moving to new ground.**
 > Everything in this file is locked until the current platform is production-hardened,
@@ -20,11 +21,11 @@ This document records those gaps so they are not lost, and defines exactly what
 
 ---
 
-## Current Platform Status (v5.82.0)
+## Platform Status checklist (originally v5.82.0; counts refreshed at v8.7.60)
 
 Before phase 2 is considered, the following must be true:
 
-- [x] All tests passing — 226 test files, 160 brutal_trials suites, 439/439 routes (v161)
+- [x] All tests passing — 329 backend test files (CI runs the full jest suite + Postgres integration suites); 559 mounted routes, openapi drift-checked
 - [x] Clickwrap ToS acceptance — route exists, logs to audit_log
 - [ ] Health scan running 12-hour cycle without failures for 30 consecutive days
 - [ ] Zero CRITICAL findings in health scan for 14 consecutive days

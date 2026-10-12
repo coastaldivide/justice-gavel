@@ -32,20 +32,23 @@ echo ""
 # FILL IN YOUR VALUES BELOW
 # ══════════════════════════════════════════════════════════════════════════════
 
-# ── GENERATED SECRETS (already filled in) ─────────────────────────────────────
-JWT_SECRET="cf572f238accb8a37194b3d2a110412789c308639765511fe1b59ec2df2c67e0"
-JWT_REFRESH_SECRET="ce0315eb76f661cd6b4a03f766f20234edac427786eb3ca09fa7d9004f68ec41"
-ENCRYPTION_KEY="0c9a3213ff36a3c1170a81756532a1dcdef7031d9c38e533b1d9b23136ed4b12"
-ADMIN_KEY="d9f53ea794ee9b62adc6d37c7e62056e664a41f3dac1ce5fe24caa7118a14dff"
+# ── SECRETS — generate fresh ones, never reuse values that were ever committed
+# A previous revision of this script shipped with real secret values embedded.
+# Those values are burned (they live in git history): generate NEW ones and,
+# if the old ones were ever deployed, rotate them in Railway.
+JWT_SECRET=""                 # openssl rand -hex 32
+JWT_REFRESH_SECRET=""         # openssl rand -hex 32 (different from JWT_SECRET)
+ENCRYPTION_KEY=""             # openssl rand -hex 32 — never change once data exists
+ADMIN_KEY=""                  # openssl rand -hex 32
 
-# VAPID keys (generated)
-VAPID_PUBLIC_KEY="8v9AfIU9KFaNO_7wpyurO9ySJrQ-z76TMQ7FW1nQOlgHvH-Ts9QzOFHdly4VMNn_Rhq6KkYLINX4kT8UVoGABw"
-VAPID_PRIVATE_KEY="tHETLTl0KZjBIDJmiUfmMjN5NClLCIN-DYgD80nx7rQ"
+# VAPID keys — generate with: npx web-push generate-vapid-keys
+VAPID_PUBLIC_KEY=""
+VAPID_PRIVATE_KEY=""
 
 # ── FILL THESE IN (get from each service dashboard) ───────────────────────────
 
 # Supabase (supabase.com → your project → Settings → API)
-SUPABASE_URL="https://yjeplvvnlennyxixwxfq.supabase.co"
+SUPABASE_URL=""               # https://<project-ref>.supabase.co
 SUPABASE_ANON_KEY=""          # supabase.com → Settings → API → anon public          # Settings → API → anon public
 SUPABASE_SERVICE_KEY=""       # supabase.com → Settings → API → service_role       # Settings → API → service_role secret
 DATABASE_URL=""               # supabase.com → Settings → Database → Transaction pooler               # Settings → Database → Connection string (Transaction mode)
@@ -67,9 +70,10 @@ STRIPE_ESQUIRE_ANNUAL_ID=""
 STRIPE_LEGAL_RADAR_ID=""          # price_1Tb1vn2... monthly
 STRIPE_LEGAL_RADAR_ANNUAL_ID=""   # price_1Tb1wQ2... annual
 
-# SendGrid (app.sendgrid.com → Settings → API Keys)
+# Email (resend.com → API Keys) — without it, emails are logged, not sent
 RESEND_API_KEY=""             # resend.com → API Keys
-SENDGRID_API_KEY=""  # legacy — not used, Resend handles email           # SG.xxxxxx
+EMAIL_FROM="noreply@justicegavel.app"
+ALERT_EMAIL_FROM="alerts@justicegavel.app"
 
 
 # Google Places (console.cloud.google.com → APIs → Credentials)
@@ -79,23 +83,23 @@ GOOGLE_PLACES_KEY=""
 SENTRY_DSN=""             # sentry.io → Project → DSN
 
 # Monitoring alerts
-ALERT_WEBHOOK_URL=""  # Slack incoming webhook URL          # Slack: https://hooks.slack.com/...
-ONCALL_PHONE=""               # Your mobile number: +1XXXXXXXXXX               # Your phone: +1XXXXXXXXXX
+ALERT_WEBHOOK_URL=""  # Slack incoming webhook URL (https://hooks.slack.com/...)
+ONCALL_EMAIL=""               # SEV-1/SEV-2 alert recipient (no SMS provider is wired)
 
 # Expo (expo.dev → Account → Access Tokens)
 EXPO_ACCESS_TOKEN=""       # expo.dev → Access Tokens
 
 # ── CORE SETTINGS ─────────────────────────────────────────────────────────────
 NODE_ENV="production"
-JWT_EXPIRES_IN="15m"
-JWT_REFRESH_EXPIRES_IN="7d"
-FRONTEND_URL="https://api.justicegavel.app"
-CORS_ORIGIN="https://api.justicegavel.app"
-SENDGRID_FROM_EMAIL="noreply@justicegavel.app"
+# Keep >= 30d: the mobile app refreshes tokens older than 25 days
+JWT_EXPIRES_IN="30d"
+JWT_REFRESH_EXPIRES_IN="60d"
+FRONTEND_URL="https://justicegavel.app"
+CORS_ORIGIN="https://justicegavel.app"
 SENTRY_ENVIRONMENT="production"
 VAPID_EMAIL="admin@justicegavel.app"
 DEMO_MODE="false"
-LIVE_SMS="true"
+# Features are actually gated on their keys (Stripe/Resend); these flags are legacy
 LIVE_EMAIL="true"
 LIVE_PAYMENTS="true"
 LIVE_REFRESH="true"
@@ -157,12 +161,9 @@ set_var "LIVE_PAYMENTS"                "$LIVE_PAYMENTS"
 
 # Email
 set_var "RESEND_API_KEY"        "$RESEND_API_KEY"
-set_var "SENDGRID_API_KEY"      "$SENDGRID_API_KEY"
-set_var "SENDGRID_FROM_EMAIL"   "$SENDGRID_FROM_EMAIL"
+set_var "EMAIL_FROM"            "$EMAIL_FROM"
+set_var "ALERT_EMAIL_FROM"      "$ALERT_EMAIL_FROM"
 set_var "LIVE_EMAIL"            "$LIVE_EMAIL"
-
-# SMS
-set_var "LIVE_SMS"              "$LIVE_SMS"
 
 # Push
 set_var "EXPO_ACCESS_TOKEN"     "$EXPO_ACCESS_TOKEN"
@@ -177,7 +178,7 @@ set_var "GOOGLE_PLACES_KEY"     "$GOOGLE_PLACES_KEY"
 set_var "SENTRY_DSN"            "$SENTRY_DSN"
 set_var "SENTRY_ENVIRONMENT"    "$SENTRY_ENVIRONMENT"
 set_var "ALERT_WEBHOOK_URL"     "$ALERT_WEBHOOK_URL"
-set_var "ONCALL_PHONE"          "$ONCALL_PHONE"
+set_var "ONCALL_EMAIL"          "$ONCALL_EMAIL"
 
 # Health scan
 set_var "HEALTH_SCAN_CRON"      "$HEALTH_SCAN_CRON"

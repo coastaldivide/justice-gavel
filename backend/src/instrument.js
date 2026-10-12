@@ -8,6 +8,7 @@
 import 'dotenv/config';
 import * as Sentry from '@sentry/node';
 import logger from './utils/logger.js';
+import { APP_VERSION } from './utils/version.js';
 
 const FLAG = Symbol.for('justicegavel.sentry.initialised');
 
@@ -26,7 +27,7 @@ if (process.env.SENTRY_DSN && !globalThis[FLAG]) {
     Sentry.init({
       dsn:              process.env.SENTRY_DSN,
       environment:      process.env.SENTRY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV || 'development',
-      release:          process.env.SENTRY_RELEASE || `justice-gavel@${process.env.npm_package_version || 'dev'}`,
+      release:          process.env.SENTRY_RELEASE || `justice-gavel@${APP_VERSION}`,
       tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? (process.env.NODE_ENV === 'production' ? 0.1 : 1.0)),
       profileSessionSampleRate: Number(process.env.SENTRY_PROFILES_SAMPLE_RATE ?? 0.1),
       profileLifecycle: 'trace',

@@ -11,6 +11,7 @@ import aiCostsRouter from './routes/admin/aiCosts.js';
 import * as Sentry from '@sentry/node';
 import hagueContactsRouter  from './routes/hague_contacts.js';
 import logger from './utils/logger.js';
+import { APP_VERSION } from './utils/version.js';
 import express from 'express';
 import helmet      from 'helmet';
 import morgan      from 'morgan';
@@ -201,7 +202,7 @@ app.use(helmet({
 
 // ── Additional security headers not covered by helmet default ─────────────────
 app.use((req, res, next) => {
-  res.setHeader('X-API-Version', process.env.npm_package_version || '8.7.50');
+  res.setHeader('X-API-Version', APP_VERSION);
   res.setHeader('Content-Security-Policy',
     "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self';"
   );
@@ -295,7 +296,7 @@ app.get(['/health', '/api/health'], async (req, res) => {
     db_checked_at: new Date(health.checkedAt).toISOString(),
     db_cached:  health.cached,
     app:        'Justice Gavel',
-    version:    process.env.npm_package_version || '8.7.50',
+    version:    APP_VERSION,
     mode:       process.env.DEMO_MODE === 'true' ? 'demo' : 'live',
     disclaimer_ver: '2026-01-01.1',
     queue,
@@ -326,7 +327,7 @@ app.get('/metrics', async (req, res) => {
     const metrics = {
       timestamp:       new Date().toISOString(),
       uptime_s:        Math.floor(process.uptime()),
-      version:         process.env.npm_package_version || '8.7.50',
+      version:         APP_VERSION,
       node_version:    process.version,
       memory: {
         rss_mb:        (memUsage.rss        / 1024 / 1024).toFixed(1),

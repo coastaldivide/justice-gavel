@@ -1,3 +1,5 @@
+> **ARCHIVED — historical document, no longer accurate.** Kept for history only (moved here in the step-10 documentation pass, Oct 2026). Versions, counts, architecture claims and process steps in here are out of date — see the repo README.md, RAILWAY_ENV_SETUP.md and RUNBOOK.md for current information.
+
 # Justice Gavel — Simulation Report & Framework Assessment
 *Generated from v8.0.0 → v8.3.3 session*
 

@@ -1,120 +1,99 @@
-# Justice Gavel — Quick Start Guide
-## Version 5.89.11 | versionCode 5991
+# Justice Gavel — Quick Start
+**v8.7.60**
 
----
+Local setup from zero to a running API + app. The condensed version lives in
+the [README](./README.md); environment variables are documented in
+[RAILWAY_ENV_SETUP.md](./RAILWAY_ENV_SETUP.md).
 
-## 🗄️ Database (Current State)
-| Table | Count | States | With Phone |
-|---|---|---|---|
-| Real Attorneys | 1,459 | 40/51 | 99% |
-| Bail Agents | 884 | 39/51 | 99% |
-| Recovery Agents | 555 | 48/51 | 99% |
+Prereqs: Node ≥ 20.6 (22 recommended), npm ≥ 10, PostgreSQL 14+.
 
-**11 states still need real attorney data:**
-DC, DE, ME, MT, ND, NH, RI, SD, VT, WV, WY
+## 1. Database
 
----
+Schema **and** seed data ship as plain SQL in `supabase/migrations/`
+(13 files, `00…12`). Apply them in filename order; they are idempotent and
+there is no separate seed script:
 
-## 🔄 Scraper Files (run from `backend/` folder)
+```bash
+createdb justice_gavel
+for f in supabase/migrations/*.sql; do
+  psql "postgres://localhost/justice_gavel" -v ON_ERROR_STOP=1 -q -f "$f"
+done
+```
 
-| File | Purpose | Runtime |
+What gets seeded (counts from a fresh migrate):
+
+| Data | Rows | Notes |
 |---|---|---|
-| `RUN_MISSING_STATES.bat` | **START HERE** — fills the 11 missing states only | ~30–45 min |
-| `RUN_SCRAPER_WINDOWS.bat` | Full rescrape — all 530 cities | ~2.5 hrs |
-| `RUN_RECOVERY_AGENTS.bat` | Recovery agents only | ~30 min |
-| `RUN_BAIL_ONLY.bat` | Bail agents only | ~30 min |
+| Lawyers | 2,055 | Seed directory — replace/extend with the operator scrapers |
+| Bail agents | 1,265 | Seed directory (DOI import adds license numbers) |
+| Recovery agents | 531 | Directory present but the screen is unregistered (legal hold) |
+| Courthouses | 404 | Verified addresses |
+| Bail schedules | 504 | All 51 jurisdictions |
+| Know-Your-Rights lessons | 50 | 9+ categories |
+| Arrest records | 600 | **Generated samples** — hidden from all user-facing and billing paths unless `SHOW_SAMPLE_ARRESTS=true` (demos only) |
 
-**To complete the database:** double-click `RUN_MISSING_STATES.bat`
-Then upload the zip here for final packaging.
+## 2. Backend
 
----
+```bash
+cd backend
+npm ci
+DATABASE_URL=postgres://localhost/justice_gavel npm start   # listens on :4000
+curl -s http://localhost:4000/health                        # {"ok":true,...}
+```
 
-## 🌱 Seed Data (run once after deploy)
+No `.env` needed to boot: dev secrets are generated per process, AI returns
+`503 ai_unavailable`, billing returns `503 payments_unavailable`, emails are
+logged. To enable features, `cp .env.example .env` and fill in keys
+(see RAILWAY_ENV_SETUP.md). Real arrest coverage additionally needs
+`ARREST_FEED_URLS` — without it arrest screens show honest empty states.
 
-Reference and seed data ship as SQL in `supabase/migrations/` and are loaded when the
-migrations are applied (in filename order, e.g. `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f <file>`).
-There is no separate seed script to run.
+## 3. Frontend
 
-**What gets seeded:**
-- 2,020 attorneys + 808 bondsmen (seed; replace with scrapers after deploy)
-- 404 courthouses + 57 probation offices + 96 law school clinics
-- 51 DUI law records + 153 drug penalty records
-- 144 bail schedules (7 original states) + 129 new records (44 states) = 273 total
-- 30 Know Your Rights lesson articles (arrest, DUI, expungement, immigration, juvenile, housing)
-- 20 forum posts across 5 categories (AI-generated, realistic legal Q&A)
-- 30 specialty courts (10 veteran, 6 drug, 10 mental health, 4 DUI)
+```bash
+cd frontend
+npm ci
+EXPO_PUBLIC_API_BASE=http://localhost:4000/api npx expo start
+# press w for web, or scan the QR code with Expo Go
+```
 
----
+## 4. Checks
 
-## 🚀 Deployment Steps
+```bash
+# backend/
+npm run lint && npm test
+node scripts/smoke-test.mjs http://localhost:4000   # against the running server
 
-1. Set `.env` keys (see below)
-2. Deploy backend to Railway
-3. Set `EXPO_PUBLIC_API_BASE=https://your-app.railway.app/api` in `frontend/.env`
-4. Run `eas build --platform all`
-5. Submit `.aab` to Google Play, `.ipa` to Apple App Store
+# frontend/
+npx tsc --noEmit && npx eslint src App.tsx --max-warnings 0 && npm test
+```
 
----
-
-## 🔑 Required .env Keys
-
-| Key | Status | Powers |
-|---|---|---|
-| GOOGLE_PLACES_KEY | ✅ SET | Scraper (~$14 one-time) |
-| JWT_SECRET | ✅ SET | Auth tokens |
-| ENCRYPTION_KEY | ✅ SET | AES-256-GCM data encryption |
-| ADMIN_KEY | ✅ SET | Bot admin webhook auth |
-| ANTHROPIC_API_KEY | ⚠️ EMPTY | AI Chat, Motions, Research |
-| STRIPE_SECRET | ⚠️ EMPTY | Payments — get from dashboard.stripe.com |
-| STRIPE_WEBHOOK_SECRET | ⚠️ EMPTY | Stripe event verification |
-| STRIPE_LEGAL_PRO_PRICE_ID | ⚠️ EMPTY | Create product in Stripe dashboard |
-| STRIPE_ADVISOR_PRICE_ID | ⚠️ EMPTY | Create product in Stripe dashboard |
-| STRIPE_ESQUIRE_PRICE_ID | ⚠️ EMPTY | Create product in Stripe dashboard |
-| SENDGRID_API_KEY | ⚠️ EMPTY | Transactional email |
-| VAPID_PUBLIC_KEY | ⚠️ EMPTY | Web push — run: npx web-push generate-vapid-keys |
-| SENTRY_DSN | ⚠️ EMPTY | Error monitoring — sentry.io (free tier) |
-
----
-
-## 📊 Data Completeness After v157
-
-| Category | Records | States | Quality |
-|---|---|---|---|
-| Attorneys | 2,020 | 51/51 | ⚠️ Seed (run scraper to get real data) |
-| Bail agents | 808 | 51/51 | ⚠️ Seed (run DOI import for verified data) |
-| Courthouses | 404 | 51/51 | ✅ Verified addresses |
-| Bail schedules | 273 | 51/51 | ✅ All states covered |
-| Know Your Rights | 30 | national | ✅ 7 categories, legally reviewed content |
-| Specialty courts | 30 | 14 states | ⚠️ Major metros covered; national expansion TODO |
-| Forum posts | 20 | national | ✅ Seeded AI-generated Q&A |
-| Specialty courts | 30 | major cities | ✅ Veteran, drug, mental health, DUI courts |
-| DUI laws | 51 | 51/51 | ✅ Current statutes |
-| Drug penalties | 153 | 51/51 | ✅ Current statutes |
-| Statute of limits | 209 | 51/51 | ⚠️ 102 null records (manual fix needed) |
-| Resources total | 376 | 51/51 | ✅ 9 categories |
-
----
-
-## ⚖️ Innocent until proven guilty.
-
----
-
-## 📋 API Documentation
+## API documentation
 
 | File | Contents |
 |---|---|
-| `openapi.json` | **OpenAPI 3.0 spec** — 439 endpoints, machine-readable, Postman-importable |
-| `API_REFERENCE.md` | Human-readable API reference (23K chars) |
+| `openapi.json` | Generated OpenAPI 3.0 spec — 475 paths / 559 operations, auth-marked. Regenerate with `node scripts/generate-openapi.mjs`; `openapi_drift.test.js` fails CI when it goes stale. Postman: File → Import |
+| `API_REFERENCE.md` | Human-readable overview: auth, errors, rate limits, resource groups |
 
-Import `openapi.json` into Postman: **File → Import → openapi.json**
+## Deploying
+
+1. Backend → Railway (root directory `backend`); set the required env vars
+   (RAILWAY_ENV_SETUP.md) and apply the migrations to the production database
+   with psql (the API never runs DDL).
+2. Frontend → set `EXPO_PUBLIC_API_BASE=https://<your-api>/api` (EAS secret),
+   then `eas build --platform all` / `eas submit`.
+3. Verify: `node backend/scripts/smoke-test.mjs https://<your-api>`.
+
+Go-live checklist: `backend/scripts/railway-checklist.md` +
+[LAUNCH_CHECKLIST.md](./LAUNCH_CHECKLIST.md).
+
+## Operator data tools (optional)
+
+The Google-Places/state-bar scrapers and DOI importers under
+`backend/src/scripts/` (and the Windows `RUN_*.bat` wrappers) are
+operator-only tools from the SQLite era: they still write to a local SQLite
+file (`data/providers.sqlite` / `demo.db`), **not** to Postgres. Porting them
+is tracked work — don't expect them to populate the production directory.
 
 ---
 
-## 🗂️ New in v161
-
-- OpenAPI 3.0 spec generated (`openapi.json`) — 365 paths, 435 operations
-- 11 composite DB indexes added (matters, firms, audit_log, cases, docket, subscriptions)
-- Migration 043: 5 previously missing tables (recovery_agents, feedback, firm_invites, account_deletion_log, ai_jobs)
-- Migration 044: Performance indexes for high-traffic query patterns
-- All SELECT * queries projected or marked intentional
-- SOL null record fix script in update_legal_data.js
+⚖️ *Innocent until proven guilty.*
