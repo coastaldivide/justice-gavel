@@ -685,9 +685,11 @@ describe('11. deliverWebhook — HMAC & Delivery Model', () => {
   test('11-03: deliverWebhook enforces HTTPS in production', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/webhooks/outbound.js', 'utf8');
-    expect(src).toContain("'production'");
-    expect(src).toContain("startsWith('https://')");
-    expect(src).toContain('HTTPS in production');
+    // audit11 H9: delivery goes through the SSRF guard, which also enforces https in production.
+    expect(src).toContain('safePost(');
+    const guard = fs.readFileSync(__REPO + '/backend/src/utils/ssrfGuard.js', 'utf8');
+    expect(guard).toContain("'production'");
+    expect(guard).toContain('must use https');
   });
 
   test('11-04: RETRY_DELAYS_MS is defined for exponential backoff', async () => {

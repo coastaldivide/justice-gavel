@@ -516,7 +516,7 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
           <View style={styles.badgeBannerActive}>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerTitle}>✓  Verified by Justice Gavel</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerSub}>Your listings show the verified badge · $48.99/month</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerSub}>Your listings show the verified badge · $49/month</Text>
             </View>
             <TouchableOpacity
               accessibilityRole="button" onPress={handleBadgeCancel}
@@ -539,7 +539,7 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
                 {badgeLoading ? 'Activating…' : '🏅  Get Verified by Justice Gavel'}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerPromoSub}>
-                Show a trusted badge on your listings · Increases calls · $48.99/month
+                Show a trusted badge on your listings · $49/month
               </Text>
             </View>
             <Text maxFontSizeMultiplier={1.4} style={styles.badgeBannerPromoArrow}>→</Text>

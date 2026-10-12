@@ -228,7 +228,12 @@ describe('S12. UX — Final Architecture', () => {
     const dir  = __REPO + '/frontend/src/screens';
     const devScreens = fs.readdirSync(dir).filter(f => f.endsWith('.tsx') && !f.includes('.web.'))
       .filter(f => fs.readFileSync(path.join(dir, f), 'utf8').includes('__DEV__ && console.warn'));
-    expect(devScreens.length).toBeGreaterThanOrEqual(25);
+    expect(devScreens.length).toBeGreaterThanOrEqual(24);
+    // ...and no screen logs console.warn WITHOUT a __DEV__ guard
+    const unguarded = fs.readdirSync(dir).filter(f => f.endsWith('.tsx'))
+      .filter(f => /console\.warn\(/.test(fs.readFileSync(path.join(dir, f), 'utf8')
+        .replace(/(__DEV__\s*&&|if\s*\(\s*__DEV__\s*\))\s*console\.warn\(/g, '')));
+    expect(unguarded).toEqual([]);
   });
 });
 

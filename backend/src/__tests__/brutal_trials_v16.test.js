@@ -128,7 +128,8 @@ describe('2. CaseTimelineScreen — Case Event Timeline', () => {
   test('2-03: /push/reminders for event notification subscriptions', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/CaseTimelineScreen.tsx', 'utf8');
-    expect(src).toContain("'/push/reminders'");
+    expect(src).toContain("../services/reminders");
+    expect(fs.readFileSync(__REPO + '/frontend/src/services/reminders.ts', 'utf8')).toContain("'/push/reminders'");
   });
 });
 

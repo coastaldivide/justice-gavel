@@ -30,8 +30,12 @@ describe('F1. Registration & Login Flow', () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/RegisterScreen.tsx','utf8');
     expect(src).toContain('/auth/register');
-    expect(src).toContain('TermsAcceptanceModal');
-    expect(src).toContain('showTerms');
+    { const app=fs.readFileSync(__REPO + '/frontend/App.tsx','utf8');
+      // audit11 H10: the Terms + AI-disclaimer gate is shown by App.tsx for EVERY
+      // signed-in session (registration, login, stored token, any 451), not only
+      // from RegisterScreen.
+      expect(app).toContain('<TermsAcceptanceModal');
+      expect(app).toContain('onDisclaimerRequired'); }
     expect(src).toContain("navigate('HomeTab')");
   });
   test('F1-03: LoginScreen calls POST /auth/login + forgot password', async () => {

@@ -174,6 +174,8 @@ switches to human-readable.
 
 | Job | When | Requires |
 |---|---|---|
+| Reminder delivery (court dates + user-set reminders: push via Expo, email fallback) | every 60 s in each API process; re-plans missing court reminders every 6 h | always on; `REMINDERS_ENABLED=false` turns it off for a process |
+| Check-in reminder blast `POST /api/checkins/remind-all` | external cron | staff token **or** `X-Admin-Key` |
 | Nightly refresh (scrapers, arrest alerts, payment-link expiry, token cleanup) | `REFRESH_CRON` (default 3 am `REFRESH_TZ`) | `LIVE_REFRESH=true` |
 | Health scan | `HEALTH_SCAN_CRON` (default 2 am) | scheduler on |
 | Bar re-verification sweep | daily tick, re-verifies attorneys whose verification is > 90 days old | scheduler on |

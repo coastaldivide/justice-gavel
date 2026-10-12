@@ -195,7 +195,8 @@ describe('3. DeadlineCalculatorScreen — Criminal Defense Deadlines', () => {
   test('3-06: /push/reminders for setting deadline reminders', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/DeadlineCalculatorScreen.tsx', 'utf8');
-    expect(src).toContain("'/push/reminders'");
+    expect(src).toContain("../services/reminders");
+    expect(fs.readFileSync(__REPO + '/frontend/src/services/reminders.ts', 'utf8')).toContain("'/push/reminders'");
   });
 });
 

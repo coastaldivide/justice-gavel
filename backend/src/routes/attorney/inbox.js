@@ -55,12 +55,14 @@ router.get('/inbox', authRequired, inboxLimiter, async (req, res) => {
                 c.state        AS case_state
            FROM consultation_bookings cb
            JOIN users u ON u.id = cb.user_id
-           LEFT JOIN case_assignments ca ON ca.user_id = cb.user_id AND ca.defender_id = ?
+           LEFT JOIN case_assignments ca ON ca.user_id = cb.user_id AND ca.defender_id = ? AND ca.status = 'active'
            LEFT JOIN cases c ON c.id = ca.case_id
-          WHERE cb.lawyer_id IN (
-                  SELECT lawyer_id FROM attorney_profiles WHERE user_id = ?
+          -- lawyer_id is a directory id: match it only through the account's
+          -- linked listing (never against the user id itself).
+          WHERE (cb.lawyer_id IN (
+                  SELECT lawyer_id FROM attorney_profiles WHERE user_id = ? AND lawyer_id IS NOT NULL
                 )
-             OR cb.lawyer_id = ?
+             OR cb.lawyer_id IN (SELECT id FROM lawyers WHERE user_id = ?))
           AND cb.status = 'confirmed'
           AND cb.date_slot >= CURRENT_DATE
           AND cb.date_slot <= (CURRENT_DATE + INTERVAL '7 days')
@@ -78,7 +80,7 @@ router.get('/inbox', authRequired, inboxLimiter, async (req, res) => {
                 c.status       AS case_status
            FROM case_messages cm
            JOIN cases c ON c.id = cm.case_id
-           JOIN case_assignments ca ON ca.case_id = c.id AND ca.defender_id = ?
+           JOIN case_assignments ca ON ca.case_id = c.id AND ca.defender_id = ? AND ca.status = 'active'
            JOIN users u ON u.id = cm.sender_id
           WHERE cm.read_at IS NULL
             AND cm.sender_type = 'user'
@@ -94,7 +96,7 @@ router.get('/inbox', authRequired, inboxLimiter, async (req, res) => {
                 u.display_name AS client_name, u.email AS client_email,
                 ce.description AS next_event
            FROM cases c
-           JOIN case_assignments ca ON ca.case_id = c.id AND ca.defender_id = ?
+           JOIN case_assignments ca ON ca.case_id = c.id AND ca.defender_id = ? AND ca.status = 'active'
            JOIN users u ON u.id = c.user_id
            LEFT JOIN case_events ce ON ce.case_id = c.id
                                    AND ce.id = (

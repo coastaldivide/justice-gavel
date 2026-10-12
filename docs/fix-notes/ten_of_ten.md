@@ -736,3 +736,171 @@ unindexed (a second GIN taxes every ingest write; name is the primary family-sea
 - bar-prep leaderboard (computed-expression ORDER BY over a 20-row LIMIT) left unindexed — not one of
   the hot paths and not btree-servable.
 - Did NOT commit (coordinator commits).
+
+# STEP 10 — documentation (built on the earlier partial attempt, wip commit ef4a4ed)
+
+## What changed
+- **README.md**: one concise README at v8.7.60. Covers architecture (Expo SDK 57 / RN 0.86 / React 19; Node 22 / Express 5; 13 migrations 00..12 applied with psql; Resend; Claude via CLAUDE_MODEL, default claude-sonnet-4-6), payments off until Stripe keys are set, and flat lead fees checked against leadFee.js / attorneyLeadFee.js (bondsman $100, PI/medical $200, civil rights $200, employment $100, ICE $75). Also covers quick start, tests, deploy, a doc map and corrected security notes.
+- **Quick start verified verbatim** in a scratch copy (PGUSER/PGPASSWORD set in the environment only):
+  - `npm ci`, createdb, the migrate loop, `npm start` and `/health` all worked (version 8.7.60), and smoke-test passed 32/32.
+  - `cp .env.example .env` then boot also worked.
+  - Frontend: `npm ci` and `EXPO_PUBLIC_API_BASE=… npx expo start` served index.html and the web bundle (200, 8.8 MB).
+  - QUICKSTART's root-level migrate loop and `design-audit --ci` also worked.
+- **Env docs**: RAILWAY_ENV_SETUP.md is the single reference.
+  - config.js `ALL_ENV_VARS` now lists exactly what the code reads (124 vars). Added 44 that were missing (integration OAuth pairs, Sentry, Supabase, bondsman Stripe ids, PORT, DEMO_MODE, LIVE_*, POSTGRES_URL, RAILWAY_ENVIRONMENT, …).
+  - Removed 2 vars that nothing reads (UPLOAD_DIR, BOT_WEBHOOK_BASE_URL), plus the fake built-in Stripe price-id fallbacks (nothing ever used them).
+  - backend/.env.example and root .env.example are identical: every var with a placeholder, plus the EXPO_PUBLIC_* section. frontend/.env.example was fixed.
+  - ENVIRONMENT_VARS.md is a pointer. The stale backend/.env.manifest was deleted.
+  - Honest descriptions added for LIVE_PAYMENTS (only the /api/pay orchestrator), LIVE_EMAIL, DEMO_MODE (label only) and the alt-payment adapters (mock stubs, "leave unset").
+- **New test `env_docs_consistency.test.js`** (7 tests). It scans process.env reads (dot, bracket and destructuring) and requires ALL_ENV_VARS = the code set. Every var must also appear in RAILWAY_ENV_SETUP.md and the .env.example files (no unused backend lines). Root must equal backend, EXPO_PUBLIC_* must match frontend reads, and placeholders must contain no real secret values.
+- **OpenAPI**: kept the earlier runtime route walker and generator, then improved both.
+  - `staffOnly` is now recognised.
+  - The spec adds `x-requires-ai` + 503, `451` on requireDisclaimer routes, and `x-payments-gated` + 503 on the 16 operations that return payments_unavailable.
+  - The BadRequest shape now matches zod's `errors[]`.
+  - Regenerated: 475 paths / 559 ops (485 bearer, 74 public/admin-key).
+  - `npm run generate:openapi` works from the root (new script) and from backend/.
+  - openapi_drift.test.js was proven to fail when a path is removed.
+- **API_REFERENCE.md** is an overview. It was corrected against the code:
+  - Real error shapes: zod `errors[]`, the 404 shape, and 5xx messages hidden in production.
+  - 451 disclaimer flow, the exact payments_unavailable / ai_unavailable bodies, and which writes are payment-gated.
+  - Refresh rotation and reuse revocation.
+  - Rate limits with their env knobs.
+  - `/api/admin` needs a token role plus X-Admin-Key.
+  - Outbound webhooks are firm subscriptions, not bot callbacks.
+- **Other docs updated after checking against the code**: RUNBOOK, LAUNCH_CHECKLIST, QUICKSTART, EXTERNAL_SERVICES_SETUP, UPTIME_MONITORING, FACT_CHECK_RUNBOOK, PHASE_2_ROADMAP (test count removed), railway-checklist, setup-railway.sh, SDK_GUIDE, APP_STORE_LISTING, frontend BUILD_INSTRUCTIONS and e2e/README.
+  - EXTERNAL_SERVICES_SETUP had a wrong Stripe product table. It is now the real plans and prices, including the bondsman ids.
+  - Google Places is used by the operator scrapers only. OpenAI is for Whisper only.
+  - SDK_GUIDE: /api/match → /api/match/lawyers, refresh_token → refreshToken, expungement/check is a GET.
+  - APP_STORE_LISTING:
+    - Removed a committed reviewer password.
+    - Removed the false "all attorneys bar-verified" claim (0 of 2,055 are).
+    - Removed "licensed bail agents" (0 of 1,265 have a license number).
+    - Removed the claim that the app does not handle attorney-client communications.
+  - e2e/README now says the Detox suite is not wired up. RUNBOOK: replaced railway CLI commands that don't exist, and the bar-verification sweep needs an admin token plus X-Admin-Key.
+- **Archived** to docs/archive with a banner:
+  - BONDSMAN_OUTREACH.md: it pitches badge "top of search" placement and arrest volumes the product doesn't have.
+  - BILLING_DECOMPOSITION_PLAN.md: already done, and it mentions calcLeadFee.
+  - The earlier attempt had already archived DEVELOPER_HANDOFF, DEVELOPER_NOTES_PHASE2, SIMULATION_REPORT, TODO, CIVIL_ATTORNEY_DATA and i18n_legal_audit.
+  - docs/fix-notes/README.md exists.
+- **docs/LEGAL_ACTION_ITEMS.md**:
+  - States that the owner chose the flat fees.
+  - New A0 item: a lawyer must still review the lead-fee structure, the UPL disclaimers/451 gate, state-rule accuracy, the privacy subprocessor list and the paid-placement copy.
+  - Price display mismatch added under A5.
+  - Bail-agent count corrected to 1,265.
+- **Small code fixes found through the docs**:
+  - discovery/analyze.js only read `STRIPE_SECRET`, so analysis stayed free even with STRIPE_SECRET_KEY set. It now uses `STRIPE_SECRET_KEY || STRIPE_SECRET`.
+  - Dropped the SendGrid env alias from email.js.
+  - In-app PrivacyPolicyScreen listed SendGrid as the email processor; it now says Resend.
+  - Dockerfile no longer sets the unused UPLOAD_DIR.
+- **Versions**: everything is 8.7.60, including root/backend/frontend package.json, app.json, iOS buildNumber 8760 / Android versionCode 8760, sw.js, README, /health and X-API-Version. The backend reads backend/package.json through utils/version.js with no fallback. New `version_alignment.test.js` (5 tests) enforces all of it.
+- Tests updated for the moves: lead_fee_consistency (archived outreach path) and v156 I1-04 (unused vars removed).
+
+## Global grep (outside docs/archive, docs/fix-notes, node_modules; *.md, *.example)
+- **sqlite**: remaining hits only describe the dev-only fallback without DATABASE_URL (true; db/index.js) and the operator scripts that still write local SQLite (true). None claims SQLite as the runtime DB.
+- **sendgrid**: 0 in docs. Code keeps the `sendgrid_id` column name only.
+- **Tiered fees** (tiered/bail-scaled/severity/$25–$300/$15–$1,000): 0. The only hits are README's "flat — never scaled" and RUNBOOK's incident severity levels.
+- **Test-count / "0 errors" metrics**: 0. The PHASE_2 count and the README "0 errors" comments were removed.
+- **RLS**: README and LAUNCH_CHECKLIST say "deny-all, no policies". Verified on a fresh DB: 188/188 public tables have RLS on and pg_policies = 0.
+- **Port 3000 / localhost:3000**: 0. The CORS line no longer lists it.
+- **Retired model id** (claude-sonnet-4-20250514 / claude-3*): 0 anywhere outside archive/fix-notes.
+- **Secret values** (sk_live/test, sk-ant, whsec, re_, 64-hex, JWTs, AIza): 0 in all docs, including archive and fix-notes.
+
+## Flagged, not fixed (outside a docs step, or owner/legal decisions)
+- `POST /api/checkins/remind-all` is unauthenticated: anyone can trigger pushes to every user with a check-in due. `GET /api/checkins/my/:id` and `/status/:id` are also public. The generated spec makes this visible.
+- Most role checks (including /api/admin/*) read the token's role claim, which can be up to 30 days old. Only takedown/disposition/research indexing re-read the role from the DB. Verified live: a demoted admin's old token still passes the /api/admin guard (with the admin key). The docs that claimed "roles always come from the DB" were corrected, and a LAUNCH_CHECKLIST item was added.
+- `/api/admin/lawyers` and `/api/admin/bail` return 500 "Unknown table": safeTable's allowlist lacks lawyers/bail_agents. Left alone because those rows must not be modified anyway.
+- billing/bondsman.js has an unreachable `!LIVE` mock badge activation. The router-level 503 gate blocks it.
+- payments/* alt-provider adapters (PayPal, Braintree, Square, …) are mock stubs that return placeholder URLs. They are documented as "leave unset".
+- Bondsman SubscriptionScreen prices and the "Top placement" copy disagree with the backend and with search ordering. These are in LEGAL_ACTION_ITEMS.
+- Operator scrapers, which the nightly scheduler runs when LIVE_REFRESH=true, still write local SQLite. This is documented.
+- Did NOT commit. The two renames are staged via git mv, the .env.manifest deletion via git rm.
+
+## Gate
+1. Fresh DB `jg_s10doc`: 13 migrations ON_ERROR_STOP applied twice, OK. 188 tables, all RLS on, 0 policies. Seed counts: 2,055 lawyers, 1,265 bail agents, 531 recovery agents, 404 courthouses, 504 bail schedules, 50 lessons, 600 sample arrests.
+2. Backend:
+   - `npm ci` OK, `npm run lint` 0/0, import smoke OK.
+   - Production boot (NODE_ENV=production TZ=UTC, generated secrets, no Stripe, mock Anthropic): /health version 8.7.60, X-API-Version 8.7.60, **smoke-test 32/32**.
+   - Live checks: 451 disclaimer_required, 503 payments_unavailable body, zod 400 shape, admin guard 401 without the key.
+3. Backend jest (in-memory): **320 suites passed / 10 PG-gated skipped; 27,872 passed / 83 skipped / 0 failed**. Suites edited mid-run were re-run: 10 suites / 142 tests pass. PG-gated suites with TEST_DATABASE_URL on a fresh migrated `jg_s10pg` (integration, arrest_visibility, alerts_takedown(_pg), final_pass_fixes): **14 suites / 136 tests pass**.
+4. Frontend: tsc 0; eslint --max-warnings 0 gives 0/0; npm test 48/705 logic + 5/31 render pass; `expo export --platform web` OK (sw.js cache v8.7.60); design-audit --ci 0.
+5. ci.yml unchanged and valid YAML. The new tests (openapi drift, env docs, version alignment) run inside the existing jest step. Scratch DBs were dropped and scratch servers stopped.
+
+# STEP 11 — audit11 remediation (finished from wip checkpoint 3dae8ea)
+
+## Starting point
+`3dae8ea` held two interrupted agents' work: security fixes C1–C5/H1–H9/M4/M8 with PG tests for
+C1–C4/H1–H8 (no C5/H9/M4 tests, CI not running them), and functional fixes H10–H12/M1–M7 with no
+tests, no M7 fix, no verification. Full jest on the checkpoint: 44 failures; frontend eslint 1 error;
+render tests 8 failures (api mock lacked the new helpers).
+
+## What step 11 changed (on top of the checkpoint)
+- **C1 hardening**: consultation-based self-assignment matched `consultation_bookings.lawyer_id`
+  (a directory id) against the caller's USER id → any account whose id equals a booked lawyer's id
+  could claim that client. Now only via the account's linked listing. Attorney inbox no longer shows
+  unread message bodies / client e-mail / today's hearings to pending or revoked counsel; fixed the
+  `OR`-precedence bug that listed every booking regardless of status/date.
+- **M6/IDOR**: `/chat/stream` loaded history by `sessionId` without the user filter (another user's
+  conversation could be pulled into the prompt). Scoped.
+- **C5**: transcription routes refuse before reading the body when Whisper isn't configured or the
+  plan lacks it. **H9 class**: SSRF guard applied to DMS / CalDAV firm-supplied URLs.
+- **H3**: token refresh paths refuse suspended/deleted/disabled accounts (was: banned only).
+- **Billing**: bondsman tier subscribe activated a tier for free when Stripe was set but the tier had
+  no price id → now 503 payments_unavailable; dead mock badge activation removed (503).
+- **Data loss**: `GET /api/cases` never returned notes, so editing any case from CaseScreen re-sent
+  `notes:''` and erased the user's encrypted notes. List/create now return decrypted notes.
+- **Frontend**: M7 carousel uses measured width (+ removed invented "4.9 App Store" rating);
+  provider plan Cancel restored; `$48.99` badge copy → `$49`; print/PDF HTML escaping via new
+  `utils/html.ts` (titles were no longer pre-encoded after M1); crisis-lines refresh unwraps the
+  envelope (same crash class as H12); bail calculator dark-mode explainer was invisible
+  (green on green) and the web state picker unreadable; BailSearch console.warn dev-guarded;
+  onboarding "licensed bail agents" → "bail agents" (0 of 1,265 have license numbers);
+  `/api/advocacy` invented counters removed (L4).
+- **M1 repair**: `backend/scripts/repair-legacy-entities.mjs` (dry run default, `--apply`), tested on
+  planted encrypted + plain rows, idempotent; listed in LAUNCH_CHECKLIST.
+- **Tests added**: `security/c5_uploads`, `security/h9_ssrf`, `security/m4_email_escaping`,
+  `security/l1_no_personal_emails`, `integration/audit11_functional` (H11×6, M1, M2, M5, M6×2),
+  C1 +3 cases; frontend `render/audit11.test.tsx` (H10×3, H12×2, M3, M7);
+  `frontend/scripts/web-journeys.cjs` (real-backend headless journeys: H10 desktop+phone, M6, H12,
+  H11, M1, M7). web-smoke Phase B now loads real plan catalogues. 44 stale source-text assertions
+  updated to the new behaviour; `api_contract` 200+error regex made statement-local;
+  `migration_idempotency` RLS check pinned to `08_enable_rls`; `nav_scan` accepts App.tsx root
+  modals; `arrest_visibility` uses a real bondsman account (live roles + C2).
+- **CI**: new step runs `src/__tests__/security` with TEST_DATABASE_URL; `final_pass_fixes` added to
+  the PG step. openapi.json regenerated (482 paths / 568 ops).
+- **Docs**: README security notes, LAUNCH_CHECKLIST (live roles, repair script), RUNBOOK scheduled
+  jobs (reminder dispatcher, remind-all), API_REFERENCE (live roles, fail-closed).
+- Full per-finding table: `audit11.md` → "Remediation status" (copied to docs/fix-notes/audit11.md).
+
+## Live attack replay (production mode, fresh DB, no Stripe) — 19/19 blocked
+C1 assign 403 / read 403 / post 403 · C2 ordinary list 403, verified attorney sees no contact, accept
+503 payments_unavailable · C3 GET/PUT/team 404 · C4 entry/matter GET, PUT, DELETE 404, row intact ·
+H5 404/404 · M8 404/404 · H1 401 · H2 401/401 · H4 lawyers 200 / bail 200 · H6 403 · H7 anon 403/403,
+0 Anthropic calls · H8 cert-less config 400, unsigned assertion 401, no token · H9 5 internal URLs 400 ·
+M1 exact round trip · M5 201 · H11 `scheduled_for` 201 + 4 reminders for a free account · H12 87 rows ·
+C5 4×95 MB → 413/400/429, RSS +49 MB, no restart, temp dir empty · H3 demoted admin's old token
+200 → 403 after the 60 s cache. Live reminder dispatch: due court reminder delivered to the mock Expo
+endpoint within 6 s (status sent, channel push).
+
+## Gate
+1. Fresh DBs (`jg_s11live`, `jg_s11pg2`): all **15** migrations ON_ERROR_STOP applied **twice** — OK;
+   196 tables, 0 tables without RLS; lawyers 2,055 / bail_agents 1,265 with identical md5 checksums
+   across fresh and exercised DBs (never modified).
+2. Backend: `npm ci` OK; `npm audit --omit=dev --audit-level=high` 0; `npm run lint` 0/0; import smoke
+   OK; production boot (TZ=UTC, generated secrets, no Stripe, mock Anthropic) → **smoke-test 32/32**.
+3. Full backend jest (in-memory): **322 suites passed / 20 PG-gated skipped; 27,904 passed /
+   169 skipped / 0 failed** (+ `security/l1_no_personal_emails` added after that run: 2/2).
+   PG-gated (integration + security + arrest_visibility + alerts_takedown(_pg) + final_pass_fixes)
+   on fresh `jg_s11pg2`: **27 suites / 242 tests, 0 failed**.
+4. Frontend: tsc **0**; eslint --max-warnings 0 **0/0**; npm test logic **48 / 705** + render
+   **6 / 38** pass; nav-targets 250 refs / 0 problems; design-audit --ci 0; `expo export --platform
+   web` OK; headless web smoke **166 checks / 0 failed / 0 page errors / 0 console errors / 0 storms**;
+   web-journeys **8 / 0 failed**.
+5. ci.yml updated (security suite step; final_pass_fixes) and valid YAML.
+
+## Not done (and why)
+- No generic cross-user IDOR sweep over every `:id` route — each audited class has its own
+  attack + legit tests; a blind sweep over 568 ops needs per-route fixtures to be meaningful.
+- `/api/legaldata/*` (bail schedules) still requires sign-in; guests get the error state. Product call.
+- Other screens' web `<Picker>` may share the contrast issue fixed in the bail calculator.
+- web-journeys needs a live backend + Chromium, so it is a documented script, not a CI step (like web-smoke).
+- Did NOT commit. Scratch DBs dropped and scratch servers stopped.

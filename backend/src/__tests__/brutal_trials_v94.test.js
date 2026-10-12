@@ -45,7 +45,7 @@ describe('QA. Code Quality Audit — All Clear', () => {
     expect(src).toContain('safeTable');
     // Template literal queries: `SELECT * FROM ${safeTable(table)}`
     // safeTable() whitelists: only allows pre-approved table names
-    expect(src).toContain('safeAdminCols');
+    expect(src).toContain('safeAdminColList');
     // safeAdminCols similarly whitlists column names for dynamic SELECT
   });
   test('QA-03: attorney/profile.js UPDATE uses joins not raw SQL', async () => {
@@ -88,7 +88,7 @@ describe('DBQ. DB Query Safety — safeTable + parameterized queries', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/admin.js','utf8');
     expect(src).toContain('safeTable');
-    expect(src).toContain('safeAdminCols');
+    expect(src).toContain('safeAdminColList');
     // safeTable prevents: `SELECT * FROM ${userInput}` SQL injection
   });
   test('DBQ-02: safeTable is exported from routeHelpers — centralized whitelist', async () => {

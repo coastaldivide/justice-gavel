@@ -95,7 +95,8 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, pe
     if (!trimmedMsg) return err400(res, 'message is required.');
     if (typeof sessionId !== 'string' || !sessionId.trim()) return err400(res, 'sessionId is required.');
 
-    const history = await getHistory(db, sessionId, 20);
+    // Only this user's own turns — a sessionId never pulls another account's history.
+    const history = await getHistory(db, sessionId, 20, req.user.id);
 
     // Build case context note — delegates to shared buildCaseNote() in _helpers.js
     const caseNote = buildCaseNote(caseContext, mode);

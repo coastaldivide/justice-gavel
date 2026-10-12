@@ -168,7 +168,7 @@ function BailSearchScreen(): React.JSX.Element {
           // body referenced `e`, which is not in scope -- a ReferenceError thrown
           // from inside an error handler, i.e. exactly when something has already
           // gone wrong. TS2304 flagged it; nothing at runtime would until it fired.
-          console.warn('[BailSearch]', (apiErr as any)?.message ?? apiErr);
+          __DEV__ && console.warn('[BailSearch]', (apiErr as any)?.message ?? apiErr);
           attempt++;
           if (attempt >= 3) throw apiErr;
           setStatus(`Connection issue -- retrying (${attempt}/3)…`);

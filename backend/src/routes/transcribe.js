@@ -19,14 +19,29 @@ const uploadAudio = uploadGuard({
   },
 });
 
-router.post('/audio', authRequired, transcribeLimiter, uploadAudio, async (req, res) => {
+// Refuse BEFORE the upload is read: a request that can never be served (no
+// Whisper key, or a plan without transcription) must not stream 25 MB first (C5).
+const PAID_TIERS = new Set(['advisor','legal_pro','esquire','24_hour_advisor','attorney','pro','starter']);
+function requirePaidTranscription(req, res, next) {
+  if (!PAID_TIERS.has(req.user?.tier || 'free')) {
+    res.setHeader('Connection', 'close');
+    return res.status(403).json({ error: 'Transcription requires Advisor plan or higher.', code: 'upgrade_required', upgrade_url: '/subscription' });
+  }
+  next();
+}
+function requireWhisper(req, res, next) {
+  if (!process.env.OPENAI_API_KEY) {
+    res.setHeader('Connection', 'close');
+    return res.status(503).json({ error: 'transcription_unavailable', message: 'Voice transcription is not available right now. You can type your note instead.' });
+  }
+  next();
+}
+
+router.post('/audio', authRequired, transcribeLimiter, requirePaidTranscription, requireWhisper, uploadAudio, async (req, res) => {
   // Input validation guard
   if (req.body && JSON.stringify(req.body).length > 50000) {
     return res.status(413).json({ error: 'Request body too large' });
   }
-  // Require Advisor tier+ for AI transcription
-  const PAID_TIERS = new Set(['advisor','legal_pro','esquire','24_hour_advisor','attorney','pro','starter']);
-  if (!PAID_TIERS.has(req.user?.tier || 'free')) return res.status(403).json({ error: 'Transcription requires Advisor plan or higher.', code: 'upgrade_required', upgrade_url: '/subscription' });
   try {
     const OPENAI_KEY = process.env.OPENAI_API_KEY;
     if (!OPENAI_KEY) return res.status(503).json({ error: 'Transcription not configured' });
@@ -132,7 +147,7 @@ router.post('/text', authRequired, async (req, res) => {
 });
 
 // POST /api/transcribe/note (multipart "audio") → { note }
-router.post('/note', authRequired, transcribeLimiter, uploadAudio, async (req, res) => {
+router.post('/note', authRequired, transcribeLimiter, requireWhisper, uploadAudio, async (req, res) => {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) {
     return res.status(503).json({ error: 'transcription_unavailable', message: 'Voice transcription is not available right now. You can type your note instead.' });

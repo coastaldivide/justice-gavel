@@ -83,7 +83,10 @@ const describePg = PG_URL ? describe : describe.skip;
 
 describePg('sample arrests on Postgres (real routes)', () => {
   const TAG = `ZZVisTest${Date.now()}`;
-  const tok = (id = 990001, role = 'user') => jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  // Tokens must belong to a REAL account: authorization reads the live users row
+  // (audit11 H3), and the bondsman lead list requires a bondsman profile (C2).
+  let viewerId = null;
+  const tok = (id = viewerId, role = 'user') => jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '1h' });
   let db; let app; const ids = {};
   let outbound; let alerts;
 
@@ -95,6 +98,11 @@ describePg('sample arrests on Postgres (real routes)', () => {
     delete process.env.STRIPE_SECRET; delete process.env.STRIPE_SECRET_KEY;
     ({ getDb: db } = await import('../db/index.js'));
     db = await db();
+    const viewer = await db.get(
+      `INSERT INTO users (email, display_name, role) VALUES (?, 'Visibility bondsman', 'user') RETURNING id`,
+      [`${TAG.toLowerCase()}@vis.example.test`]);
+    viewerId = Number(viewer.id);
+    await db.run(`INSERT INTO bondsman_profiles (user_id, company_name) VALUES (?, 'Vis Bonds')`, [viewerId]);
 
     const ins = async (name, source, extra = {}) => {
       const r = await db.get(
@@ -127,6 +135,11 @@ describePg('sample arrests on Postgres (real routes)', () => {
     await db.run(`DELETE FROM payment_links WHERE arrest_id = ANY(?::bigint[])`, [all]).catch(() => {});
     await db.run(`DELETE FROM outbound_messages WHERE arrest_id = ANY(?::bigint[])`, [all]).catch(() => {});
     await db.run(`DELETE FROM arrest_records WHERE name LIKE ?`, [`${TAG}%`]);
+    if (viewerId) {
+      await db.run('DELETE FROM lead_purchases WHERE bondsman_id = ?', [viewerId]).catch(() => {});
+      await db.run('DELETE FROM bondsman_profiles WHERE user_id = ?', [viewerId]).catch(() => {});
+      await db.run('DELETE FROM users WHERE id = ?', [viewerId]).catch(() => {});
+    }
     const { closeDb } = await import('../db/index.js');
     await closeDb();
   });

@@ -79,12 +79,15 @@ describe('FALLBACK. setState Null Fallbacks Added', () => {
   test('FALLBACK-02: BailSearchScreen setItems(res.data || [])', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/BailSearchScreen.tsx','utf8');
-    expect(src).toContain('setItems(res.data || [])');
+    // audit11 H12: list bodies are unwrapped with unwrapList (bare array / {data} / named key)
+    expect(src).toMatch(/unwrapList\(res\.data/);
+    expect(src).not.toMatch(/setItems\(res\.data\)/);
   });
   test('FALLBACK-03: CrisisResources setDbLines(r.data || [])', async () => {
     const fs=await import('fs');
     const src=fs.readFileSync(__REPO + '/frontend/src/screens/CrisisResourcesScreen.tsx','utf8');
-    expect(src).toContain('setDbLines(r.data || [])');
+    expect(src).toMatch(/unwrapList\(r\.data/);
+    expect(src).not.toMatch(/setDbLines\(r\.data\)/);
   });
 });
 

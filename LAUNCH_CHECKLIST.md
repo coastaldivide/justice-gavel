@@ -9,9 +9,12 @@
 - [x] Ghost-session protection (user existence check on every auth)
 - [x] Takedown review / dispositions / research indexing re-check the role
       **in the database**; `/api/admin/*` needs an admin token **and** `X-Admin-Key`
-- [ ] Other role checks read the token's role claim (up to 30 days old): after
-      demoting a staff account, also delete its `refresh_tokens` rows and
-      rotate `ADMIN_KEY`, or move those checks to `utils/staff.js`
+- [x] Every role check uses the live `users` row (middleware/auth.js, ≤ 60 s
+      cache): a demoted / banned / deleted account loses access within a minute
+      (audit11 H3). Still delete its `refresh_tokens` rows when offboarding staff.
+- [ ] One-off after deploying step 11: `node scripts/repair-legacy-entities.mjs`
+      (dry run) then `--apply` with the production `DATABASE_URL` + `ENCRYPTION_KEY`
+      to restore messages/feedback stored HTML-encoded by the old sanitiser (M1)
 - [x] Login rate-limited (10/15 min), registration (5/hr), password reset (5/hr)
 
 ## Transport Security ✅

@@ -149,6 +149,10 @@ function OnboardingScreen({ navigation }: ScreenProps) {
 
   const flatRef  = useRef<FlatList<(typeof SLIDES)[0]>>(null);
   const scrollX  = useRef(new Animated.Value(0)).current;
+  // Slide width = the carousel's MEASURED width, not the window width. On desktop
+  // web the app is a centred column far narrower than the window, so window-wide
+  // slides left a blank centre page with neighbours bleeding out (audit11 M7).
+  const [slideW, setSlideW] = useState(width);
 
   // P2 FIX: Browse goes directly to app -- NOT to Login
   useEffect(() => {
@@ -223,8 +227,9 @@ function OnboardingScreen({ navigation }: ScreenProps) {
         gap:16, paddingHorizontal:20, marginBottom:8,
       }}>
         <View style={{ alignItems:'center' }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, fontWeight:'900', color:colors.textPrimary }}>★★★★★</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>4.9 App Store</Text>
+          {/* The app has no store rating yet — never show an invented one. */}
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, fontWeight:'900', color:colors.textPrimary }}>Private</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>Encrypted Case Notes</Text>
         </View>
         <View style={{ width:1, height:28, backgroundColor:colors.border }} />
         <View style={{ alignItems:'center' }}>
@@ -241,8 +246,19 @@ function OnboardingScreen({ navigation }: ScreenProps) {
       {/* Slides */}
       <Animated.FlatList
         ref={flatRef}
+        testID="onboarding-carousel"
         ListEmptyComponent={<View/>}
         data={SLIDES}
+        style={styles.carousel}
+        onLayout={e => {
+          const w = Math.round(e.nativeEvent.layout.width);
+          if (w > 0 && w !== slideW) {
+            setSlideW(w);
+            // keep the current slide in view after a resize
+            requestAnimationFrame(() => flatRef.current?.scrollToOffset({ offset: activeIndex * w, animated: false }));
+          }
+        }}
+        getItemLayout={(_, index) => ({ length: slideW, offset: slideW * index, index })}
         horizontal pagingEnabled
         showsHorizontalScrollIndicator={false}
         keyExtractor={s => s.key}
@@ -251,10 +267,10 @@ function OnboardingScreen({ navigation }: ScreenProps) {
           { useNativeDriver: false },
         )}
         onMomentumScrollEnd={e => {
-          setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / width));
+          setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / slideW));
         }}
         renderItem={({ item }) => (
-          <View style={styles.slide}>
+          <View style={[styles.slide, { width: slideW }]} testID="onboarding-slide">
             <View style={[styles.iconCircle, {
               backgroundColor: item.accent + '18',
               borderColor: item.accent + '44' }]}>
@@ -269,7 +285,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
       {/* Dots */}
       <View style={styles.dotsRow}>
         {activeSlides.map((_, i) => {
-          const inputRange = [(i-1)*width, i*width, (i+1)*width];
+          const inputRange = [(i-1)*slideW, i*slideW, (i+1)*slideW];
           const w = scrollX.interpolate({ inputRange, outputRange: [8, 24, 8], extrapolate: 'clamp' });
           const o = scrollX.interpolate({ inputRange, outputRange: [0.35, 1, 0.35], extrapolate: 'clamp' });
           return <Animated.View key={`item-${i}`} style={[styles.dot, { width: w, opacity: o }]} />;
@@ -332,8 +348,9 @@ const makeStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
     shadowColor: COLORS.steel, shadowOpacity: 0.2,
     shadowRadius: 10, elevation: 6 },
+  carousel: { alignSelf: 'stretch', width: '100%' },
   slide: {
-    width, alignItems: 'center',
+    alignItems: 'center',
     paddingHorizontal: 32, paddingTop: 16 },
   iconCircle: {
     width: 110, height: 110, borderRadius: 45,

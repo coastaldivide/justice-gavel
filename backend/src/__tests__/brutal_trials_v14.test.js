@@ -444,24 +444,25 @@ describe('8. BailCalculatorScreen — Bail Schedule Lookup', () => {
 describe('9. ConsumerSubscriptionScreen — Individual Tiers', () => {
 
 
-  test('9-02: has Pro tier at $14.99/mo', async () => {
+  // audit11 M3: plan names and prices are never hard-coded in the app — they
+  // come from GET /api/billing/tiers (the table the backend charges from).
+  test('9-02: consumer plans are loaded from /billing/tiers?audience=consumer', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('Pro');
-    expect(src).toContain('$14.99');
+    expect(src).toContain("'/billing/tiers'");
+    expect(src).toContain("audience: 'consumer'");
   });
 
-  test('9-03: has Intel tier at $19.99/mo', async () => {
+  test('9-03: no hard-coded dollar prices in the consumer plans screen', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('Intel');
-    expect(src).toContain('$19.99');
+    expect(src).not.toMatch(/\$\d+\.\d\d/);
   });
 
-  test('9-04: 7-day free trial on all tiers', async () => {
+  test('9-04: free-trial length comes from the backend (trial_days)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ConsumerSubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('7-day');
+    expect(src).toContain('trial_days');
   });
 
   test('9-05: has /billing/cancel endpoint', async () => {
@@ -493,24 +494,28 @@ describe('10. SubscriptionScreen — Attorney/Bondsman Tiers', () => {
 
 
 
-  test('10-03: tiers array has cents values (Stripe-compatible)', async () => {
+  // audit11 M3: the old screen showed $78.99/$198.99/$348.99/$48.99 while the
+  // backend charges $49/$149/$349/$49, and promised "Top placement in all searches".
+  test('10-03: provider prices come from the backend pricing endpoints, none hard-coded', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('cents: 7900');    // $78.99 → 7900 cents
-    expect(src).toContain('cents: 19900');   // $198.99 → 19900 cents
+    expect(src).toContain("'/billing/tiers'");
+    expect(src).toContain("'/billing/bondsman/tiers'");
+    expect(src).not.toMatch(/\$\d+\.\d\d/);
   });
 
-  test('10-04: 30-day free trial CTA', async () => {
+  test('10-04: trial CTA only when the backend plan has trial days', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('30-day');
+    expect(src).toContain('trialDays');
+    expect(src).toContain('-Day Free Trial');
   });
 
-  test('10-05: Alert tier is highlighted (most popular)', async () => {
+  test('10-05: no placement / ranking promises for paid plans', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('highlight: true');
-    expect(src).toContain('badge');
+    expect(src).not.toMatch(/top placement|top of search|#1 in search|priority placement/i);
+    expect(src).toContain('does not change where you appear');
   });
 
   test('10-06: SubscriptionScreen uses haptic feedback', async () => {

@@ -233,6 +233,9 @@ const FILTER_CONSOLE = /Failed to load resource|net::ERR_|ERR_CONNECTION_REFUSED
       return json(503, { error: 'payments_unavailable', message: 'Payments are not configured.' });
     if (u.includes('/chat'))
       return json(503, { error: 'ai_unavailable', message: 'AI is not configured.' });
+    // Plan catalogues are public data: let the REAL backend answer, so the plan
+    // screens render the prices the backend actually charges (audit11 M3).
+    if (m === 'GET' && /\/billing\/(bondsman\/)?tiers(\?|$)/.test(u)) return route.continue();
     if (u.includes('/billing/') && m === 'GET') return json(200, { subscription: null, tier: 'free' });
     return json(200, {});
   });
@@ -266,7 +269,7 @@ const FILTER_CONSOLE = /Failed to load resource|net::ERR_|ERR_CONNECTION_REFUSED
   await check('home after login (authed)', { screenshot: '19-home-authed' });
 
   for (const [p, re, n] of [['/plans', /Start Free Trial|Upgrade|Subscribe|Get /i, '20-plans-payments-unavailable'],
-                            ['/subscribe', /Add Intel Reports|Start Free Trial/i, '21-subscribe-payments-unavailable']]) {
+                            ['/subscribe', /Add Intel Reports|Start (\d+-Day )?Free Trial/i, '21-subscribe-payments-unavailable']]) {
     await page.goto(base + p, { waitUntil: 'networkidle' });
     await page.waitForTimeout(2000);
     await step(`${p}: tap purchase (backend 503 payments_unavailable)`, async () => {

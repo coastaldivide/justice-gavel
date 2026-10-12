@@ -106,11 +106,11 @@ describe('2. billing/connections.js + billing/subscriptions.js', () => {
     expect(src).toContain('cancel');
     expect(src).toContain('refund');
   });
-  test('2-05: subscriptions.js has 4 route handlers', async () => {
+  test('2-05: subscriptions.js has 5 route handlers (incl. public GET /tiers — audit11 M3)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/billing/subscriptions.js', 'utf8');
     const h = src.match(/router\.(get|post|put|delete)\s*\(/g) || [];
-    expect(h.length).toBe(4);
+    expect(h.length).toBe(5);
   });
   test('2-06: both use billingLimiter rate protection', async () => {
     const fs = await import('fs');

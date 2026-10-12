@@ -123,7 +123,9 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    api.get('/resources?category=CRISIS_LINE&limit=20').then(r => { if (r.data) setDbLines(r.data); }).catch(() => {});
+    api.get('/resources?category=CRISIS_LINE&limit=20')
+      .then(r => { const lines = unwrapList(r.data, 'resources'); if (lines.length) setDbLines(lines); })
+      .catch(() => {});
     setTimeout(() => { if (mountedRef.current) setRefreshing(false); }, 600);
   }, []);
 

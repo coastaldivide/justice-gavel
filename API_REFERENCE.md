@@ -41,6 +41,10 @@ shows these as `bearer` + `x-staff-only`).
 - Get a token: `POST /api/auth/register` or `POST /api/auth/login` → `{ token, refreshToken, user }`.
 - Access tokens live `JWT_EXPIRES_IN` (default **30 days**; the mobile app
   refreshes tokens older than 25 days, so keep it ≥ 30d).
+  The token only identifies the account: role, status and flags are read from
+  the database on every request (≤ 60 s cache), so they never outlive a
+  demotion or ban. A deleted/disabled account gets 401; if the database cannot
+  be reached the API answers 503 `auth_unavailable` (fail closed).
 - Refresh: `POST /api/auth/refresh` with `{ refreshToken }` → a new
   `{ token, refreshToken, user }`. Refresh tokens are single-use, stored
   hashed server-side and rotated on every use; replaying a used one revokes

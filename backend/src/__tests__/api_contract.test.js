@@ -76,8 +76,10 @@ describe('API contract — response consistency', () => {
     const bad = [];
     for (const fp of routeFiles) {
       const c = readFileSync(fp, 'utf-8');
-      // Look for .status(200).json({ error: ... }) — wrong pattern
-      if (/\.status\s*\(\s*200\s*\).*?error:/s.test(c)) {
+      // Look for .status(200).json({ error: ... }) — wrong pattern. Matched within
+      // ONE statement: a 200 response followed (anywhere later in the file) by an
+      // unrelated `error:` is not this bug.
+      if (/\.status\s*\(\s*200\s*\)\s*\.json\s*\(\s*\{[^;]*?\berror\s*:/.test(c)) {
         bad.push(fp.split('/routes/')[1]);
       }
     }

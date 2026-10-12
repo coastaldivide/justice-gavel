@@ -30,7 +30,7 @@
 import { Router }          from 'express';
 import { asyncRoute, err400, err403, err404, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
 import { getDb }           from '../db/index.js';
-import { authRequired }    from '../middleware/auth.js';
+import { authRequired, invalidateUserCache } from '../middleware/auth.js';
 import { requireFirmRole } from '../middleware/rbac.js';
 import { writeAuditLog }   from '../middleware/audit.js';
 import { CONFIG }          from '../config.js';
@@ -66,9 +66,7 @@ const APP_REDIRECT = process.env.APP_SSO_REDIRECT || `${BASE_URL}/auth/sso-callb
 //     an account that belongs to someone outside the firm;
 //   • an IdP role claim maps only to non-admin firm tiers (never firm_admin/super_admin).
 import { SAML, ValidateInResponseTo } from '@node-saml/node-saml';
-import { X509Certificate } from 'crypto';
-import { createHmac, timingSafeEqual } from 'crypto';
-import { invalidateUserCache } from '../middleware/auth.js';
+import { X509Certificate, createHmac, timingSafeEqual } from 'crypto';
 
 const SSO_PROVISIONABLE_ROLES = new Set(['partner', 'associate', 'paralegal', 'viewer', 'client']);
 const RELAY_TTL_MS = 10 * 60 * 1000;

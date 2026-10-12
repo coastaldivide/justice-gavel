@@ -28,6 +28,7 @@ import { authRequired } from '../../middleware/auth.js';
 import { requireFirmRole, loadFirmContext } from '../../middleware/rbac.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 
+import { publicUrlError } from '../../utils/ssrfGuard.js';
 const router     = Router();
 const dmsLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'DMS sync limit reached.' });
 
@@ -51,7 +52,10 @@ async function imanageRequest(conn, method, path, body = null) {
   };
   if (body) opts.body = JSON.stringify(body);
 
-  const resp = await fetch(`${base}${path}`, opts);
+  // instance_url is firm-supplied: never let it reach internal addresses (SSRF, H9 class).
+  const urlErr = conn.instance_url ? await publicUrlError(`${base}${path}`) : null;
+  if (urlErr) throw new Error(`iManage URL rejected: ${urlErr}`);
+  const resp = await fetch(`${base}${path}`, { ...opts, redirect: 'manual' });
   if (!resp.ok) {
     const err = await resp.text().catch(() => resp.statusText);
     throw new Error(`iManage API ${resp.status}: ${err.slice(0, 200)}`);
@@ -75,7 +79,9 @@ async function netdocsRequest(conn, method, path, body = null) {
   };
   if (body) opts.body = JSON.stringify(body);
 
-  const resp = await fetch(`${base}${path}`, opts);
+  const urlErr = conn.instance_url ? await publicUrlError(`${base}${path}`) : null;
+  if (urlErr) throw new Error(`NetDocuments URL rejected: ${urlErr}`);
+  const resp = await fetch(`${base}${path}`, { ...opts, redirect: 'manual' });
   if (!resp.ok) {
     const err = await resp.text().catch(() => resp.statusText);
     throw new Error(`NetDocuments API ${resp.status}: ${err.slice(0, 200)}`);

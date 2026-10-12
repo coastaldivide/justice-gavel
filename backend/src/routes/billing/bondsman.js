@@ -209,27 +209,10 @@ router.post('/bondsman/verified-badge/subscribe', billingLimiter, authRequired, 
     if (existing) return res.status(409).json({ error: 'Already have an active Verified Badge subscription.' });
 
     const feeCents = BUSINESS_CONSTANTS.BONDSMAN_BADGE_CENTS; // $49/month
-    const renewsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    if (!LIVE) {
-      await db.run(
-        `INSERT INTO verified_badge_subscriptions
-           (user_id, status, stripe_sub_id, stripe_cus_id, amount_cents, renews_at)
-         VALUES (?,?,?,?,?,?)`,
-        [req.user.id, 'active', 'sub_mock_badge', 'cus_mock_badge', feeCents, renewsAt]
-      );
-      // Mark bondsman profile as verified
-      await db.run(
-        `UPDATE bondsman_profiles SET verified_badge=1, badge_expires_at=? WHERE user_id=?`,
-        [renewsAt, req.user.id]
-      );
-      return res.json({
-        success: true, mock: true,
-        message: '✓ Verified Badge activated! Your listings now show the "Verified by Justice Gavel" badge.',
-        renews_at: renewsAt,
-        fee: '$49/month',
-      });
-    }
+    // No Stripe → no badge. There is no mock/demo activation path (the billing
+    // router gate also answers 503 before this handler runs).
+    if (!LIVE) return res.status(503).json({ ...PAYMENTS_UNAVAILABLE });
 
     // Live Stripe
     const customerId = await getOrCreateStripeCustomer(req.user);
@@ -403,33 +386,12 @@ router.post('/bondsman/subscribe', billingLimiter, authRequired, async (req, res
       });
     }
 
-    const renewsAt = isAnnual
-      ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-      : new Date(Date.now() +  30 * 24 * 60 * 60 * 1000).toISOString();
-
+    // Never activate a tier without a real Stripe subscription: no key → 503
+    // payments_unavailable; a key but no price id for this tier is a
+    // configuration gap, reported the same way (it used to activate for free).
     if (!LIVE || !priceId) {
-      // Demo mode — no real Stripe charge
-      await db.run(
-        `INSERT INTO bondsman_subscriptions
-           (user_id, tier, status, stripe_sub_id, stripe_cus_id, amount_cents, billing_period, renews_at)
-         VALUES (?,?,?,?,?,?,?,?)`,
-        [req.user.id, tier, 'active', `sub_mock_${tier}`, `cus_mock`, amtCents, billing, renewsAt]
-      );
-      await db.run(
-        `UPDATE bondsman_profiles SET verified_badge=1, badge_expires_at=?, tier=? WHERE user_id=?`,
-        [renewsAt, tier, req.user.id]
-      );
-      return res.json({
-        success: true, mock: !LIVE || !priceId,
-        message: `✅ ${tierDef.name} activated (${isAnnual ? 'annual' : 'monthly'}).`,
-        tier,
-        counties:   tierDef.counties,
-        display:    tierDef.display,
-        renews_at:  renewsAt,
-        note:       !priceId
-          ? `Set STRIPE_BONDSMAN_${tier.toUpperCase()}_ID in Railway to enable real payments.`
-          : undefined,
-      });
+      if (LIVE) logger.error({ tier, billing }, `[billing] bondsman tier has no Stripe price id (STRIPE_BONDSMAN_${tier.toUpperCase()}_ID)`);
+      return res.status(503).json({ ...PAYMENTS_UNAVAILABLE });
     }
 
     // Live Stripe subscription

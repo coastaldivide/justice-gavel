@@ -23,9 +23,10 @@ describe('UPLOAD. File Upload Security', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/routes/discovery/analyze.js','utf8');
     // Before fix: multer() with no options — unlimited file size, any type
     // A malicious user could upload a 100MB+ file crashing the Node.js process
-    // After fix: 20MB limit + PDF/text/image type whitelist
-    expect(src).toContain('fileSize');
-    expect(src).toContain('20 * 1024 * 1024');
+    // After fix: 20MB limit + PDF/text/image type whitelist; audit11 C5: now
+    // through middleware/uploads.js uploadGuard (10 MB cap, admission budget).
+    expect(src).toContain('uploadGuard');
+    expect(src).toContain('maxBytes: 10 * MB');
     expect(src).toMatch(/fileFilter|ALLOWED/);
     // Type whitelist includes expected document types
     expect(src).toContain('application/pdf');
@@ -170,7 +171,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
     expect(fs.readFileSync(__REPO + '/backend/src/routes/admin.js','utf8')).toContain('scan_id');
     expect(fs.readFileSync(__REPO + '/backend/src/routes/analytics.js','utf8')).toContain('matter_taxonomy');
     // analyze.js is the only discovery route that accepts uploads (history.js had an unused multer)
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/discovery/analyze.js','utf8')).toContain('fileSize');
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/discovery/analyze.js','utf8')).toContain('uploadGuard({');
     for(const f of ['bondsman.js','connections.js','pi_leads.js']){
       const src=fs.readFileSync(__REPO + '/backend/src/routes/billing/'+f,'utf8');
       if(src.includes('paymentIntents.create')) expect(src).toContain('metadata');

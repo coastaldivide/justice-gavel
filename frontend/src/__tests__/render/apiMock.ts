@@ -93,6 +93,12 @@ function build(): ApiMock {
     isPaymentsUnavailable: (e: any) => e?.response?.data?.error === 'payments_unavailable' || e?.code === 'payments_unavailable',
     isAiUnavailable:       (e: any) => e?.response?.data?.error === 'ai_unavailable' || e?.code === 'ai_unavailable',
     apiErrorMessage,
+    // Pure helpers are the REAL implementations (loaded lazily so the mock
+    // factory stays hoist-safe): screens must be tested with the same response
+    // unwrapping the app ships (audit11 H12).
+    unwrapList: (...a: unknown[]) => (jest.requireActual('../../services/api') as any).unwrapList(...a),
+    isDisclaimerRequired: (e: unknown) => (jest.requireActual('../../services/api') as any).isDisclaimerRequired(e),
+    deviceTimeZone: () => 'America/Chicago',
   };
 
   const reset = () => {

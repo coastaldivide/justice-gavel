@@ -54,6 +54,8 @@ function getAppMounts() {
   );
 }
 
+const APP_ROOT = (() => { try { return readFileSync(path.join(__REPO, 'frontend/App.tsx'), 'utf8'); } catch { return ''; } })();
+
 describe('SCAN 1 — Dead Navigation', () => {
   test('all navigate() targets are registered in AppNavigator', () => {
     const registered = new Set(NAV.match(/name=["'](\w+)["']/g)?.map(m => m.replace(/name=["']|["']/g, '')) || []);
@@ -146,7 +148,7 @@ describe('SCAN 6 — Unregistered Screens', () => {
         // Check if it's used in another screen (modal overlay pattern)
         const usedElsewhere = getScreens().some(other =>
           other !== f && readScreen(other).includes(name)
-        );
+        ) || APP_ROOT.includes(`<${name}`);   // root-level modals (e.g. the Terms gate in App.tsx)
         if (!usedElsewhere) orphans.push(f);
       }
     }

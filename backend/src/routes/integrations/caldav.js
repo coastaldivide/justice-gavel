@@ -28,6 +28,7 @@ import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 import logger         from '../../utils/logger.js';
 import { refreshTokenIfNeeded } from './index.js';
 
+import { publicUrlError } from '../../utils/ssrfGuard.js';
 const router     = Router();
 const calLimiter = makeUserLimiter({ windowMs: 60_000, max: 60, message: 'Calendar sync limit.' });
 
@@ -173,7 +174,11 @@ async function caldavPut(conn, uid, ical) {
     authHeader = `Basic ${conn.access_token}`;
   }
 
+  // calendar_url / instance_url are firm-supplied (SSRF, H9 class).
+  const urlErr = await publicUrlError(resourceUrl);
+  if (urlErr) throw new Error(`Calendar URL rejected: ${urlErr}`);
   const resp = await fetch(resourceUrl, {
+    redirect: 'manual',
     method: 'PUT',
     headers: {
       'Authorization': authHeader,
@@ -203,7 +208,11 @@ async function caldavDelete(conn, href) {
     authHeader = `Basic ${conn.access_token}`;
   }
 
+  // href may come from a server's Location header — check it like any user URL.
+  const urlErr = await publicUrlError(href);
+  if (urlErr) throw new Error(`Calendar URL rejected: ${urlErr}`);
   const resp = await fetch(href, {
+    redirect: 'manual',
     method: 'DELETE',
     headers: { 'Authorization': authHeader },
   });

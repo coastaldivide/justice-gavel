@@ -386,7 +386,7 @@ router.post('/refresh', validate(schemas.auth.refresh), async (req, res) => {
         return res.status(401).json({ error: 'Refresh token already used or expired', code: 'token_reuse' });
       }
       const user = await db.get('SELECT * FROM users WHERE id = ?', [decoded.id]);
-      if (!user || user.account_status === 'banned') {
+      if (!user || ['banned', 'suspended', 'deleted', 'disabled', 'locked_out'].includes(String(user.account_status || '').toLowerCase())) {
         return res.status(401).json({ error: 'Account not found', code: 'user_not_found' });
       }
       return res.json(await issueTokenPair(user, db));
@@ -403,7 +403,9 @@ router.post('/refresh', validate(schemas.auth.refresh), async (req, res) => {
       return res.status(401).json({ error: 'Session expired. Please log in again.', code: 'token_expired' });
     }
     const user = await db.get('SELECT * FROM users WHERE id = ?', [claims.id]);
-    if (!user || user.account_status === 'banned') {
+    // Same disabled-account rule as middleware/auth.js — a suspended or deleted
+    // account must not be able to mint fresh tokens either.
+    if (!user || ['banned', 'suspended', 'deleted', 'disabled', 'locked_out'].includes(String(user.account_status || '').toLowerCase())) {
       return res.status(401).json({ error: 'Account not found', code: 'user_not_found' });
     }
     res.json(await issueTokenPair(user, db));

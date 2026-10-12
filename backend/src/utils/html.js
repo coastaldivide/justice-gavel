@@ -27,6 +27,7 @@ export function safeUrl(value, fallback = 'https://justicegavel.app') {
 
 /** Header-safe single line (subjects): strips CR/LF and control characters. */
 export function headerSafe(value, max = 200) {
+  // eslint-disable-next-line no-control-regex -- stripping control characters is the point
   return String(value ?? '').replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, max);
 }
 

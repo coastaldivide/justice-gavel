@@ -176,7 +176,9 @@ describe('S6d. SubscriptionScreen — Attorney & Bail Agent Tiers', () => {
   test('S6d-01: attorney+bail agent subscription tiers, providerType state', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('Attorney & bail agent subscription tiers');
+    // audit11 M3: prices come from the backend pricing endpoints
+    expect(src).toContain("'/billing/tiers'");
+    expect(src).toContain("'/billing/bondsman/tiers'");
     expect(src).toContain('providerType');
     expect(src).toContain('subscribing');
     expect(src).toContain('/billing/subscription');

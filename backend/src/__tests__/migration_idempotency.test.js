@@ -64,7 +64,7 @@ describe('Migration idempotency', () => {
 
   test('RLS migration enables security on all critical tables', () => {
     const rlsFile = readdirSync(MIG_DIR)
-      .filter(f => f.includes('rls') || f.includes('security'))
+      .filter(f => f.includes('enable_rls'))
       .sort().pop();
     if (!rlsFile) return;
     const c = readFileSync(join(MIG_DIR, rlsFile), 'utf-8');

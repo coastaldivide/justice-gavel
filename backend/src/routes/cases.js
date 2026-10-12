@@ -92,7 +92,10 @@ router.get('/', authRequired, async (req, res) => {
     const offset = (page - 1) * limit;
     const status = req.query.status ? sanitizeStr(req.query.status, 30) : null;
 
-    let sql    = `SELECT ${CASE_SAFE_COLS} FROM cases WHERE user_id=? AND deleted_at IS NULL`;
+    // notes are the owner's own (encrypted at rest) — returned decrypted so the
+    // case editor starts from the saved text. Without them, editing any field
+    // re-sent notes:'' and silently erased the user's notes.
+    let sql    = `SELECT ${CASE_SAFE_COLS}, notes FROM cases WHERE user_id=? AND deleted_at IS NULL`;
     const args = [req.user.id];
     if (status) { sql += ' AND status=?'; args.push(status); }
     sql += ' ORDER BY id DESC LIMIT ? OFFSET ?';
@@ -109,6 +112,7 @@ router.get('/', authRequired, async (req, res) => {
     ]);
 
     const total = countRow?.total ?? 0;
+    for (const row of rows) row.notes = row.notes ? decrypt(row.notes) : '';
     res.setHeader('X-Total-Count', String(total));
     if (!paginated) return res.json(rows);
     res.json({
@@ -171,6 +175,7 @@ router.post('/', authRequired, validate(schemas.cases.create), casesLimiter, asy
       `SELECT ${CASE_SAFE_COLS} FROM cases WHERE id=?`,
       [r.lastID]
     );
+    if (rawRow) rawRow.notes = safeNotes || '';
 
     // Fallback: construct a minimal response if db.get returns undefined (sql.js timing)
     if (!rawRow && r.lastID) {

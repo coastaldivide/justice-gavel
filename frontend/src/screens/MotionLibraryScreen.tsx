@@ -1,4 +1,5 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
+import { escapeHtml } from '../utils/html';
 import { unwrapList, apiErrorMessage } from '../services/api';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
@@ -646,9 +647,9 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
         .map((line: string) => {
           if (!line.trim()) return '<p style="margin:0;height:10px"></p>';
           if (line === line.toUpperCase() && line.trim().length > 3) {
-            return `<p style="text-align:center;font-weight:bold;margin:16px 0 8px">${line.trim()}</p>`;
+            return `<p style="text-align:center;font-weight:bold;margin:16px 0 8px">${escapeHtml(line.trim())}</p>`;
           }
-          return `<p style="margin:0 0 8px">${line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`;
+          return `<p style="margin:0 0 8px">${escapeHtml(line)}</p>`;
         })
         .join('');
 
@@ -667,8 +668,8 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
     border-top: 0.5px solid #ccc; padding-top: 6px; }
 </style></head>
 <body>
-  <div class="hdr"><span>${caseTitle || 'Case'}</span><span>${today}</span></div>
-  <h1>${motionLabel}</h1>
+  <div class="hdr"><span>${escapeHtml(caseTitle || 'Case')}</span><span>${escapeHtml(today)}</span></div>
+  <h1>${escapeHtml(motionLabel)}</h1>
   <div class="disc">AI-Generated Draft -- Not Legal Advice. Attorney review required before filing.
     Verify all citations and local court rules.</div>
   ${bodyHtml}

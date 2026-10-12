@@ -27,19 +27,18 @@ async function getProvidersDb() {
 
 // ── GET /api/advocacy/stats ───────────────────────────────────────────────────
 router.get('/', (req, res, next) => next());
+// GET / — topic overview only. It used to return invented counters
+// ("1247 laws tracked", "8 active campaigns") that looked like live data (audit11
+// L4). Real numbers come from GET /api/advocacy/stats (computed from the DB).
 router.get('/', (req, res) => res.json({
-              stats: {
-                laws_tracked: 1247,
-                states_covered: 50,
-                recent_changes: 23,
-                active_campaigns: 8
-              },
-              featured: [
-                { title: 'Ban the Box Laws', states: 37, status: 'expanding' },
-                { title: 'Second Chance Hiring', states: 24, status: 'active' },
-                { title: 'Expungement Reform', states: 42, status: 'expanding' },
-              ]
-            }));
+  static: true,
+  stats_url: '/api/advocacy/stats',
+  featured: [
+    { title: 'Ban the Box Laws',     topic: 'employment' },
+    { title: 'Second Chance Hiring', topic: 'employment' },
+    { title: 'Expungement Reform',   topic: 'records' },
+  ],
+}));
 router.get('/stats', authRequired, statsLimiter, async (req, res) => {
   try {
     const db  = await getDb();

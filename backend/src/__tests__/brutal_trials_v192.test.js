@@ -195,7 +195,7 @@ describe('GATE. Zero-Defect Production Gates', () => {
     expect(fs.readFileSync(__REPO + '/backend/src/routes/admin.js','utf8')).toContain('scan_id');
     expect(fs.readFileSync(__REPO + '/backend/src/routes/analytics.js','utf8')).toContain('matter_taxonomy');
     // analyze.js is the only discovery route that accepts uploads (history.js had an unused multer)
-    expect(fs.readFileSync(__REPO + '/backend/src/routes/discovery/analyze.js','utf8')).toContain('fileSize');
+    expect(fs.readFileSync(__REPO + '/backend/src/routes/discovery/analyze.js','utf8')).toContain('uploadGuard({');
     for(const f of ['bondsman.js','connections.js','pi_leads.js']){
       const src=fs.readFileSync(__REPO + '/backend/src/routes/billing/'+f,'utf8');
       if(src.includes('paymentIntents.create')) expect(src).toContain('metadata');

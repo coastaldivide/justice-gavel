@@ -158,11 +158,20 @@ and `backend/scripts/railway-checklist.md`. Mobile builds ship through EAS
 
 ## Security notes
 
-- JWT auth on every protected endpoint (user existence re-checked, cached
-  60 s). Most role checks read the role claim in the access token (valid up
-  to `JWT_EXPIRES_IN`, 30 days); actions that edit shared records (arrest
-  takedown review/dispositions, research indexing) re-read the role from the
-  database. `/api/admin/*` additionally requires the `X-Admin-Key` header.
+- JWT auth on every protected endpoint. The token only identifies the user:
+  role, account status, admin/defender flags, bar verification and tier are
+  read from the `users` row (cached 60 s per process), so a demotion, ban or
+  deletion takes effect within a minute and fails closed if the DB is
+  unreachable. Firm roles always come from `firm_members` and every
+  matter / privilege-log / firm-finance route is scoped to the caller's own
+  firm. `/api/admin/*` additionally requires the `X-Admin-Key` header.
+- Attorneys reach a client's case only through a relationship the client
+  created (invite → accept, or a booked consultation); leads reveal contact
+  details only after a completed Stripe charge; uploads are size-capped,
+  streamed to disk where large, and admitted against a process-wide budget;
+  firm-supplied URLs (webhooks, integrations) cannot reach private addresses;
+  SAML uses @node-saml/node-saml and requires a signed assertion.
+  Regression tests: `backend/src/__tests__/security/` (CI, real Postgres).
 - AES-256-GCM on message bodies, attachments and case notes.
 - No TEST_MODE/DEMO_MODE payment bypasses; demo subscriptions are excluded
   from every payment gate.

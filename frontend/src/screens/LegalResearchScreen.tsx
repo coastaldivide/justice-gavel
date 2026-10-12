@@ -1,4 +1,5 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
+import { escapeHtml } from '../utils/html';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
 import { AppIcon } from '../components/AppIcon';
@@ -193,7 +194,7 @@ function ResearchBubble({ msg, onDiscussWithAI }: { msg: Message; onDiscussWithA
               const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
               const bodyHtml = msg.content.split('\n').map((line: string) => {
                 if (!line.trim()) return '<p style="height:8px"></p>';
-                const esc = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const esc = escapeHtml(line);
                 return '<p style="margin:0 0 10px">' + esc.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>') + '</p>';
               }).join('');
               const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Georgia,serif;font-size:12pt;line-height:1.8;padding:1in 1.25in;color:#000}.hdr{border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:20px;font-size:10pt;color:#555}.disc{background:#fff8e1;border:1px solid #f9a825;padding:8px;font-size:9pt;margin:16px 0}</style></head><body><div class="hdr">Justice Gavel Legal Research &middot; ' + today + '</div><div class="disc">AI research &mdash; verify all citations before relying on them in court. Knowledge cutoff August 2025.</div>' + bodyHtml + '</body></html>';

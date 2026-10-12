@@ -98,7 +98,12 @@ describe('FLOW. 57/57 Screens — Complete Function Flows', () => {
     const log = fs.readFileSync(__REPO + '/frontend/src/screens/LoginScreen.tsx','utf8');
     expect(age).toContain("navigate('Onboarding')");
     expect(reg).toContain('/auth/register');
-    expect(reg).toContain('TermsAcceptanceModal');
+    { const app=fs.readFileSync(__REPO + '/frontend/App.tsx','utf8');
+      // audit11 H10: the Terms + AI-disclaimer gate is shown by App.tsx for EVERY
+      // signed-in session (registration, login, stored token, any 451), not only
+      // from RegisterScreen.
+      expect(app).toContain('<TermsAcceptanceModal');
+      expect(app).toContain('onDisclaimerRequired'); }
     expect(reg).toContain('secureTextEntry');
     expect(reg).toContain("navigate('HomeTab')");
     expect(log).toContain('/auth/login');

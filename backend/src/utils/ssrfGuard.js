@@ -64,7 +64,7 @@ function allowList() {
 
 /** Expand an IPv6 string to 8 hextets (numbers). */
 function v6Hextets(ip) {
-  let [head, tail] = ip.split('::');
+  const [head, tail] = ip.split('::');
   const parse = (s) => (s ? s.split(':') : []);
   let h = parse(head), t = parse(tail);
   // embedded dotted IPv4 at the end
@@ -214,4 +214,20 @@ export function safePost(rawUrl, { headers = {}, body = '', timeoutMs = 10_000, 
     req.on('error', reject);
     req.end(body);
   });
+}
+
+/**
+ * Validate a user-supplied URL for an outbound call made with fetch() (where the
+ * socket lookup cannot be hooked): static checks + every address the host
+ * resolves to right now must be public. Returns an error string, or null when
+ * the URL is acceptable. Callers must also pass `redirect: 'manual'` to fetch.
+ * (Webhook delivery uses safePost(), which re-checks at connect time.)
+ */
+export async function publicUrlError(raw, { allowUnresolved = false } = {}) {
+  const v = validateOutboundUrl(raw);
+  if (!v.ok) return v.reason;
+  const pub = await assertResolvesPublic(v.url.hostname);
+  if (pub === false) return 'URL resolves to a private or reserved address.';
+  if (pub === null && !allowUnresolved) return 'URL host could not be resolved.';
+  return null;
 }

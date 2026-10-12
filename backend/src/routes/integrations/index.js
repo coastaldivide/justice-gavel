@@ -26,6 +26,7 @@ import logger              from '../../utils/logger.js';
 import { CONFIG }           from '../../config.js';
 import { randomBytes } from 'crypto';
 
+import { publicUrlError } from '../../utils/ssrfGuard.js';
 const router     = Router();
 const connLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 60, message: 'Integration limit reached.' });
 
@@ -369,6 +370,12 @@ router.post('/connect', authRequired, requireFirmRole('firm_admin'), connLimiter
     // API-key / direct-credential providers (CalDAV basic auth, etc.)
     if (!access_token && !(username && password)) {
       return err400(res, 'access_token or username+password required for direct connection.');
+    }
+    // Firm-supplied server URLs are fetched by this server: public https only (SSRF).
+    for (const [label, u] of [['instance_url', instance_url], ['calendar_url', calendar_url]]) {
+      if (u == null || u === '') continue;
+      const urlErr = await publicUrlError(String(u), { allowUnresolved: true });
+      if (urlErr) return err400(res, `${label}: ${urlErr}`);
     }
 
     // Build metadata

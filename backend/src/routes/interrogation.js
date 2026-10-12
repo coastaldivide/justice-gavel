@@ -381,7 +381,16 @@ function formatTime(seconds) {
 }
 
 // ── POST /api/interrogation/transcribe ────────────────────────────────────────
-router.post('/transcribe', authRequired, perUserAiLimit, uploadAudio, async (req, res) => {
+// No Whisper key → refuse before reading the (up to 25 MB) upload (C5).
+function requireWhisper(req, res, next) {
+  if (!process.env.OPENAI_API_KEY) {
+    res.setHeader('Connection', 'close');
+    return res.status(503).json({ error: 'transcription_unavailable', message: 'Recording transcription is not available right now.' });
+  }
+  next();
+}
+
+router.post('/transcribe', authRequired, perUserAiLimit, requireWhisper, uploadAudio, async (req, res) => {
   try {
     if (!req.file) return err400(res, 'Audio file required');
 

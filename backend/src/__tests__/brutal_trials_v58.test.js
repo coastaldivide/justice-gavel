@@ -290,7 +290,7 @@ describe('S6L. SubscriptionScreen — loadSubscription + handleSubscribe', () =>
   test('S6L-01: loadSubscription fetches both consumer and provider sub data', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx', 'utf8');
-    expect(src).toContain('loadSubscription');
+    expect(src).toContain('const load = useCallback');
     expect(src).toContain('billing');
     expect(src).toContain('subscription');
   });

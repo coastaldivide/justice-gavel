@@ -50,9 +50,12 @@ describe('NAV. All 76 Screens Reachable', () => {
   });
   test('NAV-07: TermsAcceptanceModal shown in RegisterScreen', async () => {
     const fs=await import('fs');
-    const reg=fs.readFileSync(__REPO + '/frontend/src/screens/RegisterScreen.tsx','utf8');
-    expect(reg).toContain('TermsAcceptanceModal');
-    expect(reg).toContain('showTerms');
+    const app=fs.readFileSync(__REPO + '/frontend/App.tsx','utf8');
+    // audit11 H10: the Terms + AI-disclaimer gate is shown by App.tsx for EVERY
+    // signed-in session (registration, login, stored token, any 451), not only
+    // from RegisterScreen.
+    expect(app).toContain('<TermsAcceptanceModal');
+    expect(app).toContain('onDisclaimerRequired');
   });
 });
 
@@ -178,7 +181,12 @@ describe('FLOW. Core User Journeys', () => {
     const log=fs.readFileSync(__REPO + '/frontend/src/screens/LoginScreen.tsx','utf8');
     expect(age).toContain("navigate('Onboarding')");
     expect(reg).toContain('/auth/register');
-    expect(reg).toContain('TermsAcceptanceModal');
+    { const app=fs.readFileSync(__REPO + '/frontend/App.tsx','utf8');
+      // audit11 H10: the Terms + AI-disclaimer gate is shown by App.tsx for EVERY
+      // signed-in session (registration, login, stored token, any 451), not only
+      // from RegisterScreen.
+      expect(app).toContain('<TermsAcceptanceModal');
+      expect(app).toContain('onDisclaimerRequired'); }
     expect(reg).toContain("navigate('HomeTab')");
     expect(log).toContain('/auth/login');
     expect(log).toContain("navigate('Register')");

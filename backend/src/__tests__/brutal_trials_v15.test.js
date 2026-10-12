@@ -467,8 +467,8 @@ describe('13. ExpungementScreen — Expungement Eligibility', () => {
   test('13-01: has 3 entry points (push notification, HomeScreen, CaseScreen)', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
-    // Entry points described in JSDoc comment at top of file
-    expect(src).toContain('push');
+    // Entry points described in JSDoc comment at top of file; eligibility reminder via services/reminders
+    expect(src).toContain('scheduleReminder');
     expect(src).toContain('petition');
   });
 
@@ -491,7 +491,9 @@ describe('13. ExpungementScreen — Expungement Eligibility', () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/ExpungementScreen.tsx', 'utf8');
     expect(!src.includes('RefreshControl') || src.includes('<RefreshControl')).toBe(true); // PTR only where it is rendered (no dead import)
-    expect(src).toContain("'/push/reminders'");
+    // reminders go through services/reminders.ts (POST /push/reminders with deliver_at — audit11 H11)
+    expect(src).toContain("../services/reminders");
+    expect(fs.readFileSync(__REPO + '/frontend/src/services/reminders.ts', 'utf8')).toContain("'/push/reminders'");
   });
 });
 

@@ -31,7 +31,7 @@ import express from 'express';
 import { getDb } from '../db/index.js';
 import { authRequired, optionalAuth } from '../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
-import { createHash, randomBytes as _tokBytes, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes as _tokBytes, randomBytes as _rb, timingSafeEqual } from 'crypto';
 import { enqueueAIJob as enqueue } from '../services/aiQueue.js';
 import logger from '../utils/logger.js';
 
@@ -50,7 +50,6 @@ const LANG_NAMES = {
 // ── Cryptographically secure 6-char session join code ────────────────────────
 // Math.random() is non-cryptographic — a determined observer could predict
 // upcoming session codes. randomBytes gives 2^48 of secure entropy.
-import { randomBytes as _rb } from 'crypto';
 const SESSION_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // unambiguous chars only
 function makeCode() {
   const bytes = _rb(6);

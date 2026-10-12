@@ -47,9 +47,12 @@ describe('NAV1. All navigate() calls are valid', () => {
   });
   test('N1-06: TermsAcceptanceModal wired into RegisterScreen', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/RegisterScreen.tsx','utf8');
-    expect(src).toContain('TermsAcceptanceModal');
-    expect(src).toContain('showTerms');
+    const app=fs.readFileSync(__REPO + '/frontend/App.tsx','utf8');
+    // audit11 H10: the Terms + AI-disclaimer gate is shown by App.tsx for EVERY
+    // signed-in session (registration, login, stored token, any 451), not only
+    // from RegisterScreen.
+    expect(app).toContain('<TermsAcceptanceModal');
+    expect(app).toContain('onDisclaimerRequired');
   });
 });
 

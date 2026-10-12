@@ -1,4 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
+import { escapeHtml } from '../utils/html';
 import { useToast } from '../components/ToastProvider';
 // T4-05: wrap heavy useEffect bodies with InteractionManager.runAfterInteractions
 import { AppIcon } from '../components/AppIcon';
@@ -273,7 +274,6 @@ function CaseScreen({ route, navigation }: any) {
       const date = new Date().toLocaleDateString('en-US', {
         year:'numeric', month:'long', day:'numeric'
       });
-      const escapeHtml = (s?: string | null) => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>
@@ -482,7 +482,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
     } finally {
       setSaving(false);
     }
-  }, [editCase, load]);
+  }, [editCase, load, showToast]);
 
   // ── Document scanner ──────────────────────────────────────────────────────
   const runDocumentScan = useCallback(async (uri: string) => {

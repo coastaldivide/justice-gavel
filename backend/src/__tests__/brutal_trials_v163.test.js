@@ -46,9 +46,12 @@ describe('NAV. Navigation — Zero Dead Ends', () => {
 
   test('NAV-05: TermsAcceptanceModal wired into RegisterScreen', async () => {
     const fs=await import('fs');
-    const src=fs.readFileSync(__REPO + '/frontend/src/screens/RegisterScreen.tsx','utf8');
-    expect(src).toContain('TermsAcceptanceModal');
-    expect(src).toContain('showTerms');
+    const app=fs.readFileSync(__REPO + '/frontend/App.tsx','utf8');
+    // audit11 H10: the Terms + AI-disclaimer gate is shown by App.tsx for EVERY
+    // signed-in session (registration, login, stored token, any 451), not only
+    // from RegisterScreen.
+    expect(app).toContain('<TermsAcceptanceModal');
+    expect(app).toContain('onDisclaimerRequired');
     // Modal was built (12,227 chars) but never shown — now shown during registration
   });
 

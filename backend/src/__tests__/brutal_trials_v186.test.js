@@ -49,10 +49,10 @@ describe('BODY. Async Handler Function Bodies', () => {
   test('BODY-03: SubscriptionScreen.loadSubscription catch is intentional (no sub = upgrade UI)', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/screens/SubscriptionScreen.tsx','utf8');
-    const fnIdx = src.indexOf('const loadSubscription');
-    const body  = src.slice(fnIdx, fnIdx+600);
-    // Empty catch is intentional: not subscribed = show upgrade CTAs (not an error)
-    expect(body).toContain("api.get('/billing/subscription')");
+    const fnIdx = src.indexOf('const load = useCallback');
+    const body  = src.slice(fnIdx, fnIdx+1400);
+    // The subscription lookup's catch is intentional: not subscribed = show plans (not an error)
+    expect(body).toContain("api.get('/billing/subscription').catch(() => null)");
     expect(body).toContain('catch');
     // loading cleared via finally or explicit setLoading(false)
     const hasCleanup = body.includes('.finally(') || body.includes('setLoading(false)');

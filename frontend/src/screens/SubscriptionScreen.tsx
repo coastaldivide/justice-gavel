@@ -71,8 +71,8 @@ export function bondsmanPlansFrom(body: unknown): ProviderPlan[] {
     }));
 }
 
-function TierCard({ plan, active, onSubscribe, loading, styles }: {
-  plan: ProviderPlan; active: boolean; onSubscribe: (key: string) => void; loading: boolean; styles: any;
+function TierCard({ plan, active, onSubscribe, onCancel, loading, styles }: {
+  plan: ProviderPlan; active: boolean; onSubscribe: (key: string) => void; onCancel: () => void; loading: boolean; styles: any;
 }) {
   return (
     <View style={styles.tierCard} testID={`plan-${plan.key}`}>
@@ -124,6 +124,11 @@ function TierCard({ plan, active, onSubscribe, loading, styles }: {
       ) : (
         <View style={styles.activeBlock}>
           <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerSub}>✓ You're on this plan</Text>
+          <TouchableOpacity accessibilityRole="button" testID={`cancel-${plan.key}`}
+            accessibilityLabel={`Cancel ${plan.name}`} onPress={onCancel} disabled={loading}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text maxFontSizeMultiplier={1.4} style={styles.cancelLink}>Cancel plan</Text>
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -210,6 +215,23 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const handleSubscribe = (tier: string) => { requireAuth(() => doSubscribe(tier)); };
 
+  const handleCancel = () => {
+    confirm('Cancel your plan?', 'Your plan stays active until the end of the current billing period.',
+      { confirmLabel: 'Yes, cancel', destructive: true }).then(async ok => {
+      if (!ok) return;
+      setError('');
+      try {
+        if (providerType === 'lawyer') await api.post('/billing/cancel');
+        else await api.post('/billing/bondsman/subscription/cancel');
+        showToast('Your plan has been cancelled. Access continues until period end.', 'info');
+        await load(providerType);
+      } catch (e: any) {
+        if (isPaymentsUnavailable(e)) setError(PAYMENTS_COMING_SOON);
+        else setError(apiErrorMessage(e, 'Could not cancel your plan. Please try again.'));
+      }
+    });
+  };
+
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
       contentContainerStyle={styles.scroll}
@@ -260,6 +282,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
         <TierCard key={plan.key} plan={plan} styles={styles}
           active={activeTier === plan.key}
           onSubscribe={handleSubscribe}
+          onCancel={handleCancel}
           loading={subscribing === plan.key} />
       ))}
 
@@ -282,7 +305,7 @@ function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
 
       <AuthGateModal />
       <Text maxFontSizeMultiplier={1.4} style={styles.footer}>
-        Subscriptions auto-renew until cancelled; cancel any time in Settings.
+        Subscriptions auto-renew until cancelled; cancel any time here.
         A paid plan does not change where you appear in directory search results.
       </Text>
       <View style={{ height: 40 }} />

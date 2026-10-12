@@ -125,16 +125,20 @@ router.get('/cases', authRequired, casesListLimiter, async (req, res) => {
 // attorneys are never overwritten.
 const STAFF = new Set(['admin', 'super_admin']);
 
+// consultation_bookings.lawyer_id is a DIRECTORY id (lawyers.id), never a user
+// id: the attorney account is linked to its listing only through
+// attorney_profiles.lawyer_id / lawyers.user_id (set by operators after
+// verification). Comparing lawyer_id with the caller's user id would let account
+// #N claim every client who booked directory lawyer #N.
 async function hasConsultationWith(db, clientId, attorneyId) {
   const row = await db.get(
     `SELECT cb.id FROM consultation_bookings cb
       WHERE cb.user_id = ?
         AND cb.status IN ('confirmed', 'completed')
-        AND (cb.lawyer_id = ?
-             OR cb.lawyer_id IN (SELECT ap.lawyer_id FROM attorney_profiles ap WHERE ap.user_id = ? AND ap.lawyer_id IS NOT NULL)
+        AND (cb.lawyer_id IN (SELECT ap.lawyer_id FROM attorney_profiles ap WHERE ap.user_id = ? AND ap.lawyer_id IS NOT NULL)
              OR cb.lawyer_id IN (SELECT l.id FROM lawyers l WHERE l.user_id = ?))
       LIMIT 1`,
-    [clientId, attorneyId, attorneyId, attorneyId]).catch(() => null);
+    [clientId, attorneyId, attorneyId]).catch(() => null);
   return !!row;
 }
 

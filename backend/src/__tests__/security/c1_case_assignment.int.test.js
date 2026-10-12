@@ -106,19 +106,66 @@ describeIntegration('C1 — attorney case assignment requires a client-created r
     expect((await ctx.request().get(`/api/messages/${caseId}`).set(counsel.headers)).status).toBe(200);
   });
 
-  it('LEGIT: a confirmed consultation between client and attorney allows self-assignment', async () => {
+  it('ATTACK: a booking with directory lawyer #N grants nothing to user account #N (id confusion)', async () => {
+    const cas2 = await ctx.makeCase(client, { title: `C1 idconf case ${ctx.tag}` });
+    ctx.addCleanup(async (db) => { await db.run('DELETE FROM case_assignments WHERE case_id = ?', [cas2.id]); });
+    // consultation_bookings.lawyer_id is a directory id; here it happens to equal
+    // Mallory's USER id — that must not make Mallory the client's counsel.
+    await ctx.db.run(
+      `INSERT INTO consultation_bookings (user_id, lawyer_id, date_slot, time_slot, status, lawyer_name)
+       VALUES (?, ?, CURRENT_DATE + 1, '9:00 AM', 'confirmed', 'Someone Else')`, [client.id, mallory.id]);
+    const r = await ctx.request().post(`/api/attorney/cases/${cas2.id}/assign`).set(mallory.headers).send({});
+    expect(r.status).toBe(403);
+    expect((await ctx.request().get(`/api/messages/${cas2.id}`).set(mallory.headers)).status).toBe(403);
+    // ...and Mallory's inbox does not list that client's booking
+    const inbox = await ctx.request().get('/api/attorney/inbox').set(mallory.headers);
+    expect(inbox.status).toBe(200);
+    expect(JSON.stringify(inbox.body)).not.toContain(client.email);
+  });
+
+  it('LEGIT: a confirmed consultation with the attorney\'s linked listing allows self-assignment', async () => {
     const cas2 = await ctx.makeCase(client, { title: `C1 consult case ${ctx.tag}` });
     ctx.addCleanup(async (db) => { await db.run('DELETE FROM case_assignments WHERE case_id = ?', [cas2.id]); });
     // no relationship yet
     expect((await ctx.request().post(`/api/attorney/cases/${cas2.id}/assign`).set(outsider.headers).send({})).status).toBe(403);
+    // Operators link a verified attorney account to its directory listing
+    // (attorney_profiles.lawyer_id). Read-only pick of a listing id; the lawyers
+    // row itself is never written.
+    const listing = await ctx.db.get(
+      `SELECT l.id FROM lawyers l WHERE NOT EXISTS (SELECT 1 FROM attorney_profiles ap WHERE ap.lawyer_id = l.id)
+        ORDER BY l.id DESC LIMIT 1`);
+    await ctx.db.run('UPDATE attorney_profiles SET lawyer_id = ? WHERE user_id = ?', [listing.id, outsider.id]);
     // consultation bookings require payments (503 today) — insert the confirmed booking the
-    // booking flow would create, keyed to the attorney's account id.
+    // booking flow would create, keyed to the DIRECTORY listing id.
     await ctx.db.run(
       `INSERT INTO consultation_bookings (user_id, lawyer_id, date_slot, time_slot, status, lawyer_name)
-       VALUES (?, ?, CURRENT_DATE + 1, '9:00 AM', 'confirmed', 'Outside Atty')`, [client.id, outsider.id]);
+       VALUES (?, ?, CURRENT_DATE + 1, '9:00 AM', 'confirmed', 'Outside Atty')`, [client.id, listing.id]);
+    ctx.addCleanup(async (db) => { await db.run('DELETE FROM consultation_bookings WHERE lawyer_id = ? AND user_id = ?', [listing.id, client.id]); });
     const ok = await ctx.request().post(`/api/attorney/cases/${cas2.id}/assign`).set(outsider.headers).send({});
     expect(ok.status).toBe(201);
     expect((await ctx.request().get(`/api/messages/${cas2.id}`).set(outsider.headers)).status).toBe(200);
+  });
+
+  it('ATTACK: pending or revoked counsel never sees message bodies or client details in the inbox', async () => {
+    const cas4 = await ctx.makeCase(client, { title: `C1 inbox case ${ctx.tag}`, next_court_date: new Date().toISOString().slice(0, 10) });
+    ctx.addCleanup(async (db) => { await db.run('DELETE FROM case_assignments WHERE case_id = ?', [cas4.id]); });
+    await ctx.request().post(`/api/messages/${cas4.id}`).set(client.headers).send({ body: 'SECRET-INBOX-BODY' });
+    // invited but not accepted
+    const inv = await ctx.request().post(`/api/cases/${cas4.id}/counsel`).set(client.headers).send({ attorney_user_id: colleague.id });
+    expect(inv.status).toBe(201);
+    let inbox = await ctx.request().get('/api/attorney/inbox').set(colleague.headers);
+    expect(inbox.status).toBe(200);
+    expect(JSON.stringify(inbox.body.unread_messages)).not.toContain('SECRET-INBOX-BODY');
+    expect(inbox.body.today_hearings.some(h => Number(h.case_id) === Number(cas4.id))).toBe(false);
+    // accepted → visible; revoked → gone again
+    const pending = inbox.body.pending_assignments.find(a => Number(a.case_id) === Number(cas4.id));
+    expect((await ctx.request().post(`/api/attorney/inbox/accept/${pending.assignment_id}`).set(colleague.headers)).status).toBe(200);
+    inbox = await ctx.request().get('/api/attorney/inbox').set(colleague.headers);
+    expect(JSON.stringify(inbox.body.unread_messages)).toContain('SECRET-INBOX-BODY');
+    expect((await ctx.request().delete(`/api/cases/${cas4.id}/counsel/${colleague.id}`).set(client.headers)).status).toBe(200);
+    inbox = await ctx.request().get('/api/attorney/inbox').set(colleague.headers);
+    expect(JSON.stringify(inbox.body)).not.toContain('SECRET-INBOX-BODY');
+    expect(inbox.body.today_hearings.some(h => Number(h.case_id) === Number(cas4.id))).toBe(false);
   });
 
   it('LEGIT: platform staff can assign; a non-attorney target is rejected', async () => {

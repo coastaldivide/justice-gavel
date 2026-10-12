@@ -148,11 +148,11 @@ export function uploadGuard({
 }
 
 /** Read an uploaded file into a Buffer whether it was stored in memory or on disk. */
-export async function fileBuffer(file) {
-  if (!file) return null;
-  if (file.buffer) return file.buffer;
+export function fileBuffer(file) {
+  if (!file) return Promise.resolve(null);
+  if (file.buffer) return Promise.resolve(file.buffer);
   if (file.path) return fs.promises.readFile(file.path);
-  return null;
+  return Promise.resolve(null);
 }
 
 /** A readable stream for an uploaded file (disk or memory). */

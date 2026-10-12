@@ -95,7 +95,9 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
           <Picker
             selectedValue={state}
             onValueChange={v => { setState(v as string); setSelected(null); }}
-            style={{ color: text, height: 48 }}
+            // On web this is a native <select>: without an explicit background it is
+            // white, and the light theme-text colour made the chosen state unreadable.
+            style={{ color: text, height: 48, backgroundColor: card, borderWidth: 0, paddingHorizontal: 10 }}
             dropdownIconColor={sub}
           >
             {STATES.map(s => <Picker.Item key={s} label={s === 'ALL' ? 'National Baseline' : s} value={s} />)}
@@ -217,8 +219,11 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
                       </Text>
                     </View>
                   ) : null}
-                  <View style={{
-                    backgroundColor: isDark ? colors.legal : colors.legalBg,
+                  {/* legalBg is the tinted surface in BOTH themes; the old dark-mode
+                      background was colors.legal — the same green as the text, so the
+                      explanation was invisible. */}
+                  <View testID="bail-how-bondsmen-work" style={{
+                    backgroundColor: colors.legalBg,
                     borderRadius: 8, padding: 10, marginTop: 4,
                   }}>
                     <Text maxFontSizeMultiplier={1.4} style={{ color: isDark ? colors.legal : colors.legalDark, fontSize: 12, fontWeight: '600' }}>

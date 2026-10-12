@@ -94,7 +94,9 @@ describe('DB. Schema Integrity', () => {
     const src=fs.readFileSync(__REPO + '/backend/src/routes/firms.js','utf8');
     for(const m of src.matchAll(/INSERT\s+(?:OR\s+\w+\s+)?INTO\s+firm_members\s*\(([^)]+)\)/gsi)){
       const cols=m[1].split(',').map(c=>c.trim());
-      expect(cols).not.toContain('role');
+      // firm_role is the authoritative column (rbac.effectiveFirmRole); the
+      // legacy role column may be written alongside it, with the same value.
+      expect(cols).toContain('firm_role');
     }
   });
 });

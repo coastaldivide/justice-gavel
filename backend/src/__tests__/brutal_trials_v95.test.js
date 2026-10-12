@@ -101,7 +101,7 @@ describe('ADM. admin.js — Internal Admin Dashboard Routes', () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/backend/src/routes/admin.js','utf8');
     expect(src).toContain('safeTable');
-    expect(src).toContain('safeAdminCols');
+    expect(src).toContain('safeAdminColList');
     // Whitelisted table/column names prevent `SELECT * FROM ${userInput}`
   });
 });
