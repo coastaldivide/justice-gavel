@@ -21,7 +21,7 @@ import { CLAUDE_MODEL } from '../utils/ai.js';
 
 import { err400, API_URLS, asyncRoute } from '../utils/routeHelpers.js';
 import express  from 'express';
-import multer   from 'multer';
+import { uploadGuard, fileStream, MB } from '../middleware/uploads.js';
 import FormData from 'form-data';
 import fetch    from 'node-fetch';
 import PDFDocument from 'pdfkit';
@@ -73,22 +73,33 @@ function getRecordingLaw(state) {
 }
 
 // ── Audio upload handler ──────────────────────────────────────────────────────
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB — longer encounters
+// Whisper accepts at most 25 MB per request, so a bigger upload could never be
+// transcribed anyway. Audio is streamed to a temp file (never buffered in
+// memory) and forwarded to Whisper as a stream (C5).
+export const INTERROGATION_MAX_BYTES = 25 * MB;
+const uploadAudio = uploadGuard({
+  maxBytes: INTERROGATION_MAX_BYTES,
+  storage:  'disk',
+  field:    'audio',
+  requireMultipart: true,
   fileFilter: (req, file, cb) => {
     const ok = /audio\/(m4a|mp4|mpeg|wav|webm|ogg|flac|x-m4a)|video\/mp4|application\/octet-stream/.test(file.mimetype);
     cb(ok ? null : new Error('Unsupported format'), ok);
   },
+  onError: (err, req, res) => {
+    if (err?.code === 'LIMIT_FILE_SIZE') return err400(res, 'File too large. Maximum 25MB.');
+    if (err?.name === 'MulterError') return err400(res, 'Invalid upload.');
+    return res.status(415).json({ error: 'Unsupported audio format.' });
+  },
 });
 
 // ── Whisper transcription ─────────────────────────────────────────────────────
-async function transcribeAudio(buffer, mimetype, filename) {
+async function transcribeAudio(file, mimetype, filename) {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) throw new Error('OPENAI_API_KEY not configured');
 
   const form = new FormData();
-  form.append('file', buffer, { filename: filename || 'encounter.m4a', contentType: mimetype });
+  form.append('file', fileStream(file), { filename: filename || 'encounter.m4a', contentType: mimetype, knownLength: file.size });
   form.append('model', 'whisper-1');
   form.append('response_format', 'verbose_json'); // includes timestamps per segment
   form.append('language', 'en');
@@ -370,15 +381,7 @@ function formatTime(seconds) {
 }
 
 // ── POST /api/interrogation/transcribe ────────────────────────────────────────
-router.post('/transcribe', authRequired, perUserAiLimit, (req, res, next) => {
-  upload.single('audio')(req, res, err => {
-    if (err instanceof multer.MulterError) {
-      return err400(res, 'File too large. Maximum 100MB.');
-    }
-    if (err) return res.status(415).json({ error: 'Unsupported audio format.' });
-    next();
-  });
-}, async (req, res) => {
+router.post('/transcribe', authRequired, perUserAiLimit, uploadAudio, async (req, res) => {
   try {
     if (!req.file) return err400(res, 'Audio file required');
 
@@ -389,7 +392,7 @@ router.post('/transcribe', authRequired, perUserAiLimit, (req, res, next) => {
     let whisperResult;
     try {
       whisperResult = await transcribeAudio(
-        req.file.buffer,
+        req.file,
         req.file.mimetype,
         req.file.originalname || 'encounter.m4a'
       );

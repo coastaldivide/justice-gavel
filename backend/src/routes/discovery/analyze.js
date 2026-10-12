@@ -10,19 +10,20 @@ import { perUserAiLimit } from '../../middleware/sharedAiLimiter.js';
 import { enqueueAIJob as enqueue }        from '../../services/aiQueue.js';
 import logger             from '../../utils/logger.js';
 import rateLimit          from 'express-rate-limit';
-import multer             from 'multer';
+import { uploadGuard, MB }   from '../../middleware/uploads.js';
 
-const upload = multer({
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB max
-  fileFilter: (_req, file, cb) => {
-    const ALLOWED = [
-      'application/pdf', 'text/plain', 'text/csv',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'image/jpeg', 'image/png', 'image/webp',
-    ];
-    cb(null, ALLOWED.includes(file.mimetype));
-  },
+// Documents are analysed in memory (sent to the model as base64), so the cap is
+// modest and admission is bounded by the process-wide upload budget (C5).
+const ALLOWED_DOC_TYPES = [
+  'application/pdf', 'text/plain', 'text/csv',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg', 'image/png', 'image/webp',
+];
+const uploadDocument = uploadGuard({
+  maxBytes: 10 * MB,
+  field:    'document',
+  fileFilter: (_req, file, cb) => cb(null, ALLOWED_DOC_TYPES.includes(file.mimetype)),
 });
 import { hasDiscoveryPro, analyzeDocument } from './_helpers.js';
 
@@ -41,7 +42,7 @@ const aiLimiter = rateLimit({
 const router = Router();
 
 
-router.post('/analyze', aiLimiter, authRequired, requireAi, perUserAiLimit, upload.single('document'), async (req, res) => {
+router.post('/analyze', aiLimiter, authRequired, requireAi, perUserAiLimit, uploadDocument, async (req, res) => {
   try {
     const db = await getDb();
     if (!req.file) return err400(res, 'PDF file required');

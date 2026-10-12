@@ -7,7 +7,6 @@ import { safeJson } from '../../utils/routeHelpers.js';
  * analyzeDocument() is the core AI function — supports PDF, image, DOCX, and text.
  */
 import logger             from '../../utils/logger.js';
-import multer             from 'multer';
 
 export function safeJsonParse(str, fallback = null) {
   try { return str ? safeJson(str) : fallback; } catch { return fallback; }
@@ -83,17 +82,8 @@ export function imageMediaType(file) {
   return map[ext] || 'image/jpeg';
 }
 
-export const upload = multer({
-  storage: multer.memoryStorage(),
-  limits:  { fileSize: 32 * 1024 * 1024 }, // 32MB max
-  fileFilter: (req, file, cb) => {
-    if (isAccepted(file)) return cb(null, true);
-    cb(new Error(
-      `Unsupported file type: ${file.originalname}. ` +
-      'Accepted: PDF, JPEG, PNG, TIFF, HEIC, WebP, DOCX, DOC, TXT'
-    ), false);
-  },
-});
+// (The former 32 MB in-memory `upload` export here was unused; uploads go through
+// middleware/uploads.js uploadGuard — see discovery/analyze.js.)
 
 
 // discovery_analyses managed by db/index.js Year 2 block.

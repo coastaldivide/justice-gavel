@@ -21,6 +21,13 @@ const JOB_LAST_RUN = new Map(); // prevents duplicate runs within same window
  *
  * Requires LIVE_REFRESH=true to activate cron jobs.
  * Manual trigger: POST /api/bot/run  or  POST /api/admin/refresh
+ *
+ * LIVE_REFRESH semantics: it gates ONLY the data-refresh / outbound pipeline
+ * above (scrapers, arrest harvest, outbound bot, nightly sweeps, health scan).
+ * User-facing reminder DELIVERY (court dates, user-set reminders — see
+ * services/reminderDispatcher.js) is not a data refresh: it runs in every API
+ * process regardless of LIVE_REFRESH, and is switched off per process with
+ * REMINDERS_ENABLED=false.
  */
 
 import cron from 'node-cron';
@@ -34,6 +41,8 @@ import { processGoldenGavelAward }              from '../routes/golden_gavel.js'
 import logger                                   from '../utils/logger.js';
 import { startHealthScanScheduler, stopHealthScanScheduler } from './healthScan.js';
 import { archiveCompletedDocketEntries, checkAccountInactivity } from './retention.js';
+import { startReminderDispatcher, stopReminderDispatcher } from './reminderDispatcher.js';
+import { escapeHtml } from '../utils/sanitize.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -323,16 +332,18 @@ async function runConsultationReminderSweep(db) {
 
         // ── Email reminder to defendant ────────────────────────────────────────
         if (row.client_email) {
+          const esc = escapeHtml;
+          const safeLink = /^https:\/\//i.test(String(row.meeting_link || '')) ? row.meeting_link : null;
           await sendEmail({
             to:      row.client_email,
-            subject: `Tomorrow: consultation with ${row.lawyer_name} at ${timeLabel}`,
-            html: `<p>Hi ${row.client_name || 'there'},</p>
-                   <p>This is a reminder that your <strong>${row.duration_min}-minute consultation</strong>
-                   with <strong>${row.lawyer_name}</strong> is tomorrow,
-                   <strong>${dateLabel} at ${timeLabel}</strong>.</p>
-                   <a href="${row.meeting_link}" style="background:#0A1628;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin:12px 0">Join Video Call</a>
+            subject: `Tomorrow: consultation with ${String(row.lawyer_name || 'your attorney').replace(/[\r\n]+/g, ' ')} at ${timeLabel}`,
+            html: `<p>Hi ${esc(row.client_name || 'there')},</p>
+                   <p>This is a reminder that your <strong>${esc(row.duration_min)}-minute consultation</strong>
+                   with <strong>${esc(row.lawyer_name)}</strong> is tomorrow,
+                   <strong>${esc(dateLabel)} at ${esc(timeLabel)}</strong>.</p>
+                   ${safeLink ? `<a href="${esc(safeLink)}" style="background:#0A1628;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin:12px 0">Join Video Call</a>` : ''}
                    <p style="color:#6B7280;font-size:12px">⚖️ This consultation does not create an attorney-client relationship.</p>`,
-            text: `Reminder: ${row.lawyer_name} at ${timeLabel} ${dateLabel}. Meeting link: ${row.meeting_link}`,
+            text: `Reminder: ${row.lawyer_name} at ${timeLabel} ${dateLabel}.${safeLink ? ` Meeting link: ${safeLink}` : ''}`,
           }).catch(() => {});
         }
 
@@ -486,8 +497,11 @@ async function runNightlyJob() {
 
 // ── Start all scheduled jobs ──────────────────────────────────────────────────
 export function startScheduler() {
+  // Reminder delivery first — independent of LIVE_REFRESH (see header).
+  try { startReminderDispatcher(); } catch (e) { logger.error('[scheduler] reminder dispatcher failed to start:', e.message); }
+
   if (!CONFIG.LIVE_REFRESH) {
-    logger.info('[scheduler] LIVE_REFRESH=false — all scheduled jobs disabled.');
+    logger.info('[scheduler] LIVE_REFRESH=false — data-refresh / outbound jobs disabled (reminder delivery is unaffected).');
     logger.info('[scheduler] Set LIVE_REFRESH=true in .env to activate.');
     return;
   }
@@ -538,6 +552,7 @@ export function startScheduler() {
 }
 
 export function stopScheduler() {
+  stopReminderDispatcher();
   if (reminderInterval) { clearInterval(reminderInterval); reminderInterval = null; }
   if (tokenCleanupTask) { tokenCleanupTask.destroy(); tokenCleanupTask = null; }
   if (nightlyTask)    { nightlyTask.destroy();    nightlyTask    = null; }

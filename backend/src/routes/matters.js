@@ -30,7 +30,7 @@ import { authRequired }                       from '../middleware/auth.js';
 import { getDb }                              from '../db/index.js';
 import { makeUserLimiter }                    from '../middleware/sharedAiLimiter.js';
 import logger                                 from '../utils/logger.js';
-import { requireMatterAccess, hasMinRole, loadFirmContext } from '../middleware/rbac.js';
+import { requireMatterAccess, hasMinRole, loadFirmContext, getFirmMembership } from '../middleware/rbac.js';
 import { auditLog, writeAuditLog }            from '../middleware/audit.js';
 import { dispatchWebhookEvent }               from './webhooks/outbound.js';
 import {
@@ -40,14 +40,12 @@ import {
 }                                             from '../services/retention.js';
 
 
-// Retention helper — get firm ID for current user
+// Retention helper — the caller's active firm membership (single definition in middleware/rbac.js).
 async function getFirmId(db, userId) {
-  const fm = await db.get('SELECT firm_id FROM firm_members WHERE user_id=? AND status=\'active\' LIMIT 1', [userId]).catch(() => null);
-  return fm?.firm_id || null;
+  return (await loadFirmContext({ user: { id: userId } }))?.firm_id || null;
 }
 async function getFirmRole(db, userId) {
-  const fm = await db.get('SELECT firm_role FROM firm_members WHERE user_id=? AND status=\'active\' LIMIT 1', [userId]).catch(() => null);
-  return fm?.firm_role || '';
+  return (await loadFirmContext({ user: { id: userId } }))?.firm_role || '';
 }
 
 const router = Router();
@@ -57,21 +55,13 @@ const matterLimiter = makeUserLimiter({ windowMs: 60_000, max: 30, message: 'Too
 
 // ── Helper: resolve firm_id for user ─────────────────────────────────────────
 async function getUserFirmId(db, userId) {
-  const row = await db.get(
-    'SELECT firm_id FROM firm_members WHERE user_id = ? AND active = 1 LIMIT 1',
-    [userId]
-  ).catch(() => null);
-  return row?.firm_id || null;
+  return (await loadFirmContext({ user: { id: userId } }))?.firm_id || null;
 }
 
 // ── Helper: get user's firm role ─────────────────────────────────────────────
 async function getUserFirmRole(db, userId, firmId) {
   if (!firmId) return null;
-  const row = await db.get(
-    'SELECT role FROM firm_members WHERE user_id = ? AND firm_id = ? AND active = 1',
-    [userId, firmId]
-  ).catch(() => null);
-  return row?.role || null;
+  return (await getFirmMembership(db, userId, firmId))?.firm_role || null;
 }
 
 // ── POST /api/matters — create matter ─────────────────────────────────────────
@@ -382,7 +372,7 @@ router.get('/:id', authRequired, requireMatterAccess('id', 'viewer'), async (req
       request_id: req.requestId,
     });
 
-    res.json({ ...matter, team, your_role: req.user.firm_role });
+    res.json({ ...matter, team, your_role: req.matterAccess?.matter_role || null });
   } catch (e) {
     logger.error('[matters/get]', e.message);
     res.status(500).json({ error: 'Could not load matter.' });
@@ -575,8 +565,17 @@ router.post('/:id/team', authRequired, requireMatterAccess('id', 'partner'), aud
     }
 
     if (!target) return err404(res, 'User not found. They must have a Justice Gavel account.');
-    if (target.id === req.user.id && req.user.firm_role !== 'lead_attorney') {
+    if (target.id === req.user.id) {
       return err400(res, 'You are already on this matter team.');
+    }
+
+    // A firm matter's team is drawn from that firm. Only the read-only
+    // client/viewer roles may be given to someone outside the firm.
+    if (req.matter?.firm_id && !['client', 'viewer'].includes(role)) {
+      const targetMembership = await getFirmMembership(db, target.id, req.matter.firm_id);
+      if (!targetMembership) {
+        return err400(res, 'Only members of this firm can be given that role. Invite them to the firm first, or add them as client/viewer.');
+      }
     }
 
     // Check for existing active membership
@@ -767,7 +766,7 @@ router.delete('/:id/events/:eid', authRequired, requireMatterAccess('id', 'assoc
     );
     if (!ev) return err404(res, 'Event not found.');
     // Paralegal can only delete own events; associate+ can delete any
-    if (req.user.firm_role === 'paralegal' && ev.user_id !== req.user.id) {
+    if (!hasMinRole(req.matterAccess?.role, 'associate') && Number(ev.user_id) !== Number(req.user.id)) {
       return err403(res, 'You can only delete your own events.');
     }
     await db.run('DELETE FROM matter_events WHERE id=?', [eid]);
@@ -803,12 +802,10 @@ router.get('/:id/history', authRequired, requireMatterAccess('id', 'viewer'), as
 // ─── LEGAL HOLDS ───────────────────────────────────────────────────────────
 // POST /api/matters/:id/hold   — apply legal hold (firm_admin+)
 // DELETE /api/matters/:id/hold — release hold (firm_admin+)
-router.post('/:id/hold', authRequired, async (req, res) => {
+router.post('/:id/hold', authRequired, requireMatterAccess('id', 'firm_admin'), async (req, res) => {
   try {
-    const db     = await getDb();
-    const firmId = await getFirmId(db, req.user.id);
-    const role   = await getFirmRole(db, req.user.id);
-    if (!hasMinRole(role, 'firm_admin')) return res.status(403).json({ error: 'firm_admin+ required.' });
+    const firmId = req.matter.firm_id;
+    if (!firmId) return res.status(400).json({ error: 'Legal holds apply to firm matters.' });
     const { reason } = req.body || {};
     if (!reason?.trim()) return res.status(400).json({ error: 'reason required.' });
     const holdId = await applyLegalHold('matter', safeInt(req.params.id), firmId, req.user.id, sanitizeStr(reason, 500));
@@ -819,13 +816,17 @@ router.post('/:id/hold', authRequired, async (req, res) => {
   }
 });
 
-router.delete('/:id/hold', authRequired, async (req, res) => {
+router.delete('/:id/hold', authRequired, requireMatterAccess('id', 'firm_admin'), async (req, res) => {
   try {
     const db   = await getDb();
-    const role = await getFirmRole(db, req.user.id);
-    if (!hasMinRole(role, 'firm_admin')) return res.status(403).json({ error: 'firm_admin+ required.' });
     const { hold_id } = req.body || {};
     if (!hold_id) return res.status(400).json({ error: 'hold_id required.' });
+    // The hold must belong to THIS matter (a hold id from another firm's matter is not found).
+    const hold = await db.get(
+      "SELECT id FROM legal_holds WHERE id=? AND hold_type='matter' AND target_id=? AND active=1",
+      [safeInt(hold_id), req.matter.id]
+    ).catch(() => null);
+    if (!hold) return res.status(404).json({ error: 'Legal hold not found or already released.' });
     await releaseLegalHold(safeInt(hold_id), req.user.id);
     res.json({ ok: true, message: 'Legal hold released.' });
   } catch (e) {
@@ -836,7 +837,7 @@ router.delete('/:id/hold', authRequired, async (req, res) => {
 
 
 // ── PATCH /matters/:id/status — update status with audit trail ───────────
-router.patch('/:id/status', authRequired, async (req, res) => {
+router.patch('/:id/status', authRequired, requireMatterAccess('id', 'associate'), async (req, res) => {
   const id         = parseInt(req.params.id, 10);
   const new_status = req.body.status;
   const note       = (req.body.note || '').slice(0, 500);

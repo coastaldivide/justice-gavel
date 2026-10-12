@@ -1,5 +1,6 @@
 import logger from '../utils/logger.js';
 import { getDb } from '../db/index.js';
+import { sendExpoPush, isExpoPushToken } from './expoPush.js';
 // ── Lazy Expo singleton — same pattern as cases.js / messages.js ──────────────
 // Top-level `new Expo()` crashes at import time if expo-server-sdk is missing.
 // Lazy init means the module loads safely and the error surfaces only if push
@@ -11,15 +12,11 @@ async function getExpoClient() {
   _expoInstance = new Expo();
   return _expoInstance;
 }
-// Synchronous accessor for Expo static methods (isExpoPushToken, chunkPushNotificationReceiptIds)
-async function getExpoClass() {
-  const { Expo } = await import('expo-server-sdk');
-  return Expo;
-}
 
 /**
  * sendPushToUser — send an immediate push to a specific user
- * Used by: attorney messages, case updates, hearing reminders
+ * Used by: attorney messages, case updates, hearing reminders.
+ * Goes through services/expoPush.js (endpoint injectable via EXPO_PUSH_API_URL).
  */
 export async function sendPushToUser(userId, { title, body, data = {}, badge = 1, sound = 'default', priority = 'high', channelId = 'default'}) {
   try {
@@ -30,8 +27,7 @@ export async function sendPushToUser(userId, { title, body, data = {}, badge = 1
     );
     if (!rows.length) return { sent: 0, reason: 'no_token' };
 
-    const ExpoClass   = await getExpoClass();
-  const validTokens = rows.map(r => r.token).filter(ExpoClass.isExpoPushToken);
+    const validTokens = rows.map(r => r.token).filter(isExpoPushToken);
     if (!validTokens.length) return { sent: 0, reason: 'invalid_token' };
 
     const messages = validTokens.map(to => ({
@@ -41,14 +37,7 @@ export async function sendPushToUser(userId, { title, body, data = {}, badge = 1
       data: typeof data === 'string' ? JSON.parse(data) : (data || {}),
     }));
 
-    const expoClient = await getExpoClient();
-    const chunks = expoClient.chunkPushNotifications(messages);
-    const tickets = [];
-    for (const chunk of chunks) {
-      const chunkTickets = await expoClient.sendPushNotificationsAsync(chunk);
-      tickets.push(...chunkTickets);
-    }
-
+    const tickets = await sendExpoPush(messages);
     const errors = tickets.filter(t => t.status === 'error');
     if (errors.length) {
       logger.warn({ msg: '[push] send errors', errors: errors.map(e => e.message) });
@@ -62,78 +51,14 @@ export async function sendPushToUser(userId, { title, body, data = {}, badge = 1
 }
 
 /**
- * deliverScheduledPushes — called by a cron/interval to drain scheduled_pushes table
- * Sends all pushes where deliver_at <= NOW() and status = 'pending'
+ * deliverScheduledPushes — drains due rows of scheduled_pushes.
+ * Kept for existing callers; the work is done by services/reminderDispatcher.js
+ * (which the API process runs every minute — see services/scheduler.js).
  */
-export async function deliverScheduledPushes() {
-  const db = await getDb();
-  const due = await db.all(
-    `SELECT id, push_token, title, body, data, deliver_at, notification_type, case_id, channelId, expo_ticket_id
-     FROM scheduled_pushes
-     WHERE deliver_at <= NOW()
-       AND status = 'pending'
-     ORDER BY deliver_at ASC
-     LIMIT 50`
-  );
-
-  if (!due.length) return { processed: 0 };
-
-  let sent = 0;
-  let failed = 0;
-
-  for (const push of due) {
-    try {
-      const ExpoC = await getExpoClass();
-      if (!push.push_token || !ExpoC.isExpoPushToken(push.push_token)) {
-        await db.run(
-          "UPDATE scheduled_pushes SET status='invalid_token' WHERE id=?",
-          [push.id]
-        );
-        continue;
-      }
-
-      const messages = [{
-        to: push.push_token,
-        sound: 'default',
-        badge: 1,
-        priority: 'high',
-        channelId: push.channelId || 'default',
-        title: push.title,
-        body: push.body,
-          data: {
-            type:    push.notification_type || 'general',
-            case_id: push.case_id           || null,
-            push_id: push.id,
-          },
-      }];
-
-      const expoC = await getExpoClient();
-      const [ticket] = await expoC.sendPushNotificationsAsync(messages);
-
-      if (ticket.status === 'error') {
-        await db.run(
-          "UPDATE scheduled_pushes SET status='error', error=? WHERE id=?",
-          [ticket.message, push.id]
-        );
-        failed++;
-      } else {
-        await db.run(
-          "UPDATE scheduled_pushes SET status='sent', sent_at=NOW() WHERE id=?",
-          [push.id]
-        );
-        sent++;
-      }
-    } catch (err) {
-      await db.run(
-        "UPDATE scheduled_pushes SET status='error', error=? WHERE id=?",
-        [err.message, push.id]
-      );
-      failed++;
-    }
-  }
-
-  logger.info(`[Push] Delivered: ${sent} sent, ${failed} failed`);
-  return { processed: due.length, sent, failed };
+export async function deliverScheduledPushes(opts = {}) {
+  const { dispatchDueReminders } = await import('./reminderDispatcher.js');
+  const r = await dispatchDueReminders(opts);
+  return { processed: r.claimed, sent: r.sent, failed: r.failed };
 }
 
 /**

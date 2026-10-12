@@ -12,7 +12,7 @@ import { AppIcon } from '../components/AppIcon';
  */
 import React, { useState, useCallback, useEffect } from 'react';
 import { ActivityIndicator, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, RefreshControl, LayoutAnimation } from 'react-native';
-import { api, apiErrorMessage } from '../services/api';
+import { api, apiErrorMessage, unwrapList } from '../services/api';
 import {  useTheme, RADIUS, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, RNShare } from '../utils/webCompat';
@@ -45,7 +45,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
     if (userRating === 0) return;
     setSubmitting(true);
     try {
-      await api.post('/reviews', {
+      const res = await api.post('/reviews', {
         entity_type: 'lawyer',
         entity_id:   lawyerId,
         rating:      userRating,
@@ -53,9 +53,11 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         anonymous:   0 });
       setSubmitted(true);
       setShowReview(false);
+      // The server decides `verified` (a consultation or case with this lawyer).
       setReviews(prev => [{
         rating: userRating,
         comment: reviewText.trim(),
+        verified: res.data?.verified ?? 0,
         created_at: new Date().toISOString() }, ...prev]);
     } catch (e: any) {
       showToast(apiErrorMessage(e, 'Check your connection and try again.'), 'error');
@@ -113,7 +115,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
             navigation.setOptions({ title: lawyerRes.value.data?.name || 'Attorney Profile' });
           }
           if (reviewRes.status==='fulfilled') {
-            setReviews(reviewRes.value.data?.slice(0,5) || []);
+            setReviews(unwrapList(reviewRes.value.data, 'reviews').slice(0, 5));
           }
           setLoading(false);
         }
@@ -437,6 +439,11 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
                   marginBottom:6 }}>
                   <Text maxFontSizeMultiplier={1.4} style={{ fontSize:13, color:colors.goldText }}>
                     {'★'.repeat(r.rating)}{'☆'.repeat(5-r.rating)}
+                  </Text>
+                  <Text testID={Number(r.verified) === 1 ? 'review-verified' : 'review-unverified'}
+                    maxFontSizeMultiplier={1.4} style={{ fontSize:11, lineHeight:16,
+                    color: Number(r.verified) === 1 ? colors.legal : colors.textMuted }}>
+                    {Number(r.verified) === 1 ? '✓ Verified client' : 'Unverified review'}
                   </Text>
                   <Text maxFontSizeMultiplier={1.4} style={{ fontSize:11, lineHeight:16,
                     color:colors.textMuted }}>

@@ -24,6 +24,7 @@ const billingLimiter = rateLimit({
 const TIERS = {
   // ── Consumer monthly plans ─────────────────────────────────────────────────
   legal_radar: {
+    audience:      'consumer',          // who the plan is sold to (GET /api/billing/tiers)
     name:          'Legal Radar',
     display_price: '$19.99/mo',
     price_id:      process.env.STRIPE_LEGAL_RADAR_ID,
@@ -33,6 +34,7 @@ const TIERS = {
     tier_rank:     1,
   },
   advisor: {
+    audience:      'consumer',          // who the plan is sold to (GET /api/billing/tiers)
     name:          '24 Hour Advisor',
     display_price: '$24.99/mo',
     price_id:      process.env.STRIPE_ADVISOR_PRICE_ID,
@@ -42,6 +44,7 @@ const TIERS = {
     tier_rank:     2,
   },
   legal_pro: {
+    audience:      'consumer',          // who the plan is sold to (GET /api/billing/tiers)
     name:          'Legal Pro',
     display_price: '$34.99/mo',
     price_id:      process.env.STRIPE_LEGAL_PRO_PRICE_ID,
@@ -51,6 +54,7 @@ const TIERS = {
     tier_rank:     3,
   },
   esquire: {
+    audience:      'attorney',          // who the plan is sold to (GET /api/billing/tiers)
     name:          'Justice Gavel Esquire',
     display_price: '$49.00/mo',
     price_id:      process.env.STRIPE_ESQUIRE_PRICE_ID,
@@ -63,6 +67,7 @@ const TIERS = {
   // ── Annual plans (billed once/year, shown as monthly equivalent) ───────────
   // annual_cents = total annual charge  |  monthly_cents = annual_cents / 12
   advisor_annual: {
+    audience:      'consumer',          // who the plan is sold to (GET /api/billing/tiers)
     name:          '24 Hour Advisor (Annual)',
     display_price: '$16.58/mo billed $199/yr',
     price_id:      process.env.STRIPE_ADVISOR_ANNUAL_ID,
@@ -73,6 +78,7 @@ const TIERS = {
     matches_monthly: 'advisor',
   },
   pro_annual: {
+    audience:      'consumer',          // who the plan is sold to (GET /api/billing/tiers)
     name:          'Legal Pro (Annual)',
     display_price: '$24.92/mo billed $299/yr',
     price_id:      process.env.STRIPE_LEGAL_PRO_ANNUAL_ID,
@@ -83,6 +89,7 @@ const TIERS = {
     matches_monthly: 'legal_pro',
   },
   esquire_annual: {
+    audience:      'attorney',          // who the plan is sold to (GET /api/billing/tiers)
     name:          'Justice Gavel Esquire (Annual)',
     display_price: '$34.17/mo billed $410/yr',
     price_id:      process.env.STRIPE_ESQUIRE_ANNUAL_ID,
@@ -94,9 +101,9 @@ const TIERS = {
   },
 
   // ── Legacy aliases (keep for existing subscriptions / webhooks) ────────────
-  starter_annual:  { name: 'Advisor Annual (legacy)', price_id: process.env.STRIPE_ADVISOR_ANNUAL_ID,
+  starter_annual:  { legacy: true, audience: 'consumer', name: 'Advisor Annual (legacy)', price_id: process.env.STRIPE_ADVISOR_ANNUAL_ID,
                      monthly_cents: 1658, annual_cents: 19900, billing: 'annual', tier_rank: 2, matches_monthly: 'advisor' },
-  attorney_annual: { name: 'Esquire Annual (legacy)',  price_id: process.env.STRIPE_ESQUIRE_ANNUAL_ID,
+  attorney_annual: { legacy: true, audience: 'attorney', name: 'Esquire Annual (legacy)',  price_id: process.env.STRIPE_ESQUIRE_ANNUAL_ID,
                      monthly_cents: 3417, annual_cents: 41000, billing: 'annual', tier_rank: 4, matches_monthly: 'esquire' },
 };
 

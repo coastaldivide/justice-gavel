@@ -1,6 +1,6 @@
 import { RNShare } from '../utils/webCompat';
 import { parseLocalDate } from '../utils/dateUtils';
-import { api } from '../services/api';
+import { scheduleReminder as postReminder } from '../services/reminders';
 import { AIDisclaimer } from '../components/AIDisclaimer';
 import { useToast } from '../components/ToastProvider';
 import UPLDisclaimer from '../components/UPLDisclaimer';
@@ -416,20 +416,18 @@ function DeadlineRow({ rule, arrest, judgment, today, isDark, state }: {
 
   // Schedule a push notification reminder 3 days before a deadline
   const scheduleReminder = async (label: string, due: Date) => {
-    const remind3Days = new Date(due);
-    remind3Days.setDate(remind3Days.getDate() - 3);
+    const remind3Days = new Date(due.getFullYear(), due.getMonth(), due.getDate() - 3, 9, 0, 0, 0);
     if (remind3Days <= new Date()) {
       showToast('This deadline is within 3 days -- act today.');
       return;
     }
     setRemindLoading(true);
     try {
-      await api.post('/push/reminders', {
+      await postReminder({
         title: '⏱️ Deadline in 3 days',
         body: label + ' -- ' + due.toLocaleDateString('en-US',
           { month: 'short', day: 'numeric', year: 'numeric' }),
-        scheduled_for: remind3Days.toISOString(),
-        notification_type: 'court_reminder' });
+        deliverAt: remind3Days });
       showToast('Reminder set for 3 days before.', 'success');
     } catch {
       showToast("Make sure you're signed in and notifications are enabled.", 'info');

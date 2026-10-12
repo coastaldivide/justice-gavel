@@ -12,6 +12,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { getToken, clearAuth, setToken as storeToken } from '../utils/secureStorage';
 import { setAppAuth } from './auth';
+import { notifyDisclaimerRequired } from './legalGate';
 
 // EXPO_PUBLIC_API_BASE must be set in frontend/.env for staging/production.
 // Falls back to the production API when the variable is not set.
@@ -40,10 +41,21 @@ const instance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Inject auth token + language header on every request
+/** The device's IANA time zone (e.g. 'America/Chicago'), or null if unavailable. */
+export function deviceTimeZone(): string | null {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return typeof tz === 'string' && tz ? tz : null;
+  } catch { return null; }
+}
+
+// Inject auth token, time zone + language header on every request
 instance.interceptors.request.use(async (config) => {
   const token = await getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Reminders (court dates) fire at local wall-clock times: tell the server our zone.
+  const tz = deviceTimeZone();
+  if (tz) config.headers['X-Timezone'] = tz;
   // Accept-Language from stored preference
   try {
     const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
@@ -88,7 +100,36 @@ instance.interceptors.request.use(async (config) => {
 export const FRIENDLY_ERRORS: Record<string, string> = {
   payments_unavailable: 'Payments aren’t available yet. No charge was made — free features keep working.',
   ai_unavailable:       'AI features are temporarily unavailable. Please try again later.',
+  disclaimer_required:  'Please review and accept the legal notice to use AI features.',
 };
+
+/**
+ * Unwrap a list from an API response body. Endpoints answer in one of three
+ * shapes — a bare array, an envelope `{ data: [...] }`, or a named key
+ * (`{ reviews: [...] }`, `{ tiers: [...] }`) — and reading the wrong one is
+ * how screens crashed with "x.filter is not a function". Always go through
+ * this (or api.getList) instead of `res.data || []`.
+ *
+ *   unwrapList<Review>(res.data, 'reviews')
+ *
+ * Returns [] for anything that is not (or does not contain) an array.
+ */
+export function unwrapList<T = unknown>(body: unknown, ...keys: string[]): T[] {
+  if (Array.isArray(body)) return body as T[];
+  if (!body || typeof body !== 'object') return [];
+  const obj = body as Record<string, unknown>;
+  for (const k of [...keys, 'data', 'items', 'results']) {
+    if (Array.isArray(obj[k])) return obj[k] as T[];
+  }
+  // nested envelope: { data: { reviews: [...] } }
+  const inner = obj.data;
+  return inner && typeof inner === 'object' ? unwrapList<T>(inner, ...keys) : [];
+}
+
+/** True when the backend requires the AI legal disclaimer (HTTP 451). */
+export function isDisclaimerRequired(e: any): boolean {
+  return e?.response?.status === 451 || e?.response?.data?.code === 'disclaimer_required' || e?.code === 'disclaimer_required';
+}
 
 /** True when the backend reports billing is not configured (503 payments_unavailable). */
 export function isPaymentsUnavailable(e: any): boolean {
@@ -116,6 +157,13 @@ instance.interceptors.response.use(
     // can do `catch (e: any) { setError(e.message) }` and get a real message.
     // API returns { error: '...' } or occasionally { message: '...' }.
     // Backend contract: errors are JSON { error: <code>, message: <human text> }.
+    // 451: the AI disclaimer must be accepted first — open the legal gate.
+    if (error?.response?.status === 451 || error?.response?.data?.code === 'disclaimer_required') {
+      error.code = 'disclaimer_required';
+      error.message = FRIENDLY_ERRORS.disclaimer_required;
+      notifyDisclaimerRequired();
+      return Promise.reject(error);
+    }
     const errCode: string | undefined = error?.response?.data?.error;
     const serverMsg: string | undefined =
       FRIENDLY_ERRORS[errCode as string] ??
@@ -219,6 +267,12 @@ export async function cachedGet<T = any>(
 export const api = {
   get:    <T = any>(url: string, config?: AxiosRequestConfig) =>
             request<T>({ method: 'GET',    url, ...config }),
+  /** GET a list endpoint and unwrap it (see unwrapList). */
+  getList: async <T = any>(url: string, config?: AxiosRequestConfig & { listKeys?: string[] }): Promise<T[]> => {
+    const { listKeys = [], ...rest } = config || {};
+    const res = await request({ method: 'GET', url, ...rest });
+    return unwrapList<T>(res.data, ...listKeys);
+  },
   post:   <T = any>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
             request<T>({ method: 'POST',   url, data, ...config }),
   put:    <T = any>(url: string, data?: unknown, config?: AxiosRequestConfig) =>

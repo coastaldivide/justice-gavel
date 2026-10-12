@@ -1,5 +1,4 @@
 import { useToast } from '../components/ToastProvider';
-import TermsAcceptanceModal from './TermsAcceptanceModal';
 
 import React, { useState, useRef } from 'react';
 import type { ScreenProps } from '../types/navigation';
@@ -14,7 +13,6 @@ function RegisterScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const [showTerms, setShowTerms] = React.useState(false);
   const [identifier, setIdentifier]   = useState('');
   const [password, setPassword]       = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -227,11 +225,6 @@ if (loading) return;
             </Text>
           </TouchableOpacity>
         
-      <TermsAcceptanceModal
-        visible={showTerms}
-        onAccepted={() => setShowTerms(false)}
-        onDecline={() => setShowTerms(false)}
-      />
     </View>
 
         <Text maxFontSizeMultiplier={1.4} style={styles.privacy}>

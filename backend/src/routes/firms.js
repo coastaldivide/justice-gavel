@@ -23,7 +23,7 @@ import { makeUserLimiter }                    from '../middleware/sharedAiLimite
 import logger                                 from '../utils/logger.js';
 import rateLimit                              from 'express-rate-limit';
 import { apiLimiter }                         from '../middleware/rateLimiters.js';
-import { hasMinRole } from '../middleware/rbac.js';
+import { requireFirmMember, ACTIVE_MEMBER_SQL, effectiveFirmRole } from '../middleware/rbac.js';
 import { writeAuditLog, getAuditLog } from '../middleware/audit.js';
 
 const router      = Router();
@@ -35,14 +35,16 @@ const directoryLimiter = rateLimit({ windowMs: 60_000, max: 60, standardHeaders:
 
 // ── Helper: get user's firm membership ───────────────────────────────────────
 async function getMembership(db, userId) {
-  return await db.get(
+  const row = await db.get(
     `SELECT fm.*, f.name as firm_name, f.owner_id, f.plan
      FROM firm_members fm
      JOIN firms f ON f.id = fm.firm_id
-     WHERE fm.user_id=? AND fm.active=1
+     WHERE fm.user_id=? AND ${ACTIVE_MEMBER_SQL}
+     ORDER BY fm.firm_id ASC
      LIMIT 1`,
     [userId]
   ).catch(() => null);
+  return row ? { ...row, role: effectiveFirmRole(row) } : null;
 }
 
 // ── POST /api/firms — create firm ─────────────────────────────────────────────
@@ -69,9 +71,9 @@ router.post('/', authRequired, firmLimiter, async (req, res) => {
 
     // Auto-add creator as firm_admin
     await db.run(
-      `INSERT INTO firm_members (firm_id, user_id, firm_role, invited_by)
-       VALUES (?,?,?,?)`,
-      [firmId, req.user.id, 'firm_admin', req.user.id]
+      `INSERT INTO firm_members (firm_id, user_id, firm_role, role, invited_by)
+       VALUES (?,?,?,?,?)`,
+      [firmId, req.user.id, 'firm_admin', 'firm_admin', req.user.id]
     );
 
     // Update user record with firm_id
@@ -126,13 +128,10 @@ router.get('/mine', authRequired, async (req, res) => {
 });
 
 // ── PUT /api/firms/:id ────────────────────────────────────────────────────────
-router.put('/:id', authRequired, async (req, res) => {
+router.put('/:id', authRequired, requireFirmMember({ minRole: 'firm_admin' }), async (req, res) => {
   try {
     const db     = await getDb();
-    const firmId = safeInt(req.params.id);
-    const memb   = await getMembership(db, req.user.id);
-    if (!memb || memb.firm_id !== firmId) return err403(res, 'Not a member of this firm.');
-    if (!hasMinRole(memb.role, 'firm_admin')) return err403(res, 'Requires firm_admin role.');
+    const firmId = req.firmMembership.firm_id;
 
     const { name } = req.body || {};
     if (!name?.trim()) return err400(res, 'name is required.');
@@ -154,16 +153,13 @@ router.put('/:id', authRequired, async (req, res) => {
 });
 
 // ── GET /api/firms/:id/members ────────────────────────────────────────────────
-router.get('/:id/members', authRequired, async (req, res) => {
+router.get('/:id/members', authRequired, requireFirmMember({ minRole: 'partner' }), async (req, res) => {
   try {
     const db     = await getDb();
-    const firmId = safeInt(req.params.id);
-    const memb   = await getMembership(db, req.user.id);
-    if (!memb || memb.firm_id !== firmId) return err403(res, 'Not a member of this firm.');
-    if (!hasMinRole(memb.role, 'partner')) return err403(res, 'Requires partner role or higher.');
+    const firmId = req.firmMembership.firm_id;
 
     const members = await db.all(
-      `SELECT fm.id, fm.role, fm.title, fm.joined_at,
+      `SELECT fm.id, COALESCE(fm.firm_role, fm.role) AS role, fm.title, fm.joined_at,
               u.id as user_id, u.display_name, u.email,
               inviter.display_name as invited_by_name,
               COUNT(DISTINCT mt.matter_id) as active_matters
@@ -171,10 +167,10 @@ router.get('/:id/members', authRequired, async (req, res) => {
        JOIN users u ON u.id = fm.user_id
        LEFT JOIN users inviter ON inviter.id = fm.invited_by
        LEFT JOIN matter_teams mt ON mt.user_id=fm.user_id AND mt.active=1
-       WHERE fm.firm_id=? AND fm.active=1
+       WHERE fm.firm_id=? AND ${ACTIVE_MEMBER_SQL}
        GROUP BY fm.id, u.id, u.display_name, u.email, inviter.display_name
        ORDER BY
-         CASE fm.role
+         CASE COALESCE(fm.firm_role, fm.role)
            WHEN 'firm_admin'  THEN 1
            WHEN 'partner'     THEN 2
            WHEN 'associate'   THEN 3
@@ -195,13 +191,10 @@ router.get('/:id/members', authRequired, async (req, res) => {
 });
 
 // ── POST /api/firms/:id/members/invite ────────────────────────────────────────
-router.post('/:id/members/invite', authRequired, firmLimiter, async (req, res) => {
+router.post('/:id/members/invite', authRequired, firmLimiter, requireFirmMember({ minRole: 'firm_admin' }), async (req, res) => {
   try {
     const db     = await getDb();
-    const firmId = safeInt(req.params.id);
-    const memb   = await getMembership(db, req.user.id);
-    if (!memb || memb.firm_id !== firmId) return err403(res, 'Not a member of this firm.');
-    if (!hasMinRole(memb.role, 'firm_admin')) return err403(res, 'Requires firm_admin role.');
+    const firmId = req.firmMembership.firm_id;
 
     const { email, role = 'associate', title } = req.body || {};
     if (!email) return err400(res, 'email is required.');
@@ -216,7 +209,7 @@ router.post('/:id/members/invite', authRequired, firmLimiter, async (req, res) =
     const existingUser = await db.get('SELECT id FROM users WHERE email=?', [safeEmail]);
     if (existingUser) {
       const alreadyMember = await db.get(
-        'SELECT id FROM firm_members WHERE firm_id=? AND user_id=? AND active=1',
+        `SELECT fm.id FROM firm_members fm WHERE fm.firm_id=? AND fm.user_id=? AND ${ACTIVE_MEMBER_SQL}`,
         [firmId, existingUser.id]
       );
       if (alreadyMember) return res.status(409).json({ error: 'User is already a firm member.' });
@@ -238,9 +231,11 @@ router.post('/:id/members/invite', authRequired, firmLimiter, async (req, res) =
     // If user already has an account, auto-add them to the firm
     if (existingUser) {
       await db.run(
-        `INSERT INTO firm_members (firm_id, user_id, firm_role, title, invited_by)
-         VALUES (?,?,?,?,?) ON CONFLICT DO NOTHING`,
-        [firmId, existingUser.id, role, title || null, req.user.id]
+        `INSERT INTO firm_members (firm_id, user_id, firm_role, role, title, invited_by, active, status)
+         VALUES (?,?,?,?,?,?,1,'active')
+         ON CONFLICT (firm_id, user_id) DO UPDATE SET firm_role=excluded.firm_role, role=excluded.role,
+           title=excluded.title, invited_by=excluded.invited_by, active=1, status='active'`,
+        [firmId, existingUser.id, role, role, title || null, req.user.id]
       );
     }
 
@@ -268,27 +263,26 @@ router.post('/:id/members/invite', authRequired, firmLimiter, async (req, res) =
 });
 
 // ── PATCH /api/firms/:id/members/:uid — change role ──────────────────────────
-router.patch('/:id/members/:uid', authRequired, async (req, res) => {
+router.patch('/:id/members/:uid', authRequired, requireFirmMember({ minRole: 'firm_admin' }), async (req, res) => {
   try {
     const db     = await getDb();
-    const firmId = safeInt(req.params.id);
+    const firmId = req.firmMembership.firm_id;
     const uid    = safeInt(req.params.uid);
-    const memb   = await getMembership(db, req.user.id);
-    if (!memb || memb.firm_id !== firmId) return err403(res, 'Not a member of this firm.');
-    if (!hasMinRole(memb.role, 'firm_admin')) return err403(res, 'Requires firm_admin role.');
 
     const { role, title } = req.body || {};
     const VALID_ROLES = ['partner','associate','paralegal','client','viewer','firm_admin'];
     if (role && !VALID_ROLES.includes(role)) return err400(res, `Invalid role.`);
 
     const before = await db.get(
-      'SELECT role, title FROM firm_members WHERE firm_id=? AND user_id=? AND active=1',
+      `SELECT COALESCE(fm.firm_role, fm.role) AS role, fm.title FROM firm_members fm
+        WHERE fm.firm_id=? AND fm.user_id=? AND ${ACTIVE_MEMBER_SQL}`,
       [firmId, uid]
     );
     if (!before) return err404(res, 'Member not found.');
 
     const updates = []; const params = [];
-    if (role)  { updates.push('role=?');  params.push(role); }
+    // Both role columns are written so every reader sees the same role.
+    if (role)  { updates.push('role=?', 'firm_role=?');  params.push(role, role); }
     if (title !== undefined) { updates.push('title=?'); params.push(title ? truncateStr(sanitizeStr(title, 100), 100) : null); }
     if (!updates.length) return err400(res, 'Provide role or title to update.');
 
@@ -312,21 +306,18 @@ router.patch('/:id/members/:uid', authRequired, async (req, res) => {
 });
 
 // ── DELETE /api/firms/:id/members/:uid — remove member ───────────────────────
-router.delete('/:id/members/:uid', authRequired, async (req, res) => {
+router.delete('/:id/members/:uid', authRequired, requireFirmMember({ minRole: 'firm_admin' }), async (req, res) => {
   try {
     const db     = await getDb();
-    const firmId = safeInt(req.params.id);
+    const firmId = req.firmMembership.firm_id;
     const uid    = safeInt(req.params.uid);
-    const memb   = await getMembership(db, req.user.id);
-    if (!memb || memb.firm_id !== firmId) return err403(res, 'Not a member of this firm.');
-    if (!hasMinRole(memb.role, 'firm_admin')) return err403(res, 'Requires firm_admin role.');
     if (uid === req.user.id) return err400(res, 'Cannot remove yourself. Transfer firm ownership first.');
 
-    const before = await db.get('SELECT role FROM firm_members WHERE firm_id=? AND user_id=? AND active=1', [firmId, uid]);
+    const before = await db.get(`SELECT COALESCE(fm.firm_role, fm.role) AS role FROM firm_members fm WHERE fm.firm_id=? AND fm.user_id=? AND ${ACTIVE_MEMBER_SQL}`, [firmId, uid]);
     if (!before) return err404(res, 'Member not found.');
 
     // Soft-delete — preserve joined_at and role for audit trail
-    await db.run('UPDATE firm_members SET active=0 WHERE firm_id=? AND user_id=?', [firmId, uid]);
+    await db.run("UPDATE firm_members SET active=0, status='removed' WHERE firm_id=? AND user_id=?", [firmId, uid]);
 
     await writeAuditLog(db, {
       user_id: req.user.id, firm_id: firmId,
@@ -344,13 +335,10 @@ router.delete('/:id/members/:uid', authRequired, async (req, res) => {
 });
 
 // ── GET /api/firms/:id/audit — audit log ─────────────────────────────────────
-router.get('/:id/audit', authRequired, async (req, res) => {
+router.get('/:id/audit', authRequired, requireFirmMember({ minRole: 'partner' }), async (req, res) => {
   try {
     const db     = await getDb();
-    const firmId = safeInt(req.params.id);
-    const memb   = await getMembership(db, req.user.id);
-    if (!memb || memb.firm_id !== firmId) return err403(res, 'Not a member of this firm.');
-    if (!hasMinRole(memb.role, 'partner')) return err403(res, 'Requires partner role or higher.');
+    const firmId = req.firmMembership.firm_id;
 
     const { resource, action, user_id, limit = 50, offset = 0, since } = req.query;
 
@@ -392,9 +380,11 @@ router.post('/accept-invite', authRequired, async (req, res) => {
 
     // Add to firm
     await db.run(
-      `INSERT INTO firm_members (firm_id, user_id, firm_role, invited_by)
-       VALUES (?,?,?,?) ON CONFLICT DO NOTHING`,
-      [invite.firm_id, req.user.id, invite.role, invite.invited_by]
+      `INSERT INTO firm_members (firm_id, user_id, firm_role, role, invited_by, active, status)
+       VALUES (?,?,?,?,?,1,'active')
+       ON CONFLICT (firm_id, user_id) DO UPDATE SET firm_role=excluded.firm_role, role=excluded.role,
+         invited_by=excluded.invited_by, active=1, status='active'`,
+      [invite.firm_id, req.user.id, invite.role, invite.role, invite.invited_by]
     );
     await db.run('UPDATE firm_invites SET accepted=1 WHERE id=?', [invite.id]);
 
@@ -415,9 +405,9 @@ router.post('/accept-invite', authRequired, async (req, res) => {
 
 
 // ── GET /firms/:id/invoice-summary — billable, paid, overdue totals ───────
-router.get('/:id/invoice-summary', authRequired, async (req, res) => {
-  const fid = parseInt(req.params.id, 10);
-  if (!fid) return res.status(400).json({ error: 'Invalid firm ID' });
+// Firm finance is partner+ of THAT firm (PERMISSIONS.billing.read).
+router.get('/:id/invoice-summary', authRequired, requireFirmMember({ minRole: 'partner' }), async (req, res) => {
+  const fid = req.firmMembership.firm_id;
   try {
     const db = await getDb();
     const rows = await db.all(
@@ -438,9 +428,8 @@ router.get('/:id/invoice-summary', authRequired, async (req, res) => {
 });
 
 // ── GET /firms/:id/time-entries — billable time grouped by matter ─────────
-router.get('/:id/time-entries', authRequired, async (req, res) => {
-  const fid = parseInt(req.params.id, 10);
-  if (!fid) return res.status(400).json({ error: 'Invalid firm ID' });
+router.get('/:id/time-entries', authRequired, requireFirmMember({ minRole: 'partner' }), async (req, res) => {
+  const fid = req.firmMembership.firm_id;
   try {
     const db = await getDb();
     const entries = await db.all(
@@ -478,7 +467,7 @@ router.get('/trial-status', authRequired, async (req, res) => {
               GREATEST(0, EXTRACT(DAY FROM ft.trial_end_at - NOW())) as days_remaining
        FROM firm_trials ft
        JOIN firm_members fm ON fm.firm_id = ft.firm_id
-       WHERE fm.user_id = ? AND ft.active = true LIMIT 1`,
+       WHERE fm.user_id = ? AND ${ACTIVE_MEMBER_SQL} AND ft.active = true LIMIT 1`,
       [req.user.id]
     ).catch(() => null);
 
@@ -558,20 +547,14 @@ router.get('/:id/public-profile', apiLimiter, async (req, res) => {
 });
 
 // ── POST /firms/:id/invite — send email invitation to join firm ───────────
-router.post('/:id/invite', authRequired, inviteLimiter, async (req, res) => {
-  const fid         = parseInt(req.params.id, 10);
-  const { email, role = 'attorney' } = req.body;
-  if (!fid || !email) return res.status(400).json({ error: 'firm id and email required' });
+router.post('/:id/invite', authRequired, inviteLimiter, requireFirmMember({ minRole: 'firm_admin' }), async (req, res) => {
+  const fid         = req.firmMembership.firm_id;
+  const { email } = req.body || {};
+  // Invites can only grant a real firm tier below firm_admin.
+  const role = ['partner','associate','paralegal','client','viewer'].includes(req.body?.role) ? req.body.role : 'associate';
+  if (!email || !validateEmail(String(email))) return res.status(400).json({ error: 'A valid email is required' });
   try {
     const db = await getDb();
-    // Verify requester is a firm admin
-    const member = await db.get(
-      `SELECT firm_role FROM firm_members WHERE firm_id = ? AND user_id = ? AND active = 1`,
-      [fid, req.user.id]
-    ).catch(() => null);
-    if (!member || !['firm_admin','owner'].includes(member.firm_role)) {
-      return res.status(403).json({ error: 'Only firm admins can send invitations' });
-    }
     const firm = await db.get('SELECT name, invite_code FROM firms WHERE id = ?', [fid]).catch(() => null);
     if (!firm) return res.status(404).json({ error: 'Firm not found' });
 

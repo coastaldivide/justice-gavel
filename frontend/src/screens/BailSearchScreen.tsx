@@ -8,7 +8,7 @@ import { useLatestRef } from '../hooks/useLatestRef';
 import {ActivityIndicator, Animated, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { getLocation, formatDistance } from '../services/location';
-import { api }             from '../services/api';
+import { unwrapList, api }             from '../services/api';
 import { getUserState } from '../utils/userState';
 import { COLORS, useTheme } from '../constants/theme';
 
@@ -177,11 +177,12 @@ function BailSearchScreen(): React.JSX.Element {
       }
 
       if (!res) throw new Error('Bail agent search failed after 3 attempts');
-      setItems(res.data || []);
-      cacheBailAgents(res.data || []).catch(() => {});
+      const agents = unwrapList(res.data, 'agents', 'bail_agents');
+      setItems(agents);
+      cacheBailAgents(agents).catch(() => {});
       setSearched(true);
       setRetryCount(0);
-      setStatus(res.data?.length === 0 ? 'No bail agents found in this area. Try a nearby city.' : '');
+      setStatus(agents.length === 0 ? 'No bail agents found in this area. Try a nearby city.' : '');
     } catch {
       // Try offline cache on failure
       const { agents: cached } = (await getCachedBailAgents().catch(() => ({ agents: [] }))) as any;

@@ -112,6 +112,72 @@ router.get('/cases', authRequired, casesListLimiter, async (req, res) => {
 });
 
 // ── POST /api/attorney/cases/:caseId/assign ───────────────────────────────────
+// Becoming counsel on a case requires a relationship the CLIENT created (C1):
+//   self (no defender_id, or defender_id = caller):
+//     • a pending invite from the case owner (POST /api/cases/:id/counsel) → accepted
+//     • or a confirmed/completed consultation booking between the case owner and
+//       this attorney → active
+//   a colleague (defender_id ≠ caller):
+//     • the caller must already be ACTIVE counsel on the case, and the colleague
+//       must be an attorney in the same firm (firm_members) or office (office_members)
+//   platform staff (admin / super_admin, live DB role) may assign any attorney.
+// Anything else → 403 no_client_relationship. Existing assignments of other
+// attorneys are never overwritten.
+const STAFF = new Set(['admin', 'super_admin']);
+
+async function hasConsultationWith(db, clientId, attorneyId) {
+  const row = await db.get(
+    `SELECT cb.id FROM consultation_bookings cb
+      WHERE cb.user_id = ?
+        AND cb.status IN ('confirmed', 'completed')
+        AND (cb.lawyer_id = ?
+             OR cb.lawyer_id IN (SELECT ap.lawyer_id FROM attorney_profiles ap WHERE ap.user_id = ? AND ap.lawyer_id IS NOT NULL)
+             OR cb.lawyer_id IN (SELECT l.id FROM lawyers l WHERE l.user_id = ?))
+      LIMIT 1`,
+    [clientId, attorneyId, attorneyId, attorneyId]).catch(() => null);
+  return !!row;
+}
+
+async function sharesPractice(db, a, b) {
+  const firm = await db.get(
+    `SELECT 1 AS x FROM firm_members f1
+       JOIN firm_members f2 ON f2.firm_id = f1.firm_id
+      WHERE f1.user_id = ? AND f2.user_id = ?
+        AND COALESCE(f1.active,1) = 1 AND COALESCE(f1.status,'active') = 'active'
+        AND COALESCE(f2.active,1) = 1 AND COALESCE(f2.status,'active') = 'active'
+      LIMIT 1`, [a, b]).catch(() => null);
+  if (firm) return true;
+  const office = await db.get(
+    `SELECT 1 AS x FROM office_members o1
+       JOIN office_members o2 ON o2.office_id = o1.office_id
+      WHERE o1.user_id = ? AND o2.user_id = ? AND COALESCE(o1.active,1) = 1 AND COALESCE(o2.active,1) = 1
+      LIMIT 1`, [a, b]).catch(() => null);
+  return !!office;
+}
+
+async function upsertAssignment(db, { caseId, defenderId, assignedBy, officeId, notes, status }) {
+  const existing = await db.get(
+    'SELECT id FROM case_assignments WHERE case_id = ? AND defender_id = ? ORDER BY id DESC LIMIT 1',
+    [caseId, defenderId]);
+  if (existing) {
+    await db.run(
+      `UPDATE case_assignments
+          SET status = ?, assigned_by = ?, office_id = COALESCE(?, office_id),
+              notes = COALESCE(NULLIF(?, ''), notes),
+              accepted_at = CASE WHEN ? = 'active' THEN NOW() ELSE accepted_at END,
+              assigned_at = COALESCE(assigned_at, NOW())
+        WHERE id = ?`,
+      [status, assignedBy, officeId, notes, status, existing.id]);
+    return existing.id;
+  }
+  const r = await db.run(
+    `INSERT INTO case_assignments
+       (case_id, defender_id, assigned_by, office_id, status, notes, assigned_at, accepted_at)
+     VALUES (?,?,?,?,?,?,NOW(), CASE WHEN ? = 'active' THEN NOW() ELSE NULL END)`,
+    [caseId, defenderId, assignedBy, officeId, status, notes, status]);
+  return r.lastID;
+}
+
 router.post('/cases/:caseId/assign', authRequired, assignLimiter, async (req, res) => {
   try {
     const ctx = await requireAttorney(req, res);
@@ -121,29 +187,50 @@ router.post('/cases/:caseId/assign', authRequired, assignLimiter, async (req, re
     const { defender_id, notes = '' } = req.body || {};
     const assignTo     = defender_id ? safeInt(defender_id) : req.user.id;
     const safeNotes    = notes ? truncateStr(sanitizeStr(String(notes), 500), 500) : '';
+    if (!caseId || !assignTo) return err400(res, 'Invalid case or attorney id.');
 
-    const cas = await db.get(
-      'SELECT id FROM cases WHERE id=?',
-      [caseId]
-    );
+    const cas = await db.get('SELECT id, user_id FROM cases WHERE id=?', [caseId]);
     if (!cas) return err404(res, 'Case not found.');
 
-    // One active assignment per case: update it if present, else insert.
-    const upd = await db.run(
-      `UPDATE case_assignments
-          SET defender_id=?, assigned_by=?, office_id=?, status=?, notes=?, assigned_at=NOW()
-        WHERE case_id=?`,
-      [assignTo, req.user.id, ctx.user.office_id || null, 'active', safeNotes, caseId]
-    );
-    if (!upd.changes) {
-      await db.run(
-        `INSERT INTO case_assignments
-           (case_id, defender_id, assigned_by, office_id, status, notes, assigned_at)
-         VALUES (?,?,?,?,?,?,NOW())`,
-        [caseId, assignTo, req.user.id, ctx.user.office_id || null, 'active', safeNotes]
-      );
+    const isStaffCaller = STAFF.has(ctx.user.role);
+    const self          = Number(assignTo) === Number(req.user.id);
+    let status = null;
+
+    if (isStaffCaller) {
+      status = 'active';
+    } else if (self) {
+      const invite = await db.get(
+        `SELECT id FROM case_assignments WHERE case_id = ? AND defender_id = ? AND status IN ('pending','active') LIMIT 1`,
+        [caseId, req.user.id]);
+      if (invite || await hasConsultationWith(db, cas.user_id, req.user.id)) status = 'active';
+    } else {
+      const callerActive = await db.get(
+        `SELECT id FROM case_assignments WHERE case_id = ? AND defender_id = ? AND status = 'active' LIMIT 1`,
+        [caseId, req.user.id]);
+      if (callerActive && await sharesPractice(db, req.user.id, assignTo)) status = 'active';
     }
-    res.status(201).json({ ok: true, case_id: caseId, defender_id: assignTo });
+
+    if (!status) {
+      logger.warn({ caseId, by: req.user.id, to: assignTo }, '[attorney/cases/assign] refused — no client relationship');
+      return res.status(403).json({
+        error: 'no_client_relationship',
+        message: 'You can only be assigned to a case the client invited you to (or booked a consultation with you for).',
+      });
+    }
+
+    // The colleague / staff target must be an attorney account.
+    if (!self) {
+      const target = await db.get('SELECT id, role, is_defender FROM users WHERE id = ?', [assignTo]);
+      if (!target || (!['attorney', 'defender'].includes(target.role) && Number(target.is_defender) !== 1)) {
+        return err400(res, 'defender_id must be an attorney account.');
+      }
+    }
+
+    await upsertAssignment(db, {
+      caseId, defenderId: assignTo, assignedBy: req.user.id,
+      officeId: ctx.user.office_id || null, notes: safeNotes, status,
+    });
+    res.status(201).json({ ok: true, case_id: caseId, defender_id: assignTo, status });
   } catch (e) {
     logger.error('[attorney/cases/assign]', e.message);
     res.status(500).json({ error: 'Could not assign case.' });
@@ -211,7 +298,7 @@ router.post('/cases/:caseId/outcome', authRequired, assignLimiter, async (req, r
          JOIN cases c ON c.id = ca.case_id
          LEFT JOIN attorney_profiles ap ON ap.user_id = ca.defender_id
          LEFT JOIN lawyers l ON l.id = ap.lawyer_id
-        WHERE ca.case_id = ? AND ca.defender_id = ?`,
+        WHERE ca.case_id = ? AND ca.defender_id = ? AND ca.status = 'active'`,
       [caseId, req.user.id]
     );
     if (!assignment) return res.status(403).json({ error: 'Not assigned to this case' });
@@ -271,13 +358,25 @@ router.post('/office/join', authRequired, assignLimiter, async (req, res) => {
     const VALID_ROLES    = new Set(['attorney','partner','associate','paralegal','admin']);
     const safeRole       = VALID_ROLES.has(role) ? role : 'attorney';
 
-    await db.run('UPDATE users SET office_id=? WHERE id=?', [office_id, req.user.id]);
+    const officeId = safeInt(office_id);
+    if (!officeId) return err400(res, 'office_id must be a numeric office id.');
+    // An existing office can't be joined by just knowing its id (that exposed the
+    // member list and enabled colleague assignment). Only a brand-new office id,
+    // or one the caller already belongs to, is accepted.
+    const members = await db.get(
+      'SELECT COUNT(*) AS n, SUM(CASE WHEN user_id = ? THEN 1 ELSE 0 END) AS mine FROM office_members WHERE office_id = ? AND COALESCE(active,1) = 1',
+      [req.user.id, officeId]);
+    const firstMember = Number(members?.n || 0) === 0;
+    if (!firstMember && !Number(members?.mine || 0)) {
+      return res.status(403).json({ error: 'office_invite_required', message: 'This office already exists. Ask its administrator to add you.' });
+    }
+    await db.run('UPDATE users SET office_id=? WHERE id=?', [officeId, req.user.id]);
     await db.run(
       `INSERT INTO office_members (office_id, office_name, user_id, role)
        VALUES (?,?,?,?) ON CONFLICT DO NOTHING`,
-      [office_id, safeOfficeName, req.user.id, safeRole]
+      [officeId, safeOfficeName, req.user.id, firstMember ? 'admin' : safeRole]
     );
-    res.status(201).json({ ok: true, office_id, role: safeRole });
+    res.status(201).json({ ok: true, office_id: officeId, role: firstMember ? 'admin' : safeRole });
   } catch (e) {
     logger.error('[attorney/office/join]', e.message);
     res.status(500).json({ error: 'Could not join office.' });

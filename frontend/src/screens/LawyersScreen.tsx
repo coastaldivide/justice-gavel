@@ -20,7 +20,7 @@ import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react'
 import {Animated, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, LayoutAnimation, InteractionManager} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Picker } from '@react-native-picker/picker';
-import { api, apiErrorMessage } from '../services/api';
+import { unwrapList, api, apiErrorMessage } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocationWithCity, formatDistance } from '../services/location';
 import { cacheSearch, getCachedLawyers } from '../services/offlineCache';
@@ -598,13 +598,14 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
 
       setStatusMsg('Finding lawyers near you…');
       var res = await api.get('/providers/lawyers', { params });
-      setLawyers(res.data || []);
+      const found = unwrapList<Record<string, unknown>>(res.data, 'lawyers');
+      setLawyers(found as any[]);
       lastParamsRef.current = params;
       setPage(1);
-      setHasMore(Array.isArray(res.data) && res.data.length >= PAGE_SIZE);
+      setHasMore(found.length >= PAGE_SIZE);
     // Fetch review summaries for first 10 lawyers (non-blocking)
     try {
-      const lawyerIds = res.data?.slice(0, 10).map((l: Record<string, unknown>) => l.id);
+      const lawyerIds = found.slice(0, 10).map(l => Number(l.id)).filter(Number.isFinite);
       const reviews = await Promise.allSettled(
         (lawyerIds ?? []).map((id: number) =>
           api.get('/reviews/summary', { params: { entity_type:'lawyer', entity_id:id } })
@@ -618,7 +619,7 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
       if (mountedRef.current) setReviewSummaries(summaryMap);
     } catch {}
     // (remove the extra ); we added above -- the original setLawyers call needs its own);
-      setStatusMsg(res.data?.length === 0 ? 'No lawyers found. Try adjusting filters.' : '');
+      setStatusMsg(found.length === 0 ? 'No lawyers found. Try adjusting filters.' : '');
     } catch {
       setStatusMsg('Could not load lawyers. Check your connection or try a different city.');
     } finally {

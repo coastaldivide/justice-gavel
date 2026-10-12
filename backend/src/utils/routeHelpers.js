@@ -201,6 +201,8 @@ export const API_URLS = {
 
 // ── Admin table/column allow-lists ─────────────────────────────────────────
 const ADMIN_TABLES = new Set([
+  // Provider directory — the /api/admin/lawyers and /api/admin/bail consoles (H4).
+  'lawyers','bail_agents',
   'users','cases','matters','resources','lessons','bail_rates',
   'providers','bondsman_profiles','bar_questions','checkins',
   'video_sessions','ai_jobs','audit_log','rewards',
@@ -215,4 +217,13 @@ export function safeAdminCols(cols) {
   if (!Array.isArray(cols) || cols.length === 0) return '*';
   const valid = cols.filter(c => ADMIN_COL_PATTERN.test(c));
   return valid.length ? valid.join(', ') : '*';
+}
+
+/** Column list as an ARRAY of validated identifiers (for INSERT column lists). Throws on an invalid name. */
+export function safeAdminColList(cols) {
+  if (!Array.isArray(cols) || cols.length === 0) throw Object.assign(new Error('No columns'), { status: 400 });
+  for (const c of cols) {
+    if (!ADMIN_COL_PATTERN.test(c)) throw Object.assign(new Error('Invalid column'), { status: 400 });
+  }
+  return cols;
 }

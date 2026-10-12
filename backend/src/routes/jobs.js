@@ -15,11 +15,13 @@ import logger from '../utils/logger.js';
 import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getJobAsync, queueStats } from '../services/aiQueue.js';
+import { getDb } from '../db/index.js';
+import { requireStaff } from '../utils/staff.js';
 
 const router = Router();
 
-// GET /api/jobs/stats — queue health (registered before /:id)
-router.get('/stats', async (req, res) => {
+// GET /api/jobs/stats — queue health (registered before /:id). Staff only.
+router.get('/stats', authRequired, requireStaff(getDb), async (req, res) => {
   try {
     res.json(await queueStats());
   } catch (e) {

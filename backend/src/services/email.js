@@ -5,6 +5,12 @@
  */
 
 import logger from '../utils/logger.js';
+import { escapeHtml as e, safeUrl, headerSafe } from '../utils/html.js';
+
+// Every value interpolated into the HTML templates below goes through e()
+// (text / attribute) or safeUrl() (href) — names, case titles, notes and
+// anything an IdP or a user supplied are untrusted (M4). Subjects go through
+// headerSafe() (no CR/LF).
 
 const FROM      = process.env.EMAIL_FROM || process.env.ALERT_EMAIL_FROM || 'noreply@justicegavel.app';
 const FROM_NAME = 'Justice Gavel';
@@ -37,8 +43,8 @@ async function send({ to, subject, html, text }) {
     const result = await resend.emails.send({
       from:    `${FROM_NAME} <${FROM}>`,
       to:      Array.isArray(to) ? to : [to],
-      subject,
-      html:    html || `<p>${String(text || '').replace(/\n/g, '<br>')}</p>`,
+      subject: headerSafe(subject),
+      html:    html || `<p>${e(String(text || '')).replace(/\n/g, '<br>')}</p>`,
       text:    text || String(html || '').replace(/<[^>]+>/g, ''),
     });
     if (result?.error) throw new Error(result.error.message || 'resend error');
@@ -59,7 +65,7 @@ export async function sendPasswordReset(to, resetUrl) {
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
         <h2 style="color:#042C53">Reset your password</h2>
         <p>Click the button below to set a new password. This link expires in 1 hour.</p>
-        <a href="${resetUrl}" style="display:inline-block;background:#042C53;color:#fff;
+        <a href="${safeUrl(resetUrl)}" style="display:inline-block;background:#042C53;color:#fff;
            padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;margin:16px 0">
           Reset password
         </a>
@@ -75,7 +81,7 @@ export async function sendWelcome(to, displayName) {
     to, subject: 'Welcome to Justice Gavel',
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
-        <h2 style="color:#042C53">Welcome, ${displayName || 'there'}.</h2>
+        <h2 style="color:#042C53">Welcome, ${e(displayName || 'there')}.</h2>
         <p>Your account is ready. You now have access to:</p>
         <ul style="line-height:2">
           <li>AI-powered legal rights information</li>
@@ -96,11 +102,11 @@ export async function sendWelcome(to, displayName) {
 
 export async function sendSubscriptionConfirm(to, plan, amount) {
   return await send({
-    to, subject: `You're subscribed to Justice Gavel ${plan}`,
+    to, subject: headerSafe(`You're subscribed to Justice Gavel ${plan}`),
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
         <h2 style="color:#042C53">Subscription confirmed</h2>
-        <p>You're now on the <strong>${plan}</strong> plan at <strong>$${amount}/month</strong>.</p>
+        <p>You're now on the <strong>${e(plan)}</strong> plan at <strong>$${e(amount)}/month</strong>.</p>
         <p>All features are unlocked. Your next billing date is 30 days from today.</p>
         <a href="https://justicegavel.app" style="display:inline-block;background:#042C53;
            color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold">
@@ -116,8 +122,8 @@ export async function sendPaymentFailed(to, plan, retryDate) {
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px">
         <h2 style="color:#C62828">Payment failed</h2>
-        <p>We couldn't charge your card for your <strong>${plan}</strong> subscription.</p>
-        <p>We'll retry on <strong>${retryDate}</strong>. Update your payment method to avoid interruption.</p>
+        <p>We couldn't charge your card for your <strong>${e(plan)}</strong> subscription.</p>
+        <p>We'll retry on <strong>${e(retryDate)}</strong>. Update your payment method to avoid interruption.</p>
         <a href="https://justicegavel.app/billing" style="display:inline-block;background:#C62828;
            color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold">
           Update payment method
@@ -129,8 +135,8 @@ export async function sendPaymentFailed(to, plan, retryDate) {
 export async function sendCriticalAlert(subject, body) {
   return await send({
     to:      process.env.ALERT_EMAIL || 'engineering@justicegavel.app',
-    subject: `🚨 ${subject}`,
-    html:    `<pre style="font-family:monospace;font-size:13px">${body}</pre>`,
+    subject: headerSafe(`🚨 ${subject}`),
+    html:    `<pre style="font-family:monospace;font-size:13px">${e(body)}</pre>`,
   });
 }
 
@@ -157,30 +163,30 @@ export async function sendBookingConfirmation({ to, clientName, attorneyName,
   });
   return await send({
     to,
-    subject: `Consultation confirmed — ${attorneyName} on ${dateLabel}`,
+    subject: headerSafe(`Consultation confirmed — ${attorneyName} on ${dateLabel}`),
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h2 style="color:#0A1628">Your consultation is confirmed ✅</h2>
-        <p>Hi ${clientName},</p>
-        <p>Your <strong>${durationMin}-minute consultation</strong> with
-           <strong>${attorneyName}</strong> is booked.</p>
+        <p>Hi ${e(clientName)},</p>
+        <p>Your <strong>${e(durationMin)}-minute consultation</strong> with
+           <strong>${e(attorneyName)}</strong> is booked.</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
           <tr><td style="padding:8px 0;color:#6B7280;width:120px">Date</td>
-              <td style="padding:8px 0;font-weight:600">${dateLabel}</td></tr>
+              <td style="padding:8px 0;font-weight:600">${e(dateLabel)}</td></tr>
           <tr><td style="padding:8px 0;color:#6B7280">Time</td>
-              <td style="padding:8px 0;font-weight:600">${timeSlot}</td></tr>
+              <td style="padding:8px 0;font-weight:600">${e(timeSlot)}</td></tr>
           <tr><td style="padding:8px 0;color:#6B7280">Duration</td>
-              <td style="padding:8px 0;font-weight:600">${durationMin} minutes</td></tr>
+              <td style="padding:8px 0;font-weight:600">${e(durationMin)} minutes</td></tr>
           <tr><td style="padding:8px 0;color:#6B7280">Platform fee</td>
-              <td style="padding:8px 0;font-weight:600">$${feeDollars} (charged)</td></tr>
+              <td style="padding:8px 0;font-weight:600">$${e(feeDollars)} (charged)</td></tr>
         </table>
-        <a href="${meetingLink}"
+        <a href="${safeUrl(meetingLink)}"
            style="display:inline-block;background:#0A1628;color:#fff;padding:12px 24px;
                   border-radius:8px;text-decoration:none;font-weight:700;margin:8px 0">
           Join Video Call
         </a>
         <p style="color:#6B7280;font-size:13px;margin-top:24px">
-          Need to cancel? <a href="${cancellationUrl || 'https://justicegavel.app'}">Cancel here</a>
+          Need to cancel? <a href="${safeUrl(cancellationUrl)}">Cancel here</a>
           (free cancellation until 2 hours before the appointment).<br>
           <strong>⚖️ Legal Notice:</strong> This is a general consultation.
           It does not create an attorney-client relationship.
@@ -198,26 +204,26 @@ export async function sendAttorneyBookingAlert({ to, attorneyName, clientName,
   });
   return await send({
     to,
-    subject: `New consultation booked — ${clientName} on ${dateLabel}`,
+    subject: headerSafe(`New consultation booked — ${clientName} on ${dateLabel}`),
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h2 style="color:#0A1628">📋 New consultation booked</h2>
-        <p>Hi ${attorneyName},</p>
-        <p><strong>${clientName}</strong> has booked a
-           <strong>${durationMin}-minute consultation</strong> with you.</p>
+        <p>Hi ${e(attorneyName)},</p>
+        <p><strong>${e(clientName)}</strong> has booked a
+           <strong>${e(durationMin)}-minute consultation</strong> with you.</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
           <tr><td style="padding:8px 0;color:#6B7280;width:120px">Date</td>
-              <td style="padding:8px 0;font-weight:600">${dateLabel}</td></tr>
+              <td style="padding:8px 0;font-weight:600">${e(dateLabel)}</td></tr>
           <tr><td style="padding:8px 0;color:#6B7280">Time</td>
-              <td style="padding:8px 0;font-weight:600">${timeSlot}</td></tr>
+              <td style="padding:8px 0;font-weight:600">${e(timeSlot)}</td></tr>
           <tr><td style="padding:8px 0;color:#6B7280">Client email</td>
-              <td style="padding:8px 0">${clientEmail || 'Not provided'}</td></tr>
+              <td style="padding:8px 0">${e(clientEmail || 'Not provided')}</td></tr>
           <tr><td style="padding:8px 0;color:#6B7280">Client phone</td>
-              <td style="padding:8px 0">${clientPhone || 'Not provided'}</td></tr>
+              <td style="padding:8px 0">${e(clientPhone || 'Not provided')}</td></tr>
           ${caseTitle ? `<tr><td style="padding:8px 0;color:#6B7280">Case</td>
-              <td style="padding:8px 0">${caseTitle}</td></tr>` : ''}
+              <td style="padding:8px 0">${e(caseTitle)}</td></tr>` : ''}
         </table>
-        <a href="${meetingLink}"
+        <a href="${safeUrl(meetingLink)}"
            style="display:inline-block;background:#0A1628;color:#fff;padding:12px 24px;
                   border-radius:8px;text-decoration:none;font-weight:700;margin:8px 0">
           Join Video Call

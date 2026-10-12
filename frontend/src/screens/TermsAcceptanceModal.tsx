@@ -9,7 +9,10 @@ import { CONTENT_MAX_WIDTH } from '../utils/responsive';
  *
  * LEGAL REQUIREMENTS MET:
  *   ✓ Affirmative action required (cannot be dismissed without accepting)
- *   ✓ User must scroll to bottom before "I Agree" activates
+ *   ✓ User must have seen the whole summary before "I Agree" activates —
+ *     either by scrolling to the end or, when the summary fits on screen
+ *     (desktop web, tablets), because it is already fully visible. Requiring
+ *     a scroll event that can never fire locked desktop users out (audit11 H10).
  *   ✓ Two separate checkboxes — ToS agreement AND specific "not legal advice" acknowledgment
  *   ✓ Timestamped, versioned, platform-logged acceptance sent to backend
  *   ✓ Shown again automatically when ToS version changes
@@ -18,7 +21,9 @@ import { CONTENT_MAX_WIDTH } from '../utils/responsive';
  * USAGE:
  *   Called from the root navigator on every app launch.
  *   GET /api/auth/tos-status → { needs_acceptance: true } → show this modal
- *   On accept → POST /api/auth/accept-tos → dismiss and continue
+ *   GET /api/auth/disclaimer/status → { required: true } (or any 451) → show it too
+ *   On accept → POST /api/auth/accept-tos, then POST /api/auth/disclaimer/accept
+ *   (the second checkbox IS the AI/not-legal-advice disclaimer) → dismiss.
  */
 
 import React, { useState, useRef, useCallback } from 'react';
@@ -29,6 +34,14 @@ import { useTheme, TYPE, FONT } from '../constants/theme';
 import api from '../services/api';
 
 const TOS_VERSION = '2.1';  // Must match CURRENT_TOS_VERSION in auth.js
+
+/** Distance from the end (px) that still counts as "read to the bottom". */
+const BOTTOM_SLACK = 30;
+
+/** True when the whole summary is visible without scrolling. */
+export function contentFitsViewport(contentHeight: number, viewportHeight: number): boolean {
+  return contentHeight <= viewportHeight + BOTTOM_SLACK;
+}
 
 // ─── Summary sections shown in the modal ─────────────────────────────────────
 // The full ToS is accessible via the "Read full Terms" link.
@@ -67,7 +80,7 @@ type Props = {
   onDecline?: () => void;
 };
 
-function TermsAcceptanceModal({ visible, onAccepted }: Props) {
+function TermsAcceptanceModal({ visible, onAccepted, onDecline }: Props) {
   const { showToast } = useToast();
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -76,6 +89,8 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
   const s = styles(colors, TYPE, FONT);
 
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
+  const [viewportH,        setViewportH]         = useState(0);
+  const [contentH,         setContentH]          = useState(0);
   const [checkToS,         setCheckToS]         = useState(false);
   const [checkNoAdvice,    setCheckNoAdvice]     = useState(false);
   const [submitting,       setSubmitting]        = useState(false);
@@ -87,9 +102,17 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
 
   const handleScroll = useCallback(({ nativeEvent }: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-    const atBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 30;
+    const atBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - BOTTOM_SLACK;
     if (atBottom && !scrolledToBottom) setScrolledToBottom(true);
   }, [scrolledToBottom]);
+
+  // When everything fits in the viewport there is nothing to scroll and no
+  // scroll event will ever fire — the user has already seen it all.
+  React.useEffect(() => {
+    if (!scrolledToBottom && viewportH > 0 && contentH > 0 && contentFitsViewport(contentH, viewportH)) {
+      setScrolledToBottom(true);
+    }
+  }, [viewportH, contentH, scrolledToBottom]);
 
   const handleAccept = useCallback(async () => {
     if (!canAccept || submitting) return;
@@ -104,6 +127,9 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
         platform:          Platform.OS,
         device_id:         null, // privacy-preserving — not sending device ID
       });
+      // The "not a law firm / not legal advice" checkbox is the AI disclaimer:
+      // record it too, or every AI feature answers 451 disclaimer_required.
+      await api.post('/auth/disclaimer/accept', {});
       onAccepted();
     } catch (e: any) {
       setError(apiErrorMessage(e, 'Could not record acceptance. Please try again.'));
@@ -137,7 +163,10 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
           style={s.scroll}
           contentContainerStyle={s.scrollContent}
           onScroll={handleScroll}
+          onLayout={e => setViewportH(e.nativeEvent.layout.height)}
+          onContentSizeChange={(_w, h) => setContentH(h)}
           scrollEventThrottle={100}
+          testID="tos-scroll"
           showsVerticalScrollIndicator={true}>
 
           {/* Key points in plain language */}
@@ -188,6 +217,7 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
           accessibilityHint="Double-tap to activate"
 
             style={s.checkRow}
+            testID="tos-check-terms"
             onPress={() => setCheckToS(v => !v)}
             accessibilityState={{ checked: checkToS }}
             accessibilityLabel="I have read and agree to the Terms of Service">
@@ -209,6 +239,7 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
           accessibilityHint="Double-tap to activate"
 
             style={s.checkRow}
+            testID="tos-check-no-advice"
             onPress={() => setCheckNoAdvice(v => !v)}
             accessibilityState={{ checked: checkNoAdvice }}
             accessibilityLabel="I understand Justice Gavel is not a law firm and does not provide legal advice">
@@ -239,6 +270,7 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
           accessibilityHint="Double-tap to activate"
             style={[s.acceptBtn, (!canAccept || submitting) && s.acceptBtnDisabled]}
             onPress={handleAccept}
+            testID="tos-accept-button"
             disabled={!canAccept || submitting}
             accessibilityLabel="I Agree — accept Terms of Service"
             accessibilityState={{ disabled: !canAccept || submitting }}>
@@ -249,6 +281,13 @@ function TermsAcceptanceModal({ visible, onAccepted }: Props) {
           </TouchableOpacity>
 
           <Text maxFontSizeMultiplier={1.4} style={s.versionNote}>Terms of Service v{TOS_VERSION} · Effective May 1, 2026</Text>
+          {onDecline && (
+            <TouchableOpacity accessibilityRole="button" testID="tos-decline-button"
+              accessibilityLabel="Decline and sign out" onPress={onDecline}
+              style={s.declineBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Text maxFontSizeMultiplier={1.4} style={s.declineText}>Decline and sign out</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
       </View>
@@ -287,5 +326,7 @@ const styles = (colors: any, TYPE: Record<string, number>, FONT: Record<string, 
   acceptBtnDisabled:  { opacity: 0.4 },
   acceptBtnText:      { color: colors.textOnGold, fontSize: 15, fontFamily: FONT.bold },
   versionNote:        { fontSize: 10, color: colors.textSecond, textAlign: 'center', opacity: 0.7 },
+  declineBtn:         { alignSelf: 'center', marginTop: 10, paddingVertical: 6, paddingHorizontal: 12 },
+  declineText:        { fontSize: 12, color: colors.textSecond, textDecorationLine: 'underline' },
 });
 export default React.memo(TermsAcceptanceModal);

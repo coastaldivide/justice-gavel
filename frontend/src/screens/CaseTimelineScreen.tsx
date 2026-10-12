@@ -14,6 +14,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, RefreshControl, Platform, ActivityIndicator, KeyboardAvoidingView, LayoutAnimation, InteractionManager } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { api, apiErrorMessage } from '../services/api';
+import { scheduleReminder, localReminderInstant, formatReminderTime } from '../services/reminders';
 import {  useTheme, RADIUS, SHADOW, TYPE, FONTS, COLORS } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import { hapticImpact, hapticNotification } from '../utils/webCompat';
@@ -104,23 +105,22 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
   const scheduleEventReminder = async (event: CaseEvent) => {
     const dateStr = event.event_date || event.created_at;
     if (!dateStr) { return; }
-    const eventDate = new Date(dateStr);
-    const remind = new Date(eventDate);
-    remind.setDate(remind.getDate() - 1); // 1 day before
-    if (remind <= new Date()) {
+    // Event dates are calendar days: remind at 9:00 local the day before.
+    const remind = localReminderInstant(String(dateStr).slice(0, 10), 1, 9, 0);
+    if (!remind || remind <= new Date()) {
       showToast('This event is too close to set a reminder.');
       return;
     }
     try {
-      await api.post('/push/reminders', {
+      await scheduleReminder({
         title: '📋 Tomorrow: ' + event.title,
         body:  event.location ? `At ${event.location}` : 'Check your case details.',
-        scheduled_for: remind.toISOString(),
-        notification_type: 'court_reminder',
+        deliverAt: remind,
+        caseId,
       });
-      showToast("You'll get a notification the day before.", 'info');
-    } catch {
-      showToast('Make sure notifications are enabled.');
+      showToast(`Reminder set for ${formatReminderTime(remind.toISOString())}.`, 'info');
+    } catch (e: any) {
+      showToast(apiErrorMessage(e, 'Could not set the reminder.'), 'error');
     }
   };
 

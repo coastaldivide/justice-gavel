@@ -4,8 +4,14 @@
  */
 
 /**
- * Sanitize a string: trim whitespace, remove null bytes, RTL overrides,
- * and neutralise basic XSS vectors by escaping HTML special characters.
+ * Normalise user-supplied text for STORAGE: trim, and drop characters that are
+ * never legitimate in user text (NUL, RTL override, zero-width space, U+2028/9).
+ *
+ * It deliberately does NOT HTML-encode. User text is stored exactly as typed
+ * and rendered natively by React Native (which never interprets HTML). HTML is
+ * escaped at the few places that generate HTML — emails, printable web pages —
+ * with escapeHtml() below. Encoding on input corrupted every name, note and
+ * message ("I don&#x27;t …") and double-encoded anything later escaped again.
  */
 export function sanitizeStr(input) {
   if (input === null || input === undefined) return '';
@@ -15,12 +21,48 @@ export function sanitizeStr(input) {
     .replaceAll('\0', '')           // null bytes
     .replace(/\u202E/g, '')          // RTL override
     .replace(/\u200B/g, '')          // zero-width space
-    .replace(/\u2028|\u2029/g, '')   // line/paragraph separators
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/`/g, '&#x60;');
+    .replace(/\u2028|\u2029/g, '');  // line/paragraph separators
+}
+
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' };
+
+/**
+ * Escape text for interpolation into HTML (element content or a quoted
+ * attribute value). Use at OUTPUT time, only where HTML is generated.
+ * null/undefined → ''.
+ */
+export function escapeHtml(input) {
+  if (input === null || input === undefined) return '';
+  return String(input).replace(/[&<>"'`]/g, c => HTML_ESCAPES[c]);
+}
+
+// Entities the old input sanitisers produced (utils/sanitize.sanitizeStr and the
+// feedback route's local sanitiser). Used only by the one-off data repair script.
+const LEGACY_ENTITY_DECODE = {
+  '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#x27;': "'", '&#39;': "'",
+  '&#x60;': '`', '&#96;': '`', '&#x2F;': '/', '&#47;': '/',
+};
+
+/**
+ * Decode the HTML entities that the legacy input sanitisers wrote into stored
+ * user text. Repeats until stable so double-encoded values (&amp;quot;) are
+ * fully restored. `&amp;` is only decoded when `decodeAmp` is true (the
+ * feedback sanitiser encoded '&'; utils/sanitize never did, so a literal
+ * "&amp;" a user typed elsewhere is left alone) or when it prefixes one of the
+ * legacy entities (i.e. it is itself an artefact of double encoding).
+ * Returns the input unchanged when it is not a string.
+ */
+export function decodeLegacyEntities(input, { decodeAmp = false } = {}) {
+  if (typeof input !== 'string' || !input.includes('&')) return input;
+  let prev;
+  let out = input;
+  for (let i = 0; i < 5 && out !== prev; i++) {
+    prev = out;
+    out = out.replace(/&amp;(?=(?:lt|gt|quot|amp|#x27|#39|#x60|#96|#x2F|#47);)/g, '&');
+    out = out.replace(/&(?:lt|gt|quot|#x27|#39|#x60|#96|#x2F|#47);/g, m => LEGACY_ENTITY_DECODE[m]);
+    if (decodeAmp) out = out.replace(/&amp;/g, '&');
+  }
+  return out;
 }
 
 /**

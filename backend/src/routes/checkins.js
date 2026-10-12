@@ -22,8 +22,72 @@ import { sendPushToUser as sendPushNotification } from '../services/pushDelivery
 import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
 import logger from '../utils/logger.js';
+import { timingSafeEqual } from 'crypto';
+import { isStaff } from '../utils/staff.js';
 
 const router = Router();
+
+// ── Enrollment access (H2) ────────────────────────────────────────────────────
+// An enrollment is visible to: the bondsman who created it, the defendant it is
+// linked to (checkin_enrollments.user_id), or staff. A not-yet-linked enrollment
+// is claimed by the first signed-in user whose account email or phone matches
+// the defendant contact the bondsman entered — that is how the defendant's
+// deep link (CheckIn?enrollmentId=…) starts working. Everyone else gets 404
+// (enrollment ids are sequential and must not be enumerable).
+const digits10 = (v) => String(v || '').replace(/\D/g, '').slice(-10);
+
+async function enrollmentAccess(db, user, enrollmentId) {
+  const id = safeInt(enrollmentId);
+  if (!id) return null;
+  const e = await db.get(
+    `SELECT id, bondsman_id, user_id, defendant_name, defendant_phone, defendant_email,
+            case_number, court_date, check_in_freq, active, monthly_fee_cents, stripe_sub_id, created_at
+       FROM checkin_enrollments WHERE id=?`, [id]);
+  if (!e) return null;
+  if (Number(e.bondsman_id) === Number(user.id)) return { e, as: 'bondsman' };
+  if (e.user_id != null && Number(e.user_id) === Number(user.id)) return { e, as: 'defendant' };
+  if (e.user_id == null) {
+    const me = await db.get('SELECT email, phone FROM users WHERE id=?', [user.id]);
+    const emailMatch = me?.email && e.defendant_email && me.email.trim().toLowerCase() === String(e.defendant_email).trim().toLowerCase();
+    const phoneMatch = me?.phone && e.defendant_phone && digits10(me.phone).length === 10 && digits10(me.phone) === digits10(e.defendant_phone);
+    if (emailMatch || phoneMatch) {
+      const claimed = await db.run('UPDATE checkin_enrollments SET user_id=? WHERE id=? AND user_id IS NULL', [user.id, e.id]);
+      if (claimed.changes) return { e: { ...e, user_id: user.id }, as: 'defendant' };
+    }
+  }
+  if (await isStaff(db, user)) return { e, as: 'staff' };
+  return null;
+}
+
+/** What the defendant sees about their own enrollment (no billing internals). */
+function defendantView(e) {
+  return {
+    id: e.id, defendant_name: e.defendant_name, case_number: e.case_number,
+    court_date: e.court_date, check_in_freq: e.check_in_freq, active: e.active, created_at: e.created_at,
+  };
+}
+
+// remind-all is for the scheduler/operators only: X-Admin-Key (ADMIN_KEY) or a
+// signed-in staff account.
+function adminKeyOk(req) {
+  const provided = String(req.headers['x-admin-key'] || '');
+  const expected = process.env.ADMIN_KEY || '';
+  if (!expected || provided.length !== expected.length) return false;
+  try { return timingSafeEqual(Buffer.from(provided), Buffer.from(expected)); } catch { return false; }
+}
+function requireStaffOrAdminKey(req, res, next) {
+  if (adminKeyOk(req)) return next();
+  authRequired(req, res, async () => {
+    try {
+      const db = await getDb();
+      if (await isStaff(db, req.user)) return next();
+      return res.status(403).json({ error: 'Staff access required.', code: 'forbidden' });
+    } catch {
+      return res.status(503).json({ error: 'Authorization temporarily unavailable.' });
+    }
+  });
+}
+const remindAllLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 2, message: 'Reminders were already sent recently.' });
 
 // GET /status — current user's check-in status (no enrollment ID required)
 router.get('/status', authRequired, async (req, res) => {
@@ -215,11 +279,11 @@ router.post('/submit', validate(schemas.checkins.submit), authRequired, checkins
 
   try {
     const db = await getDb();
-    const enroll = await db.get(
-      'SELECT id, bondsman_id, defendant_name, defendant_phone, defendant_email, case_number, court_date, check_in_freq, active, monthly_fee_cents, stripe_sub_id, created_at FROM checkin_enrollments WHERE id=? AND active=1',
-      [enrollment_id]
-    );
-    if (!enroll) return err404(res, 'Enrollment not found or inactive');
+    // Only the enrolled defendant can check in for an enrollment (H2).
+    const access = await enrollmentAccess(db, req.user, enrollment_id);
+    if (!access || access.as !== 'defendant' || !Number(access.e.active)) {
+      return err404(res, 'Enrollment not found or inactive');
+    }
 
     // Check if already checked in today
     const todayCheckin = await db.get(
@@ -255,13 +319,13 @@ router.post('/submit', validate(schemas.checkins.submit), authRequired, checkins
 });
 
 // ── Defendant: get today's status ─────────────────────────────────────────────
-router.get('/status/:enrollmentId', async (req, res) => {
+router.get('/status/:enrollmentId', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    const enroll = await db.get(
-      'SELECT id, bondsman_id, defendant_name, defendant_phone, defendant_email, case_number, court_date, check_in_freq, active, monthly_fee_cents, stripe_sub_id, created_at FROM checkin_enrollments WHERE id=?', [req.params.enrollmentId]
-    );
-    if (!enroll) return err404(res, 'Enrollment not found');
+    const access = await enrollmentAccess(db, req.user, req.params.enrollmentId);
+    if (!access) return err404(res, 'Enrollment not found');
+    const enroll = access.as === 'defendant' ? defendantView(access.e) : access.e;
+    req.params.enrollmentId = String(access.e.id);
 
     const todayCheckin = await db.get(
       `SELECT id, enrollment_id, checked_in_at, check_in_type, notes, verified, location_lat, location_lng
@@ -309,9 +373,12 @@ router.get('/status/:enrollmentId', async (req, res) => {
 });
 
 // ── Defendant: their check-in history ────────────────────────────────────────
-router.get('/my/:enrollmentId', async (req, res) => {
+router.get('/my/:enrollmentId', authRequired, async (req, res) => {
   try {
     const db = await getDb();
+    const access = await enrollmentAccess(db, req.user, req.params.enrollmentId);
+    if (!access) return err404(res, 'Enrollment not found');
+    req.params.enrollmentId = String(access.e.id);
     const records = await db.all(
       `SELECT id, enrollment_id, checked_in_at, check_in_type, notes, verified, location_lat, location_lng FROM checkin_records WHERE enrollment_id=?
        ORDER BY checked_in_at DESC LIMIT 30`,
@@ -326,12 +393,13 @@ router.get('/my/:enrollmentId', async (req, res) => {
 
 // ── POST /checkins/remind-all — send push to all users with check-in due today ──
 // Called by scheduler or admin. Sends push to users whose expected_time is today.
-router.post('/remind-all', async (req, res) => {
-  // Admin or internal call only (no auth required from external, but rate limited)
+router.post('/remind-all', requireStaffOrAdminKey, remindAllLimiter, async (req, res) => {
+  // Scheduler / staff only (H1). One push per user (not per device token —
+  // sendPushToUser fans out to every token the user has).
   try {
     const db = await getDb();
     const dueToday = await db.all(
-      `SELECT ce.user_id, pt.token
+      `SELECT DISTINCT ce.user_id
        FROM checkin_enrollments ce
        JOIN push_tokens pt ON pt.user_id = ce.user_id
        WHERE ce.active = 1
@@ -342,8 +410,8 @@ router.post('/remind-all', async (req, res) => {
 
     let sent = 0;
     await Promise.allSettled(
-      dueToday.map(async ({ token }) => {
-        await sendPushNotification(token, {
+      dueToday.map(async ({ user_id }) => {
+        await sendPushNotification(user_id, {
           title: 'Check-In Reminder',
           body:  'Your scheduled check-in is due today. Open Justice Gavel to check in.',
           data:  { screen: 'CheckIn' },
@@ -403,10 +471,12 @@ router.patch('/enrollments/:id/note', authRequired, async (req, res) => {
   if (!eid || !note) return res.status(400).json({ error: 'id and note required' });
   try {
     const db = await getDb();
-    await db.run(
-      `UPDATE checkin_enrollments SET supervisor_note = ?, updated_at = NOW() WHERE id = ?`,
-      [note, eid]
+    // Only the enrolling bondsman may annotate an enrollment.
+    const r = await db.run(
+      `UPDATE checkin_enrollments SET supervisor_note = ?, updated_at = NOW() WHERE id = ? AND bondsman_id = ?`,
+      [note, eid, req.user.id]
     );
+    if (!r.changes) return res.status(404).json({ error: 'Enrollment not found' });
     return res.json({ updated: true, enrollment_id: eid });
   } catch {
     return res.status(500).json({ error: 'Could not save note' });

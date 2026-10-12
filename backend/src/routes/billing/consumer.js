@@ -6,6 +6,7 @@ import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer }
   from './_shared.js';
 import { err400 } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
+import { isPlatformSuperAdmin } from '../../middleware/rbac.js';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger             from '../../utils/logger.js';
@@ -98,7 +99,11 @@ router.get('/consumer/subscription', authRequired, async (req, res) => {
 });
 
 // ── Admin stats ────────────────────────────────────────────────────────────────
+// Platform revenue — super_admin only (live DB role, see middleware/auth.js).
 router.get('/admin/stats', authRequired, async (req, res) => {
+  if (!isPlatformSuperAdmin(req.user)) {
+    return res.status(403).json({ error: 'Super admin access required.', code: 'forbidden' });
+  }
   try {
     const db = await getDb();
     const [subs, leads, connections] = await Promise.all([

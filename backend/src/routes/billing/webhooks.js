@@ -1,3 +1,4 @@
+import { escapeHtml } from '../../utils/html.js';
 import { notifyError } from '../../monitoring/errorNotifier.js';
 import { audit, AUDIT_ACTIONS } from '../../utils/audit.js';
 /**
@@ -236,8 +237,8 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
               'Thank you for using Justice Gavel.',
               '— The Justice Gavel Team',
             ].join('\n'),
-            html: `<p>Your payment of <strong>$${amountDollars}</strong> for <strong>${productName}</strong> was successful.</p>
-<p style="color:#666;font-size:12px">Reference: ${session.id}</p>
+            html: `<p>Your payment of <strong>$${escapeHtml(amountDollars)}</strong> for <strong>${escapeHtml(productName)}</strong> was successful.</p>
+<p style="color:#666;font-size:12px">Reference: ${escapeHtml(session.id)}</p>
 <p>Thank you for using Justice Gavel.</p>
 <p>— The Justice Gavel Team</p>`,
           }).catch(() => {});
@@ -286,8 +287,8 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
               '',
               '— The Justice Gavel Team',
             ].join('\n'),
-            html: `<p>Your <strong>${planName}</strong> has been renewed for <strong>$${amountDollars}</strong>.</p>
-<p style="color:#666;font-size:12px">Billing period: ${new Date(inv.period_start * 1000).toLocaleDateString()} — ${new Date(inv.period_end * 1000).toLocaleDateString()}<br>Invoice: ${inv.id}</p>
+            html: `<p>Your <strong>${escapeHtml(planName)}</strong> has been renewed for <strong>$${escapeHtml(amountDollars)}</strong>.</p>
+<p style="color:#666;font-size:12px">Billing period: ${escapeHtml(new Date(inv.period_start * 1000).toLocaleDateString())} — ${escapeHtml(new Date(inv.period_end * 1000).toLocaleDateString())}<br>Invoice: ${escapeHtml(inv.id)}</p>
 <p><a href="https://justicegavel.app/settings/billing">Manage subscription →</a></p>
 <p>— The Justice Gavel Team</p>`,
           }).catch(() => {});

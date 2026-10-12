@@ -30,7 +30,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import { ActivityIndicator, Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
 import { FileSystem, RNShare } from '../utils/webCompat';
-import { api, apiErrorMessage } from '../services/api';
+import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
@@ -356,7 +356,7 @@ function DiscoveryScreen({ route, navigation }: ScreenProps) {
     setHistLoad(true);
     try {
           const res = await api.get('/discovery/history');
-      setHistory(res.data || []);
+      setHistory(unwrapList(res.data, 'history', 'analyses'));
       setPhase('history');
     } catch (e: any) { __DEV__ && console.warn(e?.message); }
     setHistLoad(false);

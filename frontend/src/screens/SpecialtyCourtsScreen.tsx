@@ -5,7 +5,7 @@ import type {} from '../types/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, RefreshControl, Linking, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, LayoutAnimation } from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
-import { cachedGet } from '../services/api';
+import { unwrapList, cachedGet } from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 
 type SpecialtyCourt = {
@@ -51,7 +51,7 @@ function SpecialtyCourtsScreen(): React.JSX.Element {
       if (state) params.set('state', state.toUpperCase());
       const res = await cachedGet(`/legaldata/specialty-courts?${params}`);
       if (!mountedRef.current) return;
-      setAll(res.data || []);
+      setAll(unwrapList(res.data));
     } catch { setError('Could not load specialty courts. Check connection.'); }
     finally { setLoading(false); }
   }, [state]);

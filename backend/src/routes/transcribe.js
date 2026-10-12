@@ -5,17 +5,21 @@
 import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { transcribeLimiter } from '../utils/rateLimiters.js';
-import multer from 'multer';
+import { uploadGuard, fileStream, MB } from '../middleware/uploads.js';
 import logger from '../utils/logger.js';
 import { aiConfigured, CLAUDE_MODEL, ANTHROPIC_MESSAGES_URL, ANTHROPIC_VERSION } from '../utils/ai.js';
 
 const router = Router();
-const upload = multer({ 
-  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB Whisper limit
-  storage: multer.memoryStorage()
+// 25 MB Whisper limit; streamed to a temp file, never buffered (C5).
+const uploadAudio = uploadGuard({
+  maxBytes: 25 * MB, storage: 'disk', field: 'audio',
+  fileFilter: (req, file, cb) => {
+    const ok = /^(audio\/|video\/mp4|application\/octet-stream)/.test(file.mimetype || '');
+    cb(ok ? null : new Error('Unsupported audio format'), ok);
+  },
 });
 
-router.post('/audio', authRequired, transcribeLimiter, upload.single('audio'), async (req, res) => {
+router.post('/audio', authRequired, transcribeLimiter, uploadAudio, async (req, res) => {
   // Input validation guard
   if (req.body && JSON.stringify(req.body).length > 50000) {
     return res.status(413).json({ error: 'Request body too large' });
@@ -35,7 +39,7 @@ router.post('/audio', authRequired, transcribeLimiter, upload.single('audio'), a
     const fetch = (await import('node-fetch')).default;
     
     const form = new FormData();
-    form.append('file', file.buffer, { filename: 'audio.m4a', contentType: file.mimetype });
+    form.append('file', fileStream(file), { filename: 'audio.m4a', contentType: file.mimetype, knownLength: file.size });
     form.append('model', 'whisper-1');
     form.append('language', 'en');
     
@@ -128,7 +132,7 @@ router.post('/text', authRequired, async (req, res) => {
 });
 
 // POST /api/transcribe/note (multipart "audio") → { note }
-router.post('/note', authRequired, transcribeLimiter, upload.single('audio'), async (req, res) => {
+router.post('/note', authRequired, transcribeLimiter, uploadAudio, async (req, res) => {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) {
     return res.status(503).json({ error: 'transcription_unavailable', message: 'Voice transcription is not available right now. You can type your note instead.' });
@@ -138,7 +142,7 @@ router.post('/note', authRequired, transcribeLimiter, upload.single('audio'), as
     const FormData = (await import('form-data')).default;
     const nodeFetch = (await import('node-fetch')).default;
     const form = new FormData();
-    form.append('file', req.file.buffer, { filename: 'note.m4a', contentType: req.file.mimetype || 'audio/m4a' });
+    form.append('file', fileStream(req.file), { filename: 'note.m4a', contentType: req.file.mimetype || 'audio/m4a', knownLength: req.file.size });
     form.append('model', 'whisper-1');
     const resp = await nodeFetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST', headers: { Authorization: `Bearer ${OPENAI_KEY}`, ...form.getHeaders() }, body: form,

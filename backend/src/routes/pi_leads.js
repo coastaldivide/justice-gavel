@@ -27,6 +27,7 @@ import logger from '../utils/logger.js';
 // Added: these names were used at module scope but never imported --
 // an ESM ReferenceError at import time, which blocked the whole app.
 import { validate, schemas } from '../validation/schemas.js';
+import { stripeConfigured, PAYMENTS_UNAVAILABLE } from '../config.js';
 const piLeadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 5,                    // 5 lead submissions per IP per hour
@@ -37,7 +38,22 @@ const piLeadLimiter = rateLimit({
 
 
 const router = Router();
-const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
+const stripeKey = () => process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || '';
+
+// ── Who may see / buy leads (C2) ──────────────────────────────────────────────
+// Leads describe people in crisis (injury, civil-rights violations, ICE
+// detention). Browsing shows only NON-identifying fields and is limited to
+// attorney accounts; the free-text summary and the contact details are released
+// only to an attorney with a COMPLETED purchase (a succeeded Stripe charge).
+// req.user.role / bar_verified are the live DB values (middleware/auth.js).
+const ATTORNEY_ROLES = new Set(['attorney', 'defender', 'admin', 'super_admin']);
+const isAttorney = (u) => ATTORNEY_ROLES.has(u?.role) || Number(u?.is_defender) === 1;
+function requireLeadAttorney(req, res, next) {
+  if (!isAttorney(req.user)) {
+    return res.status(403).json({ error: 'attorney_required', message: 'Only attorney accounts can view case leads.' });
+  }
+  next();
+}
 
 // ── Lead fee schedule ─────────────────────────────────────────────────────────
 // Flat fee per lead type — single source of truth in billing/attorneyLeadFee.js.
@@ -98,10 +114,11 @@ router.post('/submit', validate(schemas.pi_leads.submit), piLeadLimiter, authReq
 });
 
 // ── GET / — attorney views available leads ────────────────────────────────────
-router.get('/', authRequired, async (req, res) => {
+router.get('/', authRequired, requireLeadAttorney, async (req, res) => {
   try {
     const db = await getDb();
-    const { type, state, limit = 30 } = req.query;
+    const { type, state } = req.query;
+    const limit = Math.min(Math.max(safeInt(req.query.limit || 30), 1), 100);
 
     let where = "cl.status = 'open' AND (cl.expires_at IS NULL OR cl.expires_at > NOW())";
     const params = [];
@@ -114,32 +131,36 @@ router.get('/', authRequired, async (req, res) => {
               clp.id as purchased_id
        FROM civil_leads cl
        LEFT JOIN civil_lead_purchases clp
-         ON clp.lead_id = cl.id AND clp.attorney_id = ?
+         ON clp.lead_id = cl.id AND clp.attorney_id = ? AND clp.status = 'charged'
+        AND COALESCE(clp.stripe_pi_id, '') NOT IN ('', 'pi_civil_demo')
        WHERE ${where}
        ORDER BY cl.created_at DESC
        LIMIT ?`,
       [req.user.id, ...params, Number(limit)]
     );
 
-    const leads = rows.map(r => ({
-      id:               r.id,
-      lead_type:        r.lead_type,
-      city:             r.city,
-      state:            r.state,
-      county:           r.county,
-      incident_type:    r.incident_type,
-      incident_summary: r.incident_summary,   // visible before purchase
-      incident_date:    r.incident_date,
-      injury_severity:  r.injury_severity,
-      lead_fee_cents:   r.lead_fee_cents,
-      lead_fee_display: feeLabel(r.lead_fee_cents),
-      created_at:       r.created_at,
-      purchased:        !!r.purchased_id,
-      // Contact only revealed after purchase
-      contact_name:     r.purchased_id ? r.contact_name  : null,
-      contact_phone:    r.purchased_id ? r.contact_phone : null,
-      contact_email:    r.purchased_id ? r.contact_email : null,
-    }));
+    const leads = rows.map(r => {
+      const purchased = !!r.purchased_id;
+      return {
+        id:               r.id,
+        lead_type:        r.lead_type,
+        city:             r.city,
+        state:            r.state,
+        incident_type:    r.incident_type,
+        injury_severity:  r.injury_severity,
+        lead_fee_cents:   r.lead_fee_cents,
+        lead_fee_display: feeLabel(r.lead_fee_cents),
+        created_at:       r.created_at,
+        purchased,
+        // Free text and contact details only after a completed purchase.
+        county:           purchased ? r.county           : null,
+        incident_date:    purchased ? r.incident_date    : null,
+        incident_summary: purchased ? r.incident_summary : null,
+        contact_name:     purchased ? r.contact_name     : null,
+        contact_phone:    purchased ? r.contact_phone    : null,
+        contact_email:    purchased ? r.contact_email    : null,
+      };
+    });
 
     res.json({ leads, count: leads.length });
   } catch (e) {
@@ -149,7 +170,12 @@ router.get('/', authRequired, async (req, res) => {
 });
 
 // ── POST /:id/accept — attorney accepts a lead ────────────────────────────────
-router.post('/:id/accept', authRequired, async (req, res) => {
+router.post('/:id/accept', authRequired, requireLeadAttorney, async (req, res) => {
+  // Contact details are sold, never given away: no Stripe → 503, nothing revealed.
+  if (!stripeConfigured()) return res.status(503).json({ ...PAYMENTS_UNAVAILABLE });
+  if (Number(req.user.bar_verified) !== 1 && !['admin', 'super_admin'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'bar_verification_required', message: 'Verify your bar number before purchasing leads.' });
+  }
   try {
     const db = await getDb();
     const leadId = safeInt(req.params.id);
@@ -160,7 +186,7 @@ router.post('/:id/accept', authRequired, async (req, res) => {
 
     // Check not already purchased
     const existing = await db.get(
-      'SELECT id FROM civil_lead_purchases WHERE attorney_id = ? AND lead_id = ?',
+      "SELECT id FROM civil_lead_purchases WHERE attorney_id = ? AND lead_id = ? AND status = 'charged' AND COALESCE(stripe_pi_id, '') NOT IN ('', 'pi_civil_demo')",
       [req.user.id, leadId]
     );
     if (existing) return res.status(409).json({ error: 'You have already purchased this lead' });
@@ -171,26 +197,34 @@ router.post('/:id/accept', authRequired, async (req, res) => {
       [req.user.id]
     );
 
-    let stripePiId = 'pi_civil_demo';
+    if (!profile?.stripe_cus_id || !profile?.payment_method_id) {
+      return res.status(402).json({ error: 'payment_method_required', message: 'Add a payment method to your lead profile first.' });
+    }
 
-    if (STRIPE_KEY && profile?.stripe_cus_id && profile?.payment_method_id) {
-      try {
-        const Stripe = (await import('stripe')).default;
-        const stripe = new Stripe(STRIPE_KEY);
-        const pi = await stripe.paymentIntents.create(
-      {
+    let stripePiId;
+    try {
+      const Stripe = (await import('stripe')).default;
+      const stripe = new Stripe(stripeKey());
+      const pi = await stripe.paymentIntents.create(
+        {
           amount:               lead.lead_fee_cents,
           currency:             'usd',
           customer:             profile.stripe_cus_id,
           payment_method:       profile.payment_method_id,
           confirm:              true,
           off_session:          true,
-          description:          `Civil lead: ${lead.incident_type} — ${lead.city}, ${lead.state}`,
-        });
-        stripePiId = pi.id;
-      } catch {
-        return res.status(402).json({ error: 'Payment failed. Check your payment method.' });
+          description:          `Civil lead #${lead.id} — ${lead.city}, ${lead.state}`,
+          metadata:             { user_id: String(req.user.id), lead_id: String(lead.id), source: 'civil_leads' },
+        },
+        { idempotencyKey: `civil_lead_${req.user.id}_${lead.id}` }
+      );
+      // Only a completed charge unlocks the lead (requires_action etc. do not).
+      if (pi?.status !== 'succeeded') {
+        return res.status(402).json({ error: 'payment_incomplete', status: pi?.status || null });
       }
+      stripePiId = pi.id;
+    } catch {
+      return res.status(402).json({ error: 'Payment failed. Check your payment method.' });
     }
 
     // Record purchase + reveal contact
@@ -207,6 +241,7 @@ router.post('/:id/accept', authRequired, async (req, res) => {
 
     res.json({
       ok: true,
+      incident_summary: lead.incident_summary,
       contact_name:  lead.contact_name,
       contact_phone: lead.contact_phone,
       contact_email: lead.contact_email,

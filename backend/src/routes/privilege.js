@@ -25,7 +25,7 @@ import { Router }          from 'express';
 import PDFDocument         from 'pdfkit';
 import { getDb }           from '../db/index.js';
 import { authRequired }    from '../middleware/auth.js';
-import { loadFirmContext, requireFirmRole } from '../middleware/rbac.js';
+import { loadFirmContext, requireFirmRole, getFirmMembership, resolveMatterAccess, hasMinRole } from '../middleware/rbac.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { enqueueAIJob as enqueue }         from '../services/aiQueue.js';
 import { err400, err403, err404, safeInt, sanitizeStr, truncateStr, API_URLS } from '../utils/routeHelpers.js';
@@ -78,6 +78,71 @@ function nextDocNumber(counter) {
   return `PRIV-${String(counter.n).padStart(4, '0')}`;
 }
 
+// ── Access scoping (C4) ───────────────────────────────────────────────────────
+// A privilege-log entry belongs to a firm (firm_id) or, with no firm, to its
+// creator. Matter-linked entries additionally require access to that matter
+// (ethics walls and matter teams apply — middleware/rbac.js resolveMatterAccess).
+// Entries outside the caller's scope are reported as 404.
+const ENTRY_COLS = 'id, firm_id, matter_id, matter_table, doc_number, doc_date, doc_type, author, recipients, description, privilege_basis, withheld, page_count, ai_generated, reviewed_by, created_by, created_at, updated_at';
+
+async function canAccessEntry(db, user, entry) {
+  if (!entry) return false;
+  if (entry.firm_id != null) {
+    if (!(await getFirmMembership(db, user.id, entry.firm_id))) return false;
+  } else if (Number(entry.created_by) !== Number(user.id)) {
+    return false;
+  }
+  if (entry.matter_id && (entry.matter_table || 'matters') === 'matters') {
+    const r = await resolveMatterAccess(db, user, entry.matter_id);
+    if (r.status === 403) return false;                 // ethics wall / not on the team
+    if (r.status && r.status !== 404) return false;     // 404: matter deleted → firm scope decides
+  }
+  return true;
+}
+
+async function loadEntry(db, user, id) {
+  const entry = await db.get(`SELECT ${ENTRY_COLS} FROM privilege_log WHERE id=?`, [safeInt(id)]);
+  return (await canAccessEntry(db, user, entry)) ? entry : null;
+}
+
+/**
+ * Resolve the matter an entry is being written to / read for. Returns
+ * { firmId } (the scope rows are stored/read under) or { status } on denial.
+ * matter_table 'matters' (default): the caller needs matter access (minRole).
+ * matter_table 'cases': the caller must own the case or be its assigned attorney.
+ */
+async function resolvePrivilegeTarget(db, req, matterId, matterTable = 'matters', minRole = 'paralegal') {
+  if (!matterId) {
+    const ctx = await loadFirmContext(req);
+    return { firmId: ctx?.firm_id || null };
+  }
+  if (matterTable === 'cases') {
+    const ok = await db.get(
+      `SELECT c.id FROM cases c
+        WHERE c.id = ? AND (c.user_id = ? OR EXISTS (
+          SELECT 1 FROM case_assignments ca WHERE ca.case_id = c.id AND ca.defender_id = ? AND ca.status = 'active'))`,
+      [matterId, req.user.id, req.user.id]).catch(() => null);
+    if (!ok) return { status: 404 };
+    const ctx = await loadFirmContext(req);
+    return { firmId: ctx?.firm_id || null };
+  }
+  const r = await resolveMatterAccess(db, req.user, matterId);
+  if (r.status) return { status: r.status === 400 ? 400 : (r.status === 403 ? 403 : 404) };
+  if (!hasMinRole(r.role, minRole)) return { status: 403 };
+  return { firmId: r.matter.firm_id != null ? Number(r.matter.firm_id) : null, matter: r.matter };
+}
+
+const targetError = (res, status) => status === 403
+  ? err403(res, 'You do not have access to this matter.')
+  : status === 400 ? err400(res, 'Invalid matter_id.') : err404(res, 'Matter not found.');
+
+/** SQL scope for a matter's log: the matter's firm, or (personal matter) the caller's own rows. */
+function matterLogScope(target, userId) {
+  return target.firmId
+    ? { sql: 'firm_id = ?', params: [target.firmId] }
+    : { sql: 'firm_id IS NULL AND created_by = ?', params: [userId] };
+}
+
 // ── GET /api/privilege/bases ──────────────────────────────────────────────────
 router.get('/bases', authRequired, (req, res) => {
   res.json({ bases: PRIVILEGE_BASES });
@@ -107,6 +172,12 @@ router.post('/generate', authRequired, requireAi, aiLimiter, async (req, res) =>
     }
 
     const matterId = matter_id ? safeInt(matter_id) : null;
+    const safeTable = matter_table === 'cases' ? 'cases' : 'matters';
+    let target = { firmId: ctx?.firm_id || null };
+    if (save && matterId) {
+      target = await resolvePrivilegeTarget(db, req, matterId, safeTable);
+      if (target.status) return targetError(res, target.status);
+    }
 
     const jobId = await enqueue('privilege_generate', async () => {
       let entries;
@@ -185,11 +256,12 @@ CRITICAL: The description must NOT reveal privileged content. It must only descr
 
       // Save entries if requested
       const saved = [];
-      if (save && matterId && ctx?.firm_id) {
+      if (save && matterId) {
+        const scope = matterLogScope(target, req.user.id);
         // Fetch existing count ONCE before loop (eliminates N+1)
         const existingPriv = await db.get(
-          'SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=? AND firm_id=?',
-          [matterId, ctx.firm_id]
+          `SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=? AND ${scope.sql}`,
+          [matterId, ...scope.params]
         ).catch(() => ({ n: 0 }));
         const docCounter = { n: Number(existingPriv?.n) || 0 };   // pg COUNT() is a string
 
@@ -202,7 +274,7 @@ CRITICAL: The description must NOT reveal privileged content. It must only descr
                page_count, ai_generated, created_by)
              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?)`,
             [
-              ctx.firm_id, matterId, sanitizeStr(matter_table, 20),
+              target.firmId, matterId, safeTable,
               docNum,
               e.doc_date || null,
               sanitizeStr(e.doc_type || 'other', 30),
@@ -269,14 +341,18 @@ router.post('/entries', authRequired, privLimiter, async (req, res) => {
     }
 
     const matterId = matter_id ? safeInt(matter_id) : null;
-    const firmId   = ctx?.firm_id || null;
+    const safeTable = matter_table === 'cases' ? 'cases' : 'matters';
+    const target   = await resolvePrivilegeTarget(db, req, matterId, safeTable);
+    if (target.status) return targetError(res, target.status);
+    const firmId   = matterId ? target.firmId : (ctx?.firm_id || null);
     // Next number in this matter's log (was called as nextDocNumber(db, matterId, firmId),
     // which treated `db` as the counter and produced "PRIV-0NaN").
     let docNum = `PRIV-${Date.now()}`;
-    if (matterId && firmId) {
+    if (matterId) {
+      const scope = matterLogScope({ firmId }, req.user.id);
       const existing = await db.get(
-        'SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=? AND firm_id=?',
-        [matterId, firmId]
+        `SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=? AND ${scope.sql}`,
+        [matterId, ...scope.params]
       ).catch(() => ({ n: 0 }));
       docNum = nextDocNumber({ n: Number(existing?.n) || 0 });
     }
@@ -289,7 +365,7 @@ router.post('/entries', authRequired, privLimiter, async (req, res) => {
          author, recipients, description, privilege_basis, withheld, page_count, ai_generated, created_by)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,?)`,
       [
-        firmId, matterId, sanitizeStr(matter_table, 20),
+        firmId, matterId, safeTable,
         docNum,
         doc_date ? sanitizeStr(doc_date, 20) : null,
         DOC_TYPES.includes(doc_type) ? doc_type : 'other',
@@ -323,7 +399,7 @@ router.get('/entries', authRequired, async (req, res) => {
     const params = [];
 
     if (ctx?.firm_id) { sql += ' AND pl.firm_id=?'; params.push(ctx.firm_id); }
-    else              { sql += ' AND pl.created_by=?'; params.push(req.user.id); }
+    else              { sql += ' AND pl.firm_id IS NULL AND pl.created_by=?'; params.push(req.user.id); }
     if (matter_id)       { sql += ' AND pl.matter_id=?';        params.push(safeInt(matter_id)); }
     if (privilege_basis) { sql += ' AND pl.privilege_basis=?';  params.push(sanitizeStr(privilege_basis,30)); }
     if (withheld !== undefined) { sql += ' AND pl.withheld=?';  params.push(withheld === 'true' ? 1 : 0); }
@@ -342,7 +418,7 @@ router.get('/entries', authRequired, async (req, res) => {
 router.get('/entries/:id', authRequired, async (req, res) => {
   try {
     const db    = await getDb();
-    const entry = await db.get('SELECT id, firm_id, matter_id, matter_table, doc_number, doc_date, doc_type, author, recipients, description, privilege_basis, withheld, page_count, ai_generated, reviewed_by, created_by, created_at, updated_at FROM privilege_log WHERE id=?', [safeInt(req.params.id)]);
+    const entry = await loadEntry(db, req.user, req.params.id);
     if (!entry) return err404(res, 'Entry not found.');
     res.json(entry);
   } catch {
@@ -351,10 +427,10 @@ router.get('/entries/:id', authRequired, async (req, res) => {
 });
 
 // ── PUT /api/privilege/entries/:id
-router.put('/entries/:id', authRequired, async (req, res) => {
+router.put('/entries/:id', authRequired, privLimiter, async (req, res) => {
   try {
     const db    = await getDb();
-    const entry = await db.get('SELECT id, firm_id, matter_id, matter_table, doc_number, doc_date, doc_type, author, recipients, description, privilege_basis, withheld, page_count, ai_generated, reviewed_by, created_by, created_at, updated_at FROM privilege_log WHERE id=?', [safeInt(req.params.id)]);
+    const entry = await loadEntry(db, req.user, req.params.id);
     if (!entry) return err404(res, 'Entry not found.');
 
     const allowed = ['doc_date','doc_type','author','recipients','description','privilege_basis','withheld','page_count'];
@@ -371,7 +447,7 @@ router.put('/entries/:id', authRequired, async (req, res) => {
     updates.push("updated_at=NOW()");
     params.push(safeInt(req.params.id));
     await db.run(`UPDATE privilege_log SET ${updates.join(',')} WHERE id=?`, params);
-    const updated = await db.get('SELECT id, firm_id, matter_id, matter_table, doc_number, doc_date, doc_type, author, recipients, description, privilege_basis, withheld, page_count, ai_generated, reviewed_by, created_by, created_at, updated_at FROM privilege_log WHERE id=?', [safeInt(req.params.id)]);
+    const updated = await db.get(`SELECT ${ENTRY_COLS} FROM privilege_log WHERE id=?`, [entry.id]);
     res.json(updated);
   } catch {
     res.status(500).json({ error: 'Could not update entry.' });
@@ -379,12 +455,12 @@ router.put('/entries/:id', authRequired, async (req, res) => {
 });
 
 // ── DELETE /api/privilege/entries/:id
-router.delete('/entries/:id', authRequired, async (req, res) => {
+router.delete('/entries/:id', authRequired, privLimiter, async (req, res) => {
   try {
     const db    = await getDb();
-    const entry = await db.get('SELECT id FROM privilege_log WHERE id=?', [safeInt(req.params.id)]);
+    const entry = await loadEntry(db, req.user, req.params.id);
     if (!entry) return err404(res, 'Entry not found.');
-    await db.run('DELETE FROM privilege_log WHERE id=?', [safeInt(req.params.id)]);
+    await db.run('DELETE FROM privilege_log WHERE id=?', [entry.id]);
     res.json({ deleted: true });
   } catch {
     res.status(500).json({ error: 'Could not delete entry.' });
@@ -396,12 +472,15 @@ router.get('/matter/:matterId', authRequired, async (req, res) => {
   try {
     const db       = await getDb();
     const matterId = safeInt(req.params.matterId);
+    const target   = await resolvePrivilegeTarget(db, req, matterId, 'matters', 'viewer');
+    if (target.status) return targetError(res, target.status);
+    const scope    = matterLogScope(target, req.user.id);
 
     const entries  = await db.all(
       `SELECT pl.*, u.display_name AS reviewed_by_name
        FROM privilege_log pl LEFT JOIN users u ON u.id=pl.reviewed_by
-       WHERE pl.matter_id=? ORDER BY pl.doc_number ASC`,
-      [matterId]
+       WHERE pl.matter_id=? AND pl.${scope.sql} ORDER BY pl.doc_number ASC`,
+      [matterId, ...scope.params]
     );
 
     const summary = {
@@ -426,15 +505,17 @@ router.get('/matter/:matterId/pdf', authRequired, async (req, res) => {
   try {
     const db       = await getDb();
     const matterId = safeInt(req.params.matterId);
-    const ctx      = await loadFirmContext(req);
-    const firm     = ctx?.firm_id ? await db.get('SELECT name FROM firms WHERE id=?', [ctx.firm_id]).catch(() => null) : null;
+    const target   = await resolvePrivilegeTarget(db, req, matterId, 'matters', 'viewer');
+    if (target.status) return targetError(res, target.status);
+    const scope    = matterLogScope(target, req.user.id);
+    const firm     = target.firmId ? await db.get('SELECT name FROM firms WHERE id=?', [target.firmId]).catch(() => null) : null;
 
     // Get matter title
     const matter   = await db.get('SELECT title, client_name FROM matters WHERE id=?', [matterId]).catch(() => null);
 
     const entries  = await db.all(
-      'SELECT id, firm_id, matter_id, matter_table, doc_number, doc_date, doc_type, author, recipients, description, privilege_basis, withheld, page_count, ai_generated, reviewed_by, created_by, created_at, updated_at FROM privilege_log WHERE matter_id=? ORDER BY doc_number ASC',
-      [matterId]
+      `SELECT ${ENTRY_COLS} FROM privilege_log WHERE matter_id=? AND ${scope.sql} ORDER BY doc_number ASC`,
+      [matterId, ...scope.params]
     );
 
     if (!entries.length) return err400(res, 'No privilege log entries found for this matter.');
@@ -455,10 +536,13 @@ router.get('/matter/:matterId/csv', authRequired, async (req, res) => {
   try {
     const db       = await getDb();
     const matterId = safeInt(req.params.matterId);
+    const target   = await resolvePrivilegeTarget(db, req, matterId, 'matters', 'viewer');
+    if (target.status) return targetError(res, target.status);
+    const scope    = matterLogScope(target, req.user.id);
 
     const entries = await db.all(
-      'SELECT id, firm_id, matter_id, matter_table, doc_number, doc_date, doc_type, author, recipients, description, privilege_basis, withheld, page_count, ai_generated, reviewed_by, created_by, created_at, updated_at FROM privilege_log WHERE matter_id=? ORDER BY doc_number ASC',
-      [matterId]
+      `SELECT ${ENTRY_COLS} FROM privilege_log WHERE matter_id=? AND ${scope.sql} ORDER BY doc_number ASC`,
+      [matterId, ...scope.params]
     );
     if (!entries.length) return err400(res, 'No privilege log entries found.');
 
@@ -595,16 +679,17 @@ router.put('/entries/:id/review', authRequired, requireFirmRole('partner'), asyn
   try {
     const db    = await getDb();
     const ctx   = req.firmCtx;
-    const entry = await db.get('SELECT id, firm_id, matter_id, matter_table, doc_number, doc_date, doc_type, author, recipients, description, privilege_basis, withheld, page_count, ai_generated, reviewed_by, created_by, created_at, updated_at FROM privilege_log WHERE id=?', [safeInt(req.params.id)]);
-    if (!entry) return err404(res, 'Privilege log entry not found.');
-    if (entry.firm_id !== ctx?.firm_id) return err403(res);
+    const entry = await loadEntry(db, req.user, req.params.id);
+    if (!entry || entry.firm_id == null || Number(entry.firm_id) !== Number(ctx?.firm_id)) {
+      return err404(res, 'Privilege log entry not found.');
+    }
 
     await db.run(
       "UPDATE privilege_log SET reviewed_by=?, updated_at=NOW() WHERE id=?",
       [req.user.id, safeInt(req.params.id)]
     );
 
-    const updated = await db.get('SELECT id, firm_id, matter_id, matter_table, doc_number, doc_date, doc_type, author, recipients, description, privilege_basis, withheld, page_count, ai_generated, reviewed_by, created_by, created_at, updated_at FROM privilege_log WHERE id=?', [safeInt(req.params.id)]);
+    const updated = await db.get(`SELECT ${ENTRY_COLS} FROM privilege_log WHERE id=?`, [entry.id]);
     res.json({ ...updated, reviewed: true, reviewed_by_id: req.user.id });
   } catch (e) {
     logger.error('[privilege/review]', e.message);
@@ -617,11 +702,15 @@ router.get('/matter/:matterId/review-status', authRequired, requireFirmRole('par
   try {
     const db       = await getDb();
     const matterId = safeInt(req.params.matterId);
+    const target   = await resolvePrivilegeTarget(db, req, matterId, 'matters', 'viewer');
+    if (target.status) return targetError(res, target.status);
+    const scope    = matterLogScope(target, req.user.id);
+    const p        = [matterId, ...scope.params];
 
     const [total, reviewed, aiGenerated] = await Promise.all([
-      db.get('SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=?', [matterId]),
-      db.get('SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=? AND reviewed_by IS NOT NULL', [matterId]),
-      db.get('SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=? AND ai_generated=1', [matterId]),
+      db.get(`SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=? AND ${scope.sql}`, p),
+      db.get(`SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=? AND ${scope.sql} AND reviewed_by IS NOT NULL`, p),
+      db.get(`SELECT COUNT(*) as n FROM privilege_log WHERE matter_id=? AND ${scope.sql} AND ai_generated=1`, p),
     ]);
 
     const totalN    = total?.n    || 0;

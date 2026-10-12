@@ -33,6 +33,10 @@ import { encrypt, decrypt }                from '../services/encryption.js';
 import { randomBytes }                     from 'crypto';
 import logger                              from '../utils/logger.js';
 import { checkLegalHold }                  from '../services/retention.js';
+import {
+  scheduleCourtReminders, cancelCourtReminders, listPendingCourtReminders,
+  rememberTimeZone, rescheduleUserCourtReminders, CLOSED_CASE_STATUSES,
+} from '../services/courtReminders.js';
 
 const router       = Router();
 const casesLimiter = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'Too many case operations. Slow down.' });
@@ -182,13 +186,18 @@ router.post('/', authRequired, validate(schemas.cases.create), casesLimiter, asy
       };
     }
 
-    // Schedule court date reminders if date was provided
+    // Court-date reminders for every account (free included). Planned before
+    // responding so the app can show them; a failure never fails the create —
+    // the dispatcher's backfill sweep re-plans any case left without reminders.
+    let reminders;
     if (next_court_date && rawRow) {
-      scheduleCourtReminders(db, req.user.id, r.lastID, safeTitle.trim(), next_court_date)
-        .catch(() => {});
+      reminders = await planReminders(db, req, {
+        caseId: r.lastID, caseTitle: safeTitle.trim(), courtDate: next_court_date, state: safeState,
+      });
     }
 
-    res.status(201).json(rawRow ?? { id: r.lastID, title: safeTitle.trim(), status: safeStatus });
+    const body = rawRow ?? { id: r.lastID, title: safeTitle.trim(), status: safeStatus };
+    res.status(201).json(reminders ? { ...body, reminders } : body);
   } catch (e) {
     logger.error('[cases/create]', e.message);
     res.status(500).json({ error: 'Could not create case.' });
@@ -268,14 +277,22 @@ router.put('/:id', authRequired, validate(schemas.cases.update), casesLimiter, a
       triggerExpungementPush(db, req.user.id, updated).catch(() => {});
     }
 
-    // Reschedule court reminders if date changed
-    const newCourtDate = next_court_date === undefined ? undefined : safeCourtDate(next_court_date);
-    if (newCourtDate && newCourtDate !== existing.next_court_date) {
-      scheduleCourtReminders(
-        db, req.user.id, caseId,
-        updated.title || existing.title,
-        newCourtDate
-      ).catch(() => {});
+    // Court reminders follow the case: re-plan when the date (or title/state,
+    // which appear in / time the reminder) changes; cancel when the date is
+    // cleared or the case is closed.
+    const finalStatus = updated.status || existing.status;
+    const finalDate   = updated.next_court_date ? String(updated.next_court_date).slice(0, 10) : null;
+    if (!finalDate || CLOSED_CASE_STATUSES.has(finalStatus)) {
+      await cancelCourtReminders(db, req.user.id, caseId, finalDate ? 'case_closed' : 'court_date_cleared')
+        .catch(e => logger.warn('[cases/update] cancel reminders:', e.message));
+    } else if (finalDate !== (existing.next_court_date ? String(existing.next_court_date).slice(0, 10) : null)
+            || (title !== undefined && updated.title !== existing.title)
+            || (state !== undefined && updated.state !== existing.state)
+            || CLOSED_CASE_STATUSES.has(existing.status)) {
+      const reminders = await planReminders(db, req, {
+        caseId, caseTitle: updated.title || existing.title, courtDate: finalDate, state: updated.state,
+      });
+      if (reminders) updated.reminders = reminders;
     }
 
     // Push to linked family members (non-blocking)
@@ -309,6 +326,8 @@ router.delete('/:id', authRequired, async (req, res) => {
     }
 
     await db.run("UPDATE cases SET deleted_at=NOW() WHERE id=? AND user_id=?", [caseId, req.user.id]);
+    await cancelCourtReminders(db, req.user.id, caseId, 'case_deleted')
+      .catch(e => logger.warn('[cases/delete] cancel reminders:', e.message));
     res.json({ ok: true });
   } catch (e) {
     logger.error('[cases/delete]', e.message);
@@ -589,60 +608,70 @@ async function triggerExpungementPush(db, userId, caseRow) {
   const body      = 'You may be eligible to expunge this from your record — seal it permanently. Tap to check eligibility.';
   const deliverAt = new Date(Date.now() + 2 * 60 * 1000).toISOString();
   await db.run(
-    `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at)
-     VALUES (?,?,?,?,?,?)`,
+    `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at, notification_type, case_id)
+     VALUES (?,?,?,?,?,?,'expungement',?)`,
     [userId, user?.push_token || null, title, body,
-     JSON.stringify({ screen: 'Expungement', case_id: caseRow.id }), deliverAt]
+     JSON.stringify({ screen: 'Expungement', case_id: caseRow.id }), deliverAt, caseRow.id]
   );
   await db.run('UPDATE cases SET expungement_notified=1 WHERE id=?', [caseRow.id]);
 }
 
-async function scheduleCourtReminders(db, userId, caseId, caseTitle, courtDateStr) {
-  if (!courtDateStr) return;
-  const STARTER_TIERS = new Set(['advisor','legal_pro','legal_radar','starter_annual','pro_annual','legal_radar_annual']);
+/**
+ * Plan the court reminders for one case, first remembering the device time
+ * zone the app sent (X-Timezone). Returns the pending reminders, or undefined
+ * when planning failed (logged; the backfill sweep retries later).
+ */
+async function planReminders(db, req, { caseId, caseTitle, courtDate, state }) {
   try {
-    const sub = await db.get(
-      "SELECT tier FROM subscriptions WHERE user_id=? AND status IN ('active','trialing') ORDER BY id DESC LIMIT 1",
-      [userId]
-    );
-    if (!sub || !STARTER_TIERS.has(sub.tier)) return;
-  } catch (e) { logger.warn('[cases/court-reminder]', e?.message); return; }
-
-  // 'YYYY-MM-DD' parses as UTC midnight; the day is formatted in UTC below so the
-  // reminder names the same calendar day regardless of the server's TZ.
-  const courtDate = new Date(String(courtDateStr).slice(0, 10));
-  if (isNaN(courtDate.getTime()) || courtDate.getTime() + 86_400_000 < Date.now()) return;
-
-  // Remove stale reminders for this case before inserting new ones
-  await db.run(
-    "DELETE FROM scheduled_pushes WHERE user_id=? AND data LIKE ?",
-    [userId, `%"case_id":${caseId}%`]
-  ).catch(() => {});
-
-  const user  = await db.get('SELECT push_token FROM users WHERE id=?', [userId]).catch(() => null);
-  const token = user?.push_token || null;
-
-  const reminders = [
-    { days: 7, title: '📅 Court date in 7 days',   body: `${caseTitle} — Court on ${courtDate.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', timeZone: 'UTC' })}` },
-    { days: 3, title: '⚠️ Court date in 3 days',   body: `${caseTitle} — Review your case and contact your lawyer.` },
-    { days: 1, title: '🚨 Court date TOMORROW',    body: `${caseTitle} — Be on time and bring all documents.` },
-    { days: 0, title: '🏛️ Court date TODAY',       body: `${caseTitle} — Your court appearance is today. Good luck.` },
-  ];
-
-  await Promise.all(reminders.map(async r => {
-    const deliverAt = new Date(courtDate);
-    deliverAt.setDate(deliverAt.getDate() - r.days);
-    deliverAt.setHours(8, 0, 0, 0);
-    if (deliverAt <= new Date()) return;
-    await db.run(
-      `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at)
-       VALUES (?,?,?,?,?,?)`,
-      [userId, token, r.title, r.body,
-       JSON.stringify({ screen: 'CasesTab', case_id: caseId }),
-       deliverAt.toISOString()]
-    ).catch(() => {});
-  }));
+    const tzChanged = await rememberTimeZone(db, req.user.id, req.get('X-Timezone'));
+    if (tzChanged) await rescheduleUserCourtReminders(db, req.user.id);
+    const r = await scheduleCourtReminders(db, {
+      userId: req.user.id, caseId: Number(caseId), caseTitle, courtDate, state,
+    });
+    return r.reminders;
+  } catch (e) {
+    logger.warn({ caseId, err: e.message }, '[cases] court reminders not planned');
+    return undefined;
+  }
 }
+
+// GET /:id/reminders — the case's pending court reminders.
+// POST /:id/reminders — (re)plan them now (idempotent; used by "Remind me").
+router.get('/:id/reminders', authRequired, async (req, res) => {
+  try {
+    const db = await getDb();
+    const caseId = safeInt(req.params.id);
+    const cas = await db.get('SELECT id FROM cases WHERE id=? AND user_id=? AND deleted_at IS NULL', [caseId, req.user.id]);
+    if (!cas) return err404(res, 'Case not found.');
+    res.json({ reminders: await listPendingCourtReminders(db, req.user.id, caseId) });
+  } catch (e) {
+    logger.error('[cases/reminders]', e.message);
+    res.status(500).json({ error: 'Could not load reminders.' });
+  }
+});
+
+router.post('/:id/reminders', authRequired, casesLimiter, async (req, res) => {
+  try {
+    const db = await getDb();
+    const caseId = safeInt(req.params.id);
+    const cas = await db.get(
+      'SELECT id, title, status, next_court_date, state FROM cases WHERE id=? AND user_id=? AND deleted_at IS NULL',
+      [caseId, req.user.id]);
+    if (!cas) return err404(res, 'Case not found.');
+    if (!cas.next_court_date) return err400(res, 'This case has no court date. Add one to get reminders.');
+    if (CLOSED_CASE_STATUSES.has(cas.status)) return err400(res, 'This case is closed.');
+    await rememberTimeZone(db, req.user.id, req.get('X-Timezone'));
+    const r = await scheduleCourtReminders(db, {
+      userId: req.user.id, caseId, caseTitle: cas.title,
+      courtDate: String(cas.next_court_date).slice(0, 10), state: cas.state,
+    });
+    if (!r.reminders.length) return err400(res, 'This court date has already passed.');
+    res.json({ case_id: caseId, time_zone: r.time_zone, reminders: r.reminders });
+  } catch (e) {
+    logger.error('[cases/reminders/plan]', e.message);
+    res.status(500).json({ error: 'Could not set reminders.' });
+  }
+});
 
 
 // GET /family/contacts — emergency contacts for user's cases

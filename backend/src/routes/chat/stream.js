@@ -121,95 +121,124 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, pe
       { role: 'user', content: caseNote + trimmedMsg + contextNote + jurisdictionNote },
     ];
 
-    // ── SSE headers ────────────────────────────────────────────────────────
-    res.setHeader('Content-Type',  'text/event-stream');
-    res.write('data: ' + JSON.stringify({ type: 'disclaimer', required: true }) + '\n\n');
-    res.setHeader('Cache-Control', 'no-cache');
+    // ── SSE headers — set and flushed BEFORE the first frame ──────────────
+    // Every validation / limit / disclaimer response above is plain JSON with
+    // its own status; from here on the response is an event stream and errors
+    // are reported as `error` frames (headers are already on the wire).
+    res.status(200);
+    res.setHeader('Content-Type',  'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection',    'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
 
-    const send = (obj) => res.write('data: ' + JSON.stringify(obj) + '\n\n');
+    const send = (obj) => {
+      if (res.writableEnded || res.destroyed) return;
+      res.write('data: ' + JSON.stringify(obj) + '\n\n');
+    };
+    send({ type: 'disclaimer', required: true });
+
+    // 120-second stream timeout; also abort the upstream call when the client goes away.
+    const upstream = new AbortController();
+    let timedOut = false;
+    const stTimer = setTimeout(() => { timedOut = true; upstream.abort(); }, 120_000);
+    const onClientClose = () => { if (!res.writableEnded) upstream.abort(); };
+    res.on('close', onClientClose);
+
     let fullText = '';
+    try {
+      const response = await fetch(API_URLS.ANTHROPIC, {
+        method: 'POST',
+        signal: upstream.signal,
+        headers: {
+          'Content-Type':      'application/json',
+          'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model:       CLAUDE_MODEL,
+          temperature: isDefender ? 0.3 : 0.4,  // defenders: precise; consumers: conversational
+          max_tokens:  isDefender ? 1500 : 600,
+          stream:      true,   // ← enables token streaming
+          system:      systemPrompt,
+          messages,
+        }),
+      });
 
-    // ── Anthropic streaming API ─────────────────────────────────────────────
-    // 120-second stream timeout — prevents hung server connections at scale
-    const _ctrl    = new AbortController();
-    const _stTimer = setTimeout(() => {
-      _ctrl.abort();
-      try { res.write('data: ' + JSON.stringify({ type: 'error', error: 'Response timed out. Please try again.' }) + '\n\n'); res.end(); } catch { /* client already disconnected */ }
-    }, 120_000);
-
-    const response = await fetch(API_URLS.ANTHROPIC, {
-      method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         (process.env.ANTHROPIC_API_KEY ?? ''),
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model:       CLAUDE_MODEL,
-        temperature: isDefender ? 0.3 : 0.4,  // defenders: precise; consumers: conversational
-        max_tokens:  isDefender ? 1500 : 600,
-        stream:      true,   // ← enables token streaming
-        system:      systemPrompt,
-        messages,
-      }),
-    });
-
-    if (!response.ok || !response.body) {
-      const errDetail = response.ok ? 'no body' : `HTTP ${response.status}`;
-      logger.error('[chat/stream] Anthropic unavailable:', errDetail);
-      send({ type: 'error', message: 'AI service unavailable. Please try again.' });
-      return res.end();
-    }
-
-    // ── Stream token chunks to client ───────────────────────────────────────
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') continue;
-        try {
-          const parsed = safeJson(data);
-          if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-            const token = parsed.delta.text ?? '';
-            fullText += token;
-            send({ type: 'token', text: token });
-          }
-        } catch (e) { logger.warn('[chat/stream] malformed chunk:', e?.message); }
+      if (!response.ok || !response.body) {
+        const errDetail = response.ok ? 'no body' : `HTTP ${response.status}`;
+        logger.error('[chat/stream] Anthropic unavailable:', errDetail);
+        send({ type: 'error', message: 'AI service unavailable. Please try again.' });
+        return;
       }
+
+      // ── Stream token chunks to client ─────────────────────────────────────
+      // SSE lines can be split across network reads: keep the incomplete tail.
+      const reader  = response.body.getReader();
+      const decoder = new TextDecoder();
+      let pending = '';
+      let upstreamError = null;
+      const handleLine = (line) => {
+        if (!line.startsWith('data:')) return;
+        const data = line.slice(5).trim();
+        if (!data || data === '[DONE]') return;
+        const parsed = safeJson(data);
+        if (!parsed || typeof parsed !== 'object') return;
+        if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+          const token = parsed.delta.text ?? '';
+          fullText += token;
+          send({ type: 'token', text: token });
+        } else if (parsed.type === 'error') {
+          upstreamError = parsed.error?.message || 'upstream error';
+        }
+      };
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        pending += decoder.decode(value, { stream: true });
+        const lines = pending.split('\n');
+        pending = lines.pop() ?? '';
+        lines.forEach(handleLine);
+      }
+      pending += decoder.decode();
+      if (pending) handleLine(pending);
+
+      if (upstreamError) {
+        logger.error('[chat/stream] Anthropic stream error:', upstreamError);
+        if (!fullText) { send({ type: 'error', message: 'AI service unavailable. Please try again.' }); return; }
+      }
+
+      // ── Save complete exchange to DB ─────────────────────────────────────
+      // Only persist when tokens were actually received, so a failed stream
+      // never leaves an orphan user turn (the client may retry via /chat/ask).
+      if (fullText) {
+        await saveMessage(db, sessionId, 'user', trimmedMsg, req.user.id).catch(() => {});
+        await saveMessage(db, sessionId, 'assistant', fullText, req.user.id).catch(() => {});
+      }
+
+      // ── Final event with metadata ───────────────────────────────────────
+      send({
+        type: 'done',
+        full_text: fullText,
+        partial: !!upstreamError,
+        intent: classifyIntent(trimmedMsg),
+        suggestLawyerSearch: detectLawyerHandoff(trimmedMsg, fullText),
+      });
+    } catch (err) {
+      if (upstream.signal.aborted && !timedOut) return; // client disconnected — nothing to send
+      logger.error('[chat/stream]', err?.message || String(err));
+      send({ type: 'error', message: timedOut ? 'Response timed out. Please try again.' : 'Stream error.' });
+    } finally {
+      clearTimeout(stTimer);
+      res.off('close', onClientClose);
+      if (!res.writableEnded) res.end();
     }
-
-    // ── Save complete message to DB ─────────────────────────────────────────
-    await saveMessage(db, sessionId, 'user', trimmedMsg, req.user.id).catch(() => {});
-    // Only persist assistant message if tokens were actually received
-    if (fullText) await saveMessage(db, sessionId, 'assistant', fullText, req.user.id).catch(() => {});
-
-    // ── Final event with metadata ───────────────────────────────────────────
-    send({
-      type: 'done',
-      full_text: fullText,
-      intent: classifyIntent(trimmedMsg),
-      suggestLawyerSearch: detectLawyerHandoff(trimmedMsg, fullText),
-    });
-    res.end();
 
   } catch (err) {
+    // Only reached before the stream started (headers not yet sent).
     logger.error('[chat/stream]', err?.message || String(err));
-    try {
-      res.write('data: ' + JSON.stringify({ type: 'error', message: 'Stream error.' }) + '\n\n');
-      res.end();
-    } catch { /* response already ended */ }
+    if (!res.headersSent) return res.status(500).json({ error: 'Stream error.' });
+    if (!res.writableEnded) res.end();
   }
 });
 

@@ -13,7 +13,7 @@ import { AppIcon } from '../components/AppIcon';
  *   3. ChatScreen when user expresses distress
  *   4. ResourcesScreen "Crisis Support" category
  */
-import { api } from '../services/api';
+import { unwrapList, api } from '../services/api';
 import React, { useMemo } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, RefreshControl, LayoutAnimation, ActivityIndicator } from 'react-native';
@@ -109,7 +109,7 @@ function CrisisResourcesScreen({ navigation }: ScreenProps): React.JSX.Element {
   const [dbLines, setDbLines] = React.useState<any[]>([]);
   React.useEffect(() => {
     api.get('/resources?category=CRISIS_LINE&limit=20')
-      .then(r => { if (r.data?.length) setDbLines(r.data || []); })
+      .then(r => { const lines = unwrapList(r.data, 'resources'); if (lines.length) setDbLines(lines); })
       .catch(() => {}).finally(() => setIsLoading(false));
   }, []);
   // Crisis lines from the resources directory that are not already listed above.

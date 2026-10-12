@@ -42,6 +42,21 @@ import { requireFirmRole, loadFirmContext } from '../../middleware/rbac.js';
 import { writeAuditLog } from '../../middleware/audit.js';
 import { makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 import logger           from '../../utils/logger.js';
+import { safePost, validateOutboundUrl, assertResolvesPublic } from '../../utils/ssrfGuard.js';
+
+/** Validate a subscription URL (H9). Returns an error string, or null when acceptable. */
+async function webhookUrlError(raw) {
+  const v = validateOutboundUrl(raw);
+  if (!v.ok) return v.reason;
+  // If DNS answers now, every address must be public. (If it can't be resolved
+  // yet the URL is accepted — each delivery re-resolves and re-checks anyway.)
+  const pub = await assertResolvesPublic(v.url.hostname);
+  if (pub === false) return 'Webhook URL resolves to a private or reserved address.';
+  return null;
+}
+
+// Internal reads that need the signing secret (never returned to clients).
+const SUB_COLS_WITH_SECRET = 'id, firm_id, name, url, secret, events, active, last_triggered_at, failure_count, created_by, created_at, updated_at';
 
 const router     = Router();
 const whLimiter  = makeUserLimiter({ windowMs: 3_600_000, max: 60, message: 'Webhook operation limit.' });
@@ -99,17 +114,9 @@ export async function deliverWebhook(db, subscription, eventType, payload, attem
   let responseStatus = null, responseBody = null, success = false;
 
   try {
-    // Validate URL is HTTPS in production
-    const url = subscription.url;
-    if (process.env.NODE_ENV === 'production' && !url.startsWith('https://')) {
-      throw new Error('Webhook endpoint must use HTTPS in production.');
-    }
-
-    const controller = new AbortController();
-    const timeout    = setTimeout(() => controller.abort(), 10_000);
-
-    const resp = await fetch(url, {
-      method:  'POST',
+    // SSRF-safe delivery: https-only in production, every resolved address is
+    // checked at connect time (no DNS rebinding), redirects are never followed.
+    const resp = await safePost(subscription.url, {
       headers: {
         'Content-Type':      'application/json',
         'X-JG-Signature':    `t=${timestamp},v1=${signature}`,
@@ -118,13 +125,14 @@ export async function deliverWebhook(db, subscription, eventType, payload, attem
         'User-Agent':        'JusticeGavel-Webhooks/1.0',
       },
       body,
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timeout));
+      timeoutMs: 10_000,
+    });
 
     responseStatus = resp.status;
-    responseBody   = await resp.text().catch(() => '').then(t => t.slice(0, 500));
-    success        = resp.ok || (resp.status >= 200 && resp.status < 300);
+    responseBody   = String(resp.body || '').slice(0, 500);
+    success        = resp.ok;
   } catch (e) {
+    if (e?.code === 'ESSRFBLOCKED') logger.warn({ subscription: subscription.id, err: e.message }, '[webhook] delivery blocked (SSRF guard)');
     responseBody = e.message?.slice(0, 500) || 'Connection failed';
     responseStatus = null;
     success = false;
@@ -166,7 +174,7 @@ export async function deliverWebhook(db, subscription, eventType, payload, attem
     }
 
     // Retry with backoff
-    if (attempt < RETRY_DELAYS_MS.length) {
+    if (attempt < RETRY_DELAYS_MS.length && !/Blocked destination|private or reserved|must use https|public domain/i.test(String(responseBody))) {
       const delay = RETRY_DELAYS_MS[attempt];
       logger.info(`[webhook] Retrying ${eventType} to ${subscription.url} in ${delay}ms (attempt ${attempt + 2})`);
       setTimeout(() => deliverWebhook(db, subscription, eventType, payload, attempt + 1), delay);
@@ -183,7 +191,7 @@ export async function deliverWebhook(db, subscription, eventType, payload, attem
 export async function dispatchWebhookEvent(db, firmId, eventType, payload) {
   try {
     const subscriptions = await db.all(
-      "SELECT id, firm_id, name, url, events, active, last_triggered_at, failure_count, created_by, created_at, updated_at FROM webhook_subscriptions WHERE firm_id=? AND active=1",
+      `SELECT ${SUB_COLS_WITH_SECRET} FROM webhook_subscriptions WHERE firm_id=? AND active=1`,
       [firmId]
     ).catch(() => []);
 
@@ -233,11 +241,9 @@ router.post('/subscriptions', authRequired, requireFirmRole('firm_admin'), whLim
       return err400(res, 'events must be a non-empty array. See GET /api/webhooks/outbound/events for options.');
     }
 
-    // Validate URL format
-    try { new URL(url); } catch { return err400(res, 'Invalid URL format.'); }
-    if (process.env.NODE_ENV === 'production' && !url.startsWith('https://')) {
-      return err400(res, 'Webhook URL must use HTTPS.');
-    }
+    // Validate URL (format, https in production, public destination — H9)
+    const urlErr = await webhookUrlError(url);
+    if (urlErr) return err400(res, urlErr);
 
     // Validate event types
     const invalidEvents = events.filter(e => !WEBHOOK_EVENTS.includes(e) && e !== '*');
@@ -338,11 +344,14 @@ router.put('/subscriptions/:id', authRequired, requireFirmRole('firm_admin'), as
 
     if (name)   { updates.push('name=?');   params.push(truncateStr(sanitizeStr(name,100),100)); }
     if (url) {
-      try { new URL(url); } catch { return err400(res, 'Invalid URL.'); }
-      updates.push('url=?'); params.push(url.trim());
+      const urlErr = await webhookUrlError(url);
+      if (urlErr) return err400(res, urlErr);
+      updates.push('url=?'); params.push(String(url).trim());
     }
     if (events) {
-      if (!Array.isArray(events)) return err400(res, 'events must be an array.');
+      if (!Array.isArray(events) || !events.length) return err400(res, 'events must be a non-empty array.');
+      const invalid = events.filter(e => !WEBHOOK_EVENTS.includes(e) && e !== '*');
+      if (invalid.length) return err400(res, `Unknown event types: ${invalid.join(', ')}.`);
       updates.push('events=?'); params.push(JSON.stringify(events));
     }
     if (active !== undefined) { updates.push('active=?'); params.push(active ? 1 : 0); }
@@ -385,7 +394,7 @@ router.post('/subscriptions/:id/test', authRequired, requireFirmRole('firm_admin
   try {
     const db  = await getDb();
     const ctx = req.firmCtx;
-    const sub = await db.get('SELECT id, firm_id, name, url, events, active, last_triggered_at, failure_count, created_by, created_at, updated_at FROM webhook_subscriptions WHERE id=? AND firm_id=? LIMIT 1', [safeInt(req.params.id), ctx.firm_id]);
+    const sub = await db.get(`SELECT ${SUB_COLS_WITH_SECRET} FROM webhook_subscriptions WHERE id=? AND firm_id=? LIMIT 1`, [safeInt(req.params.id), ctx.firm_id]);
     if (!sub) return err404(res, 'Subscription not found.');
 
     const testPayload = {
@@ -409,7 +418,8 @@ router.post('/subscriptions/:id/test', authRequired, requireFirmRole('firm_admin
         : 'Test delivery failed. Check that your endpoint is reachable and returns 2xx.',
     });
   } catch (e) {
-    res.status(500).json({ error: 'Test delivery failed.', detail: e.message });
+    logger.error('[webhooks/test]', e?.message);
+    res.status(500).json({ error: 'Test delivery failed.' });
   }
 });
 
@@ -450,11 +460,11 @@ router.post('/deliveries/:id/retry', authRequired, requireFirmRole('firm_admin')
   try {
     const db       = await getDb();
     const ctx      = req.firmCtx;
-    const delivery = await db.get('SELECT id, subscription_id, event_type, response_status, response_body, delivery_ms, success, attempted_at FROM webhook_deliveries WHERE id=? LIMIT 1', [safeInt(req.params.id)]);
+    const delivery = await db.get('SELECT id, subscription_id, event_type, payload, response_status, response_body, delivery_ms, success, attempted_at FROM webhook_deliveries WHERE id=? LIMIT 1', [safeInt(req.params.id)]);
     if (!delivery) return err404(res, 'Delivery not found.');
 
-    const sub = await db.get('SELECT id, firm_id, name, url, events, active, last_triggered_at, failure_count, created_by, created_at, updated_at FROM webhook_subscriptions WHERE id=? AND firm_id=? LIMIT 1', [delivery.subscription_id, ctx.firm_id]);
-    if (!sub) return err403(res);
+    const sub = await db.get(`SELECT ${SUB_COLS_WITH_SECRET} FROM webhook_subscriptions WHERE id=? AND firm_id=? LIMIT 1`, [delivery.subscription_id, ctx.firm_id]);
+    if (!sub) return err404(res, 'Delivery not found.');
 
     // Re-parse original payload
     let payload;
@@ -463,8 +473,10 @@ router.post('/deliveries/:id/retry', authRequired, requireFirmRole('firm_admin')
     const result = await deliverWebhook(db, sub, delivery.event_type, payload?.data || payload);
     res.json({ retried: true, success: result.success, status: result.status, delivery_ms: result.delivery_ms });
   } catch (e) {
-    res.status(500).json({ error: 'Retry failed.', detail: e.message });
+    logger.error('[webhooks/retry]', e?.message);
+    res.status(500).json({ error: 'Retry failed.' });
   }
+}));
 
 // GET /events — list all supported event types
 router.get('/events', authRequired, (req, res) => {
@@ -476,5 +488,4 @@ router.get('/events', authRequired, (req, res) => {
   });
 });
 
-}));
 export default router;

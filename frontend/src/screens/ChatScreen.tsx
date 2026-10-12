@@ -53,7 +53,23 @@ import { track } from '../services/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { ScreenProps } from '../types/navigation';
-import { api, isAiUnavailable, API_BASE_URL } from '../services/api';
+import { unwrapList, api, isAiUnavailable, isDisclaimerRequired, deviceTimeZone, API_BASE_URL } from '../services/api';
+import { notifyDisclaimerRequired } from '../services/legalGate';
+
+/**
+ * An HTTP answer from /chat/stream that the /chat/ask fallback would answer
+ * the same way (auth, daily limit, disclaimer, rate limit, AI off). Re-sending
+ * the question would only double-count it, so the stream path surfaces these
+ * directly (shaped like an axios error for the shared handler below).
+ */
+class StreamHttpError extends Error {
+  response: { status: number; data: Record<string, unknown> };
+  constructor(status: number, data: Record<string, unknown>) {
+    super(String(data?.message || data?.error || `HTTP ${status}`));
+    this.response = { status, data };
+  }
+}
+const TERMINAL_STREAM_STATUSES = new Set([400, 401, 402, 403, 429, 451, 503]);
 import { pollJob }        from '../services/jobPoller';
 import { isOnline }       from '../services/offlineCache';
 import { t }              from '../i18n';
@@ -396,7 +412,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
   const loadHistory = useCallback(async (sid: string) => {
     try {
       const res = await api.get(`/chat/history/${sid}`);
-      const msgs: Message[] = (res.data || []).map((h: Record<string, unknown>) => ({
+      const msgs: Message[] = unwrapList<Record<string, unknown>>(res.data, 'messages', 'history').map((h: Record<string, unknown>) => ({
         id:   randomId(),
         role: h.role as 'user' | 'assistant',
         text: h.content as string,
@@ -539,6 +555,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
         const placeholderId = randomId();
         setMessages(prev => [...prev, { id: placeholderId, role: 'assistant', text: '' }]);
         scrollToBottom();
+        let streamedText = '';
         try {
           const token = await getToken();
           let gotContent = false;
@@ -548,6 +565,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
               headers: {
                 'Content-Type':  'application/json',
                 ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                ...(deviceTimeZone() ? { 'X-Timezone': deviceTimeZone() as string } : {}),
               },
               body: JSON.stringify({
                 message:         text.trim(),
@@ -560,7 +578,13 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
                 user_state_name: userStateRef.current?.name || null,
               }),
             }).then(async response => {
-              if (!response.ok || !response.body) throw new Error('Stream unavailable');
+              if (!response.ok || !response.body) {
+                if (TERMINAL_STREAM_STATUSES.has(response.status)) {
+                  const data = await response.json().catch(() => ({}));
+                  throw new StreamHttpError(response.status, data as Record<string, unknown>);
+                }
+                throw new Error('Stream unavailable');
+              }
               const reader  = response.body.getReader();
               const decoder = new TextDecoder();
               let buffer = '';
@@ -576,6 +600,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
                     const event = JSON.parse(line.slice(6));
                     if (event.type === 'token') {
                       gotContent = true;
+                      streamedText += event.text;
                       setMessages(prev => prev.map(m =>
                         m.id === placeholderId
                           ? { ...m, text: m.text + event.text }
@@ -607,8 +632,22 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
           // T1-N: setSending → setLoading
           setLoading(false);
           return; // streaming succeeded — skip fallback
-        } catch {
-          // Streaming failed — remove placeholder and fall through to pollJob
+        } catch (streamErr) {
+          if (streamErr instanceof StreamHttpError) {
+            // Same answer /chat/ask would give — handle it once, don't re-send.
+            setMessages(prev => prev.filter(m => m.id !== placeholderId));
+            throw streamErr;
+          }
+          if (streamedText) {
+            // The answer was already streaming (and billed): keep what arrived
+            // instead of asking the same question a second time.
+            setMessages(prev => prev.map(m => m.id === placeholderId
+              ? { ...m, text: streamedText + '\n\n⚠️ The answer was cut off. Ask again to continue.' }
+              : m));
+            setLoading(false);
+            return;
+          }
+          // Nothing arrived (no SSE support / proxy / network) — fall back to the job queue once.
           setMessages(prev => prev.filter(m => m.id !== placeholderId));
         }
       }
@@ -676,10 +715,17 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
       const status = (e as { response?: { status?: number; data?: { code?: string; error?: string } } }).response?.status;
       const code   = (e as { response?: { data?: { code?: string } } }).response?.data?.code;
 
-      if (status === 402 || code === 'chat_limit_reached') {
+      if (isDisclaimerRequired(e)) {
+        notifyDisclaimerRequired();
         setMessages(prev => [...prev, {
           id: randomId(), role: 'assistant',
-          text: "You've used your 3 free AI questions for today.\n\nUpgrade to 24 Hour Advisor ($9.99/mo) for unlimited chat, full lawyer search, arrest records, and all Know Your Rights lessons.",
+          text: 'Before using AI chat, please review and accept the legal notice (Justice Gavel is not a law firm and this is not legal advice). Then ask your question again.',
+          suggestLawyerSearch: false,
+        }]);
+      } else if (status === 402 || code === 'chat_limit_reached') {
+        setMessages(prev => [...prev, {
+          id: randomId(), role: 'assistant',
+          text: "You've used your free AI questions for today.\n\nUpgrade to a paid plan for unlimited chat, full lawyer search, arrest records, and all Know Your Rights lessons.",
           suggestLawyerSearch: false,
           showUpgrade: true,
         }]);

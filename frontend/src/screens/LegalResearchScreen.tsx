@@ -28,7 +28,7 @@ import UPLDisclaimer from '../components/UPLDisclaimer';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, Linking, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Animated, KeyboardAvoidingView, Platform, LayoutAnimation, InteractionManager } from 'react-native';
-import { api, apiErrorMessage } from '../services/api';
+import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
@@ -462,7 +462,7 @@ showToast(msg, 'error');
     setHistLoad(true);
     try {
       const res = await api.get('/research/history');
-      setHistory(res.data || []);
+      setHistory(unwrapList(res.data, 'history', 'sessions'));
       setPhase('history');
     } catch (e: any) { __DEV__ && console.warn(e?.message); }
     setHistLoad(false);

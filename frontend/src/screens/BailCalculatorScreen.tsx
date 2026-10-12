@@ -2,11 +2,10 @@ import { AIDisclaimer } from '../components/AIDisclaimer';
 import {} from '../components/LegalCharts';
 import UPLDisclaimer from '../components/UPLDisclaimer';
 import type { ScreenProps } from '../types/navigation';
-import EmergencyStrip from '../components/EmergencyStrip';
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, LayoutAnimation, RefreshControl } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { cachedGet } from '../services/api';
+import { unwrapList, cachedGet } from '../services/api';
 import { useTheme } from '../constants/theme';
 
 const STATES = [
@@ -49,7 +48,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
     let cancel = false;
     setLoading(true);
     cachedGet(`/legaldata/bail?state=${state}&limit=200`)
-      .then(r => { if (!cancel) { setSchedules(r.data || []); setFetchError(false); } })
+      .then(r => { if (!cancel) { setSchedules(unwrapList<Schedule>(r.data)); setFetchError(false); } })
       .catch(() => { if (!cancel) { setSchedules([]); setFetchError(true); } })
       .finally(() => { if (!cancel) { setLoading(false); setRefreshing(false); } });
     return () => { cancel = true; };
@@ -122,6 +121,11 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
         />
 
         {loading && <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} />}
+        {!loading && !fetchError && schedules.length > 0 && filtered.length === 0 && (
+          <Text testID="bail-no-match" maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginVertical: 16 }}>
+            No charges match “{filter}”. Try a shorter search.
+          </Text>
+        )}
         {fetchError && !loading && !schedules.length && (
           <View style={{ alignItems:'center', padding:24 }}>
             <Text maxFontSizeMultiplier={1.4} style={{ color: sub, marginBottom: 8, textAlign: 'center' }}>
@@ -146,6 +150,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
               accessibilityRole="button"
           accessibilityHint="Double-tap to activate"
               key={s.id}
+              testID="bail-schedule-row"
               onPress={() => setSelected(isSel ? null : s)}
               style={{
                 backgroundColor: isSel ? (isDark ? colors.bgSubtle : colors.infoBg) : card,
@@ -180,7 +185,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
 
               {/* Expanded breakdown */}
               {isSel && (
-                <View style={{
+                <View testID="bail-breakdown" style={{
                   marginTop: 12, borderTopWidth: 1,
                   borderTopColor: colors.border, paddingTop: 12, gap: 8,
                 }}>
@@ -194,7 +199,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
                         s.bail_max ? `${fmt(s.bail_min)} - ${fmt(s.bail_max)}` : `${fmt(s.bail_min)}+`
                       } text={text} sub={sub} />
                       <Row label="Cash bail (pay full)" value={`${fmt(s.bail_min)} - ${s.bail_max ? fmt(s.bail_max) : '???'}`} text={text} sub={sub} />
-                      <Row label={`Bondsman cost (${bondPct}% non-refundable)`}
+                      <Row testID="bail-bond-cost" label={`Bondsman cost (${bondPct}% non-refundable)`}
                         value={s.bail_max
                           ? `${fmt(bondCost(s.bail_min))} - ${fmt(bondCost(s.bail_max))}`
                           : `${fmt(bondCost(s.bail_min))}+`}
@@ -263,7 +268,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnAccent, fontSize:11,
               textAlign:'center', marginTop:4 }}>
-              Bondsmen charge 10% (non-refundable). Find licensed agents in your city.
+              Bondsmen typically charge about 10% (non-refundable). Find bail agents in your city.
             </Text>
           </TouchableOpacity>
         </View>
@@ -287,7 +292,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
             </Text>
             <Text maxFontSizeMultiplier={1.3}
               style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 3 }}>
-              1,459 verified attorneys across 40 states
+              Search the attorney directory by city and practice area
             </Text>
           </TouchableOpacity>
         </View>
@@ -310,11 +315,10 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
   );
 }
 
-function Row({ label, value, text, sub, highlight }:
-  { label:string; value:string; text:string; sub:string; highlight?:string }) {
+function Row({ label, value, text, sub, highlight, testID }:
+  { label:string; value:string; text:string; sub:string; highlight?:string; testID?: string }) {
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-      <EmergencyStrip compact={true} />
+    <View testID={testID} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
       <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 12, flex: 1 }}>{label}</Text>
       <Text maxFontSizeMultiplier={1.4} style={{ color: highlight || text, fontWeight: '600', fontSize: 13 }}>{value}</Text>
     </View>

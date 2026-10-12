@@ -40,6 +40,8 @@ import { registerForPushNotificationsAsync, useOTAUpdates, usePushTokenRefresh, 
 import AgeGateScreen from './src/screens/AgeGateScreen';
 import TermsAcceptanceModal from './src/screens/TermsAcceptanceModal';
 import { api } from './src/services/api';
+import { onDisclaimerRequired } from './src/services/legalGate';
+import { clearAuth } from './src/utils/secureStorage';
 
 // ── Sentry crash reporting ────────────────────────────────────────────────────
 Sentry.init({
@@ -114,6 +116,8 @@ const RootStack = createNativeStackNavigator();
 
 function AppInner() {
   const [authState, setAuthState]     = useState<AuthState>('loading');
+  const authStateRef = React.useRef<AuthState>('loading');
+  authStateRef.current = authState;
   const [tosNeeded,  setTosNeeded]    = useState(false);
   const [ageVerified, setAgeVerified] = useState<boolean | null>(null);
   const [bioLocked,   setBioLocked]   = useState(false);
@@ -178,11 +182,6 @@ function AppInner() {
 
       if (token) {
         setAuthState('authed');
-        // Check ToS version — show modal if user hasn't accepted current version
-        try {
-          const tosRes = await api.get('/auth/tos-status').catch(() => null);
-          if (tosRes?.data?.needs_acceptance) setTosNeeded(true);
-        } catch {}
         return;
       }
       const hasBrowsed = await AsyncStorage.getItem('has_browsed');
@@ -193,6 +192,31 @@ function AppInner() {
       setAuthState('guest');
     })();
   }, []);
+
+  // ── Legal gate: ToS + AI disclaimer ────────────────────────────────────────
+  // Checked every time the app becomes signed-in (cold start with a stored
+  // token, login, registration) — not only on cold start — and re-opened by
+  // any 451 disclaimer_required (e.g. after a disclaimer version bump).
+  useEffect(() => {
+    if (authState !== 'authed') { setTosNeeded(false); return; }
+    let cancelled = false;
+    (async () => {
+      const [tos, disc] = await Promise.all([
+        api.get('/auth/tos-status').catch(() => null),
+        api.get('/auth/disclaimer/status').catch(() => null),
+      ]);
+      if (cancelled) return;
+      if (tos?.data?.needs_acceptance || disc?.data?.required) setTosNeeded(true);
+      // Reminders fire at local wall-clock times: keep the account's zone current.
+      const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; } })();
+      if (tz) api.post('/push/timezone', { timezone: tz }).catch(() => {});
+    })();
+    return () => { cancelled = true; };
+  }, [authState]);
+
+  useEffect(() => onDisclaimerRequired(() => {
+    if (authStateRef.current === 'authed') setTosNeeded(true);
+  }), []);
 
   // ── Push notification → deep navigation ────────────────────────────────────
   useEffect(() => {
@@ -338,6 +362,11 @@ function AppInner() {
     <TermsAcceptanceModal
       visible={tosNeeded}
       onAccepted={() => setTosNeeded(false)}
+      onDecline={async () => {
+        setTosNeeded(false);
+        await clearAuth().catch(() => {});
+        setAuthState('guest');
+      }}
     />
     </ErrorBoundary>
     );

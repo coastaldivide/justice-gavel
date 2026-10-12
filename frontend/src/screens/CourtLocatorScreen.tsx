@@ -4,7 +4,7 @@ import { AppIcon } from '../components/AppIcon';
 import React, { useState, useEffect, useCallback } from 'react';
 import {View, Text, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, LayoutAnimation} from 'react-native';
 import { FlashListCompat as FlashList } from '../components/FlashListCompat';
-import {api} from '../services/api';
+import { unwrapList,api} from '../services/api';
 import {  useTheme, COLORS } from '../constants/theme';
 
 type Courthouse = {
@@ -59,8 +59,9 @@ function CourtLocatorScreen(): React.JSX.Element {
         : `/courthouses?q=${encodeURIComponent(q)}&limit=30`;
       const res = await api.get(endpoint);
       // Normalize federal courts to match courthouse schema
-      const raw = res.data || [];
-      const normalized = courtMode === 'federal' ? (raw ?? []).map((fc: Record<string, unknown>) => ({
+      // /courthouses answers with an array, /legaldata/* with { data: [...] }.
+      const raw = unwrapList<Record<string, unknown>>(res.data, 'courthouses');
+      const normalized = courtMode === 'federal' ? raw.map((fc: Record<string, unknown>) => ({
         ...fc,
         name: fc.name,
         address: fc.address,
@@ -70,7 +71,7 @@ function CourtLocatorScreen(): React.JSX.Element {
         notes: `Federal district: ${fc.district}`,
         court_type: 'Federal',
       })) : raw;
-      setResults(normalized);
+      setResults(normalized as unknown as Courthouse[]);
     } catch {
       setError('Could not load courthouses. Check connection.');
     } finally { setLoading(false); }

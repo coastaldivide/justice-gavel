@@ -62,6 +62,14 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
   });
 
   it('bondsman leads list works read-only, hides sample arrests, quotes the flat fee', async () => {
+    // Only bondsman accounts may browse leads (audit11 C2): a plain user is refused…
+    const plain = await ctx.request().get('/api/billing/leads?state=TN').set(user.headers);
+    expect(plain.status).toBe(403);
+    // …and the same user can list once they have a bondsman profile.
+    const prof = await ctx.request().post('/api/billing/bondsman/profile').set(user.headers)
+      .send({ company_name: `${ctx.tag} Bonds`, license_number: 'TN-1', license_state: 'TN', counties: ['Davidson'], states: ['TN'] });
+    expect(prof.status).toBe(200);
+    ctx.addCleanup(async (db) => { await db.run('DELETE FROM bondsman_profiles WHERE user_id = ?', [user.user.id]); });
     const res = await ctx.request().get('/api/billing/leads?state=TN&hours=87600').set(user.headers);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.leads)).toBe(true);

@@ -15,7 +15,7 @@ import { View, Text, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, T
 import { PRACTICE_AREAS } from '../components/PracticeAreaSelector';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
-import { api, apiErrorMessage } from '../services/api';
+import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { getLocationWithCity, formatDistance } from '../services/location';
 import {  useTheme, COLORS } from '../constants/theme';
 
@@ -353,8 +353,9 @@ function MatchScreen(): React.JSX.Element {
       if (situation.trim()) params.situation = situation.trim();
 
       const res = await api.get('/match/lawyers', { params });
-      setResults(res.data || []);
-      setStatusMsg(res.data?.length === 0 ? 'No matches found. Try removing filters.' : '');
+      const matches = unwrapList(res.data, 'lawyers', 'matches');
+      setResults(matches);
+      setStatusMsg(matches.length === 0 ? 'No matches found. Try removing filters.' : '');
     } catch (e: any) {
       const errMsg  = e.response?.data?.message || apiErrorMessage(e, '');
       const status  = e.response?.status;
@@ -378,7 +379,7 @@ function MatchScreen(): React.JSX.Element {
         const res = await api.get('/match/lawyers', {
           params: { situation, caseType, language, proBonoOnly },
         });
-        setResults(res.data?.lawyers || res.data || []);
+        setResults(unwrapList(res.data, 'lawyers', 'matches'));
       } catch { /* silent on refresh error */ }
     }
     setRefreshing(false);

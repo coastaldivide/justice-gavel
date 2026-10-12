@@ -24,7 +24,7 @@ import React, { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Linking, RefreshControl, Platform, KeyboardAvoidingView, LayoutAnimation } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { api, apiErrorMessage } from '../services/api';
+import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { t }   from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 
@@ -308,7 +308,7 @@ function SavedLawyersScreen({ navigation }: any): React.JSX.Element {
     setError('');
     try {
       const res = await api.get('/saved/lawyers');
-      setLawyers(res.data || []);
+      setLawyers(unwrapList(res.data, 'lawyers'));
     } catch (e: any) {
       setError(apiErrorMessage(e, 'Could not load saved lawyers.'));
     } finally {

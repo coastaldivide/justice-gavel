@@ -3,147 +3,75 @@ import { useToast } from '../components/ToastProvider';
 /**
  * ConsumerSubscriptionScreen -- User-facing subscription plans
  *
- * Three tiers for individuals / families:
- *   Advisor  $29.99/mo -- full search, unlimited AI, lessons, arrest search
- *   Pro      $14.99/mo -- Advisor + arrest monitoring alerts
- *   Intel    $19.99/mo ($249.99/yr) -- Pro + county analytics + weekly reports
- *
- * 7-day free trial on all tiers.
+ * Plan names, prices, annual options and trial lengths all come from
+ * GET /api/billing/tiers?audience=consumer — the same table the backend
+ * charges from. This file only describes what each plan includes.
  */
 import React, { useRef, useState, useEffect } from 'react';
 import type { ScreenProps } from '../types/navigation';
 import { ActivityIndicator, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, InteractionManager } from 'react-native';
-import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
+import { api, apiErrorMessage, isPaymentsUnavailable, unwrapList } from '../services/api';
 import { PAYMENTS_COMING_SOON } from '../payments';
 
 import { useAuthGate } from '../components/AuthGate';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 
-// Billing period toggle data
-const MONTHLY_TIERS = [
-  {
-    key: 'advisor', label: '24 Hour Advisor', price: '$29.99/mo', annualKey: 'starter_annual',
-    annualPrice: '$79.99/yr', annualMonthly: '$6.67/mo', savings: 'Save $40',
-    cents: 2999, icon: '🔓', color: COLORS.legal, bg: COLORS.legalBg,
-    trial: '30-day free trial', highlight: false,
-    features: [
-      'Find lawyers & bail agents -- full contact info',
-      'Unlimited AI legal chat',
-      'All Know Your Rights lessons',
-      'Case management + court date reminders',
-      'Push alerts: court dates (7d, 3d, day-of)',
-    ],
-  },
-  {
-    key: 'legal_pro', label: 'Legal Pro', price: '$14.99/mo', annualKey: 'pro_annual',
-    annualPrice: '$119.99/yr', annualMonthly: '$10.00/mo', savings: 'Save $60',
-    cents: 1499, icon: '⭐', color: COLORS.navy, bg: COLORS.bgSubtle,
-    trial: '30-day free trial', highlight: true, badge: 'Most Popular',
-    features: [
-      'Everything in Advisor +',
-      'Arrest monitoring -- push alerts when a watched name appears in ingested public records',
-      'Priority lawyer search results',
-      'AI Lawyer Match report',
-    ],
-  },
-  {
-    key: 'legal_radar', label: 'Legal Radar', price: '$19.99/mo', annualKey: 'legal_radar_annual',
-    annualPrice: '$249.99/yr', annualMonthly: '$20.83/mo', savings: 'Save $90',
-    cents: 1999, icon: '📊', color: COLORS.blue, bg: COLORS.bgSubtle,
-    trial: '30-day free trial', highlight: false,
+/** Presentation + inclusions per plan key. Prices are NOT here. */
+const PLAN_COPY: Record<string, { icon: string; color: string; highlight?: boolean; badge?: string; features: string[] }> = {
+  legal_radar: {
+    icon: '📊', color: COLORS.blue,
     features: [
       'Arrest monitoring alerts from ingested public records',
       'County arrest analytics dashboard',
-      'Weekly Legal Radar intelligence report',
-      'Charge trend & bail amount data',
-      'Court activity tracker in your area',
+      'Weekly Legal Radar report',
+      'Charge trend and bail amount data',
     ],
   },
-  {
-    key: 'esquire',
-    label: 'Justice Gavel Esquire',
-    price: '$49.00/mo',
-    cents: 4900,
-    icon: '⚖️',
-    color: COLORS.navy,
-    bg: COLORS.borderSubtle,
-    trial: null,
-    annualKey: 'esquire_annual',
-    annualPrice: '$399.00/yr',
-    annualCents: 39900,
-    features: [
-      'Full attorney dashboard & client management',
-      'AI motion library — draft, review, file',
-      'Case & matter management with AI research',
-      'Firm vertical tools — plea tracker, docket',
-      'CLE credit tracking',
-      'PI lead marketplace',
-      'Priority AI processing',
-    ],
-  },
-];
-
-const TIERS = [
-  {
-    key: 'advisor',
-    label: '24 Hour Advisor',
-    price: '$29.99/mo',
-    cents: 2999,
-    annualKey: 'advisor_annual',
-    annualPrice: '$79.99/yr',
-    annualCents: 7999,
-    icon: '🔓',
-    color: COLORS.legal,
-    bg: COLORS.legalBg,
-    trial: '7-day free trial',
+  advisor: {
+    icon: '🔓', color: COLORS.legal,
     features: [
       'Find lawyers & bail agents -- full contact info',
-      'Search arrest records by name',
       'Unlimited AI legal chat',
       'All Know Your Rights lessons',
-      'Full legal resource library',
       'Case management',
     ],
-    highlight: false,
   },
-  {
-    key: 'legal_pro',
-    label: 'Legal Pro',
-    price: '$29.00/mo',
-    cents: 2900,
-    icon: '⭐',
-    color: COLORS.navy,
-    bg: COLORS.bgSubtle,
-    trial: '7-day free trial',
+  legal_pro: {
+    icon: '⭐', color: COLORS.navy, highlight: true, badge: 'Most Popular',
     features: [
-      'Everything in Advisor +',
-      'Arrest monitoring -- get alerted if someone you know is booked',
-      'Priority results in lawyer search',
-      'SOS emergency alert to contacts',
-      'Lawyer Match AI report',
+      'Everything in 24 Hour Advisor',
+      'Arrest monitoring -- alerts when a watched name appears in ingested public records',
+      'AI Lawyer Match report',
+      'Video consultations',
     ],
-    highlight: true,
-    badge: 'Most Popular',
   },
-  {
-    key: 'legal_radar',
-    label: 'Legal Radar',
-    price: '$19.99/mo',
-    cents: 1999,
-    icon: '📊',
-    color: COLORS.blue,
-    bg: COLORS.bgSubtle,
-    trial: '7-day free trial',
-    features: [
-      'Everything in Pro',
-      'County arrest analytics dashboard',
-      'Weekly intelligence reports for your county',
-      'Charge trend breakdowns',
-      'Bail amount averages by charge type',
-    ],
-    highlight: false,
-  },
-];
+};
+
+export type ConsumerPlan = {
+  key: string; label: string; price: string; trialDays: number;
+  annualKey: string | null; annualPrice: string | null; annualTrialDays: number | null; annualSavings: string | null;
+  icon: string; color: string; highlight?: boolean; badge?: string; features: string[];
+};
+
+/** Build the plan cards from GET /billing/tiers?audience=consumer. */
+export function consumerPlansFrom(body: unknown): ConsumerPlan[] {
+  const tiers = unwrapList<Record<string, any>>(body, 'tiers').filter(t => t && t.audience === 'consumer');
+  const monthly = tiers.filter(t => t.billing === 'monthly');
+  return monthly.map(m => {
+    const annual = tiers.find(t => t.billing === 'annual' && t.matches_monthly === m.key) || null;
+    const saving = annual && m.monthly_cents && annual.annual_cents
+      ? Math.round((m.monthly_cents * 12 - annual.annual_cents) / 100) : 0;
+    const copy = PLAN_COPY[m.key] || { icon: '✓', color: COLORS.navy, features: [] };
+    return {
+      key: m.key, label: m.name, price: m.display_price, trialDays: Number(m.trial_days) || 0,
+      annualKey: annual?.key ?? null,
+      annualPrice: annual ? `$${(annual.annual_cents / 100).toFixed(0)}/yr` : null,
+      annualTrialDays: annual ? Number(annual.trial_days) || 0 : null,
+      annualSavings: saving > 0 ? `Save $${saving}` : null,
+      ...copy,
+    };
+  });
+}
 
 function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
   return (
@@ -158,11 +86,13 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
         <Text maxFontSizeMultiplier={1.4} style={styles.tierIcon}>{tier.icon}</Text>
         <View style={{ flex: 1 }}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.tierLabel, { color: tier.color }]}>{tier.label}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.tierPrice}>
-            {annual ? tier.annualPrice : tier.price}
+          <Text maxFontSizeMultiplier={1.4} style={styles.tierPrice} testID={`consumer-price-${tier.key}`}>
+            {annual && tier.annualPrice ? tier.annualPrice : tier.price}
           </Text>
           {annual && (
-            <Text maxFontSizeMultiplier={1.4} style={styles.tierPriceSub}>{tier.annualMonthly} · {tier.savings}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.tierPriceSub}>
+              {tier.annualPrice ? (tier.annualSavings || 'Billed yearly') : 'Monthly billing only'}
+            </Text>
           )}
         </View>
         {active && (
@@ -173,7 +103,7 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
       </View>
 
       <Text maxFontSizeMultiplier={1.4} style={[styles.trialText, { color: tier.color }]}>
-        ✓ {annual ? '7-day free trial' : tier.trial}
+        ✓ {(annual && tier.annualPrice ? tier.annualTrialDays : tier.trialDays) || 0}-day free trial
       </Text>
 
       <View style={styles.featureList}>
@@ -189,7 +119,7 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
         <TouchableOpacity
           accessibilityRole="button"
           style={[styles.subBtn, { backgroundColor: tier.color }, loading && { opacity: 0.6 }]}
-          onPress={() => onSubscribe(tier.key, annual)}
+          onPress={() => onSubscribe(annual && tier.annualKey ? tier.annualKey : tier.key, annual && !!tier.annualKey)}
           disabled={loading}
           activeOpacity={0.85}
         >
@@ -198,7 +128,7 @@ function TierCard({ tier, active, onSubscribe, loading, annual }: any) {
             : <>
                 <Text maxFontSizeMultiplier={1.4} style={styles.subBtnText}>Start Free Trial</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.subBtnSub}>
-                  Then {annual ? tier.annualPrice : tier.price} -- cancel anytime
+                  Then {annual && tier.annualPrice ? tier.annualPrice : tier.price} -- cancel anytime
                 </Text>
               </>
           }
@@ -237,6 +167,8 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
   };
   const [subscribing, setSubscribing]   = useState<string | null>(null);
   const [annual, setAnnual]             = useState(false);
+  const [plans, setPlans]               = useState<ConsumerPlan[]>([]);
+  const [plansError, setPlansError]     = useState('');
   const { requireAuth, AuthGateModal }  = useAuthGate(navigation);
 
   useEffect(() => { loadSub(); }, []);
@@ -244,18 +176,25 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
   const loadSub = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/billing/consumer/subscription');
-      setSubscription(res.data?.subscription);
-    } catch (e: any) { __DEV__ && console.warn(e?.message); }
-    finally { setLoading(false); }
+      const [tiersRes, subRes] = await Promise.all([
+        api.get('/billing/tiers', { params: { audience: 'consumer' } }),
+        api.get('/billing/consumer/subscription').catch(() => null),
+      ]);
+      if (!mountedRef.current) return;
+      setPlans(consumerPlansFrom(tiersRes.data));
+      setPlansError('');
+      setSubscription(subRes?.data?.subscription ?? null);
+    } catch (e: any) {
+      if (mountedRef.current) setPlansError(apiErrorMessage(e, 'Could not load plans. Check your connection.'));
+    } finally { if (mountedRef.current) setLoading(false); }
   };
 
-  const handleSubscribe = (tier: string, isAnnual: boolean) => {
-    const key = isAnnual ? (tier + '_annual') : tier;
-    requireAuth(() => doSubscribe(key));
+  // tierKey is already the exact backend key (monthly or its annual variant).
+  const handleSubscribe = (tierKey: string, isAnnual: boolean) => {
+    requireAuth(() => doSubscribe(tierKey, isAnnual));
   };
 
-  const doSubscribe = async (tier: string) => {
+  const doSubscribe = async (tier: string, isAnnual = false) => {
     // ── iOS App Store IAP gate (Apple §3.1.1) ─────────────────────────────────
     // Apple requires digital subscriptions on iOS to use StoreKit (IAP).
     // Until expo-iap is integrated, we block iOS purchases and show instructions.
@@ -268,7 +207,10 @@ function ConsumerSubscriptionScreen({ navigation }: ScreenProps): React.JSX.Elem
     // ── Android / web: proceed with Stripe backend flow ─────────────────────────
     setSubscribing(tier);
     try {
-      const res = await api.post('/billing/consumer/subscribe', { tier });
+      // Monthly consumer plans: /consumer/subscribe; annual variants: /subscribe.
+      const res = isAnnual
+        ? await api.post('/billing/subscribe', { tier, provider_type: 'consumer' })
+        : await api.post('/billing/consumer/subscribe', { tier });
       setSubscription(res.data?.subscription);
 showToast(res.data?.message || 'Free trial activated!', 'success');
       loadSub();
@@ -318,7 +260,9 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
 
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Choose Your Plan</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>Full access to everything -- starting at $29.99/mo</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
+          {plans.length ? `Plans from ${plans.map(p => p.price).sort((x, y) => parseFloat(x.replace(/[^0-9.]/g, '')) - parseFloat(y.replace(/[^0-9.]/g, '')))[0]}` : 'Choose the plan that fits'}
+        </Text>
       </View>
 
       {/* Monthly / Annual billing toggle */}
@@ -336,17 +280,18 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
           accessibilityLabel="Annual" onPress={() => setAnnual(true)}
         >
           <Text maxFontSizeMultiplier={1.4} style={[styles.toggleBtnText, annual && styles.toggleBtnTextActive]}>Annual</Text>
-          <View style={styles.savingsBadge}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.savingsBadgeText}>Save up to $80</Text>
-          </View>
+          {plans.some(p => p.annualSavings) && (
+            <View style={styles.savingsBadge}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.savingsBadgeText}>Save yearly</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
       {annual && (
         <View style={styles.annualNote}>
           <Text maxFontSizeMultiplier={1.4} style={styles.annualNoteText}>
-            ℹ️ Annual plans have a 7-day free trial. Monthly plans have 30 days.
-            After the trial you're billed the full annual price.
+            ℹ️ After the free trial an annual plan is billed the full yearly price at once.
           </Text>
         </View>
       )}
@@ -381,7 +326,7 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
         <View style={styles.activeBanner}>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerTitle}>
-              ✓ {TIERS.find(t => t.key === activeTier)?.label || activeTier} Plan -- {subscription.status}
+              ✓ {plans.find(t => t.key === activeTier || t.annualKey === activeTier)?.label || activeTier} Plan -- {subscription.status}
             </Text>
             {subscription.trial_ends_at && subscription.status === 'trialing' && (
               <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerSub}>
@@ -396,7 +341,10 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
         </View>
       )}
 
-      {MONTHLY_TIERS.map(tier => (
+      {!!plansError && (
+        <Text maxFontSizeMultiplier={1.4} style={styles.footer}>{plansError}</Text>
+      )}
+      {plans.map(tier => (
         <TierCard
           key={tier.key}
           tier={tier}
@@ -407,15 +355,9 @@ showToast(res.data?.message || 'Free trial activated!', 'success');
         />
       ))}
       <Text maxFontSizeMultiplier={1.4} style={styles.footer}>
-        All plans include a 7-day free trial. Cancel anytime before trial ends and you won't be charged.
+        Cancel before the free trial ends and you won't be charged.
         Payments processed securely by Stripe.
       </Text>
-      <TouchableOpacity
-          accessibilityRole="button"
-        onPress={() => showToast('Checking previous purchases...', 'info')}
-        style={{ alignItems: 'center', paddingVertical: 16 }}>
-        <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 12, lineHeight: 20, textDecorationLine: 'underline' }}>Restore Purchases</Text>
-      </TouchableOpacity>
       <View style={{ height: 40 }} />
 
           <TouchableOpacity

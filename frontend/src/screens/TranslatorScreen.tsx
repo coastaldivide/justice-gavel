@@ -30,7 +30,7 @@ import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import type { ScreenProps } from '../types/navigation';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Animated, KeyboardAvoidingView, Platform } from 'react-native';
-import { api, apiErrorMessage } from '../services/api';
+import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { useAuthGate } from '../components/AuthGate';
 import { hapticSelection, RNShare, Clipboard } from '../utils/webCompat';
 
@@ -219,7 +219,7 @@ function TranslatorScreen({ route, navigation }: ScreenProps): React.JSX.Element
           `/translate/session/${sessionCode}/messages?since=${lastMsgIdRef.current}`,
           { headers: {} }
         ).catch(() => api.get(`/translate/session/${sessionCode}/messages?since=${lastMsgIdRef.current}`));
-        const newMsgs: TurnMessage[] = res.data || [];
+        const newMsgs = unwrapList<TurnMessage>(res.data, 'messages');
         if (newMsgs.length > 0) {
           setMessages(prev => {
             const ids = new Set(prev.map(m => m.id));
@@ -273,9 +273,10 @@ showToast(apiErrorMessage(e, 'Translation session failed.'), 'error');
 
       // Load existing messages
       const msgs = await api.get(`/translate/session/${code}/messages?since=0`);
-      setMessages(msgs.data || []);
-      if (msgs.data?.length) {
-        const id = msgs.data[msgs.data.length - 1].id;
+      const existing = unwrapList<TurnMessage>(msgs.data, 'messages');
+      setMessages(existing);
+      if (existing.length) {
+        const id = existing[existing.length - 1].id ?? 0;
         lastMsgIdRef.current = id;
       }
 

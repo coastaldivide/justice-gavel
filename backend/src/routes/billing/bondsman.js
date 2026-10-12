@@ -14,8 +14,27 @@ import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
 import { getDb }        from '../../db/index.js';
 import logger             from '../../utils/logger.js';
+import { stripeConfigured, PAYMENTS_UNAVAILABLE } from '../../config.js';
 
 const router = Router();
+
+// ── Bail-lead marketplace access (C2) ─────────────────────────────────────────
+// Only bondsman accounts (a bondsman_profiles row) or staff may browse leads;
+// the list carries initials, never the full name, and the full record is
+// released only by a SUCCEEDED Stripe charge.
+async function requireBondsman(req, res, next) {
+  try {
+    if (['admin', 'super_admin'].includes(req.user?.role)) return next();
+    const db = await getDb();
+    const p  = await db.get('SELECT id FROM bondsman_profiles WHERE user_id = ? LIMIT 1', [req.user.id]);
+    if (p) return next();
+    return res.status(403).json({ error: 'bondsman_profile_required', message: 'Create your bondsman profile to view leads.' });
+  } catch {
+    return res.status(500).json({ error: 'Server error. Please try again.' });
+  }
+}
+const initials = (name) => String(name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2)
+  .map(w => w[0].toUpperCase() + '.').join(' ') || 'Unnamed';
 
 // ── Bondsman: save profile ────────────────────────────────────────────────────
 router.post('/bondsman/profile', billingLimiter, authRequired, async (req, res) => {
@@ -56,7 +75,7 @@ router.get('/bondsman/profile', authRequired, async (req, res) => {
 });
 
 // ── Bondsman: get available leads ─────────────────────────────────────────────
-router.get('/leads', authRequired, async (req, res) => {
+router.get('/leads', authRequired, requireBondsman, async (req, res) => {
   const { county, state = 'TN', hours = 48, limit = 50 } = req.query;
   try {
     const db = await getDb();
@@ -81,6 +100,7 @@ router.get('/leads', authRequired, async (req, res) => {
         lp.id as already_purchased
        FROM arrest_records ar
        LEFT JOIN lead_purchases lp ON lp.arrest_id = ar.id AND lp.bondsman_id = ? AND lp.status = 'charged'
+                                  AND COALESCE(lp.stripe_pi_id, '') NOT IN ('', 'pi_mock_demo')
        WHERE ${conditions.join(' AND ')}
        ORDER BY ar.bail_amount DESC, ar.booking_date DESC
        LIMIT ?`,
@@ -93,8 +113,8 @@ router.get('/leads', authRequired, async (req, res) => {
       lead_fee_cents: BONDSMAN_LEAD_FEE_CENTS,
       lead_fee_display: formatLeadFee(),
       purchased: !!r.already_purchased,
-      // Only reveal full name and contact if purchased
-      name: r.already_purchased ? r.name : r.name.split(' ')[0] + ' ' + (r.name.split(' ')[1]?.[0] || '') + '.',
+      // Only reveal the full name after a purchase — initials before.
+      name: r.already_purchased ? r.name : initials(r.name),
     }));
 
     res.json({ leads, count: leads.length, lead_fee: bondsmanLeadFeeInfo(), mock: !LIVE,
@@ -108,7 +128,10 @@ router.get('/leads', authRequired, async (req, res) => {
 });
 
 // ── Bondsman: accept lead (charge card) ───────────────────────────────────────
-router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) => {
+router.post('/leads/:id/accept', billingLimiter, authRequired, requireBondsman, async (req, res) => {
+  // No Stripe → no sale and nothing revealed (the billing router gate also
+  // returns 503; there is no demo/mock purchase path).
+  if (!stripeConfigured() || !LIVE) return res.status(503).json({ ...PAYMENTS_UNAVAILABLE });
   const arrestId = safeInt(req.params.id);
   const { payment_method_id } = req.body;
 
@@ -125,29 +148,13 @@ router.post('/leads/:id/accept', billingLimiter, authRequired, async (req, res) 
 
     // Check not already purchased
     const existing = await db.get(
-      'SELECT id FROM lead_purchases WHERE bondsman_id = ? AND arrest_id = ? AND status = ?',
+      `SELECT id FROM lead_purchases WHERE bondsman_id = ? AND arrest_id = ? AND status = ?
+          AND COALESCE(stripe_pi_id, '') NOT IN ('', 'pi_mock_demo')`,
       [req.user.id, arrestId, 'charged']
     );
     if (existing) return res.status(409).json({ error: 'Already purchased this lead', arrest });
 
     const feeCents = BONDSMAN_LEAD_FEE_CENTS;
-
-    if (!LIVE) {
-      // Demo mode — mock purchase
-      await db.run(
-        `INSERT INTO lead_purchases (bondsman_id, arrest_id, bail_amount, lead_fee_cents, status, contact_revealed, stripe_pi_id)
-         VALUES (?,?,?,?,?,?,?)`,
-        [req.user.id, arrestId, arrest.bail_amount, feeCents, 'charged', 1, 'pi_mock_demo']
-      );
-      await db.run('UPDATE bondsman_profiles SET leads_accepted = leads_accepted + 1 WHERE user_id = ?', [req.user.id]);
-      return res.json({
-        success: true,
-        mock: true,
-        fee_charged: formatLeadFee(feeCents),
-        arrest,  // Full record revealed
-        message: `Lead accepted (demo). In production, ${formatLeadFee(feeCents)} would be charged to your card.`
-      });
-    }
 
     // Live Stripe charge
     const customerId = await getOrCreateStripeCustomer(req.user);

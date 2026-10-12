@@ -64,18 +64,16 @@ function ExpungementCountdown({ waitYears, caseDate }: {
 
   const scheduleReminder = React.useCallback(async () => {
     try {
-      const { api } = await import('../services/api');
-      const remind = new Date(eligible);
-      remind.setDate(remind.getDate() - 30);  // 30 days before eligible
+      const { scheduleReminder } = await import('../services/reminders');
+      const remind = new Date(eligible.getFullYear(), eligible.getMonth(), eligible.getDate() - 30, 9, 0, 0, 0);  // 30 days before eligible, 9:00 local
       if (remind <= now) {
         // Less than 30 days away -- remind in 3 days instead
         remind.setTime(Date.now() + 3 * 86400000);
       }
-      await api.post('/push/reminders', {
+      await scheduleReminder({
         title: '📋 You may now be eligible for expungement',
         body: 'Based on your waiting period, check your eligibility now.',
-        scheduled_for: remind.toISOString(),
-        notification_type: 'expungement_eligible',
+        deliverAt: remind,
       });
 showToast('Reminder set for when you become eligible.', 'success');
     } catch {

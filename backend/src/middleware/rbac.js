@@ -144,27 +144,69 @@ export const PERMISSIONS = {
   },
 };
 
+// ── Firm membership (single source of truth) ─────────────────────────────────
+// firm_members carries two role columns (firm_role — written by firm creation,
+// invites and SSO — and the legacy `role`) and two liveness columns (`active`
+// and `status`). Every check goes through these helpers so they agree.
+export const ACTIVE_MEMBER_SQL =
+  `COALESCE(fm.active, 1) = 1 AND COALESCE(fm.status, 'active') = 'active'`;
+
+/** The effective firm role of a firm_members row (firm_role wins when it is a real tier). */
+export function effectiveFirmRole(row) {
+  if (!row) return null;
+  const fr = row.firm_role;
+  const r  = row.role;
+  if (fr && roleLevel(fr) >= 0) return fr;
+  if (r && roleLevel(r) >= 0)   return r;
+  return fr || r || null;
+}
+
+/** Platform-level super admin (users.role from the live DB row — see middleware/auth.js). */
+export function isPlatformSuperAdmin(user) {
+  return user?.role === 'super_admin';
+}
+
+/**
+ * Active membership of `userId` in the SPECIFIC firm `firmId`, or null.
+ * Returns { firm_id, user_id, firm_role } with the effective role.
+ */
+export async function getFirmMembership(db, userId, firmId) {
+  const fid = Number(firmId);
+  if (!userId || !Number.isInteger(fid) || fid <= 0) return null;
+  const row = await db.get(
+    `SELECT fm.firm_id, fm.user_id, fm.firm_role, fm.role
+       FROM firm_members fm
+      WHERE fm.user_id = ? AND fm.firm_id = ? AND ${ACTIVE_MEMBER_SQL}
+      LIMIT 1`,
+    [userId, fid]
+  );
+  if (!row) return null;
+  return { firm_id: Number(row.firm_id), user_id: Number(row.user_id), firm_role: effectiveFirmRole(row) };
+}
+
 // ── loadFirmContext ───────────────────────────────────────────────────────────
-// Loads firm membership from DB and caches on req.firmCtx.
-// Returns null if user is not a member of any firm.
+// Loads the caller's (primary) firm membership from DB and caches on req.firmCtx.
+// Returns null if user is not an active member of any firm.
 export async function loadFirmContext(req) {
   if (req.firmCtx !== undefined) return req.firmCtx;
 
   try {
     const db     = await getDb();
     const member = await db.get(
-      `SELECT fm.firm_id, fm.firm_role, fm.status,
+      `SELECT fm.firm_id, fm.firm_role, fm.role, fm.status,
               f.name  AS firm_name,
               f.plan  AS firm_plan,
               f.seat_limit
        FROM firm_members fm
        JOIN firms f ON f.id = fm.firm_id
-       WHERE fm.user_id = ? AND fm.status = 'active'
+       WHERE fm.user_id = ? AND ${ACTIVE_MEMBER_SQL}
        ORDER BY fm.firm_id ASC LIMIT 1`,
       [req.user.id]
     ).catch(() => null);
 
-    req.firmCtx = member || null;
+    req.firmCtx = member
+      ? { ...member, firm_id: Number(member.firm_id), firm_role: effectiveFirmRole(member) }
+      : null;
   } catch {
     req.firmCtx = null;
   }
@@ -172,13 +214,19 @@ export async function loadFirmContext(req) {
 }
 
 // ── requireFirmRole ──────────────────────────────────────────────────────────
-// User must be an active firm member with at least minRole.
+// User must be an active firm member with at least minRole. The role comes from
+// firm_members (never from the token). A platform super_admin passes the role
+// check but still has no firm context of their own.
 export function requireFirmRole(minRole) {
   return async function rbacFirmRole(req, res, next) {
     try {
       const ctx = await loadFirmContext(req);
-      // Resolve role: DB firm membership first, then JWT firm_role, then JWT role
-      const resolvedRole = ctx?.firm_role || req.user?.firm_role || req.user?.role || null;
+      const resolvedRole = ctx?.firm_role
+        || (isPlatformSuperAdmin(req.user) ? 'super_admin' : null)
+        // In-memory unit suites (no DB) sign tokens that carry a firm_role claim;
+        // middleware/auth.js strips that claim whenever a database is configured.
+        || req.user?.firm_role
+        || null;
       if (!resolvedRole) {
         return res.status(403).json({
           error: 'Firm membership required.',
@@ -196,6 +244,45 @@ export function requireFirmRole(minRole) {
       next();
     } catch (e) {
       logger.error('[rbac/requireFirmRole]', e.message);
+      res.status(500).json({ error: 'Authorization check failed.' });
+    }
+  };
+}
+
+/**
+ * requireFirmMember({ param, minRole, allowSuperAdmin })
+ * Route guard for /…/:firmId-style routes: the caller must be an ACTIVE member
+ * of the firm named in req.params[param] (default 'id') with at least minRole.
+ * Non-members get 404 (other firms' ids are not confirmed). Sets req.firmMembership.
+ */
+export function requireFirmMember({ param = 'id', minRole = null, allowSuperAdmin = false } = {}) {
+  return async function rbacFirmMember(req, res, next) {
+    try {
+      const firmId = Number.parseInt(req.params[param], 10);
+      if (!Number.isInteger(firmId) || firmId <= 0) {
+        return res.status(400).json({ error: 'Invalid firm id.' });
+      }
+      const db = await getDb();
+      const m  = await getFirmMembership(db, req.user.id, firmId);
+      if (!m) {
+        if (allowSuperAdmin && isPlatformSuperAdmin(req.user)) {
+          req.firmMembership = { firm_id: firmId, user_id: req.user.id, firm_role: 'super_admin', platform: true };
+          return next();
+        }
+        return res.status(404).json({ error: 'Firm not found.', code: 'not_firm_member' });
+      }
+      if (minRole && !hasMinRole(m.firm_role, minRole)) {
+        return res.status(403).json({
+          error:    `Requires ${minRole} role or higher.`,
+          code:     'insufficient_role',
+          required: minRole,
+          actual:   m.firm_role,
+        });
+      }
+      req.firmMembership = m;
+      next();
+    } catch (e) {
+      logger.error('[rbac/requireFirmMember]', e.message);
       res.status(500).json({ error: 'Authorization check failed.' });
     }
   };
@@ -245,127 +332,96 @@ export function requirePermission(resource, action) {
   };
 }
 
+// ── Matter access (matters table) ────────────────────────────────────────────
+// A matter belongs to a firm (matters.firm_id) or, when firm_id is NULL, to the
+// user who created it. Access rules, in order:
+//   1. Ethics wall (matter_team_members.ethics_wall=1 for this user) → 403, no override.
+//   2. Firm matter: the caller must be an ACTIVE member of THAT firm.
+//        firm_admin+ of the firm → full access
+//        on the matter team (matter_teams, active) → the team role
+//      External team members are only allowed with the read-only team roles
+//      client/viewer. Anyone else → 404 (another firm's matter ids are not confirmed).
+//   3. Personal matter (no firm): the creator, or a member of its team.
+//   4. Platform super_admin (live DB role) → access, audit-logged by the routes.
+const TEAM_ROLE_TIER = { lead_attorney: 'partner', lead_partner: 'partner', co_counsel: 'partner' };
+const EXTERNAL_TEAM_ROLES = new Set(['client', 'viewer']);
+const teamTier = (role) => TEAM_ROLE_TIER[role] || resolveRole(role || 'viewer');
+
+export async function resolveMatterAccess(db, user, matterId) {
+  const id = Number(matterId);
+  if (!Number.isInteger(id) || id <= 0) return { status: 400, code: 'invalid_matter_id' };
+  const matter = await db.get(
+    'SELECT id, firm_id, created_by, user_id FROM matters WHERE id = ?', [id]);
+  if (!matter) return { status: 404, code: 'matter_not_found' };
+
+  const walled = await db.get(
+    'SELECT 1 AS w FROM matter_team_members WHERE case_id = ? AND user_id = ? AND ethics_wall = 1 LIMIT 1',
+    [id, user.id]
+  ).catch(() => null);
+  if (walled) return { status: 403, code: 'ethics_wall' };
+
+  const team = await db.get(
+    'SELECT role FROM matter_teams WHERE matter_id = ? AND user_id = ? AND COALESCE(active, 1) = 1 LIMIT 1',
+    [id, user.id]
+  ).catch(() => null);
+
+  const firmId = matter.firm_id != null ? Number(matter.firm_id) : null;
+  if (firmId) {
+    const m = await getFirmMembership(db, user.id, firmId);
+    if (m) {
+      if (hasMinRole(m.firm_role, 'firm_admin')) return { matter, role: m.firm_role, via: 'firm_admin' };
+      if (team) return { matter, role: teamTier(team.role), teamRole: team.role, via: 'team' };
+      return { status: 403, code: 'not_matter_member' };
+    }
+    if (team && EXTERNAL_TEAM_ROLES.has(team.role)) {
+      return { matter, role: teamTier(team.role), teamRole: team.role, via: 'external_team' };
+    }
+  } else {
+    const ownerId = Number(matter.created_by ?? matter.user_id);
+    if (ownerId && ownerId === Number(user.id)) return { matter, role: 'partner', teamRole: 'lead_attorney', via: 'owner' };
+    if (team) return { matter, role: teamTier(team.role), teamRole: team.role, via: 'team' };
+  }
+  if (isPlatformSuperAdmin(user)) return { matter, role: 'super_admin', via: 'platform' };
+  return { status: 404, code: 'matter_not_found' };
+}
+
 // ── requireMatterAccess ──────────────────────────────────────────────────────
-// User must be on the matter team (matter_team_members) or own the case.
-// opts:
-//   minRole:        minimum matter_role to proceed (default: 'viewer')
-//   requireEdit:    must have can_edit = 1
-//   requireMessage: must have can_message = 1
-//   idParam:        req.params key for case ID (default: 'id')
+// opts: minRole (default 'viewer'), idParam (default 'id').
+// Also accepts the positional form used by routes: requireMatterAccess('id', 'partner').
+// Sets req.matter ({id, firm_id, …}) and req.matterAccess ({ matter_role, via, … }).
 export function requireMatterAccess(opts = {}, legacyMinRole) {
-  // Also accepts the positional form used by routes: requireMatterAccess('id', 'partner')
   if (typeof opts === 'string') opts = { idParam: opts, minRole: legacyMinRole || 'viewer' };
-  const {
-    minRole        = 'viewer',
-    requireEdit    = false,
-    requireMessage = false,
-    idParam        = 'id',
-  } = opts;
+  const { minRole = 'viewer', idParam = 'id' } = opts;
 
   return async function rbacMatterAccess(req, res, next) {
     try {
-      const db     = await getDb();
-      const caseId = parseInt(req.params[idParam] || req.params.caseId, 10);
-      if (!caseId || isNaN(caseId)) {
-        return res.status(400).json({ error: 'Invalid matter ID.' });
+      const db = await getDb();
+      const r  = await resolveMatterAccess(db, req.user, req.params[idParam]);
+      if (r.status === 400) return res.status(400).json({ error: 'Invalid matter ID.' });
+      if (r.status === 404) return res.status(404).json({ error: 'Matter not found.', code: 'matter_not_found' });
+      if (r.status === 403) {
+        return res.status(403).json(r.code === 'ethics_wall'
+          ? { error: 'Access to this matter is restricted by an ethics wall.', code: 'ethics_wall' }
+          : { error: 'You are not a member of this matter team.', code: 'not_matter_member' });
       }
-
-      // 1. Case owner → lead_partner access
-      const owned = await db.get(
-        'SELECT id FROM cases WHERE id=? AND user_id=?',
-        [caseId, req.user.id]
-      ).catch(() => null);
-
-      if (owned) {
-        req.matterAccess = {
-          matter_role: 'lead_partner',
-          can_edit:    1,
-          can_message: 1,
-          can_view_docs: 1,
-          ethics_wall: 0,
-        };
-        return next();
-      }
-
-      // 2. Firm admin/super_admin bypass matter-team check (but still log)
-      const ctx = await loadFirmContext(req);
-      if (ctx && hasMinRole(ctx.firm_role, 'firm_admin')) {
-        req.matterAccess = {
-          matter_role: ctx.firm_role,
-          can_edit:    1,
-          can_message: 1,
-          can_view_docs: 1,
-          ethics_wall: 0,
-        };
-        return next();
-      }
-
-      // 3. Matter team member
-      const member = await db.get(
-        `SELECT matter_role, can_edit, can_message, can_view_docs, ethics_wall
-         FROM matter_team_members
-         WHERE case_id=? AND user_id=?`,
-        [caseId, req.user.id]
-      ).catch(() => null);
-
-      if (!member) {
-        // 4. Legacy: family access (backward compat with case_family_access)
-        const family = await db.get(
-          `SELECT 1 FROM case_family_access
-           WHERE case_id=? AND user_id=? AND accepted=1`,
-          [caseId, req.user.id]
-        ).catch(() => null);
-
-        if (family) {
-          req.matterAccess = {
-            matter_role: 'client',
-            can_edit: 0, can_message: 1, can_view_docs: 1, ethics_wall: 0,
-          };
-          return next();
-        }
-
+      if (!hasMinRole(r.role, minRole)) {
         return res.status(403).json({
-          error: 'You are not a member of this matter team.',
-          code:  'not_matter_member',
-        });
-      }
-
-      // 5. Ethics wall — hard block, no override
-      if (member.ethics_wall) {
-        return res.status(403).json({
-          error: 'Access to this matter is restricted by an ethics wall.',
-          code:  'ethics_wall',
-        });
-      }
-
-      // 6. Role level check
-      const effectiveRole = member.matter_role === 'lead_partner' ? 'partner'
-                          : member.matter_role === 'co_counsel'   ? 'partner'
-                          : member.matter_role || 'viewer';
-      if (!hasMinRole(effectiveRole, minRole)) {
-        return res.status(403).json({
-          error:    `Requires ${minRole} role on this matter. Your role: ${member.matter_role}.`,
+          error:    `Requires ${minRole} role on this matter.`,
           code:     'insufficient_matter_role',
           required: minRole,
-          actual:   member.matter_role,
+          actual:   r.teamRole || r.role,
         });
       }
-
-      // 7. Edit / message capability checks
-      if (requireEdit && !member.can_edit) {
-        return res.status(403).json({
-          error: 'You do not have edit access to this matter.',
-          code:  'no_edit_permission',
-        });
-      }
-      if (requireMessage && !member.can_message) {
-        return res.status(403).json({
-          error: 'You do not have messaging access to this matter.',
-          code:  'no_message_permission',
-        });
-      }
-
-      req.matterAccess = member;
+      req.matter       = r.matter;
+      req.matterAccess = {
+        matter_role:   r.teamRole || r.role,
+        role:          r.role,
+        via:           r.via,
+        can_edit:      hasMinRole(r.role, 'associate') ? 1 : 0,
+        can_message:   1,
+        can_view_docs: 1,
+        ethics_wall:   0,
+      };
       next();
     } catch (e) {
       logger.error('[rbac/requireMatterAccess]', e.message);

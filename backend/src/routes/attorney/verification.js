@@ -1,6 +1,7 @@
 /**
  * attorney/verification.js — Bar verification submit + admin approve
  */
+import { escapeHtml, safeUrl } from '../../utils/html.js';
 import { err400, err404 } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
 import { authRequired } from '../../middleware/auth.js';
@@ -157,16 +158,16 @@ router.post('/verify-bar', authRequired, routeLimiter, async (req, res) => {
       html: `
         <h2>Bar Verification Request</h2>
         <table>
-          <tr><td><b>Attorney:</b></td><td>${user.email}</td></tr>
-          <tr><td><b>Bar number:</b></td><td>${cleanBar}</td></tr>
-          <tr><td><b>State:</b></td><td>${stateUpper}</td></tr>
+          <tr><td><b>Attorney:</b></td><td>${escapeHtml(user.email)}</td></tr>
+          <tr><td><b>Bar number:</b></td><td>${escapeHtml(cleanBar)}</td></tr>
+          <tr><td><b>State:</b></td><td>${escapeHtml(stateUpper)}</td></tr>
           <tr><td><b>Submitted:</b></td><td>${new Date().toISOString()}</td></tr>
         </table>
-        <p><a href="${lookupUrl}" style="font-size:16px;font-weight:bold">
-          → Look up ${cleanBar} at ${stateUpper} State Bar
+        <p><a href="${safeUrl(lookupUrl)}" style="font-size:16px;font-weight:bold">
+          → Look up ${escapeHtml(cleanBar)} at ${escapeHtml(stateUpper)} State Bar
         </a></p>
         <p style="color:#666">Confirm: ACTIVE and IN GOOD STANDING before approving.</p>
-        <p><a href="${adminUrl}" style="background:#042C53;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">
+        <p><a href="${safeUrl(adminUrl)}" style="background:#042C53;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">
           Approve or Reject in Admin Panel
         </a></p>
       `,

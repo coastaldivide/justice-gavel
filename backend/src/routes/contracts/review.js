@@ -17,7 +17,7 @@ import { getDb }                              from '../../db/index.js';
 import { perUserAiLimit, makeUserLimiter } from '../../middleware/sharedAiLimiter.js';
 import { enqueueAIJob as enqueue }                            from '../../services/aiQueue.js';
 import logger                                 from '../../utils/logger.js';
-import multer                                 from 'multer';
+import { uploadGuard, MB }                    from '../../middleware/uploads.js';
 import { reviewContract, redlineContracts, negotiationPoints } from './_helpers.js';
 
 const router = Router();
@@ -27,20 +27,22 @@ const reviewLimiter    = makeUserLimiter({ windowMs: 3_600_000, max: 15, message
 const redlineLimiter   = makeUserLimiter({ windowMs: 3_600_000, max: 10, message: 'Redline limit reached.' });
 const negotiateLimiter = makeUserLimiter({ windowMs: 3_600_000, max: 20, message: 'Negotiation strategy limit reached.' });
 
-// File upload: accept PDF, DOCX, and plain text (max 10MB)
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits:  { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const ok = ['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain'].includes(file.mimetype)
-               || file.originalname.match(/\.(pdf|docx|txt)$/i);
-    cb(ok ? null : new Error('Only PDF, DOCX, and TXT files are accepted'), ok);
-  },
+// File upload: accept PDF, DOCX, and plain text. Only the first ~15k
+// characters are analysed, so 5 MB per file is ample (C5 — memory-bounded).
+const contractFileFilter = (req, file, cb) => {
+  const ok = ['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain'].includes(file.mimetype)
+             || /\.(pdf|docx|txt)$/i.test(file.originalname || '');
+  cb(ok ? null : new Error('Only PDF, DOCX, and TXT files are accepted'), ok);
+};
+const uploadContract = uploadGuard({ maxBytes: 5 * MB, field: 'contract', fileFilter: contractFileFilter });
+const uploadRedline  = uploadGuard({
+  maxBytes: 5 * MB, maxFiles: 2, fileFilter: contractFileFilter,
+  fields: [{ name: 'original', maxCount: 1 }, { name: 'revised', maxCount: 1 }],
 });
 
 // ── POST /api/contracts/review — risk analysis ────────────────────────────────
 router.post('/review', authRequired, requireAi, reviewLimiter, perUserAiLimit,
-  upload.single('contract'), async (req, res) => {
+  uploadContract, async (req, res) => {
   try {
     // Accept file upload OR raw text body
     let contractText = '';
@@ -134,7 +136,7 @@ router.get('/review/:id', authRequired, async (req, res) => {
 
 // ── POST /api/contracts/redline — compare two versions ────────────────────────
 router.post('/redline', authRequired, requireAi, redlineLimiter, perUserAiLimit,
-  upload.fields([{ name: 'original', maxCount: 1 }, { name: 'revised', maxCount: 1 }]),
+  uploadRedline,
   async (req, res) => {
   try {
     // Accept files OR text bodies

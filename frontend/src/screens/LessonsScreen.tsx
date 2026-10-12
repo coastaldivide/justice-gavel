@@ -4,7 +4,7 @@ import type { ScreenProps } from '../types/navigation';
 import { View, Text, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, LayoutAnimation, Platform } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api, cachedGet, apiErrorMessage } from '../services/api';
+import { unwrapList, api, cachedGet, apiErrorMessage } from '../services/api';
 import { cacheLessons, getCachedLessons } from '../services/offlineCache';
 import { COLORS, RADIUS, useTheme } from '../constants/theme';
 import * as Haptics from 'expo-haptics';
@@ -61,7 +61,7 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
   const loadLessons = async (fresh = false): Promise<Lesson[]> => {
       try {
         const r = fresh ? await api.get('/lessons') : await cachedGet('/lessons');
-        setLessons(r.data || []);
+        setLessons(unwrapList(r.data, 'lessons'));
         cacheLessons(r.data); // save for offline
         return Array.isArray(r.data) ? r.data : [];
       } catch {

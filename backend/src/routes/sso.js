@@ -23,14 +23,12 @@
  *   6. We extract email/name, find or create the user, issue a JWT
  *   7. We redirect to the app with ?token=<jwt>
  *
- * No external SAML library required — we use Node.js built-in crypto + XML.
- * This handles the 95% case (Okta/Azure/Google). For edge cases (multi-cert,
- * signed assertions with encryption) recommend saml2-js in production.
+ * SAML parsing and signature verification use @node-saml/node-saml (see the
+ * "SAML (H8)" block below) — never hand-rolled regexes over the XML.
  */
 
 import { Router }          from 'express';
 import { asyncRoute, err400, err403, err404, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
-import { randomUUID, createVerify } from 'crypto';
 import { getDb }           from '../db/index.js';
 import { authRequired }    from '../middleware/auth.js';
 import { requireFirmRole } from '../middleware/rbac.js';
@@ -39,8 +37,10 @@ import { CONFIG }          from '../config.js';
 import jwt                 from 'jsonwebtoken';
 import logger              from '../utils/logger.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
+import rateLimit from 'express-rate-limit';
 
 const routeLimiter = makeUserLimiter({ windowMs: 60_000, max: 30 }); // 30 req/min per user
+const ssoLimiter   = rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true, legacyHeaders: false });
 
 const router = Router();
 
@@ -50,112 +50,127 @@ const SP_ENTITY_ID = `${BASE_URL}/api/sso/metadata`;
 const SP_ACS_URL   = `${BASE_URL}/api/sso/acs`;
 const APP_REDIRECT = process.env.APP_SSO_REDIRECT || `${BASE_URL}/auth/sso-callback`;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── SAML (H8) ─────────────────────────────────────────────────────────────────
+// All XML signature work is done by @node-saml/node-saml (xml-crypto underneath):
+// it canonicalises, verifies the Reference/DigestValue of the signed element,
+// extracts the profile ONLY from the element the signature covers (so
+// signature-wrapping — a second, unsigned Assertion next to a signed one — is
+// rejected), and checks Issuer, Audience, Destination/Recipient, NotBefore /
+// NotOnOrAfter and (for SP-initiated logins) InResponseTo.
+// Policy on top of the library:
+//   • an SSO config without an IdP certificate is "not configured" — rejected;
+//   • the Assertion itself must be signed (wantAssertionsSigned);
+//   • assertion IDs are single-use (replay cache in sso_request_cache);
+//   • SSO can sign in an EXISTING account only if it is already an active member
+//     of that firm; otherwise it may create a NEW account. It can never take over
+//     an account that belongs to someone outside the firm;
+//   • an IdP role claim maps only to non-admin firm tiers (never firm_admin/super_admin).
+import { SAML, ValidateInResponseTo } from '@node-saml/node-saml';
+import { X509Certificate } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
+import { invalidateUserCache } from '../middleware/auth.js';
 
-/** Normalize party name for conflict index lookups */
+const SSO_PROVISIONABLE_ROLES = new Set(['partner', 'associate', 'paralegal', 'viewer', 'client']);
+const RELAY_TTL_MS = 10 * 60 * 1000;
 
-/** Build a minimal SAML AuthnRequest XML */
-function buildAuthnRequest(idpSsoUrl, issuer, acsUrl) {
-  const id  = '_' + randomUUID().replace(/-/g, '');
-  const now = new Date().toISOString();
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<samlp:AuthnRequest
-  xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
-  xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
-  ID="${id}"
-  Version="2.0"
-  IssueInstant="${now}"
-  Destination="${idpSsoUrl}"
-  AssertionConsumerServiceURL="${acsUrl}"
-  ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST">
-  <saml:Issuer>${issuer}</saml:Issuer>
-  <samlp:NameIDPolicy Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress" AllowCreate="true"/>
-</samlp:AuthnRequest>`;
-  return { id, xml };
+/** DB-backed cache so InResponseTo / replay checks work across instances. */
+function dbCacheProvider(db, kind) {
+  return {
+    async saveAsync(key, value) {
+      await db.run(
+        `INSERT INTO sso_request_cache (cache_key, kind, value, created_at) VALUES (?,?,?,NOW())
+         ON CONFLICT (cache_key) DO NOTHING`, [`${kind}:${key}`, kind, String(value)]);
+      return { value: String(value), createdAt: Date.now() };
+    },
+    async getAsync(key) {
+      const row = await db.get(
+        `SELECT value FROM sso_request_cache WHERE cache_key=? AND created_at > NOW() - INTERVAL '1 hour'`,
+        [`${kind}:${key}`]);
+      return row ? row.value : null;
+    },
+    async removeAsync(key) {
+      if (key == null) return null;
+      const row = await this.getAsync(key);
+      await db.run('DELETE FROM sso_request_cache WHERE cache_key=?', [`${kind}:${key}`]);
+      return row;
+    },
+  };
 }
 
-/** Base64-encode XML for HTTP-Redirect binding */
-function encodeRedirect(xml) {
-  return Buffer.from(xml).toString('base64').replace(/\s/g, '');
+function normalizeCert(certPem) {
+  const body = String(certPem || '')
+    .replace(/-----BEGIN CERTIFICATE-----|-----END CERTIFICATE-----|\s/g, '');
+  return body.length >= 100 ? body : null;
 }
 
-/** Decode base64 SAML response */
-function decodeSamlResponse(encoded) {
+/** node-saml instance for one firm's IdP configuration. */
+export function samlForConfig(ssoConfig, db) {
+  const cert = normalizeCert(ssoConfig?.certificate);
+  if (!cert) return null;
+  return new SAML({
+    callbackUrl:           SP_ACS_URL,
+    entryPoint:            ssoConfig.sso_url,
+    issuer:                SP_ENTITY_ID,
+    audience:              SP_ENTITY_ID,
+    idpCert:               cert,
+    idpIssuer:             ssoConfig.entity_id ? String(ssoConfig.entity_id) : undefined,
+    wantAssertionsSigned:  true,
+    wantAuthnResponseSigned: false,
+    acceptedClockSkewMs:   2 * 60 * 1000,
+    maxAssertionAgeMs:     10 * 60 * 1000,
+    validateInResponseTo:  ValidateInResponseTo.ifPresent,
+    requestIdExpirationPeriodMs: 10 * 60 * 1000,
+    cacheProvider:         dbCacheProvider(db, 'authn'),
+    disableRequestedAuthnContext: true,
+    identifierFormat:      'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+  });
+}
+
+/** HMAC-signed RelayState carrying the firm id (tamper-evident, short-lived). */
+function signRelayState(firmId) {
+  const payload = Buffer.from(JSON.stringify({ f: Number(firmId), t: Date.now() })).toString('base64url');
+  const mac = createHmac('sha256', process.env.JWT_SECRET).update(`sso-relay.${payload}`).digest('base64url');
+  return `${payload}.${mac}`;
+}
+function verifyRelayState(rs) {
+  const [payload, mac] = String(rs || '').split('.');
+  if (!payload || !mac) return null;
+  const expect = createHmac('sha256', process.env.JWT_SECRET).update(`sso-relay.${payload}`).digest('base64url');
+  const a = Buffer.from(mac), b = Buffer.from(expect);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
   try {
-    return Buffer.from(encoded, 'base64').toString('utf8');
-  } catch {
-    return null;
-  }
+    const st = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    if (!Number.isInteger(st.f) || Date.now() - Number(st.t) > RELAY_TTL_MS) return null;
+    return st.f;
+  } catch { return null; }
 }
 
-/** Extract an attribute value from SAML XML (simple regex — no full XML parser) */
-function extractAttr(xml, attrName) {
-  // Attribute name match
-  const byName = new RegExp(`Name="${attrName}"[^>]*>[\\s\\S]*?<saml[^:]*:AttributeValue[^>]*>([^<]+)`, 'i');
-  const m1 = xml.match(byName);
-  if (m1) return m1[1].trim();
-
-  // Friendly name match
-  const byFriendly = new RegExp(`FriendlyName="${attrName}"[^>]*>[\\s\\S]*?<saml[^:]*:AttributeValue[^>]*>([^<]+)`, 'i');
-  const m2 = xml.match(byFriendly);
-  if (m2) return m2[1].trim();
-
-  return null;
+function profileAttr(profile, name) {
+  if (!name || !profile) return null;
+  const v = profile[name] ?? profile.attributes?.[name];
+  const one = Array.isArray(v) ? v[0] : v;
+  return typeof one === 'string' && one.trim() ? one.trim() : null;
 }
 
-/** Extract NameID (email) from SAML assertion */
-function extractNameId(xml) {
-  const m = xml.match(/<saml[^:]*:NameID[^>]*>([^<]+)<\/saml[^:]*:NameID>/i);
-  return m ? m[1].trim() : null;
-}
-
-/** Verify SAML signature using IdP certificate */
-function verifySamlSignature(xml, certPem) {
-  try {
-    // Extract the SignatureValue
-    const sigMatch = xml.match(/<ds:SignatureValue[^>]*>([^<]+)<\/ds:SignatureValue>/);
-    if (!sigMatch) return false; // no signature present
-
-    const sigValue = sigMatch[1].replace(/\s/g, '');
-
-    // Extract SignedInfo (the data that was signed)
-    const signedInfoMatch = xml.match(/(<ds:SignedInfo[\s\S]*?<\/ds:SignedInfo>)/);
-    if (!signedInfoMatch) return false;
-
-    const signedInfo = signedInfoMatch[1];
-
-    // Normalize certificate — strip headers if present
-    const cert = certPem
-      .replace(/-----BEGIN CERTIFICATE-----/g, '')
-      .replace(/-----END CERTIFICATE-----/g, '')
-      .replace(/\s/g, '');
-    const pemFormatted = `-----BEGIN CERTIFICATE-----\n${cert.match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----`;
-
-    const verify = createVerify('RSA-SHA256');
-    verify.update(signedInfo);
-    return verify.verify(pemFormatted, sigValue, 'base64');
-  } catch (e) {
-    logger.warn('[sso] signature verification error:', e.message);
-    return false;
-  }
-}
-
-/** Generate a JWT for an SSO-authenticated user */
-function issueJwt(user, firmRole) {
+/** Issue a JWT for an SSO-authenticated user (role is re-read from the DB on every request). */
+function issueJwt(user) {
   const payload = {
     id:          user.id,
+    role:        user.role || 'user',
     email:       user.email || null,
     displayName: user.display_name || user.name || user.email,
     premium:     !!user.is_premium,
-    firm_role:   firmRole || null,
     sso:         true,
   };
   return jwt.sign(
     payload,
     process.env.JWT_SECRET,   // always set: required in production, generated per-process in dev (config.js)
-    { expiresIn: CONFIG.JWT_EXPIRES_IN || '30d' }
+    { expiresIn: CONFIG.JWT_EXPIRES_IN || '30d', algorithm: 'HS256' }
   );
 }
+
+const SSO_CONFIG_COLS = `id, firm_id, provider, entity_id, sso_url, slo_url, certificate,
+              attribute_email, attribute_name, attribute_role, force_sso, active`;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SP METADATA — share this URL with IdP administrators
@@ -185,7 +200,7 @@ router.get('/metadata', (req, res) => {
 // INITIATE SSO LOGIN — redirect user to IdP
 // GET /api/sso/login?firm=<slug>
 // ══════════════════════════════════════════════════════════════════════════════
-router.get('/login', async (req, res) => {
+router.get('/login', ssoLimiter, async (req, res) => {
   try {
     const { firm } = req.query;
     if (!firm) return err400(res, 'firm parameter required (firm slug or ID)');
@@ -194,30 +209,23 @@ router.get('/login', async (req, res) => {
     // Look up firm by slug or ID
     const firmRow = await db.get(
       'SELECT id, name FROM firms WHERE slug=? OR id=? LIMIT 1',
-      [sanitizeStr(firm, 100), safeInt(firm)]
+      [sanitizeStr(String(firm), 100), safeInt(firm)]
     );
     if (!firmRow) return err404(res, 'Firm not found.');
 
     const ssoConfig = await db.get(
-      `SELECT id, firm_id, provider, entity_id, sso_url, slo_url, certificate,
-              attribute_email, attribute_name, attribute_role, force_sso, active
-       FROM sso_configurations WHERE firm_id=? AND active=1 LIMIT 1`,
+      `SELECT ${SSO_CONFIG_COLS} FROM sso_configurations WHERE firm_id=? AND active=1 LIMIT 1`,
       [firmRow.id]
     );
-    if (!ssoConfig) {
+    const saml = ssoConfig && /^https:\/\//i.test(String(ssoConfig.sso_url || '')) ? samlForConfig(ssoConfig, db) : null;
+    if (!saml) {
       return res.status(400).json({
         error: 'SSO is not configured for this firm. Contact your IT administrator.',
         code:  'sso_not_configured',
       });
     }
 
-    const { xml } = buildAuthnRequest(ssoConfig.sso_url, SP_ENTITY_ID, SP_ACS_URL);
-    const encoded = encodeRedirect(xml);
-
-    // State parameter encodes firm_id for ACS handler
-    const state = Buffer.from(JSON.stringify({ firm_id: firmRow.id })).toString('base64');
-
-    const redirectUrl = `${ssoConfig.sso_url}?SAMLRequest=${encodeURIComponent(encoded)}&RelayState=${encodeURIComponent(state)}`;
+    const redirectUrl = await saml.getAuthorizeUrlAsync(signRelayState(firmRow.id), req.get('host'), {});
 
     await writeAuditLog(db, {
       firm_id:   firmRow.id,
@@ -236,104 +244,102 @@ router.get('/login', async (req, res) => {
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ASSERTION CONSUMER SERVICE — IdP posts SAMLResponse here
-// POST /api/sso/acs
+// POST /api/sso/acs   (firm from the signed RelayState, or ?firm=<id> for IdP-initiated)
 // ══════════════════════════════════════════════════════════════════════════════
-router.post('/acs', async (req, res) => {
+router.post('/acs', ssoLimiter, async (req, res) => {
+  let db, firmId = null;
   try {
     const { SAMLResponse, RelayState } = req.body || {};
-    if (!SAMLResponse) return err400(res, 'SAMLResponse missing.');
+    if (!SAMLResponse || typeof SAMLResponse !== 'string') return err400(res, 'SAMLResponse missing.');
+    if (SAMLResponse.length > 256 * 1024) return res.status(413).json({ error: 'SAMLResponse too large.' });
 
-    // Decode state to get firm_id
-    let firmId = null;
-    try {
-      const state = JSON.parse(Buffer.from(RelayState || '', 'base64').toString());
-      firmId = state.firm_id;
-    } catch {
-      return err400(res, 'Invalid RelayState.');
-    }
+    firmId = verifyRelayState(RelayState) ?? (safeInt(req.query.firm) || null);
+    if (!firmId) return err400(res, 'Invalid RelayState.');
 
-    const db = await getDb();
+    db = await getDb();
     const ssoConfig = await db.get(
-      `SELECT id, firm_id, provider, entity_id, sso_url, slo_url, certificate,
-              attribute_email, attribute_name, attribute_role, force_sso, active
-       FROM sso_configurations WHERE firm_id=? AND active=1 LIMIT 1`,
+      `SELECT ${SSO_CONFIG_COLS} FROM sso_configurations WHERE firm_id=? AND active=1 LIMIT 1`,
       [firmId]
     );
-    if (!ssoConfig) return err404(res, 'SSO configuration not found.');
+    const saml = ssoConfig ? samlForConfig(ssoConfig, db) : null;
+    // Never accept an assertion for a firm without a verifiable IdP certificate.
+    if (!saml) return res.status(400).json({ error: 'SSO is not configured for this firm.', code: 'sso_not_configured' });
 
-    // Decode and validate SAMLResponse
-    const xml = decodeSamlResponse(SAMLResponse);
-    if (!xml) return err400(res, 'Invalid SAMLResponse encoding.');
-
-    // Check for success status
-    const statusMatch = xml.match(/<samlp:StatusCode[^>]*Value="([^"]+)"/i);
-    const status = statusMatch?.[1] || '';
-    if (!status.includes('Success')) {
-      logger.warn('[sso/acs] IdP returned failure status:', status);
-      return res.status(401).json({ error: 'IdP authentication failed.', idp_status: status });
+    let profile;
+    try {
+      ({ profile } = await saml.validatePostResponseAsync({ SAMLResponse }));
+    } catch (e) {
+      logger.warn({ firmId, err: e?.message }, '[sso/acs] SAML validation failed');
+      await writeAuditLog(db, { firm_id: firmId, action: 'sso_signature_fail', resource: 'sso', ip: req.ip }).catch(() => {});
+      return res.status(401).json({ error: 'SAML response could not be verified.', code: 'saml_invalid' });
+    }
+    if (!profile) return res.status(401).json({ error: 'SAML response could not be verified.', code: 'saml_invalid' });
+    // The SIGNED assertion's own Issuer must be this firm's IdP (node-saml checks the
+    // Response-level Issuer; the assertion is what we trust).
+    if (!ssoConfig.entity_id || profile.issuer !== String(ssoConfig.entity_id)) {
+      logger.warn({ firmId, issuer: profile.issuer }, '[sso/acs] assertion issuer mismatch');
+      return res.status(401).json({ error: 'SAML response could not be verified.', code: 'saml_invalid' });
     }
 
-    // Verify signature if certificate configured
-    if (ssoConfig.certificate) {
-      const valid = verifySamlSignature(xml, ssoConfig.certificate);
-      if (!valid) {
-        logger.warn('[sso/acs] Signature verification failed for firm', firmId);
-        await writeAuditLog(db, {
-          firm_id: firmId, action: 'sso_signature_fail', resource: 'sso', ip: req.ip,
-        });
-        return res.status(401).json({ error: 'SAML signature verification failed.' });
-      }
-    }
+    // Single-use assertions (replay protection).
+    const assertionId = profile.getAssertion?.()?.Assertion?.$?.ID || null;
+    if (!assertionId) return res.status(401).json({ error: 'SAML assertion has no ID.', code: 'saml_invalid' });
+    const replay = await db.run(
+      `INSERT INTO sso_request_cache (cache_key, kind, value, created_at) VALUES (?, 'assertion', ?, NOW())
+       ON CONFLICT (cache_key) DO NOTHING`, [`assertion:${firmId}:${assertionId}`, String(firmId)]);
+    if (!replay.changes) return res.status(401).json({ error: 'SAML assertion was already used.', code: 'saml_replay' });
 
-    // Extract user attributes
+    // Extract user attributes — only from the verified profile.
     const emailAttr  = ssoConfig.attribute_email  || 'email';
     const nameAttr   = ssoConfig.attribute_name   || 'displayName';
     const roleAttr   = ssoConfig.attribute_role;
+    const email   = profile.nameID?.includes('@') ? profile.nameID
+                  : (profileAttr(profile, emailAttr) || profileAttr(profile, 'email') || profile.mail || null);
+    const name    = profileAttr(profile, nameAttr) || profileAttr(profile, 'displayName') || profileAttr(profile, 'cn');
+    const idpRole = roleAttr ? profileAttr(profile, roleAttr) : null;
 
-    const email  = extractNameId(xml) || extractAttr(xml, emailAttr) || extractAttr(xml, 'email');
-    const name   = extractAttr(xml, nameAttr) || extractAttr(xml, 'displayName') || extractAttr(xml, 'cn');
-    const idpRole = roleAttr ? extractAttr(xml, roleAttr) : null;
-
-    if (!email || !email.includes('@')) {
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       return res.status(400).json({ error: 'Could not extract valid email from SAML assertion.' });
     }
 
     const safeEmail = email.toLowerCase().trim();
     const safeName  = truncateStr(name || safeEmail.split('@')[0], 100);
 
-    // Find or create user
-    let user = await db.get('SELECT id, email, display_name, name, is_premium, firm_role FROM users WHERE email=? LIMIT 1', [safeEmail]);
-    if (!user) {
+    // Find or create user — never take over an account outside this firm.
+    let user = await db.get('SELECT id, email, role, display_name, name, is_premium, account_status FROM users WHERE LOWER(email)=? LIMIT 1', [safeEmail]);
+    let firmMember = null;
+    if (user) {
+      firmMember = await db.get(
+        `SELECT fm.firm_role, fm.role FROM firm_members fm
+          WHERE fm.firm_id=? AND fm.user_id=? AND COALESCE(fm.active,1)=1 AND COALESCE(fm.status,'active')='active'`,
+        [firmId, user.id]);
+      if (!firmMember) {
+        logger.warn({ firmId, userId: user.id }, '[sso/acs] refused: existing account is not a member of this firm');
+        await writeAuditLog(db, { firm_id: firmId, action: 'sso_account_not_member', resource: 'sso', ip: req.ip }).catch(() => {});
+        return res.status(403).json({ error: 'This account is not a member of the firm. Ask your firm administrator to invite it.', code: 'sso_not_member' });
+      }
+      if (['banned', 'suspended', 'deleted', 'disabled'].includes(String(user.account_status || 'active'))) {
+        return res.status(403).json({ error: 'This account is disabled.', code: 'account_disabled' });
+      }
+    } else {
       const r = await db.run(
         `INSERT INTO users (email, display_name, name, password_hash, role, login_identifier)
          VALUES (?,?,?,?,?,?)`,
         [safeEmail, safeName, safeName, 'sso_no_password', 'user', safeEmail]
       );
-      user = await db.get('SELECT id, email, display_name, name, is_premium FROM users WHERE id=? LIMIT 1', [r.lastID]);
-    } else if (!user.display_name || user.display_name === user.email) {
-      // Update display name from IdP if we have one
-      await db.run('UPDATE users SET display_name=?, name=? WHERE id=?', [safeName, safeName, user.id]);
-    }
-
-    // Resolve firm membership — add if not already a member
-    let firmMember = await db.get(
-      "SELECT firm_role, status FROM firm_members WHERE firm_id=? AND user_id=? AND status='active'",
-      [firmId, user.id]
-    );
-
-    if (!firmMember) {
-      // Auto-provision with 'associate' role unless IdP provides role claim
-      const provisionedRole = idpRole || 'associate';
+      user = await db.get('SELECT id, email, role, display_name, name, is_premium FROM users WHERE id=? LIMIT 1', [r.lastID]);
+      const provisionedRole = SSO_PROVISIONABLE_ROLES.has(idpRole) ? idpRole : 'associate';
       await db.run(
-        `INSERT INTO firm_members (firm_id, user_id, firm_role, status)
-         VALUES (?,?,?,?) ON CONFLICT DO NOTHING`,
-        [firmId, user.id, provisionedRole, 'active']
+        `INSERT INTO firm_members (firm_id, user_id, firm_role, role, status, active)
+         VALUES (?,?,?,?,'active',1) ON CONFLICT DO NOTHING`,
+        [firmId, user.id, provisionedRole, provisionedRole]
       );
       firmMember = { firm_role: provisionedRole };
     }
+    invalidateUserCache(user.id);
 
     // Issue JWT and redirect to app
-    const token = issueJwt(user, firmMember.firm_role);
+    const token = issueJwt(user);
 
     await writeAuditLog(db, {
       user_id:  user.id,
@@ -345,7 +351,6 @@ router.post('/acs', async (req, res) => {
       ua:       req.headers['user-agent'],
     });
 
-    // Redirect to app with token
     const redirectUrl = `${APP_REDIRECT}?token=${encodeURIComponent(token)}&firm_id=${firmId}`;
     res.redirect(302, redirectUrl);
   } catch (e) {
@@ -389,7 +394,7 @@ router.get('/config/:firmId', authRequired, requireFirmRole('firm_admin'), async
     const db     = await getDb();
     const ctx    = req.firmCtx;
     const firmId = safeInt(req.params.firmId);
-    if (ctx.firm_id !== firmId) return err403(res, 'Access denied to this firm.');
+    if (!ctx || Number(ctx.firm_id) !== firmId) return err403(res, 'Access denied to this firm.');
 
     const config = await db.get(
       `SELECT id, firm_id, provider, entity_id, sso_url, slo_url,
@@ -420,7 +425,7 @@ router.post('/config/:firmId', authRequired, routeLimiter, requireFirmRole('firm
     const db     = await getDb();
     const ctx    = req.firmCtx;
     const firmId = safeInt(req.params.firmId);
-    if (ctx.firm_id !== firmId) return err403(res, 'Access denied to this firm.');
+    if (!ctx || Number(ctx.firm_id) !== firmId) return err403(res, 'Access denied to this firm.');
 
     const {
       provider        = 'saml',
@@ -435,11 +440,15 @@ router.post('/config/:firmId', authRequired, routeLimiter, requireFirmRole('firm
     if (!entity_id) return err400(res, 'entity_id (IdP entity ID / issuer) is required.');
     if (!certificate) return err400(res, 'certificate (IdP public X.509 certificate, PEM) is required.');
 
-    // Validate certificate format
-    const certClean = certificate.replace(/-----BEGIN CERTIFICATE-----|-----END CERTIFICATE-----|\s/g, '');
-    if (!certClean || certClean.length < 100) {
+    // Validate certificate: it must parse as an X.509 certificate.
+    const certClean = normalizeCert(certificate);
+    try {
+      if (!certClean) throw new Error('empty');
+      new X509Certificate(`-----BEGIN CERTIFICATE-----\n${certClean.match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----\n`);
+    } catch {
       return err400(res, 'certificate appears invalid. Provide the full PEM certificate from your IdP.');
     }
+    if (!/^https:\/\//i.test(String(sso_url))) return err400(res, 'sso_url must be an https:// URL.');
 
     const PROVIDERS = ['saml', 'okta', 'azure_ad', 'google', 'ping', 'onelogin'];
     const safeProvider = PROVIDERS.includes(provider) ? provider : 'saml';
@@ -502,7 +511,7 @@ router.delete('/config/:firmId', authRequired, requireFirmRole('firm_admin'), as
     const db     = await getDb();
     const ctx    = req.firmCtx;
     const firmId = safeInt(req.params.firmId);
-    if (ctx.firm_id !== firmId) return err403(res, 'Access denied to this firm.');
+    if (!ctx || Number(ctx.firm_id) !== firmId) return err403(res, 'Access denied to this firm.');
 
     await db.run("UPDATE sso_configurations SET active=0 WHERE firm_id=?", [firmId]);
     await writeAuditLog(db, {
@@ -522,7 +531,7 @@ router.get('/test/:firmId', authRequired, requireFirmRole('firm_admin'), asyncRo
     const db     = await getDb();
     const ctx    = req.firmCtx;
     const firmId = safeInt(req.params.firmId);
-    if (ctx.firm_id !== firmId) return err403(res, 'Access denied to this firm.');
+    if (!ctx || Number(ctx.firm_id) !== firmId) return err403(res, 'Access denied to this firm.');
 
     const config = await db.get(
       'SELECT id, provider, entity_id, sso_url, slo_url, certificate, force_sso, active FROM sso_configurations WHERE firm_id=? AND active=1 LIMIT 1', [firmId]);

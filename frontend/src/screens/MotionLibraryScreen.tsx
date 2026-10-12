@@ -1,5 +1,5 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
-import { apiErrorMessage } from '../services/api';
+import { unwrapList, apiErrorMessage } from '../services/api';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { AppIcon } from '../components/AppIcon';
@@ -539,8 +539,9 @@ function MotionLibraryScreen({ route, navigation }: ScreenProps): React.JSX.Elem
     try {
       markOnline();
       const res = await api.get('/motions/history');
-      setHistory(res.data || []);
-      cacheMotions(res.data || []).catch(() => {});  // write-through cache for offline use
+      const motions = unwrapList(res.data, 'motions', 'history');
+      setHistory(motions);
+      cacheMotions(motions).catch(() => {});  // write-through cache for offline use
       setPhase('history');
     } catch (e: any) {
       showToast('Unable to load. Please check your connection and try again.', 'error'); __DEV__ && console.warn(e?.message); }

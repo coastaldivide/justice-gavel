@@ -41,6 +41,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+import { escapeHtml } from '../utils/html.js';
 import cron from 'node-cron';
 import { getDb }        from '../db/index.js';
 import { sendEmail }    from './email.js';
@@ -1357,7 +1358,7 @@ export function startHealthScanScheduler() {
           to:      ADMIN_EMAIL,
           subject: '🚨 [JusticeGavel] HEALTH SCAN CRASHED — immediate attention required',
           text:    `The Justice Gavel automated health scan crashed and could not complete.\n\n${crashText}`,
-          html:    `<h2 style='color:red'>🚨 Justice Gavel Health Scan CRASHED</h2><p>The automated scan failed at <strong>${crashTime}</strong>. The app's self-monitoring is down.</p><pre>${crashText}</pre>`,
+          html:    `<h2 style='color:red'>🚨 Justice Gavel Health Scan CRASHED</h2><p>The automated scan failed at <strong>${escapeHtml(crashTime)}</strong>. The app's self-monitoring is down.</p><pre>${escapeHtml(crashText)}</pre>`,
         }).catch(() => {});
       }
       if (ADMIN_SMS) {

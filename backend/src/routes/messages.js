@@ -22,6 +22,7 @@
 import { Router }       from 'express';
 import crypto           from 'crypto';
 import multer           from 'multer';
+import { uploadGuard }  from '../middleware/uploads.js';
 import rateLimit        from 'express-rate-limit';
 import { authRequired } from '../middleware/auth.js';
 import { getDb }        from '../db/index.js';
@@ -50,7 +51,11 @@ const attachmentLimiter = rateLimit({
   standardHeaders: true, legacyHeaders: false, validate: false,
 });
 
-const isAttorneyRole = (user) => user?.role === 'attorney' || user?.role === 'defender';
+// req.user.role / is_defender are the LIVE values from the users row (middleware/auth.js).
+// Being an attorney is necessary but not sufficient: counsel access also needs an
+// ACTIVE case_assignments row, which only exists when the case owner invited the
+// attorney (routes/caseCounsel.js) — see routes/attorney/cases.js.
+const isAttorneyRole = (user) => user?.role === 'attorney' || user?.role === 'defender' || Number(user?.is_defender) === 1;
 const isId = (v) => /^\d{1,15}$/.test(String(v ?? ''));
 const preview = (s) => (s.length > 80 ? s.slice(0, 80) + '…' : s);
 
@@ -296,25 +301,19 @@ function safeFileName(name, mime) {
   return `${base}.${EXT[mime]}`;
 }
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: ATTACHMENT_MAX_BYTES, files: 1, fields: 10, fieldSize: 10_000, parts: 12 },
-}).any();
-
-function parseMultipart(req, res, next) {
-  if (!req.is('multipart/form-data')) {
-    return err400(res, 'Send the document as multipart/form-data with a "file" field');
-  }
-  upload(req, res, (err) => {
-    if (!err) return next();
+// Attachments are encrypted in memory before storage, so they stay in memory —
+// capped at 10 MB and admitted against the process-wide upload budget (C5).
+const parseMultipart = uploadGuard({
+  maxBytes: ATTACHMENT_MAX_BYTES, any: true, requireMultipart: true, maxFields: 10, maxFieldBytes: 10_000,
+  onError: (err, req, res) => {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(413).json({ error: 'file_too_large', message: `Attachments can be at most ${ATTACHMENT_MAX_BYTES / 1024 / 1024} MB.` });
     }
     if (err instanceof multer.MulterError) return err400(res, `Invalid upload: ${err.message}`);
     logger.warn('[messages/attachment] multipart error:', err?.message);
     return err400(res, 'Invalid upload');
-  });
-}
+  },
+});
 
 async function requireStorage(req, res, next) {
   try {

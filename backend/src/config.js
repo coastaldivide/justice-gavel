@@ -241,6 +241,8 @@ export const ALL_ENV_VARS = {
 
   // ── Push (Expo + web push) ───────────────────────────────────────────────
   EXPO_ACCESS_TOKEN:        process.env.EXPO_ACCESS_TOKEN          || '',
+  EXPO_PUSH_API_URL:        process.env.EXPO_PUSH_API_URL          || '',    // default https://exp.host/--/api/v2 (services/expoPush.js)
+  REMINDERS_ENABLED:        process.env.REMINDERS_ENABLED          || 'true', // 'false' stops reminder delivery in this process
   VAPID_PUBLIC_KEY:         process.env.VAPID_PUBLIC_KEY           || '',
   VAPID_PRIVATE_KEY:        process.env.VAPID_PRIVATE_KEY          || '',
   VAPID_EMAIL:              process.env.VAPID_EMAIL                || '',
@@ -310,7 +312,7 @@ export const ALL_ENV_VARS = {
   REFRESH_CRON:             process.env.REFRESH_CRON               || '0 3 * * *',
   REFRESH_TZ:               process.env.REFRESH_TZ                 || 'America/Chicago',
   HEALTH_SCAN_CRON:         process.env.HEALTH_SCAN_CRON           || '0 2 * * *',
-  LIVE_REFRESH:             process.env.LIVE_REFRESH               || 'false', // 'true' enables the scheduler
+  LIVE_REFRESH:             process.env.LIVE_REFRESH               || 'false', // 'true' enables the data-refresh/outbound scheduler (not reminder delivery)
 
   // ── Arrest data ──────────────────────────────────────────────────────────
   ARREST_FEED_URLS:         process.env.ARREST_FEED_URLS           || '', // see services/arrest_ingest.js

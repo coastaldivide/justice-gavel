@@ -9,7 +9,8 @@ import { ScreenCapture, RNShare } from '../utils/webCompat';
 import type {} from '../types/navigation';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ScrollView, Linking, ActivityIndicator, RefreshControl, KeyboardAvoidingView, Platform, LayoutAnimation } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { api, apiErrorMessage } from '../services/api';
+import { unwrapList, api, apiErrorMessage } from '../services/api';
+import { planCourtReminders, formatReminderTime } from '../services/reminders';
 import { cacheAgeLabel, cacheSavedLawyers, getCachedLawyers } from '../services/offlineCache';
 import { t }   from '../i18n';
 import * as Calendar      from 'expo-calendar';
@@ -19,7 +20,7 @@ import * as secureStorage from '../utils/secureStorage';
 import { useBiometricGate, BiometricLockView } from '../hooks/useBiometricGate';
 import { saveCaseOffline, getOfflineCases, startSyncListener } from '../services/offlineSync';
 import Markdown from 'react-native-markdown-display';
-import { daysUntil, formatDate, parseLocalDate, toLocalISODate } from '../utils/dateUtils';
+import { daysUntil, formatDate, toLocalISODate } from '../utils/dateUtils';
 const C_0A1929 = ('\x23' + '0A1929') as string; // hex color
 
 const STATUS_COLORS: Record<string, string> = {
@@ -54,24 +55,17 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
                   style={{ flexDirection:'row', alignItems:'center', gap:4, paddingVertical:6,
                     marginTop:2 }}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  testID="case-remind-me"
                   onPress={async () => {
-
-                    const d = parseLocalDate(item.next_court_date) ?? new Date(NaN);
-                    const remind = new Date(d);
-                    remind.setDate(d.getDate()-1);
-                    if (remind <= new Date()) {
-                      showToast('Court date is tomorrow or today.');
-                      return;
-                    }
                     try {
-                      await api.post('/push/reminders', {
-                        title: '🏛️ Court tomorrow: ' + item.title,
-                        body: 'Your court date is tomorrow. Review your case details.',
-                        scheduled_for: remind.toISOString(),
-                        notification_type: 'court_reminder',
-                      });
-                      showToast('We\'ll remind you the day before court.');
-                    } catch { showToast('Could not set reminder'); }
+                      const planned = await planCourtReminders(item.id);
+                      const when = planned.map(r => formatReminderTime(r.deliver_at));
+                      showToast(when.length
+                        ? `Court reminders set: ${when.join(' · ')}`
+                        : 'Court reminders are set.', 'success');
+                    } catch (e: any) {
+                      showToast(apiErrorMessage(e, 'Could not set reminder'), 'error');
+                    }
                   }}
                   accessibilityLabel="Set court date reminder"
                 >
@@ -375,8 +369,9 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
       }
       setIsGuest(false);
       const res = await api.get('/saved/lawyers');
-      setSavedLawyers(res.data || []);
-      cacheSavedLawyers(res.data).catch(() => {}); // write-through offline cache of saved lawyers
+      const saved = unwrapList(res.data, 'lawyers');
+      setSavedLawyers(saved);
+      cacheSavedLawyers(saved).catch(() => {}); // write-through offline cache of saved lawyers
     } catch (e: any) {
       const status = e.response?.status;
       if (status === 401 || status === 403) {
@@ -416,10 +411,10 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
         api.get('/cases'),
         api.get('/cases/family'),
       ]);
-      if (myRes.status === 'fulfilled') setCases(myRes.value.data);
-      if (famRes.status === 'fulfilled') setFamilyCases(famRes.value.data || []);
+      if (myRes.status === 'fulfilled') setCases(unwrapList(myRes.value.data, 'cases'));
+      if (famRes.status === 'fulfilled') setFamilyCases(unwrapList(famRes.value.data, 'cases'));
     } catch (e: any) { __DEV__ && console.warn(e?.message); }
-    api.get('/push/reminders').then(r => setUpcomingReminders(r.data || [])).catch((e) => { __DEV__ && console.warn(e?.message); });
+    api.get('/push/reminders').then(r => setUpcomingReminders(unwrapList(r.data, 'reminders'))).catch((e) => { __DEV__ && console.warn(e?.message); });
     setLoading(false);
   }, []);
 
@@ -456,12 +451,15 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
         status: editCase.status || 'Open',
         next_court_date: editCase.next_court_date?.trim() || null,
         notes: editCase.notes?.trim() || ''};
-      if (editCase.id) {
-        await api.put(`/cases/${editCase.id}`, payload);
-      } else {
-        await api.post('/cases', payload);
-      }
+      const res = editCase.id
+        ? await api.put(`/cases/${editCase.id}`, payload)
+        : await api.post('/cases', payload);
       setModal(false);
+      // The server plans court-date reminders whenever a court date is saved.
+      const planned = unwrapList<{ deliver_at: string }>(res?.data?.reminders);
+      if (planned.length) {
+        showToast(`Court reminders set: ${planned.map(r => formatReminderTime(r.deliver_at)).join(' · ')}`, 'success');
+      }
       await load();
     } catch (e: any) {
       // Offline fallback -- save locally and sync when reconnected
@@ -719,14 +717,14 @@ showToast('Document read — specific fields could not be extracted. Check Notes
 
       {/* Upcoming court date reminders banner */}
       {!loading && upcomingReminders.length > 0 && activeTab === 'cases' && (
-        <View style={styles.reminderBanner}>
+        <View style={styles.reminderBanner} testID="court-reminders-banner">
           <Text maxFontSizeMultiplier={1.4} style={styles.reminderBannerIcon}>📅</Text>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={styles.reminderBannerTitle}>
               {upcomingReminders.length} upcoming court reminder{upcomingReminders.length > 1 ? 's' : ''}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={styles.reminderBannerSub} numberOfLines={1}>
-              Next: {upcomingReminders[0]?.title} -- {new Date(upcomingReminders[0]?.deliver_at).toLocaleDateString()}
+              Next: {upcomingReminders[0]?.title} -- {formatReminderTime(upcomingReminders[0]?.deliver_at)}
             </Text>
           </View>
         </View>

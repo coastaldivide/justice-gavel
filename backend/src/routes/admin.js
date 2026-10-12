@@ -1,4 +1,4 @@
-import { safeJson, asyncRoute, err400, escapeLike, err401, err404, safeInt, safeTable, safeAdminCols } from '../utils/routeHelpers.js';
+import { safeJson, asyncRoute, err400, escapeLike, err401, err404, safeInt, safeTable, safeAdminColList } from '../utils/routeHelpers.js';
 /**
  * /api/admin — Provider database management
  *
@@ -201,7 +201,7 @@ function crudRoutes(table, extraWriteFields = []) {
       const cols = [...allowed, 'source', 'source_id', 'updated_at'];
       const vals = [...allowed.map(f => body[f] ?? null), 'admin', 'admin_' + Date.now(), new Date().toISOString()];
       const result = await db.run(
-        `INSERT INTO ${safeTable(table)} (${safeAdminCols(table, cols).join(",")}) VALUES (${safeAdminCols(table, cols).map(() => "?").join(',')})`,
+        `INSERT INTO ${safeTable(table)} (${safeAdminColList(cols).join(',')}) VALUES (${cols.map(() => '?').join(',')})`,
         vals
       );
       const created = await db.get(`SELECT * FROM ${safeTable(table)} WHERE id = ?`, [result.lastID]);

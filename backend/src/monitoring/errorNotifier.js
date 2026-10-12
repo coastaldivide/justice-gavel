@@ -4,7 +4,7 @@ async function fetchNotify(url, opts) {
   const ctrl = new AbortController();
   const id   = setTimeout(() => ctrl.abort(), 5000); // 5s max for notifications
   try {
-    const r = await fetchNotify(url, { ...opts, signal: ctrl.signal });
+    const r = await fetch(url, { ...opts, signal: ctrl.signal });
     clearTimeout(id);
     return r;
   } catch { clearTimeout(id); }
@@ -42,12 +42,36 @@ function shouldAlert(code) {
   return true;
 }
 
+/**
+ * Alert recipients come ONLY from the environment (no personal addresses in
+ * source): ONCALL_EMAIL / ONCALL_EMAIL_2 for SEV-1/SEV-2, falling back to
+ * ALERT_EMAIL. With none set, alerts are still logged (and sent to Sentry /
+ * ALERT_WEBHOOK_URL when configured) but no email is attempted.
+ */
+export function alertRecipients() {
+  const oncall = [process.env.ONCALL_EMAIL, process.env.ONCALL_EMAIL_2]
+    .map(v => String(v || '').trim()).filter(Boolean);
+  if (oncall.length) return oncall;
+  const fallback = String(process.env.ALERT_EMAIL || '').trim();
+  return fallback ? [fallback] : [];
+}
+
+let _warnedNoRecipients = false;
+
 // ── Send email via Resend (services/email.js; logs only without RESEND_API_KEY)
 async function sendAlertEmail({ subject, body, to }) {
+  const recipients = to && to.length ? to : alertRecipients();
+  if (!recipients.length) {
+    if (!_warnedNoRecipients) {
+      _warnedNoRecipients = true;
+      logger.warn('[notifier] no alert recipients configured (set ONCALL_EMAIL / ALERT_EMAIL) — alert emails are skipped');
+    }
+    return;
+  }
   try {
     const { sendEmail } = await import('../services/email.js');
     await sendEmail({
-      to:      to || process.env.ALERT_EMAIL || 'engineering@justicegavel.app',
+      to:      recipients,
       subject,
       text:    body,
       html:    `<pre style="font-family:monospace;font-size:13px">${String(body || '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</pre>`,
@@ -102,10 +126,7 @@ RUNBOOK: https://github.com/coastaldivide/justice-gavel/blob/main/RUNBOOK.md
     sendAlertEmail({
       subject: `🚨 SEV-1: ${message}`,
       body,
-      to: [
-        process.env.ONCALL_EMAIL  || 'aa.n.hart@gmail.com',
-        process.env.ONCALL_EMAIL_2 || 'russelltallen@gmail.com',
-      ],
+      to: alertRecipients(),
     }),
     // SMS removed — using Slack webhook instead
     pingWebhook({ text: `🚨 *SEV-1 CRITICAL* — ${message}`, color: '#C62828', fields: extras }),
@@ -125,10 +146,7 @@ export async function notifyError(message, extras = {}) {
 
   await Promise.allSettled([
     sendAlertEmail({
-      to: [
-        process.env.ONCALL_EMAIL  || 'aa.n.hart@gmail.com',
-        process.env.ONCALL_EMAIL_2 || 'russelltallen@gmail.com',
-      ],
+      to: alertRecipients(),
       subject: `⚠️ SEV-2 Error: ${message}`,
       body: `${message}\n\n${JSON.stringify(extras, null, 2)}\n\nTime: ${new Date().toISOString()}`,
     }),

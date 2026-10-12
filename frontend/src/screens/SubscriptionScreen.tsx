@@ -2,97 +2,85 @@ import { useConfirm } from '../hooks/useConfirm';
 import { BONDSMAN_LEAD_FEE_DISPLAY } from '../constants/leadFee';
 import { useToast } from '../components/ToastProvider';
 /**
- * SubscriptionScreen -- Attorney & bail agent subscription tiers
+ * SubscriptionScreen -- provider plans (attorneys and bail agents)
  *
- * Shows all tiers with pricing, features, and a 30-day free trial CTA.
- * One-tap subscribe. Manages active subscription display and cancel.
+ * Every price shown here comes from the backend — the same table the backend
+ * charges from (routes/billing/_shared.js):
+ *   attorneys   GET /api/billing/tiers?audience=attorney → POST /api/billing/subscribe
+ *   bail agents GET /api/billing/bondsman/tiers          → POST /api/billing/bondsman/subscribe
+ * Nothing is hard-coded, and no placement / ranking promises are made: the
+ * directory's search order does not depend on a paid plan.
+ * Without Stripe the subscribe calls answer 503 payments_unavailable and the
+ * screen says so (no charge, free features keep working).
  */
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { ActivityIndicator, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, LayoutAnimation } from 'react-native';
-import { api, apiErrorMessage, isPaymentsUnavailable } from '../services/api';
+import { ActivityIndicator, Linking, Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { api, apiErrorMessage, isPaymentsUnavailable, unwrapList } from '../services/api';
 import { PAYMENTS_COMING_SOON } from '../payments';
-import {  useTheme, COLORS } from '../constants/theme';
+import { useTheme, COLORS } from '../constants/theme';
 import { useAuthGate } from '../components/AuthGate';
 
-const TIERS = [
-  {
-    key: 'advisor',
-    label: 'Basic Listing',
-    price: '$78.99/mo',
-    cents: 7900,
-    color: COLORS.textSecond,
-    bg: COLORS.bgSubtle,
-    icon: '📋',
-    features: [
-      'Directory profile visible to families',
-      '🔒 Encrypted client messaging',
-      'Searchable by county and case type',
-      'Phone and address listing',
-      'Rating and review system',
-    ],
-    highlight: false,
-  },
-  {
-    key: 'legal_radar',
-    label: 'Alert Tier',
-    price: '$198.99/mo',
-    cents: 19900,
-    color: COLORS.blue,
-    bg: COLORS.bgSubtle,
-    icon: '🔔',
-    features: [
-      'Everything in Basic',
-      'Daily arrest alerts by county',
-      'Filter by charge type',
-      'Email + push notifications',
-      'No-attorney flag on leads',
-    ],
-    highlight: true,
-    badge: 'Most Popular',
-  },
-  {
-    key: 'legal_pro',
-    label: 'Legal Pro',
-    price: '$348.99/mo',
-    cents: 34900,
-    color: COLORS.navy,
-    bg: COLORS.bgSubtle,
-    icon: '⭐',
-    features: [
-      'Everything in Alert',
-      'Top placement in all searches',
-      'AI match priority -- first recommendation',
-      'Verified badge on profile',
-      'Unlimited alerts across any county',
-      'Weekly county intel report included',
-    ],
-    highlight: false,
-  },
-];
+type ProviderType = 'lawyer' | 'bail_agent';
 
-const INTEL_TIER = {
-  key: 'esquire',
-  label: 'Weekly Intel Report',
-  price: '$48.99/mo',
-  icon: '📊',
-  description: 'Weekly arrest data breakdown for your counties -- charge trends, bail averages, unrepresented rates. Add-on to any tier.',
+/** One purchasable plan, normalised from either pricing endpoint. */
+export type ProviderPlan = {
+  key: string;
+  name: string;
+  price: string;          // exactly as the backend displays it
+  sub?: string | null;    // e.g. "$1490/yr · Save $298/yr" or "3 counties"
+  features: string[];
+  trialDays?: number | null;
 };
 
-function TierCard({ tier, active, onSubscribe, loading }: any) {
+/** What each attorney plan includes (features only — prices come from the API). */
+const ATTORNEY_FEATURES: Record<string, string[]> = {
+  esquire: [
+    'Attorney dashboard and client inbox',
+    'AI motion drafting library (review before filing)',
+    'Case and matter management with AI research',
+    'Conflict checks and docket tools',
+  ],
+};
+ATTORNEY_FEATURES.esquire_annual = ATTORNEY_FEATURES.esquire;
+
+export function attorneyPlansFrom(body: unknown): ProviderPlan[] {
+  return unwrapList<Record<string, any>>(body, 'tiers')
+    .filter(t => t && t.audience === 'attorney' && typeof t.display_price === 'string')
+    .map(t => ({
+      key: String(t.key),
+      name: String(t.name),
+      price: t.display_price,
+      sub: t.billing === 'annual' ? 'Billed once a year' : 'Billed monthly',
+      features: ATTORNEY_FEATURES[t.key] || [],
+      trialDays: Number(t.trial_days) || null,
+    }));
+}
+
+export function bondsmanPlansFrom(body: unknown): ProviderPlan[] {
+  return unwrapList<Record<string, any>>(body, 'tiers')
+    .filter(t => t && typeof t.display === 'string')
+    .map(t => ({
+      key: String(t.key),
+      name: String(t.name),
+      price: t.display,
+      sub: t.annual_display ? `or ${t.annual_display}${t.annual_savings ? ` · ${t.annual_savings}` : ''}` : null,
+      features: String(t.label || '').split('·').map((f: string) => f.trim()).filter(Boolean),
+      trialDays: null,
+    }));
+}
+
+function TierCard({ plan, active, onSubscribe, loading, styles }: {
+  plan: ProviderPlan; active: boolean; onSubscribe: (key: string) => void; loading: boolean; styles: any;
+}) {
   return (
-    <View style={[styles.tierCard, tier.highlight && styles.tierCardHighlight]}>
-      {tier.badge && (
-        <View style={styles.tierBadge}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.tierBadgeText}>{tier.badge}</Text>
-        </View>
-      )}
+    <View style={styles.tierCard} testID={`plan-${plan.key}`}>
       <View style={styles.tierHeader}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.tierIcon}>{tier.icon}</Text>
         <View style={{ flex: 1 }}>
-          <Text maxFontSizeMultiplier={1.4} style={[styles.tierLabel, { color: tier.color }]}>{tier.label}</Text>
-          <Text maxFontSizeMultiplier={1.4} style={styles.tierPrice}>{tier.price}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.tierLabel}>{plan.name}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.tierPrice} testID={`plan-price-${plan.key}`}>{plan.price}</Text>
+          {!!plan.sub && <Text maxFontSizeMultiplier={1.4} style={styles.featureText}>{plan.sub}</Text>}
         </View>
         {active && (
           <View style={styles.activeBadge}>
@@ -101,28 +89,35 @@ function TierCard({ tier, active, onSubscribe, loading }: any) {
         )}
       </View>
 
-      <View style={styles.featureList}>
-        {(tier.features || []).map((f: string) => (
-          <View key={f} style={styles.featureRow}>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.featureCheck, { color: tier.color }]}>✓</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.featureText}>{f}</Text>
-          </View>
-        ))}
-      </View>
+      {plan.features.length > 0 && (
+        <View style={styles.featureList}>
+          {plan.features.map(f => (
+            <View key={f} style={styles.featureRow}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.featureCheck}>✓</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.featureText}>{f}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {!active ? (
         <TouchableOpacity
           accessibilityRole="button"
+          accessibilityLabel={`Subscribe to ${plan.name}`}
           activeOpacity={0.6}
-          style={[styles.subscribeBtn, { backgroundColor: tier.color }, loading && { opacity: 0.6 }]}
-          onPress={() => onSubscribe(tier.key)}
+          style={[styles.subscribeBtn, loading && { opacity: 0.6 }]}
+          onPress={() => onSubscribe(plan.key)}
           disabled={loading}
         >
           {loading
             ? <ActivityIndicator color={COLORS.bgCard} size="small" />
             : <>
-                <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>Start 30-Day Free Trial</Text>
-                <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnSub}>Then {tier.price} -- cancel anytime · auto-renews</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>
+                  {plan.trialDays ? `Start ${plan.trialDays}-Day Free Trial` : 'Subscribe'}
+                </Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnSub}>
+                  {plan.trialDays ? `Then ${plan.price} -- ` : ''}cancel anytime · auto-renews
+                </Text>
               </>
           }
         </TouchableOpacity>
@@ -138,260 +133,160 @@ function TierCard({ tier, active, onSubscribe, loading }: any) {
 function SubscriptionScreen({ navigation }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = makeStyles(colors);
   const mountedRef = useRef(true);
-  useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
-  const [subscription, setSubscription] = useState<any>(null);
+  const [providerType, setProviderType] = useState<ProviderType>('lawyer');
+  const [plans, setPlans]               = useState<ProviderPlan[]>([]);
+  const [activeTier, setActiveTier]     = useState<string | null>(null);
   const [loading, setLoading]           = useState(true);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const [error, setError] = useState('');
-  const onRefresh = () => {
-    setRefreshing(true);
-    api.get('/billing/subscription')
-      .then(r => { if (mountedRef.current) setSubscription(r.data?.subscription ?? null); })
-      .catch(() => showToast('Could not refresh. Check your connection.', 'error'))
-      .finally(() => { if (mountedRef.current) setRefreshing(false); });
-  };
+  const [refreshing, setRefreshing]     = useState(false);
+  const [loadError, setLoadError]       = useState('');
+  const [error, setError]               = useState('');
   const [subscribing, setSubscribing]   = useState<string | null>(null);
   const { requireAuth, AuthGateModal } = useAuthGate(navigation);
-  const [providerType, setProviderType] = useState<'lawyer' | 'bail_agent'>('lawyer');
 
-  useEffect(() => {
-    loadSubscription();
+  const load = useCallback(async (type: ProviderType) => {
+    setLoadError('');
+    try {
+      if (type === 'lawyer') {
+        const [tiers, sub] = await Promise.all([
+          api.get('/billing/tiers', { params: { audience: 'attorney' } }),
+          api.get('/billing/subscription').catch(() => null),
+        ]);
+        if (!mountedRef.current) return;
+        setPlans(attorneyPlansFrom(tiers.data));
+        const s = sub?.data?.subscription;
+        setActiveTier(s && ['active', 'trialing'].includes(s.status) ? s.tier : null);
+      } else {
+        const [tiers, sub] = await Promise.all([
+          api.get('/billing/bondsman/tiers'),
+          api.get('/billing/bondsman/subscription').catch(() => null),
+        ]);
+        if (!mountedRef.current) return;
+        setPlans(bondsmanPlansFrom(tiers.data));
+        setActiveTier(sub?.data?.active ? sub.data.tier : null);
+      }
+    } catch (e: any) {
+      if (mountedRef.current) { setPlans([]); setLoadError(apiErrorMessage(e, 'Could not load plans. Check your connection.')); }
+    }
   }, []);
 
-  const loadSubscription = async () => {
+  useEffect(() => {
     setLoading(true);
-    try {
-      const res = await api.get('/billing/subscription');
-      setSubscription(res.data?.subscription);
-    } catch {
-      // subscription not available -- screen still renders with upgrade CTAs
-      // not subscribed yet -- that's fine
-    } finally {
-      setLoading(false);
-    }
-  };
+    load(providerType).finally(() => { if (mountedRef.current) setLoading(false); });
+  }, [providerType, load]);
 
-  const handleSubscribe = (tier: string) => {
-    requireAuth(() => doSubscribe(tier));
+  const onRefresh = () => {
+    setRefreshing(true);
+    load(providerType).finally(() => { if (mountedRef.current) setRefreshing(false); });
   };
 
   const doSubscribe = async (tier: string) => {
-    // ── iOS App Store IAP gate (Apple §3.1.1) ─────────────────────────────────
-    // Apple requires digital subscriptions on iOS to use StoreKit (IAP).
-    // Until expo-iap is integrated, we block iOS purchases and show instructions.
+    // iOS App Store IAP gate (Apple §3.1.1): digital subscriptions on iOS go through the website.
     if (Platform.OS === 'ios') {
       confirm('Subscribe on Web?', 'iOS subscriptions are managed at justicegavel.app/subscribe.',
-      { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); })
-      setSubscribing(null);
+        { confirmLabel: 'Open Website' }).then(ok => { if (ok) Linking.openURL('https://justicegavel.app/subscribe').catch(() => {}); });
       return;
     }
-    // ── Android / web: proceed with Stripe backend flow ─────────────────────────
     setSubscribing(tier);
     setError('');
     try {
-      const res = await api.post('/billing/subscribe', { tier, provider_type: providerType });
-      setSubscription(res.data?.subscription);
-      showToast(res.data?.message || '30-day free trial activated. No credit card charged yet.', 'success');
-      loadSubscription();
+      const res = providerType === 'lawyer'
+        ? await api.post('/billing/subscribe', { tier, provider_type: 'lawyer' })
+        : await api.post('/billing/bondsman/subscribe', { tier });
+      showToast(res.data?.message || 'Subscription started.', 'success');
+      await load(providerType);
     } catch (e: any) {
-      const msg = apiErrorMessage(e, '');
-      if (isPaymentsUnavailable(e)) {
-        setError(PAYMENTS_COMING_SOON);
-      } else if (msg.includes('Already subscribed') || e?.response?.data?.error === 'already_subscribed') {
-        setError('You already have an active plan. Manage it in Settings.');
-      } else {
-        setError(msg || 'Payment failed. Check your card details and try again.');
-      }
+      if (isPaymentsUnavailable(e)) setError(PAYMENTS_COMING_SOON);
+      else if (e?.response?.status === 409) setError('You already have an active plan. Manage it in Settings.');
+      else setError(apiErrorMessage(e, 'Could not start the subscription. Please try again.'));
     } finally {
-      setSubscribing(null);
+      if (mountedRef.current) setSubscribing(null);
     }
   };
 
-  const handleCancel = () => {
-    confirm('Cancel Your Plan?', "You'll lose access to leads and alerts at the end of your billing period.",
-      { confirmLabel: 'Yes, cancel', destructive: true }).then(async ok => {
-        if (!ok) return;
-        try {
-          await api.post('/billing/cancel');
-          setSubscription(null);
-          showToast('Your plan has been cancelled. Access continues until period end.', 'info');
-        } catch (e: any) {
-          setError(apiErrorMessage(e, 'Could not cancel your plan. Please try again.'));
-        }
-      });
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.center}
-        testID="subscription-screen">
-        <ActivityIndicator size="large" color={colors.navy} />
-      </View>
-    );
-  }
-
-  const activeTier = subscription?.tier;
-  const isCanceled  = subscription?.status === 'canceled' || subscription?.cancel_at_period_end;
-  const periodEnd   = subscription?.current_period_end
-    ? new Date(subscription.current_period_end).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
-    : null;
-  const trialEnd = subscription?.trial_ends_at
-    ? new Date(subscription.trial_ends_at).toLocaleDateString()
-    : null;
+  const handleSubscribe = (tier: string) => { requireAuth(() => doSubscribe(tier)); };
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.bg }]}
-        contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      contentContainerStyle={styles.scroll}
+      testID="subscription-screen"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       {!!error && (
-        <View style={{margin:16,padding:14,backgroundColor:colors.errorBg,
-          borderRadius:10,borderWidth:1,borderColor:colors.danger}}>
-          <Text style={{color:colors.danger,fontWeight:'700',fontSize:14}}>
-            ⚠ {error}
-          </Text>
+        <View testID="subscription-error" style={{ margin: 16, padding: 14, backgroundColor: colors.errorBg,
+          borderRadius: 10, borderWidth: 1, borderColor: colors.danger }}>
+          <Text style={{ color: colors.danger, fontWeight: '700', fontSize: 14 }}>⚠ {error}</Text>
         </View>
       )}
-      {/* Header */}
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Attorney Plans</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.heading}>Provider Plans</Text>
         <Text maxFontSizeMultiplier={1.4} style={styles.subheading}>
-          Connect with clients the moment they need you most
+          Tools for attorneys and bail agents who work with Justice Gavel users
         </Text>
       </View>
 
-      {/* Grace period / canceled but still active notice */}
-      {isCanceled && periodEnd && (
-        <View style={[styles.activeBanner, { borderColor: COLORS.textSecond, backgroundColor: isDark ? (colors.warnDark || COLORS.warnDark || COLORS.textPrimary) : (colors.warnBg || COLORS.warnBg || COLORS.bgCard) }]}>
-          <Text maxFontSizeMultiplier={1.3} style={[styles.activeBannerSub, { color: COLORS.textSecond }]}>
-            ⚠️  Subscription canceled — access continues until {periodEnd}
-          </Text>
-        </View>
-      )}
-      {/* Active subscription banner */}
-      {subscription && (
-        <View style={styles.activeBanner}>
-          <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerTitle}>
-              ✓ {TIERS.find(t => t.key === activeTier)?.label || activeTier} -- {subscription.status}
-            </Text>
-            {trialEnd && subscription.status === 'trialing' && (
-              <Text maxFontSizeMultiplier={1.4} style={styles.activeBannerSub}>Free trial ends {trialEnd}</Text>
-            )}
-          </View>
-          <TouchableOpacity
-            accessibilityRole="button" onPress={handleCancel}
-             accessibilityLabel="Cancel">
-            <Text maxFontSizeMultiplier={1.4} style={styles.cancelLink}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Provider type toggle */}
       <View style={styles.toggleBlock}>
         <Text maxFontSizeMultiplier={1.4} style={styles.toggleTitle}>I am a:</Text>
         <View style={styles.toggleRow}>
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={[styles.toggleChip, providerType === 'lawyer' && styles.toggleChipActive]}
-            onPress={() => setProviderType('lawyer')}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.toggleChipText, providerType === 'lawyer' && styles.toggleChipTextActive]}>
-              ⚖️ Attorney
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={[styles.toggleChip, providerType === 'bail_agent' && styles.toggleChipActive]}
-            onPress={() => setProviderType('bail_agent')}
-          >
-            <Text maxFontSizeMultiplier={1.4} style={[styles.toggleChipText, providerType === 'bail_agent' && styles.toggleChipTextActive]}>
-              🔓 Bail Agent
-            </Text>
-          </TouchableOpacity>
+          {([['lawyer', '⚖️ Attorney'], ['bail_agent', '🔓 Bail Agent']] as const).map(([type, label]) => (
+            <TouchableOpacity key={type}
+              accessibilityRole="button"
+              accessibilityState={{ selected: providerType === type }}
+              testID={`provider-type-${type}`}
+              style={[styles.toggleChip, providerType === type && styles.toggleChipActive]}
+              onPress={() => { setError(''); setProviderType(type); }}
+            >
+              <Text maxFontSizeMultiplier={1.4} style={[styles.toggleChipText, providerType === type && styles.toggleChipTextActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
-      {/* Tier cards */}
-      {TIERS.map(tier => (
-        <TierCard
-          key={tier.key}
-          tier={tier}
-          active={activeTier === tier.key}
+      {loading ? (
+        <ActivityIndicator style={{ marginVertical: 32 }} size="large" color={colors.navy} />
+      ) : loadError ? (
+        <View style={{ alignItems: 'center', padding: 24 }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textSecond, textAlign: 'center', marginBottom: 8 }}>{loadError}</Text>
+          <TouchableOpacity accessibilityRole="button" onPress={onRefresh}>
+            <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary }}>Tap to retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : plans.map(plan => (
+        <TierCard key={plan.key} plan={plan} styles={styles}
+          active={activeTier === plan.key}
           onSubscribe={handleSubscribe}
-          loading={subscribing === tier.key}
-        />
+          loading={subscribing === plan.key} />
       ))}
 
-      {/* Intel add-on */}
-      <View style={styles.intelCard}>
-        <View style={styles.intelHeader}>
-          <Text maxFontSizeMultiplier={1.4} style={styles.intelIcon}>{INTEL_TIER.icon}</Text>
-          <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.intelLabel}>{INTEL_TIER.label}</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.intelPrice}>{INTEL_TIER.price} add-on</Text>
-          </View>
+      {providerType === 'bail_agent' && (
+        <View style={styles.bondsCTA}>
+          <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTATitle}>🔓 Leads</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTAText}>
+            Bondsmen accept only the leads they want, for a flat {BONDSMAN_LEAD_FEE_DISPLAY} per
+            lead -- the same fee whatever the bail amount.
+          </Text>
+          <TouchableOpacity
+            accessibilityRole="button"
+            style={styles.bondsCTABtn}
+            accessibilityLabel={'Open Lead Dashboard \u2192'} onPress={() => navigation.navigate('BondsmanDashboard')}
+          >
+            <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTABtnText}>Open Lead Dashboard →</Text>
+          </TouchableOpacity>
         </View>
-        <Text maxFontSizeMultiplier={1.4} style={styles.intelDesc} numberOfLines={2} ellipsizeMode="tail">{INTEL_TIER.description}</Text>
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={[styles.subscribeBtn, { backgroundColor: colors.navy }, subscribing === 'intel' && { opacity: 0.6 }]}
-          onPress={() => handleSubscribe('intel')}
-          disabled={subscribing === 'intel'}
-        >
-          {subscribing === 'intel'
-            ? <ActivityIndicator color={colors.bgCard} size="small" />
-            : <Text maxFontSizeMultiplier={1.4} style={styles.subscribeBtnText}>Add Intel Reports -- $49/mo</Text>
-          }
-        </TouchableOpacity>
-      </View>
-
-      {/* Bail bondsman separate CTA */}
-      <View style={styles.bondsCTA}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTATitle}>🔓 Bail Bondsman?</Text>
-        <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTAText}>
-          Bondsmen accept only the leads they want, for a flat {BONDSMAN_LEAD_FEE_DISPLAY} per
-          lead -- the same fee whatever the bail amount.
-        </Text>
-        <TouchableOpacity
-          accessibilityRole="button"
-          style={styles.bondsCTABtn}
-          accessibilityLabel={"Open Lead Dashboard \u2192"} onPress={() => navigation.navigate('BondsmanDashboard')}
-        >
-          <Text maxFontSizeMultiplier={1.4} style={styles.bondsCTABtnText}>Open Lead Dashboard →</Text>
-        </TouchableOpacity>
-
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize:10, color:colors.textMuted,
-          textAlign:'center', fontStyle:'italic', marginTop:8, paddingHorizontal:16 }}>
-          Subscriptions auto-renew unless cancelled at least 24 hours before renewal date.
-          Manage or cancel in Settings at any time.
-        </Text>
-        </View>
+      )}
 
       <AuthGateModal />
       <Text maxFontSizeMultiplier={1.4} style={styles.footer}>
-        All subscriptions include a 30-day free trial. Cancel anytime.
-        Flat platform fee only -- compliant with attorney advertising rules in all 50 states.
+        Subscriptions auto-renew until cancelled; cancel any time in Settings.
+        A paid plan does not change where you appear in directory search results.
       </Text>
       <View style={{ height: 40 }} />
-
-      {/* ── Free plan exit ────────────────────────────────────────────── */}
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityLabel="Continue with free plan"
-        onPress={() => navigation.goBack()}
-        style={{ paddingVertical: 16, alignItems: 'center', marginBottom: 4 }}
-      >
-        <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textSecond, fontSize: 13, textDecorationLine: 'underline' }}>
-          Continue with free plan · 15 AI messages · 5 cases · no credit card
-        </Text>
-      </TouchableOpacity>
-      <View style={{ height: 32 }} />
-      </ScrollView>
+    </ScrollView>
   );
 }
 
@@ -424,15 +319,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   tierBadgeText: { color: COLORS.bgCard, fontSize: 11, fontFamily: 'Inter_800ExtraBold', fontWeight: '800' },
   tierHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   tierIcon: { fontSize: 28, marginRight: 12 },
-  tierLabel: { fontSize: 16, fontWeight: '800' },
+  tierLabel: { fontSize: 16, fontWeight: '800', color: colors.textBrand },
   tierPrice: { fontSize: 22, fontFamily: 'Inter_900Black', fontWeight: '900', color: colors.textBrand, marginTop: 1 },
   activeBadge: { backgroundColor: colors.legalBg, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 20 },
   activeBadgeText: { color: colors.legal, fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
   featureList: { marginBottom: 16 },
   featureRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
-  featureCheck: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginRight: 8, marginTop: 1 },
+  featureCheck: { fontSize: 12, lineHeight: 20, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', marginRight: 8, marginTop: 1, color: colors.legal },
   featureText: { fontSize: 12, color: colors.info, flex: 1, lineHeight: 18 },
-  subscribeBtn: { borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+  subscribeBtn: { borderRadius: 12, paddingVertical: 16, alignItems: 'center', backgroundColor: COLORS.navy },
   subscribeBtnText: { color: COLORS.bgCard, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 15,
     lineHeight: 22, },
   subscribeBtnSub: { color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 },
@@ -457,6 +352,4 @@ const makeStyles = (colors: any) => StyleSheet.create({
   footer: { fontSize: 11, color: colors.info, textAlign: 'center', paddingHorizontal: 24, lineHeight: 16, marginTop: 16 },
 });
 
-// Module-level styles for helper components (uses static COLORS, not dynamic theme)
-const styles = makeStyles(COLORS);
 export default React.memo(SubscriptionScreen);

@@ -10,7 +10,7 @@ import type { ScreenProps } from '../types/navigation';
  * Accessible from: HomeScreen tile "My Plan" → upsell, or direct nav from Pro plan
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { api, apiErrorMessage } from '../services/api';
+import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 
 const MAX_WATCHES = 5;
@@ -60,7 +60,7 @@ function ArrestMonitorScreen({ navigation }: ScreenProps): React.JSX.Element {
 
       // Load existing watches
       const res = await api.get('/arrests/monitors').catch(() => ({ data: [] }));
-      setWatches(res.data || []);
+      setWatches(unwrapList(res.data, 'monitors'));
     } catch (e: any) { __DEV__ && console.warn(e?.message); }
     setLoading(false);
   }, []);

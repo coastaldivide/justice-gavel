@@ -453,11 +453,29 @@ router.get('/waivers/:firmId', authRequired, requireFirmRole('partner'), async (
 // ══════════════════════════════════════════════════════════════════════════════
 
 /**
+ * Ethics walls are set on a firm's own matters only (M8). The matter must exist
+ * in `matters` and belong to the caller's firm; anything else is 404 so other
+ * firms' matter ids are neither readable nor writable.
+ */
+async function requireOwnFirmMatter(db, req, res) {
+  const ctx      = req.firmCtx || await loadFirmContext(req);
+  const matterId = safeInt(req.params.matterId);
+  if (!matterId) { err400(res, 'Invalid matter id.'); return null; }
+  const matter = await db.get('SELECT id, firm_id FROM matters WHERE id=?', [matterId]).catch(() => null);
+  if (!matter || matter.firm_id == null || !ctx?.firm_id || Number(matter.firm_id) !== Number(ctx.firm_id)) {
+    err404(res, 'Matter not found.');
+    return null;
+  }
+  return matter;
+}
+
+/**
  * GET /api/conflicts/ethics-wall/:matterId — get wall status for all team members
  */
 router.get('/ethics-wall/:matterId', authRequired, requireFirmRole('partner'), async (req, res) => {
   try {
     const db       = await getDb();
+    if (!(await requireOwnFirmMatter(db, req, res))) return;
     const matterId = safeInt(req.params.matterId);
 
     // Check both matter_team_members (cases) and matter_teams (matters)
@@ -505,6 +523,7 @@ router.get('/ethics-wall/:matterId', authRequired, requireFirmRole('partner'), a
 router.post('/ethics-wall/:matterId', authRequired, requireFirmRole('partner'), wallLimiter, async (req, res) => {
   try {
     const db       = await getDb();
+    if (!(await requireOwnFirmMatter(db, req, res))) return;
     const matterId = safeInt(req.params.matterId);
     const ctx      = req.firmCtx;
     const { user_id, reason } = req.body || {};
@@ -590,6 +609,7 @@ router.post('/ethics-wall/:matterId', authRequired, requireFirmRole('partner'), 
 router.delete('/ethics-wall/:matterId/:userId', authRequired, requireFirmRole('firm_admin'), wallLimiter, async (req, res) => {
   try {
     const db       = await getDb();
+    if (!(await requireOwnFirmMatter(db, req, res))) return;
     const matterId = safeInt(req.params.matterId);
     const targetId = safeInt(req.params.userId);
     const ctx      = req.firmCtx;

@@ -1,4 +1,7 @@
 import { err400, truncateStr } from '../utils/routeHelpers.js';
+import { sanitizeStr } from '../utils/sanitize.js';
+import { isValidTimeZone } from '../utils/timezone.js';
+import { rememberTimeZone, rescheduleUserCourtReminders } from '../services/courtReminders.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
@@ -113,8 +116,8 @@ router.post('/retention/post-purchase', authRequired, async (req, res) => {
     // Calculate delivery time
     const deliverAt = new Date(Date.now() + msg.delay_hours * 3600 * 1000).toISOString();
     await db.run(
-      `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at)
-       SELECT ?, push_token, ?, ?, ?, ? FROM users WHERE id=? AND push_token IS NOT NULL`,
+      `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at, notification_type)
+       SELECT ?, push_token, ?, ?, ?, ?, 'engagement' FROM users WHERE id=? AND push_token IS NOT NULL`,
       [req.user.id, msg.title, msg.body, msg.data, deliverAt, req.user.id]
     ).catch(() => {}); // graceful — table may not exist yet in demo
     return res.json({ scheduled: true, deliver_at: deliverAt, message: msg });
@@ -123,53 +126,118 @@ router.post('/retention/post-purchase', authRequired, async (req, res) => {
   }
 });
 
-// ── Register push token ────────────────────────────────────────────────────────
-// POST /api/push/token — saves Expo push token for this user
-// ── List upcoming court reminders for user ─────────────────────────────────────
-// GET /api/push/reminders — returns pending court date reminders
+// ── Reminders ──────────────────────────────────────────────────────────────────
+// POST /api/push/reminders — schedule a reminder the user asked for (deadline,
+//   follow-up, …). Body: { title, body?, deliver_at (ISO 8601 instant), case_id?,
+//   notification_type? } — `scheduled_for` is accepted as an alias of deliver_at
+//   for app builds that sent that name. Delivered by services/reminderDispatcher.js
+//   (push to the user's devices, email fallback). Court-date reminders are planned
+//   automatically per case — see POST /api/cases/:id/reminders.
+// GET  /api/push/reminders — the user's pending reminders (court + own), soonest first.
+const MAX_REMINDER_AHEAD_MS = 2 * 366 * 86_400_000;
 
-// POST /api/push/reminders — schedule a reminder notification
-router.post('/reminders', authRequired, async (req, res) => {
+router.post('/reminders', authRequired, pushLimiter, async (req, res) => {
   try {
     const db = await getDb();
-    const { title, body, deliver_at, notification_type, case_id, data } = req.body || {};
-    if (!title || !deliver_at) {
+    const b = req.body || {};
+    const title = typeof b.title === 'string' ? sanitizeStr(b.title).slice(0, 120) : '';
+    const rawWhen = b.deliver_at ?? b.scheduled_for;
+    if (!title || !rawWhen) {
       return res.status(400).json({ error: 'title and deliver_at are required' });
     }
-    // Get user push token
-    const user = await db.get('SELECT push_token FROM users WHERE id = ?', [req.user.id]);
-    const push_token = user?.push_token || null;
-    
+    const when = new Date(String(rawWhen));
+    if (Number.isNaN(when.getTime()) || !/\d{4}-\d{2}-\d{2}T/.test(String(rawWhen))) {
+      return err400(res, 'deliver_at must be an ISO 8601 date-time (e.g. 2026-10-14T15:00:00Z)');
+    }
+    const now = Date.now();
+    if (when.getTime() <= now - 60_000) return err400(res, 'deliver_at is in the past');
+    if (when.getTime() > now + MAX_REMINDER_AHEAD_MS) return err400(res, 'deliver_at is too far in the future');
+
+    let caseId = null;
+    if (b.case_id !== undefined && b.case_id !== null && b.case_id !== '') {
+      caseId = Number(b.case_id);
+      const owned = Number.isSafeInteger(caseId)
+        ? await db.get('SELECT id FROM cases WHERE id = ? AND user_id = ? AND deleted_at IS NULL', [caseId, req.user.id])
+        : null;
+      if (!owned) return res.status(404).json({ error: 'Case not found.' });
+    }
+    // 'court_reminder' rows are owned by the per-case planner; user-set ones are 'reminder'.
+    const type = 'reminder';
+    const text = typeof b.body === 'string' ? sanitizeStr(b.body).slice(0, 500) : '';
+    const data = { type, screen: typeof b.data?.screen === 'string' ? b.data.screen.slice(0, 40) : (caseId ? 'Cases' : null), case_id: caseId };
+
+    await rememberTimeZone(db, req.user.id, req.get('X-Timezone')).catch(() => false);
     const r = await db.run(
-      `INSERT INTO scheduled_pushes 
-       (user_id, push_token, title, body, deliver_at, notification_type, case_id, data, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-      [req.user.id, push_token, title, body || '', deliver_at,
-       notification_type || 'reminder', case_id || null,
-       data ? JSON.stringify(data) : null]
+      `INSERT INTO scheduled_pushes
+         (user_id, push_token, title, body, deliver_at, notification_type, case_id, data, status)
+       VALUES (?, NULL, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [req.user.id, title, text, when.toISOString(), type, caseId, JSON.stringify(data)]
     );
-    res.json({ id: r.lastID, scheduled: true, deliver_at });
-  } catch(e) { 
+    res.status(201).json({ id: r.lastID, scheduled: true, deliver_at: when.toISOString(), case_id: caseId });
+  } catch(e) {
     logger.error('[push/reminders]', e.message);
-    res.status(500).json({ error: 'Could not schedule reminder' }); 
+    res.status(500).json({ error: 'Could not schedule reminder' });
   }
 });
 
 router.get('/reminders', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    const reminders = await db.all(
-      `SELECT id, title, body, deliver_at, delivered
-       FROM scheduled_pushes
-       WHERE user_id=? AND delivered=0
-         AND data LIKE '%case_id%'
-         AND deliver_at > NOW()
-       ORDER BY deliver_at ASC
-       LIMIT 20`,
+    const rows = await db.all(
+      `SELECT id, title, body, deliver_at, notification_type, case_id, data
+         FROM scheduled_pushes
+        WHERE user_id = ? AND status = 'pending'
+          AND notification_type IN ('court_reminder','reminder')
+          AND deliver_at > NOW()
+        ORDER BY deliver_at ASC
+        LIMIT 50`,
       [req.user.id]
-    ).catch(() => []);
-    return res.json(reminders);
+    );
+    return res.json(rows.map(r => {
+      let data = {};
+      try { data = JSON.parse(r.data || '{}'); } catch { /* keep {} */ }
+      return {
+        id: Number(r.id), title: r.title, body: r.body,
+        deliver_at: r.deliver_at instanceof Date ? r.deliver_at.toISOString() : r.deliver_at,
+        type: r.notification_type, case_id: r.case_id == null ? null : Number(r.case_id),
+        court_date: data.court_date || null,
+      };
+    }));
   } catch (e) { logger.error('[push/reminders]', e.message); res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// DELETE /api/push/reminders/:id — cancel one of my pending reminders.
+router.delete('/reminders/:id', authRequired, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id)) return err400(res, 'invalid id');
+    const db = await getDb();
+    const r = await db.run(
+      `UPDATE scheduled_pushes SET status = 'cancelled', error = 'user_cancelled'
+        WHERE id = ? AND user_id = ? AND status = 'pending'`,
+      [id, req.user.id]
+    );
+    if (!r.changes) return res.status(404).json({ error: 'Reminder not found.' });
+    res.json({ ok: true });
+  } catch (e) { logger.error('[push/reminders/delete]', e.message); res.status(500).json({ error: 'Server error. Please try again.' }); }
+});
+
+// ── Time zone ─────────────────────────────────────────────────────────────────
+// POST /api/push/timezone { timezone: 'America/Chicago' } — the app reports the
+// device zone (also sent as the X-Timezone header). Reminder times are wall-clock
+// times in this zone; changing it re-plans pending court reminders.
+router.post('/timezone', authRequired, async (req, res) => {
+  try {
+    const tz = req.body?.timezone;
+    if (!isValidTimeZone(tz)) return err400(res, 'timezone must be an IANA zone name, e.g. America/Chicago');
+    const db = await getDb();
+    const changed = await rememberTimeZone(db, req.user.id, tz);
+    const replanned = changed ? await rescheduleUserCourtReminders(db, req.user.id) : 0;
+    res.json({ ok: true, timezone: tz, changed, replanned_cases: replanned });
+  } catch (e) {
+    logger.error('[push/timezone]', e.message);
+    res.status(500).json({ error: 'Could not save time zone.' });
+  }
 });
 
 // ── Notification preferences ──────────────────────────────────────────────────
@@ -180,7 +248,7 @@ router.get('/preferences', authRequired, async (req, res) => {
     const db = await getDb();
     const user = await db.get(
       `SELECT notif_court_reminders, notif_legal_tips, notif_arrest_alerts,
-              notif_marketing, notif_checkin_reminders
+              notif_marketing, notif_checkin_reminders, timezone
        FROM users WHERE id=?`,
       [req.user.id]
     );
@@ -188,8 +256,9 @@ router.get('/preferences', authRequired, async (req, res) => {
       notif_court_reminders:  1,
       notif_legal_tips:       1,
       notif_arrest_alerts:    1,
-      notif_marketing:        1,
+      notif_marketing:        0,
       notif_checkin_reminders:1,
+      timezone:               null,
     });
   } catch {
     return res.status(500).json({ error: 'Could not load preferences' });
@@ -199,27 +268,25 @@ router.get('/preferences', authRequired, async (req, res) => {
 router.post('/preferences', authRequired, async (req, res) => {
   try {
     const db = await getDb();
-    const {
-      notif_court_reminders  = 1,
-      notif_legal_tips       = 1,
-      notif_arrest_alerts    = 1,
-      notif_marketing        = 1,
-      notif_checkin_reminders= 1,
-    } = req.body;
-    await db.run(
-      `UPDATE users SET
-         notif_court_reminders=?,   notif_legal_tips=?,
-         notif_arrest_alerts=?,     notif_marketing=?,
-         notif_checkin_reminders=?
-       WHERE id=?`,
-      [
-        notif_court_reminders ? 1:0,  notif_legal_tips ? 1:0,
-        notif_arrest_alerts ? 1:0,    notif_marketing ? 1:0,
-        notif_checkin_reminders ? 1:0, req.user.id,
-      ]
-    );
+    const b = req.body || {};
+    // Only the keys the client sends are changed — a missing key never flips
+    // a preference (in particular it never opts anyone into marketing).
+    const KEYS = ['notif_court_reminders', 'notif_legal_tips', 'notif_arrest_alerts', 'notif_marketing', 'notif_checkin_reminders'];
+    const sets = []; const vals = [];
+    for (const k of KEYS) {
+      if (b[k] === undefined) continue;
+      sets.push(`${k}=?`); vals.push(b[k] ? 1 : 0);
+    }
+    if (b.timezone !== undefined && b.timezone !== null) {
+      if (!isValidTimeZone(b.timezone)) return err400(res, 'timezone must be an IANA zone name, e.g. America/Chicago');
+    }
+    if (sets.length) await db.run(`UPDATE users SET ${sets.join(', ')} WHERE id=?`, [...vals, req.user.id]);
+    if (b.timezone && await rememberTimeZone(db, req.user.id, b.timezone)) {
+      await rescheduleUserCourtReminders(db, req.user.id);
+    }
     return res.json({ ok: true });
-  } catch {
+  } catch (e) {
+    logger.error('[push/preferences]', e.message);
     return res.status(500).json({ error: 'Could not save preferences' });
   }
 });
@@ -239,8 +306,8 @@ router.post('/d7-reengage', authRequired, async (req, res) => {
 
     const deliverAt = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
     await db.run(
-      `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at)
-       VALUES (?,?,?,?,?,?)`,
+      `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at, notification_type)
+       VALUES (?,?,?,?,?,?,'engagement')`,
       [user.id, user.push_token,
        "Your legal rights don't expire.",
        'Check if you qualify for free expungement — it could clear your record permanently.',

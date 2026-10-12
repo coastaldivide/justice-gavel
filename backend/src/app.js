@@ -85,6 +85,7 @@ import analyticsRouter     from './routes/analytics.js';
 import searchRouter                 from './routes/search.js';
 import { randomUUID } from 'crypto';
 import forumRouter from './routes/forum.js';
+import caseCounselRouter from './routes/caseCounsel.js';
 import { stripeConfigured } from './config.js';
 import { aiConfigured } from './utils/ai.js';
 import { getDb } from './db/index.js';
@@ -463,6 +464,7 @@ app.use('/api/jobs',           jobsRouter);           // async AI job polling   
 
 // ── Late-registered routes ────────────────────────────────────────────────────
 app.use('/api/cases', caseLifecycleRouter);
+app.use('/api/cases', caseCounselRouter);   // client-side counsel invites (C1)
 app.use('/api/pretrial', pretrialRouter);
 app.use('/api/bondsman', bondsmanCRMRouter);
 app.use('/api/legal-aid', legalAidRouter);

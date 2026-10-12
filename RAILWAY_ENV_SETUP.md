@@ -81,6 +81,8 @@ GOOGLE_PLACES_KEY=<AIza...>              provider-search fallback + scrapers
 YELP_API_KEY=<...>                       scraper business-data fallback
 SUPABASE_URL + SUPABASE_SERVICE_KEY      Supabase Storage (attachments) + DOI import script
 EXPO_ACCESS_TOKEN=<...>                  Expo push notifications
+EXPO_PUSH_API_URL=<url>                  Expo push endpoint override (default https://exp.host/--/api/v2;
+                                          point at a mock for staging/tests)
 VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY     web push (npx web-push generate-vapid-keys)
 VAPID_EMAIL=admin@justicegavel.app       web push contact
 ```
@@ -123,6 +125,11 @@ ATTACHMENTS_STORAGE=off|local|supabase   force a backend; "off" → attachment u
 ```
 LIVE_REFRESH=true                        enable the nightly scheduler (scrapers, alerts,
                                           payment-link expiry, token cleanup). Off by default.
+                                          Does NOT affect reminder delivery (below).
+REMINDERS_ENABLED=true                   court-date / user reminder delivery: every API process
+                                          drains due scheduled_pushes each minute (push → email
+                                          fallback) whatever LIVE_REFRESH says. Set false to turn
+                                          it off in a process. Default true.
 REFRESH_CRON=0 3 * * *                   nightly refresh schedule   (REFRESH_TZ=America/Chicago)
 HEALTH_SCAN_CRON=0 2 * * *               nightly health-scan schedule (SCAN_QUIET=true to hush)
 ALERT_EMAIL / ONCALL_EMAIL / ONCALL_EMAIL_2   SEV-1/SEV-2 alert recipients

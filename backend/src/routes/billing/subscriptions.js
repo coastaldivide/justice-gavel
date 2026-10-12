@@ -93,6 +93,30 @@ router.post('/subscribe', billingLimiter, authRequired, async (req, res) => {
   }
 });
 
+// ── Public price list ─────────────────────────────────────────────────────────
+// GET /api/billing/tiers[?audience=consumer|attorney] — the plans and the exact
+// prices the backend will charge (TIERS in _shared.js is the single source).
+// Screens render prices from here instead of hard-coding them. Legacy aliases
+// that exist only for old subscriptions/webhooks are not listed.
+router.get('/tiers', (req, res) => {
+  const audience = ['consumer', 'attorney'].includes(req.query.audience) ? req.query.audience : null;
+  const tiers = Object.entries(TIERS)
+    .filter(([, t]) => !t.legacy && (!audience || t.audience === audience))
+    .map(([key, t]) => ({
+      key,
+      name:            t.name,
+      audience:        t.audience,
+      billing:         t.billing,
+      display_price:   t.display_price,
+      monthly_cents:   t.monthly_cents,
+      annual_cents:    t.annual_cents ?? null,
+      matches_monthly: t.matches_monthly ?? null,
+      // consumer monthly plans: 7 days (/consumer/subscribe); annual: 7; attorney monthly: 30 (/subscribe)
+      trial_days:      t.billing === 'annual' || t.audience === 'consumer' ? 7 : 30,
+    }));
+  res.json({ tiers, payments_live: LIVE });
+});
+
 // ── Get subscription status ───────────────────────────────────────────────────
 router.get('/subscription', authRequired, async (req, res) => {
   try {

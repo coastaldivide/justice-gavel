@@ -5,7 +5,7 @@
  * without needing a live database.
  */
 
-import { sanitizeStr, truncateStr, validateEmail, normalizePhone } from '../utils/sanitize.js';
+import { sanitizeStr, escapeHtml, decodeLegacyEntities, truncateStr, validateEmail, normalizePhone } from '../utils/sanitize.js';
 
 const XSS_VECTORS = [
   '<script>alert("xss")</script>',
@@ -61,21 +61,19 @@ const INVALID_PHONES = [
 ];
 
 // ── sanitizeStr ───────────────────────────────────────────────────────────────
-describe('sanitizeStr', () => {
-  test.each(XSS_VECTORS)('neutralises XSS vector: %s', (input) => {
+describe('sanitizeStr (storage normalisation — never HTML-encodes)', () => {
+  test.each(XSS_VECTORS)('stores the text as typed, minus control characters: %s', (input) => {
     if (typeof input !== 'string') return;
     const result = sanitizeStr(input);
-    // After sanitization, dangerous patterns should be HTML-encoded (not raw executable)
-    // <script> becomes &lt;script&gt; — safe to render
-    expect(result).not.toMatch(/^<script/i);   // Raw unencoded script tag
-    // onerror= is safe when inside &lt;...&gt; (HTML-encoded, not executable)
-    // Check it's not raw: "<img onerror=" but "&lt;img onerror=" is fine
-    const hasRawEventHandler = /<[a-z][^>]*\s+on\w+=/i.test(result);
-    expect(hasRawEventHandler).toBe(false);
-    // javascript: protocol should not appear in executable contexts
-    const hasRawJsProto = /href=["']javascript:|src=["']javascript:/i.test(result);
-    expect(hasRawJsProto).toBe(false);
     expect(result).not.toContain('\x00');
+    expect(result).not.toContain('\u202E');
+    // No HTML entities are introduced — React Native renders text literally.
+    expect(result).not.toMatch(/&(lt|gt|quot|#x27|#x60|amp);/);
+    expect(result).toBe(input.trim().replaceAll('\0', '').replace(/\u202E/g, ''));
+  });
+
+  test('keeps apostrophes, quotes and angle brackets intact (audit11 M1)', () => {
+    expect(sanitizeStr('I don\'t know what "bail" means <3')).toBe('I don\'t know what "bail" means <3');
   });
 
   test('returns empty string for null/undefined', () => {
@@ -90,6 +88,40 @@ describe('sanitizeStr', () => {
 
   test('trims leading/trailing whitespace', () => {
     expect(sanitizeStr('  hello  ')).toBe('hello');
+  });
+});
+
+describe('escapeHtml (output escaping for HTML sinks)', () => {
+  test.each(XSS_VECTORS)('neutralises XSS vector: %s', (input) => {
+    const result = escapeHtml(input);
+    expect(result).not.toMatch(/<[a-z!/]/i);          // no raw tag can open
+    expect(result).not.toMatch(/["'`]/);               // cannot break out of an attribute
+  });
+
+  test('escapes each special character exactly once', () => {
+    expect(escapeHtml(`<a href="x">'&\``)).toBe('&lt;a href=&quot;x&quot;&gt;&#39;&amp;&#96;');
+    expect(escapeHtml(null)).toBe('');
+    expect(escapeHtml(42)).toBe('42');
+  });
+});
+
+describe('decodeLegacyEntities (one-off repair of previously encoded text)', () => {
+  test('restores single- and double-encoded text', () => {
+    expect(decodeLegacyEntities('I don&#x27;t know what &quot;bail&quot; means &lt;3'))
+      .toBe('I don\'t know what "bail" means <3');
+    expect(decodeLegacyEntities('&amp;quot;hi&amp;quot; &amp;amp;lt;')).toBe('"hi" <');
+  });
+
+  test('leaves a user-typed &amp; alone unless asked (feedback encoded &)', () => {
+    expect(decodeLegacyEntities('AT&amp;T')).toBe('AT&amp;T');
+    expect(decodeLegacyEntities('AT&amp;T', { decodeAmp: true })).toBe('AT&T');
+  });
+
+  test('is idempotent and ignores non-strings', () => {
+    const once = decodeLegacyEntities('&quot;x&quot; &#x2F; &#x60;');
+    expect(decodeLegacyEntities(once)).toBe(once);
+    expect(decodeLegacyEntities(null)).toBe(null);
+    expect(decodeLegacyEntities(7)).toBe(7);
   });
 });
 
