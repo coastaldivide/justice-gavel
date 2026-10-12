@@ -52,7 +52,7 @@ to review:
 Cost: 1-hour consultation. Risk without it: personal criminal exposure.
 
 ### A2 — Import DOI producer files for bondsmen
-1,265 seeded bail agents, 0 with a license number. The TN, TX, and FL
+1,262 seeded bail agents, 0 with a license number. The TN, TX, and FL
 Department of Insurance producer files are **free and public**.
 - TN: tn.gov/commerce/insurance
 - TX: tdi.texas.gov/agent/agent-license-lookup.html

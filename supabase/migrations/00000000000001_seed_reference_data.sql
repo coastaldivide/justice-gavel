@@ -670,12 +670,7 @@ INSERT INTO "arrest_records" (id, name, booking_date, charges, bail_amount, cour
   (600,'Robert Thomas','2026-07-01','Shoplifting — Misdemeanor',1000.0,'2026-08-02',NULL,0,'TN-2026-CR-60940','Davidson County Criminal Justice Center','Davidson','TN','seed_v1',0,'2026-07-11 23:48:20',NULL,NULL)
 ON CONFLICT DO NOTHING;
 
--- bail_agents: 3 rows
-INSERT INTO "bail_agents" (id, name, company, phone, address, city, state, lat, lng, rate_pct, rating, verified, available_now, payment_plan, distance_km, created_at) VALUES
-  (1,'Fast Freedom Bail','Fast Freedom Bail Bonds','615-555-1001','101 Jefferson St','Nashville','TN',36.168,-86.7859,10.0,4.7,1,1,1,NULL,'2026-05-25 02:05:02'),
-  (2,'Nashville Bail Co','Nashville Bail Company','615-555-1002','202 Rosa Parks Blvd','Nashville','TN',36.168,-86.7859,8.0,4.5,1,1,0,NULL,'2026-05-25 02:05:02'),
-  (3,'ATL Bail Bonds','Atlanta Bail Bonds Inc','404-555-2001','200 Marietta St','Atlanta','GA',33.7534,-84.3893,10.0,4.3,1,1,1,NULL,'2026-05-25 02:05:02')
-ON CONFLICT DO NOTHING;
+-- bail_agents: 3 placeholder rows (555 numbers, no source) removed 2026-10-12 — see migration 018
 
 -- bail_schedules: 504 rows
 INSERT INTO "bail_schedules" (id, state, charge, charge_type, severity, bail_min, bail_max, bail_note, source, created_at, updated_at, verified_by, source_url) VALUES
