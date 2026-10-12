@@ -51,7 +51,7 @@ The page content changed. That may mean the law changed.
 ### If a source returns 404 or error
 1. Search for the new official URL
 2. Update the URL in both the database and fact_check_monitor.js SOURCES
-3. Document what changed in fact_check_config.json
+3. Document what changed in `backend/fact_check_config.json`
 
 ## Update commands
 
@@ -75,7 +75,8 @@ Expungement law changes are tracked at:
 - **CCRC**: https://ccresourcecenter.org/state-restoration-profiles/
 - **Clean Slate Initiative**: https://www.cleanslateinitiative.org/states
 
-When the CCRC page shows a new state, update `expungement.js STATE_RULES`:
+When the CCRC page shows a new state, update `STATE_RULES` in
+`backend/src/routes/expungement/rules.js`:
 1. Find the state block
 2. Update `waitYears` and `note` fields
 3. Update the comment at the top: `// Last verified: [date]`

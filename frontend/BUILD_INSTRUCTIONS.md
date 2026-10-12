@@ -3,7 +3,7 @@
 Run these commands on your local machine (not in CI) after cloning the repo.
 
 ## Prerequisites
-- Node.js 18+
+- Node.js 22 (≥ 20.6 works; CI uses 22)
 - npm install -g eas-cli
 - Apple Developer Program account ($99/year) — enrolled
 - Google Play Console account ($25 one-time) — enrolled

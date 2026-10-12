@@ -97,7 +97,7 @@ describe('every fee quote uses it', () => {
   });
 
   it('docs quote the flat fee, not a bail-scaled range', () => {
-    for (const doc of ['README.md', 'BONDSMAN_OUTREACH.md']) {
+    for (const doc of ['README.md', 'docs/archive/BONDSMAN_OUTREACH.md' /* archived in step 10 */]) {
       const text = read(doc);
       expect(text).not.toMatch(/\$15\s*[–-]\s*\$(1,000|400|250)/);
       expect(text).not.toMatch(/per[- ]lead[^\n]*by bail amount/i);

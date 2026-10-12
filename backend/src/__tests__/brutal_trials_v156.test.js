@@ -52,9 +52,12 @@ describe('I1. config.js — ALL_ENV_VARS Complete (83 vars)', () => {
     expect(src).toContain('REFRESH_CRON');
     expect(src).toContain('HEALTH_SCAN_CRON');
     expect(src).toContain('REDIS_URL');
-    expect(src).toContain('UPLOAD_DIR');
+    // Step 10: UPLOAD_DIR and BOT_WEBHOOK_BASE_URL were never read by any code and
+    // were dropped from ALL_ENV_VARS (env_docs_consistency.test.js enforces this).
+    expect(src).not.toContain('UPLOAD_DIR');
     expect(src).toContain('EXPO_ACCESS_TOKEN');
-    expect(src).toContain('BOT_WEBHOOK_BASE_URL');
+    expect(src).not.toContain('BOT_WEBHOOK_BASE_URL');
+    expect(src).toContain('ARREST_FEED_URLS');
   });
   test('I1-05: total documented env vars ≥ 80', async () => {
     const fs=await import('fs');

@@ -26,7 +26,8 @@ const upload = multer({
 });
 import { hasDiscoveryPro, analyzeDocument } from './_helpers.js';
 
-const STRIPE_SECRET  = process.env.STRIPE_SECRET;
+// Same key resolution as payments/stripe.js (STRIPE_SECRET_KEY, legacy alias STRIPE_SECRET).
+const STRIPE_SECRET  = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET;
 
 const aiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

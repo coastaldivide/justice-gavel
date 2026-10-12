@@ -19,7 +19,7 @@ frontend/   React Native app — iOS, Android, Web (PWA + Electron wrapper)
             Expo SDK 57 · React Native 0.86 · React 19 · TypeScript 6 (strict)
             React Navigation 7 · FlashList 2 · i18n: EN/ES/PT/VI
 
-backend/    Node 22 · Express 5 (ESM) · JWT auth (DB-checked roles)
+backend/    Node 22 · Express 5 (ESM) · JWT access + rotating refresh tokens
             AES-256-GCM encryption for messages/case notes at rest
             AI: Anthropic Claude (CLAUDE_MODEL, default claude-sonnet-4-6)
             Email: Resend (emails are logged, not sent, until RESEND_API_KEY is set)
@@ -31,8 +31,9 @@ supabase/migrations/   PostgreSQL schema — 13 plain-SQL files (00…12), appli
 ```
 
 **Payments are disabled until Stripe keys are set.** Without
-`STRIPE_SECRET_KEY`, every billing endpoint returns `503 payments_unavailable`
-and the app shows "Payments are not available yet". Setting the keys
+`STRIPE_SECRET_KEY`, every charging/subscribing endpoint returns
+`503 payments_unavailable` and the app shows "Payments aren't available yet"
+(free features keep working). Setting the keys
 (see [RAILWAY_ENV_SETUP.md](./RAILWAY_ENV_SETUP.md)) re-enables Stripe
 automatically — no code change.
 
@@ -51,13 +52,15 @@ implicate ABA Model Rules 5.4/7.2). Single sources of truth:
 | ICE detention | $75 |
 
 Consumer subscriptions: Legal Radar $19.99/mo · Advisor $24.99/mo ($199/yr) ·
-Legal Pro $34.99/mo ($299/yr) · Esquire $49/mo ($410/yr) · Bondsman $49/mo +
-the flat $100 lead fee. Lawyer search results are merit-ordered — no paid
-placement, no referral program.
+Legal Pro $34.99/mo ($299/yr) · Esquire $49/mo ($410/yr). Bondsman plans
+$49 / $149 / $349 per month, plus the flat $100 per accepted lead. Lawyer
+search results are merit-ordered — no paid placement, no referral program.
 
 ## Quick start
 
-Prereqs: Node ≥ 20.6 (22 recommended), npm ≥ 10, PostgreSQL 14+.
+Prereqs: Node ≥ 20.6 (22 recommended), npm ≥ 10, PostgreSQL 14+. If your
+Postgres needs a user/password, export `PGUSER` / `PGPASSWORD` (psql and the
+backend both honour them) or put them in the URL.
 
 ### Backend
 
@@ -95,25 +98,28 @@ Unset, `EXPO_PUBLIC_API_BASE` falls back to the production API
 
 ```bash
 # backend (from backend/)
-npm run lint                  # ESLint, 0 errors 0 warnings
+npm run lint                  # ESLint (--max-warnings 0)
 npm test                      # full jest suite (in-memory store)
 TEST_DATABASE_URL=postgres://… npm test   # also runs the Postgres-gated suites
 node scripts/smoke-test.mjs http://localhost:4000   # against a running server
 
 # frontend (from frontend/)
-npx tsc --noEmit              # strict TypeScript, 0 errors
+npx tsc --noEmit              # strict TypeScript
 npx eslint src App.tsx --max-warnings 0
 npm test                      # logic + render suites
 node scripts/design-audit.mjs --ci       # WCAG AA contrast, a11y, touch targets
 npx expo export --platform web
 
 # API spec (from the repo root)
-node scripts/generate-openapi.mjs        # regenerate openapi.json from the mounted routes
+npm run generate:openapi                 # regenerate openapi.json from the mounted routes
 ```
 
-CI (`.github/workflows/ci.yml`) runs all of the above plus fresh-database
-migrations and an end-to-end smoke test; `openapi_drift.test.js` fails the
-build if `openapi.json` no longer matches the mounted routes.
+CI (`.github/workflows/ci.yml`) runs these plus fresh-database migrations,
+the Postgres-gated suites and an end-to-end smoke test against a production
+boot. Docs are tested too: `openapi_drift.test.js` fails if `openapi.json` no
+longer matches the mounted routes, `env_docs_consistency.test.js` if an
+environment variable is read but not documented (or documented but unused),
+and `version_alignment.test.js` if any version number disagrees.
 
 ## API
 
@@ -141,14 +147,22 @@ and `backend/scripts/railway-checklist.md`. Mobile builds ship through EAS
 | [RUNBOOK.md](./RUNBOOK.md) | Incident response, monitoring, backups |
 | [LAUNCH_CHECKLIST.md](./LAUNCH_CHECKLIST.md) | Pre-launch security/ops checklist |
 | [EXTERNAL_SERVICES_SETUP.md](./EXTERNAL_SERVICES_SETUP.md) | Per-service signup/config walkthroughs |
+| [UPTIME_MONITORING.md](./UPTIME_MONITORING.md) | `/health` contract + uptime monitor setup |
+| [FACT_CHECK_RUNBOOK.md](./FACT_CHECK_RUNBOOK.md) | Verifying legal reference data against official sources |
+| [docs/LEGAL_ACTION_ITEMS.md](./docs/LEGAL_ACTION_ITEMS.md) | Open legal/compliance items, incl. the lawyer review still required |
+| [PHASE_2_ROADMAP.md](./PHASE_2_ROADMAP.md) | Deferred feature territory (decision record) |
+| `backend/scripts/railway-checklist.md` | Step-by-step go-live checklist |
 | [docs/](./docs/) | Privacy policy, ToS, store listing, SDK guide, legal action items |
 | [docs/fix-notes/](./docs/fix-notes/) | Historical fix/change logs (see its README) |
 | [docs/archive/](./docs/archive/) | Superseded docs kept for history — do not rely on them |
 
 ## Security notes
 
-- JWT auth on every protected endpoint; roles come from the database, never
-  the token. Admin/staff actions are re-checked server-side.
+- JWT auth on every protected endpoint (user existence re-checked, cached
+  60 s). Most role checks read the role claim in the access token (valid up
+  to `JWT_EXPIRES_IN`, 30 days); actions that edit shared records (arrest
+  takedown review/dispositions, research indexing) re-read the role from the
+  database. `/api/admin/*` additionally requires the `X-Admin-Key` header.
 - AES-256-GCM on message bodies, attachments and case notes.
 - No TEST_MODE/DEMO_MODE payment bypasses; demo subscriptions are excluded
   from every payment gate.

@@ -12,11 +12,11 @@
 
 | Service | Behavior while the key is absent |
 |---|---|
-| Stripe | Every billing endpoint returns `503 payments_unavailable`; the app shows "Payments are not available yet". Setting the keys re-enables payments automatically. |
+| Stripe | Every charging/subscribing endpoint returns `503 payments_unavailable`; the app shows "Payments aren't available yet" and free features keep working. Setting the keys re-enables payments automatically. |
 | Resend (email) | Emails are logged to the server log. Never sent. |
 | Expo Push | Push tokens accepted and stored. Delivery logged only. |
 | AI (Anthropic) | AI endpoints return `503 ai_unavailable` — key required for AI features. |
-| Google Places | Fallback search returns empty results with a warning log. |
+| Google Places / Yelp | The nightly provider-refresh scrapers are skipped. In-app lawyer/bail search never calls Google; it reads the Postgres directory. |
 | Integrations (Clio, etc.) | Demo data returned. No live API calls. |
 | Redis | AI jobs run in-process instead of BullMQ. |
 
@@ -28,15 +28,18 @@ operationally — it enables the nightly scheduler.
 
 ## 🔴 CRITICAL — Must have before launch (app broken without these)
 
-### 1. JWT_SECRET + ENCRYPTION_KEY
+### 1. JWT_SECRET + JWT_REFRESH_SECRET + ENCRYPTION_KEY (+ ADMIN_KEY)
 ```bash
-# Generate both locally — never share or commit these values
+# Generate locally — never share or commit these values
 openssl rand -hex 32   # → JWT_SECRET
+openssl rand -hex 32   # → JWT_REFRESH_SECRET (must differ from JWT_SECRET)
 openssl rand -hex 32   # → ENCRYPTION_KEY
 openssl rand -hex 32   # → ADMIN_KEY
 ```
-`JWT_SECRET` signs every auth token. `ENCRYPTION_KEY` encrypts case notes and
-attorney-client messages with AES-256-GCM. `ADMIN_KEY` protects `/api/admin/*`.
+`JWT_SECRET` signs access tokens, `JWT_REFRESH_SECRET` signs refresh tokens.
+`ENCRYPTION_KEY` encrypts case notes and attorney-client messages with
+AES-256-GCM. `ADMIN_KEY` is the `X-Admin-Key` header for `/api/admin/*` and
+`/api/bot/*`. The server refuses to start in production without the first three.
 
 These are generated once and never change. Changing `ENCRYPTION_KEY` after
 data is encrypted makes all existing encrypted data unreadable — treat it like
@@ -44,6 +47,7 @@ a master password.
 
 ```env
 JWT_SECRET=<64-char hex>
+JWT_REFRESH_SECRET=<64-char hex>
 ENCRYPTION_KEY=<64-char hex>
 ADMIN_KEY=<64-char hex>
 JWT_EXPIRES_IN=30d
@@ -61,7 +65,7 @@ privilege log generation, and signal explanations all require this key.
 3. Copy the key (shown once — save it immediately)
 
 ```env
-ANTHROPIC_API_KEY=sk-ant-api03-...
+ANTHROPIC_API_KEY=<sk-ant-... key>
 ```
 
 **Cost:** Pay-per-token. The app uses Claude Sonnet 4.6 by default.
@@ -71,22 +75,30 @@ Set `AI_CONCURRENCY=4` to limit parallel requests if costs run high.
 ---
 
 ### 3. Stripe
-Subscription billing for all three user types: firms, attorneys, consumers.
+Consumer subscriptions, bondsman plans and flat lead fees (bondsman $100,
+personal injury $200, civil rights $200, employment $100, ICE detention $75).
 
 **Steps:**
 1. `dashboard.stripe.com` → Developers → API Keys
 2. Copy Secret Key (`sk_live_...` for prod, `sk_test_...` for testing)
 3. Create Products and Prices in Stripe dashboard:
 
-| Product | Billing | Env var |
+| Product | Price | Env var |
 |---|---|---|
-| Starter Plan | Monthly | `STRIPE_ADVISOR_PRICE_ID` |
-| Starter Plan | Annual | `STRIPE_ADVISOR_ANNUAL_ID` |
-| Pro Plan | Monthly | `STRIPE_LEGAL_PRO_PRICE_ID` |
-| Pro Plan | Annual | `STRIPE_LEGAL_PRO_ANNUAL_ID` |
-| Attorney Plan | Monthly | `STRIPE_ESQUIRE_PRICE_ID` |
-| Attorney Plan | Annual | `STRIPE_ESQUIRE_ANNUAL_ID` |
-| Legal Radar | Monthly | `STRIPE_LEGAL_RADAR_ID` |
+| Legal Radar | $19.99/mo | `STRIPE_LEGAL_RADAR_ID` |
+| 24 Hour Advisor | $24.99/mo | `STRIPE_ADVISOR_PRICE_ID` |
+| 24 Hour Advisor (annual) | $199/yr | `STRIPE_ADVISOR_ANNUAL_ID` |
+| Legal Pro | $34.99/mo | `STRIPE_LEGAL_PRO_PRICE_ID` |
+| Legal Pro (annual) | $299/yr | `STRIPE_LEGAL_PRO_ANNUAL_ID` |
+| Justice Gavel Esquire | $49/mo | `STRIPE_ESQUIRE_PRICE_ID` |
+| Justice Gavel Esquire (annual) | $410/yr | `STRIPE_ESQUIRE_ANNUAL_ID` |
+| Bondsman Starter | $49/mo, $490/yr | `STRIPE_BONDSMAN_STARTER_ID`, `STRIPE_BONDSMAN_STARTER_ANNUAL_ID` |
+| Bondsman Pro | $149/mo, $1,490/yr | `STRIPE_BONDSMAN_PRO_ID`, `STRIPE_BONDSMAN_PRO_ANNUAL_ID` |
+| Bondsman Market | $349/mo, $3,490/yr | `STRIPE_BONDSMAN_MARKET_ID`, `STRIPE_BONDSMAN_MARKET_ANNUAL_ID` |
+
+Prices are defined in `backend/src/routes/billing/_shared.js`;
+`backend/scripts/setup-stripe-products.js` can create the products. Lead fees
+are one-off charges and need no price id.
 
 4. Set up Stripe Webhook:
    - `dashboard.stripe.com` → Webhooks → Add endpoint
@@ -97,8 +109,8 @@ Subscription billing for all three user types: firms, attorneys, consumers.
    - Copy Signing Secret (`whsec_...`) → `STRIPE_WEBHOOK_SECRET`
 
 ```env
-STRIPE_SECRET_KEY=sk_live_...        # STRIPE_SECRET accepted as alias
-STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_SECRET_KEY=<sk_live_ or sk_test_ key>   # STRIPE_SECRET accepted as a legacy alias
+STRIPE_WEBHOOK_SECRET=<whsec_ signing secret>
 STRIPE_ADVISOR_PRICE_ID=price_...
 STRIPE_LEGAL_PRO_PRICE_ID=price_...
 STRIPE_ESQUIRE_PRICE_ID=price_...
@@ -131,7 +143,7 @@ logged instead of sent.
    DNS records it gives you (without this, emails go to spam)
 
 ```env
-RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxx
+RESEND_API_KEY=<re_... key>
 EMAIL_FROM=noreply@justicegavel.app
 ALERT_EMAIL_FROM=alerts@justicegavel.app
 ADMIN_ALERT_EMAIL=admin@yourfirm.com
@@ -145,7 +157,7 @@ ADMIN_ALERT_EMAIL=admin@yourfirm.com
 
 ---
 
-### 6. Expo Push Notifications (iOS + Android)
+### 5. Expo Push Notifications (iOS + Android)
 Every push alert on iOS and Android goes through Expo's push gateway.
 This powers all attorney alerts: asylum bar, plea expiry, VOP compound,
 health scan findings, escalation SLA.
@@ -158,15 +170,19 @@ health scan findings, escalation SLA.
    (`console.firebase.google.com` → Project Settings → Cloud Messaging → Server Key)
 
 ```env
-EXPO_ACCESS_TOKEN=eas_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+EXPO_ACCESS_TOKEN=<expo access token>
 ```
 
 **Cost:** Free for up to 1 million notifications/month.
 
 ---
 
-### 7. Google Places API
-Attorney and bail bondsman location search, geocoding for address-based matching.
+### 6. Google Places API
+Used only by the operator scrapers (`backend/src/scripts/refresh.js`,
+`scrape_providers_national.js`), which the nightly scheduler runs when
+`LIVE_REFRESH=true`. In-app search reads the Postgres directory and never calls
+Google. Note: those scrapers still write a local SQLite file, not Postgres
+(see QUICKSTART.md, "Operator data tools").
 
 **Steps:**
 1. `console.cloud.google.com` → Select/create project
@@ -183,7 +199,7 @@ GOOGLE_PLACES_KEY=AIzaSy...
 
 ---
 
-### 8. Sentry (Error Monitoring)
+### 7. Sentry (Error Monitoring)
 Backend error tracking and React Native crash reporting.
 
 **Steps:**
@@ -193,14 +209,14 @@ Backend error tracking and React Native crash reporting.
 3. In Sentry: set up Alerts → notify on first occurrence of new errors
 
 ```env
-SENTRY_DSN=https://abc123@o123456.ingest.sentry.io/456789
+SENTRY_DSN=https://<key>@<org>.ingest.sentry.io/<project>
 ```
 
 **Cost:** Free tier: 5,000 errors/month. Team: $26/month.
 
 ---
 
-### 9. VAPID Web Push (Browser + Desktop push)
+### 8. VAPID Web Push (Browser + Desktop push)
 Push notifications for attorneys using the web app or Electron desktop.
 Generated locally — no external account needed.
 
@@ -233,7 +249,7 @@ No external service — uses the W3C Web Push standard directly.
 All integrations work fully in demo mode before credentials are added.
 Firms connecting them will go through an in-app OAuth flow — no server restart needed.
 
-### 10. Clio Manage
+### 9. Clio Manage
 ```
 Register: app.clio.com/settings/developer_applications → New Application
 Redirect URI: https://yourdomain.com/api/integrations/oauth/callback
@@ -243,7 +259,7 @@ CLIO_CLIENT_ID=...
 CLIO_CLIENT_SECRET=...
 ```
 
-### 11. Google Calendar
+### 10. Google Calendar
 ```
 Register: console.cloud.google.com → OAuth2 → Create OAuth client ID → Web Application
 Authorized redirect: https://yourdomain.com/api/integrations/oauth/callback
@@ -254,7 +270,7 @@ GOOGLE_CALENDAR_CLIENT_ID=...
 GOOGLE_CALENDAR_CLIENT_SECRET=...
 ```
 
-### 12. Microsoft Outlook / Exchange
+### 11. Microsoft Outlook / Exchange
 ```
 Register: portal.azure.com → App Registrations → New Registration
 Redirect URI: https://yourdomain.com/api/integrations/oauth/callback
@@ -265,7 +281,7 @@ OUTLOOK_CLIENT_ID=...          # This is the Application (client) ID
 OUTLOOK_CLIENT_SECRET=...      # Certificates & secrets → New client secret
 ```
 
-### 13. CourtListener (RECAP + Precedent Monitoring)
+### 12. CourtListener (RECAP + Precedent Monitoring)
 ```
 Register: courtlistener.com/sign-in → Profile → API Token
 ```
@@ -275,7 +291,7 @@ COURTLISTENER_ENABLED=true
 ```
 Without the token, anonymous access works at 5,000 requests/day. Free.
 
-### 14. iManage Work
+### 13. iManage Work
 ```
 Register: docs.imanage.com/api → Register OAuth App
 Redirect URI: https://yourdomain.com/api/integrations/oauth/callback
@@ -285,7 +301,7 @@ IMANAGE_CLIENT_ID=...
 IMANAGE_CLIENT_SECRET=...
 ```
 
-### 15. PracticePanther + MyCase
+### 14. PracticePanther + MyCase
 ```
 PracticePanther: practicepanther.com/api → Developer Settings
 MyCase: app.mycase.com/api → Developer Settings
@@ -315,7 +331,7 @@ Supabase: supabase.com → New Project → Settings → Database → Connection 
 DATABASE_URL=postgresql://user:pass@host:5432/dbname   # POSTGRES_URL accepted as alias
 ```
 
-### Yelp (attorney/bondsman ratings)
+### Yelp (operator scrapers' business-data fallback)
 ```
 Register: fusion.yelp.com/v3 → Manage App → API Key
 ```
@@ -323,9 +339,16 @@ Register: fusion.yelp.com/v3 → Manage App → API Key
 YELP_API_KEY=...
 ```
 
-### OpenAI (AI redundancy fallback)
+### OpenAI (Whisper transcription)
+Used only for audio transcription (`/api/transcribe`, voice notes). Without
+it transcription returns 503; all chat/AI drafting uses Anthropic.
 ```env
-OPENAI_API_KEY=sk-...
+OPENAI_API_KEY=<sk-... key>
+```
+
+### Daily.co (video consultations)
+```env
+DAILY_API_KEY=<key>      # without it video-room creation returns 503
 ```
 
 ---
@@ -335,7 +358,7 @@ OPENAI_API_KEY=sk-...
 Copy this block into your Railway / Fly.io / Heroku environment:
 
 ```
-# ── Security (generate all four with: openssl rand -hex 32) ──
+# ── Security (generate all four with: openssl rand -hex 32; JWT_REFRESH_SECRET ≠ JWT_SECRET) ──
 JWT_SECRET=
 JWT_REFRESH_SECRET=
 ENCRYPTION_KEY=

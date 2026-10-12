@@ -37,8 +37,8 @@ this document no longer duplicates the list.
 **Symptoms:** `/health` returns 503 with `{"db": "error"}`, all API calls fail
 
 1. Check provider status: https://status.supabase.com (or Railway status)
-2. Check Railway logs: `railway logs --service justice-gavel-api`
-3. Verify `DATABASE_URL` env var is set: `railway variables --service justice-gavel-api`
+2. Check Railway logs: `railway logs` (from a directory linked to the API service)
+3. Verify `DATABASE_URL` env var is set: `railway variables`
 4. If provider issue: wait for resolution, post a status update
 5. If Railway issue: redeploy from last stable commit
 6. Post-recovery: `node scripts/check-env.js` and `node scripts/smoke-test.mjs https://api.justicegavel.app`
@@ -105,17 +105,19 @@ if they were ever deployed, rotate them now.
 ## DEPLOY PROCESS
 
 ```bash
-git push origin main      # Railway auto-deploys (root directory: backend)
-railway rollback          # Railway dashboard → Deployments → Roll back
-railway restart           # Settings → Restart service
+git push origin main      # Railway auto-deploys the service (root directory: backend)
+railway redeploy          # redeploy the latest deployment (Railway CLI)
 ```
+
+Roll back: Railway dashboard → Deployments → pick the last good deployment →
+Redeploy. Restart: Railway dashboard → the service → Restart.
 
 **Pre-deploy checklist:**
 - [ ] `node scripts/check-env.js` passes
 - [ ] Backend tests pass: `npm run lint && npm test` (in backend/)
 - [ ] Frontend compiles: `npx tsc --noEmit` (in frontend/)
 - [ ] No high+ production vulnerabilities: `npm audit --omit=dev --audit-level=high`
-- [ ] If routes changed: `node scripts/generate-openapi.mjs` and commit openapi.json
+- [ ] If routes changed: `npm run generate:openapi` (repo root) and commit openapi.json
 - [ ] New migrations applied to the production DB with psql **before** deploy
 
 ---
@@ -178,17 +180,20 @@ switches to human-readable.
 | Bar-prep reminders (`bar-daily-7am`, `bar-streak-3pm`, `bar-countdown-8am`) | daily | `REDIS_URL` (BullMQ) |
 
 Manual bar-verification sweep: `POST /api/admin/bar-verification/sweep`
-(staff role, checked in the database). Manual nightly run:
+(bearer token of a user whose role is `admin`, plus the `X-Admin-Key` header —
+the `/api/admin` guard applies to every `/api/admin/*` path). Manual nightly run:
 `node -e "import('./src/services/barVerification.js').then(m=>m.runNightlyVerification())"`.
 
 ---
 
 ## API RESPONSE SHAPE (for quick triage)
 
-Errors are `{ "error": "message" }`; validation errors add `fields`.
+Errors are `{ "error": "message", "code"? }`; validation errors are
+`400 { "error": "Validation failed", "errors": [{ field, message, code }] }`.
 Status codes: 400 validation, 401 unauthenticated, 403 forbidden, 404, 429
-(`Retry-After` set), 500 (Sentry-logged), 503 deliberate feature-off
-(`payments_unavailable` / `ai_unavailable` / `storage_unavailable`).
+(`Retry-After` set), 451 AI disclaimer not yet accepted (`disclaimer_required`
+— a user action, not an incident), 500 (Sentry-logged), 503 deliberate
+feature-off (`payments_unavailable` / `ai_unavailable` / `storage_unavailable`).
 Full reference: API_REFERENCE.md + openapi.json.
 
 ---

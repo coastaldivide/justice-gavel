@@ -1,10 +1,18 @@
 # Justice Gavel — Detox E2E Test Suite
 
+> **Status: not wired up.** These Detox specs are not run anywhere: `detox` is
+> not a dependency, the `e2e:*` npm scripts below do not exist in
+> `package.json`, and many `testID`s they reference are missing. The
+> maintained end-to-end check is the headless web smoke test
+> (`frontend/scripts/web-smoke.cjs`, `npm run smoke:web`, run by hand against a web
+> export and a live backend; CI runs the backend smoke test and the web export).
+> Treat this folder as a starting point for native E2E, not a working suite.
+
 ## Setup
 
 ### Prerequisites
 - macOS with Xcode 15+ (iOS) **or** macOS/Linux with Android SDK 34+ (Android)
-- Node 18+
+- Node 22 (the version CI uses)
 - Expo development build (not Expo Go)
 
 ### Install

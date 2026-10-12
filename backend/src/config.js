@@ -181,6 +181,7 @@ export const ALL_ENV_VARS = {
 
   // ── Database ─────────────────────────────────────────────────────────────
   DATABASE_URL:             process.env.DATABASE_URL               || '',    // POSTGRES_URL accepted as alias
+  POSTGRES_URL:             process.env.POSTGRES_URL               || '',    // alias of DATABASE_URL
   PGSSL:                    process.env.PGSSL                      || '',    // 'false' disables TLS to Postgres
   DB_LOG_ERRORS:            process.env.DB_LOG_ERRORS              || 'false',
 
@@ -189,6 +190,7 @@ export const ALL_ENV_VARS = {
   CLAUDE_MODEL:             process.env.CLAUDE_MODEL               || 'claude-sonnet-4-6', // utils/ai.js
   ANTHROPIC_BASE_URL:       process.env.ANTHROPIC_BASE_URL         || '',    // test/mock override only
   AI_JOB_TIMEOUT_MS:        process.env.AI_JOB_TIMEOUT_MS          || '45000',
+  AI_CONCURRENCY:           process.env.AI_CONCURRENCY             || '8',
   OPENAI_API_KEY:           process.env.OPENAI_API_KEY             || '',   // Whisper transcription
 
   // ── Admin ────────────────────────────────────────────────────────────────
@@ -197,21 +199,31 @@ export const ALL_ENV_VARS = {
   ADMIN_ALERT_EMAIL:        process.env.ADMIN_ALERT_EMAIL          || '',
   ADMIN_ALERT_SMS:          process.env.ADMIN_ALERT_SMS            || '',
   ADMIN_PANEL_URL:          process.env.ADMIN_PANEL_URL            || '',
+  ADMIN_URL:                process.env.ADMIN_URL                  || '',    // bar re-verification email links
 
   // ── Stripe ───────────────────────────────────────────────────────────────
-  STRIPE_SECRET:            process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET              || '',
+  STRIPE_SECRET_KEY:        process.env.STRIPE_SECRET_KEY          || '',    // unset → billing 503 payments_unavailable
+  STRIPE_SECRET:            process.env.STRIPE_SECRET              || '',    // legacy alias of STRIPE_SECRET_KEY
   STRIPE_WEBHOOK_SECRET:    process.env.STRIPE_WEBHOOK_SECRET      || '',
   STRIPE_ACH_ENABLED:       process.env.STRIPE_ACH_ENABLED         || 'false',
   STRIPE_SUCCESS_URL:       process.env.STRIPE_SUCCESS_URL         || 'https://justicegavel.app/payment/success',
   STRIPE_CANCEL_URL:        process.env.STRIPE_CANCEL_URL          || 'https://justicegavel.app/payment/cancel',
-  // Subscription price IDs (create in Stripe dashboard)
-  STRIPE_LEGAL_PRO_PRICE_ID:      (process.env.STRIPE_LEGAL_PRO_PRICE_ID || 'price_1Tb1jc2XUfNqC3X4Iqzcz6lC'),
-  STRIPE_LEGAL_PRO_ANNUAL_ID:     (process.env.STRIPE_LEGAL_PRO_ANNUAL_ID || 'price_1Tb1iJ2XUfNqC3X49Ycr9lti'),
-  STRIPE_ADVISOR_PRICE_ID:  (process.env.STRIPE_ADVISOR_PRICE_ID || 'price_1Tb1hV2XUfNqC3X4QLiRdT22'),
-  STRIPE_ADVISOR_ANNUAL_ID: (process.env.STRIPE_ADVISOR_ANNUAL_ID || 'price_1Tb1hV2XUfNqC3X4iMSFj1e1'),
-  STRIPE_ESQUIRE_PRICE_ID: (process.env.STRIPE_ESQUIRE_PRICE_ID || 'price_1Tb1kY2XUfNqC3X4JMquJ8hX'),
-  STRIPE_ESQUIRE_ANNUAL_ID:(process.env.STRIPE_ESQUIRE_ANNUAL_ID || 'price_1Tb1l32XUfNqC3X4BRSRCuQa'),
-  STRIPE_LEGAL_RADAR_ID: (process.env.STRIPE_LEGAL_RADAR_ID || 'price_1Tb1vn2XUfNqC3X4U1jojSNW'),
+  // Subscription price IDs (create in Stripe dashboard; routes/billing/_shared.js reads them).
+  // No built-in fallbacks: a plan whose price id is unset cannot be purchased.
+  STRIPE_LEGAL_PRO_PRICE_ID:      (process.env.STRIPE_LEGAL_PRO_PRICE_ID || ''),
+  STRIPE_LEGAL_PRO_ANNUAL_ID:     (process.env.STRIPE_LEGAL_PRO_ANNUAL_ID || ''),
+  STRIPE_ADVISOR_PRICE_ID:  (process.env.STRIPE_ADVISOR_PRICE_ID || ''),
+  STRIPE_ADVISOR_ANNUAL_ID: (process.env.STRIPE_ADVISOR_ANNUAL_ID || ''),
+  STRIPE_ESQUIRE_PRICE_ID: (process.env.STRIPE_ESQUIRE_PRICE_ID || ''),
+  STRIPE_ESQUIRE_ANNUAL_ID:(process.env.STRIPE_ESQUIRE_ANNUAL_ID || ''),
+  STRIPE_LEGAL_RADAR_ID: (process.env.STRIPE_LEGAL_RADAR_ID || ''),
+  // Bondsman plan price IDs (routes/billing/_shared.js)
+  STRIPE_BONDSMAN_STARTER_ID:        process.env.STRIPE_BONDSMAN_STARTER_ID        || '',
+  STRIPE_BONDSMAN_STARTER_ANNUAL_ID: process.env.STRIPE_BONDSMAN_STARTER_ANNUAL_ID || '',
+  STRIPE_BONDSMAN_PRO_ID:            process.env.STRIPE_BONDSMAN_PRO_ID            || '',
+  STRIPE_BONDSMAN_PRO_ANNUAL_ID:     process.env.STRIPE_BONDSMAN_PRO_ANNUAL_ID     || '',
+  STRIPE_BONDSMAN_MARKET_ID:         process.env.STRIPE_BONDSMAN_MARKET_ID         || '',
+  STRIPE_BONDSMAN_MARKET_ANNUAL_ID:  process.env.STRIPE_BONDSMAN_MARKET_ANNUAL_ID  || '',
 
   // ── Email (Resend) ───────────────────────────────────────────────────────
   RESEND_API_KEY:           process.env.RESEND_API_KEY             || null,  // null disables email (logged instead)
@@ -221,6 +233,7 @@ export const ALL_ENV_VARS = {
   ALERT_WEBHOOK_URL:        process.env.ALERT_WEBHOOK_URL          || '',    // Slack incoming webhook
   ONCALL_EMAIL:             process.env.ONCALL_EMAIL               || '',
   ONCALL_EMAIL_2:           process.env.ONCALL_EMAIL_2             || '',
+  LIVE_EMAIL:               process.env.LIVE_EMAIL                 || '',    // 'false' forces log-only even with RESEND_API_KEY
 
   // ── Google / Maps ────────────────────────────────────────────────────────
   GOOGLE_PLACES_KEY:        process.env.GOOGLE_PLACES_KEY          || '',
@@ -242,13 +255,46 @@ export const ALL_ENV_VARS = {
   COINBASE_COMMERCE_API_KEY:process.env.COINBASE_COMMERCE_API_KEY  || '',
   BITPAY_TOKEN:             process.env.BITPAY_TOKEN               || '',
   NOWPAYMENTS_KEY:          process.env.NOWPAYMENTS_KEY            || '',
+  LIVE_PAYMENTS:            process.env.LIVE_PAYMENTS              || 'false', // /api/pay orchestrator: real sessions only when 'true'
+
+  // ── Integrations (OAuth apps; demo data without credentials) ─────────────
+  CLIO_CLIENT_ID:                process.env.CLIO_CLIENT_ID                || '',
+  CLIO_CLIENT_SECRET:            process.env.CLIO_CLIENT_SECRET            || '',
+  MYCASE_CLIENT_ID:              process.env.MYCASE_CLIENT_ID              || '',
+  MYCASE_CLIENT_SECRET:          process.env.MYCASE_CLIENT_SECRET          || '',
+  PRACTICEPANTHER_CLIENT_ID:     process.env.PRACTICEPANTHER_CLIENT_ID     || '',
+  PRACTICEPANTHER_CLIENT_SECRET: process.env.PRACTICEPANTHER_CLIENT_SECRET || '',
+  IMANAGE_CLIENT_ID:             process.env.IMANAGE_CLIENT_ID             || '',
+  IMANAGE_CLIENT_SECRET:         process.env.IMANAGE_CLIENT_SECRET         || '',
+  NETDOCUMENTS_CLIENT_ID:        process.env.NETDOCUMENTS_CLIENT_ID        || '',
+  NETDOCUMENTS_CLIENT_SECRET:    process.env.NETDOCUMENTS_CLIENT_SECRET    || '',
+  GOOGLE_CALENDAR_CLIENT_ID:     process.env.GOOGLE_CALENDAR_CLIENT_ID     || '',
+  GOOGLE_CALENDAR_CLIENT_SECRET: process.env.GOOGLE_CALENDAR_CLIENT_SECRET || '',
+  OUTLOOK_CLIENT_ID:             process.env.OUTLOOK_CLIENT_ID             || '',
+  OUTLOOK_CLIENT_SECRET:         process.env.OUTLOOK_CLIENT_SECRET         || '',
+  COURTLISTENER_TOKEN:           process.env.COURTLISTENER_TOKEN           || '',
+  COURTLISTENER_ENABLED:         process.env.COURTLISTENER_ENABLED         || 'true',
+  BASE_URL:                      process.env.BASE_URL                      || '', // this API's public URL (SAML/OAuth callbacks)
+  APP_SSO_REDIRECT:              process.env.APP_SSO_REDIRECT              || '',
+  APP_OAUTH_REDIRECT:            process.env.APP_OAUTH_REDIRECT            || '',
+
+  // ── Supabase (attachments storage, RAG, DOI import script) ───────────────
+  SUPABASE_URL:             process.env.SUPABASE_URL               || '',
+  SUPABASE_SERVICE_KEY:     process.env.SUPABASE_SERVICE_KEY       || '',
+  SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY   || '',    // DOI import fallback only
+
+  // ── Error tracking (instrument.js) ───────────────────────────────────────
+  SENTRY_DSN:                  process.env.SENTRY_DSN                  || '',
+  SENTRY_ENVIRONMENT:          process.env.SENTRY_ENVIRONMENT          || '',
+  SENTRY_RELEASE:              process.env.SENTRY_RELEASE              || '',
+  SENTRY_TRACES_SAMPLE_RATE:   process.env.SENTRY_TRACES_SAMPLE_RATE   || '',
+  SENTRY_PROFILES_SAMPLE_RATE: process.env.SENTRY_PROFILES_SAMPLE_RATE || '',
+  SENTRY_PROFILING:            process.env.SENTRY_PROFILING            || '',
 
   // ── Infrastructure ───────────────────────────────────────────────────────
   REDIS_URL:                process.env.REDIS_URL                  || '',
-  UPLOAD_DIR:               process.env.UPLOAD_DIR                 || '/tmp/uploads',
   PROVIDERS_DB:             process.env.PROVIDERS_DB               || '',
   REPORT_DIR:               process.env.REPORT_DIR                 || '/tmp/reports',
-  BOT_WEBHOOK_BASE_URL:     process.env.BOT_WEBHOOK_BASE_URL       || '',
   RATE_LIMIT_PER_MIN:       process.env.RATE_LIMIT_PER_MIN         || '200', // global per-IP limit (app.js)
   CORS_ORIGIN:              process.env.CORS_ORIGIN                || '',
   EXTRA_ORIGINS:            process.env.EXTRA_ORIGINS              || '',
@@ -264,6 +310,7 @@ export const ALL_ENV_VARS = {
   REFRESH_CRON:             process.env.REFRESH_CRON               || '0 3 * * *',
   REFRESH_TZ:               process.env.REFRESH_TZ                 || 'America/Chicago',
   HEALTH_SCAN_CRON:         process.env.HEALTH_SCAN_CRON           || '0 2 * * *',
+  LIVE_REFRESH:             process.env.LIVE_REFRESH               || 'false', // 'true' enables the scheduler
 
   // ── Arrest data ──────────────────────────────────────────────────────────
   ARREST_FEED_URLS:         process.env.ARREST_FEED_URLS           || '', // see services/arrest_ingest.js
@@ -273,6 +320,10 @@ export const ALL_ENV_VARS = {
 
   // ── Logging ──────────────────────────────────────────────────────────────
   LOG_LEVEL:                process.env.LOG_LEVEL                  || 'info',
+
+  // ── Runtime / platform ───────────────────────────────────────────────────
+  PORT:                     process.env.PORT                       || '4000',
+  DEMO_MODE:                process.env.DEMO_MODE                  || '',    // only 'true' counts in production
   // json | text. Production defaults to one-line JSON (utils/logger.js).
   LOG_FORMAT:               process.env.LOG_FORMAT                 || '',
   SCAN_QUIET:               process.env.SCAN_QUIET                 || 'false',

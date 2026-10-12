@@ -1,15 +1,12 @@
 /**
- * services/email.js — Resend email service
+ * services/email.js — transactional email via Resend.
  *
- * Replaces SendGrid. API is cleaner, deliverability is better,
- * Superior deliverability, cleaner API.
- *
- * Transactional email via Resend.
+ * Without RESEND_API_KEY (or with LIVE_EMAIL=false) emails are logged, not sent.
  */
 
 import logger from '../utils/logger.js';
 
-const FROM      = process.env.EMAIL_FROM || process.env.ALERT_EMAIL_FROM || process.env.SENDGRID_FROM_EMAIL || 'noreply@justicegavel.app';
+const FROM      = process.env.EMAIL_FROM || process.env.ALERT_EMAIL_FROM || 'noreply@justicegavel.app';
 const FROM_NAME = 'Justice Gavel';
 
 /** Email is sent only when RESEND_API_KEY is set (LIVE_EMAIL=false forces log-only). */

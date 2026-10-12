@@ -1,5 +1,7 @@
 # App Store & Google Play Listing — Justice Gavel
 # ASO-optimized listing text for submission
+# Regulated copy: every claim here must be true of the shipped build and
+# backed in the claims inventory (docs/LEGAL_ACTION_ITEMS.md, A6).
 
 ## App Store (iOS)
 **Name (30 chars max):**
@@ -26,7 +28,7 @@ AI LEGAL GUIDE
 • Jurisdiction-specific guidance for all 50 states
 
 FIND AN ATTORNEY
-• 2,048+ attorneys searchable by location and specialty
+• 2,000+ attorneys searchable by location and specialty
 • GPS-powered nearest lawyer search
 • Video consultation booking
 • Pro bono and free consultation filter
@@ -43,7 +45,7 @@ EMERGENCY FEATURES
 • Crisis mental health resources
 
 BAIL & BAIL AGENTS
-• 1,262+ licensed bail agents nearby
+• 1,200+ bail agents searchable by location
 • Bail amount calculator
 • 24/7 availability filter
 
@@ -88,9 +90,14 @@ Find lawyers, know your rights, manage your case. 2,000+ attorneys nationwide.
 
 ## App Review Notes (not shown to users)
 The AI assistant provides GENERAL LEGAL INFORMATION only, not legal advice.
-All attorney profiles require bar license verification (JTB Verified badge).
-The app does not handle attorney-client privileged communications.
-Test credentials for reviewer: test@justicegavel.app / TestReview2025!
+Attorneys who complete bar verification show a "Bar Verified" badge; other
+directory listings are public-record data and are not labelled verified.
+Messages between users and attorneys are encrypted at rest (AES-256-GCM); the
+app shows a privilege notice and does not itself create an attorney-client
+relationship.
+Test credentials for reviewer: create a dedicated review account before
+submission and enter its email/password in App Store Connect — never commit
+the password to this repo.
 
 ## Localized Descriptions (to be translated by native legal translators)
 

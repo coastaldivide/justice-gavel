@@ -5,7 +5,9 @@ Local setup from zero to a running API + app. The condensed version lives in
 the [README](./README.md); environment variables are documented in
 [RAILWAY_ENV_SETUP.md](./RAILWAY_ENV_SETUP.md).
 
-Prereqs: Node ≥ 20.6 (22 recommended), npm ≥ 10, PostgreSQL 14+.
+Prereqs: Node ≥ 20.6 (22 recommended), npm ≥ 10, PostgreSQL 14+. If your
+Postgres needs a user/password, export `PGUSER` / `PGPASSWORD` (psql and the
+backend both honour them) or put them in the URL.
 
 ## 1. Database
 
@@ -71,7 +73,7 @@ npx tsc --noEmit && npx eslint src App.tsx --max-warnings 0 && npm test
 
 | File | Contents |
 |---|---|
-| `openapi.json` | Generated OpenAPI 3.0 spec — 475 paths / 559 operations, auth-marked. Regenerate with `node scripts/generate-openapi.mjs`; `openapi_drift.test.js` fails CI when it goes stale. Postman: File → Import |
+| `openapi.json` | Generated OpenAPI 3.0 spec, auth-marked. Regenerate with `npm run generate:openapi` (repo root); `openapi_drift.test.js` fails CI when it goes stale. Postman: File → Import |
 | `API_REFERENCE.md` | Human-readable overview: auth, errors, rate limits, resource groups |
 
 ## Deploying
@@ -88,11 +90,16 @@ Go-live checklist: `backend/scripts/railway-checklist.md` +
 
 ## Operator data tools (optional)
 
-The Google-Places/state-bar scrapers and DOI importers under
-`backend/src/scripts/` (and the Windows `RUN_*.bat` wrappers) are
-operator-only tools from the SQLite era: they still write to a local SQLite
-file (`data/providers.sqlite` / `demo.db`), **not** to Postgres. Porting them
-is tracked work — don't expect them to populate the production directory.
+The Google-Places/state-bar scrapers, `import_csv.js`, `import_doi_bondsmen.js`,
+`fact_check_monitor.js` and `update_legal_data.js` under `backend/src/scripts/`
+(and the Windows `RUN_*.bat` wrappers) are operator-only tools from the SQLite
+era: they still write to a local SQLite file (`data/providers.sqlite` /
+`demo.db`), **not** to Postgres — don't expect them to populate the production
+directory. (The nightly scheduler runs the provider-refresh scrapers when
+`LIVE_REFRESH=true` and a Google/Yelp key is set; their output stays in that
+local file.) The exception is `import_doi_supabase.js`
+(`scripts/run_doi_import.sh`, see docs/DOI_IMPORT_GUIDE.md), which writes to
+the real database through Supabase with `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`.
 
 ---
 

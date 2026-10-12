@@ -11,8 +11,8 @@ All endpoints (except public ones) require a JWT bearer token.
 POST https://api.justicegavel.app/api/auth/login
 Content-Type: application/json
 
-{ "email": "user@example.com", "password": "..." }
-→ { "token": "eyJ...", "refresh_token": "eyJ..." }
+{ "identifier": "user@example.com", "password": "..." }
+→ { "token": "eyJ...", "refreshToken": "eyJ...", "user": { ... } }
 ```
 
 Use the token in every request: `Authorization: Bearer eyJ...`
@@ -47,8 +47,8 @@ BASE = "https://api.justicegavel.app/api"
 token = requests.post(f"{BASE}/auth/login",
     json={"email":"...", "password":"..."}).json()["token"]
 
-lawyers = requests.get(f"{BASE}/match",
-    params={"lat": 36.16, "lng": -86.78, "case_type": "DUI"},
+lawyers = requests.get(f"{BASE}/match/lawyers",
+    params={"lat": 36.16, "lng": -86.78, "case": "DUI"},
     headers={"Authorization": f"Bearer {token}"}).json()
 ```
 
@@ -62,14 +62,14 @@ const { token } = await fetch(`${BASE}/auth/login`, {
   body: JSON.stringify({ email: '...', password: '...' }),
 }).then(r => r.json());
 
-const lawyers = await fetch(`${BASE}/match?lat=36.16&lng=-86.78&case_type=DUI`, {
+const lawyers = await fetch(`${BASE}/match/lawyers?lat=36.16&lng=-86.78&case=DUI`, {
   headers: { Authorization: `Bearer ${token}` },
 }).then(r => r.json());
 ```
 
 ### Go
 ```go
-resp, _ := http.Get("https://api.justicegavel.app/api/match?lat=36.16&lng=-86.78")
+resp, _ := http.Get("https://api.justicegavel.app/api/match/lawyers?lat=36.16&lng=-86.78")
 defer resp.Body.Close()
 var lawyers []map[string]interface{}
 json.NewDecoder(resp.Body).Decode(&lawyers)
@@ -77,7 +77,7 @@ json.NewDecoder(resp.Body).Decode(&lawyers)
 
 ### Swift / iOS (native Xcode)
 ```swift
-var request = URLRequest(url: URL(string: "https://api.justicegavel.app/api/match?lat=36.16&lng=-86.78")!)
+var request = URLRequest(url: URL(string: "https://api.justicegavel.app/api/match/lawyers?lat=36.16&lng=-86.78")!)
 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 let (data, _) = try await URLSession.shared.data(for: request)
 let lawyers = try JSONDecoder().decode([Lawyer].self, from: data)
@@ -87,7 +87,7 @@ let lawyers = try JSONDecoder().decode([Lawyer].self, from: data)
 ```kotlin
 val client = OkHttpClient()
 val request = Request.Builder()
-    .url("https://api.justicegavel.app/api/match?lat=36.16&lng=-86.78")
+    .url("https://api.justicegavel.app/api/match/lawyers?lat=36.16&lng=-86.78")
     .addHeader("Authorization", "Bearer $token")
     .build()
 val response = client.newCall(request).execute()
@@ -97,7 +97,7 @@ val response = client.newCall(request).execute()
 ```java
 HttpClient client = HttpClient.newHttpClient();
 HttpRequest request = HttpRequest.newBuilder()
-    .uri(URI.create("https://api.justicegavel.app/api/match?lat=36.16&lng=-86.78"))
+    .uri(URI.create("https://api.justicegavel.app/api/match/lawyers?lat=36.16&lng=-86.78"))
     .header("Authorization", "Bearer " + token)
     .build();
 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -108,7 +108,7 @@ HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.o
 require 'net/http'
 require 'json'
 
-uri = URI('https://api.justicegavel.app/api/match?lat=36.16&lng=-86.78')
+uri = URI('https://api.justicegavel.app/api/match/lawyers?lat=36.16&lng=-86.78')
 req = Net::HTTP::Get.new(uri)
 req['Authorization'] = "Bearer #{token}"
 res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |h| h.request(req) }
@@ -117,7 +117,7 @@ lawyers = JSON.parse(res.body)
 
 ### PHP
 ```php
-$ch = curl_init('https://api.justicegavel.app/api/match?lat=36.16&lng=-86.78');
+$ch = curl_init('https://api.justicegavel.app/api/match/lawyers?lat=36.16&lng=-86.78');
 curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token"]);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $lawyers = json_decode(curl_exec($ch), true);
@@ -129,14 +129,14 @@ var client = new HttpClient();
 client.DefaultRequestHeaders.Authorization = 
     new AuthenticationHeaderValue("Bearer", token);
 var lawyers = await client.GetFromJsonAsync<List<Lawyer>>(
-    "https://api.justicegavel.app/api/match?lat=36.16&lng=-86.78");
+    "https://api.justicegavel.app/api/match/lawyers?lat=36.16&lng=-86.78");
 ```
 
 ### Rust
 ```rust
 let client = reqwest::Client::new();
 let lawyers: Vec<serde_json::Value> = client
-    .get("https://api.justicegavel.app/api/match")
+    .get("https://api.justicegavel.app/api/match/lawyers")
     .query(&[("lat","36.16"), ("lng","-86.78")])
     .bearer_auth(&token)
     .send().await?.json().await?;
@@ -145,7 +145,7 @@ let lawyers: Vec<serde_json::Value> = client
 ### Dart / Flutter
 ```dart
 final response = await http.get(
-  Uri.parse('https://api.justicegavel.app/api/match?lat=36.16&lng=-86.78'),
+  Uri.parse('https://api.justicegavel.app/api/match/lawyers?lat=36.16&lng=-86.78'),
   headers: {'Authorization': 'Bearer $token'},
 );
 final lawyers = jsonDecode(response.body);
@@ -156,13 +156,13 @@ final lawyers = jsonDecode(response.body);
 | Endpoint | Method | Description |
 |---|---|---|
 | `/api/auth/login` | POST | Get JWT token |
-| `/api/match` | GET | Match lawyers by location + case type |
+| `/api/match/lawyers` | GET | Match lawyers by location + case type |
 | `/api/bail` | GET | Bail calculator |
 | `/api/chat/stream` | POST | AI chat (streaming SSE) |
-| `/api/expungement/check` | POST | Expungement eligibility |
+| `/api/expungement/check` | GET | Expungement eligibility |
 | `/api/arrests/search` | GET | Public arrest record search |
 | `/api/billing/bondsman/tiers` | GET | Bondsman subscription tiers |
 | `/api/checkins/submit` | POST | Defendant GPS check-in |
 | `/api/translate/message` | POST | Live translation (14 languages) |
 
-Full spec: `openapi.json` (generated from the mounted routes — currently 559 operations; regenerate with `node scripts/generate-openapi.mjs`)
+Full spec: `openapi.json` (generated from the mounted routes — regenerate with `npm run generate:openapi` from the repo root)

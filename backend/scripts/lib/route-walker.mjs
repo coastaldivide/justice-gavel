@@ -27,7 +27,7 @@ import express from 'express';
 export const AUTH_MIDDLEWARE = new Set(['authRequired', 'authMiddleware', 'requireAuth']);
 /** Middleware names that additionally require a staff/admin account. */
 export const STAFF_MIDDLEWARE = new Set([
-  'requireSuperAdmin', 'requireAdmin', 'requireStaff', 'requireRole', 'adminOnly',
+  'requireSuperAdmin', 'requireAdmin', 'requireStaff', 'requireRole', 'adminOnly', 'staffOnly',
 ]);
 
 export async function collectRoutes() {

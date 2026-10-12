@@ -1,3 +1,5 @@
+> **ARCHIVED — historical document, may be inaccurate.** Kept for history only (moved here in the step-10 documentation pass, Oct 2026). The split it proposes has been done (`backend/src/routes/billing/`), and `calcLeadFee` / tiered PI fees it mentions no longer exist — lead fees are flat (see README.md).
+
 # Billing Route Decomposition Plan
 # CodeScene hotspot score: 52 (billing.js: 1372L, CC=152)
 # Target: split into 4 focused sub-routers

@@ -7,7 +7,11 @@
 - [x] Refresh tokens: single-use, rotated, DB-stored (`JWT_REFRESH_EXPIRES_IN` default 60d)
 - [x] bcrypt rounds = 12
 - [x] Ghost-session protection (user existence check on every auth)
-- [x] Staff/admin routes check the role **in the database**, never the token
+- [x] Takedown review / dispositions / research indexing re-check the role
+      **in the database**; `/api/admin/*` needs an admin token **and** `X-Admin-Key`
+- [ ] Other role checks read the token's role claim (up to 30 days old): after
+      demoting a staff account, also delete its `refresh_tokens` rows and
+      rotate `ADMIN_KEY`, or move those checks to `utils/staff.js`
 - [x] Login rate-limited (10/15 min), registration (5/hr), password reset (5/hr)
 
 ## Transport Security ✅

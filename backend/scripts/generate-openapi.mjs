@@ -13,6 +13,9 @@
  *   - security: bearerAuth on JWT-guarded routes, adminKey (X-Admin-Key) on
  *     admin-key routes, [] on public ones
  *   - x-staff-only on routes that also require a staff/admin account
+ *   - 451 + x-requires-ai / 503 on routes guarded by requireDisclaimer / requireAi
+ *   - x-payments-gated + 503 on operations that return payments_unavailable
+ *     until Stripe keys are set
  *
  * src/__tests__/openapi_drift.test.js fails whenever the spec on disk and
  * the mounted routes drift apart — rerun this script after changing routes.
@@ -34,6 +37,19 @@ const TAG_NAMES = (p) => {
   const seg = p.replace(/^\/api\//, '/').split('/').filter(Boolean)[0] || 'ops';
   return [seg.replace(/\{.*/, '') || 'ops'];
 };
+
+// Mirrors the payments gates in routes/billing/index.js, routes/pay.js and
+// routes/consultations.js (POST /book): which operations answer
+// 503 payments_unavailable while no Stripe key is configured.
+const BILLING_NO_STRIPE = [/^\/bondsman\/profile\/?$/, /^\/pi-lead\/submit\/?$/, /^\/webhook\/?$/];
+function isPaymentsGated(method, p) {
+  if (method === 'GET') return false;
+  if (p.startsWith('/api/billing/')) {
+    return !BILLING_NO_STRIPE.some(re => re.test(p.slice('/api/billing'.length)));
+  }
+  if (p.startsWith('/api/pay/')) return method === 'POST';
+  return method === 'POST' && p === '/api/consultations/book';
+}
 
 const routes = await collectRoutes();
 
@@ -63,6 +79,13 @@ for (const r of routes) {
     },
   };
   if (r.staff) op['x-staff-only'] = true;
+  const needsDisclaimer = r.middleware.includes('requireDisclaimer');
+  const needsAi = r.middleware.includes('requireAi');
+  const paymentsGated = isPaymentsGated(r.method, r.path);
+  if (needsDisclaimer) op.responses[451] = { $ref: '#/components/responses/DisclaimerRequired' };
+  if (needsAi || paymentsGated) op.responses[503] = { $ref: '#/components/responses/Unavailable' };
+  if (needsAi) op['x-requires-ai'] = true;
+  if (paymentsGated) op['x-payments-gated'] = true;
   if (params.length) op.parameters = params;
   if (['POST', 'PUT', 'PATCH'].includes(r.method)) {
     op.requestBody = { $ref: '#/components/requestBodies/Json' };
@@ -103,14 +126,16 @@ const spec = {
     },
     responses: {
       Success:      { description: 'Success' },
-      BadRequest:   { description: 'Bad request / validation error ({ error, fields? })' },
+      BadRequest:   { description: 'Bad request / validation error ({ error, errors?: [{ field, message, code }] })' },
+      DisclaimerRequired: { description: 'Legal disclaimer not accepted ({ error, code: "disclaimer_required", version, text }) — accept via POST /api/auth/disclaimer/accept' },
+      Unavailable:  { description: 'Feature not configured: { error: "payments_unavailable" } (no Stripe key) or { error: "ai_unavailable" } (no Anthropic key)' },
       Unauthorized: { description: 'Missing or invalid credentials' },
       RateLimited:  { description: 'Rate limited (Retry-After header set)' },
       ServerError:  { description: 'Internal server error ({ error })' },
     },
     requestBodies: {
       Json: {
-        description: 'JSON body — field-level validation happens in the route; a 400 names the offending fields.',
+        description: 'JSON body — validated in the route; a 400 lists the offending fields in `errors`.',
         required: false,
         content: { 'application/json': { schema: { type: 'object', additionalProperties: true } } },
       },

@@ -1,9 +1,13 @@
 # Environment & Railway Setup (backend API)
 
-**This is the single environment-variable reference for the backend.**
-Every variable below is actually read by the code (`backend/src/config.js`
-mirrors this list in `ALL_ENV_VARS`); `backend/.env.example` carries the same
-set with placeholder values. `ENVIRONMENT_VARS.md` is just a pointer here.
+**This is the single environment-variable reference.**
+Every backend variable below is actually read by the code, and every variable
+the code reads is listed here. `backend/src/config.js` mirrors the list in
+`ALL_ENV_VARS`; `backend/.env.example` and the repo-root `.env.example` carry
+the same set with safe placeholder values (plus the frontend's `EXPO_PUBLIC_*`
+build variables, see the end of this file).
+`backend/src/__tests__/env_docs_consistency.test.js` fails if any of the four
+drift from the code. `ENVIRONMENT_VARS.md` is just a pointer here.
 
 ## Railway service settings
 
@@ -25,6 +29,7 @@ The server refuses to start without these:
 ```
 NODE_ENV=production
 DATABASE_URL=<postgres://... Supabase/Railway Postgres connection string>
+                                          (POSTGRES_URL is read as an alias when DATABASE_URL is unset)
 JWT_SECRET=<openssl rand -hex 32>
 JWT_REFRESH_SECRET=<openssl rand -hex 32, different from JWT_SECRET>
 ENCRYPTION_KEY=<openssl rand -hex 32  (64 hex chars) — never change once data exists>
@@ -41,14 +46,30 @@ A "feature disabled" line is logged at boot for each missing key:
 ```
 ANTHROPIC_API_KEY=<sk-ant-...>           AI chat/research/motions (else 503 ai_unavailable)
 CLAUDE_MODEL=claude-sonnet-4-6           model override (default claude-sonnet-4-6)
-STRIPE_SECRET_KEY=<sk_live_/sk_test_...> payments (STRIPE_SECRET also accepted); else billing → 503 payments_unavailable
+STRIPE_SECRET_KEY=<sk_live_/sk_test_...> payments; unset → charging/subscribing endpoints return
+                                          503 payments_unavailable and the app shows "Payments aren't
+                                          available yet". Setting it re-enables Stripe, no code change.
+STRIPE_SECRET                            legacy alias of STRIPE_SECRET_KEY (prefer STRIPE_SECRET_KEY)
 STRIPE_WEBHOOK_SECRET=<whsec_...>        Stripe webhook verification (POST /webhooks/stripe)
-STRIPE_*_PRICE_ID / STRIPE_*_ANNUAL_ID   subscription price ids: LEGAL_RADAR, ADVISOR,
-                                          LEGAL_PRO, ESQUIRE (+ STRIPE_BONDSMAN_STARTER/
-                                          PRO/MARKET[_ANNUAL]_ID for bondsman plans)
+STRIPE_LEGAL_RADAR_ID                    consumer subscription price ids: Legal Radar $19.99/mo,
+STRIPE_ADVISOR_PRICE_ID                   24 Hour Advisor $24.99/mo or $199/yr, Legal Pro
+STRIPE_ADVISOR_ANNUAL_ID                  $34.99/mo or $299/yr, Esquire $49/mo or $410/yr. Create
+STRIPE_LEGAL_PRO_PRICE_ID                 them in Stripe (backend/scripts/setup-stripe-products.js
+                                          helps); a plan whose id is unset cannot be purchased
+STRIPE_LEGAL_PRO_ANNUAL_ID
+STRIPE_ESQUIRE_PRICE_ID
+STRIPE_ESQUIRE_ANNUAL_ID
+STRIPE_BONDSMAN_STARTER_ID               bondsman plan price ids, monthly / annual: Starter $49/mo
+                                          ($490/yr), Pro $149/mo ($1,490/yr), Market $349/mo ($3,490/yr)
+STRIPE_BONDSMAN_STARTER_ANNUAL_ID
+STRIPE_BONDSMAN_PRO_ID
+STRIPE_BONDSMAN_PRO_ANNUAL_ID
+STRIPE_BONDSMAN_MARKET_ID
+STRIPE_BONDSMAN_MARKET_ANNUAL_ID
 STRIPE_SUCCESS_URL / STRIPE_CANCEL_URL   checkout redirect pages
 STRIPE_ACH_ENABLED=false                 enable Stripe ACH bank transfer
 RESEND_API_KEY=<re_...>                  transactional email (else emails are only logged)
+LIVE_EMAIL                               "false" forces log-only email even with RESEND_API_KEY set
 EMAIL_FROM=noreply@justicegavel.app      sender for user email (ALERT_EMAIL_FROM for ops alerts)
 REDIS_URL=<redis://...>                  BullMQ queue (else AI jobs run in-process)
 SENTRY_DSN=<https://...@sentry.io/...>   error tracking (SENTRY_ENVIRONMENT / SENTRY_RELEASE /
@@ -68,13 +89,15 @@ VAPID_EMAIL=admin@justicegavel.app       web push contact
 
 ```
 CORS_ORIGIN / EXTRA_ORIGINS              extra comma-separated browser origins
-                                          (justicegavel.app, www.justicegavel.app and
-                                          localhost:8081/19006/3000 are always allowed)
+                                          (justicegavel.app, www.justicegavel.app and the local
+                                          Expo/web dev-server origins are always allowed)
 FRONTEND_URL                             additional allowed origin, fallback base for links
 APP_URL=https://justicegavel.app         base URL used in password-reset links
 BASE_URL=https://api.justicegavel.app    this API's public URL (SAML ACS + OAuth redirect URIs)
 APP_SSO_REDIRECT / APP_OAUTH_REDIRECT    where users land after SAML / provider OAuth
-ADMIN_KEY=<openssl rand -hex 32>         required X-Admin-Key header for /api/admin and /api/bot
+ADMIN_KEY=<openssl rand -hex 32>         X-Admin-Key header: /api/bot/* (key only) and /api/admin/*
+                                          (key AND a signed-in admin/super_admin account). Unset =
+                                          those consoles are closed
 JWT_EXPIRES_IN=30d                       access-token lifetime (the mobile app refreshes
                                           tokens older than 25 days — keep >= 30d)
 JWT_REFRESH_EXPIRES_IN=60d               refresh-token lifetime (single-use, rotated)
@@ -106,10 +129,13 @@ ALERT_EMAIL / ONCALL_EMAIL / ONCALL_EMAIL_2   SEV-1/SEV-2 alert recipients
 ALERT_WEBHOOK_URL=<slack webhook>        Slack channel for operational alerts
 ADMIN_EMAIL / ADMIN_ALERT_EMAIL / ADMIN_ALERT_SMS   admin notification targets
 ADMIN_PANEL_URL / ADMIN_URL              links embedded in admin notification emails
-BOT_WEBHOOK_BASE_URL                     base URL for outbound-bot payment links
-DEMO_MODE                                ignored in production unless explicitly "true"
-LIVE_PAYMENTS / LIVE_EMAIL               legacy live flags (Stripe/Resend keys are what
-                                          actually gate the features)
+DEMO_MODE                                only labels the instance: /health reports mode demo|live.
+                                          In production only an explicit "true" counts. Never
+                                          bypasses payments or auth
+LIVE_PAYMENTS=false                      /api/pay multi-provider orchestrator: returns a mock
+                                          session URL unless "true" (and POST /api/pay/* is still
+                                          503 payments_unavailable without STRIPE_SECRET_KEY).
+                                          Subscriptions and lead fees do NOT use this flag
 ```
 
 ## Performance / ops tuning
@@ -161,21 +187,38 @@ SHOW_SAMPLE_ARRESTS=false                default false — leave unset in produc
 
 ## Integration OAuth credentials (optional, one pair per provider)
 
-`CLIO_CLIENT_ID/SECRET`, `MYCASE_CLIENT_ID/SECRET`,
-`PRACTICEPANTHER_CLIENT_ID/SECRET`, `IMANAGE_CLIENT_ID/SECRET`,
-`NETDOCUMENTS_CLIENT_ID/SECRET`, `GOOGLE_CALENDAR_CLIENT_ID/SECRET`,
-`OUTLOOK_CLIENT_ID/SECRET` — each pair enables one live integration (demo data
-without it). `COURTLISTENER_TOKEN` raises CourtListener rate limits
-(`COURTLISTENER_ENABLED=false` turns the integration off).
+Each pair enables one live integration (demo data without it). Register the
+redirect URI `<BASE_URL>/api/integrations/oauth/callback` with the provider.
 
-Alternative payment providers (all optional, inert without keys):
-`PAYPAL_CLIENT_ID/SECRET`, `BRAINTREE_MERCHANT_ID`, `SQUARE_ACCESS_TOKEN`,
-`AUTHORIZE_NET_API_LOGIN_ID`, `AMAZON_PAY_PUBLIC_KEY_ID`,
-`COINBASE_COMMERCE_API_KEY`, `BITPAY_TOKEN`, `NOWPAYMENTS_KEY`.
+| Provider | Variables |
+|---|---|
+| Clio | `CLIO_CLIENT_ID`, `CLIO_CLIENT_SECRET` |
+| MyCase | `MYCASE_CLIENT_ID`, `MYCASE_CLIENT_SECRET` |
+| PracticePanther | `PRACTICEPANTHER_CLIENT_ID`, `PRACTICEPANTHER_CLIENT_SECRET` |
+| iManage | `IMANAGE_CLIENT_ID`, `IMANAGE_CLIENT_SECRET` |
+| NetDocuments | `NETDOCUMENTS_CLIENT_ID`, `NETDOCUMENTS_CLIENT_SECRET` |
+| Google Calendar | `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET` |
+| Outlook | `OUTLOOK_CLIENT_ID`, `OUTLOOK_CLIENT_SECRET` |
+| CourtListener | `COURTLISTENER_TOKEN` (optional, raises rate limits); `COURTLISTENER_ENABLED=false` turns it off |
 
-Operator/scraper-only: `PROVIDERS_DB`, `UPLOAD_DIR`, `REPORT_DIR`,
-`SUPABASE_PUBLISHABLE_KEY` (DOI import fallback). Set automatically by the
-platform: `PORT`, `RAILWAY_ENVIRONMENT`.
+## Alternative payment provider stubs (leave unset)
+
+`PAYPAL_CLIENT_ID`, `PAYPAL_SECRET`, `BRAINTREE_MERCHANT_ID`,
+`SQUARE_ACCESS_TOKEN`, `AUTHORIZE_NET_API_LOGIN_ID`, `AMAZON_PAY_PUBLIC_KEY_ID`,
+`COINBASE_COMMERCE_API_KEY`, `BITPAY_TOKEN`, `NOWPAYMENTS_KEY` are read by the
+adapters in `backend/src/payments/`, which are only reachable through
+`/api/pay` with `LIVE_PAYMENTS=true`. Most of them are placeholders that
+return mock checkout URLs even when a key is set. They are not production
+integrations: Stripe is the only supported payment provider.
+
+## Operator scripts and platform
+
+- `REPORT_DIR`: output directory for `src/scripts/fact_check_monitor.js` reports.
+- `PROVIDERS_DB`: local output file for the operator-only
+  `src/scripts/scrape_recovery_agents.js` (recovery agents are not shown in the app).
+- `SUPABASE_PUBLISHABLE_KEY`: fallback key for `src/scripts/import_doi_supabase.js`.
+- Set by the platform, do not set by hand: `PORT` (default 4000 locally),
+  `RAILWAY_ENVIRONMENT` (used as the Sentry environment / boot log label).
 
 ## Verify a deploy
 
@@ -185,3 +228,16 @@ node scripts/smoke-test.mjs https://<your-api-host> [--db-url $DATABASE_URL]
 ```
 
 Full go-live sequence: `backend/scripts/railway-checklist.md`.
+
+## Frontend build variables (EXPO_PUBLIC_*)
+
+Read by the app at **build** time (`frontend/.env` or EAS secrets), never by
+the backend. They are listed in all three `.env.example` files.
+
+| Variable | Effect |
+|---|---|
+| `EXPO_PUBLIC_API_BASE` | API base URL. Unset → `https://api.justicegavel.app/api`. Local: `http://localhost:4000/api` |
+| `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Native payment sheet. Leave empty until Stripe is live |
+| `EXPO_PUBLIC_SENTRY_DSN` | App error tracking (off when empty) |
+| `EXPO_PUBLIC_MIXPANEL_TOKEN` | Analytics (off when empty) |
+| `EXPO_PUBLIC_BETA` | `true` shows the beta banner (TestFlight/beta builds) |

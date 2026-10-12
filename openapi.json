@@ -33,7 +33,13 @@
         "description": "Success"
       },
       "BadRequest": {
-        "description": "Bad request / validation error ({ error, fields? })"
+        "description": "Bad request / validation error ({ error, errors?: [{ field, message, code }] })"
+      },
+      "DisclaimerRequired": {
+        "description": "Legal disclaimer not accepted ({ error, code: \"disclaimer_required\", version, text }) — accept via POST /api/auth/disclaimer/accept"
+      },
+      "Unavailable": {
+        "description": "Feature not configured: { error: \"payments_unavailable\" } (no Stripe key) or { error: \"ai_unavailable\" } (no Anthropic key)"
       },
       "Unauthorized": {
         "description": "Missing or invalid credentials"
@@ -47,7 +53,7 @@
     },
     "requestBodies": {
       "Json": {
-        "description": "JSON body — field-level validation happens in the route; a 400 names the offending fields.",
+        "description": "JSON body — validated in the route; a 400 lists the offending fields in `errors`.",
         "required": false,
         "content": {
           "application/json": {
@@ -4486,8 +4492,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -4553,8 +4563,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -4588,8 +4602,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -4648,8 +4666,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -4715,8 +4737,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -4750,8 +4776,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -4785,8 +4815,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -4852,8 +4886,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -4919,8 +4957,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "parameters": [
           {
             "name": "id",
@@ -4964,8 +5006,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "parameters": [
           {
             "name": "id",
@@ -5076,8 +5122,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -5111,8 +5161,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -5146,8 +5200,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -6249,10 +6307,17 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
+          "451": {
+            "$ref": "#/components/responses/DisclaimerRequired"
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -6366,10 +6431,17 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
+          "451": {
+            "$ref": "#/components/responses/DisclaimerRequired"
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -7311,8 +7383,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -7557,8 +7633,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -7624,8 +7704,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -7701,8 +7785,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -7967,8 +8055,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "parameters": [
           {
             "name": "id",
@@ -8255,8 +8347,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -8882,8 +8978,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -14221,8 +14321,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -16138,8 +16242,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "parameters": [
           {
             "name": "id",
@@ -16181,10 +16289,17 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
+          "451": {
+            "$ref": "#/components/responses/DisclaimerRequired"
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -16332,8 +16447,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -16412,8 +16531,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -16447,8 +16570,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-payments-gated": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -16661,6 +16788,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "x-staff-only": true,
         "parameters": [
           {
             "name": "defendant_id",
@@ -16702,7 +16830,8 @@
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "x-staff-only": true
       }
     },
     "/api/pretrial/enroll": {
@@ -16735,6 +16864,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "x-staff-only": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -17035,8 +17165,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -17987,10 +18121,17 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           },
+          "451": {
+            "$ref": "#/components/responses/DisclaimerRequired"
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }
@@ -19551,8 +19692,12 @@
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
+        "x-requires-ai": true,
         "requestBody": {
           "$ref": "#/components/requestBodies/Json"
         }

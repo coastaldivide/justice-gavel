@@ -2,11 +2,12 @@
   "name": "justice-gavel",
   "version": "8.7.60",
   "private": true,
-  "description": "Justice Gavel monorepo root — the API lives in backend/, the app in frontend/",
+  "description": "Justice Gavel monorepo root \u2014 the API lives in backend/, the app in frontend/",
   "scripts": {
     "start": "cd backend && npm start",
     "install:backend": "cd backend && npm ci --omit=dev",
-    "smoke": "cd backend && node scripts/smoke-test.mjs"
+    "smoke": "cd backend && node scripts/smoke-test.mjs",
+    "generate:openapi": "node scripts/generate-openapi.mjs"
   },
   "engines": {
     "node": ">=20.6.0"

@@ -49,9 +49,9 @@ VAPID_PRIVATE_KEY=""
 
 # Supabase (supabase.com → your project → Settings → API)
 SUPABASE_URL=""               # https://<project-ref>.supabase.co
-SUPABASE_ANON_KEY=""          # supabase.com → Settings → API → anon public          # Settings → API → anon public
-SUPABASE_SERVICE_KEY=""       # supabase.com → Settings → API → service_role       # Settings → API → service_role secret
-DATABASE_URL=""               # supabase.com → Settings → Database → Transaction pooler               # Settings → Database → Connection string (Transaction mode)
+# (No anon key: the backend is the only database client; RLS denies anon.)
+SUPABASE_SERVICE_KEY=""       # supabase.com → Settings → API → service_role secret
+DATABASE_URL=""               # supabase.com → Settings → Database → Connection string (Transaction pooler)
 
 # Anthropic (console.anthropic.com → API Keys)
 ANTHROPIC_API_KEY=""          # console.anthropic.com → API Keys
@@ -67,8 +67,13 @@ STRIPE_ESQUIRE_PRICE_ID=""
 STRIPE_ADVISOR_ANNUAL_ID=""
 STRIPE_LEGAL_PRO_ANNUAL_ID=""
 STRIPE_ESQUIRE_ANNUAL_ID=""
-STRIPE_LEGAL_RADAR_ID=""          # price_1Tb1vn2... monthly
-STRIPE_LEGAL_RADAR_ANNUAL_ID=""   # price_1Tb1wQ2... annual
+STRIPE_LEGAL_RADAR_ID=""
+STRIPE_BONDSMAN_STARTER_ID=""
+STRIPE_BONDSMAN_STARTER_ANNUAL_ID=""
+STRIPE_BONDSMAN_PRO_ID=""
+STRIPE_BONDSMAN_PRO_ANNUAL_ID=""
+STRIPE_BONDSMAN_MARKET_ID=""
+STRIPE_BONDSMAN_MARKET_ANNUAL_ID=""
 
 # Email (resend.com → API Keys) — without it, emails are logged, not sent
 RESEND_API_KEY=""             # resend.com → API Keys
@@ -99,7 +104,9 @@ CORS_ORIGIN="https://justicegavel.app"
 SENTRY_ENVIRONMENT="production"
 VAPID_EMAIL="admin@justicegavel.app"
 DEMO_MODE="false"
-# Features are actually gated on their keys (Stripe/Resend); these flags are legacy
+# Stripe/Resend features are gated on their keys. LIVE_EMAIL=false would force
+# log-only email; LIVE_PAYMENTS=true lets /api/pay create real (Stripe) sessions;
+# LIVE_REFRESH=true turns the nightly scheduler on. See RAILWAY_ENV_SETUP.md.
 LIVE_EMAIL="true"
 LIVE_PAYMENTS="true"
 LIVE_REFRESH="true"
@@ -140,7 +147,6 @@ set_var "DEMO_MODE"             "$DEMO_MODE"
 
 # Database
 set_var "SUPABASE_URL"          "$SUPABASE_URL"
-set_var "SUPABASE_ANON_KEY"     "$SUPABASE_ANON_KEY"
 set_var "SUPABASE_SERVICE_KEY"  "$SUPABASE_SERVICE_KEY"
 set_var "DATABASE_URL"          "$DATABASE_URL"
 
@@ -157,6 +163,12 @@ set_var "STRIPE_ADVISOR_ANNUAL_ID"     "$STRIPE_ADVISOR_ANNUAL_ID"
 set_var "STRIPE_LEGAL_PRO_ANNUAL_ID"   "$STRIPE_LEGAL_PRO_ANNUAL_ID"
 set_var "STRIPE_ESQUIRE_ANNUAL_ID"     "$STRIPE_ESQUIRE_ANNUAL_ID"
 set_var "STRIPE_LEGAL_RADAR_ID"        "$STRIPE_LEGAL_RADAR_ID"
+set_var "STRIPE_BONDSMAN_STARTER_ID"        "$STRIPE_BONDSMAN_STARTER_ID"
+set_var "STRIPE_BONDSMAN_STARTER_ANNUAL_ID" "$STRIPE_BONDSMAN_STARTER_ANNUAL_ID"
+set_var "STRIPE_BONDSMAN_PRO_ID"            "$STRIPE_BONDSMAN_PRO_ID"
+set_var "STRIPE_BONDSMAN_PRO_ANNUAL_ID"     "$STRIPE_BONDSMAN_PRO_ANNUAL_ID"
+set_var "STRIPE_BONDSMAN_MARKET_ID"         "$STRIPE_BONDSMAN_MARKET_ID"
+set_var "STRIPE_BONDSMAN_MARKET_ANNUAL_ID"  "$STRIPE_BONDSMAN_MARKET_ANNUAL_ID"
 set_var "LIVE_PAYMENTS"                "$LIVE_PAYMENTS"
 
 # Email

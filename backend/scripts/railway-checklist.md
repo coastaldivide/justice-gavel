@@ -54,10 +54,16 @@ set — everything else works without them.
 | Advisor | Monthly | $24.99 | $199/yr |
 | Legal Pro | Monthly | $34.99 | $299/yr |
 | Esquire | Monthly | $49.00 | $410/yr |
-| Bondsman | Monthly | $49.00 | — (leads billed flat $100 each) |
+| Bondsman Starter | Monthly | $49.00 | $490/yr |
+| Bondsman Pro | Monthly | $149.00 | $1,490/yr |
+| Bondsman Market | Monthly | $349.00 | $3,490/yr |
 
-[ ] Copy each `price_...` id into the matching `STRIPE_*_PRICE_ID` /
-    `STRIPE_*_ANNUAL_ID` variable
+Lead fees are one-off flat charges (no price id): bondsman $100, personal
+injury $200, civil rights $200, employment $100, ICE detention $75.
+
+[ ] Copy each `price_...` id into its variable (exact names in
+    RAILWAY_ENV_SETUP.md: `STRIPE_LEGAL_RADAR_ID`, `STRIPE_ADVISOR_PRICE_ID`,
+    `STRIPE_BONDSMAN_STARTER_ID`, …). A plan whose id is unset cannot be bought
 [ ] Webhooks → Add endpoint
     - URL: `https://<your-api-host>/webhooks/stripe`
     - Events: `checkout.session.completed`, `customer.subscription.updated`,
@@ -77,7 +83,7 @@ set — everything else works without them.
 
 ---
 
-## STEP 6 — Google Places (3 min, optional)
+## STEP 6 — Google Places (3 min, optional — operator scrapers only)
 
 [ ] console.cloud.google.com → enable Places API (New) + Geocoding API
 [ ] Credentials → Create API Key → `GOOGLE_PLACES_KEY`

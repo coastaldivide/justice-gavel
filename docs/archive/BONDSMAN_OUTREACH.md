@@ -1,3 +1,5 @@
+> **ARCHIVED — historical document, may be inaccurate.** Kept for history only (moved here in the step-10 documentation pass, Oct 2026). Do not use this script as-is: it promises search placement for the Verified Badge (bail search is not ordered by badge) and quotes weekly arrest volumes the app does not have (no arrest feeds are configured by default). The flat $100 bondsman lead fee is current.
+
 # Justice Gavel — Bondsman Outreach Package
 **Goal:** 10 paying bondsmen → Marcus Okafor VC condition  
 **Target market:** Tennessee (local first, then TX, FL, GA)  

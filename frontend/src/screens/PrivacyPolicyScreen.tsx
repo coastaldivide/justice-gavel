@@ -139,7 +139,7 @@ const SECTIONS: Section[] = [
       '• Anthropic -- AI responses (claude.ai privacy policy)\n' +
       '• OpenAI -- Audio transcription (openai.com/policies)\n' +
       '• Stripe -- Payment processing (stripe.com/privacy)\n' +
-      '• SendGrid -- Email notifications (sendgrid.com/policies)\n' +
+      '• Resend -- Email notifications (resend.com/legal/privacy-policy)\n' +
       '• Sentry -- Crash reporting (sentry.io/privacy)\n' +
       '• Expo / AWS -- App infrastructure\n\n' +
       'We do not share your data with attorneys listed on our platform ' +

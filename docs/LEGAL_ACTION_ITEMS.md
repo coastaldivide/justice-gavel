@@ -8,13 +8,42 @@ Priority order matches counsel's blocker list.
 
 ## THIS WEEK — Personal exposure attached
 
+### A0 — Lawyer review still required (not done by engineering)
+The code and docs now match the owner's decisions, but none of this has been
+reviewed by counsel. Before launch a licensed attorney should review:
+- **Lead-fee structure** — flat per-lead fees to bail agents ($100) and to
+  attorneys (PI/medical $200, civil rights $200, employment $100, ICE $75):
+  runner-capper statutes, ABA Model Rules 5.4 / 7.2 (paying for referrals,
+  fee-splitting) and each target state's equivalents.
+- **UPL disclaimers** — the AI disclaimer text and its gate (AI endpoints
+  return 451 until the current disclaimer version is accepted), the in-app
+  "not legal advice" copy, and the App Store listing.
+- **State rule accuracy** — bail schedules, expungement rules
+  (`backend/src/routes/expungement/rules.js`), DUI/drug tables, crisis
+  hotlines (process: FACT_CHECK_RUNBOOK.md).
+- **Privacy policy subprocessor list** — the in-app policy
+  (`frontend/src/screens/PrivacyPolicyScreen.tsx`) named SendGrid; it now
+  names Resend (the actual email provider). Counsel should confirm the full
+  list (hosting on Railway, database on Supabase/Railway Postgres, Daily.co
+  video, Mixpanel analytics, Google Places are not listed) and align
+  `docs/PRIVACY_POLICY.md` with the in-app text.
+- **Marketing copy that implies paid placement** — the bondsman
+  SubscriptionScreen lists "Top placement in all searches" and the
+  Verified Badge is pitched as "top of search results", but bail search is
+  ordered by distance/rating only. Either build it (and review it against
+  advertising rules) or remove the copy. The archived outreach script
+  (`docs/archive/BONDSMAN_OUTREACH.md`) also quotes arrest volumes the app
+  does not have.
+
 ### A1 — TN criminal lawyer call (Monday)
 Bondsman lead program. Lead fees are now flat and defined in one place
 (`backend/src/routes/billing/leadFee.js` + `attorneyLeadFee.js`): bondsman
 **$100**, personal injury/medical **$200**, civil rights **$200**, employment
 **$100**, ICE detention **$75** — never scaled to bail or case value.
-The **ICE $75 fee is unchanged by owner decision** (Oct 2026 doc pass).
-Even with the flat restructuring, get a Tennessee criminal defense attorney
+These amounts were **chosen by the owner** (Oct 2026); the ICE $75 fee is
+unchanged by owner decision. Flat fees reduce the runner-capper / fee-splitting
+risk but do not settle it: **a lawyer still needs to review the lead-fee
+structure** (see A0 below). Get a Tennessee criminal defense attorney
 to review:
 - The arrest-alert → bondsman-notification pipeline
 - Tex. Penal Code §38.12 (third-degree felony in aggravated forms)
@@ -23,7 +52,7 @@ to review:
 Cost: 1-hour consultation. Risk without it: personal criminal exposure.
 
 ### A2 — Import DOI producer files for bondsmen
-1,262 bail agents with 0 license numbers. The TN, TX, and FL
+1,265 seeded bail agents, 0 with a license number. The TN, TX, and FL
 Department of Insurance producer files are **free and public**.
 - TN: tn.gov/commerce/insurance
 - TX: tdi.texas.gov/agent/agent-license-lookup.html
@@ -62,6 +91,11 @@ Five Stripe tiers + annual options. Have counsel check:
 - California Automatic Renewal Law (ARL): pre-checkout price disclosure,
   affirmative consent, post-purchase confirmation, easy cancellation
 - FTC Negative Option Rule (updated 2024): same requirements federally
+- Displayed vs charged price: `frontend/src/screens/SubscriptionScreen.tsx`
+  shows $198.99 / $348.99 / $48.99 tiers under plan keys the backend prices
+  differently (`backend/src/routes/billing/_shared.js`), and the bondsman
+  dashboard shows the $49 Verified Badge as $48.99. Align the copy with what
+  Stripe will charge before enabling payments.
 Cost: 2-hour attorney review. Enforcement is active. Fixes are cheap now.
 
 ### A6 — Claims inventory / substantiation file
