@@ -121,6 +121,9 @@ function BookingScreen({ route, navigation }: ScreenProps): React.JSX.Element {
       // Step 1 — Create booking + PaymentIntent server-side
       const res = await api.post('/consultations/book', {
         lawyer_id:    lawyerId ?? null,
+        // The server requires the attorney's name for the booking record,
+        // confirmation email and attorney alert.
+        lawyer_name:  lawyerName,
         duration_min: duration.min,
         fee_cents:    duration.cents,
         date_slot:    selDay?.date,

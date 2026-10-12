@@ -433,3 +433,75 @@
   each is a checkmark drawn only on a filled (navy/gold/legal) checkbox, or a header action inside the navy
   gradient. Verified correct by eye and by axe (0 violations).
 - No axe violations were waived: serious/critical and moderate are all 0 on the audited screens.
+
+## Step 5 — Strict TypeScript (frontend)
+- tsconfig: full `strict: true` — removed the escape hatches (`noImplicitAny:false`,
+  `strictFunctionTypes:false`, `strictPropertyInitialization:false`).
+- `ScreenProps.route` is now required (react-navigation always passes it); RouteParams gained
+  matterId/attorneyId/topic; payments `initPaymentSheet` takes Stripe's real `SetupParams` via a
+  type-only import (erased on web); realtime/BarPrep/Matter/VideoConsultation/LegalDisclaimer callbacks typed.
+- Final 23 strict errors fixed by hand: FlashList keyExtractor/renderItem annotations in 7 screens,
+  MediaStreamTrack in the 2 web recorders, BailSearch `res` definite-assignment guard (now throws into
+  the offline-cache fallback instead of a potential undefined deref).
+- Real bugs strict mode surfaced, fixed:
+  1. InsuranceScreen compared `f['legal_pro']` but rows define `pro` — the Legal Pro column of the
+     comparison table always rendered "--" for every feature.
+  2. ExpungementScreen passed `{params}` as cachedGet's TTL argument — the state/limit params were
+     never sent, and the URL-keyed cache served one state's attorney list to every state. Params now
+     ride in the URL (per-state cache keys).
+- Gate: tsc --noEmit 0 errors; eslint src App.tsx --max-warnings 0 → 0/0; jest 48 suites/705 + render
+  2/8 pass; nav-targets 0 problems; expo export --platform web OK. Backend untouched this step.
+
+## Pricing follow-up (owner instruction, Oct 11)
+- Bail-agent lead fee confirmed flat $100 (commit 257bd17 had already applied it across code, app,
+  docs, smoke test). Retired the last three test files that still asserted the abandoned bail-scaled
+  tiers ($15–$1,000 / $15k–$100k cents) as "correct"; kraken K-02/K-09, crash_paths and coverage_gap
+  now import routes/billing/leadFee.js and prove the fee never varies with bail. (commit 5200f98)
+
+# STEP 6 — finish or honestly remove every half-built feature
+
+## Inventory (feature → outcome)
+| # | Feature | State found | Outcome |
+|---|---|---|---|
+| 1 | `hooks/useRealtimeMessages.ts` | Dead stub: Supabase client commented out, `supabase = null`, no screen imported it. Worse: `MessagesScreen.tsx` was a verbatim clone of LegalResearchScreen (clobbered pre-baseline at b493700) — every "Messages" navigation (CaseScreen, AttorneyInbox, AttorneyDashboard, LawyerProfile, LawyersScreen, deep link `messages/:caseId`, push notifications) landed on a second Legal-Research paywall | **DONE** — stub deleted; new `hooks/useCaseMessages.ts` (authenticated REST polling every 8 s, foreground-only via AppState, merge-by-id dedupe, stale-case guard, optimistic-free send that keeps the draft on failure, full cleanup). New real `MessagesScreen` (thread bubbles, day separators, read receipts, attachment chips, pull-to-refresh, guest sign-in gate, lawyerId→case resolution mirroring LawyersScreen, case picker when opened without params). **No Supabase anon key anywhere** (RLS has no policies); API no longer advertises `realtime_channel`/`channel` fields and no UI claims "realtime" |
+| 2 | `ChildSupportScreen` | Complete calculator, never registered ("orphaned route removed in v8.6.3") | **DONE** — registered in MoreStack (`ChildSupport`, "🧮 Support Calculator") + CTA "Estimate your child support →" on FamilyCourt's Child Support tab. nav-targets: 250 refs, 0 problems. Other orphans: `RecoveryAgentsScreen` stays unregistered **deliberately** (item 5.5, licensing), `TermsAcceptanceModal` is used by App/Register |
+| 3 | `services/arrest_ingest.js` | Fake sources returning `[]` (Davidson/Shelby TODO scrapes + invented judyrecords API) | **DONE / honest** — rewritten around operator-configured `ARREST_FEED_URLS` (JSON array of `{id,url,state,county}`; https-only, slug ids, dedupe, 2-letter states; records validated/sanitized: name+parseable booking_date required, lengths capped, source stored as `feed_<id>` so it can never collide with the sample-row filter). No feed ⇒ loud log + `{feeds_configured:false, inserted:0}`; startup warns via `OPTIONAL_FEATURES`. `dry_run` now actually works (the route already passed it). Documented in ENVIRONMENT_VARS.md / RAILWAY_ENV_SETUP.md / .env.example; judyrecords key + `API_URLS.JUDYRECORDS` removed. `/arrests/search`, `/arrests/recent` and `/billing/leads` now return `feeds_configured`; FamilyConnect empty state and BondsmanDashboard empty state show "No public arrest feeds configured for your area yet" when it is false. Dishonest copy fixed: ArrestMonitor upsell/"3am scan across the US", Bondsman "real-time feed"/"within minutes of booking", ConsumerSubscription "24/7 arrest monitoring"/"Real-time arrest monitoring", HelpNow "real-time arrest alerts". Sample rows stay hidden |
+| 3b | Arrest monitors (found during 3) | CRUD-only: **no job ever matched monitors**, and `last_checked`/`last_result` the app renders did not exist in Postgres | **DONE** — migration 11 adds the columns; `arrest_alerts.sendArrestAlerts` now checks every active monitor each run (pure `monitorMatches`: all watch-name words + county/state filters), push-notifies owners (`screen:'ArrestMonitor'`), stamps `last_checked`/`last_result` even on zero-arrest runs; GET /monitors returns them. Also fixed the County input's wrong `keyboardType="numeric"` |
+| 4 | Unused dependencies | depcheck hits | **Removed** frontend: @gorhom/bottom-sheet, @hookform/resolvers, zod, expo-asset (expo itself depends on it), expo-linking, expo-status-bar (App uses RN StatusBar); devDeps @testing-library/jest-native, eslint-plugin-react-native. backend: body-parser (Express 5 built-ins), p-queue (aiQueue is bullmq/in-process). **Kept deliberately**: react-dom (expo web), expo-dev-client (native dev builds), expo-system-ui (app.json `userInterfaceStyle`), @babel/preset-typescript (babel.config.test.js). Lockfiles regenerated; `npm ci` green in both |
+| 5 | Stub sweep | grep TODO/FIXME/coming soon/not implemented/placeholder in runtime code | `useRealtimeMessages` TODO → replaced (above); arrest_ingest TODO/placeholder → replaced (above); `PlaceholderIllustration` (dashed "design placeholder" circle rendered live in JustArrested) → **deleted**, screen now uses the finished `IllustrationRights` SVG; payments "coming soon"/503 → **kept (intentional)**; `[PLACEHOLDER]` in motion/expungement AI prompts → intentional model instruction, kept; `routes/time.js` bind-param refactor TODO + `scripts/update_legal_data.js` "TODO 3B" header → kept (documented tech-debt notes on working code; scrapers are operator-only per step 3); remaining "no-op" mentions are real feature-flag shims (Sentry, ensureTables, webCompat). `LawyerSkeletonCard`/`MotionTypeBadge`/`CaseStatusBadge` stay as unused-but-finished library components (pinned by v11/v154/v163 with prior-step rationale; they mislead no user) |
+| 6 | `FlashListCompat` `props: any` | untyped passthrough | **DONE** — generic `FlashListCompat<T>(props: FlashListCompatProps<T>)` = `FlashListProps<T>` + optional FlatList-only virtualization props (still stripped). Surfaced a real bug: CourtLocator passed `maxWidth/alignSelf/width` in `contentContainerStyle`, which FlashList ignores — centered max-width column now lives on a wrapper View (and actually works) |
+
+## Other changes
+- Tests added: `arrest_ingest.test.js` (11: config validation, sanitization, no-feed honesty, dry-run, broken-feed error), `arrest_monitors.test.js` (5: matcher rules; fake-DB run proves push + stamping, incl. zero-arrest runs).
+- Stale source-pin tests updated to current intent: v8 7-04 + v27 3-03 (route REQUIRED since step 5 — these were failing at HEAD because step 5 never ran backend jest), v8 §5 / v31 S7-03 / v43 S7-03 / v154 M19-02 / v155 M19b-03 (PlaceholderIllustration → Illustrations), v45 S6-03 ("Real-time lead feed" → honest docblock), arrest_visibility PG (sendArrestAlerts result now includes monitor stats).
+- smoke-test.mjs: new check "arrest search reports honest feed coverage (feeds_configured)" (32 checks total).
+- Live manual verification against the booted prod server: `/arrests/search` → `feeds_configured:false`; case message POST/GET round-trips; monitors return `last_checked`/`last_result`.
+
+## Gate
+1. Fresh DB `jg_step6`: all **12** migrations ON_ERROR_STOP, applied **twice** — OK (195 tables incl. views, 600 seed rows kept, new monitor columns present). Dropped after.
+2. Backend: `npm ci` OK (new lockfile); import smoke OK; prod boot NODE_ENV=production TZ=UTC (generated secrets, no Stripe, mock Anthropic) `/health` db ok, payments:false; **smoke-test 32/32** (incl. the new feeds_configured check). Startup logs the new "ARREST_FEED_URLS not set — Arrest ingestion disabled" warning.
+3. Backend jest (in-memory): **318 suites passed, 1 skipped (PG-only); 27,861 passed, 13 skipped, 0 failed.** With TEST_DATABASE_URL: arrest_visibility + alerts_takedown_pg **15/15**. `npm run lint` 0/0.
+4. Frontend: tsc --noEmit **0 errors**; eslint `--max-warnings 0` **0/0**; `npm test` 48 suites/705 + render 2/8 all pass; nav-targets **0 problems** (250 refs); design-audit `--ci` **0** failures in every category; `expo export --platform web` OK (ChildSupport + real Messages bundles present, honest copy in bundles).
+5. Headless web smoke vs live backend: **166 checks, 0 failed, 0 page errors, 0 console errors, 0 request storms** (344 API requests).
+6. ci.yml: unchanged — new tests run inside the existing in-memory jest step, the new smoke check inside the existing smoke step, and the new migration inside the existing migration loop.
+
+## Chose not to do (and why)
+- RecoveryAgentsScreen stays present-but-unregistered: deliberate legal suspension (item 5.5), documented in AppNavigator; not a half-built feature.
+- Direct (non-case) messaging UI for `/messages/direct`: LawyerProfile/Lawyers message flows resolve to a case thread (matching the existing LawyersScreen behavior); a separate DM inbox is new product surface, not a half-built one.
+- PI lead fee tiering (`billing/pi_leads.js`) still differs from its route's flat-fee comment — attorney-lead scope flagged since step 1, unchanged.
+- Did NOT commit (coordinator commits).
+
+## Step 7 — real behavioural tests (completed by coordinator)
+- backend/src/__tests__/integration/: 10 suites / 89 tests running every route group the app calls
+  against a real migrated Postgres (gated on TEST_DATABASE_URL, skipped in-memory). New CI step runs them
+  on the migrated jg_ci database.
+- frontend render tests: apiMock.ts harness + authScreens / homeChat / providerScreens suites (31 render
+  tests total). Found and fixed a real bug: the consultations booking schema rejected every payload the
+  app actually sends (24h time_slot, string-enum duration, required numeric lawyer_id, no lawyer_name);
+  schema now matches BookingScreen, which now also sends lawyer_name. Verified live: app payload → 503
+  payments_unavailable (payments off), garbage → 400 with field errors.
+- Test-only fixes made when finishing the step: LawyersScreen render tests must seed the
+  'lawyers_need_shown' AsyncStorage flag (first-visit modal gates fetching — now covered by its own
+  test); empty result asserts the status message the user actually sees; CALL NOW matched via getAllByText.
+- Verification: backend full jest 0 failed / 27,861 passed / 83 PG-gated skips; integration suite on
+  jg_int 89/89; frontend tsc 0, eslint 0/0 (--max-warnings 0), logic 705 + render 31 pass; ci.yml YAML OK.

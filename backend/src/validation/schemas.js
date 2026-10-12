@@ -130,12 +130,25 @@ export const schemas = {
   },
 
   consultations: {
+    // Matches what BookingScreen actually sends:
+    //   { lawyer_id: number|null, lawyer_name, lawyer_phone?, duration_min: 15|30|60,
+    //     date_slot: 'YYYY-MM-DD', time_slot: '9:00 AM' (the format /slots returns), notes? }
+    // The old schema ('HH:MM' 24h time_slot, string-enum duration, required
+    // numeric lawyer_id, no lawyer_name) rejected every real app booking.
     book: z.object({
-      lawyer_id:    z.number().int().positive(),
+      lawyer_id:    z.preprocess(
+        v => (v === null || v === undefined || v === '' ? null : Number(v)),
+        z.number().int().positive().nullable()
+      ).optional(),
+      lawyer_name:  nonEmptyStr(200),
+      lawyer_phone: z.string().trim().max(40).optional(),
       date_slot:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      time_slot:    z.string().regex(/^\d{2}:\d{2}$/),
-      duration_min: z.enum(['15','30','60']).transform(Number),
-      notes:        z.string().max(1000).optional(),
+      time_slot:    z.string().trim().regex(/^(?:[01]?\d|2[0-3]):[0-5]\d(?:\s?[AaPp][Mm])?$/,
+        'time_slot must be H:MM AM/PM or HH:MM'),
+      duration_min: z.coerce.number()
+        .refine(v => [15, 30, 60].includes(v), 'duration_min must be 15, 30 or 60')
+        .default(30),
+      notes:        z.string().max(2000).optional(),
     }),
   },
 

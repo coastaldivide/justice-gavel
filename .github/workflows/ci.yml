@@ -139,6 +139,15 @@ jobs:
           TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}
         run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci src/__tests__/arrest_visibility.test.js src/__tests__/alerts_takedown_pg.test.js
 
+      - name: Route integration suite on real Postgres (jest)
+        # Every route group the app calls (auth, cases, chat/jobs, providers,
+        # messages, billing/consultations, bail/legaldata/expungement, push,
+        # saved/reviews) exercised end-to-end against the migrated database.
+        # These suites skip themselves in the in-memory jest run below.
+        env:
+          TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}
+        run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci src/__tests__/integration
+
       - name: Stop API server
         if: always()
         run: |
