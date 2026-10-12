@@ -81,8 +81,9 @@ describeIntegration('billing + consultations with payments disabled (real Postgr
   });
 
   it('consultation booking returns 503 payments_unavailable and books NOTHING', async () => {
+    const anyLawyer = await ctx.db.get('SELECT id FROM lawyers ORDER BY id LIMIT 1');
     const res = await ctx.request().post('/api/consultations/book').set(user.headers).send({
-      lawyer_id: 1, lawyer_name: 'Test Attorney', date_slot: '2027-03-02', time_slot: '9:00 AM', duration_min: 30,
+      lawyer_id: anyLawyer.id, lawyer_name: 'Test Attorney', date_slot: '2027-03-02', time_slot: '9:00 AM', duration_min: 30,
     });
     expect(res.status).toBe(503);
     expect(res.body.error).toBe('payments_unavailable');

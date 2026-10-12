@@ -2006,16 +2006,7 @@ INSERT INTO "law_school_clinics" (id, school, city, state, clinic_name, phone, u
   (96,'University of Wyoming College of Law','Laramie','WY','Criminal Defense Clinic','(307) 766-2130','https://www.uwyo.edu/law/clinics','1000 E University Ave Dept 3035, Laramie, WY 82071','Criminal defense in Laramie County courts',1,NULL,'2026-04-29 22:19:35',NULL,NULL,NULL)
 ON CONFLICT DO NOTHING;
 
--- lawyers: 7 rows
-INSERT INTO "lawyers" (id, name, firm, phone, email, address, city, state, lat, lng, specialties, rating, review_count, bar_number, bar_verified, free_consult, languages, bio, photo_url, website, created_at) VALUES
-  (1,'James Thompson','Thompson Criminal Defense','615-555-0101','j.thompson@tcdf.law','100 Broadway','Nashville','TN',36.1627,-86.7816,'["Criminal Defense","DUI"]',4.8,0,NULL,0,1,'["English"]',NULL,NULL,NULL,'2026-05-25 02:05:02'),
-  (2,'Maria Rodriguez','Rodriguez Law Firm','615-555-0102','m.rodriguez@rlf.law','200 Commerce St','Nashville','TN',36.1595,-86.7784,'["Criminal Defense","Immigration"]',4.7,0,NULL,0,1,'["English"]',NULL,NULL,NULL,'2026-05-25 02:05:02'),
-  (3,'David Kim','Kim & Associates','615-555-0103','d.kim@kimlaw.com','300 Church St','Nashville','TN',36.161,-86.7798,'["Drug Offenses","Criminal Defense"]',4.6,0,NULL,0,1,'["English"]',NULL,NULL,NULL,'2026-05-25 02:05:02'),
-  (4,'Sarah Williams','Public Defense Group','404-555-0201','s.williams@pdg.law','100 Peachtree','Atlanta','GA',33.749,-84.388,'["Criminal Defense","Appeals"]',4.9,0,NULL,0,1,'["English"]',NULL,NULL,NULL,'2026-05-25 02:05:02'),
-  (5,'Robert Johnson','Johnson Criminal Law','404-555-0202','r.johnson@jcl.law','200 Spring St','Atlanta','GA',33.7516,-84.3862,'["Criminal Defense","Bail"]',4.5,0,NULL,0,1,'["English"]',NULL,NULL,NULL,'2026-05-25 02:05:02'),
-  (6,'Lisa Chen','Chen Defense','310-555-0301','l.chen@chendef.law','100 Grand Ave','Los Angeles','CA',34.0522,-118.2437,'["Criminal Defense","Drug Offenses"]',4.7,0,NULL,0,1,'["English"]',NULL,NULL,NULL,'2026-05-25 02:05:02'),
-  (7,'Michael Brown','Brown Law','312-555-0401','m.brown@brownlaw.com','100 Michigan Ave','Chicago','IL',41.8781,-87.6298,'["Criminal Defense","DUI"]',4.6,0,NULL,0,1,'["English"]',NULL,NULL,NULL,'2026-05-25 02:05:02')
-ON CONFLICT DO NOTHING;
+-- lawyers: 7 placeholder rows (555 numbers, no source) removed 2026-10-12 — see migration 017
 
 -- lessons: 50 rows
 INSERT INTO "lessons" (id, title, category, content, points, created_at, body, difficulty, duration_min) VALUES
