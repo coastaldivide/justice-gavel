@@ -228,7 +228,30 @@ export function startAIWorkers() {
   return _workers;
 }
 
+/**
+ * drainLocalJobs(timeoutMs) — wait for the in-process queue to empty.
+ * Called on graceful shutdown AFTER the HTTP server stops accepting requests,
+ * so it only waits for work already in flight; gives up after timeoutMs so
+ * shutdown always completes (server.js force-exits at 25 s).
+ */
+export async function drainLocalJobs(timeoutMs = 10_000) {
+  const deadline = Date.now() + Math.max(0, timeoutMs);
+  while ((_running > 0 || _pending.length > 0) && Date.now() < deadline) {
+    await new Promise(r => { const t = setTimeout(r, 100); t.unref?.(); });
+  }
+  return { drained: _running === 0 && _pending.length === 0, running: _running, pending: _pending.length };
+}
+
 export async function stopAIWorkers() {
+  // 1. Drain in-process AI jobs (chat/research/motion closures) so answers a
+  //    user is polling for are not lost mid-generation.
+  const drain = await drainLocalJobs(parseInt(process.env.AI_DRAIN_TIMEOUT_MS || '10000', 10));
+  if (!drain.drained) {
+    logger.warn({ running: drain.running, pending: drain.pending }, '[ai_queue] shutdown drain timed out — jobs still in flight');
+  } else if (_done + _failed > 0) {
+    logger.info('[ai_queue] in-process queue drained');
+  }
+  // 2. BullMQ workers: close() waits for each worker's active job by default.
   await Promise.allSettled(_workers.map(w => w.close()));
   _workers.length = 0;
   await Promise.allSettled([aiChatQueue, aiResearchQueue, aiDocumentQueue, aiMotionQueue, barVerifyQueue]

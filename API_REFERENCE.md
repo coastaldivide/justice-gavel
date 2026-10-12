@@ -63,10 +63,19 @@ All authenticated endpoints require: `Authorization: Bearer <jwt_token>`
 
 🌐 Public endpoint
 
+Pagination: `limit` (default 20, **max 50**) and `page` (default 1). The response
+is always a bounded page — the city/state path reads at most 300 candidate rows
+and the no-filter fallback at most 500 before paging, so no request returns
+unbounded rows. Responses are gzip-compressed and carry `Cache-Control: private,
+max-age=60` on the GPS path.
+
 ### `GET /api/providers/bail` 🌐
 > ── GET /api/providers/bail ───────────────────────────────────────────────────
 
 🌐 Public endpoint
+
+Pagination: `limit` (default 20, **max 50**). GPS searches pre-filter by bounding
+box in SQL and return at most `limit` agents.
 
 ### `GET /api/providers/coverage` 🌐
 > GET /api/providers/coverage — returns state coverage for UI display

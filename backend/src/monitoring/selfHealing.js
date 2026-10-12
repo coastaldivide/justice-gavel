@@ -69,51 +69,67 @@ export async function healDatabase() {
 }
 
 // ── 2. Memory leak guard ───────────────────────────────────────────────────────
-const MEMORY_WARN_MB  = 384;   // 384MB — warn
-const MEMORY_CRIT_MB  = 512;   // 512MB — attempt heal
-let memoryWarned      = false;
+// Thresholds are derived from the container's memory limit (MEMORY_LIMIT_MB,
+// default 512 — the Railway plan this deploys to) and watch RSS, because the
+// container OOM-killer enforces RSS, not V8 heap. On a 512MB container:
+//   warn      72% → 368 MB   (notifyWarn once per episode)
+//   critical  85% → 435 MB   (force GC if exposed, then notifyError)
+//   restart   93% → 476 MB   (graceful exit before the OOM-killer SIGKILLs us,
+//                             so Railway restarts a cleanly-shut-down process)
+// The old thresholds (heap 512 MB warn → restart at heap 600 MB) could never
+// fire on a 512 MB container — RSS exceeds heap, so the kernel killed the
+// process long before heap reached 512 MB.
+const MEMORY_LIMIT_MB   = Math.max(128, parseInt(process.env.MEMORY_LIMIT_MB || '512', 10) || 512);
+const MEMORY_WARN_MB    = Math.round(MEMORY_LIMIT_MB * 0.72);
+const MEMORY_CRIT_MB    = Math.round(MEMORY_LIMIT_MB * 0.85);
+const MEMORY_RESTART_MB = Math.round(MEMORY_LIMIT_MB * 0.93);
+let memoryWarned        = false;
 
 export function startMemoryWatchdog() {
-  const _timer81 = setInterval(async () => {
-  _timer81.unref();
+  const timer = setInterval(async () => {
     const { heapUsed, rss } = process.memoryUsage();
     const heapMB = Math.round(heapUsed / 1024 / 1024);
     const rssMB  = Math.round(rss / 1024 / 1024);
 
-    if (heapMB > MEMORY_CRIT_MB) {
-      logger.error(`[self-heal] CRITICAL memory: heap=${heapMB}MB rss=${rssMB}MB`);
+    if (rssMB > MEMORY_CRIT_MB) {
+      logger.error(`[self-heal] CRITICAL memory: rss=${rssMB}MB heap=${heapMB}MB (limit ${MEMORY_LIMIT_MB}MB)`);
 
-      // Attempt 1: Force GC if available
+      // Attempt 1: Force GC if available (--expose-gc)
       if (global.gc) {
         global.gc();
-        const after = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
-        logger.info(`[self-heal] GC ran: ${heapMB}MB → ${after}MB`);
+        const after = Math.round(process.memoryUsage().rss / 1024 / 1024);
+        logger.info(`[self-heal] GC ran: rss ${rssMB}MB → ${after}MB`);
         if (after < MEMORY_WARN_MB) return;  // GC fixed it
       }
 
       // (A former "attempt 2" imported invalidateUserCache but never called it and
       // still logged "User cache cleared"; the auth cache is bounded and self-evicting.)
 
-      await notifyError('Memory usage critical — heap over 512MB', {
+      await notifyError(`Memory usage critical — rss over ${MEMORY_CRIT_MB}MB`, {
         code:   'memory_critical',
         heapMB,
         rssMB,
+        limitMB: MEMORY_LIMIT_MB,
       });
 
-      // Attempt 3: Graceful restart (Railway restarts container on exit)
-      if (heapMB > 600) {
-        logger.error('[self-heal] Memory over 600MB — initiating graceful restart');
-        await notifyCritical('Memory exhaustion — forcing restart', { heapMB, code: 'oom_restart' });
+      // Attempt 3: Graceful restart (Railway restarts container on exit),
+      // before the kernel OOM-killer SIGKILLs us mid-request.
+      if (rssMB > MEMORY_RESTART_MB) {
+        logger.error(`[self-heal] rss over ${MEMORY_RESTART_MB}MB — initiating graceful restart`);
+        await notifyCritical('Memory exhaustion — forcing restart', { rssMB, heapMB, code: 'oom_restart' });
         process.exit(1);  // Railway auto-restarts
       }
 
-    } else if (heapMB > MEMORY_WARN_MB && !memoryWarned) {
+    } else if (rssMB > MEMORY_WARN_MB && !memoryWarned) {
       memoryWarned = true;
-      notifyWarn(`Memory usage elevated: heap=${heapMB}MB`, { code: 'memory_elevated', heapMB });
-    } else if (heapMB < MEMORY_WARN_MB) {
+      notifyWarn(`Memory usage elevated: rss=${rssMB}MB of ${MEMORY_LIMIT_MB}MB`, { code: 'memory_elevated', rssMB, heapMB });
+    } else if (rssMB < MEMORY_WARN_MB) {
       memoryWarned = false;
     }
   }, 30_000);  // Check every 30 seconds
+  timer.unref();
+  _intervals.push(timer);   // so stopAllWatchdogs() clears it (it never was before)
+  return timer;
 }
 
 
@@ -155,17 +171,17 @@ export async function runHealthCheck() {
   // Env check (JWT secret not dev default in production)
   if (process.env.NODE_ENV === 'production' &&
       process.env.JWT_SECRET === 'dev_secret_change_me') {
-    results.jwt_secret = process.env.SELF_HEAL_SECRET || '';
+    results.jwt_secret = 'insecure_default';   // label only — never echo secret material
     healthy = false;
     await notifyCritical('JWT_SECRET is still the development default in production', {
       code: 'insecure_jwt_secret',
     });
   }
 
-  // Memory check
-  const heapMB = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
-  results.memory_mb = heapMB;
-  if (heapMB > MEMORY_CRIT_MB) healthy = false;
+  // Memory check (rss — the number the container limit enforces)
+  const rssMB = Math.round(process.memoryUsage().rss / 1024 / 1024);
+  results.memory_mb = rssMB;
+  if (rssMB > MEMORY_CRIT_MB) healthy = false;
 
   return { healthy, results, timestamp: new Date().toISOString() };
 }

@@ -33,4 +33,26 @@ config.resolver.blockList = [
   /.*\.test\.(ts|tsx|js)$/,
 ];
 
+// ── Web: do not bundle react-native-reanimated ────────────────────────────────
+// No app code imports reanimated (SkeletonLoader pulses with core Animated).
+// It still landed in the web ENTRY bundle (836 KB minified) because
+// react-native-gesture-handler's gestures/reanimatedWrapper.js does a guarded
+// `try { require('react-native-reanimated') } catch {}`, and Metro bundles any
+// statically-visible require. The wrapper is written for reanimated being
+// absent (it checks `Reanimated?.useSharedValue` and falls back), so resolving
+// the package to an empty module on web is a supported configuration.
+// Native platforms are untouched — reanimated stays bundled there.
+const defaultResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (
+    platform === 'web' &&
+    (moduleName === 'react-native-reanimated' || moduleName.startsWith('react-native-reanimated/'))
+  ) {
+    return { type: 'empty' };
+  }
+  return defaultResolveRequest
+    ? defaultResolveRequest(context, moduleName, platform)
+    : context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = config;

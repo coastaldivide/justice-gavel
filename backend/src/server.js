@@ -186,11 +186,24 @@ server.on('listening', () => {
   timers.push(push);
   deliverScheduledPushes().catch(err => logger.error({ err: err.message }, '[Push] Startup drain error'));
 
-  // Quarterly bar re-verification — first run 2 minutes after startup
+  // Quarterly bar re-verification — first run 2 minutes after startup.
+  // NOTE: the 90-day interval (7,776,000,000 ms) does NOT fit in Node's 32-bit
+  // timer, so a bare setInterval(fn, 90d) clamps to 1 ms (TimeoutOverflowWarning)
+  // and ran runBarReVerification in a tight loop — millions of DB queries and
+  // log lines per hour in production (found during the step-9 ops pass). Tick
+  // daily instead and run only when 90 days have elapsed.
   const BAR_REVERIFY_INTERVAL_MS = 90 * 24 * 60 * 60 * 1000;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  let lastBarReverifyAt = 0;
   const first = setTimeout(() => {
+    lastBarReverifyAt = Date.now();
     runBarReVerification();
-    const t = setInterval(runBarReVerification, BAR_REVERIFY_INTERVAL_MS);
+    const t = setInterval(() => {
+      if (Date.now() - lastBarReverifyAt >= BAR_REVERIFY_INTERVAL_MS) {
+        lastBarReverifyAt = Date.now();
+        runBarReVerification();
+      }
+    }, DAY_MS);
     t.unref();
     timers.push(t);
   }, 2 * 60 * 1000);

@@ -70,8 +70,17 @@ ADMIN_PANEL_URL=https://admin.justicegavel.app
 ## Logging
 ```
 LOG_LEVEL=info             # debug | info | warn | error
-LOG_FORMAT=combined        # combined | dev | tiny
+LOG_FORMAT=                # json | text — production defaults to one-line JSON
 SCAN_QUIET=false           # Suppress health scan verbose output
+SLOW_QUERY_MS=500          # WARN-log DB queries slower than this (SQL text only, no params; 0 = off)
+```
+
+## Performance / ops
+```
+PG_POOL_MAX=20             # Postgres pool size
+MEMORY_LIMIT_MB=512        # Container memory limit; watchdog warns 72% / heals 85% / restarts 93%
+AI_DRAIN_TIMEOUT_MS=10000  # Graceful-shutdown wait for in-flight AI jobs
+HEALTH_CACHE_MS=5000       # /health caches its DB probe this long
 ```
 
 ## Alternative Payment Providers (all optional)

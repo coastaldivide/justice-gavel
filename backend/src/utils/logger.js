@@ -13,7 +13,10 @@
 
 const LEVEL_ORDER = { debug: 0, info: 1, warn: 2, error: 3 };
 const MIN_LEVEL   = LEVEL_ORDER[process.env.LOG_LEVEL?.toLowerCase()] ?? 1; // default: info
-const JSON_FORMAT = process.env.LOG_FORMAT === 'json';
+// One-line JSON when LOG_FORMAT=json. Production defaults to JSON (Railway /
+// Datadog ingest one JSON object per line); set LOG_FORMAT=text to opt out.
+const JSON_FORMAT = process.env.LOG_FORMAT === 'json'
+  || (process.env.NODE_ENV === 'production' && !process.env.LOG_FORMAT);
 
 const SERVICE_META = {
   service: 'justice-gavel-api',

@@ -221,9 +221,25 @@ app.use(responseTime((req, res, time) => {
   res.setHeader('X-Response-Time', time.toFixed(2) + 'ms');
 }));
 if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan(IS_PROD
-    ? ':date[iso] :method :url :status :res[content-length] :response-time ms'
-    : 'dev'));
+  if (IS_PROD) {
+    // One JSON object per line (Railway/Datadog-friendly). Logs req.path, never
+    // the query string — search params can carry PII (names, emails, counties).
+    app.use(morgan((tokens, req, res) => JSON.stringify({
+      ts:         tokens.date(req, res, 'iso'),
+      level:      'info',
+      type:       'http',
+      method:     tokens.method(req, res),
+      // originalUrl, not req.path: by log time routing has rewritten req.path
+      // to the router-relative path. Query string stripped — it can carry PII.
+      path:       String(req.originalUrl || req.url || '').split('?')[0],
+      status:     Number(tokens.status(req, res)) || 0,
+      length:     Number(tokens.res(req, res, 'content-length')) || 0,
+      ms:         Number(tokens['response-time'](req, res)) || 0,
+      request_id: req.id,
+    }), { skip: (req) => req.path === '/health' }));
+  } else {
+    app.use(morgan('dev'));
+  }
 }
 
 // ── Stripe webhooks — RAW body, mounted BEFORE the JSON parser ────────────────
@@ -300,6 +316,12 @@ app.get('/metrics', async (req, res) => {
     const { getQueueStats } = await import('./services/aiQueue.js').catch(() => ({ getQueueStats: () => ({}) }));
     const stats = getQueueStats() || {};
     const queue = { pending: stats.pending ?? 0, running: stats.running ?? 0, completed: stats.done ?? 0, failed: stats.failed ?? 0 };
+    // pg pool gauges — in-memory counters, no query issued
+    let pool = null;
+    try {
+      const { getPoolStats } = await import('./db/index.js');
+      pool = getPoolStats();
+    } catch { /* pool stats optional */ }
 
     const metrics = {
       timestamp:       new Date().toISOString(),
@@ -317,6 +339,9 @@ app.get('/metrics', async (req, res) => {
         completed: queue.completed ?? 0,
         failed:    queue.failed    ?? 0,
       },
+      // Connection pool: total/idle/waiting are live gauges; waiting > 0 means
+      // requests are queueing for a connection. null on the sqlite dev fallback.
+      db_pool: pool,
       process: {
         pid:       process.pid,
         platform:  process.platform,
@@ -339,6 +364,17 @@ app.get('/metrics', async (req, res) => {
         `# HELP jg_queue_failed AI jobs failed`,
         `# TYPE jg_queue_failed counter`,
         `jg_queue_failed ${metrics.queue.failed}`,
+        ...(pool ? [
+          `# HELP jg_db_pool_total Open DB connections`,
+          `# TYPE jg_db_pool_total gauge`,
+          `jg_db_pool_total ${pool.total}`,
+          `# HELP jg_db_pool_idle Idle DB connections`,
+          `# TYPE jg_db_pool_idle gauge`,
+          `jg_db_pool_idle ${pool.idle}`,
+          `# HELP jg_db_pool_waiting Requests waiting for a DB connection`,
+          `# TYPE jg_db_pool_waiting gauge`,
+          `jg_db_pool_waiting ${pool.waiting}`,
+        ] : []),
       ];
       res.set('Content-Type', 'text/plain; version=0.0.4');
       return res.send(lines.join('\n') + '\n');

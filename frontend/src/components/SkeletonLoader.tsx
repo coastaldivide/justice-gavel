@@ -9,12 +9,29 @@
  *   if (isLoading) return <SkeletonLoader type="card" />;
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { COLORS } from '../constants/theme';
-import { View, StyleSheet } from 'react-native';
-import Animated from 'react-native-reanimated';
-import { usePulse } from '../utils/animations';
+import { View, StyleSheet, Animated } from 'react-native';
 import { S, R } from '../constants/tokens';
+
+// Pulse with the core react-native Animated API. This was the ONLY place the
+// app imported react-native-reanimated, and that single import shipped the
+// whole 836 KB reanimated runtime in the web entry bundle (step 9 bundle
+// audit). A looping opacity tween needs none of it.
+function usePulseOpacity(): Animated.Value {
+  const opacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1,   duration: 800, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+  return opacity;
+}
 
 interface SkeletonBoxProps {
   width?: number | string;
@@ -25,12 +42,12 @@ interface SkeletonBoxProps {
 const SkeletonBox: React.FC<SkeletonBoxProps> = ({
   width = '100%', height = 16, radius = R.sm, style,
 }) => {
-  const pulseStyle = usePulse(true);
+  const opacity = usePulseOpacity();
   return (
     <Animated.View
       style={[
         { width: width as number, height, borderRadius: radius, backgroundColor: COLORS.border },
-        pulseStyle,
+        { opacity },
         style,
       ]}
     />

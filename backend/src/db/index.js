@@ -38,6 +38,19 @@ const DB_PATH   = path.resolve(__dirname, '../../demo.db');
 // DB_LOG_ERRORS=true logs every failed query (code + SQL) — useful for debugging.
 const LOG_ERRORS = process.env.DB_LOG_ERRORS === 'true';
 
+// Queries slower than SLOW_QUERY_MS (default 500 ms) are logged at WARN with
+// the SQL text (placeholders only — never parameter values) so slow spots show
+// up in production logs without leaking PII. Set SLOW_QUERY_MS=0 to disable.
+const SLOW_QUERY_MS = parseInt(process.env.SLOW_QUERY_MS || '500', 10);
+
+function warnIfSlow(startMs, pgSql) {
+  if (!SLOW_QUERY_MS) return;
+  const ms = Date.now() - startMs;
+  if (ms >= SLOW_QUERY_MS) {
+    logger.warn({ ms, sql: pgSql.replace(/\s+/g, ' ').slice(0, 140) }, '[db] slow query');
+  }
+}
+
 let _db = null;
 let _initPromise = null;
 
@@ -170,12 +183,15 @@ async function initPostgres(url) {
   function makeApi(executor, { inTx = false } = {}) {
     const q = async (sql, params) => {
       const { pgSql } = prepare(sql);
+      const t0 = Date.now();
       try {
         return await executor.query(pgSql, normParams(params));
       } catch (e) {
         e.sql = pgSql.slice(0, 200);
         if (LOG_ERRORS) logger.warn({ err: e.message, code: e.code, sql: e.sql.replace(/\s+/g, ' ') }, '[db] query error');
         throw e;
+      } finally {
+        warnIfSlow(t0, pgSql);
       }
     };
     const api = {
@@ -193,12 +209,15 @@ async function initPostgres(url) {
         }
         const { pgSql, isInsert } = prepare(sql);
         let result;
+        const t0 = Date.now();
         try {
           result = await executor.query(pgSql, normParams(params));
         } catch (e) {
           e.sql = pgSql.slice(0, 200);
           if (LOG_ERRORS) logger.warn({ err: e.message, code: e.code, sql: e.sql.replace(/\s+/g, ' ') }, '[db] query error');
           throw e;
+        } finally {
+          warnIfSlow(t0, pgSql);
         }
         const raw = isInsert && result.rows?.[0] ? result.rows[0].id : undefined;
         const lastID = raw === undefined || raw === null ? 0
@@ -329,6 +348,22 @@ export async function getDb() {
 }
 
 export async function initDb() { return await getDb(); }
+
+/**
+ * getPoolStats() — synchronous pg pool gauges for /metrics and /health.
+ * Reads in-memory counters only (no queries). null when the pool is not up
+ * (sqlite dev fallback, or before the first connection).
+ */
+export function getPoolStats() {
+  const pool = _db?._pool;
+  if (!pool) return null;
+  return {
+    total:   pool.totalCount,
+    idle:    pool.idleCount,
+    waiting: pool.waitingCount,
+    max:     pool.options?.max ?? null,
+  };
+}
 
 export async function closeDb() {
   if (_db?._shutdown) { try { await _db._shutdown(); } catch { /* ignore */ } }

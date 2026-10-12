@@ -244,8 +244,16 @@ export const ALL_ENV_VARS = {
 
   // ── Logging ──────────────────────────────────────────────────────────────
   LOG_LEVEL:                process.env.LOG_LEVEL                  || 'info',
-  LOG_FORMAT:               process.env.LOG_FORMAT                 || 'combined',
+  // json | text. Production defaults to one-line JSON (utils/logger.js).
+  LOG_FORMAT:               process.env.LOG_FORMAT                 || '',
   SCAN_QUIET:               process.env.SCAN_QUIET                 || 'false',
+  SLOW_QUERY_MS:            process.env.SLOW_QUERY_MS              || '500', // db/index.js: warn on queries slower than this (0 = off)
+
+  // ── Performance / ops tuning ─────────────────────────────────────────────
+  PG_POOL_MAX:              process.env.PG_POOL_MAX                || '20',  // db/index.js pool size
+  MEMORY_LIMIT_MB:          process.env.MEMORY_LIMIT_MB            || '512', // monitoring/selfHealing.js watchdog thresholds scale from this
+  AI_DRAIN_TIMEOUT_MS:      process.env.AI_DRAIN_TIMEOUT_MS        || '10000', // graceful-shutdown wait for in-flight AI jobs
+  HEALTH_CACHE_MS:          process.env.HEALTH_CACHE_MS            || '5000', // /health caches its DB probe this long
 
   // ── Runtime ──────────────────────────────────────────────────────────────
   NODE_ENV:                 process.env.NODE_ENV                   || 'development',

@@ -54,7 +54,19 @@ ATTACHMENTS_DIR=/app/data/attachments    message attachments (POST /api/messages
 ATTACHMENTS_BUCKET=case-documents        Supabase Storage bucket for attachments (objects under messages/)
 ATTACHMENTS_STORAGE=off|local|supabase   force a backend; "off" → attachment upload returns 503
                                           storage_unavailable
-HEALTH_CACHE_MS=5000                     /health caches its DB probe this long (default 5 s)
+HEALTH_CACHE_MS=5000                     /health caches its DB probe this long (default 5 s).
+                                          Uptime pollers hit /health freely; at most one SELECT 1
+                                          per window reaches the database
+SLOW_QUERY_MS=500                        queries slower than this are logged at WARN with the SQL
+                                          text (bind placeholders only, never values). 0 disables
+PG_POOL_MAX=20                           Postgres connection pool size (default 20)
+MEMORY_LIMIT_MB=512                      container memory limit; the self-healing watchdog warns at
+                                          72%, GCs/alerts at 85% and restarts gracefully at 93% of
+                                          this (defaults match the 512 MB Railway plan)
+AI_DRAIN_TIMEOUT_MS=10000                graceful shutdown waits this long for in-flight AI jobs
+                                          before closing the process (force-exit at 25 s regardless)
+LOG_FORMAT=json                          production defaults to one-line JSON logs; set LOG_FORMAT=text
+                                          to get the human-readable format instead
 ARREST_FEED_URLS=[...]                   JSON array of public arrest feeds to ingest, e.g.
                                           [{"id":"davidson_tn","url":"https://example.gov/bookings.json",
                                           "state":"TN","county":"Davidson"}]. Each url must be https and
