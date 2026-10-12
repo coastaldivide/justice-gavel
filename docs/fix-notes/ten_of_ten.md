@@ -505,3 +505,234 @@
   test); empty result asserts the status message the user actually sees; CALL NOW matched via getAllByText.
 - Verification: backend full jest 0 failed / 27,861 passed / 83 PG-gated skips; integration suite on
   jg_int 89/89; frontend tsc 0, eslint 0/0 (--max-warnings 0), logic 705 + render 31 pass; ci.yml YAML OK.
+
+# STEP 8 — Expo SDK upgrade 52 → 57 (frontend only)
+
+## What the registry says (2026-10-11)
+- `expo` dist-tags: `latest` = **57.0.27** (SDK 57); 58.0.x exists but is still tagged `next`
+  (prerelease channel, not yet promoted) → SDK 57 is the newest **stable** and is what shipped.
+- SDK 57 pairs: react-native **0.86.3**, react/react-dom **19.2.3**, react-native-web **0.21**,
+  reanimated **4.5.1** + react-native-worklets 0.10.1, TS ~6.0 (versions taken from
+  expo@57.0.27's bundledNativeModules.json + the sdk-57 template, verified by `expo install
+  --check` (offline) and expo-doctor).
+
+## Dependency changes (package.json rewritten, lockfile regenerated, plain `npm ci`, no flags)
+- expo ~52.0.49 → **~57.0.27**; every expo-* package to its ~57.x line; react 18.3.1 → **19.2.3**;
+  react-native 0.76.9 → **0.86.3**; react-native-web 0.19 → **0.21.4**.
+- **expo-av removed from SDK 57** → replaced with **expo-audio ~57.0.5** (+ expo-asset ~57.0.19,
+  its required peer — flagged by expo-doctor). Recording code migrated (below).
+- reanimated ~3.16 → **4.5.1** + new **react-native-worklets 0.10.1** (babel-preset-expo wires the
+  worklets plugin automatically); gesture-handler 2.20 → 2.32; screens 4.4 → 4.26.2;
+  safe-area-context 4.12 → 5.7; svg 15.8 → 15.15.4.
+- @react-navigation v6 (now marked unsupported, pulls vulnerable query-string) → **v7**
+  (native 7.5.0, bottom-tabs/native-stack 7.20.0).
+- @shopify/flash-list 1.7.3 → **2.0.2**; @stripe/stripe-react-native 0.38.6 → **0.64.0** (SDK-57
+  pin); @sentry/react-native 6.10 → **7.11.0**; async-storage 1.23 → 2.2.0; netinfo 11 → 12;
+  picker 2.9 → 2.11.4; mixpanel 3.3 → 3.8.1.
+- Dev: typescript 5.3 → **6.0.3**; @typescript-eslint 8.59 → 8.71.1 (TS 6 support); jest-expo 52 →
+  **57.0.5**; @testing-library/react-native 12.9 → **13.3.3**; react-test-renderer 18.3.1 → 19.2.3
+  (jest-expo 57's exact pin). jest stays 29.7 (jest-expo 57 is a jest-29 preset).
+- No --legacy-peer-deps anywhere; `npm ci` resolves clean. expo-doctor **19/21** (the 2 failures
+  are network-only in this sandbox: exp.host schema fetch + RN Directory query).
+
+## Code fixes for breaking changes (29 tsc errors → 0)
+- **expo-av → expo-audio**: VoiceNoteScreen + InterrogationRecorderScreen now use
+  `useAudioRecorder(RecordingPresets.HIGH_QUALITY)`, `requestRecordingPermissionsAsync()`,
+  `setAudioModeAsync({allowsRecording, playsInSilentMode})`, `recorder.stop()` / `recorder.uri`
+  (hook releases the mic on unmount); webCompat's AudioMode shim now dynamic-imports expo-audio.
+  Web variants (.web.tsx MediaRecorder) untouched.
+- **FlashList v2**: `estimatedItemSize` prop removed from 15 screens (v2 self-measures);
+  FlashListCompat accepts-and-strips it as a legacy prop; ChatScreen ref type `FlashList<T>` →
+  `FlashListRef<T>`.
+- **react-navigation v7**: `tabBarTestID` → `tabBarButtonTestID`; linking config/navigationRef/
+  getStateFromPath patterns unchanged and verified by the smoke's 63 deep-link paths.
+- **RN 0.86**: `StyleSheet.absoluteFillObject` removed → `absoluteFill` (ScreenHeader).
+- **React 19 types**: `useRef()` without initial value no longer allowed → explicit `(undefined)`
+  in BarPrepQuizScreen (2 sites).
+- **expo-notifications**: NotificationBehavior now requires `shouldShowBanner`/`shouldShowList` —
+  added in App.tsx + services/push.ts handlers.
+- **expo-haptics on web is no longer a silent no-op**: LessonsScreen fired a mount-time success
+  haptic that Chromium blocks (`navigator.vibrate` before user gesture) and logs a console error →
+  now gated off web. Press-triggered haptics (HapticButton, EmergencyStrip) stay — they run inside
+  a user gesture.
+
+## Android store requirement
+- `expo prebuild --platform all` on a scratch copy (no Firebase files): **succeeds**; generated
+  project resolves SDK versions from RN 0.86's version catalog via `expoAutolinking.
+  useExpoVersionCatalog()` → **targetSdk 36 / compileSdk 36** (Expo plugin fallback floor is 35).
+  ≥ 35 requirement met.
+
+## npm audit (the point of the exercise)
+| | critical | high | moderate | total |
+|---|---|---|---|---|
+| before (SDK 52) total | 1 | 59 | 32 | **92** |
+| before prod (--omit=dev) | 1 | 36 | 25 | **62** |
+| after (SDK 57) total | 0 | 52 | 12 | **64** |
+| after prod | 0 | 29 | 5 | **34** |
+- The critical (tar, via SDK 52's CLI) and the nav-v6 query-string/decode-uri-component chain are
+  gone. **Every remaining flag traces to 3 advisories with no patched release at all** (latest
+  version == vulnerable range, ecosystem-wide): `braces` ≤3.0.3 (micromatch — inside metro *and*
+  jest, poisons ~50 transitive rows incl. expo/react-native themselves), `node-forge` ≤1.4.0
+  (@expo/cli + expo-updates code-signing; build-time), `sprintf-js` ≤1.1.3 (jest's argparse,
+  electron-builder's roarr; dev-only). Nothing further to pin until upstream publishes fixes.
+
+## Verification (all green)
+- `npm ci` (no flags) OK, Node 22.22; `tsc --noEmit` **0 errors** (TS 6.0, full strict);
+  `eslint src App.tsx --max-warnings 0` **0/0**; design-audit --ci all categories 0;
+  check-nav-targets **250 refs / 73 targets / 0 problems**.
+- `npm test`: logic **48 suites / 705 tests**, render **5 suites / 31 tests** — all pass
+  (jest-expo 57 + RNTL 13 + react-test-renderer 19.2.3).
+- `expo export --platform web`: 79 chunks, 6.0 MB; index.html + Home/Chat/Lawyers/Payments/
+  Settings chunks present; **0** electron-log/updater/ipcRenderer matches; default API base baked
+  in (metro EXPO_PUBLIC_* cacheVersion fix still effective — smoke build carried localhost:4700,
+  release build carries api.justicegavel.app). `--platform android`: Hermes .hbc exported.
+- Web smoke vs live backend (fresh DB jg_step8: 12 migrations ×2 ON_ERROR_STOP, 195 tables;
+  backend NODE_ENV=production on :4700, mock Anthropic :4710, payments off): **166 checks,
+  0 failed, 0 page errors, 0 console errors, 0 request storms** (343 API requests). Payments-
+  disabled copy and web Stripe stubs verified by the smoke's phase-B 503 checks.
+- Electron (xvfb + CDP, web-build from the new stack): app://justicegavel/ boots, Settings renders
+  via __navigateTo (screenshot verified), SPA fallback 200 / missing asset 404 / traversal 404,
+  **0 page errors**.
+- Backend untouched; full backend jest run after the frontend diff: **27,860 passed / 83 PG-gated
+  skips / 1 failed** — v19 7-05 pinned the string "expo-av" in webCompat.ts. Fixed from the
+  frontend side (the shim's comment now reads "expo-audio — replaces the removed expo-av", which
+  is simply true); 7-05 re-run passes. backend/ and supabase/ have zero diffs.
+- Versions: package.json + app.json **8.7.59**, iOS buildNumber **8759**, Android versionCode
+  **8759**, sw.js cache `justice-gavel-v8.7.59`.
+- ci.yml: **unchanged** — Node 22 and every command/check still apply as written (verified by
+  running the frontend job's steps locally, including the bundle-content checks).
+
+## Chose not to do / notes
+- SDK 58 (`next`) not taken: not yet the npm `latest` stable; first-party pairings (e.g.
+  expo-notifications 58.1.x) were still churning on the next channel.
+- jest 30 (npm's suggested "fix" for braces/sprintf-js) not taken: jest-expo 57 is a jest-29
+  preset, and braces/sprintf-js have no fixed release anyway — the flags would survive.
+- eslint 9.39.5 prints a deprecation notice (v10 exists); left as-is — flat config and
+  @typescript-eslint 8.71 both work, and the lint gate is 0/0. Candidate for a later chore.
+- `newArchEnabled: true` kept in app.json (SDK 57 is new-arch-only; key is tolerated).
+- react-native-markdown-display 7.0.2 unchanged — still the latest release and works under
+  React 19 (exercised by ChatScreen render tests + smoke).
+
+# STEP 9 — performance & operations (indexes, runtime, bundle, ops)
+
+## 1. Database indexes — migration `supabase/migrations/00000000000012_performance_indexes.sql`
+(The brief named it `…10_performance_indexes.sql`, but 10 = takedown_review and 11 = arrest_monitor_checks
+already exist, so it is number 12. Index-only, `IF NOT EXISTS` everywhere, applied twice cleanly.)
+
+Method: scratch DB migrated 00..11 with the real seeded reference data (2,055 lawyers / 1,265 bail
+agents / 600 seed arrests), plus synthetic volume from a scratchpad script (NOT a migration): 50k users,
+200k cases, 200k case_messages, 300k chat_sessions rows, 200k arrest_records (source `feed_synth`),
+150k refresh_tokens, 100k saved_lawyers, 120k bar_prep_progress, 100k direct messages, 100k docket
+entries, 30k bookings, 20k subscriptions. Every candidate was kept only if EXPLAIN (ANALYZE, BUFFERS)
+showed the planner using it with a real win.
+
+Before → after (execution time, the exact SQL the routes issue):
+| query (route) | before | after | index |
+|---|---|---|---|
+| case thread `GET /api/messages/:caseId` | 22.3 ms | 0.08 ms | `idx_case_messages_case_sent (case_id, sent_at DESC) WHERE deleted_at IS NULL` |
+| unread badge `GET /api/messages/unread` | 22.8 ms | 0.14 ms | `idx_case_messages_unread (case_id) WHERE read_at IS NULL` |
+| read-marking UPDATE on thread open | seq scan | index scan | same (predicate deliberately `read_at IS NULL` only — the UPDATE has no deleted_at filter, so a stricter predicate would disqualify it) |
+| chat history `GET /api/chat/history/:id` | 31.5 ms | 0.07 ms | `idx_chat_sessions_session_created (session_id, created_at DESC)` |
+| chat free-tier daily count (ask/stream) | 35.1 ms | 0.03 ms | `idx_chat_sessions_user_created (user_id, created_at DESC)` |
+| arrest name search `GET /api/arrests/search?name=` | 154.5 ms | 6.1 ms | `idx_arrest_records_name_trgm` GIN `gin_trgm_ops` (ILIKE '%…%' is only trigram-indexable) |
+| arrests by county+24h `GET /api/arrests/recent` | 93.1 ms | 0.39 ms | `idx_arrest_records_county_lower (LOWER(county), created_at DESC)` |
+| scheduler unsent-arrest 24h scan (alerts + bot) | 85.9 ms | 0.50 ms | `idx_arrest_records_created (created_at DESC)` |
+| saved lawyers `GET /api/saved/lawyers` | 16.3 ms | 0.05 ms | `idx_saved_lawyers_user_saved (user_id, saved_at DESC)` |
+| lawyers city path `GET /api/providers/lawyers?city=` | 1.5 ms | 0.12 ms | `idx_lawyers_city_lower (LOWER(city), state) WHERE COALESCE(active,1)=1` |
+| bail bbox GPS path `GET /api/providers/bail` | 0.8 ms | 0.08 ms | `idx_bail_agents_lat_lng (lat,lng) WHERE COALESCE(active,1)=1` |
+
+The lawyers/bail indexes resurrect what the baseline schema SKIPPED (its comments show them dropped
+because `active`/`lat`/`lng` didn't exist yet — migration 3 added the columns and nobody revisited).
+pg_trgm: `CREATE EXTENSION IF NOT EXISTS` inside a DO block that catches insufficient_privilege /
+undefined_file and skips only the trigram index — migration succeeds with or without it (Supabase
+ships pg_trgm; local PG16 contrib verified).
+
+Tested and REJECTED (planner ignored them or gain was noise): `arrest_records(state, booking_date)`;
+partial `docket_entries(due_date) WHERE status='pending'` (overdue query LIMITs out of a seq scan at
+0.5 ms); partial consultation-reminder index (unindexable `(date_slot||time_slot)::timestamp`
+dominates, 4.4→3.6 ms hourly); refresh-token cleanup indexes (the daily DELETE removes most rows, scan
+is the cheap part). Refresh rotation already rides the `(user_id, token_hash)` PK (0.09 ms);
+cases-by-user and bar-prep progress were already covered by migrations 0/4. `charges ILIKE` stays
+unindexed (a second GIN taxes every ingest write; name is the primary family-search key).
+
+## 2. Backend runtime
+- gzip + strong ETags verified live: `compression()` + `app.set('etag','strong')` were already wired;
+  spot-check shows `Content-Encoding: gzip` + `ETag` on /api/providers/lawyers.
+- Pagination: lawyers & bail cap `limit` at 50 (city path reads ≤300 candidates, fallback ≤500 before
+  paging); arrests search ≤100 / recent ≤500. Now documented in API_REFERENCE.md.
+- **Production logs are one-line JSON.** `utils/logger.js` now defaults to JSON when
+  NODE_ENV=production (LOG_FORMAT=text opts out); morgan's prod format replaced with a JSON line that
+  logs `req.originalUrl` **without the query string** (search params carry names/emails — verified a
+  `?city=PIIMARKER` request leaves zero trace), plus request_id/status/bytes/ms. Spot-checked auth,
+  messages and the global error handler: they log `e.message` and ids only — no tokens, no bodies.
+  Also fixed `selfHealing.runHealthCheck` writing `process.env.SELF_HEAL_SECRET` into its results.
+- **Slow-query log added** in db/index.js: queries ≥ SLOW_QUERY_MS (default 500 ms, 0=off) WARN with
+  the SQL text — bind placeholders only, never parameter values. Verified: `pg_sleep(0.2)` logs
+  `{ ms: 202, sql: 'SELECT pg_sleep(0.2)…' } [db] slow query`.
+
+## 3. Frontend perf
+- `expo export --platform web`: 79 chunks. Main bundle **4,244 KB → 3,368 KB minified (−21%);
+  1,056 KB → 902 KB gzipped**. Top chunks after: CaseScreen 227 KB (markdown-display +
+  expo-calendar + expo-image-picker — already lazy), __common 186 KB, FirmVerticalScreen 94 KB.
+- The win: source-map-explorer showed **react-native-reanimated (836 KB) in the web ENTRY bundle**
+  with exactly one app consumer — SkeletonLoader's opacity pulse. Replaced the pulse with core RN
+  `Animated` (identical visuals) and deleted the otherwise-unused `utils/animations.tsx`. Reanimated
+  still landed in the entry via gesture-handler's *guarded* `try{require('react-native-reanimated')}`
+  (Metro bundles any static require), so metro.config.js now resolves the package to an empty module
+  **on web only** — the wrapper's own `Reanimated?.useSharedValue` fallback is the supported
+  no-reanimated path. Native bundles untouched; package stays installed (SDK 57 pairing).
+- Verified on real Chromium: headless web smoke vs live prod backend — **166 checks, 0 failed,
+  0 page errors, 0 console errors, 0 request storms** (343 API requests).
+- List screens: all FlashList with stable keys (`String(item.id)`; BailSearch falls back to index only
+  when a row has no id). Lawyer cards render **no images at all** (text + badge views), so there is no
+  unsized-image layout thrash to fix.
+- Not done (documented): the Sentry web stack is ~940 KB of the remaining entry (replay/feedback
+  included because Metro doesn't tree-shake); no cheap safe fix. 69 screens were already React.lazy;
+  the eager ones are startup/tab roots, worth ~100 KB total — left alone.
+
+## 4. Ops polish
+- `/metrics` now includes **db_pool {total, idle, waiting, max}** from new sync `getPoolStats()`
+  (in-memory pg Pool counters — zero queries), alongside the existing in-process AI queue stats and
+  memory; Prometheus format gained jg_db_pool_* gauges. Verified live.
+- **Graceful shutdown drains the AI queue**: new `drainLocalJobs()` waits (AI_DRAIN_TIMEOUT_MS,
+  default 10 s, within the 25 s force-exit) for in-flight in-process jobs before `stopAIWorkers()`
+  closes BullMQ workers (whose `close()` already waits on active jobs). Verified: SIGTERM →
+  "in-process queue drained" → "Shutdown complete" → clean exit.
+- **Memory watchdog refit for the 512 MB Railway container**: it watched *heap* with warn 384 / crit
+  512 / restart 600 MB — unreachable before the kernel OOM-kills on RSS. Now watches **RSS** with
+  thresholds derived from MEMORY_LIMIT_MB (512 default): warn 72% (368 MB), crit+GC 85% (435 MB),
+  graceful restart 93% (476 MB). Its interval is now registered so stopAllWatchdogs() clears it.
+- **Found & fixed a production-killer:** server.js armed the quarterly bar re-verification with
+  `setInterval(fn, 90 days)` — 7,776,000,000 ms overflows Node's 32-bit timer and clamps to **1 ms**
+  (TimeoutOverflowWarning observed), so 2 minutes after boot the job ran in a tight loop: ~2.07M
+  runs/log lines in ~40 min of soak, DB query per run. Now a daily tick that fires only when 90 days
+  have elapsed. Soak after fix: exactly 1 run, 0 overflow warnings, 84 log lines.
+- Docs: LIVE_REFRESH and HEALTH_CACHE_MS were already in RAILWAY_ENV_SETUP.md; expanded
+  HEALTH_CACHE_MS and added SLOW_QUERY_MS, PG_POOL_MAX, MEMORY_LIMIT_MB, AI_DRAIN_TIMEOUT_MS,
+  LOG_FORMAT there and in ENVIRONMENT_VARS.md + .env.example + config.js ALL_ENV_VARS.
+
+## Gate
+1. Fresh DB `jg_step9_gate`: all **13** migrations ON_ERROR_STOP applied **twice** — OK. 195 tables;
+   row counts unchanged (600 arrests / 2,055 lawyers / 1,265 bail agents); 10 new indexes present.
+2. Backend: `npm ci` OK; import smoke OK; prod boot (NODE_ENV=production TZ=UTC, generated secrets,
+   no Stripe, mock Anthropic) — **smoke-test 32/32**, run twice (before and after the server.js timer
+   fix). Live: gzip+ETag, /metrics db_pool, JSON one-line logs without query strings, slow-query warn,
+   SIGTERM drain + clean exit.
+3. Backend jest (in-memory), re-run after every change: **318 suites passed / 10 PG-gated skipped,
+   27,861 passed / 83 skipped, 0 failed.** PG-gated suites on a migrated DB (integration +
+   arrest_visibility + alerts_takedown_pg): **12 suites / 104 tests, all pass.** `npm run lint` 0/0.
+4. Frontend: tsc --noEmit **0**; eslint --max-warnings 0 **0/0**; logic **48 suites / 705** + render
+   **5 / 31** all pass; design-audit --ci all categories **0**; nav-targets **250 refs / 0 problems**;
+   `expo export --platform web` OK; headless web smoke **166 / 0 / 0 / 0**.
+5. ci.yml: **unchanged** — the migration step globs `supabase/migrations/*.sql` (picks up 12), and the
+   postgres:16 CI image ships pg_trgm; lint/jest/smoke steps apply as written.
+
+## Chose not to do (and why)
+- GPS lawyers path still loads all active lawyers into memory for haversine+radius expansion — at
+  2,055 rows it is ~1–2 ms; an SQL bbox would change the radius-fallback semantics (feature refactor).
+- No index on `refresh_tokens` cleanup, `docket_entries`, `consultation_bookings`, `charges` — EXPLAIN
+  rejected them (details above).
+- Sentry web bundle weight and the eager startup screens — noted above, not cheap/safe.
+- bar-prep leaderboard (computed-expression ORDER BY over a 20-row LIMIT) left unindexed — not one of
+  the hot paths and not btree-servable.
+- Did NOT commit (coordinator commits).

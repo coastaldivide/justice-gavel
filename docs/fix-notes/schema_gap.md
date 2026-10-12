@@ -19,7 +19,7 @@ Owner of this file: the DB/schema agent. Last full re-check: see bottom.
 4. Types come from the original SQLite migrations (`backend/src/migrations/*.sql`) or the legacy
    Supabase files when a definition existed, otherwise from how the code reads/writes the column.
 
-Tooling (re-runnable): `(scratch tooling, not included)`
+Tooling (re-runnable): `/tmp/claude-0/-home-claude/f67a72be-81eb-5537-b665-16640d832203/scratchpad/schema/`
 (`extract.mjs`, `check.py`, `rx.py`, `dyn2.py`, `onconf.py`, `verify.sh`).
 
 ## Result
