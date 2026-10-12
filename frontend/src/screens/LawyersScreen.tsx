@@ -807,7 +807,6 @@ const fetchLawyers = useCallback(async (isRefresh = false) => {
             </TouchableOpacity>
           )}
                 <FlashList testID="lawyer-list"
-          estimatedItemSize={80}
           data={sortedLawyers}
           keyExtractor={i => String(i.id)}
           onEndReached={loadMore}

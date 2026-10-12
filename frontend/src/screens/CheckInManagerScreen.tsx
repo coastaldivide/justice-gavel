@@ -220,7 +220,6 @@ function HistoryModal({ enrollment, visible, onClose }: any) {
             : (
               <FlashList
           accessibilityLabel="Check-in schedule list"
-          estimatedItemSize={80}
           data={records}
                 keyExtractor={r => String(r.id)}
                 contentContainerStyle={{ padding: 14}}
@@ -355,7 +354,6 @@ function CheckInManagerScreen({ navigation }: ScreenProps) {
         <FlashList
           data={[...active, ...inactive]}
           keyExtractor={(r) => String(r.id)}
-          estimatedItemSize={80}
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
           renderItem={({ item }) => {

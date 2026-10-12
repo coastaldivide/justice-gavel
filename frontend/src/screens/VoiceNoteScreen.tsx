@@ -18,11 +18,14 @@ import { useToast } from '../components/ToastProvider';
  *   1. CaseScreen notes modal mic button
  *   2. New case creation mic button
  *
- * Fallback: if no audio permission or Expo AV unavailable,
+ * Fallback: if no audio permission or recording unavailable,
  *   shows a text input with the same Claude structuring.
  */
 import type { ScreenProps } from '../types/navigation';
-import { Audio } from 'expo-av';
+import {
+  useAudioRecorder, RecordingPresets,
+  requestRecordingPermissionsAsync, setAudioModeAsync,
+} from 'expo-audio';
 import React, {
   useState, useEffect, useRef, useCallback
 } from 'react';
@@ -110,11 +113,8 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
-      // Stop any active recording on unmount to release microphone
-      if (recordingRef.current) {
-        recordingRef.current.stopAndUnloadAsync().catch(() => {});
-        recordingRef.current = null;
-      }
+      // Any active recording is stopped and the microphone released by the
+      // useAudioRecorder hook when this screen unmounts.
     };
     });
     return () => _task.cancel();
@@ -130,58 +130,39 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
   const [saving,   setSaving]   = useState(false);
   const [textIn,   setTextIn]   = useState('');
 
-  // Recording state (without expo-av -- using fetch + base64)
-  const recordingRef = useRef<any>(null);
-  const timer        = useTimer(phase === 'recording');
-
-  // Try to load expo-av dynamically (graceful if not installed)
-  const [avReady, setAvReady] = useState(false);
-  const AudioRef = useRef<any>(null);
-
-  useEffect(() => {
-    // expo-av is a dependency; native only (web uses VoiceNoteScreen.web.tsx).
-    AudioRef.current = Audio;
-    setAvReady(!!Audio);
-  }, []);
+  // Recording state — expo-audio recorder (native only; web uses VoiceNoteScreen.web.tsx)
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const timer    = useTimer(phase === 'recording');
 
   // ── Start recording ──────────────────────────────────────────────────────────
   const startRecording = useCallback(async () => {
-    if (!avReady || !AudioRef.current) {
-      setPhase('text_input');
-      return;
-    }
-    const Audio = AudioRef.current;
     try {
-      const perm = await Audio.requestPermissionsAsync();
+      const perm = await requestRecordingPermissionsAsync();
       if (!perm.granted) {
         confirm('Microphone needed', 'Allow microphone access to record voice notes, or type your note instead.',
       { confirmLabel: 'Type instead', cancelLabel: 'OK' }).then(ok => { if (ok) setPhase('text_input'); });
         return;
       }
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
       });
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      recordingRef.current = recording;
+      await recorder.prepareToRecordAsync();
+      recorder.record();
       setPhase('recording');
     } catch (e: any) {
       showToast(e.message || 'Try typing your note instead.', 'error');
       setPhase('text_input');
     }
-  }, [avReady, confirm, showToast]);
+  }, [recorder, confirm, showToast]);
 
   // ── Stop + process ───────────────────────────────────────────────────────────
   const stopAndProcess = useCallback(async () => {
-    if (!recordingRef.current) return;
     setPhase('processing');
 
     try {
-      await recordingRef.current.stopAndUnloadAsync();
-      const uri  = recordingRef.current.getURI();
-      recordingRef.current = null;
+      await recorder.stop();
+      const uri = recorder.uri;
 
       if (!uri) throw new Error('No recording URI');
 
@@ -211,7 +192,7 @@ function VoiceNoteScreen({ route, navigation }: ScreenProps): React.JSX.Element 
       confirm('Processing error', msg + ' Would you like to type your note instead?',
       { confirmLabel: 'Type instead', cancelLabel: 'Try again' }).then(ok => { if (ok) setPhase('text_input'); else setPhase('idle'); });
     }
-  }, [confirm]);
+  }, [recorder, confirm]);
 
   // ── Process typed text ───────────────────────────────────────────────────────
   const processText = useCallback(async () => {

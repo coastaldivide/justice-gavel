@@ -158,7 +158,6 @@ function CourtLocatorScreen(): React.JSX.Element {
       <FlashList
           onRefresh={onRefresh}
         refreshing={refreshing}
-        estimatedItemSize={80}
           data={results}
         keyExtractor={(i: Courthouse) => String(i.id)}
         contentContainerStyle={{ padding: 16, paddingTop: 4 }}

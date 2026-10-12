@@ -322,7 +322,6 @@ function CaseTimelineScreen({ route }: ScreenProps): React.JSX.Element {
           keyboardShouldPersistTaps="handled"
         data={events}
         keyExtractor={(item) => String(item.id)}
-          estimatedItemSize={80}
         renderItem={renderItem}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh}

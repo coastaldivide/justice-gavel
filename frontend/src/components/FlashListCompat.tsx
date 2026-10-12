@@ -17,7 +17,10 @@ type FlatListOnlyProps<T> = Partial<Pick<FlatListProps<T>,
   | 'updateCellsBatchingPeriod'
 >>;
 
-export type FlashListCompatProps<T> = FlashListProps<T> & FlatListOnlyProps<T>;
+export type FlashListCompatProps<T> = FlashListProps<T> & FlatListOnlyProps<T> & {
+  /** FlashList v1 prop — v2 measures items itself; accepted and ignored. */
+  estimatedItemSize?: number;
+};
 
 export function FlashListCompat<T>(props: FlashListCompatProps<T>): React.JSX.Element {
   const {
@@ -27,10 +30,10 @@ export function FlashListCompat<T>(props: FlashListCompatProps<T>): React.JSX.El
     windowSize: _d,
     initialNumToRender: _e,
     updateCellsBatchingPeriod: _f,
-    estimatedItemSize = 80,
+    estimatedItemSize: _g,
     ...rest
   } = props;
-  return <FlashList<T> estimatedItemSize={estimatedItemSize} {...rest} />;
+  return <FlashList<T> {...rest} />;
 }
 
 export default FlashListCompat;

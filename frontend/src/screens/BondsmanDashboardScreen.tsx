@@ -574,7 +574,6 @@ showToast(`Lead accepted. ${res.data?.fee_charged}. Contact info revealed below.
         <>
         <FlashList
           testID="lead-list"
-          estimatedItemSize={80}
           data={leads}
           keyExtractor={i => String(i.id)}
           contentContainerStyle={{ padding: 12, paddingBottom: 40 }}

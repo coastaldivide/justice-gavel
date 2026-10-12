@@ -390,7 +390,6 @@ function RecoveryAgentsScreen(): React.JSX.Element {
           refreshing={refreshing}
           data={agents}
           keyExtractor={(item) => String(item.id)}
-          estimatedItemSize={80}
           renderItem={renderAgent}
           contentContainerStyle={{ padding: 12, paddingBottom: 40}}
           keyboardShouldPersistTaps="handled"

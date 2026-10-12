@@ -72,11 +72,11 @@ export default function BarPrepQuizScreen({ route, navigation }: ScreenProps<'Ba
   const [submitting, setSubmitting]       = useState(false);
   const [timeLeft, setTimeLeft]           = useState(time_limit_seconds);
   const questionStartMs                   = useRef(Date.now());
-  const timerRef                          = useRef<ReturnType<typeof setInterval>>();
+  const timerRef                          = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const progressAnim                      = useRef(new Animated.Value(0)).current;
 
   // FIX #10: store handleSubmit in a ref so the timer always calls the latest version
-  const handleSubmitRef = useRef<(isTimeout?: boolean) => void>();
+  const handleSubmitRef = useRef<((isTimeout?: boolean) => void) | undefined>(undefined);
 
   // FIX #12: in-flight guard prevents double-tap during async practice reveal
   const isSelectingRef = useRef(false);

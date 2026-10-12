@@ -170,7 +170,6 @@ function SearchScreen({ navigation }: ScreenProps): React.JSX.Element {
       </View>
 
       <FlashList
-        estimatedItemSize={80}
           data={grouped ?? []}
         keyExtractor={(item: SearchSection) => item.type}
         contentContainerStyle={s.list}

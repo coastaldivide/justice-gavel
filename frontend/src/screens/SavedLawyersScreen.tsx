@@ -370,7 +370,6 @@ confirm('Remove Attorney?', 'Remove this attorney from your saved list?',
       ) : (
         <FlashList testID="saved-lawyers-list"
           keyboardShouldPersistTaps="handled"
-          estimatedItemSize={80}
           data={lawyers}
           keyExtractor={item => String(item.id)}
           contentContainerStyle={styles.list}

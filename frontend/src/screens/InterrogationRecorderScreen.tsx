@@ -27,7 +27,10 @@ import {
   InteractionManager,
 } from 'react-native';
 // Audio -- native only (web uses InterrogationRecorderScreen.web.tsx).
-import { Audio } from 'expo-av';
+import {
+  useAudioRecorder, RecordingPresets,
+  requestRecordingPermissionsAsync, setAudioModeAsync,
+} from 'expo-audio';
 import * as Location from 'expo-location';
 import { FileSystem, hapticImpact, hapticNotification, RNShare } from '../utils/webCompat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -94,9 +97,9 @@ function InterrogationRecorderScreen(): React.JSX.Element {
   const [error, setError]         = useState('');
   const [location, setLocation]   = useState('');
 
-  const recordingRef = useRef<any>(null);
-  const timerRef     = useRef<any>(null);
-  const mountedRef   = useRef(true);
+  const recorder   = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const timerRef   = useRef<any>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
     const _task = InteractionManager.runAfterInteractions(() => {
@@ -105,7 +108,8 @@ function InterrogationRecorderScreen(): React.JSX.Element {
     return () => {
       mountedRef.current = false;
       clearInterval(timerRef.current);
-      if (recordingRef.current) recordingRef.current.stopAndUnloadAsync().catch(() => {});
+      // Any active recording is stopped and the microphone released by the
+      // useAudioRecorder hook when this screen unmounts.
     };
     });
     return () => _task.cancel();
@@ -186,20 +190,18 @@ function InterrogationRecorderScreen(): React.JSX.Element {
   const doStartRecording = async () => {
     try {
       hapticImpact();
-      const { status } = await Audio.requestPermissionsAsync();
+      const { status } = await requestRecordingPermissionsAsync();
       if (status !== 'granted') {
 showToast('Allow microphone access in Settings.', 'warning');
       }
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
       });
 
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      recordingRef.current = recording;
+      await recorder.prepareToRecordAsync();
+      recorder.record();
 
       const loc = await getLocation();
       if (mountedRef.current) setLocation(loc);
@@ -221,8 +223,8 @@ showToast('Allow microphone access in Settings.', 'warning');
     setPhase('processing');
 
     try {
-      await recordingRef.current?.stopAndUnloadAsync();
-      const uri = recordingRef.current?.getURI();
+      await recorder.stop();
+      const uri = recorder.uri;
       if (!uri) throw new Error('No recording found');
 
 

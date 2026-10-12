@@ -161,7 +161,6 @@ function FirmDiscoveryScreen() {
         <ActivityIndicator style={{ marginTop: 60 }} color={colors.blue} />
       ) : (
         <FlashList
-          estimatedItemSize={80}
           data={firms ?? []}
           keyExtractor={(item: Firm) => String(item.id)}
           renderItem={renderFirm}

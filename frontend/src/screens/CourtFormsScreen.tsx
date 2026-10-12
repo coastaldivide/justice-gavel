@@ -215,7 +215,6 @@ function CourtFormsScreen(): React.JSX.Element | null {
         </View>
         <FlashList
           data={filteredStates}
-          estimatedItemSize={72}
           ListEmptyComponent={
             <View style={{ padding:40, alignItems:'center' }}>
               <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, color:COLORS.textMuted, textAlign:'center' }}>

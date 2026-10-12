@@ -184,7 +184,6 @@ function ResourcesScreen(): React.JSX.Element {
         </View>
       ) : (
         <FlashList
-          estimatedItemSize={80}
           data={filtered ?? []}
           keyExtractor={(i: { id: number | string }) => String(i.id)}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}

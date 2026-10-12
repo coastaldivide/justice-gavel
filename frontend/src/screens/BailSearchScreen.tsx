@@ -312,7 +312,6 @@ function BailSearchScreen(): React.JSX.Element {
       <FlashList testID="bail-agent-list"
           focusable
           keyExtractor={(item, index) => String(item?.id ?? item?.booking_number ?? index)}
-          estimatedItemSize={80}
           keyboardShouldPersistTaps="handled"
           onRefresh={() => { setRefreshing(true); search().finally(() => setRefreshing(false)); }}
           refreshing={refreshing}

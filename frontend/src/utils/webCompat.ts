@@ -254,17 +254,17 @@ export const FileSystem = {
   },
 };
 
-// ── Audio / expo-av shim ──────────────────────────────────────────────────────
-// Only InterrogationRecorderScreen uses Audio — full MediaRecorder shim there.
-// This shim covers the Audio.setAudioModeAsync call pattern.
+// ── Audio mode shim (expo-audio — replaces the removed expo-av) ───────────────
+// The recorder screens import expo-audio directly on native; their .web.tsx
+// variants use MediaRecorder. This shim covers the setAudioModeAsync pattern
+// for any shared code that needs it.
 
 export const AudioMode = {
   setAudioModeAsync: async (opts: Record<string, unknown>) => {
     if (isWeb) return; // no-op — browser handles audio mode automatically
-    let avModule;
-    try { avModule = await import('expo-av'); } catch { return null as any; }
-    const { Audio } = avModule;
-    return Audio.setAudioModeAsync(opts as never);
+    let audioModule;
+    try { audioModule = await import('expo-audio'); } catch { return null as any; }
+    return audioModule.setAudioModeAsync(opts as never);
   },
 };
 
@@ -308,7 +308,7 @@ export const DocumentPicker = isWeb ? {
   },
 } : null;  // native: import * as DocumentPicker from 'expo-document-picker'
 
-// ── expo-av shim (Audio recording) ───────────────────────────────────────────
+// ── Audio recording shim (web) ───────────────────────────────────────────────
 // Web uses MediaRecorder via the .web.tsx screen versions
 export const Audio = isWeb ? {
   requestPermissionsAsync: async () => ({ granted: true }),

@@ -48,7 +48,7 @@ import {
   LayoutAnimation,
   InteractionManager,
 } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { track } from '../services/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -360,7 +360,7 @@ function ChatScreen({ navigation, route }: ScreenProps) {
 
   // ── Refs ──────────────────────────────────────────────────────────────────────
   const mountedRef   = useRef(true);
-  const listRef      = useRef<FlashList<Message>>(null);
+  const listRef      = useRef<FlashListRef<Message>>(null);
   const userStateRef = useRef<{ code: string; name: string } | null>(null);
 
   // ── Effects ───────────────────────────────────────────────────────────────────
@@ -800,7 +800,7 @@ confirm('Clear Conversation?', 'Delete all messages? This cannot be undone.',
         </View>
       ) : (
         // T1-Q: renderItem and ListEmptyComponent are separate props, cleanly formatted
-        <FlashList<Message> estimatedItemSize={80}
+        <FlashList<Message>
           ref={listRef}
           keyboardShouldPersistTaps="handled"
           data={messages}

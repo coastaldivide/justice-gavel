@@ -296,11 +296,11 @@ function MainTabs() {
         // keeps the accessibilityRole="tab" + selected state the item passes in.
         tabBarButton: (props: any) => <TouchableOpacity {...props} />,
       }}>
-      <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarButton: (props: any) => <TouchableOpacity testID="home-tab" {...props} />, tabBarLabel: 'Home', tabBarTestID: 'home-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> }} />
+      <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarButton: (props: any) => <TouchableOpacity testID="home-tab" {...props} />, tabBarLabel: 'Home', tabBarButtonTestID: 'home-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> }} />
       <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: 'AI Help',  tabBarIcon: ({ focused }) => <TabIcon emoji="💬" focused={focused} /> }} />
       <Tab.Screen name="LawyersTab" component={LawyersScreen}   options={{ tabBarLabel: 'Lawyers',  tabBarIcon: ({ focused }) => <TabIcon emoji="⚖️" focused={focused} /> }} />
       <Tab.Screen name="BailTab"    component={BailSearchScreen}options={{ tabBarLabel: 'Bail Help',tabBarIcon: ({ focused }) => <TabIcon emoji="💰" focused={focused} /> }} />
-      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="more-tab" {...props} />, tabBarLabel: 'Resources', tabBarTestID: 'more-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="📚" focused={focused} /> }} />
+      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="more-tab" {...props} />, tabBarLabel: 'Resources', tabBarButtonTestID: 'more-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="📚" focused={focused} /> }} />
     </Tab.Navigator>
     </ErrorBoundary>
   );

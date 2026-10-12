@@ -795,7 +795,6 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           : (
             <FlashList
           testID="case-list"
-          estimatedItemSize={130}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textSecond} />}
               data={cases}
               keyExtractor={i => String(i.id)}

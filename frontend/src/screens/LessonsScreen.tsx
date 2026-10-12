@@ -1,7 +1,7 @@
 import { useToast } from '../components/ToastProvider';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { ScreenProps } from '../types/navigation';
-import { View, Text, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, LayoutAnimation } from 'react-native';
+import { View, Text, RefreshControl, TouchableOpacity, StyleSheet, ActivityIndicator, LayoutAnimation, Platform } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, cachedGet, apiErrorMessage } from '../services/api';
@@ -51,7 +51,9 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
         const match = loaded.find(l => `${l.title} ${l.content ?? ''}`.toLowerCase().includes(q));
         if (match) setExpanded(match.id);
       }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(()=>{});
+      // Not on web: a mount-time vibration is blocked by the browser (no user
+      // gesture yet) and logs a Chromium intervention error.
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(()=>{});
       if (mountedRef.current) setLoading(false);
     })();
   }, [incomingCategory, incomingQuery]);
@@ -187,7 +189,6 @@ function LessonsScreen({ navigation, route }: ScreenProps) {
           </View>
         )}
         <FlashList
-          estimatedItemSize={80}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadLessons(true).finally(() => setRefreshing(false)); }} tintColor={colors.textSecond} />}
           data={displayLessons}
           keyExtractor={l => String(l.id)}
