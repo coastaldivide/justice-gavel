@@ -47,4 +47,4 @@ Upload all 5 to App Store Connect in this order:
 1. Replace icon.png with final designer-produced icon in EAS before submission
 2. Add app preview video (15–30 seconds) — App Store allows 1 video per locale
 3. Produce iPad Pro 12.9" screenshots (2048×2732) for separate iPad listing
-4. Localized screenshots for es/pt/vi when translations are reviewed
+4. Localized screenshots for es/pt/vi (switch the app language in Settings → Language)

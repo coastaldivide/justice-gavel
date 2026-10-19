@@ -5,43 +5,57 @@
  * bail calculator), each line labelled with where it comes from. No
  * deadlines, no state rules. Missed-date guidance always ends with
  * "Call your lawyer or the court clerk." Not yet reviewed by a lawyer.
+ *
+ * Text lives in i18n/messages/<lang>.js (guidance.*); courtDayGuidance(lang)
+ * returns it in en / es / pt / vi (English for anything else), with the same
+ * structure in every language.
  */
+import { msg, normalizeLang } from '../i18n/index.js';
 
-const REMINDER_COPY = 'Justice Gavel court-reminder guidance';
-const BAIL_LESSON = 'Justice Gavel lesson: "How to Prepare for Your Bail Hearing"';
-const FAQ = 'Justice Gavel in-app FAQ: "court date / missed hearing"';
-const BAIL_CALC = 'Justice Gavel bail calculator: "How bail bondsmen work"';
+const SRC = { reminder: 'guidance.src.reminder', lesson: 'guidance.src.bail_lesson', faq: 'guidance.src.faq', calc: 'guidance.src.bail_calc' };
 
-export const CALL_LAWYER_OR_CLERK = 'Call your lawyer or the court clerk.';
-
-export const COURT_DAY_CHECKLIST = Object.freeze({
-  title: 'Court day checklist',
-  bring: [
-    { text: 'Arrive early.', source: REMINDER_COPY },
-    { text: 'Bring all your court paperwork and documents.', source: REMINDER_COPY },
-    { text: 'For a bail hearing, things that can help: an employment letter or pay stubs, a lease or mortgage showing stable housing, and family members present in court.', source: BAIL_LESSON },
-  ],
-  wear: [
-    { text: 'Business casual minimum. No orange. Clean and conservative.', source: BAIL_LESSON },
-  ],
-  last_reviewed: null,
-  lawyer_reviewed: false,
-  note: 'General information only — your lawyer or the court can tell you exactly what your hearing needs.',
-});
-
-export const MISSED_COURT_GUIDANCE = Object.freeze({
-  title: 'I missed my court date — what now?',
-  steps: [
-    { text: 'Missing court can lead to a bench warrant, and often the loss of any bail that was paid.', source: `${REMINDER_COPY}; ${FAQ}` },
-    { text: 'Do not just stay away — a bench warrant stays active until it is dealt with.', source: FAQ },
-    { text: 'If a bail agent posted your bond, tell them — when you miss court, the bondsman is responsible for the full bail amount.', source: BAIL_CALC },
-    { text: CALL_LAWYER_OR_CLERK, source: REMINDER_COPY },
-  ],
-  last_reviewed: null,
-  lawyer_reviewed: false,
-  note: 'General information only — not legal advice.',
-});
-
-export function courtDayGuidance() {
-  return { checklist: COURT_DAY_CHECKLIST, missed: MISSED_COURT_GUIDANCE };
+function build(lang) {
+  const l = normalizeLang(lang) || 'en';
+  const t = (k) => msg(l, k);
+  const checklist = Object.freeze({
+    title: t('guidance.checklist.title'),
+    bring: [
+      { id: 'bring_1', text: t('guidance.bring.1'), source: t(SRC.reminder) },
+      { id: 'bring_2', text: t('guidance.bring.2'), source: t(SRC.reminder) },
+      { id: 'bring_3', text: t('guidance.bring.3'), source: t(SRC.lesson) },
+    ],
+    wear: [
+      { id: 'wear_1', text: t('guidance.wear.1'), source: t(SRC.lesson) },
+    ],
+    last_reviewed: null,
+    lawyer_reviewed: false,
+    note: t('guidance.checklist.note'),
+    language: l,
+  });
+  const missed = Object.freeze({
+    title: t('guidance.missed.title'),
+    steps: [
+      { id: 'missed_1', text: t('guidance.missed.1'), source: `${t(SRC.reminder)}; ${t(SRC.faq)}` },
+      { id: 'missed_2', text: t('guidance.missed.2'), source: t(SRC.faq) },
+      { id: 'missed_3', text: t('guidance.missed.3'), source: t(SRC.calc) },
+      { id: 'missed_4', text: t('guidance.missed.4'), source: t(SRC.reminder) },
+    ],
+    last_reviewed: null,
+    lawyer_reviewed: false,
+    note: t('guidance.missed.note'),
+    language: l,
+  });
+  return { checklist, missed, language: l };
 }
+
+const CACHE = new Map();
+/** { checklist, missed, language } in `lang`. */
+export function courtDayGuidance(lang = 'en') {
+  const l = normalizeLang(lang) || 'en';
+  if (!CACHE.has(l)) CACHE.set(l, build(l));
+  return CACHE.get(l);
+}
+
+export const CALL_LAWYER_OR_CLERK = msg('en', 'guidance.missed.4');
+export const COURT_DAY_CHECKLIST = courtDayGuidance('en').checklist;
+export const MISSED_COURT_GUIDANCE = courtDayGuidance('en').missed;

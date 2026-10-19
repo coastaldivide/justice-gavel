@@ -56,13 +56,12 @@ describe('rights content', () => {
 
   it('the app\'s bundled script and guidance are the same text as the server\'s (no drift)', () => {
     for (const l of [...SCRIPT.say, ...SCRIPT.dont]) expect(en[l.key]).toBe(l.text);
-    const screen = readFileSync(resolve(REPO, 'frontend/src/screens/CourtDatesScreen.tsx'), 'utf8');
+    // The bundled copies live in the app's i18n files (all four languages are
+    // checked in i18n_server_content.test.js).
     const g = courtDayGuidance();
-    for (const s of [...g.checklist.bring, ...g.checklist.wear, ...g.missed.steps]) {
-      expect(screen).toContain(`text: '${s.text.replace(/'/g, "\\'")}'`);
-    }
-    const ja = readFileSync(resolve(REPO, 'frontend/src/screens/JustArrestedScreen.tsx'), 'utf8');
-    expect(ja).toContain(`'${SCRIPT.source}'`);
+    expect([...g.checklist.bring, ...g.checklist.wear, ...g.missed.steps].map(s => s.text))
+      .toEqual([en.cg_bring_1, en.cg_bring_2, en.cg_bring_3, en.cg_wear_1, en.cg_missed_1, en.cg_missed_2, en.cg_missed_3, en.cg_missed_4]);
+    expect(en.rc_script_source).toBe(SCRIPT.source);
   });
 
   it('every state code has a name; the built-in state notes are kept but never shown (no citation, no reviewer)', async () => {

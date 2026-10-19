@@ -14,36 +14,45 @@ import { authRequired } from '../middleware/auth.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import logger from '../utils/logger.js';
 import { acceptInvite, listFollowing, leaveFollow, FollowError } from '../services/followers.js';
+import { resolveLang, requestedLang, msg, rememberLanguage } from '../i18n/index.js';
+import { rescheduleUserCourtReminders } from '../services/courtReminders.js';
 
 const router = Router();
-const acceptLimiter = makeUserLimiter({ windowMs: 15 * 60_000, max: 10, message: 'Too many tries. Wait a few minutes and try again.' });
+const acceptLimiter = makeUserLimiter({ windowMs: 15 * 60_000, max: 10, message: (req) => msg(resolveLang(req), 'follow.err.too_many_tries') });
 
-function fail(res, e, where) {
-  if (e instanceof FollowError) return res.status(e.status).json({ error: e.message, code: e.code });
+function fail(req, res, e, where) {
+  const lang = resolveLang(req);
+  if (e instanceof FollowError) return res.status(e.status).json({ error: e.localizedMessage(lang), code: e.code });
   logger.error({ err: e.message }, `[following${where}]`);
-  return res.status(500).json({ error: 'Something went wrong. Please try again.' });
+  return res.status(500).json({ error: msg(lang, 'follow.err.server') });
 }
 
 router.post('/accept', authRequired, acceptLimiter, async (req, res) => {
   try {
-    const following = await acceptInvite(await getDb(), req.user.id, req.body?.code);
+    const db = await getDb();
+    // The follower's reminders are written in their language: remember it first.
+    if (await rememberLanguage(db, req.user.id, requestedLang(req)).catch(() => false)) {
+      await rescheduleUserCourtReminders(db, req.user.id).catch(() => 0);
+    }
+    const following = await acceptInvite(db, req.user.id, req.body?.code);
     res.status(201).json({ ok: true, following });
-  } catch (e) { fail(res, e, '/accept'); }
+  } catch (e) { fail(req, res, e, '/accept'); }
 });
 
 router.get('/', authRequired, async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ following: await listFollowing(await getDb(), req.user.id) });
-  } catch (e) { fail(res, e, ''); }
+    const lang = resolveLang(req);
+    res.json({ language: lang, following: await listFollowing(await getDb(), req.user.id, { lang }) });
+  } catch (e) { fail(req, res, e, ''); }
 });
 
 router.delete('/:id', authRequired, async (req, res) => {
   const id = Number.parseInt(req.params.id, 10);
-  if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: 'Bad id.' });
+  if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: msg(resolveLang(req), 'follow.err.bad_id') });
   try {
     res.json(await leaveFollow(await getDb(), req.user.id, id));
-  } catch (e) { fail(res, e, '/:id'); }
+  } catch (e) { fail(req, res, e, '/:id'); }
 });
 
 export default router;

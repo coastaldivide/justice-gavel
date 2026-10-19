@@ -17,40 +17,28 @@ import type { ScreenProps } from '../types/navigation';
 import EmergencyStrip from '../components/EmergencyStrip';
 import { useToast } from '../components/ToastProvider';
 import { useTheme } from '../constants/theme';
-import { t } from '../i18n';
+import { t, useLang, getLang } from '../i18n';
 import { RNShare } from '../utils/webCompat';
-import { getUserState, setUserState, STATE_LIST, STATE_NAMES } from '../utils/userState';
+import { getUserState, setUserState, localizedStateList, stateName as localStateName } from '../utils/userState';
 import { detectAndSaveUserState } from '../services/location';
 import {
-  fetchRightsCard, getCachedRightsCard, reviewPendingNotice, type RightsCardData, type RightsSection,
+  fetchRightsCard, getCachedRightsCard, reviewPendingNotice, reviewedLabel as monthLabel, type RightsCardData, type RightsSection,
 } from '../services/corePath';
 
-const GENERAL_SOURCES: Record<number, string> = {
-  1: 'U.S. Constitution, 5th Amendment (as summarized in the Justice Gavel rights card)',
-  2: 'U.S. Constitution, 6th Amendment (as summarized in the Justice Gavel rights card)',
-  3: 'U.S. Constitution, 4th Amendment (as summarized in the Justice Gavel rights card)',
-};
-const CARD_SOURCE = 'Justice Gavel rights card — based on published state statutes and case law (as recorded April 2026)';
 const BUNDLED_REVIEWED = '2026-04';
 const SAY_KEYS = ['rs_say_1', 'rs_say_2', 'rs_say_3', 'rs_say_4', 'rs_say_5'];
 
-/** The bundled general card in the app's language (works with no network). */
+/** The bundled general card in the app's language (works with no network). Same text and sources as the server's. */
 export function bundledGeneral(): RightsSection[] {
   return [1, 2, 3, 4, 5, 6, 7, 8].map(i => ({
     key: `rc_${i}`, heading: t(`rc_h${i}`), body: t(`rc_b${i}`),
-    source: GENERAL_SOURCES[i] || CARD_SOURCE, last_reviewed: BUNDLED_REVIEWED, lawyer_reviewed: false,
+    source: i <= 3 ? t(`rc_src_${i}`) : t('rc_src_card'), last_reviewed: BUNDLED_REVIEWED, lawyer_reviewed: false,
+    language: getLang(),
   }));
 }
 
-function monthLabel(d: string | null): string {
-  if (!d) return '';
-  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?/.exec(d);
-  if (!m) return d;
-  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3] || 15))).toLocaleDateString('en-US',
-    m[3] ? { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' } : { month: 'long', year: 'numeric', timeZone: 'UTC' });
-}
-
 function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
+  const lang = useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { showToast } = useToast();
@@ -63,7 +51,6 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [picker, setPicker] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const english = t('rc_title') === 'Know Your Rights';
 
   const load = useCallback(async (code: string) => {
     setStateCode(code);
@@ -86,12 +73,19 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
       if (!code) {
         const detected = await detectAndSaveUserState({
           prompt: true,
-          reason: 'Your rights and court rules depend on your state. Justice Gavel uses your location once to pick your state — you can also choose it from the list.',
+          reason: t('rc_location_reason'),
         }).catch(() => null);
         if (detected && mounted.current) load(detected);
       }
     })();
   }, [load, route?.params]);
+
+  // Language switched while open: show that language's saved copy, then the live card.
+  const firstLang = useRef(true);
+  useEffect(() => {
+    if (firstLang.current) { firstLang.current = false; return; }
+    load(stateCode);
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onRefresh = async () => { setRefreshing(true); await load(stateCode); if (mounted.current) setRefreshing(false); };
 
@@ -101,21 +95,30 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
     load(code);
   };
 
-  // General sections: translated bundled text, with the server's source / review
-  // metadata (and any reviewed database replacement) when we have it.
+  // General sections: the bundled text in the app's language, with the server's
+  // source / review metadata — and any database replacement — when we have it.
+  // The server answers in our language (card.language); a section in another
+  // language (a lawyer-reviewed English replacement) wins only when reviewed.
+  const cardInLang = !!card && (card.language || 'en') === lang;
   const general: RightsSection[] = bundledGeneral().map(b => {
     const s = card?.general.find(x => x.key === b.key);
     if (!s) return b;
-    // A database row (recorded source) that changes the text wins in English; in
-    // other languages only a lawyer-reviewed replacement overrides the translation.
-    const replaced = english ? (s.body !== b.body || s.heading !== b.heading) : s.lawyer_reviewed;
-    return { ...b, ...(replaced ? { heading: s.heading, body: s.body } : {}), source: s.source, source_url: s.source_url, last_reviewed: s.last_reviewed, lawyer_reviewed: s.lawyer_reviewed, reviewed_by: s.reviewed_by };
+    const sameLang = (s.language || card?.language || 'en') === lang;
+    const replaced = sameLang ? (s.body !== b.body || s.heading !== b.heading) : s.lawyer_reviewed;
+    return {
+      ...b,
+      ...(replaced ? { heading: s.heading, body: s.body, language: s.language || 'en' } : {}),
+      source: replaced || sameLang ? s.source : b.source, source_url: s.source_url,
+      last_reviewed: s.last_reviewed, lawyer_reviewed: s.lawyer_reviewed, reviewed_by: s.reviewed_by,
+    };
   });
   const specific = card?.state_specific || [];
-  const stateName = stateCode ? (STATE_NAMES[stateCode] || card?.state_name || stateCode) : '';
+  const specificOtherLang = specific.some(s => (s.language || card?.language || 'en') !== lang);
+  const stateName = stateCode ? localStateName(stateCode, card?.state_name_local || card?.state_name) : '';
   const notice = !stateCode ? t('ja_choose_state')
-    : card ? card.state_notice
-      : reviewPendingNotice(stateName);
+    : cardInLang ? card?.state_notice ?? null
+      : specific.length ? null : reviewPendingNotice(stateName);
+  const states = localizedStateList();
 
   const share = async () => {
     const lines = [
@@ -126,7 +129,7 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
       '', t('rc_footer'), 'https://justicegavel.app/rights',
     ];
     try { await RNShare.share({ title: t('rc_title'), message: lines.join('\n\n') }); }
-    catch (e: any) { if (e?.message && e.message !== 'User did not share') showToast('Sharing is not available on this device.', 'error'); }
+    catch (e: any) { if (e?.message && e.message !== 'User did not share') showToast(t('cp_share_unavailable'), 'error'); }
   };
 
   const Section = ({ s, testID }: { s: RightsSection; testID: string }) => (
@@ -136,10 +139,10 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
       <Text maxFontSizeMultiplier={1.4} style={styles.sourceText} testID="rights-source">
         {t('rc_source')}: {s.source || '—'}
         {s.last_reviewed ? ` · ${t('rc_last_reviewed')}: ${monthLabel(s.last_reviewed)}` : ''}
-        {s.lawyer_reviewed ? ` · Reviewed by ${s.reviewed_by}` : ` · ${t('rc_lawyer_pending')}`}
+        {s.lawyer_reviewed ? ` · ${t('rc_reviewed_by', { name: String(s.reviewed_by) })}` : ` · ${t('rc_lawyer_pending')}`}
       </Text>
       {!!s.source_url && (
-        <TouchableOpacity accessibilityRole="link" accessibilityLabel={`Open source for ${s.heading}`} onPress={() => Linking.openURL(String(s.source_url)).catch(() => {})}>
+        <TouchableOpacity accessibilityRole="link" accessibilityLabel={t('rc_open_source_a11y', { heading: s.heading })} onPress={() => Linking.openURL(String(s.source_url)).catch(() => {})}>
           <Text maxFontSizeMultiplier={1.4} style={styles.link}>{String(s.source_url)}</Text>
         </TouchableOpacity>
       )}
@@ -152,7 +155,7 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
       <EmergencyStrip compact />
       <Text maxFontSizeMultiplier={1.4} style={styles.title} accessibilityRole="header">{t('rc_page_title')}</Text>
       <TouchableOpacity accessibilityRole="button" testID="rights-state-picker" style={styles.stateBtn}
-        accessibilityLabel={`${t('ja_state')}: ${stateName || t('ja_choose_state')}. Change`} onPress={() => setPicker(true)}>
+        accessibilityLabel={t('ja_state_a11y', { state: stateName || t('ja_choose_state') })} onPress={() => setPicker(true)}>
         <Text maxFontSizeMultiplier={1.4} style={styles.stateBtnText}>📍 {stateName || t('ja_choose_state')}  ▾</Text>
       </TouchableOpacity>
 
@@ -171,7 +174,7 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
       {specific.length > 0 && (
         <View testID="rights-state-sections">
           <Text maxFontSizeMultiplier={1.4} style={styles.groupTitle}>{t('rc_state_section')}: {stateName}</Text>
-          {!english && <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('rc_english_only')}</Text>}
+          {specificOtherLang && <Text maxFontSizeMultiplier={1.4} style={styles.muted} testID="rights-english-only">{t('rc_english_only')}</Text>}
           {specific.map(s => <Section key={s.key} s={s} testID="rights-state-section" />)}
         </View>
       )}
@@ -180,7 +183,7 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
       {general.map(s => <Section key={s.key} s={s} testID="rights-section" />)}
 
       <TouchableOpacity accessibilityRole="button" testID="rights-share" style={styles.primaryBtn} onPress={share}>
-        <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnText}>📤 Share this card</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.primaryBtnText}>📤 {t('rc_share_card')}</Text>
       </TouchableOpacity>
       <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>⚖️ {t('rc_footer')}</Text>
 
@@ -189,7 +192,7 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
           <View style={styles.sheet}>
             <Text maxFontSizeMultiplier={1.3} style={styles.sheetTitle}>{t('ja_choose_state')}</Text>
             <ScrollView style={{ maxHeight: 420 }}>
-              {STATE_LIST.map(s => (
+              {states.map(s => (
                 <TouchableOpacity key={s.code} accessibilityRole="button" testID={`rights-state-${s.code}`}
                   style={[styles.stateRow, s.code === stateCode && styles.stateRowActive]} onPress={() => choose(s.code)}>
                   <Text maxFontSizeMultiplier={1.3} style={styles.stateRowText}>{s.name}</Text>
@@ -197,7 +200,7 @@ function RightsCardScreen({ route }: ScreenProps): React.JSX.Element {
               ))}
             </ScrollView>
             <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setPicker(false)}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>Close</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('close')}</Text>
             </TouchableOpacity>
           </View>
         </View>

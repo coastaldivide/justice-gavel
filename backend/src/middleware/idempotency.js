@@ -7,8 +7,9 @@
  *     outcome releases the key so a retry runs again;
  *   - same key again, same request: the stored status + body is replayed with
  *     `Idempotent-Replayed: true` — nothing is created twice;
- *   - same key while the first is still running: 409 idempotency_in_progress
- *     (Retry-After: 1);
+ *   - same key while the first is still running: the retry waits up to 2 s for
+ *     it to finish and replays it; still running after that → 409
+ *     idempotency_in_progress (Retry-After: 1);
  *   - same key, different body or path: 422 idempotency_key_reused.
  * Without the header nothing changes.
  *
@@ -63,6 +64,8 @@ export function isIdempotentPost(method, path) {
 
 const KEY_RE = /^[A-Za-z0-9_.:-]{8,128}$/;
 const TTL_HOURS = 24;
+const PENDING_WAIT_MS = 50;
+const PENDING_WAIT_STEPS = 40; // ≤ 2 s
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 
 function scopeOf(req) {
@@ -102,6 +105,16 @@ export function idempotency() {
         if (!row) return next();
         if (row.fingerprint !== fingerprint) {
           return res.status(422).json({ error: 'idempotency_key_reused', message: 'This Idempotency-Key was already used for a different request.' });
+        }
+        // The first request's answer is stored just after it is sent, so a retry
+        // made the moment that answer arrives can find the key still 'pending'.
+        // Wait briefly for it to finish and replay it; only a request that is
+        // really still running gets 409.
+        for (let i = 0; row.status !== 'done' && i < PENDING_WAIT_STEPS; i++) {
+          await new Promise(r => { setTimeout(r, PENDING_WAIT_MS); });
+          const again = await db.get('SELECT status, response_status, response_body FROM idempotency_keys WHERE scope = ? AND key = ?', [scope, key]);
+          if (!again) return idempotencyMiddleware(req, res, next); // the first one failed and released the key: run this one
+          Object.assign(row, again);
         }
         if (row.status !== 'done') {
           res.setHeader('Retry-After', '1');

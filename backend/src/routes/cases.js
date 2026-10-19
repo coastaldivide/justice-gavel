@@ -37,11 +37,12 @@ import logger                              from '../utils/logger.js';
 import { checkLegalHold }                  from '../services/retention.js';
 import {
   cancelCourtReminders, listPendingCourtReminders, scheduleForCourtDate, syncLegacyCourtDate,
-  refreshNextCourtDate, rememberTimeZone, rescheduleUserCourtReminders, CLOSED_CASE_STATUSES,
+  refreshNextCourtDate, rememberRequestPrefs, rescheduleUserCourtReminders, CLOSED_CASE_STATUSES,
 } from '../services/courtReminders.js';
 import {
   createInvite, listFollowers, revokeFollower, listFollowing, FollowError, notifyFollowersCourtDateChanged,
 } from '../services/followers.js';
+import { resolveLang, msg } from '../i18n/index.js';
 
 const router       = Router();
 const casesLimiter = makeUserLimiter({ windowMs: 60_000, max: 20, message: 'Too many case operations. Slow down.' });
@@ -505,35 +506,37 @@ router.delete('/:id/share', authRequired, async (req, res) => {
 // same endpoints (kept so existing app builds keep working). The follower's
 // side is /api/following.
 
-function followFail(res, e, where) {
-  if (e instanceof FollowError) return res.status(e.status).json({ error: e.message, code: e.code });
+function followFail(req, res, e, where) {
+  const lang = resolveLang(req);
+  if (e instanceof FollowError) return res.status(e.status).json({ error: e.localizedMessage(lang), code: e.code });
   logger.error({ err: e.message }, `[cases/followers${where}]`);
-  return res.status(500).json({ error: 'Could not update sharing. Please try again.' });
+  return res.status(500).json({ error: msg(lang, 'follow.err.sharing') });
 }
 
 async function createFollowerHandler(req, res) {
   try {
     const b = req.body && typeof req.body === 'object' ? req.body : {};
+    const lang = resolveLang(req);
     const out = await createInvite(await getDb(), {
       ownerId: req.user.id, caseId: safeInt(req.params.id), email: b.email ?? null, name: b.name ?? null,
-      consent: b.consent, shareReminders: b.share_reminders !== false,
+      consent: b.consent, shareReminders: b.share_reminders !== false, lang,
     });
     // The invite code is a one-time secret (only its hash is stored): keep it
     // out of the idempotency replay cache too.
     res.locals.idempotencyNoStore = true;
-    res.status(201).json({ ok: true, ...out, message: 'Invite created. Share the code with your family member.' });
-  } catch (e) { followFail(res, e, '/create'); }
+    res.status(201).json({ ok: true, ...out, message: msg(lang, 'follow.invite_created') });
+  } catch (e) { followFail(req, res, e, '/create'); }
 }
 async function listFollowersHandler(req, res) {
   try {
     res.setHeader('Cache-Control', 'no-store');
     res.json(await listFollowers(await getDb(), req.user.id, safeInt(req.params.id)));
-  } catch (e) { followFail(res, e, '/list'); }
+  } catch (e) { followFail(req, res, e, '/list'); }
 }
 async function revokeFollowerHandler(req, res) {
   try {
     res.json(await revokeFollower(await getDb(), req.user.id, safeInt(req.params.id), safeInt(req.params.memberId)));
-  } catch (e) { followFail(res, e, '/revoke'); }
+  } catch (e) { followFail(req, res, e, '/revoke'); }
 }
 
 router.post('/:id/followers', authRequired, casesLimiter, createFollowerHandler);
@@ -551,7 +554,7 @@ router.get('/family', authRequired, async (req, res) => {
       id: r.case_id, follow_id: r.follow_id, title: r.case_title, state: r.state,
       next_court_date: r.next_court_date, owner_name: r.owner_first_name, role: 'follower', court_dates: r.court_dates,
     })));
-  } catch (e) { followFail(res, e, '/family'); }
+  } catch (e) { followFail(req, res, e, '/family'); }
 });
 
 // ── Private helpers ───────────────────────────────────────────────────────────
@@ -578,8 +581,8 @@ async function triggerExpungementPush(db, userId, caseRow) {
  */
 async function planReminders(db, req, { caseId, oldDate, newDate }) {
   try {
-    const tzChanged = await rememberTimeZone(db, req.user.id, req.get('X-Timezone'));
-    if (tzChanged) await rescheduleUserCourtReminders(db, req.user.id);
+    const changed = await rememberRequestPrefs(db, req.user.id, req);
+    if (changed) await rescheduleUserCourtReminders(db, req.user.id);
     const courtDateId = await syncLegacyCourtDate(db, { caseId: Number(caseId), userId: req.user.id, oldDate, newDate });
     await refreshNextCourtDate(db, Number(caseId));
     if (!courtDateId) return [];
@@ -594,7 +597,7 @@ async function planReminders(db, req, { caseId, oldDate, newDate }) {
 /** Re-plan every upcoming hearing of a case; returns all pending owner reminders of the case. */
 async function replanCase(db, req, caseId) {
   try {
-    await rememberTimeZone(db, req.user.id, req.get('X-Timezone'));
+    if (await rememberRequestPrefs(db, req.user.id, req)) await rescheduleUserCourtReminders(db, req.user.id);
     const rows = await db.all(
       `SELECT id FROM court_dates WHERE case_id = ? AND user_id = ? AND deleted_at IS NULL AND status = 'scheduled'
           AND court_date >= CURRENT_DATE - 1 ORDER BY court_date LIMIT 50`, [caseId, req.user.id]);
@@ -631,7 +634,7 @@ router.post('/:id/reminders', authRequired, casesLimiter, async (req, res) => {
     if (!cas) return err404(res, 'Case not found.');
     if (!cas.next_court_date) return err400(res, 'This case has no court date. Add one to get reminders.');
     if (CLOSED_CASE_STATUSES.has(cas.status)) return err400(res, 'This case is closed.');
-    await rememberTimeZone(db, req.user.id, req.get('X-Timezone'));
+    if (await rememberRequestPrefs(db, req.user.id, req)) await rescheduleUserCourtReminders(db, req.user.id);
     // a case whose date predates court_dates gets its hearing row now
     const nextDate = String(cas.next_court_date).slice(0, 10);
     await syncLegacyCourtDate(db, { caseId, userId: req.user.id, oldDate: nextDate, newDate: nextDate });

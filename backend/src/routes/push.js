@@ -3,6 +3,7 @@ import { err400, truncateStr } from '../utils/routeHelpers.js';
 import { sanitizeStr } from '../utils/sanitize.js';
 import { isValidTimeZone } from '../utils/timezone.js';
 import { rememberTimeZone, rescheduleUserCourtReminders } from '../services/courtReminders.js';
+import { normalizeLang, rememberLanguage, resolveLang, msg } from '../i18n/index.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
@@ -63,7 +64,7 @@ router.post('/test', authRequired, pushLimiter, async (req,res)=>{
 });
 // ── Legal tip of the day ───────────────────────────────────────────────────────
 // GET /api/push/tip — returns today's legal tip (changes daily)
-const LEGAL_TIPS = [
+export const LEGAL_TIPS = [
   { tip: "You have the right to remain silent. Use it. Anything you say CAN be used against you.",                     category: "Criminal",      lesson_query: "rights" },
   { tip: "You can legally record police in public in all 50 states as long as you don't interfere.",                   category: "Constitutional",lesson_query: "police" },
   { tip: "A DUI checkpoint must be publicly announced in advance in most US states.",                                  category: "Criminal",      lesson_query: "DUI" },
@@ -85,7 +86,11 @@ router.get('/tip', (req, res) =>{
   try {
   const dayIndex = Math.floor(Date.now() / 86400000) % LEGAL_TIPS.length;
   const entry = LEGAL_TIPS[dayIndex];
-  return res.json({ tip: entry.tip, category: entry.category, lesson_query: entry.lesson_query, index: dayIndex, total: LEGAL_TIPS.length });
+  const lang = resolveLang(req);
+  res.set('Vary', 'Accept-Language');
+  res.set('Content-Language', lang);
+  // category / lesson_query stay English: they are search keys for the lessons screen.
+  return res.json({ tip: msg(lang, `tip.${dayIndex}`), language: lang, category: entry.category, lesson_query: entry.lesson_query, index: dayIndex, total: LEGAL_TIPS.length });
 
   } catch (_e) {
     res.status(500).json({ error: 'Internal server error.', code: 'server_error' });
@@ -243,6 +248,25 @@ router.post('/timezone', authRequired, async (req, res) => {
   }
 });
 
+// ── Language ──────────────────────────────────────────────────────────────────
+// POST /api/push/language { language: 'es' } — the language the person chose in
+// the app (en / es / pt / vi). Court reminders, follower notices and reminder
+// e-mails are written in it; changing it re-plans pending court reminders so
+// their text follows.
+router.post('/language', authRequired, async (req, res) => {
+  const lang = normalizeLang(req.body?.language);
+  if (!lang) return err400(res, msg(resolveLang(req), 'lang.err.bad'));
+  try {
+    const db = await getDb();
+    const changed = await rememberLanguage(db, req.user.id, lang);
+    const replanned = changed ? await rescheduleUserCourtReminders(db, req.user.id) : 0;
+    res.json({ ok: true, language: lang, changed, replanned_court_dates: replanned, message: msg(lang, 'lang.saved') });
+  } catch (e) {
+    logger.error('[push/language]', e.message);
+    res.status(500).json({ error: msg(lang, 'lang.err.save') });
+  }
+});
+
 // ── Notification preferences ──────────────────────────────────────────────────
 // GET  /api/push/preferences  — return current prefs
 // POST /api/push/preferences  — update prefs
@@ -251,7 +275,7 @@ router.get('/preferences', authRequired, async (req, res) => {
     const db = await getDb();
     const user = await db.get(
       `SELECT notif_court_reminders, notif_legal_tips, notif_arrest_alerts,
-              notif_marketing, notif_checkin_reminders, timezone
+              notif_marketing, notif_checkin_reminders, timezone, preferred_language
        FROM users WHERE id=?`,
       [req.user.id]
     );
@@ -262,6 +286,7 @@ router.get('/preferences', authRequired, async (req, res) => {
       notif_marketing:        0,
       notif_checkin_reminders:1,
       timezone:               null,
+      preferred_language:     null,
     });
   } catch {
     return res.status(500).json({ error: 'Could not load preferences' });
@@ -283,10 +308,13 @@ router.post('/preferences', authRequired, async (req, res) => {
     if (b.timezone !== undefined && b.timezone !== null) {
       if (!isValidTimeZone(b.timezone)) return err400(res, 'timezone must be an IANA zone name, e.g. America/Chicago');
     }
-    if (sets.length) await db.run(`UPDATE users SET ${sets.join(', ')} WHERE id=?`, [...vals, req.user.id]);
-    if (b.timezone && await rememberTimeZone(db, req.user.id, b.timezone)) {
-      await rescheduleUserCourtReminders(db, req.user.id);
+    if (b.language !== undefined && b.language !== null && !normalizeLang(b.language)) {
+      return err400(res, msg(resolveLang(req), 'lang.err.bad'));
     }
+    if (sets.length) await db.run(`UPDATE users SET ${sets.join(', ')} WHERE id=?`, [...vals, req.user.id]);
+    const tzChanged = !!b.timezone && await rememberTimeZone(db, req.user.id, b.timezone);
+    const langChanged = !!b.language && await rememberLanguage(db, req.user.id, b.language);
+    if (tzChanged || langChanged) await rescheduleUserCourtReminders(db, req.user.id);
     return res.json({ ok: true });
   } catch (e) {
     logger.error('[push/preferences]', e.message);

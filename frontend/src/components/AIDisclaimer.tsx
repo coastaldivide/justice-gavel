@@ -17,6 +17,7 @@ import { COLORS } from '../constants/theme';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { storage, storageReady } from '../utils/storage';
 import { useTheme } from '../constants/theme';
+import { t, useLang } from '../i18n';
 
 const DISCLAIMER_KEY = 'upl_disclaimer_acknowledged_v1';
 
@@ -27,6 +28,7 @@ interface Props {
 
 export function AIDisclaimer({ variant = 'banner', feature = 'AI Legal Analysis' }: Props) {
   const { colors } = useTheme();
+  useLang();
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -102,12 +104,12 @@ export function AIDisclaimer({ variant = 'banner', feature = 'AI Legal Analysis'
       <View
         style={[styles.inlineBanner, { backgroundColor: (colors as any).surfaceAlt, borderColor: colors.border }]}
         accessibilityRole="text"
-        accessibilityLabel="AI information disclaimer"
+        accessibilityLabel={t('aid_inline_a11y')}
       >
         <Text style={[styles.inlineText, { color: colors.textMuted }]}>
-          ⚖️ <Text style={{ fontWeight: '600' }}>AI information only</Text> — not legal advice.
+          ⚖️ <Text style={{ fontWeight: '600' }}>{t('aid_inline_strong')}</Text> — {t('aid_inline_rest')}
           {' '}
-          <Text style={{ textDecorationLine: 'underline' }}>What this means</Text>
+          <Text style={{ textDecorationLine: 'underline' }}>{t('aid_what_this_means')}</Text>
         </Text>
       </View>
     );
@@ -118,10 +120,10 @@ export function AIDisclaimer({ variant = 'banner', feature = 'AI Legal Analysis'
     <View
       style={[styles.banner, { backgroundColor: colors.bgSubtle, borderTopColor: colors.border }]}
       accessibilityRole="text"
-      accessibilityLabel="Legal information disclaimer"
+      accessibilityLabel={t('aid_banner_a11y')}
     >
       <Text style={[styles.bannerText, { color: colors.textSecond }]}>
-        ⚖️ This is legal information, not legal advice. Not a substitute for an attorney.
+        ⚖️ {t('aid_banner')}
       </Text>
     </View>
   );

@@ -787,7 +787,7 @@ describe('9. i18n — Translation Function & Language Files', () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/i18n/index.ts', 'utf8');
     // Verify the fallback chain is implemented
-    expect(src).toContain("dict['en']");
+    expect(src).toContain('dict.en[key]');
     expect(src).toContain('return key');
   });
 

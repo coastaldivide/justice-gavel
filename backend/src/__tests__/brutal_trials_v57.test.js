@@ -247,7 +247,8 @@ describe('HNS. HelpNowScreen — Multi-Source Lawyer/Bondsman Fetching', () => {
   test('HNS-02: last results saved on the phone for offline use', async () => {
     const fs = await import('fs');
     const hn = fs.readFileSync(__REPO + '/frontend/src/screens/HelpNowScreen.tsx', 'utf8');
-    expect(hn).toContain('CACHE_KEY');
+    // one saved copy per language (the server notes in it are in that language)
+    expect(hn).toContain('helpnow_cache_v3_${getLang()}');
     expect(hn).toContain('AsyncStorage');
     expect(hn).toContain('help-offline');
   });

@@ -8,6 +8,7 @@ import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { RootStackParamList } from '../types/navigation';
+import { t, useLang, locale } from '../i18n';
 import { COLORS } from '../constants/theme';
 import ErrorBoundary from '../components/ErrorBoundary';
 import JTBLogo from '../components/JTBLogo';
@@ -164,6 +165,7 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 
 // ── More stack — all secondary screens ────────────────────────────────────────
 function MoreNavigator() {
+  useLang();
   // The Electron menu / deep-link bridge (window.__navigateTo) lives in
   // App.tsx, where it has access to the root navigation container ref.
   return (
@@ -199,11 +201,11 @@ function MoreNavigator() {
       <MoreStack.Screen name="QuickConnect"          component={QuickConnectScreen}          options={{ title: '⚡ Quick Connect' }} />
       <MoreStack.Screen name="ConsumerSubscription"  component={ConsumerSubscriptionScreen}  options={{ title: '📋 Choose Your Plan' }} />
       <MoreStack.Screen name="ArrestMonitor"         component={ArrestMonitorScreen}         options={{ title: '🔔 Arrest Monitor' }} />
-      <MoreStack.Screen name="HelpNow"               component={HelpNowScreen}               options={{ title: '🚨 Get Help Now', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="HelpNow"               component={HelpNowScreen}               options={{ title: `🚨 ${t('nav_title_help_now')}`, headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="Booking"               component={BookingScreen}               options={{ title: '📅 Book a Consultation' }} />
-      <MoreStack.Screen name="RightsCard"            component={RightsCardScreen}            options={{ title: '📋 Know Your Rights Card' }} />
-      <MoreStack.Screen name="CourtDates"            component={CourtDatesScreen}            options={{ title: '📅 My Court Dates' }} />
-      <MoreStack.Screen name="CourtDateDetail"       component={CourtDateDetailScreen}       options={{ title: '📅 Court Date' }} />
+      <MoreStack.Screen name="RightsCard"            component={RightsCardScreen}            options={{ title: `📋 ${t('rc_page_title')}` }} />
+      <MoreStack.Screen name="CourtDates"            component={CourtDatesScreen}            options={{ title: `📅 ${t('ja_my_court_dates')}` }} />
+      <MoreStack.Screen name="CourtDateDetail"       component={CourtDateDetailScreen}       options={{ title: `📅 ${t('nav_title_court_date')}` }} />
       <MoreStack.Screen name="CheckIn"               component={CheckInScreen}               options={{ title: '✓ Daily Check-In', headerStyle: { backgroundColor: COLORS.navy }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CheckInManager"        component={CheckInManagerScreen}        options={{ title: '📋 Check-In Manager' }} />
       <MoreStack.Screen name="Expungement"           component={ExpungementScreen}           options={{ title: '📋 Clear My Record' }} />
@@ -237,8 +239,8 @@ function MoreNavigator() {
       <MoreStack.Screen name="DrugPenalties"         component={LegalPenaltiesScreen}         options={{ title: '💊 Drug Charge Penalties' }} />
       <MoreStack.Screen name="SpecialtyCourts"       component={SpecialtyCourtsScreen}       options={{ title: '⚖️ Specialty Courts' }} />
       <MoreStack.Screen name="CourtLocator"          component={CourtLocatorScreen}          options={{ title: '🏛️ Court Locator' }} />
-      <MoreStack.Screen name="BailCalculator"        component={BailCalculatorScreen}        options={{ title: '💰 Bail Calculator' }} />
-      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: '🚨 Just Arrested — What To Do', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
+      <MoreStack.Screen name="BailCalculator"        component={BailCalculatorScreen}        options={{ title: `💰 ${t('bail_calculator')}` }} />
+      <MoreStack.Screen name="JustArrested"         component={JustArrestedScreen}        options={{ title: `🚨 ${t('nav_title_just_arrested')}`, headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="CourtForms"            component={CourtFormsScreen}            options={{ title: '📝 Court Forms' }} />
       <MoreStack.Screen name="InterrogationRecorder" component={InterrogationRecorderScreen} options={{ title: '🎙 Encounter Recorder', headerStyle: { backgroundColor: COLORS.emergencyDark }, headerTintColor: COLORS.white }} />
       <MoreStack.Screen name="DocumentScanner"       component={DocumentScannerScreen}       options={{ title: '📷 Document Scanner' }} />
@@ -280,6 +282,7 @@ options={{ title: '⚙️ Settings' }} />
 // ─────────────────────────────────────────────────────────────────────────────
 
 function MainTabs() {
+  useLang();
   return (
     <ErrorBoundary>
     <Tab.Navigator
@@ -301,11 +304,11 @@ function MainTabs() {
         // keeps the accessibilityRole="tab" + selected state the item passes in.
         tabBarButton: (props: any) => <TouchableOpacity {...props} />,
       }}>
-      <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarButton: (props: any) => <TouchableOpacity testID="home-tab" {...props} />, tabBarLabel: 'Home', tabBarButtonTestID: 'home-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> }} />
-      <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: 'AI Help',  tabBarIcon: ({ focused }) => <TabIcon emoji="💬" focused={focused} /> }} />
-      <Tab.Screen name="LawyersTab" component={LawyersScreen}   options={{ tabBarLabel: 'Lawyers',  tabBarIcon: ({ focused }) => <TabIcon emoji="⚖️" focused={focused} /> }} />
-      <Tab.Screen name="BailTab"    component={BailSearchScreen}options={{ tabBarLabel: 'Bail Help',tabBarIcon: ({ focused }) => <TabIcon emoji="💰" focused={focused} /> }} />
-      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="more-tab" {...props} />, tabBarLabel: 'Resources', tabBarButtonTestID: 'more-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="📚" focused={focused} /> }} />
+      <Tab.Screen name="HomeTab"    component={HomeScreen}      options={{ tabBarButton: (props: any) => <TouchableOpacity testID="home-tab" {...props} />, tabBarLabel: t('tab_home'), tabBarButtonTestID: 'home-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> }} />
+      <Tab.Screen name="ChatTab"    component={ChatScreen}      options={{ tabBarLabel: t('tab_ai_help'),  tabBarIcon: ({ focused }) => <TabIcon emoji="💬" focused={focused} /> }} />
+      <Tab.Screen name="LawyersTab" component={LawyersScreen}   options={{ tabBarLabel: t('tab_lawyers'),  tabBarIcon: ({ focused }) => <TabIcon emoji="⚖️" focused={focused} /> }} />
+      <Tab.Screen name="BailTab"    component={BailSearchScreen}options={{ tabBarLabel: t('tab_bail_help'),tabBarIcon: ({ focused }) => <TabIcon emoji="💰" focused={focused} /> }} />
+      <Tab.Screen name="MoreTab"    component={MoreNavigator}   options={{ tabBarButton: (props: any) => <TouchableOpacity testID="more-tab" {...props} />, tabBarLabel: t('tab_resources'), tabBarButtonTestID: 'more-tab',     tabBarIcon: ({ focused }) => <TabIcon emoji="📚" focused={focused} /> }} />
     </Tab.Navigator>
     </ErrorBoundary>
   );
@@ -313,6 +316,7 @@ function MainTabs() {
 
 // ── Guest navigator ────────────────────────────────────────────────────────────
 function GuestNavigator() {
+  useLang();
   return (
     <ErrorBoundary>
     {/* App.tsx already shows the age gate before any navigator mounts, so the
@@ -324,7 +328,7 @@ function GuestNavigator() {
       <GuestStack.Screen name="Register"   component={RegisterScreen} options={{ headerShown: true, title: 'Create Account', ...HDR }} />
       <GuestStack.Screen name="AttorneyPrivacy" component={AttorneyPrivacyScreen} />
           <GuestStack.Screen name="LegalDisclaimer" component={LegalDisclaimerScreen} />
-        <GuestStack.Screen name="JustArrested"     component={JustArrestedScreen}      options={{ headerTitle: "Your Rights" }} />
+        <GuestStack.Screen name="JustArrested"     component={JustArrestedScreen}      options={{ headerTitle: t('nav_title_your_rights') }} />
         <GuestStack.Screen name="Emergency"        component={EmergencyShareScreen}    options={{ headerShown: false }} />
         <GuestStack.Screen name="TermsOfService"   component={TermsOfServiceScreen}    options={{ headerShown: true, title: 'Terms of Service', ...HDR }} />
         <GuestStack.Screen name="PrivacyPolicy"    component={PrivacyPolicyScreen}     options={{ headerShown: true, title: 'Privacy Policy', ...HDR }} />
@@ -343,10 +347,10 @@ function SplashScreen() {
         JUSTICE GAVEL
       </Text>
       <Text style={{ fontSize: 10, fontWeight: '600', color: COLORS.steel, letterSpacing: 5, marginBottom: 8 }}>
-        YOUR LEGAL CONNECTION
+        {t('home_footer_title').toLocaleUpperCase(locale())}
       </Text>
       <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.steel, letterSpacing: 0.5, marginBottom: 36, textAlign: 'center', paddingHorizontal: 40 }}>
-        Innocent until proven guilty.
+        {t('splash_innocent')}
       </Text>
       <ActivityIndicator color={COLORS.steel} size="large" />
     </View>

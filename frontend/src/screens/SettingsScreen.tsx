@@ -241,6 +241,8 @@ function SettingsScreen({ navigation }: any) {
     setLanguage(l);
     setLang(l);
     await AsyncStorage.setItem('lang', l).catch(() => {}); // non-fatal storage write
+    // Signed in: court reminders and e-mails follow the new language (re-planned server-side).
+    if ((user as { id?: unknown })?.id) api.post('/push/language', { language: l }).catch(() => { /* offline: sent with the next court-date save */ });
   };
 
   const toggleMaster = async (val: boolean) => {

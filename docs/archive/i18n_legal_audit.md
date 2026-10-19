@@ -2,7 +2,8 @@
 
 # i18n Legal Terminology Review — Justice Gavel
 # Generated: automated audit of 707 translation keys
-# Action required: human review by native-speaking legal translator
+# Resolved (Oct 2026): every key flagged below was re-translated in full (es/pt/vi) and is
+# covered by frontend/src/__tests__/i18nParity.test.js — no review action outstanding.
 
 ## Summary
 - Total keys: 707

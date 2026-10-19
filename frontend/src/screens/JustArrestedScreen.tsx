@@ -19,15 +19,15 @@ import { Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } 
 import type { ScreenProps } from '../types/navigation';
 import { useToast } from '../components/ToastProvider';
 import { useTheme } from '../constants/theme';
-import { t } from '../i18n';
-import { getUserState, setUserState, STATE_LIST, STATE_NAMES } from '../utils/userState';
+import { t, useLang } from '../i18n';
+import { getUserState, setUserState, localizedStateList, stateName as localStateName } from '../utils/userState';
 import { getToken } from '../utils/secureStorage';
 import { hapticImpact, RNShare } from '../utils/webCompat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
 import { IllustrationRights } from '../components/Illustrations';
 import {
-  getCoreProgress, saveCoreProgress, setPendingRoute, fetchRightsCard, getCachedRightsCard, prefetchRights,
+  getCoreProgress, saveCoreProgress, setPendingRoute, fetchRightsCard, getCachedRightsCard, prefetchRights, reviewedLabel,
   type CoreStep, type RightsCardData,
 } from '../services/corePath';
 
@@ -35,7 +35,6 @@ import {
 // with no network on first open.
 const SAY_KEYS = ['rs_say_1', 'rs_say_2', 'rs_say_3', 'rs_say_4', 'rs_say_5'];
 const DONT_KEYS = ['rs_dont_1', 'rs_dont_2', 'rs_dont_3', 'rs_dont_4', 'rs_dont_5'];
-const BUNDLED_SCRIPT_SOURCE = 'Summarized from the Justice Gavel rights card (sections 1–6) and its Just Arrested guidance';
 const BUNDLED_LAST_REVIEWED = '2026-04';
 
 /** Haptic tap; a device without haptics (or a test) must never break a step. */
@@ -43,14 +42,8 @@ function buzz() {
   try { Promise.resolve(hapticImpact()).catch(() => {}); } catch { /* no haptics here */ }
 }
 
-function reviewedLabel(d: string | null): string {
-  if (!d) return '';
-  const m = /^(\d{4})-(\d{2})/.exec(d);
-  if (!m) return d;
-  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, 15)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-}
-
 function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const lang = useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { showToast } = useToast();
@@ -74,6 +67,13 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
       if (mounted.current) setCard(fresh);
     } catch { /* offline: bundled script / cached copy stays */ }
   }, []);
+
+  // A language switch: show this language's saved copy / fetch it.
+  const firstLang = useRef(true);
+  useEffect(() => {
+    if (firstLang.current) { firstLang.current = false; return; }
+    setCard(null); loadCard(stateCode);
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     (async () => {
@@ -122,30 +122,32 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
 
   const call = (num: string) => {
     buzz();
-    Linking.openURL(`tel:${num}`).catch(() => showToast(`Please dial ${num} manually.`, 'warning'));
+    Linking.openURL(`tel:${num}`).catch(() => showToast(t('cp_dial_manually', { num }), 'warning'));
   };
 
   const alertFamily = () => {
-    const msg = 'I was just arrested and need help. Please open Justice Gavel (free) to find a lawyer and a bail agent: https://justicegavel.app/just-arrested';
+    const msg = t('ja_alert_msg', { url: 'https://justicegavel.app/just-arrested' });
     const enc = encodeURIComponent(msg);
     Linking.openURL(`whatsapp://send?text=${enc}`)
       .catch(() => Linking.openURL(`https://wa.me/?text=${enc}`))
-      .catch(() => RNShare.share({ message: msg, title: 'I need help' }).catch(() => {}));
+      .catch(() => RNShare.share({ message: msg, title: t('ja_alert_title') }).catch(() => {}));
   };
 
   const script = card?.script;
   const sayLines = SAY_KEYS.map(k => t(k));
   const dontLines = DONT_KEYS.map(k => t(k));
-  const scriptSource = script?.source || BUNDLED_SCRIPT_SOURCE;
+  // The server's script source only when it is in the app's language.
+  const scriptSource = script?.source && (card?.language || 'en') === lang ? script.source : t('rc_script_source');
   const scriptReviewed = script ? script.last_reviewed : BUNDLED_LAST_REVIEWED;
-  const stateName = stateCode ? (STATE_NAMES[stateCode] || stateCode) : '';
+  const stateName = stateCode ? localStateName(stateCode) : '';
+  const states = localizedStateList();
   const stepTitles = [t('ja_s1'), t('ja_s2'), t('ja_s3')];
 
   return (
     <View style={styles.screen} testID="just-arrested-screen">
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1.3} style={styles.headerTitle} accessibilityRole="header">{t('ja_title')}</Text>
-        <Text maxFontSizeMultiplier={1.3} style={styles.stepOf} testID="core-step-label">{t('ja_step_of').replace('{n}', String(step))}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.stepOf} testID="core-step-label">{t('ja_step_of', { n: step })}</Text>
         <View style={styles.stepRow} accessibilityRole="tablist">
           {([1, 2, 3] as CoreStep[]).map(n => {
             const isDone = n === 1 ? done.rights : n === 2 ? done.help : done.court;
@@ -156,7 +158,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
                 testID={`core-step-${n}`}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
-                accessibilityLabel={`Step ${n} of 3: ${stepTitles[n - 1]}${isDone ? ', done' : ''}`}
+                accessibilityLabel={`${t('ja_step_a11y', { n, title: stepTitles[n - 1] })}${isDone ? t('ja_done_a11y') : ''}`}
                 style={[styles.stepPill, active && styles.stepPillActive]}
                 onPress={() => goStep(n)}
               >
@@ -175,7 +177,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
             <View style={{ alignItems: 'center' }}><IllustrationRights width={90} height={81} /></View>
             <Text maxFontSizeMultiplier={1.3} style={styles.stepTitle}>1. {t('ja_s1')}</Text>
             <TouchableOpacity accessibilityRole="button" testID="core-state-button" style={styles.stateBtn}
-              accessibilityLabel={`${t('ja_state')}: ${stateName || t('ja_choose_state')}. Change`} onPress={() => setPicker(true)}>
+              accessibilityLabel={t('ja_state_a11y', { state: stateName || t('ja_choose_state') })} onPress={() => setPicker(true)}>
               <Text maxFontSizeMultiplier={1.3} style={styles.stateBtnText}>📍 {t('ja_state')}: {stateName || t('ja_choose_state')}  ▾</Text>
             </TouchableOpacity>
 
@@ -194,7 +196,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
             <Text maxFontSizeMultiplier={1.4} style={styles.sourceLine} testID="core-script-source">
               {t('rc_source')}: {scriptSource}{scriptReviewed ? ` · ${t('rc_last_reviewed')}: ${reviewedLabel(scriptReviewed)}` : ''} · {t('rc_lawyer_pending')}
             </Text>
-            {!!card?.state_notice && stateCode && (
+            {!!card?.state_notice && stateCode && (card.language || 'en') === lang && (
               <Text maxFontSizeMultiplier={1.4} style={styles.notice} testID="core-state-notice">ℹ️ {card.state_notice}</Text>
             )}
 
@@ -272,18 +274,18 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
 
         {/* Always there: emergency numbers and the family alert */}
         <View style={styles.emergencyRow}>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Call 911 emergency services" style={styles.btn911} onPress={() => call('911')}>
-            <Text maxFontSizeMultiplier={1.2} style={styles.emergencyText}>📞 CALL 911</Text>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('cp_call_911_a11y')} style={styles.btn911} onPress={() => call('911')}>
+            <Text maxFontSizeMultiplier={1.2} style={styles.emergencyText}>📞 {t('cp_call_911')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Call 988 crisis line" style={styles.btn988} onPress={() => call('988')}>
-            <Text maxFontSizeMultiplier={1.2} style={styles.emergencyText}>💙 CRISIS 988</Text>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('cp_call_988_a11y')} style={styles.btn988} onPress={() => call('988')}>
+            <Text maxFontSizeMultiplier={1.2} style={styles.emergencyText}>💙 {t('cp_crisis_988')}</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Send an alert to family on WhatsApp or text" style={styles.familyBtn} onPress={alertFamily}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.familyBtnText}>💬 Alert family (WhatsApp / text)</Text>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('ja_alert_family_a11y')} style={styles.familyBtn} onPress={alertFamily}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.familyBtnText}>💬 {t('ja_alert_family')}</Text>
         </TouchableOpacity>
         <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>
-          ⚖️ General information only — not legal advice. Laws vary by state. Talk to a licensed attorney or a public defender about your situation.
+          ⚖️ {t('ja_disclaimer')}
         </Text>
       </ScrollView>
 
@@ -292,7 +294,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
           <View style={styles.sheet} testID="core-state-picker">
             <Text maxFontSizeMultiplier={1.3} style={styles.sheetTitle}>{t('ja_choose_state')}</Text>
             <ScrollView style={{ maxHeight: 420 }}>
-              {STATE_LIST.map(s => (
+              {states.map(s => (
                 <TouchableOpacity key={s.code} accessibilityRole="button" testID={`core-state-${s.code}`}
                   style={[styles.stateRow, s.code === stateCode && styles.stateRowActive]} onPress={() => pickState(s.code)}>
                   <Text maxFontSizeMultiplier={1.3} style={styles.stateRowText}>{s.name}</Text>
@@ -300,7 +302,7 @@ function JustArrestedScreen({ navigation }: ScreenProps): React.JSX.Element {
               ))}
             </ScrollView>
             <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setPicker(false)}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>Close</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('close')}</Text>
             </TouchableOpacity>
           </View>
         </View>

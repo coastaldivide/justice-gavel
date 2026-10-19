@@ -25,9 +25,10 @@
  *     card: there is no sourced per-state premium data in the repo.
  */
 
+import { msg, normalizeLang, stateName as localStateName } from '../i18n/index.js';
+
 export const CONTENT_LAST_REVIEWED = '2026-04';
-const CARD_SOURCE = 'Justice Gavel rights card — based on published state statutes and case law (as recorded April 2026)';
-const STATE_SOURCE = 'Published state statutes and case law (Justice Gavel state summary, as recorded April 2026; no specific citation recorded)';
+const STATE_SOURCE = msg('en', 'rights.source.state');
 
 export const STATE_NAMES = {
   AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
@@ -55,62 +56,51 @@ const section = (key, topic, heading, body, source) => ({
   last_reviewed: CONTENT_LAST_REVIEWED, lawyer_reviewed: false, reviewed_by: null,
 });
 
-/**
- * The general (federal / constitutional) card. Text is identical to the
- * English bundled card (en.json rc_h1-8 / rc_b1-8), which the app shows offline and
- * translates; `key` is the i18n suffix (rc_h1 / rc_b1 → 'rc_1').
- */
-export const GENERAL_SECTIONS = Object.freeze([
-  section('rc_1', 'silence', '1. RIGHT TO REMAIN SILENT  (5th Amendment)',
-    'Say clearly: "I am invoking my right to remain silent."\n\nThen stop talking. You do NOT have to answer any questions — not your name, not where you came from, nothing. Anything you say CAN and WILL be used against you in court. Silence cannot be used as evidence of guilt.\n\nThis right applies: during a traffic stop · at your door · at the police station · after arrest.',
-    'U.S. Constitution, 5th Amendment (as summarized in the Justice Gavel rights card)'),
-  section('rc_2', 'lawyer', '2. RIGHT TO A LAWYER  (6th Amendment)',
-    'Say clearly: "I want a lawyer. I will not answer questions without a lawyer present."\n\nOnce you ask for a lawyer, police MUST stop questioning you immediately. Do not answer any more questions until your lawyer arrives — even if they say it will help you, even if they say the lawyer is on the way.\n\nIf you cannot afford a lawyer, one will be appointed for you at no cost. Ask: "I want a public defender."',
-    'U.S. Constitution, 6th Amendment (as summarized in the Justice Gavel rights card)'),
-  section('rc_3', 'search', '3. RIGHT AGAINST UNLAWFUL SEARCH  (4th Amendment)',
-    'Say clearly: "I do not consent to a search."\n\nPolice CANNOT search your home without a warrant signed by a judge. They cannot search your car without probable cause or your consent. Your refusal cannot be used as probable cause.\n\nIf they search anyway: do not physically resist. Say "I do not consent" calmly and clearly. Challenge the illegal search in court — that is how suppression motions win.',
-    'U.S. Constitution, 4th Amendment (as summarized in the Justice Gavel rights card)'),
-  section('rc_4', 'charges', '4. RIGHT TO KNOW THE CHARGES',
-    'After arrest you have the right to be told what you are charged with. Ask: "What am I being charged with?"\n\nYou have the right to an arraignment — usually within 24 to 72 hours of arrest — where charges are formally read and bail is set. You have the right to enter a plea.',
-    CARD_SOURCE),
-  section('rc_5', 'traffic_stop', '5. DURING A TRAFFIC STOP',
-    'You must provide: driver\'s license, registration, and proof of insurance.\n\nYou do NOT have to: answer questions about where you are going, consent to a search of your vehicle, or answer questions about whether you have been drinking.\n\nKeep your hands visible. Move slowly. Say: "I do not consent to a search. Am I free to go?"',
-    CARD_SOURCE),
-  section('rc_6', 'arrest', '6. DURING ARREST — STAY CALM',
-    'Do not physically resist — even if the arrest is unlawful. Resisting adds new charges.\n\nDo NOT: argue, run, reach into your clothing, make sudden movements, sign anything.\n\nDO: stay calm, say "I am invoking my right to remain silent and I want a lawyer," remember badge numbers and officer names, call a lawyer or family member as soon as possible.',
-    CARD_SOURCE),
-  section('rc_7', 'bail', '7. BAIL AND RELEASE',
-    'At your bail hearing, the judge considers: severity of charges, criminal history, flight risk, and community ties.\n\nYou have the right to argue for lower bail. A bail bondsman can post the bail for you for a fee — ask the agent what they charge before you sign anything.\n\nOpen Justice Gavel → tap HELP NOW to find a bondsman and lawyer instantly.',
-    CARD_SOURCE),
-  section('rc_8', 'phone_call', '8. PHONE CALL RIGHT',
-    'After arrest, ask to make a phone call. Most (not all) states allow this within a reasonable time after booking.\n\nUse the call for:\n• A criminal defense attorney\n• A bail bondsman\n• A trusted family member\n\nNote: The right to a phone call varies by state. Some states have no statutory guarantee. If denied, document when you asked.',
-    CARD_SOURCE),
+const GENERAL_TOPICS = Object.freeze([
+  ['rc_1', 'silence'], ['rc_2', 'lawyer'], ['rc_3', 'search'], ['rc_4', 'charges'],
+  ['rc_5', 'traffic_stop'], ['rc_6', 'arrest'], ['rc_7', 'bail'], ['rc_8', 'phone_call'],
 ]);
+const SOURCE_KEY = { rc_1: 'rights.source.rc_1', rc_2: 'rights.source.rc_2', rc_3: 'rights.source.rc_3' };
+
+/**
+ * The general (federal / constitutional) card in `lang` (en / es / pt / vi).
+ * The text is the app's bundled card (frontend/src/i18n/<lang>.json rc_h1-8 /
+ * rc_b1-8 — i18n_server_content.test.js fails if they drift); `key` is the
+ * i18n suffix (rc_h1 / rc_b1 → 'rc_1'). Every section says which language it is in.
+ */
+export function generalSections(lang = 'en') {
+  const l = normalizeLang(lang) || 'en';
+  return GENERAL_TOPICS.map(([key, topic]) => ({
+    ...section(key, topic, msg(l, `rights.${key}.heading`), msg(l, `rights.${key}.body`), msg(l, SOURCE_KEY[key] || 'rights.source.card')),
+    language: l,
+  }));
+}
+
+/** The English general card (AI grounding, legacy callers, tests). */
+export const GENERAL_SECTIONS = Object.freeze(generalSections('en').map(s => Object.freeze(s)));
 
 /**
  * The 30-second "what to say / what not to do" script. Every line is lifted
  * from the card above (or the existing Just Arrested guidance on jail calls);
  * `from` names the section it comes from. i18n keys: rs_say_N / rs_dont_N.
  */
-export const SCRIPT = Object.freeze({
-  say: [
-    { key: 'rs_say_1', text: 'I am invoking my right to remain silent.', from: 'rc_1' },
-    { key: 'rs_say_2', text: 'I want a lawyer.', from: 'rc_2' },
-    { key: 'rs_say_3', text: 'I do not consent to a search.', from: 'rc_3' },
-    { key: 'rs_say_4', text: 'Am I free to go?', from: 'rc_5' },
-    { key: 'rs_say_5', text: 'What am I being charged with?', from: 'rc_4' },
-  ],
-  dont: [
-    { key: 'rs_dont_1', text: 'Do not answer questions without a lawyer.', from: 'rc_2' },
-    { key: 'rs_dont_2', text: 'Do not physically resist, run or argue.', from: 'rc_6' },
-    { key: 'rs_dont_3', text: 'Do not sign anything.', from: 'rc_6' },
-    { key: 'rs_dont_4', text: 'Do not consent to a search.', from: 'rc_3' },
-    { key: 'rs_dont_5', text: 'Do not talk about your case on jail phone calls — they are recorded.', from: 'just_arrested' },
-  ],
-  source: 'Summarized from the Justice Gavel rights card (sections 1–6) and its Just Arrested guidance',
-  last_reviewed: CONTENT_LAST_REVIEWED,
-  lawyer_reviewed: false,
+const SCRIPT_FROM = Object.freeze({
+  say: [['rs_say_1', 'rc_1'], ['rs_say_2', 'rc_2'], ['rs_say_3', 'rc_3'], ['rs_say_4', 'rc_5'], ['rs_say_5', 'rc_4']],
+  dont: [['rs_dont_1', 'rc_2'], ['rs_dont_2', 'rc_6'], ['rs_dont_3', 'rc_6'], ['rs_dont_4', 'rc_3'], ['rs_dont_5', 'just_arrested']],
 });
+export function scriptFor(lang = 'en') {
+  const l = normalizeLang(lang) || 'en';
+  const line = ([key, from]) => ({ key, text: msg(l, `rights.${key}`), from });
+  return {
+    say: SCRIPT_FROM.say.map(line),
+    dont: SCRIPT_FROM.dont.map(line),
+    source: msg(l, 'rights.script.source'),
+    last_reviewed: CONTENT_LAST_REVIEWED,
+    lawyer_reviewed: false,
+    language: l,
+  };
+}
+export const SCRIPT = Object.freeze(scriptFor('en'));
 
 // ── Per-state notes (moved unchanged from routes/lessons.js) ────────────────
 // Source recorded with them: "Published state statutes and case law —
@@ -373,8 +363,7 @@ export const STATE_RIGHTS = Object.freeze({
   },
 });
 /** Shown for a state until a cited / reviewed state section exists. */
-export const reviewPendingNotice = (name) =>
-  `State-specific details for ${name} haven't been reviewed yet — ask a local lawyer or public defender.`;
+export const reviewPendingNotice = (name, lang = 'en') => msg(lang, 'rights.notice.review_pending', { state: name });
 
 // A specific statute / code citation in a source string: a section sign, or a
 // code / statute abbreviation followed by a number ("Tex. Penal Code 38.02",
@@ -418,16 +407,27 @@ function rowToSection(r) {
     last_reviewed: dateOnly(r.content_verified_at),
     lawyer_reviewed: !!r.reviewed_by, reviewed_by: r.reviewed_by || null,
     needs_review: Number(r.needs_review || 0) === 1,
+    language: normalizeLang(r.language) || 'en',
   };
 }
 
-function mergeRows(base, rows) {
+/**
+ * Overlay database rows on `base`. `lang` is the language being served:
+ * a row in that language replaces the bundled section; an English row
+ * replaces a translated section only when a lawyer reviewed it (reviewed text
+ * beats an unreviewed translation — the section then says language 'en').
+ */
+function mergeRows(base, rows, lang = 'en') {
   const out = base.map(s => ({ ...s }));
-  for (const r of rows) {
+  const ordered = [...rows].sort((a, b) => (normalizeLang(a.language) === lang ? 1 : 0) - (normalizeLang(b.language) === lang ? 1 : 0));
+  for (const r of ordered) {
     const s = rowToSection(r);
     // Never show a database row that has no recorded source (owner rule).
     if (!s.source) continue;
     const i = out.findIndex(x => x.key === s.key || x.topic === s.topic);
+    if (s.language !== lang) {
+      if (i >= 0 && out[i].language === lang && !s.lawyer_reviewed) continue;
+    }
     if (i >= 0) out[i] = s; else out.push(s);
   }
   return out;
@@ -440,7 +440,7 @@ export async function reviewedStateCodes(db) {
   try {
     const rows = await db.all(
       `SELECT UPPER(state) AS state, topic, title, content, source, source_url, content_verified_at, reviewed_by, needs_review
-         FROM rights_cards WHERE language = 'en' AND state IS NOT NULL AND UPPER(state) <> 'US' LIMIT 2000`);
+         FROM rights_cards WHERE state IS NOT NULL AND UPPER(state) <> 'US' LIMIT 2000`);
     for (const r of rows) {
       const sec = rowToSection(r);
       if (sec.source && isReviewedStateSection(sec) && STATE_NAMES[r.state]) out.add(r.state);
@@ -450,48 +450,62 @@ export async function reviewedStateCodes(db) {
 }
 
 /**
- * The full rights card for a state: general (federal) sections + the state's
- * sourced sections + the 30-second script. `db` is optional (rights_cards
- * overlay); a database failure falls back to the bundled content.
+ * The full rights card for a state, in `lang` (en / es / pt / vi; anything
+ * else → English): general (federal) sections + the state's sourced sections
+ * + the 30-second script. `language` is the language the card's bundled text
+ * is in; every section carries its own `language` (a reviewed English
+ * database section may appear in a translated card — `mixed_language` is then
+ * true). `db` is optional (rights_cards overlay); a database failure falls
+ * back to the bundled content.
  */
 export async function getRightsCard(db, rawState, { lang = 'en' } = {}) {
   const code = normalizeState(rawState);
-  const language = 'en'; // only English content is recorded on the server; the app translates the bundled card
-  let general = GENERAL_SECTIONS.map(s => ({ ...s }));
+  const language = normalizeLang(lang) || 'en';
+  let general = generalSections(language);
   // Only cited / reviewed rights_cards rows become state sections; the
   // built-in unreviewed summaries are never shown.
   let specific = [];
   if (db) {
     try {
       const rows = await db.all(
-        `SELECT topic, title, content, state, source, source_url, content_verified_at, reviewed_by, needs_review
+        `SELECT topic, title, content, state, source, source_url, content_verified_at, reviewed_by, needs_review, language
            FROM rights_cards
-          WHERE language = ? AND (state IS NULL OR UPPER(state) IN ('US', ?))
+          WHERE language IN (?, 'en') AND (state IS NULL OR UPPER(state) IN ('US', ?))
           ORDER BY COALESCE(sort_order, 1000), id
-          LIMIT 100`,
+          LIMIT 200`,
         [language, code || 'US']);
-      general  = mergeRows(general, rows.filter(r => !r.state || String(r.state).toUpperCase() === 'US'));
+      general  = mergeRows(general, rows.filter(r => !r.state || String(r.state).toUpperCase() === 'US'), language);
       if (code) {
-        specific = mergeRows([], rows.filter(r => r.state && String(r.state).toUpperCase() === code))
-          .filter(isReviewedStateSection);
+        const stateRows = rows.filter(r => r.state && String(r.state).toUpperCase() === code);
+        // Per topic: the row in the served language when there is one, else the English row.
+        const byTopic = new Map();
+        for (const r of stateRows) {
+          const prev = byTopic.get(r.topic);
+          if (!prev || (normalizeLang(r.language) === language && normalizeLang(prev.language) !== language)) byTopic.set(r.topic, r);
+        }
+        specific = mergeRows([], [...byTopic.values()], language).filter(isReviewedStateSection);
       }
     } catch { /* bundled content stays */ }
   }
   const name = code ? STATE_NAMES[code] : null;
+  const localName = code ? localStateName(code, name, language) : null;
+  const sections = [...general, ...specific];
   return {
     state: code || 'US',
     state_name: name,
+    state_name_local: localName,
     language,
     requested_language: String(lang || 'en').slice(0, 5),
+    mixed_language: sections.some(s => s.language !== language),
     general,
     state_specific: specific,
     state_specific_available: specific.length > 0,
     state_notice: !code
-      ? 'Choose your state to see state-specific details.'
-      : specific.length ? null : reviewPendingNotice(name),
-    script: SCRIPT,
+      ? msg(language, 'rights.notice.choose_state')
+      : specific.length ? null : reviewPendingNotice(localName, language),
+    script: scriptFor(language),
     lawyer_review: 'pending',
-    disclaimer: 'General legal information only — not legal advice. Laws vary by state and change. Talk to a licensed attorney about your situation.',
+    disclaimer: msg(language, 'rights.disclaimer'),
   };
 }
 
@@ -534,32 +548,36 @@ export function rightsRefsFor(text, reply = '') {
   });
 }
 
-/** Shape of the old GET /api/lessons/rights-card response, built from the same content. */
-export function buildLegacyRightsCard(rawState) {
+/** Shape of the old GET /api/lessons/rights-card response, built from the same content (in `lang`). */
+export function buildLegacyRightsCard(rawState, lang = 'en') {
+  const l = normalizeLang(lang) || 'en';
   const code = normalizeState(rawState) || 'US';
-  const stateName = STATE_NAMES[code] || code;
+  const stateName = localStateName(code, STATE_NAMES[code] || code, l);
+  const sections = generalSections(l);
   // The built-in state summaries are unreviewed: never shown (see top of file).
-  const general = GENERAL_SECTIONS.slice(0, 3).map(s => ({ heading: s.heading, body: s.body }));
+  const general = sections.slice(0, 3).map(s => ({ heading: s.heading, body: s.body }));
+  const phrases = ['rs_say_1', 'rs_say_2', 'rs_say_3'].map(k => `"${msg(l, `rights.${k}`)}"`).join('\n');
   const rights = [
     ...general,
-    { heading: '4. DURING ARREST', body: GENERAL_SECTIONS[5].body },
-    { heading: '5. YOUR KEY PHRASES', body: '"I am invoking my right to remain silent."\n"I want a lawyer."\n"I do not consent to a search."' },
+    { heading: msg(l, 'rights.legacy.during_arrest'), body: sections[5].body },
+    { heading: msg(l, 'rights.legacy.key_phrases'), body: phrases },
   ];
   return {
     state: code,
     stateName,
+    language: l,
     mustID: null,
-    title: 'Know Your Rights',
-    subtitle: `${stateName} — What to say & do if you're stopped or arrested`,
-    brandLine: 'JusticeGavel.app  ·  Free legal help  ·  Available 24/7',
+    title: msg(l, 'rights.legacy.title'),
+    subtitle: msg(l, 'rights.legacy.subtitle', { state: stateName }),
+    brandLine: msg(l, 'rights.legacy.brand'),
     rights,
     emergency: [
-      `Bail help:  JusticeGavel.app → Bail Finder (${stateName})`,
-      `Lawyer:     JusticeGavel.app → Find a Lawyer (${stateName})`,
+      msg(l, 'rights.legacy.bail_help', { state: stateName }),
+      msg(l, 'rights.legacy.lawyer', { state: stateName }),
     ],
-    footer: 'General legal information only — not legal advice. Laws change. Verify with a licensed attorney in your state.',
-    state_notice: code === 'US' ? null : reviewPendingNotice(stateName),
+    footer: msg(l, 'rights.legacy.footer'),
+    state_notice: code === 'US' ? null : reviewPendingNotice(stateName, l),
     last_updated: CONTENT_LAST_REVIEWED,
-    source_note: 'Based on published state statutes and case law as of April 2026.',
+    source_note: msg(l, 'rights.legacy.source_note'),
   };
 }

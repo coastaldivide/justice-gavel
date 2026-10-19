@@ -28,7 +28,7 @@ or legal sign-off · ✅ = built (filled in as work lands).
 | Every rights statement shows its source and a "last reviewed" date | Trust, and legal safety | ✅ content (source + "April 2026" as recorded; "Not yet reviewed by a lawyer") · ⏸ Owner: lawyer review → `rights_cards` rows with `reviewed_by` |
 | AI chat answers grounded in the verified rights content, with links back to it; says "talk to a lawyer" instead of guessing | Stops confident wrong answers | ✅ verified card text + "say you are not sure, talk to a lawyer" rule in the prompt; `rights_refs` → "From your rights card →" links (model compliance is a prompt instruction, not a guarantee) |
 | Share arrest info with family in one tap (who, where held, booking number, charges) | Families are the ones making calls | ✅ Emergency Share now carries who / where held / booking no. / charges (kept on the phone) |
-| Spanish (and the app's other languages) for the rights card and script | Many arrested people's families aren't English-first | ✅ script + hub + card in es/pt/vi · ⏸ Owner: native review (the existing es/pt/vi card text is shorter than English and sections 5/8 differ) |
+| Spanish (and the app's other languages) for the rights card and script | Many arrested people's families aren't English-first | ✅ The whole core path in es/pt/vi: every app string (frontend/src/i18n, parity-tested — no English left), the server's rights card, script, notices, guidance, help notes, court-date text, .ics, reminders (push/e-mail/SMS) and family invites (backend/src/i18n, served by `?lang=` / Accept-Language, reminders in the person's saved language `users.preferred_language`). The card sections now match the English section by section. |
 
 ## 2. Find a lawyer **and** a bail agent
 

@@ -429,6 +429,31 @@ async function main() {
     return 'consent required, code accepted, notes hidden, revoke works';
   });
 
+  await check('core path 5: the core path answers in es / pt / vi (rights card, guidance, results notes, court dates)', async () => {
+    const want = {
+      es: { say: 'Estoy ejerciendo mi derecho a guardar silencio.', last: 'Llame a su abogado o al secretario del tribunal.', notice: /^Los detalles específicos de Tennessee/ },
+      pt: { say: 'Estou exercendo meu direito de permanecer em silêncio.', last: 'Ligue para o seu advogado ou para a secretaria do tribunal.', notice: /^Os detalhes específicos de Tennessee/ },
+      vi: { say: 'Tôi đang thực hiện quyền giữ im lặng của mình.', last: 'Hãy gọi cho luật sư của bạn hoặc thư ký tòa án.', notice: /^Thông tin riêng của Tennessee/ },
+    };
+    for (const [lang, w] of Object.entries(want)) {
+      const r = await call('GET', '/api/rights/TN', { headers: { 'Accept-Language': lang } });
+      assert(r.status === 200 && r.json?.language === lang && r.json.general.length === 8, `rights ${lang}: ${brief(r)}`);
+      assert(r.json.general.every(sec => sec.language === lang), `rights ${lang}: a section is not in ${lang}`);
+      assert(r.json.script.say[0].text === w.say && w.notice.test(r.json.state_notice || ''), `rights ${lang}: script / notice ${r.json.state_notice}`);
+      const g = await call('GET', `/api/court-dates/guidance?lang=${lang}`);
+      assert(g.json?.language === lang && g.json.missed.steps.at(-1).text === w.last, `guidance ${lang}: ${brief(g)}`);
+      const h = await call('GET', '/api/help/nearby?state=TN&limit=1', { headers: { 'Accept-Language': lang } });
+      assert(h.status === 200 && h.json?.meta?.language === lang && !/Never by payment/.test(h.json.meta.ranking), `help ${lang}: ${brief(h)}`);
+      if (courtDateId) {
+        const cd = await call('GET', `/api/court-dates/${courtDateId}`, { token, headers: { 'Accept-Language': lang } });
+        assert(cd.status === 200 && cd.json?.language === lang && cd.json.guidance?.language === lang, `court date ${lang}: ${brief(cd)}`);
+      }
+    }
+    const fr = await call('GET', '/api/rights/TN', { headers: { 'Accept-Language': 'fr-FR' } });
+    assert(fr.json?.language === 'en', `unsupported language should be served in English: ${fr.json?.language}`);
+    return 'es, pt, vi served (language field = language served); unsupported → en';
+  });
+
   await check('POST /api/messages/bulk (LawyersScreen payload) reports who was messaged / skipped', async () => {
     assert(lawyerIds.length === 2, 'no lawyer ids from the search check');
     const r = await call('POST', '/api/messages/bulk', { token, body: { lawyer_ids: lawyerIds, message: 'Smoke: are you available for a consultation?' } });

@@ -649,7 +649,10 @@ describe('14. EmergencyStrip — Emergency Quick-Call', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/components/EmergencyStrip.tsx', 'utf8');
     expect(src).toContain('accessibilityRole="button"');
     expect(src).toContain('accessibilityLabel');
-    expect(src).toContain('Call 911');
+    // labels are translated (en / es / pt / vi)
+    expect(src).toContain("accessibilityLabel={t('cp_call_911_a11y')}");
+    const en = JSON.parse(fs.readFileSync(__REPO + '/frontend/src/i18n/en.json', 'utf8'));
+    expect(en.cp_call_911_a11y).toContain('Call 911');
     expect(src).toContain('988');
   });
 

@@ -23,6 +23,7 @@
 
 import { useCallback } from 'react';
 import { Alert, Platform } from 'react-native';
+import { t } from '../i18n';
 
 interface ConfirmOptions {
   confirmLabel?: string;
@@ -33,7 +34,7 @@ interface ConfirmOptions {
 export function useConfirm() {
   const confirm = useCallback(
     (title: string, message?: string, opts: ConfirmOptions = {}): Promise<boolean> => {
-      const { confirmLabel = 'OK', cancelLabel = 'Cancel', destructive = false } = opts;
+      const { confirmLabel = t('confirm_ok'), cancelLabel = t('cancel'), destructive = false } = opts;
       // Alert.alert is a no-op on react-native-web, so the promise would never
       // resolve. Use the browser's confirm dialog instead.
       if (Platform.OS === 'web') {

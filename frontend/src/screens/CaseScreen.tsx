@@ -15,6 +15,7 @@ import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { planCourtReminders, formatReminderTime } from '../services/reminders';
 import { cacheAgeLabel, cacheSavedLawyers, getCachedLawyers, cacheCases, getCachedCases } from '../services/offlineCache';
 import { t }   from '../i18n';
+import { formatCourtDay } from '../services/corePath';
 import * as Calendar      from 'expo-calendar';
 import * as ImagePicker   from 'expo-image-picker';
 import { COLORS, RADIUS, useTheme } from '../constants/theme';
@@ -103,14 +104,14 @@ const CaseCard = React.memo(function CaseCard({ item, onPress, navigation, onCal
         style={styles.shareBtn}
         onPress={() => navigation.navigate('CourtDates', { caseId: item.id })}
       >
-        <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>📅  Court dates & reminders</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.shareBtnText}>📅  {t('cs_court_dates')}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         accessibilityRole="button"
         style={[styles.shareBtn, { borderColor: 'rgba(133,183,235,0.33)', backgroundColor: COLORS.bgCard }]}
         onPress={() => onInvite(item)}
       >
-        <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: COLORS.info }]}>👨‍👩‍👧  Invite Family</Text>
+        <Text maxFontSizeMultiplier={1.4} style={[styles.shareBtnText, { color: COLORS.info }]}>👨‍👩‍👧  {t('cs_invite_family')}</Text>
       </TouchableOpacity>
       {hasDate && (
         <TouchableOpacity
@@ -650,9 +651,9 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         consent: true, email: inviteEmail.trim() ? inviteEmail.trim().toLowerCase() : undefined,
       });
       setInviteCode(res.data?.invite_code || null);
-      showToast('Invite created. Share the code with your family member.', 'success');
+      showToast(res.data?.message || t('cs_invite_created'), 'success');
     } catch (e: any) {
-      setInviteError(apiErrorMessage(e, 'Could not create the invite.'));
+      setInviteError(apiErrorMessage(e, t('cdd_invite_failed')));
     } finally { setInviting(false); }
   }, [inviteConsent, inviteEmail, invitingCase, showToast]);
 
@@ -872,7 +873,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
       {familyCases.length > 0 && activeTab === 'cases' && (
         <View style={styles.familySection}>
           <Text maxFontSizeMultiplier={1.4} style={[styles.familySectionTitle, { color: colors.textMuted }]}>
-            👨‍👩‍👧  Shared with me ({familyCases.length})
+            👨‍👩‍👧  {t('cs_shared_with_me', { n: familyCases.length })}
           </Text>
           {familyCases.map(fc => (
             <TouchableOpacity
@@ -880,13 +881,13 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               key={fc.id}
               style={[styles.familyCaseRow, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
               onPress={() => navigation.navigate('CourtDates')}
-              accessibilityLabel={`Court dates of ${fc.title}, shared with you`}
+              accessibilityLabel={t('cs_shared_a11y', { title: fc.title })}
             >
               <View style={{ flex: 1 }}>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.familyCaseTitle, { color: colors.textPrimary }]} numberOfLines={1}>{fc.title}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={[styles.familyCaseSub, { color: colors.textMuted }]}>
-                  From {fc.owner_name || 'family member'}
-                  {fc.next_court_date ? ` · Court: ${formatDate(fc.next_court_date, { month: 'short', day: 'numeric' })}` : ''}
+                  {t('cs_from', { name: fc.owner_name || t('cs_family_member') })}
+                  {fc.next_court_date ? ` · ${t('cs_court_on', { date: formatCourtDay(String(fc.next_court_date).slice(0, 10)) })}` : ''}
                 </Text>
               </View>
               <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textMuted, fontSize: 18 }}>›</Text>
@@ -904,25 +905,26 @@ showToast('Document read — specific fields could not be extracted. Check Notes
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.modalClose}>✕</Text>
           </TouchableOpacity>
-            <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>Invite Family Member</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.modalTitle}>{t('cdd_invite_title')}</Text>
             <View style={{ width: 40 }} />
           </View>
           <View style={{ padding: 16 }}>
             {inviteCode ? (
               <View testID="case-invite-code">
                 <Text maxFontSizeMultiplier={1.4} style={[styles.fieldHint, { color: colors.textSecond }]}>
-                  Give them this code. They open Justice Gavel → My court dates → “Follow”. You can stop sharing any time from the court date.
+                  {t('cs_give_code')}
                 </Text>
                 <Text selectable maxFontSizeMultiplier={1.2} style={{ color: colors.textPrimary, fontSize: 28, fontWeight: '900', letterSpacing: 3, marginVertical: 12 }}>{inviteCode}</Text>
               </View>
             ) : (<>
-            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>Their e-mail (optional — we e-mail them the code)</Text>
+            <Text maxFontSizeMultiplier={1.4} style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('cdd_their_email')}</Text>
             <Text maxFontSizeMultiplier={1.4} style={[styles.fieldHint, { color: colors.textSecond }]}>
-              They will see the court dates of "{invitingCase?.title}" (day, time, courthouse) and can get the same reminders — never your notes.
+              {t('cs_invite_hint', { title: invitingCase?.title || '' })}
             </Text>
             <TextInput
               style={[styles.textInput, { backgroundColor: colors.bgCard, borderColor: colors.border, color: colors.textPrimary }]}
-              placeholder="Emergency contact email"
+              accessibilityLabel={t('cdd_email_a11y')}
+              placeholder={t('cs_email_placeholder')}
               placeholderTextColor={colors.textMuted}
               value={inviteEmail}
               onChangeText={setInviteEmail}
@@ -935,7 +937,7 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: inviteConsent }} testID="case-invite-consent"
               style={{ flexDirection: 'row', gap: 8, paddingVertical: 10, minHeight: 44 }} onPress={() => setInviteConsent(v => !v)}>
               <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontSize: 14, lineHeight: 20, flex: 1 }}>
-                {inviteConsent ? '☑' : '☐'} I agree to share this case's court dates with this person. I can stop sharing at any time.
+                {inviteConsent ? '☑' : '☐'} {t('cs_invite_consent')}
               </Text>
             </TouchableOpacity>
             {!!inviteError && <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergency, fontSize: 12, lineHeight: 20, marginBottom: 8 }}>⚠ {inviteError}</Text>}
@@ -943,12 +945,12 @@ showToast('Document read — specific fields could not be extracted. Check Notes
               style={[styles.emptyBtn, { backgroundColor: colors.blue, opacity: inviting ? 0.6 : 1 }]}
               onPress={sendInvite}
               disabled={inviting || !inviteConsent}
-              accessibilityLabel="Create invite code"
-          accessibilityHint="Double-tap to activate"
+              accessibilityLabel={t('cdd_create_code')}
+          accessibilityHint={t('cp_double_tap')}
             >
               {inviting
                 ? <ActivityIndicator color={colors.bg} size="small" />
-                : <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>👨‍👩‍👧  Create invite code</Text>
+                : <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>👨‍👩‍👧  {t('cdd_create_code')}</Text>
               }
             </TouchableOpacity>
             </>)}

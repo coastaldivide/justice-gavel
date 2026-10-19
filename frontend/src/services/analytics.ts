@@ -18,6 +18,7 @@
  * and are silently no-ops in production (no crash risk).
  */
 
+import { getLang } from '../i18n';
 import { API_BASE_URL } from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken } from '../utils/secureStorage';
@@ -94,6 +95,7 @@ export async function track(event: EventName, props: EventProps = {}): Promise<v
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept-Language': getLang(),
         ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
       body: JSON.stringify(payload),

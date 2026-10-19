@@ -5,6 +5,7 @@ import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
 import { getDb } from '../db/index.js';
 import { buildLegacyRightsCard } from '../services/rightsContent.js';
+import { resolveLang } from '../i18n/index.js';
 
 const router = Router();
 
@@ -69,7 +70,8 @@ router.get('/progress/:userId', authRequired, async (req, res, next) => {
 router.get('/rights-card', (req, res) => {
   try {
     res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
-    return res.json(buildLegacyRightsCard(req.query.state || 'US'));
+    res.setHeader('Vary', 'Accept-Language');
+    return res.json(buildLegacyRightsCard(req.query.state || 'US', resolveLang(req)));
   } catch (_e) {
     if (!res.headersSent) res.status(500).json({ error: 'Internal server error.', code: 'server_error' });
   }

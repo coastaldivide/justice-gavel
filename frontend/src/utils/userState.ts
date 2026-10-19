@@ -14,6 +14,8 @@
  *   SettingsScreen    — lets user update preference
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getLang, locale } from '../i18n';
+import { STATE_NAMES_I18N } from '../i18n/stateNames';
 
 export const USER_STATE_KEY      = 'jg_user_state';
 export const USER_STATE_NAME_KEY = 'jg_user_state_name';
@@ -37,6 +39,22 @@ export const STATE_NAMES: Record<string, string> = {
 export const STATE_LIST = Object.entries(STATE_NAMES)
   .map(([code, name]) => ({ code, name }))
   .sort((a, b) => a.name.localeCompare(b.name));
+
+/** The state's name in the app's language (English name when it is the same / unknown). */
+export function stateName(code: string | null | undefined, fallback?: string | null): string {
+  if (!code) return '';
+  const l = getLang();
+  const local = l !== 'en' ? STATE_NAMES_I18N[l]?.[code] : undefined;
+  return local || STATE_NAMES[code] || fallback || code;
+}
+
+/** STATE_LIST with names in the app's language, sorted for that language. */
+export function localizedStateList(): { code: string; name: string }[] {
+  const loc = locale();
+  return Object.keys(STATE_NAMES)
+    .map(code => ({ code, name: stateName(code) }))
+    .sort((a, b) => a.name.localeCompare(b.name, loc));
+}
 
 /** Load the user's saved state. Returns {code, name} or null. */
 export async function getUserState(): Promise<{ code: string; name: string } | null> {

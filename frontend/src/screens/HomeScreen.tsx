@@ -11,7 +11,7 @@ import { api } from '../services/api';
 import { getContacts } from '../services/storage';
 import { getLocation } from '../services/location';
 import FloatingSOSButton from '../components/FloatingSOSButton';
-import { t, initLang } from '../i18n';
+import { t, initLang, useLang } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import { getCoreProgress, consumePendingRoute, prefetchRights } from '../services/corePath';
 import { getUserState } from '../utils/userState';
@@ -21,6 +21,7 @@ import * as secureStorage from '../utils/secureStorage';
 // Tiles ordered by most urgent / most used first
 // Bail Bond Help and Find Lawyer are top-left -- zero ambiguity
 // Labels use plain 3rd-grade functional language -- what the button DOES, not what it IS
+// `label` is the English reference; the tile shows t(`home_tile_${key}`) (es/pt/vi in i18n/*.json).
 const TILES = [
   { key: 'just_arrested', icon: '🚨', label: 'Just Arrested?\nTap Here Now', nav: 'More:JustArrested', bg: COLORS.emergency, color: COLORS.surface, primary: true },
   { key: 'Emergency', label: 'Emergency\nHelp Now', icon: '🆘', color: COLORS.emergency, bg: COLORS.errorBg, nav: 'More:HelpNow',   primary: false },
@@ -63,6 +64,7 @@ const TILES = [
 ];
 
 function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
+  useLang(); // re-render in the chosen language
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const mountedRef = React.useRef(true);
@@ -133,7 +135,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
           const withDate = (Array.isArray(res.data) ? res.data : [])
             .filter((ca: Record<string, unknown>) => ca.next_court_date)
             .map((ca: Record<string, unknown>) => ({
-              title: String(ca.title ?? 'Your case'),
+              title: String(ca.title ?? t('home_your_case')),
               date: String(ca.next_court_date),
               daysLeft: Math.ceil((new Date(String(ca.next_court_date)).getTime() - Date.now()) / 86400000),
             }))
@@ -191,21 +193,21 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
     const contacts = await getContacts();
     const active = (contacts as string[]).filter((c: string) => c?.trim());
     if (active.length === 0) {
-      confirm('No emergency contacts', 'Add contacts so they can be alerted when you need help.',
-      { confirmLabel: 'Add Now' }).then(ok => { if (ok) (navigation as any).navigate('MoreTab', { screen: 'Contacts' }); });
+      confirm(t('home_sos_none_title'), t('home_sos_none_body'),
+      { confirmLabel: t('home_sos_add') }).then(ok => { if (ok) (navigation as any).navigate('MoreTab', { screen: 'Contacts' }); });
       return;
     }
-confirm('Send SOS?', `This will alert ${active.length} contact(s) with your location.`,
-      { confirmLabel: 'Send now' }).then(async ok => { if (!ok) return;
+confirm(t('home_sos_title'), t('home_sos_body', { n: active.length }),
+      { confirmLabel: t('home_sos_send') }).then(async ok => { if (!ok) return;
       setSosSending(true);
         try {
-          const { lat, lng } = await getLocation({ reason: 'Your emergency contacts get your location with the SOS so they can find you. It is sent only to them.' }).catch(() => ({ lat: undefined, lng: undefined }));
+          const { lat, lng } = await getLocation({ reason: t('home_sos_reason') }).catch(() => ({ lat: undefined, lng: undefined }));
           const userData = await AsyncStorage.getItem('user');
           const user = userData ? JSON.parse(userData) : {};
           await api.post('/alerts', { userName: user.displayName || user.name || 'User', contacts: active, lat, lng });
-          showToast('Your emergency contacts have been notified.');
+          showToast(t('home_sos_sent'));
         } catch (e: any) {
-          showToast(e.message || 'Check your connection and try again.', 'error');
+          showToast(e?.message ? `${t('home_sos_failed')} (${e.message})` : t('home_sos_failed'), 'error');
         } finally { setSosSending(false); }
     })
   };
@@ -227,21 +229,21 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
             <JTBLogo size={40} />
           </View>
           <View>
-            <Text maxFontSizeMultiplier={1.4} style={styles.brand}>Justice Gavel</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.brand}>{t('app_name')}</Text>
             {!!displayName
               ? <Text maxFontSizeMultiplier={1.4} style={styles.welcome}>{
                   visitCount <= 1
-                    ? `Welcome, ${displayName}`
+                    ? t('home_welcome_1', { name: displayName })
                     : visitCount <= 5
-                    ? `Good to see you, ${displayName}`
-                    : `Welcome back, ${displayName}`
+                    ? t('home_welcome_2', { name: displayName })
+                    : t('home_welcome_3', { name: displayName })
                 }</Text>
               : <Text maxFontSizeMultiplier={1.4} style={styles.welcome}>{
                   visitCount <= 1
-                    ? 'Find bail & legal help fast'
+                    ? t('home_sub_1')
                     : visitCount <= 5
-                    ? 'Your legal companion'
-                    : 'Welcome back'
+                    ? t('home_sub_2')
+                    : t('home_sub_3')
                 }</Text>
             }
           </View>
@@ -249,18 +251,18 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         <View style={styles.headerActions}>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={styles.helpNowBtn}
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'HelpNow' })}
-            accessibilityLabel="Get help now"
+            accessibilityLabel={t('get_help_now')}
             activeOpacity={0.85}
           >
             <Text maxFontSizeMultiplier={1.4} style={styles.helpNowBtnText}>{t('help_now')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-            accessibilityLabel={"\u2699\ufe0f"} onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
+          accessibilityHint={t('cp_double_tap')}
+            accessibilityLabel={t('home_settings_a11y')} onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             style={styles.settingsBtn}
           >
             <AppIcon name="settings-outline" size={20} color={COLORS.navy} />
@@ -286,7 +288,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         <TouchableOpacity
           accessibilityRole="button"
           testID="home-just-arrested"
-          accessibilityLabel={`Just arrested? ${coreStep > 1 ? `Continue at step ${coreStep} of 3` : 'Start: know your rights, find a lawyer and a bail agent, never miss a court date'}`}
+          accessibilityLabel={`${t('ja_title')} ${coreStep > 1 ? t('home_core_continue_a11y', { n: coreStep }) : t('home_core_start_a11y')}`}
           style={styles.coreCard}
           onPress={() => (navigation as any).navigate('MoreTab', { screen: 'JustArrested' })}
           activeOpacity={0.85}
@@ -296,7 +298,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
             <Text key={label} maxFontSizeMultiplier={1.3} style={styles.coreStep}>{i + 1}) {label}</Text>
           ))}
           <Text maxFontSizeMultiplier={1.3} style={styles.coreCta}>
-            {coreStep > 1 ? `Continue — ${t('ja_step_of').replace('{n}', String(coreStep))} →` : 'Start now — no account needed →'}
+            {coreStep > 1 ? `${t('home_core_continue')} — ${t('ja_step_of', { n: coreStep })} →` : `${t('home_core_start')} →`}
           </Text>
         </TouchableOpacity>
 
@@ -304,7 +306,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           {!isPro && (
             <TouchableOpacity
               accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
               onPress={() => (navigation as any).navigate('MoreTab', { screen: 'ConsumerSubscription' })}
               style={{
                 backgroundColor: colors.bgCard,
@@ -312,14 +314,14 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
                 borderWidth: 1, borderColor: colors.border,
                 marginBottom: 12,
               }}
-              accessibilityLabel="Unlock county arrest analytics">
+              accessibilityLabel={t('home_analytics_a11y')}>
               {/* Locked stat row — placeholders only. Never show invented arrest
                   counts here (the seeded arrest rows are sample data). */}
               <View style={{ flexDirection: 'row', gap: 12, marginBottom: 10 }}>
                 {[
-                  { label: 'Arrests this month', value: '•••' },
-                  { label: 'Top charge', value: '•••' },
-                  { label: 'Avg bail', value: '•••' },
+                  { label: t('home_stat_arrests'), value: '•••' },
+                  { label: t('home_stat_top_charge'), value: '•••' },
+                  { label: t('home_stat_avg_bail'), value: '•••' },
                 ].map(stat => (
                   <View key={stat.label}
                     style={{ flex: 1, backgroundColor: colors.bgCard, borderRadius: 10,
@@ -335,10 +337,10 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 12, color: colors.textBrand, flex: 1 }}>
-                  🔒 Unlock county arrest analytics — Intel tier
+                  {t('home_analytics_cta')}
                 </Text>
                 <Text style={{ fontSize: 11, color: colors.textBrand, fontWeight: '600' }}>
-                  $19.99/mo →
+                  {t('home_analytics_price')}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -347,7 +349,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         {/* Emergency banner -- prominent, always first */}
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.emergencyBanner}
           onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Emergency' })}
           activeOpacity={0.85}
@@ -356,8 +358,8 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
             <AppIcon name="flash" size={20} color={COLORS.emergency} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.emergencyTitle}>Emergency Screen</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.emergencySub}>Alert contacts · Find help · Know your rights</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.emergencyTitle}>{t('home_emergency_title')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.emergencySub}>{t('home_emergency_sub')}</Text>
           </View>
           <Text maxFontSizeMultiplier={1.4} style={styles.emergencyArrow}>›</Text>
         </TouchableOpacity>
@@ -365,19 +367,19 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         {/* Quick Connect -- prominent package banner */}
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={styles.quickConnectBanner}
           onPress={() => (navigation as any).navigate('MoreTab', { screen: 'QuickConnect' })}
           activeOpacity={0.85}
         >
           <View style={styles.quickConnectLeft}>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTag}>ONE-TIME PACKAGE</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTitle}>Get Help Now</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectSub}>1 Bail Bondsman  +  1 Lawyer</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTag}>{t('home_qc_tag')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectTitle}>{t('get_help_now')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectSub}>{t('home_qc_sub')}</Text>
           </View>
           <View style={styles.quickConnectRight}>
             <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPrice}>$20</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPriceSub}>total</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.quickConnectPriceSub}>{t('home_qc_total')}</Text>
           </View>
         </TouchableOpacity>
 
@@ -385,7 +387,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         {upcomingCase && (
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={[
               styles.courtCountdown,
               upcomingCase.daysLeft <= 3
@@ -396,19 +398,19 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
             ]}
             onPress={() => (navigation as any).navigate('HomeTab')}
             activeOpacity={0.88}
-            accessibilityLabel={`Court date in ${upcomingCase.daysLeft} days -- tap to review case`}
+            accessibilityLabel={t('home_court_a11y', { n: upcomingCase.daysLeft })}
           >
             <View style={styles.courtCountdownLeft}>
               <Text maxFontSizeMultiplier={1.4} style={styles.courtCountdownNum}>{upcomingCase.daysLeft}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.courtCountdownUnit}>
-                {upcomingCase.daysLeft === 1 ? 'day' : 'days'}
+                {upcomingCase.daysLeft === 1 ? t('home_court_day') : t('home_court_days')}
               </Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text maxFontSizeMultiplier={1.4} style={styles.courtCountdownTitle}>
-                {upcomingCase.daysLeft === 0 ? '🚨 Court date TODAY'
-                  : upcomingCase.daysLeft <= 3 ? '⚠️ Court date soon'
-                  : '📅 Upcoming court date'}
+                {upcomingCase.daysLeft === 0 ? t('home_court_today')
+                  : upcomingCase.daysLeft <= 3 ? t('home_court_soon')
+                  : t('home_court_upcoming')}
               </Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.courtCountdownCase} numberOfLines={1}>
                 {upcomingCase.title}
@@ -422,13 +424,13 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         {!!legalTip && (
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={styles.tipCard}
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Education', params: { category: tipCategory, query: tipQuery } })}
             activeOpacity={0.85}
           >
             <View style={styles.tipLeft}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.tipLabel}>LEGAL TIP</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.tipLabel}>{t('home_tip_label')}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.tipText} numberOfLines={2}>{legalTip}</Text>
             </View>
             <Text maxFontSizeMultiplier={1.4} style={styles.tipArrow}>›</Text>
@@ -436,31 +438,31 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         )}
 
         {/* Section label */}
-        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>Quick Access</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.sectionLabel}>{t('home_quick_access')}</Text>
 
         {/* Tile grid */}
         <View style={styles.grid}>
-          {TILES.map((t: any) => (
+          {TILES.map((tile: any) => (
             <TouchableOpacity
               accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
-              accessibilityLabel={t.label.replace(/\n/g, ' ')}
-              key={t.key}
-              testID={`tile-${t.key}`}
-              style={[styles.tile, { backgroundColor: t.bg }, !t.primary && styles.tileSm]}
-              onPress={() => navigate(t.nav)}
+          accessibilityHint={t('cp_double_tap')}
+              accessibilityLabel={t(`home_tile_${tile.key}`).replace(/\n/g, ' ')}
+              key={tile.key}
+              testID={`tile-${tile.key}`}
+              style={[styles.tile, { backgroundColor: tile.bg }, !tile.primary && styles.tileSm]}
+              onPress={() => navigate(tile.nav)}
               activeOpacity={0.75}
             >
-              <Text maxFontSizeMultiplier={1.4} style={styles.tileIcon}>{t.icon}</Text>
-              <Text maxFontSizeMultiplier={1.4} style={[styles.tileLabel, { color: t.color }]}>{t.label}</Text>
-              {t.key === 'Bail' && nearbyCounts.bail != null && nearbyCounts.bail > 0 && (
-                <View style={[styles.countBadge, { backgroundColor: t.color }]}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{nearbyCounts.bail} near you</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.tileIcon}>{tile.icon}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={[styles.tileLabel, { color: tile.color }]}>{t(`home_tile_${tile.key}`)}</Text>
+              {tile.key === 'Bail' && nearbyCounts.bail != null && nearbyCounts.bail > 0 && (
+                <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.bail })}</Text>
                 </View>
               )}
-              {t.key === 'Lawyers' && nearbyCounts.lawyers != null && nearbyCounts.lawyers > 0 && (
-                <View style={[styles.countBadge, { backgroundColor: t.color }]}>
-                  <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{nearbyCounts.lawyers} near you</Text>
+              {tile.key === 'Lawyers' && nearbyCounts.lawyers != null && nearbyCounts.lawyers > 0 && (
+                <View style={[styles.countBadge, { backgroundColor: tile.color }]}>
+                  <Text maxFontSizeMultiplier={1.4} style={styles.countBadgeText}>{t('home_near_you', { n: nearbyCounts.lawyers })}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -472,10 +474,10 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           <View style={styles.returningCard}>
             <Text maxFontSizeMultiplier={1.4} style={styles.returningText}>
               {visitCount === 2
-                ? '👋  Glad you came back. Your legal rights are always here.'
+                ? t('home_return_2')
                 : visitCount <= 5
-                ? '📌  Did you save a lawyer from your last search? Check My Cases.'
-                : '⭐  Your rights are always with you. Come back anytime.'}
+                ? t('home_return_5')
+                : t('home_return_n')}
             </Text>
           </View>
         )}
@@ -483,15 +485,15 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
         {!displayName && (
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
             style={styles.nudgeCard}
             onPress={() => (navigation as any).navigate('MoreTab', { screen: 'Settings' })}
             activeOpacity={0.85}
           >
             <AppIcon name="person-outline" size={20} color={COLORS.navy} />
             <View style={{ flex: 1 }}>
-              <Text maxFontSizeMultiplier={1.4} style={styles.nudgeTitle}>Create a free account</Text>
-              <Text maxFontSizeMultiplier={1.4} style={styles.nudgeSub}>Save cases, send SOS alerts, get notifications</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.nudgeTitle}>{t('ja_create')}</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.nudgeSub}>{t('home_nudge_sub')}</Text>
             </View>
             <Text maxFontSizeMultiplier={1.4} style={styles.nudgeArrow}>›</Text>
           </TouchableOpacity>
@@ -502,10 +504,10 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
           <JTBLogo size={32} />
           <View style={{ marginLeft: 12, flex: 1 }}>
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '800', color: colors.textOnNavy, marginBottom: 2 }}>
-              ⚖️ Innocent until proven guilty.
+              {t('home_footer_innocent')}
             </Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.footerTitle}>Your Legal Connection</Text>
-            <Text maxFontSizeMultiplier={1.4} style={styles.footerSub}>Available 24/7 · 97 cities nationwide</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.footerTitle}>{t('home_footer_title')}</Text>
+            <Text maxFontSizeMultiplier={1.4} style={styles.footerSub}>{t('home_footer_sub')}</Text>
           </View>
         </View>
       </ScrollView>
@@ -515,27 +517,27 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
       {isOffline && (
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+          accessibilityHint={t('cp_double_tap')}
           style={{ backgroundColor: colors.infoBg, borderBottomWidth: 1, borderBottomColor: COLORS.steelMid,
             flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
           onPress={() => Alert.alert(
-              'Offline Mode',
-              'No internet connection. Search, AI advice, and account features require connection. Emergency resources and saved rights cards work offline.',
-              [{ text: 'OK' }]
+              t('offline_title'),
+              t('home_offline_body'),
+              [{ text: t('home_offline_ok') }]
             )}
           hitSlop={{  top: 12, bottom: 12, left: 12, right: 12  }}
-          accessibilityLabel="No internet connection -- tap to see what works offline"
+          accessibilityLabel={t('home_offline_a11y')}
         >
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 14 }}>📡</Text>
           <View style={{ flex: 1 }}>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, fontFamily: 'Inter_700Bold', fontWeight: '700', color: colors.info }}>
-              No internet connection
+              {t('no_internet')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 11, color: colors.textMuted, lineHeight: 16 }}>
-              Rights card, deadline calculator, and guides still work offline
+              {t('home_offline_sub')}
             </Text>
           </View>
-          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.info, fontSize: 12 }}>See what works →</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ color: colors.info, fontSize: 12 }}>{t('home_offline_see')}</Text>
         </TouchableOpacity>
       )}
     </View>

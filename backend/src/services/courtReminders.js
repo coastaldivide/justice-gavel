@@ -13,6 +13,8 @@
  *     1 day before    18:00   "Court date TOMORROW"
  *     the day itself  06:30   "Court date TODAY"
  *
+ *   The text is written in the recipient's saved language (users.preferred_language,
+ *   en / es / pt / vi — i18n/messages); the English titles are shown above.
  *   Times are wall-clock times in the USER'S time zone (users.timezone, sent
  *   by the app), falling back to the zone of the case's state, then
  *   DEFAULT_TIME_ZONE. A reminder whose time has already passed is skipped; if
@@ -35,8 +37,9 @@
 import logger from '../utils/logger.js';
 import {
   DEFAULT_TIME_ZONE, isValidTimeZone, stateTimeZone, zonedDateTimeToUtc,
-  addDays, todayInZone, daysBetween, formatCourtDay, parseDateOnly,
+  addDays, todayInZone, daysBetween, parseDateOnly,
 } from '../utils/timezone.js';
+import { msg, formatDay, formatTime, userLang, rememberLanguage, requestedLang } from '../i18n/index.js';
 
 export const COURT_REMINDER_PLAN = Object.freeze([
   { days: 7, hh: 9,  mm: 0,  title: '📅 Court date in 7 days' },
@@ -48,38 +51,49 @@ export const COURT_REMINDER_PLAN = Object.freeze([
 /** Case statuses after which no court reminder should go out. */
 export const CLOSED_CASE_STATUSES = new Set(['Closed', 'Dismissed', 'Expunged', 'Transferred']);
 
-function titleForDaysLeft(days) {
-  if (days <= 0) return '🏛️ Court date TODAY';
-  if (days === 1) return '🚨 Court date TOMORROW';
-  return `📅 Court date in ${days} days`;
+/** Owner reminder title for `days` left, in `lang`. */
+export function titleForDaysLeft(days, lang = 'en', { planned = false } = {}) {
+  if (days <= 0) return msg(lang, 'reminder.title.today');
+  if (days === 1) return msg(lang, 'reminder.title.tomorrow');
+  // the planned 3-day reminder carries the warning sign (COURT_REMINDER_PLAN)
+  return msg(lang, planned && days === 3 ? 'reminder.title.in_3_days' : 'reminder.title.in_days', { days });
 }
 
-/** '09:30' / '09:30:00' → '9:30 AM'; null when no time. */
-export function formatCourtTime(t) {
-  const m = /^(\d{2}):(\d{2})/.exec(String(t ?? ''));
-  if (!m) return null;
-  const h = Number(m[1]); const mm = m[2];
-  return `${((h + 11) % 12) + 1}:${mm} ${h < 12 ? 'AM' : 'PM'}`;
+/** '09:30' / '09:30:00' → '9:30 AM' (en) / '9:30 a. m.' (es) / '09:30' (pt, vi); null when no time. */
+export function formatCourtTime(t, lang = 'en') {
+  return formatTime(t, lang);
 }
 
-function bodyFor(caseTitle, courtDate, days, { time = null, place = null } = {}) {
-  const day = formatCourtDay(courtDate);
-  const at = time ? ` at ${formatCourtTime(time)}` : '';
-  const where = place ? ` — ${String(place).slice(0, 120)}` : '';
-  const t = String(caseTitle || 'Your case').slice(0, 120);
-  if (days <= 0) return `${t} — your court appearance is today (${day}${at})${where}. Arrive early and bring your paperwork.`;
-  if (days === 1) return `${t} — court is tomorrow, ${day}${at}${where}. Be on time and bring all documents.`;
-  return `${t} — court on ${day}${at}${where}. Review your case and contact your lawyer.`;
+function parts(courtDate, { time = null, place = null } = {}, lang = 'en') {
+  return {
+    day: formatDay(courtDate, lang),
+    at: time ? msg(lang, 'reminder.at_time', { time: formatCourtTime(time, lang) }) : '',
+    where: place ? msg(lang, 'reminder.where', { place: String(place).slice(0, 120) }) : '',
+  };
 }
 
-function followerBodyFor(ownerName, courtDate, days, { time = null, place = null } = {}) {
-  const who = String(ownerName || 'Your family member').slice(0, 60);
-  const day = formatCourtDay(courtDate);
-  const at = time ? ` at ${formatCourtTime(time)}` : '';
-  const where = place ? ` — ${String(place).slice(0, 120)}` : '';
-  if (days <= 0) return `${who} has court today (${day}${at})${where}.`;
-  if (days === 1) return `${who} has court tomorrow, ${day}${at}${where}.`;
-  return `${who} has court on ${day}${at}${where}.`;
+// '9:30 a.m.' + '.' at the end of a sentence → one period.
+const onePeriod = (s) => s.replace(/\.\.(?=\s|$)/g, '.');
+
+export function bodyFor(caseTitle, courtDate, days, opts = {}, lang = 'en') {
+  const p = { ...parts(courtDate, opts, lang), case: String(caseTitle || msg(lang, 'reminder.default_case')).slice(0, 120) };
+  if (days <= 0) return onePeriod(msg(lang, 'reminder.body.today', p));
+  if (days === 1) return onePeriod(msg(lang, 'reminder.body.tomorrow', p));
+  return onePeriod(msg(lang, 'reminder.body.later', p));
+}
+
+export function followerTitleFor(ownerName, days, lang = 'en') {
+  const who = ownerName || msg(lang, 'reminder.follower.default_who');
+  if (days <= 0) return msg(lang, 'reminder.follower.title.today', { who });
+  if (days === 1) return msg(lang, 'reminder.follower.title.tomorrow', { who });
+  return msg(lang, 'reminder.follower.title.in_days', { who, days });
+}
+
+export function followerBodyFor(ownerName, courtDate, days, opts = {}, lang = 'en') {
+  const p = { ...parts(courtDate, opts, lang), who: String(ownerName || msg(lang, 'reminder.follower.default_member')).slice(0, 60) };
+  if (days <= 0) return onePeriod(msg(lang, 'reminder.follower.body.today', p));
+  if (days === 1) return onePeriod(msg(lang, 'reminder.follower.body.tomorrow', p));
+  return onePeriod(msg(lang, 'reminder.follower.body.later', p));
 }
 
 /** Remember the user's IANA zone if valid and new. Returns true when it changed. */
@@ -89,6 +103,18 @@ export async function rememberTimeZone(db, userId, tz) {
   if (!row || row.timezone === tz) return false;
   await db.run('UPDATE users SET timezone = ? WHERE id = ?', [tz, userId]);
   return true;
+}
+
+/**
+ * Remember the device zone (X-Timezone) and app language (?lang= / Accept-Language)
+ * a signed-in request carries. Returns true when either changed — the caller
+ * then re-plans the user's reminders (rescheduleUserCourtReminders), so their
+ * times and text follow.
+ */
+export async function rememberRequestPrefs(db, userId, req) {
+  const tz = await rememberTimeZone(db, userId, typeof req?.get === 'function' ? req.get('X-Timezone') : null).catch(() => false);
+  const lang = await rememberLanguage(db, userId, requestedLang(req)).catch(() => false);
+  return !!(tz || lang);
 }
 
 /** Zone used for a user's reminders: stored user zone → case state zone → default. */
@@ -110,6 +136,7 @@ function mapReminder(r) {
     title: r.title, body: r.body,
     deliver_at: r.deliver_at instanceof Date ? r.deliver_at.toISOString() : r.deliver_at,
     court_date: data.court_date || null, days_before: data.days_before ?? null, time_zone: data.time_zone || null,
+    language: data.lang || 'en',
   };
 }
 
@@ -155,18 +182,18 @@ export async function cancelFollowerReminders(db, followerUserId, caseId, reason
 }
 
 /** The steps of the plan still ahead of `now` for a hearing on `date` in `tz`. */
-function plannedSteps(date, tz, now) {
+function plannedSteps(date, tz, now, lang = 'en') {
   const today = todayInZone(tz, now);
   const daysLeft = daysBetween(today, date);
   if (daysLeft === null || daysLeft < 0) return [];
   const planned = [];
   for (const step of COURT_REMINDER_PLAN) {
     const at = zonedDateTimeToUtc(addDays(date, -step.days), step.hh, step.mm, tz);
-    if (at && at.getTime() > now.getTime()) planned.push({ ...step, at });
+    if (at && at.getTime() > now.getTime()) planned.push({ ...step, title: titleForDaysLeft(step.days, lang, { planned: true }), at });
   }
   if (!planned.length) {
     // Date added late (e.g. the evening before): remind right away instead of never.
-    planned.push({ days: daysLeft, at: now, title: titleForDaysLeft(daysLeft), immediate: true });
+    planned.push({ days: daysLeft, at: now, title: titleForDaysLeft(daysLeft, lang), immediate: true });
   }
   return planned;
 }
@@ -227,14 +254,15 @@ async function planFollowerReminders(db, { followerId, ownerId, caseId, courtDat
   const date = parseDateOnly(courtDate) ? String(courtDate).slice(0, 10) : null;
   if (!date) return 0;
   const { tz } = await resolveReminderTimeZone(db, followerId, state);
+  const lang = await userLang(db, followerId);
   const owner = await ownerFirstName(db, ownerId);
-  const steps = plannedSteps(date, tz, now);
+  const steps = plannedSteps(date, tz, now, lang);
   for (const p of steps) {
     await insertReminder(db, {
       userId: followerId, type: 'follower_court_reminder',
-      title: p.days <= 0 ? `🏛️ ${owner || 'Family'}: court TODAY` : p.days === 1 ? `🚨 ${owner || 'Family'}: court TOMORROW` : `📅 ${owner || 'Family'}: court in ${p.days} days`,
-      body: followerBodyFor(owner, date, p.days, { time: courtTime, place }),
-      data: { type: 'follower_court_reminder', screen: 'Following', case_id: caseId, court_date_id: courtDateId, court_date: date, days_before: p.days, time_zone: tz },
+      title: followerTitleFor(owner, p.days, lang),
+      body: followerBodyFor(owner, date, p.days, { time: courtTime, place }, lang),
+      data: { type: 'follower_court_reminder', screen: 'Following', case_id: caseId, court_date_id: courtDateId, court_date: date, days_before: p.days, time_zone: tz, lang },
       at: p.at, caseId, courtDateId,
       dedupe: `fcourt:${courtDateId}:${followerId}:${p.days}${p.immediate ? ':now' : ''}`,
     });
@@ -257,15 +285,16 @@ export async function scheduleCourtReminders(db, {
   const date = parseDateOnly(courtDate) ? String(courtDate).slice(0, 10) : null;
   const { tz, source } = await resolveReminderTimeZone(db, userId, state);
   if (!date) return { time_zone: tz, tz_source: source, reminders: [] };
+  const lang = await userLang(db, userId);
 
-  const planned = plannedSteps(date, tz, now);
+  const planned = plannedSteps(date, tz, now, lang);
   for (const p of planned) {
     await insertReminder(db, {
       userId, type: 'court_reminder', title: p.title,
-      body: bodyFor(caseTitle, date, p.days, { time: courtTime, place }),
+      body: bodyFor(caseTitle, date, p.days, { time: courtTime, place }, lang),
       data: {
         type: 'court_reminder', screen: 'Cases', case_id: caseId, court_date_id: courtDateId,
-        court_date: date, days_before: p.days, time_zone: tz,
+        court_date: date, days_before: p.days, time_zone: tz, lang,
       },
       at: p.at, caseId, courtDateId,
       dedupe: courtDateId
@@ -283,8 +312,8 @@ export async function scheduleCourtReminders(db, {
   }
   const reminders = (await listPendingCourtReminders(db, userId, caseId, courtDateId))
     .filter(r => r.type === 'court_reminder');
-  logger.info({ userId, caseId, courtDateId, count: reminders.length, tz, tzSource: source }, '[court-reminders] scheduled');
-  return { time_zone: tz, tz_source: source, reminders };
+  logger.info({ userId, caseId, courtDateId, count: reminders.length, tz, tzSource: source, lang }, '[court-reminders] scheduled');
+  return { time_zone: tz, tz_source: source, language: lang, reminders };
 }
 
 /** Normalise a DATE column value (pg may hand back a Date at local midnight) to 'YYYY-MM-DD'. */

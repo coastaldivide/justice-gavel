@@ -25,18 +25,20 @@ import { parseHours, isOpenNow, completeness, rankProviders, hasRealPhone } from
 import { normalizeState } from '../services/rightsContent.js';
 import { safeJson, sanitizeStr } from '../utils/routeHelpers.js';
 import logger from '../utils/logger.js';
+import { resolveLang, msg } from '../i18n/index.js';
 
 const router = Router();
+const errBody = (key, code) => (req) => ({ error: msg(resolveLang(req), key), code });
 
 const nearbyLimiter = rateLimit({
   windowMs: 60_000, max: 60, standardHeaders: true, legacyHeaders: false,
   keyGenerator: (req) => String(req.user?.id || req.ip),
-  message: { error: 'Too many searches — please wait a moment.', code: 'rate_limited' },
+  message: errBody('help.err.rate_limited', 'rate_limited'),
 });
 const reportLimiter = rateLimit({
   windowMs: 10 * 60_000, max: 10, standardHeaders: true, legacyHeaders: false,
   keyGenerator: (req) => String(req.user?.id || req.ip),
-  message: { error: 'Too many reports. Try again in a few minutes.', code: 'rate_limited' },
+  message: errBody('help.err.reports_rate_limited', 'rate_limited'),
 });
 
 export const CHARGE_KEYWORDS = Object.freeze({
@@ -136,13 +138,14 @@ function pickWithinRadius(list, loc, limit) {
 
 router.get('/nearby', optionalAuth, nearbyLimiter, async (req, res) => {
   const q = req.query;
+  const lang = resolveLang(req);
   const lat = num(q.lat); const lng = num(q.lng);
   const origin = lat != null && lng != null && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
   const city = q.city ? sanitizeStr(String(q.city), 100).replace(/,\s*[A-Za-z]{2}$/, '').trim() || null : null;
   const cityState = q.city && /,\s*([A-Za-z]{2})$/.exec(String(q.city));
   const state = normalizeState(q.state || (cityState && cityState[1]));
   if (!origin && !city && !state) {
-    return res.status(400).json({ error: 'Share your location, or choose a city or state.', code: 'location_required' });
+    return res.status(400).json({ error: msg(lang, 'help.err.location_required'), code: 'location_required' });
   }
   const maxKm = num(q.max_km);
   const loc = { origin, city, state, maxKm: maxKm != null ? Math.min(Math.max(maxKm, 1), 400) : null };
@@ -192,7 +195,7 @@ router.get('/nearby', optionalAuth, nearbyLimiter, async (req, res) => {
           // The seeded office descriptions carry uncited timing claims ("request at
           // arraignment / first appearance"); they are not shown (owner rule).
           about: null,
-          note: 'If you cannot afford a lawyer, ask the court how to request a public defender.',
+          note: msg(lang, 'help.pd_note'),
         };
       }
       inmateLookup = rows.filter(r => r.category === 'INMATE_LOOKUP').map(r => ({
@@ -212,41 +215,39 @@ router.get('/nearby', optionalAuth, nearbyLimiter, async (req, res) => {
         radius_km: { lawyers: lw.radius_km, bail_agents: bw.radius_km },
         filters,
         counts: { lawyers: outLawyers.length, bail_agents: outBail.length },
-        ranking: 'Sorted by distance and how complete the listing is (real phone, hours, website, address). Never by payment.',
-        hours_note: '"Open now" and "24/7" come from the hours each listing publishes. Call to confirm.',
-        charge_note: charge ? 'Charge filter matches the practice areas and name a lawyer lists. Bail agents post bond for any charge.' : null,
+        ranking: msg(lang, 'help.meta.ranking'),
+        hours_note: msg(lang, 'help.meta.hours_note'),
+        charge_note: charge ? msg(lang, 'help.meta.charge_note') : null,
+        language: lang,
       },
     });
   } catch (e) {
     logger.error({ err: e.message }, '[help/nearby] failed');
-    res.status(500).json({ error: 'Could not search right now. Please try again.', code: 'server_error' });
+    res.status(500).json({ error: msg(lang, 'help.err.search_failed'), code: 'server_error' });
   }
 });
 
-export const REPORT_REASONS = Object.freeze({
-  wrong_phone: 'Wrong or disconnected phone number',
-  closed: 'Closed / out of business',
-  wrong_address: 'Wrong address',
-  wrong_hours: 'Wrong hours',
-  not_this_service: 'Does not offer this service',
-  other: 'Something else',
-});
+/** Report reasons (English labels for the admin queue; the app gets them in its language). */
+export const REPORT_REASONS = Object.freeze(Object.fromEntries(
+  ['wrong_phone', 'closed', 'wrong_address', 'wrong_hours', 'not_this_service', 'other']
+    .map(code => [code, msg('en', `help.reason.${code}`)])));
 
 router.post('/reports', optionalAuth, reportLimiter, async (req, res) => {
+  const lang = resolveLang(req);
   const b = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
   const table = b.provider_type === 'lawyer' ? 'lawyers' : b.provider_type === 'bail_agent' ? 'bail_agents' : null;
   const id = Number.parseInt(b.provider_id, 10);
   const reason = typeof b.reason === 'string' && REPORT_REASONS[b.reason] ? b.reason : null;
-  if (!table) return res.status(400).json({ error: "provider_type must be 'lawyer' or 'bail_agent'.", code: 'bad_provider_type' });
-  if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: 'provider_id is required.', code: 'bad_provider_id' });
-  if (!reason) return res.status(400).json({ error: `reason must be one of: ${Object.keys(REPORT_REASONS).join(', ')}.`, code: 'bad_reason' });
+  if (!table) return res.status(400).json({ error: msg(lang, 'help.err.bad_provider_type'), code: 'bad_provider_type' });
+  if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: msg(lang, 'help.err.bad_provider_id'), code: 'bad_provider_id' });
+  if (!reason) return res.status(400).json({ error: msg(lang, 'help.err.bad_reason', { list: Object.keys(REPORT_REASONS).join(', ') }), code: 'bad_reason' });
   const details = b.details == null ? null : sanitizeStr(String(b.details), 500).trim().slice(0, 500) || null;
   const reporterKey = createHash('sha256')
     .update(req.user?.id ? `u:${req.user.id}` : `ip:${req.ip || ''}`).digest('hex').slice(0, 40);
   try {
     const db = await getDb();
     const exists = await db.get(`SELECT id FROM ${table} WHERE id = ?`, [id]);
-    if (!exists) return res.status(404).json({ error: 'Listing not found.', code: 'not_found' });
+    if (!exists) return res.status(404).json({ error: msg(lang, 'help.err.listing_not_found'), code: 'not_found' });
     const ins = await db.get(
       `INSERT INTO listing_reports (table_name, record_id, reason, details, reporter_user_id, reporter_key)
        VALUES (?, ?, ?, ?, ?, ?)
@@ -256,16 +257,16 @@ router.post('/reports', optionalAuth, reportLimiter, async (req, res) => {
     if (ins) {
       logger.info({ table, recordId: id, reason, reportId: Number(ins.id) }, '[help/reports] listing reported');
       return res.status(201).json({ ok: true, report_id: Number(ins.id), duplicate: false,
-        message: 'Thanks — our team will check this listing.' });
+        message: msg(lang, 'help.report.thanks') });
     }
     const prev = await db.get(
       `SELECT id FROM listing_reports WHERE table_name = ? AND record_id = ? AND reason = ? AND reporter_key = ? AND status = 'pending'`,
       [table, id, reason, reporterKey]);
     return res.status(200).json({ ok: true, report_id: prev ? Number(prev.id) : null, duplicate: true,
-      message: 'You already reported this — our team will check it.' });
+      message: msg(lang, 'help.report.duplicate') });
   } catch (e) {
     logger.error({ err: e.message }, '[help/reports] failed');
-    res.status(500).json({ error: 'Could not send the report. Please try again.', code: 'server_error' });
+    res.status(500).json({ error: msg(lang, 'help.err.report_failed'), code: 'server_error' });
   }
 });
 
@@ -277,8 +278,9 @@ router.post('/reports', optionalAuth, reportLimiter, async (req, res) => {
  */
 router.get('/bail-schedule', nearbyLimiter, async (req, res) => {
   const raw = String(req.query.state || 'ALL').toUpperCase();
+  const lang = resolveLang(req);
   const state = raw === 'ALL' ? 'ALL' : normalizeState(raw);
-  if (!state) return res.status(400).json({ error: 'Unknown state code.', code: 'bad_state' });
+  if (!state) return res.status(400).json({ error: msg(lang, 'bail.err.bad_state'), code: 'bad_state' });
   const charge = req.query.charge ? sanitizeStr(String(req.query.charge), 60).toLowerCase() : null;
   try {
     const db = await getDb();
@@ -289,6 +291,7 @@ router.get('/bail-schedule', nearbyLimiter, async (req, res) => {
       [state, state, state]);
     if (charge) rows = rows.filter(r => String(r.charge || '').toLowerCase().includes(charge));
     res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Vary', 'Accept-Language');
     res.json({
       data: rows.map(r => ({
         ...r, id: Number(r.id),
@@ -297,13 +300,15 @@ router.get('/bail-schedule', nearbyLimiter, async (req, res) => {
       meta: {
         state, count: rows.length,
         fee_estimate_available: false,
-        fee_note: 'Bail agents set their own fees. Justice Gavel has no sourced fee data for your state yet — ask the agent what they charge before you sign.',
-        disclaimer: 'Bail amounts are general ranges. Actual bail is set by a judge based on your specific circumstances.',
+        fee_note: msg(lang, 'bail.fee_note'),
+        disclaimer: msg(lang, 'bail.disclaimer'),
+        // Charge names and bail notes are database records, kept as recorded (English).
+        language: lang,
       },
     });
   } catch (e) {
     logger.error({ err: e.message }, '[help/bail-schedule] failed');
-    res.status(500).json({ error: 'Could not load bail ranges.', code: 'server_error' });
+    res.status(500).json({ error: msg(lang, 'bail.err.load_failed'), code: 'server_error' });
   }
 });
 
@@ -317,35 +322,36 @@ router.get('/bail-schedule', nearbyLimiter, async (req, res) => {
 const claimLimiter = rateLimit({
   windowMs: 60 * 60_000, max: 10, standardHeaders: true, legacyHeaders: false,
   keyGenerator: (req) => String(req.user?.id || req.ip),
-  message: { error: 'Too many claim requests. Try again later.', code: 'rate_limited' },
+  message: errBody('help.err.claims_rate_limited', 'rate_limited'),
 });
 router.post('/claims', authRequired, claimLimiter, async (req, res) => {
+  const lang = resolveLang(req);
   const b = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
   const table = b.provider_type === 'lawyer' ? 'lawyers' : b.provider_type === 'bail_agent' ? 'bail_agents' : null;
   const id = Number.parseInt(b.provider_id, 10);
-  if (!table) return res.status(400).json({ error: "provider_type must be 'lawyer' or 'bail_agent'.", code: 'bad_provider_type' });
-  if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: 'provider_id is required.', code: 'bad_provider_id' });
+  if (!table) return res.status(400).json({ error: msg(lang, 'help.err.bad_provider_type'), code: 'bad_provider_type' });
+  if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: msg(lang, 'help.err.bad_provider_id'), code: 'bad_provider_id' });
   const license = b.license_number == null ? '' : sanitizeStr(String(b.license_number), 40).trim();
-  if (license.length < 3) return res.status(400).json({ error: table === 'lawyers' ? 'Enter your bar number.' : 'Enter your bail-agent license number.', code: 'license_required' });
+  if (license.length < 3) return res.status(400).json({ error: msg(lang, table === 'lawyers' ? 'help.claim.bar_number' : 'help.claim.license_number'), code: 'license_required' });
   const licState = normalizeState(b.license_state);
   const phone = b.contact_phone == null ? null : sanitizeStr(String(b.contact_phone), 30).trim() || null;
   const note = b.note == null ? null : sanitizeStr(String(b.note), 500).trim() || null;
   try {
     const db = await getDb();
     const exists = await db.get(`SELECT id FROM ${table} WHERE id = ?`, [id]);
-    if (!exists) return res.status(404).json({ error: 'Listing not found.', code: 'not_found' });
+    if (!exists) return res.status(404).json({ error: msg(lang, 'help.err.listing_not_found'), code: 'not_found' });
     const ins = await db.get(
       `INSERT INTO listing_claims (table_name, record_id, user_id, license_number, license_state, contact_phone, note)
        VALUES (?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (table_name, record_id, user_id) WHERE status = 'pending' DO NOTHING RETURNING id`,
       [table, id, req.user.id, license, licState, phone, note]);
-    if (!ins) return res.status(200).json({ ok: true, duplicate: true, message: 'Your claim is already waiting for review.' });
+    if (!ins) return res.status(200).json({ ok: true, duplicate: true, message: msg(lang, 'help.claim.duplicate') });
     logger.info({ table, recordId: id, claimId: Number(ins.id) }, '[help/claims] listing claim requested');
     res.status(201).json({ ok: true, claim_id: Number(ins.id), status: 'pending',
-      message: 'Thanks — we will check your license and link the listing to your account.' });
+      message: msg(lang, 'help.claim.thanks') });
   } catch (e) {
     logger.error({ err: e.message }, '[help/claims] failed');
-    res.status(500).json({ error: 'Could not send the claim. Please try again.', code: 'server_error' });
+    res.status(500).json({ error: msg(lang, 'help.err.claim_failed'), code: 'server_error' });
   }
 });
 
@@ -358,13 +364,15 @@ router.get('/claims/mine', authRequired, async (req, res) => {
     res.json({ claims: rows.map(r => ({ ...r, id: Number(r.id), record_id: Number(r.record_id) })) });
   } catch (e) {
     logger.error({ err: e.message }, '[help/claims/mine] failed');
-    res.status(500).json({ error: 'Could not load your claims.' });
+    res.status(500).json({ error: msg(resolveLang(req), 'help.err.claims_load_failed') });
   }
 });
 
-router.get('/report-reasons', (_req, res) => {
+router.get('/report-reasons', (req, res) => {
+  const lang = resolveLang(req);
   res.setHeader('Cache-Control', 'public, max-age=86400');
-  res.json({ reasons: Object.entries(REPORT_REASONS).map(([code, label]) => ({ code, label })) });
+  res.setHeader('Vary', 'Accept-Language');
+  res.json({ language: lang, reasons: Object.keys(REPORT_REASONS).map(code => ({ code, label: msg(lang, `help.reason.${code}`) })) });
 });
 
 export default router;

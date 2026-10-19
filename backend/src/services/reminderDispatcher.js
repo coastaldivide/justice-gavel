@@ -20,6 +20,10 @@
  *   engagement      marketing-style nudges; push only and ONLY when the user
  *                   opted in (users.notif_marketing = 1).
  *
+ * Titles / bodies were written in the recipient's language when the reminder
+ * was planned (services/courtReminders.js); the e-mail and SMS wrappers here
+ * use the same language (users.preferred_language).
+ *
  * Push goes through services/expoPush.js (EXPO_PUSH_API_URL is injectable);
  * email through services/email.js (only when RESEND_API_KEY is set).
  *
@@ -39,6 +43,7 @@ import { escapeHtml } from '../utils/sanitize.js';
 import { CLOSED_CASE_STATUSES, dateOnly, backfillCourtReminders } from './courtReminders.js';
 import { sendSms, smsLive } from './sms.js';
 import { guardJob } from '../utils/cronGuard.js';
+import { msg, formatDay, normalizeLang } from '../i18n/index.js';
 
 const BATCH = 50;
 const STALE_CLAIM_MINUTES = 10;
@@ -108,19 +113,27 @@ async function userPushTokens(db, userId, user) {
   return [...new Set(tokens)];
 }
 
+/** The language a reminder goes out in: the user's saved language, else the one it was planned in. */
+function reminderLang(user, data) {
+  return normalizeLang(user?.preferred_language) || normalizeLang(data?.lang) || 'en';
+}
+
 async function sendReminderEmail(user, row, data) {
   const { sendEmail, emailLive } = await import('./email.js');
   const isCourt = COURT_TYPES.has(row.notification_type);
+  const lang = reminderLang(user, data);
+  const day = data.court_date ? formatDay(data.court_date, lang, { year: true }) : '';
+  const dateLine = msg(lang, 'reminder.email.court_date', { date: '\u0000' });
+  const [before, after] = dateLine.split('\u0000');
   const html = `
-    <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+    <div lang="${lang}" style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
       <h2 style="color:#042C53;margin:0 0 12px">${escapeHtml(row.title)}</h2>
       <p style="font-size:15px;line-height:1.5">${escapeHtml(row.body || '')}</p>
-      ${isCourt ? `<p style="font-size:13px;color:#555">Court date: <strong>${escapeHtml(data.court_date || '')}</strong>.
-        Missing court can lead to a bench warrant — if you cannot attend, contact the court clerk or your lawyer before the date.</p>` : ''}
-      <p style="font-size:12px;color:#888">You get this because reminders are on in Justice Gavel.
-        Turn them off any time in Settings → Notifications. Justice Gavel is not a law firm.</p>
+      ${isCourt ? `<p style="font-size:13px;color:#555">${escapeHtml(before)}<strong>${escapeHtml(day)}</strong>${escapeHtml(after ?? '')}
+        ${escapeHtml(msg(lang, 'reminder.email.warning'))}</p>` : ''}
+      <p style="font-size:12px;color:#888">${escapeHtml(msg(lang, 'reminder.email.footer'))}</p>
     </div>`;
-  const text = `${row.title}\n\n${row.body || ''}${isCourt && data.court_date ? `\n\nCourt date: ${data.court_date}` : ''}`;
+  const text = `${row.title}\n\n${row.body || ''}${isCourt && data.court_date ? `\n\n${msg(lang, 'reminder.email.court_date', { date: day })}\n${msg(lang, 'reminder.email.warning')}` : ''}\n\n${msg(lang, 'reminder.email.footer')}`;
   const result = await sendEmail({ to: user.email, subject: String(row.title).replace(/[\r\n]+/g, ' '), html, text });
   return emailLive() && !result?.mock ? 'email' : 'email_log_only';
 }
@@ -130,7 +143,8 @@ async function deliverOne(db, row, now) {
   const type = row.notification_type || 'reminder';
 
   const user = await db.get(
-    `SELECT id, email, phone, sms_reminders, push_token, account_status, notif_court_reminders, notif_expungement, notif_marketing
+    `SELECT id, email, phone, sms_reminders, push_token, account_status, notif_court_reminders, notif_expungement, notif_marketing,
+            preferred_language
        FROM users WHERE id = ?`, [row.user_id]);
   if (!user || DISABLED_ACCOUNT.has(String(user.account_status || '').toLowerCase())) {
     return finish(db, row.id, { status: 'cancelled', error: 'user_unavailable' }).then(() => 'cancelled');
@@ -184,7 +198,7 @@ async function deliverOne(db, row, now) {
     }
   }
   if (SMS_FALLBACK_TYPES.has(type) && smsLive() && Number(user.sms_reminders) === 1 && user.phone) {
-    const r = await sendSms({ to: user.phone, body: `${row.title} — ${row.body || ''} Reply STOP to opt out.` });
+    const r = await sendSms({ to: user.phone, body: msg(reminderLang(user, data), 'reminder.sms', { title: row.title, body: row.body || '' }) });
     if (r.ok) {
       await finish(db, row.id, { status: 'sent', channel: 'sms', delivered: 1, sent_at: now.toISOString(), error: pushError });
       return 'sent';

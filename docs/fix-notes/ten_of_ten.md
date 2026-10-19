@@ -1127,8 +1127,8 @@ Running log: notes/core_path_progress.md.
 - Filters are honest but data-limited: all lawyer rows = "Criminal Defense", English, free_consultation=1.
 - Bail-agent in-app messaging doesn't exist; claims link the profile only.
 - AI grounding is a prompt instruction + refs, not a guarantee of model behaviour.
-- Owner: lawyer review of rights/checklist/missed text (rights_cards.reviewed_by), native review of es/pt/vi
-  (existing card translations are shorter and sections 5/8 differ from English), TWILIO_*/RESEND keys,
+- Owner: lawyer review of rights/checklist/missed text (rights_cards.reviewed_by), TWILIO_*/RESEND keys,
+  (es/pt/vi translation: done in full in the i18n step — see the "Full es / pt / vi" section; no review action),
   listing-claim outreach, data enrichment (languages, practice areas).
 - Journeys still local-only (CI has no browser step).
 
@@ -1278,3 +1278,76 @@ int, v29, v174 CONTRACT-02 now asserts no phone, list_bounds), smoke core-path-1
    export web OK; journeys **21/0**; web smoke **170/0**, 0 page/console errors, 0 storms.
 5. ci.yml unchanged (new suites run in existing steps; migrations loop picks up 22); openapi regenerated
    (no diff). Not committed; scratch DB dropped, servers stopped.
+
+# Step — full Spanish / Portuguese / Vietnamese (es / pt / vi)
+
+Translated in-house to native quality (ES neutral US/LatAm "usted"; PT-BR "você"; VI full diacritics,
+polite). Fixed terms: ES derecho a guardar silencio · defensor público · fianza · agente de fianzas · fecha
+de corte · orden de arresto; PT direito de permanecer em silêncio · defensor público · fiança · agente de
+fiança · audiência; VI quyền giữ im lặng · luật sư công · tiền bảo lãnh tại ngoại · người bảo lãnh tại ngoại
+· ngày ra tòa. Brand names, placeholders, numbers, phones, URLs, citations and emoji kept; meaning matches
+the English (no law "improved").
+
+## Frontend dictionaries (835 → 1,256 keys)
+- Existing values rewritten: **es 350, pt 529, vi 526** (English leftovers: es 19, pt 126, vi 280; the rest
+  short / wrong / inconsistent, incl. all rc_* rights-card values). en fix: `onboard_browse`.
+- **421 new keys** in all four files (hub, rights card + script + sources + state notice, Help now, court
+  dates + detail + guidance, bail calculator, family invite, Home, Onboarding, splash, tab labels, a11y
+  labels, confirm-dialog defaults); server-shown strings copied from the server catalogs so both agree.
+- Identical to English only: app_name, home_title, disc_upload_types, 3 plan names (all langs) and
+  booking_min (es/pt) — the 7-entry allowlist in the parity test.
+- i18n runtime: `useLang()` (live re-render), `t(key, {params})`, `locale()` for dates/times, saved choice
+  first else device language; later `initLang()` calls never override a decided language. State names in
+  es/pt/vi. Accept-Language on every API call (axios + analytics fetch). Per-language offline caches:
+  `cache_rights_v3_<lang>_<state>`, `helpnow_cache_v3_<lang>`; another language's copy is never shown.
+- Screens on the core path fully on t(): JustArrested, RightsCard, HelpNow, CourtDates, CourtDateDetail,
+  BailCalculator, Case (family invite/shared), Home (all tiles/banners/countdown/tip/nudge/offline),
+  Onboarding, Settings language toggle (saves to server), navigator titles/tabs, EmergencyStrip,
+  UPL/AI disclaimers, splash.
+
+## Server (205 catalog keys × 4, `backend/src/i18n`)
+Language = `?lang=` → Accept-Language (q-parsed) → user profile `preferred_language` (migration 23) →
+English; responses carry an honest `language`, `Content-Language`, `Vary`. Localized: rights card
+(general sections, 30-second script, sources, state-pending notice, disclaimer; reviewed state rows stay
+English and are flagged `mixed_language`), court-day guidance (checklist + missed-date steps),
+reminders (push / SMS / e-mail titles + bodies, follower variants, localized day/time; saved language
+used at plan and send time; changing language re-plans reminders), followers (invite share text +
+e-mail, errors), help/results notes and PD note, bail fee note, court-date errors / hearing labels / .ics,
+rate-limit messages, legal tip of the day (15 tips). `POST /api/push/language`.
+
+## Tests added
+- frontend `i18nParity.test.js` (keys, placeholders, emoji, ≤7 allowlist, no value <50 % of English,
+  wrong-language guards, rights-card paragraph/bullet structure).
+- frontend render `i18nCorePath.test.tsx` — es/pt/vi × hub (3 steps), rights card online + offline, Help
+  now, Court dates, Court date detail, Home; English-fragment detector (+ proof it fires on English) and
+  live language switch. 
+- backend `i18n_server_content.test.js` (catalog structure, rights/guidance/reminders/tips per language,
+  app ↔ server text identical, request-language rules incl. /push/tip) and
+  `integration/i18n_core_path.int.test.js` (12, PG: endpoints answer in the requested / saved language,
+  reminders planned in the saved language). Smoke "core path 5" (es/pt/vi). Web journeys I18N-es /
+  I18N-vi (Just-arrested path end to end in Spanish and Vietnamese, no English text, Accept-Language on
+  every API call).
+- Source pins updated (v7, v17, v50, v57, v93, core_path_units drift); openapi regenerated.
+
+## Also fixed while gating
+- Idempotency: a retry sent the moment the first 201 arrived could get 409 (key finalised just after
+  the response). The retry now waits ≤ 2 s for the first to finish and replays it; still running → 409.
+- Help now inmate-lookup rows: recorded "Inmate Lookup:" label prefix dropped on display (data kept).
+
+## Not translated (recorded data, shown as recorded)
+Provider / courthouse / jail names, PD office data, bail-schedule charge names and other DB records;
+reviewed state rights rows (English until reviewed translations exist — the card says so). Off-core
+screens (most of Case, AIDisclaimer modal, pro/attorney tools) still partly English, with the same t()
+fallback. Lawyer review of legal content stays an owner action; no translation-review action remains.
+
+## Gate
+1. Fresh DB, 24 migrations (00..23) twice — OK; 196 tables, 0 without RLS; lawyers 2046 / bail_agents
+   1262, md5 identical before/after all tests.
+2. npm ci, audit 0, import OK, lint 0/0; prod boot → smoke **40/40**.
+3. In-memory jest **337 suites passed / 33 skipped; 28,048 passed / 254 skipped / 0 failed.** PG: trio 3/40,
+   integration 20/159, security 12/95, refresh 4/26 — **0 failed**.
+4. Frontend: tsc 0, eslint 0, npm test 51/732 + render 10/112, nav-targets 0, design-audit 0, CI bundle
+   checks OK, expo export web + android OK; journeys **31/0**; web smoke **170/0**, 0 page/console errors,
+   0 storms.
+5. ci.yml unchanged (new suites run in existing steps; migrations loop picks up 23). Not committed;
+   scratch DBs dropped, servers stopped.

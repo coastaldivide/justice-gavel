@@ -6,22 +6,27 @@
  *    interrupted person lands back where they were ("Step 2 of 3").
  *  - A route can be queued before the main tabs exist (first screen after
  *    install → browse mode → open the path) and is consumed by HomeScreen.
- *  - Offline copies: the rights card per state (+ the general card), the
+ *  - Offline copies: the rights card per state AND language (+ the general card), the
  *    court dates list and the cases this user follows. Court-date copies hold
  *    dates / places only — there are no case notes in them.
  * Every storage call is wrapped: a storage failure never breaks a screen.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from './api';
+import { getLang, locale, t } from '../i18n';
+import { stateName } from '../utils/userState';
 
 export type CoreStep = 1 | 2 | 3;
 export interface CoreProgress { current: CoreStep; done: { rights: boolean; help: boolean; court: boolean }; updatedAt: string | null }
 
 const PROGRESS_KEY = 'core_path_progress';
 const PENDING_KEY = 'core_path_pending_route';
-// v2: copies saved before the state-review rule (v1) could hold unreviewed state notes.
-const RIGHTS_PREFIX = 'cache_rights_v2_';
-const OLD_RIGHTS_PREFIX = 'cache_rights_v1_';
+// v3: one copy per language and state ('cache_rights_v3_es_TN'). v2 copies are
+// English (the server served English only) and v1 copies could hold unreviewed
+// state notes; both are still read for English (sanitised) and removed on save.
+const RIGHTS_PREFIX = 'cache_rights_v3_';
+const LEGACY_RIGHTS_PREFIXES = ['cache_rights_v2_', 'cache_rights_v1_'];
+const rightsKey = (lang: string, state: string) => `${RIGHTS_PREFIX}${lang}_${state || 'US'}`;
 const COURT_KEY = 'cache_court_dates_v1';
 const FOLLOWING_KEY = 'cache_following_v1';
 
@@ -64,10 +69,11 @@ export async function consumePendingRoute(): Promise<string | null> {
 export interface RightsSection {
   key: string; topic?: string; heading: string; body: string; source: string | null; source_url?: string | null;
   last_reviewed: string | null; lawyer_reviewed: boolean; reviewed_by?: string | null; must_id?: boolean | null;
+  language?: string;
 }
 export interface ScriptLine { key: string; text: string; from: string }
 export interface RightsCardData {
-  state: string; state_name: string | null; language: string;
+  state: string; state_name: string | null; state_name_local?: string | null; language: string; mixed_language?: boolean;
   general: RightsSection[]; state_specific: RightsSection[]; state_specific_available: boolean;
   state_notice: string | null; disclaimer: string;
   script: { say: ScriptLine[]; dont: ScriptLine[]; source: string; last_reviewed: string | null; lawyer_reviewed: boolean };
@@ -83,8 +89,7 @@ const STATUTE_CITE_RE = /§\s*\d|\b(?:Code|Stat|Stats|Ann|Laws|Rev|Penal|Crim|Pr
 export function isReviewedStateSection(s: Partial<RightsSection> | null | undefined): boolean {
   return !!(s && (s.source_url || s.reviewed_by || STATUTE_CITE_RE.test(String(s.source || ''))));
 }
-export const reviewPendingNotice = (name: string): string =>
-  `State-specific details for ${name} haven't been reviewed yet — ask a local lawyer or public defender.`;
+export const reviewPendingNotice = (name: string): string => t('rc_state_pending', { state: name });
 export function sanitizeRightsCard(card: RightsCardData): RightsCardData {
   const specific = (card?.state_specific || []).filter(isReviewedStateSection);
   const hasState = !!card?.state && card.state !== 'US';
@@ -93,28 +98,40 @@ export function sanitizeRightsCard(card: RightsCardData): RightsCardData {
     state_specific: specific,
     state_specific_available: specific.length > 0,
     state_notice: specific.length ? (card.state_notice ?? null)
-      : hasState ? reviewPendingNotice(card.state_name || card.state) : (card?.state_notice ?? null),
+      : hasState ? reviewPendingNotice(stateName(card.state, card.state_name_local || card.state_name)) : (card?.state_notice ?? null),
   };
 }
 
+/** Save the copy under the language it is in (card.language, else the app's). */
 export async function cacheRightsCard(state: string, card: RightsCardData): Promise<void> {
-  try { await AsyncStorage.setItem(RIGHTS_PREFIX + (state || 'US'), JSON.stringify({ card: sanitizeRightsCard(card), at: new Date().toISOString() })); } catch { /* non-critical */ }
-  try { await AsyncStorage.removeItem(OLD_RIGHTS_PREFIX + (state || 'US')); } catch { /* non-critical */ }
+  const lang = card?.language || getLang();
+  try { await AsyncStorage.setItem(rightsKey(lang, state), JSON.stringify({ card: sanitizeRightsCard(card), at: new Date().toISOString() })); } catch { /* non-critical */ }
+  for (const p of LEGACY_RIGHTS_PREFIXES) {
+    try { await AsyncStorage.removeItem(p + (state || 'US')); } catch { /* non-critical */ }
+  }
 }
-export async function getCachedRightsCard(state: string): Promise<{ card: RightsCardData; at: string } | null> {
+/** This phone's copy of the state's card in `lang` (default: the app's language). */
+export async function getCachedRightsCard(state: string, lang: string = getLang()): Promise<{ card: RightsCardData; at: string } | null> {
   try {
-    const raw = await AsyncStorage.getItem(RIGHTS_PREFIX + (state || 'US'));
+    let raw = await AsyncStorage.getItem(rightsKey(lang, state));
+    if (!raw && lang === 'en') {
+      for (const p of LEGACY_RIGHTS_PREFIXES) { raw = await AsyncStorage.getItem(p + (state || 'US')); if (raw) break; }
+    }
     if (!raw) return null;
     const saved = JSON.parse(raw) as { card: RightsCardData; at: string };
-    return saved?.card ? { card: sanitizeRightsCard(saved.card), at: saved.at } : null;
+    if (!saved?.card) return null;
+    // A copy in another language is never shown as this language's card.
+    if ((saved.card.language || 'en') !== lang) return null;
+    return { card: sanitizeRightsCard(saved.card), at: saved.at };
   } catch { return null; }
 }
 
-/** Fetch the state's card and keep a copy for airplane mode. Throws on network failure. */
+/** Fetch the state's card in the app's language and keep a copy for airplane mode. Throws on network failure. */
 export async function fetchRightsCard(state: string): Promise<RightsCardData> {
   const code = state || 'US';
-  const res = await api.get<RightsCardData>(`/rights/${encodeURIComponent(code)}`);
-  const card = sanitizeRightsCard(res.data);
+  const lang = getLang();
+  const res = await api.get<RightsCardData>(`/rights/${encodeURIComponent(code)}`, { params: { lang } });
+  const card = sanitizeRightsCard({ ...res.data, language: res.data?.language || 'en' });
   await cacheRightsCard(code, card);
   return card;
 }
@@ -187,17 +204,46 @@ export function isOfflineError(e: unknown): boolean {
   return !err?.response && (err?.code === 'ERR_NETWORK' || /network|offline|timeout/i.test(String(err?.message || '')) || !err?.code);
 }
 
-export const HEARING_LABELS: Record<string, string> = {
-  arraignment: 'Arraignment', preliminary_hearing: 'Preliminary hearing', pretrial: 'Pre-trial',
-  motion: 'Motion hearing', trial: 'Trial', sentencing: 'Sentencing', probation: 'Probation hearing',
-  status: 'Status hearing', other: 'Other hearing',
-};
+export const HEARING_TYPES = ['arraignment', 'preliminary_hearing', 'pretrial', 'motion', 'trial', 'sentencing', 'probation', 'status', 'other'] as const;
+/** Hearing type code → label in the app's language (the code itself when unknown). */
+export function hearingLabel(code: string | null | undefined): string {
+  if (!code) return '';
+  return (HEARING_TYPES as readonly string[]).includes(code) ? t(`hearing_${code}`) : code;
+}
+/** Court-date status code → label in the app's language. */
+export function statusLabel(code: string | null | undefined): string {
+  if (!code) return '';
+  return ['scheduled', 'attended', 'missed', 'rescheduled', 'cancelled'].includes(code) ? t(`cd_status_${code}`) : code;
+}
 
-/** 'YYYY-MM-DD' → 'Thursday, November 5, 2026' without any time-zone shift. */
+const NBSP = /[\u00a0\u202f]/g;
+/** 'YYYY-MM-DD' → 'Thursday, November 5, 2026' / 'jueves, 5 de noviembre de 2026' … without any time-zone shift. */
 export function formatCourtDay(d: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
   if (!m) return d || '';
-  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12)).toLocaleDateString('en-US', {
+  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12)).toLocaleDateString(locale(), {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
-  });
+  }).replace(NBSP, ' ');
+}
+
+/** 'HH:MM' → '9:30 AM' (en) / '9:30 a.m.' (es) / '09:30' (pt, vi); '' when no time. Same as the server's labels. */
+export function formatCourtTime(tm: string | null | undefined): string {
+  const m = /^(\d{2}):(\d{2})/.exec(String(tm ?? ''));
+  if (!m) return '';
+  const h = Number(m[1]); const mm = m[2];
+  const lang = getLang();
+  if (lang === 'en') return `${((h + 11) % 12) + 1}:${mm} ${h < 12 ? 'AM' : 'PM'}`;
+  return new Date(Date.UTC(2000, 0, 1, h, Number(mm))).toLocaleTimeString(locale(), {
+    hour: lang === 'es' ? 'numeric' : '2-digit', minute: '2-digit', timeZone: 'UTC',
+  }).replace(NBSP, ' ');
+}
+
+/** Month + year ('April 2026' / 'abril de 2026'), or day + month + year when the date has a day. */
+export function reviewedLabel(d: string | null | undefined): string {
+  if (!d) return '';
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?/.exec(d);
+  if (!m) return d;
+  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3] || 15))).toLocaleDateString(locale(),
+    m[3] ? { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' } : { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .replace(NBSP, ' ');
 }

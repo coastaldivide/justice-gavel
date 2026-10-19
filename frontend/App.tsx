@@ -30,7 +30,7 @@ import * as Sentry from '@sentry/react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { processSyncQueue } from './src/services/offlineSync';
 
-import { initLang } from './src/i18n';
+import { initLang, getLang } from './src/i18n';
 import { registerAuthSetter, AuthState, canBrowse } from './src/services/auth';
 import { getToken } from './src/utils/secureStorage';
 import { ThemeProvider, useTheme } from './src/constants/theme';
@@ -211,6 +211,8 @@ function AppInner() {
       // Reminders fire at local wall-clock times: keep the account's zone current.
       const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return null; } })();
       if (tz) api.post('/push/timezone', { timezone: tz }).catch(() => {});
+      // …and its language (court reminders / e-mails are written in it).
+      api.post('/push/language', { language: getLang() }).catch(() => {});
     })();
     return () => { cancelled = true; };
   }, [authState]);

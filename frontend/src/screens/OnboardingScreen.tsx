@@ -12,7 +12,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutA
 import { setPendingRoute } from '../services/corePath';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAppAuth } from '../services/auth';
-import { t, initLang, setLang } from '../i18n';
+import { t, initLang, setLang, useLang } from '../i18n';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme} from '../constants/theme';
 import { detectAndSaveUserState } from '../services/location';
 import JTBLogo from '../components/JTBLogo';
@@ -50,6 +50,7 @@ const SLIDES = [
 ];
 
 function OnboardingScreen({ navigation }: ScreenProps) {
+  useLang(); // re-render in the chosen language
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     // Passive: uses location only if already allowed — no prompt during onboarding.
@@ -148,7 +149,7 @@ function OnboardingScreen({ navigation }: ScreenProps) {
         {/* ── Crisis resource footer ───────────────────────────────────────── */}
         <View style={{ marginTop: 24, paddingTop: 16, borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.15)' }}>
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.textPrimary, fontSize: 11, textAlign: 'center', marginBottom: 4 }}>
-            Need free legal help right now?
+            {t('onb_help_q')}
           </Text>
           <Text maxFontSizeMultiplier={1.3} style={{ color: colors.info, fontSize: 13, textAlign: 'center', fontWeight: '600' }}>
             Public Defender Project: 1-800-341-0059 · ACLU: 1-212-549-2500
@@ -162,18 +163,18 @@ function OnboardingScreen({ navigation }: ScreenProps) {
       }}>
         <View style={{ alignItems:'center' }}>
           {/* The app has no store rating yet — never show an invented one. */}
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, fontWeight:'900', color:colors.textPrimary }}>Private</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>Encrypted Case Notes</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, fontWeight:'900', color:colors.textPrimary }}>{t('onb_private')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>{t('onb_private_sub')}</Text>
         </View>
         <View style={{ width:1, height:28, backgroundColor:colors.border }} />
         <View style={{ alignItems:'center' }}>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, fontWeight:'900', color:colors.textPrimary }}>Free</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>Always Free to Start</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, fontWeight:'900', color:colors.textPrimary }}>{t('onb_free')}</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>{t('onb_free_sub')}</Text>
         </View>
         <View style={{ width:1, height:28, backgroundColor:colors.border }} />
         <View style={{ alignItems:'center' }}>
           <Text maxFontSizeMultiplier={1.4} style={{ fontSize:15, fontWeight:'900', color:colors.textPrimary }}>24/7</Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>AI Legal Help</Text>
+          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, color:colors.textMuted, marginTop:1 }}>{t('onb_ai_sub')}</Text>
         </View>
       </View>
 
@@ -184,8 +185,8 @@ function OnboardingScreen({ navigation }: ScreenProps) {
         testID="onboarding-just-arrested"
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         accessibilityRole="button"
-        accessibilityLabel="Just arrested? Get help now, no sign up"
-        accessibilityHint="Opens three steps: know your rights, find a lawyer and a bail agent, never miss a court date"
+        accessibilityLabel={t('onb_core_a11y')}
+        accessibilityHint={t('onb_core_hint')}
       >
         <View style={{ flex: 1 }}>
           <Text maxFontSizeMultiplier={1.3} style={styles.justArrestedTitle}>🚨 {t('ja_title')}</Text>
@@ -254,15 +255,15 @@ function OnboardingScreen({ navigation }: ScreenProps) {
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={styles.browseBtnSub}>{t('onboard_browse_sub')}</Text>
         <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, textAlign: 'center', lineHeight: 16, paddingHorizontal: 24, marginTop: 6, color: colors.textOnAccent, opacity: 0.9 }}>
-          {'By continuing you agree to our '}
+          {t('onb_terms_pre')}
           <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}
             onPress={() => navigation.navigate('TermsOfService')}>
-            Terms of Service
+            {t('onb_terms_tos')}
           </Text>
-          {' and '}
+          {t('onb_terms_and')}
           <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}
             onPress={() => navigation.navigate('PrivacyPolicy')}>
-            Privacy Policy
+            {t('onb_terms_pp')}
           </Text>
         </Text>
         </TouchableOpacity>

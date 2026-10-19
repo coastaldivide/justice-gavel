@@ -7,6 +7,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator,
 import { Picker } from '@react-native-picker/picker';
 import { unwrapList, cachedGet } from '../services/api';
 import { useTheme } from '../constants/theme';
+import { t, useLang, locale } from '../i18n';
 
 const STATES = [
   'ALL','AL','AK','AZ','AR','CA','CO','CT','DC','DE','FL','GA','HI',
@@ -23,9 +24,13 @@ type Schedule = {
 
 // Bail ranges only. There is no sourced per-state bail-agent fee data in the
 // app yet, so no fee estimate is shown (owner rule) — the agent sets the fee.
-const FEE_NOTE = 'Bail agents set their own fees. Justice Gavel has no sourced fee data for your state yet — ask the agent what they charge before you sign.';
+// The note is the server's (GET /help/bail-schedule meta.fee_note) in the app's
+// language, or the bundled copy of the same text (bc_fee_note).
+// Charge names, severities and notes are database records shown as recorded.
+const typeLabel = (ct: string) => (ct === 'felony' ? t('bc_type_felony') : ct === 'misdemeanor' ? t('bc_type_misdemeanor') : (ct || '').toUpperCase());
 
 function BailCalculatorScreen({ navigation, route }: ScreenProps) {
+  const lang = useLang();
   const params = (route?.params || {}) as { state?: string; chargeType?: string; caseTitle?: string };
   const mountedRef = React.useRef(true);
   React.useEffect(() => {
@@ -44,6 +49,8 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
   const [refreshing, setRefreshing] = React.useState(false);
   const [selected, setSelected] = useState<Schedule | null>(null);
   const [filter, setFilter] = useState(params.chargeType || '');
+  const [meta, setMeta] = useState<{ fee_note?: string; language?: string } | null>(null);
+  const feeNote = meta?.fee_note && (meta.language || 'en') === lang ? meta.fee_note : t('bc_fee_note');
 
   const bg   = colors.bg;
   const card = isDark ? colors.surface : colors.bgCard;
@@ -53,18 +60,18 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
   useEffect(() => {
     let cancel = false;
     setLoading(true);
-    cachedGet(`/help/bail-schedule?state=${state}`)
-      .then(r => { if (!cancel) { setSchedules(unwrapList<Schedule>(r.data)); setFetchError(false); setNeedsSignIn(false); } })
+    cachedGet(`/help/bail-schedule?state=${state}&lang=${lang}`)
+      .then(r => { if (!cancel) { setSchedules(unwrapList<Schedule>(r.data)); setMeta((r.data as any)?.meta || null); setFetchError(false); setNeedsSignIn(false); } })
       .catch((e: { response?: { status?: number } }) => { if (!cancel) { setSchedules([]); setFetchError(true); setNeedsSignIn(e?.response?.status === 401); } })
       .finally(() => { if (!cancel) { setLoading(false); setRefreshing(false); } });
     return () => { cancel = true; };
-  }, [state, refreshTick]);
+  }, [state, refreshTick, lang]);
 
   const filtered = schedules.filter(s =>
     !filter || (s.charge || "").toLowerCase().includes(filter.toLowerCase())
   );
 
-  const fmt = (n: number) => '$' + n.toLocaleString();
+  const fmt = (n: number) => '$' + n.toLocaleString(locale());
 
   const onRefresh = () => { setRefreshing(true); setRefreshTick(t => t + 1); };
   return (
@@ -81,22 +88,21 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
           backgroundColor: colors.primary, borderRadius: 14, padding: 16, marginBottom: 16,
         }}>
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.bgCard, fontWeight: '800', fontSize: 18 }}>
-            💰 Bail Amount Estimator
+            💰 {t('bc_title')}
           </Text>
           <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textOnAccent, fontSize: 13, marginTop: 4 }}>
-            Select a state and charge type to see typical bail ranges.
-            These are general ranges -- actual bail is set by a judge.
+            {t('bc_intro')}
           </Text>
         </View>
 
         {!!params.caseTitle && (
           <Text testID="bail-case-link" maxFontSizeMultiplier={1.4} style={{ color: text, fontWeight: '700', fontSize: 14, marginBottom: 10 }}>
-            For your case: {params.caseTitle}{params.chargeType ? ` (${params.chargeType})` : ''}
+            {t('bc_for_case', { title: params.caseTitle })}{params.chargeType ? ` (${params.chargeType})` : ''}
           </Text>
         )}
         {/* State selector */}
         <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontWeight: '600', fontSize: 12, marginBottom: 6, letterSpacing: 0.8 }}>
-          STATE
+          {t('bc_state_label')}
         </Text>
         <View style={{
           backgroundColor: card, borderRadius: 10, borderWidth: 1,
@@ -110,19 +116,19 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
             style={{ color: text, height: 48, backgroundColor: card, borderWidth: 0, paddingHorizontal: 10 }}
             dropdownIconColor={sub}
           >
-            {STATES.map(s => <Picker.Item key={s} label={s === 'ALL' ? 'National Baseline' : s} value={s} />)}
+            {STATES.map(s => <Picker.Item key={s} label={s === 'ALL' ? t('bc_national') : s} value={s} />)}
           </Picker>
         </View>
 
         {/* Charge search */}
         <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontWeight: '600', fontSize: 12, marginBottom: 6, letterSpacing: 0.8 }}>
-          SEARCH CHARGE TYPE
+          {t('bc_search_label')}
         </Text>
         <TextInput
-          accessibilityLabel="e.g. DUI, assault, theft…"
+          accessibilityLabel={t('bc_search_placeholder')}
           value={filter}
           onChangeText={setFilter}
-          placeholder="e.g. DUI, assault, theft…"
+          placeholder={t('bc_search_placeholder')}
           placeholderTextColor={sub}
           style={{
             backgroundColor: card, borderRadius: 10, paddingHorizontal: 14,
@@ -135,25 +141,23 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
         {loading && <ActivityIndicator color={colors.primary} style={{ marginVertical: 20 }} />}
         {!loading && !fetchError && schedules.length > 0 && filtered.length === 0 && (
           <Text testID="bail-no-match" maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginVertical: 16 }}>
-            No charges match “{filter}”. Try a shorter search.
+            {t('bc_no_match', { q: filter })}
           </Text>
         )}
         {!loading && !fetchError && schedules.length === 0 && (
           <Text testID="bail-no-schedules" maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginVertical: 16 }}>
-            No bail schedule is on file for {state === 'ALL' ? 'the national baseline' : state} yet. Pick another state, or ask the court clerk or a bail agent for the local amounts.
+            {t('bc_no_schedules', { place: state === 'ALL' ? t('bc_national_lower') : state })}
           </Text>
         )}
         {fetchError && !loading && !schedules.length && (
           <View style={{ alignItems:'center', padding:24 }}>
             <Text testID="bail-fetch-error" maxFontSizeMultiplier={1.4} style={{ color: sub, marginBottom: 8, textAlign: 'center' }}>
-              {needsSignIn
-                ? 'Sign in (free) to see the bail schedule for your state.'
-                : 'Could not load bail schedules. Check your connection.'}
+              {needsSignIn ? t('bc_sign_in') : t('bc_load_failed')}
             </Text>
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityHint="Double-tap to activate" accessibilityLabel="Tap to retry" onPress={() => { setFetchError(false); setRefreshTick(t => t+1); }}>
-              <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary }}>Tap to retry</Text>
+              accessibilityHint={t('cp_double_tap')} accessibilityLabel={t('bc_retry')} onPress={() => { setFetchError(false); setRefreshTick(n => n + 1); }}>
+              <Text maxFontSizeMultiplier={1.4} style={{ color:colors.primary }}>{t('bc_retry')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -167,7 +171,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
           return (
             <TouchableOpacity
               accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+              accessibilityHint={t('cp_double_tap')}
               key={s.id}
               testID="bail-schedule-row"
               onPress={() => setSelected(isSel ? null : s)}
@@ -185,7 +189,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
                   paddingHorizontal: 7, paddingVertical: 3,
                 }}>
                   <Text maxFontSizeMultiplier={1.4} style={{ color: typeColor.text, fontWeight: '700', fontSize: 10 }}>
-                    {(s.charge_type || "").toUpperCase()}
+                    {typeLabel(s.charge_type || '')}
                   </Text>
                 </View>
                 <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontWeight: '600', fontSize: 13, flex: 1 }}>
@@ -196,7 +200,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
                 <Text maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 12 }}>{s.severity}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>
-                  {s.bail_min === 0 && !s.bail_max ? 'No bail / ROR'
+                  {s.bail_min === 0 && !s.bail_max ? t('bc_no_bail')
                     : s.bail_max === null ? `${fmt(s.bail_min)}+`
                     : `${fmt(s.bail_min)} - ${fmt(s.bail_max)}`}
                 </Text>
@@ -209,24 +213,24 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
                   borderTopColor: colors.border, paddingTop: 12, gap: 8,
                 }}>
                   <Text maxFontSizeMultiplier={1.4} style={{ color: text, fontWeight: '700', fontSize: 14 }}>
-                    💡 Bail Breakdown
+                    💡 {t('bc_breakdown')}
                   </Text>
 
                   {s.bail_min > 0 && (
                     <>
-                      <Row label="Typical bail range" value={
+                      <Row label={t('bc_typical_range')} value={
                         s.bail_max ? `${fmt(s.bail_min)} - ${fmt(s.bail_max)}` : `${fmt(s.bail_min)}+`
                       } text={text} sub={sub} />
-                      <Row label="Cash bail (pay full)" value={`${fmt(s.bail_min)} - ${s.bail_max ? fmt(s.bail_max) : '???'}`} text={text} sub={sub} />
+                      <Row label={t('bc_cash_bail')} value={s.bail_max ? `${fmt(s.bail_min)} - ${fmt(s.bail_max)}` : `${fmt(s.bail_min)}+`} text={text} sub={sub} />
                       <Text testID="bail-fee-note" maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 12, lineHeight: 17 }}>
-                        Bail agent fee: {FEE_NOTE}
+                        {t('bc_agent_fee')} {feeNote}
                       </Text>
                     </>
                   )}
 
                   {!!s.source && (
                     <Text testID="bail-source" maxFontSizeMultiplier={1.4} style={{ color: sub, fontSize: 11 }}>
-                      Source: {s.source.replace(/_/g, ' ')}{s.last_reviewed ? ` · Last reviewed: ${s.last_reviewed}` : ' · Review date not recorded'}
+                      {t('rc_source')}: {s.source.replace(/_/g, ' ')}{s.last_reviewed ? ` · ${t('rc_last_reviewed')}: ${s.last_reviewed}` : ` · ${t('bc_no_review_date')}`}
                     </Text>
                   )}
                   {s.bail_note ? (
@@ -247,13 +251,10 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
                     borderRadius: 8, padding: 10, marginTop: 4,
                   }}>
                     <Text maxFontSizeMultiplier={1.4} style={{ color: isDark ? colors.legal : colors.legalDark, fontSize: 12, fontWeight: '600' }}>
-                      How bail bondsmen work
+                      {t('bc_how_title')}
                     </Text>
                     <Text maxFontSizeMultiplier={1.4} style={{ color: isDark ? colors.legal : colors.legalDark, fontSize: 12, marginTop: 4 }}>
-                      A bail agent posts the full bail with the court for a fee they set — ask
-                      what it is and whether any of it is refundable before you sign. If you miss
-                      a court date, the bondsman must pay the full amount and will pursue you to
-                      recover it.
+                      {t('bc_how_body')}
                     </Text>
                   </View>
                 </View>
@@ -270,11 +271,10 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
             padding: 14, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: colors.gold }}>
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '700',
               color: colors.textPrimary, marginBottom: 4 }}>
-              ⚖️ You have not been convicted of anything.
+              ⚖️ {t('bc_not_convicted')}
             </Text>
             <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, color: colors.textSecond, lineHeight: 18 }}>
-              Bail is not a fine or punishment. It is a deposit to guarantee your appearance
-              in court. You are innocent until the state proves otherwise.
+              {t('bc_not_convicted_body')}
             </Text>
           </View>
         )}
@@ -285,15 +285,15 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
         }}>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+            accessibilityHint={t('cp_double_tap')}
             onPress={() => navigation.navigate('BailTab')}
           >
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.bgCard, fontWeight:'700', fontSize:14 }}>
-              🔓 Find a Bail Bondsman Near You
+              🔓 {t('bc_find_bondsman')}
             </Text>
             <Text maxFontSizeMultiplier={1.4} style={{ color:colors.textOnAccent, fontSize:11,
               textAlign:'center', marginTop:4 }}>
-              Find bail agents in your city — ask each one what they charge.
+              {t('bc_find_bondsman_sub')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -304,7 +304,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
         <View style={{ marginHorizontal: 16, marginBottom: 20 }}>
           <TouchableOpacity
             accessibilityRole="button"
-          accessibilityHint="Double-tap to activate"
+            accessibilityHint={t('cp_double_tap')}
             style={{ backgroundColor: colors.navy, borderRadius: 14,
               paddingVertical: 16, alignItems: 'center' }}
             onPress={() => navigation.navigate('LawyersTab')}
@@ -313,11 +313,11 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
           >
             <Text maxFontSizeMultiplier={1.2}
               style={{ color: colors.textOnNavy, fontSize: 15, fontWeight: '800' }}>
-              ⚖️ Find Attorneys Near You
+              ⚖️ {t('bc_find_attorneys')}
             </Text>
             <Text maxFontSizeMultiplier={1.3}
               style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 3 }}>
-              Search the attorney directory by city and practice area
+              {t('bc_find_attorneys_sub')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -328,9 +328,7 @@ function BailCalculatorScreen({ navigation, route }: ScreenProps) {
         padding: 12, marginTop: 16, marginBottom: 8 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 11, lineHeight: 16,
           color: colors.textSecond, fontStyle: 'italic' }}>
-          ⚖️ General legal information only -- not legal advice. Laws vary by
-          jurisdiction and change frequently. Consult a licensed attorney for
-          advice specific to your situation.
+          ⚖️ {t('bc_disclaimer')}
         </Text>
       </View>
       </ScrollView>

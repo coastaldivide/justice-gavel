@@ -67,10 +67,10 @@ describe('I18N4. i18n/index.ts — Translation Engine', () => {
   test('I18N4-01: t(key) — primary → English fallback → key fallback chain', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/i18n/index.ts','utf8');
-    expect(src).toContain("export function t(key:string)");
-    expect(src).toContain('Primary: current language translation');
-    expect(src).toContain('Fallback 1: English');
-    expect(src).toContain('Fallback 2: the key itself');
+    expect(src).toContain('export function t(key: string, params?: Record<string, string | number>): string');
+    expect(src).toContain('const primary = dict[lang] && dict[lang][key];');
+    expect(src).toContain('Fallback: English');
+    expect(src).toContain('return key;');
   });
   test('I18N4-03: detectLang — Intl.DateTimeFormat locale detection', async () => {
     const fs = await import('fs');
@@ -94,7 +94,9 @@ describe('I18N4. i18n/index.ts — Translation Engine', () => {
     const src = fs.readFileSync(__REPO + '/frontend/src/i18n/index.ts','utf8');
     expect(src).toContain('initLang');
     expect(src).toContain('detectLang()');
-    expect(src).toContain("// Call at startup: setLang(detectLang())");
+    // the person's saved choice wins over the device language
+    expect(src).toContain("const saved = await AsyncStorage.getItem('lang')");
+    expect(src).toContain('setLang(detectLang(), { persist: false });');
   });
   test('I18N4-06: Missing translation warn in DEV only — never crashes production', async () => {
     const fs = await import('fs');

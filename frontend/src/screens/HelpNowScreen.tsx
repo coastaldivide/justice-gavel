@@ -24,9 +24,10 @@ import { locationGranted } from '../services/permissions';
 import { useToast } from '../components/ToastProvider';
 import { useTheme } from '../constants/theme';
 import { hapticCall } from '../services/haptics';
-import { getUserState, STATE_NAMES } from '../utils/userState';
+import { getUserState, stateName } from '../utils/userState';
 import { isOfflineError, saveCoreProgress } from '../services/corePath';
 import { getToken } from '../utils/secureStorage';
+import { t, useLang, getLang, locale } from '../i18n';
 
 export interface Provider {
   id: number; kind: 'lawyer' | 'bail_agent'; name: string; organization: string | null; phone: string | null;
@@ -43,29 +44,36 @@ interface HelpResult {
 }
 interface Filters { charge: string; language: string; free: boolean; open: boolean; h24: boolean; miles: number | null }
 
-const CHARGES = ['DUI', 'Drug Offenses', 'Assault', 'Domestic Violence', 'Theft', 'Weapons', 'Traffic'];
-const LANGUAGES = ['Spanish', 'Vietnamese', 'Portuguese', 'Chinese'];
-const DISTANCES = [10, 25, 50];
-const REASONS: { code: string; label: string }[] = [
-  { code: 'wrong_phone', label: 'Wrong or disconnected phone number' },
-  { code: 'closed', label: 'Closed / out of business' },
-  { code: 'wrong_address', label: 'Wrong address' },
-  { code: 'wrong_hours', label: 'Wrong hours' },
-  { code: 'not_this_service', label: 'Does not offer this service' },
-  { code: 'other', label: 'Something else' },
+// Filter values are what the server matches (English practice areas / languages as listed);
+// the chip labels are translated.
+const CHARGES: { value: string; key: string }[] = [
+  { value: 'DUI', key: 'hn_charge_dui' }, { value: 'Drug Offenses', key: 'hn_charge_drug' },
+  { value: 'Assault', key: 'hn_charge_assault' }, { value: 'Domestic Violence', key: 'hn_charge_domestic' },
+  { value: 'Theft', key: 'hn_charge_theft' }, { value: 'Weapons', key: 'hn_charge_weapons' },
+  { value: 'Traffic', key: 'hn_charge_traffic' },
 ];
-const CACHE_KEY = 'helpnow_cache_v2';
+const LANGUAGES: { value: string; key: string }[] = [
+  { value: 'Spanish', key: 'hn_lang_spanish' }, { value: 'Vietnamese', key: 'hn_lang_vietnamese' },
+  { value: 'Portuguese', key: 'hn_lang_portuguese' }, { value: 'Chinese', key: 'hn_lang_chinese' },
+];
+const DISTANCES = [10, 25, 50];
+const REASON_CODES = ['wrong_phone', 'closed', 'wrong_address', 'wrong_hours', 'not_this_service', 'other'];
+// One saved copy per language (the notes in it come from the server in that language).
+const cacheKey = () => `helpnow_cache_v3_${getLang()}`;
 const EMPTY_FILTERS: Filters = { charge: '', language: '', free: false, open: false, h24: false, miles: null };
 
 const miles = (km: number | null) => (km == null ? null : km / 1.609);
 const fmtMiles = (km: number | null) => {
   const m = miles(km);
-  return m == null ? '' : m < 10 ? `${m.toFixed(1)} mi` : `${Math.round(m)} mi`;
+  if (m == null) return '';
+  const n = m < 10 ? m.toLocaleString(locale(), { maximumFractionDigits: 1, minimumFractionDigits: 1 }) : String(Math.round(m));
+  return t('hn_miles', { n });
 };
 
 type Where = { lat: number; lng: number } | { city: string } | { state: string };
 
 function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
+  const lang = useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { showToast } = useToast();
@@ -105,16 +113,16 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
       const res = await api.get<HelpResult>('/help/nearby', { params });
       if (!mounted.current) return;
       setResult(res.data); setPhase('ok'); setOfflineAt(null);
-      AsyncStorage.setItem(CACHE_KEY, JSON.stringify({ result: res.data, at: new Date().toISOString() })).catch(() => {});
+      AsyncStorage.setItem(cacheKey(), JSON.stringify({ result: res.data, at: new Date().toISOString() })).catch(() => {});
       saveCoreProgress({ mark: 'help' }).catch(() => {});
     } catch (e) {
       if (!mounted.current) return;
       if (isOfflineError(e)) {
-        const raw = await AsyncStorage.getItem(CACHE_KEY).catch(() => null);
+        const raw = await AsyncStorage.getItem(cacheKey()).catch(() => null);
         const cached = raw ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : null;
         if (cached?.result) { setResult(cached.result); setOfflineAt(cached.at); setPhase('ok'); return; }
       }
-      setErrorMsg(isOfflineError(e) ? 'You are offline and no results are saved on this phone yet. Call 911 in an emergency.' : apiErrorMessage(e, 'Could not search right now.'));
+      setErrorMsg(isOfflineError(e) ? t('hn_offline_none') : apiErrorMessage(e, t('hn_search_failed')));
       setPhase('error');
     }
   }, []);
@@ -136,18 +144,25 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
     })();
   }, [search]);
 
+  // Language switched: the server notes come back in the new language.
+  const firstLang = useRef(true);
+  useEffect(() => {
+    if (firstLang.current) { firstLang.current = false; return; }
+    if (where) search(where, filters);
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const useMyLocation = async () => {
     try {
       const c = await getLocation({ prompt: true });
       const w = { lat: c.lat, lng: c.lng };
       setWhere(w); search(w, filters);
     } catch {
-      showToast('Location is off — type your city instead.', 'warning');
+      showToast(t('hn_location_off'), 'warning');
     }
   };
   const searchCity = () => {
     const c = cityInput.trim();
-    if (c.length < 2) { showToast('Type a city, e.g. Nashville, TN', 'warning'); return; }
+    if (c.length < 2) { showToast(t('hn_type_city'), 'warning'); return; }
     const w = { city: c }; setWhere(w); search(w, filters);
   };
   const applyFilters = (patch: Partial<Filters>) => {
@@ -156,12 +171,12 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
   };
   const onRefresh = async () => { if (!where) return; setRefreshing(true); await search(where, filters); setRefreshing(false); };
 
-  const call = (p: Provider) => { if (!p.phone) return; hapticCall(); Linking.openURL(`tel:${p.phone.replace(/[^\d+]/g, '')}`).catch(() => showToast(`Please dial ${p.phone} manually.`, 'warning')); };
-  const text = (p: Provider) => { if (!p.phone) return; Linking.openURL(`sms:${p.phone.replace(/[^\d+]/g, '')}`).catch(() => showToast('Texting is not available on this device.', 'warning')); };
+  const call = (p: Provider) => { if (!p.phone) return; hapticCall(); Linking.openURL(`tel:${p.phone.replace(/[^\d+]/g, '')}`).catch(() => showToast(t('cp_dial_manually', { num: String(p.phone) }), 'warning')); };
+  const text = (p: Provider) => { if (!p.phone) return; Linking.openURL(`sms:${p.phone.replace(/[^\d+]/g, '')}`).catch(() => showToast(t('hn_text_unavailable'), 'warning')); };
   const directions = (p: Provider) => {
     const dest = p.lat != null && p.lng != null ? `${p.lat},${p.lng}` : encodeURIComponent(p.address || `${p.name} ${p.city} ${p.state}`);
     const url = Platform.OS === 'ios' ? `maps://maps.apple.com/?daddr=${dest}` : `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
-    Linking.openURL(url).catch(() => showToast('Maps are not available on this device.', 'warning'));
+    Linking.openURL(url).catch(() => showToast(t('hn_maps_unavailable'), 'warning'));
   };
 
   const submitReport = async () => {
@@ -171,17 +186,17 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
       const r = await api.post<{ message: string }>('/help/reports', {
         provider_type: report.kind, provider_id: report.id, reason, details: details.trim() || undefined,
       });
-      showToast(r.data?.message || 'Thanks — our team will check this listing.', 'success');
+      showToast(r.data?.message || t('hn_report_thanks'), 'success');
       setReport(null); setReason(''); setDetails('');
     } catch (e) {
-      showToast(apiErrorMessage(e, 'Could not send the report. Please try again.'), 'error');
+      showToast(apiErrorMessage(e, t('hn_report_failed')), 'error');
     } finally { sendingRef.current = false; if (mounted.current) setSending(false); }
   };
 
   const openClaim = async (p: Provider) => {
     const tok = await getToken().catch(() => null);
     if (!tok) {
-      showToast('Sign in with your professional account to claim a listing.', 'info');
+      showToast(t('hn_claim_signin'), 'info');
       (navigation as any).navigate('Login');
       return;
     }
@@ -195,15 +210,15 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
         provider_type: claim.kind, provider_id: claim.id, license_number: license.trim(),
         license_state: claim.state, contact_phone: claimPhone.trim() || undefined,
       });
-      showToast(r.data?.message || 'Thanks — we will check your license.', 'success');
+      showToast(r.data?.message || t('hn_claim_thanks'), 'success');
       setClaim(null);
     } catch (e) {
-      showToast(apiErrorMessage(e, 'Could not send the claim.'), 'error');
+      showToast(apiErrorMessage(e, t('hn_claim_failed')), 'error');
     } finally { sendingRef.current = false; if (mounted.current) setSending(false); }
   };
 
   const Chip = ({ label, active, onPress, testID }: { label: string; active: boolean; onPress: () => void; testID: string }) => (
-    <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: active }} accessibilityLabel={`${label} filter${active ? ', on' : ''}`}
+    <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: active }} accessibilityLabel={`${t('hn_filter_a11y', { label })}${active ? t('hn_filter_on') : ''}`}
       testID={testID} style={[styles.chip, active && styles.chipOn]} onPress={onPress}>
       <Text maxFontSizeMultiplier={1.3} style={[styles.chipText, active && styles.chipTextOn]}>{active ? '✓ ' : ''}{label}</Text>
     </TouchableOpacity>
@@ -213,7 +228,7 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
     <View style={styles.card} testID={p.kind === 'lawyer' ? 'help-lawyer-card' : 'help-bail-card'}>
       <View style={styles.cardTop}>
         <Text maxFontSizeMultiplier={1.2} style={[styles.kind, p.kind === 'lawyer' ? styles.kindLawyer : styles.kindBail]}>
-          {p.kind === 'lawyer' ? '⚖️ LAWYER' : '🔓 BAIL AGENT'}
+          {p.kind === 'lawyer' ? `⚖️ ${t('hn_kind_lawyer')}` : `🔓 ${t('hn_kind_bail')}`}
         </Text>
         {!!p.distance_km && <Text maxFontSizeMultiplier={1.3} style={styles.distance}>{fmtMiles(p.distance_km)}</Text>}
       </View>
@@ -222,34 +237,34 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
       {!!p.address && <Text maxFontSizeMultiplier={1.4} style={styles.address} numberOfLines={2}>{p.address}</Text>}
       <View style={styles.badges}>
         {p.is_24_7 ? <Text testID="help-247-badge" maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeOpen]}>24/7</Text>
-          : p.open_now === true ? <Text testID="help-open-badge" maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeOpen]}>Open now</Text>
-            : p.open_now === false ? <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeClosed]}>Closed now</Text>
-              : <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>Hours not listed</Text>}
-        {p.kind === 'lawyer' && p.free_consultation && <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>Free consultation (as listed)</Text>}
-        {!!p.license_number && <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>Lic. {p.license_number}</Text>}
+          : p.open_now === true ? <Text testID="help-open-badge" maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeOpen]}>{t('hn_open_now')}</Text>
+            : p.open_now === false ? <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeClosed]}>{t('hn_closed_now')}</Text>
+              : <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>{t('hn_hours_unknown')}</Text>}
+        {p.kind === 'lawyer' && p.free_consultation && <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>{t('hn_free_consult_listed')}</Text>}
+        {!!p.license_number && <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>{t('hn_license', { num: String(p.license_number) })}</Text>}
         {p.rating != null && p.rating > 0 && <Text maxFontSizeMultiplier={1.3} style={[styles.badge, styles.badgeUnknown]}>★ {p.rating.toFixed(1)}{p.review_count ? ` (${p.review_count})` : ''}</Text>}
       </View>
       <View style={styles.actions}>
-        <TouchableOpacity accessibilityRole="button" testID="help-call" disabled={!p.phone} accessibilityLabel={p.phone ? `Call ${p.name}` : 'No phone listed'}
+        <TouchableOpacity accessibilityRole="button" testID="help-call" disabled={!p.phone} accessibilityLabel={p.phone ? t('hn_call_a11y', { name: p.name }) : t('hn_no_phone')}
           style={[styles.actionBtn, styles.actionCall, !p.phone && styles.actionDisabled]} onPress={() => call(p)}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.actionCallText}>📞 Call</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.actionCallText}>📞 {t('hn_call')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" testID="help-text" disabled={!p.phone} accessibilityLabel={`Text ${p.name}`}
+        <TouchableOpacity accessibilityRole="button" testID="help-text" disabled={!p.phone} accessibilityLabel={t('hn_text_a11y', { name: p.name })}
           style={[styles.actionBtn, !p.phone && styles.actionDisabled]} onPress={() => text(p)}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💬 Text</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💬 {t('hn_text')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" testID="help-directions" accessibilityLabel={`Directions to ${p.name}`}
+        <TouchableOpacity accessibilityRole="button" testID="help-directions" accessibilityLabel={t('hn_directions_a11y', { name: p.name })}
           style={styles.actionBtn} onPress={() => directions(p)}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🧭 Directions</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🧭 {t('hn_directions')}</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity accessibilityRole="button" testID="help-report" accessibilityLabel={`Report a problem with the listing for ${p.name}`}
+      <TouchableOpacity accessibilityRole="button" testID="help-report" accessibilityLabel={t('hn_report_a11y', { name: p.name })}
         style={styles.reportLink} onPress={() => { setReport(p); setReason(''); setDetails(''); }}>
-        <Text maxFontSizeMultiplier={1.3} style={styles.reportText}>⚑ Report a problem with this listing</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.reportText}>⚑ {t('hn_report_link')}</Text>
       </TouchableOpacity>
-      <TouchableOpacity accessibilityRole="button" testID="help-claim" accessibilityLabel={`Claim the listing for ${p.name} (for the business owner)`}
+      <TouchableOpacity accessibilityRole="button" testID="help-claim" accessibilityLabel={t('hn_claim_a11y', { name: p.name })}
         style={styles.reportLink} onPress={() => openClaim(p)}>
-        <Text maxFontSizeMultiplier={1.3} style={styles.reportText}>Is this your business? Claim this listing</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.reportText}>{t('hn_claim_link')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -259,150 +274,150 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
     <View style={styles.screen} testID="help-now-screen">
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        <Text maxFontSizeMultiplier={1.3} style={styles.title} accessibilityRole="header">Lawyers and bail agents near you</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.title} accessibilityRole="header">{t('hn_title')}</Text>
 
         <View style={styles.whereRow}>
           <TouchableOpacity accessibilityRole="button" testID="help-use-location" style={styles.locBtn} onPress={useMyLocation}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.locBtnText}>📍 Use my location</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.locBtnText}>📍 {t('hn_use_location')}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.whereRow}>
-          <TextInput accessibilityLabel="City, for example Nashville, TN" testID="help-city-input" style={styles.input}
-            placeholder="City, e.g. Nashville, TN" placeholderTextColor={colors.textMuted}
+          <TextInput accessibilityLabel={t('hn_city_a11y')} testID="help-city-input" style={styles.input}
+            placeholder={t('hn_city_placeholder')} placeholderTextColor={colors.textMuted}
             value={cityInput} onChangeText={setCityInput} onSubmitEditing={searchCity} returnKeyType="search" />
           <TouchableOpacity accessibilityRole="button" testID="help-city-search" style={styles.goBtn} onPress={searchCity}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>Search</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>{t('search')}</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          <Chip label="Open now" active={filters.open} onPress={() => applyFilters({ open: !filters.open })} testID="help-filter-open" />
+          <Chip label={t('hn_open_now')} active={filters.open} onPress={() => applyFilters({ open: !filters.open })} testID="help-filter-open" />
           <Chip label="24/7" active={filters.h24} onPress={() => applyFilters({ h24: !filters.h24 })} testID="help-filter-24" />
-          <Chip label="Free consultation" active={filters.free} onPress={() => applyFilters({ free: !filters.free })} testID="help-filter-free" />
+          <Chip label={t('hn_free_consult')} active={filters.free} onPress={() => applyFilters({ free: !filters.free })} testID="help-filter-free" />
           {DISTANCES.map(d => (
-            <Chip key={d} label={`Within ${d} mi`} active={filters.miles === d} onPress={() => applyFilters({ miles: filters.miles === d ? null : d })} testID={`help-filter-mi-${d}`} />
+            <Chip key={d} label={t('hn_within', { n: d })} active={filters.miles === d} onPress={() => applyFilters({ miles: filters.miles === d ? null : d })} testID={`help-filter-mi-${d}`} />
           ))}
         </ScrollView>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {CHARGES.map(c => (
-            <Chip key={c} label={c} active={filters.charge === c} onPress={() => applyFilters({ charge: filters.charge === c ? '' : c })} testID={`help-filter-charge-${c.replace(/\s+/g, '-').toLowerCase()}`} />
+          {CHARGES.map(({ value: c, key }) => (
+            <Chip key={c} label={t(key)} active={filters.charge === c} onPress={() => applyFilters({ charge: filters.charge === c ? '' : c })} testID={`help-filter-charge-${c.replace(/\s+/g, '-').toLowerCase()}`} />
           ))}
         </ScrollView>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {LANGUAGES.map(l => (
-            <Chip key={l} label={l} active={filters.language === l} onPress={() => applyFilters({ language: filters.language === l ? '' : l })} testID={`help-filter-lang-${l.toLowerCase()}`} />
+          {LANGUAGES.map(({ value: l, key }) => (
+            <Chip key={l} label={t(key)} active={filters.language === l} onPress={() => applyFilters({ language: filters.language === l ? '' : l })} testID={`help-filter-lang-${l.toLowerCase()}`} />
           ))}
         </ScrollView>
 
         {!where && phase === 'idle' && (
-          <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-need-location">Tap “Use my location” or type your city to see lawyers and bail agents near you.</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-need-location">{t('hn_need_location')}</Text>
         )}
-        {phase === 'loading' && <ActivityIndicator style={{ marginVertical: 24 }} color={colors.textBrand} accessibilityLabel="Searching" />}
+        {phase === 'loading' && <ActivityIndicator style={{ marginVertical: 24 }} color={colors.textBrand} accessibilityLabel={t('bail_searching')} />}
         {phase === 'error' && (
           <View style={styles.errorBox} testID="help-error">
             <Text maxFontSizeMultiplier={1.4} style={styles.errorText}>{errorMsg}</Text>
             {!!where && (
               <TouchableOpacity accessibilityRole="button" style={styles.goBtn} onPress={() => where && search(where, filters)}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>Try again</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>{t('try_again')}</Text>
               </TouchableOpacity>
             )}
           </View>
         )}
         {!!offlineAt && (
-          <Text maxFontSizeMultiplier={1.4} style={styles.offline} testID="help-offline">📴 Offline — showing results saved on this phone. Call to confirm. Call 911 in an emergency.</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.offline} testID="help-offline">📴 {t('hn_offline_saved')}</Text>
         )}
 
         {phase === 'ok' && result && (
           <>
             <Text maxFontSizeMultiplier={1.4} style={styles.meta} testID="help-ranking-note">
-              {st ? `${STATE_NAMES[st] || st} · ` : ''}{result.meta.ranking} {result.meta.hours_note}
+              {st ? `${stateName(st)} · ` : ''}{result.meta.ranking} {result.meta.hours_note}
             </Text>
             {!!result.meta.charge_note && <Text maxFontSizeMultiplier={1.4} style={styles.meta}>{result.meta.charge_note}</Text>}
 
-            <Text maxFontSizeMultiplier={1.4} style={styles.group}>⚖️ Lawyers ({result.lawyers.length})</Text>
-            {result.lawyers.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-empty-lawyers">No lawyers match these filters here. Try fewer filters or a wider distance.</Text>}
+            <Text maxFontSizeMultiplier={1.4} style={styles.group}>⚖️ {t('hn_lawyers_count', { n: result.lawyers.length })}</Text>
+            {result.lawyers.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-empty-lawyers">{t('hn_empty_lawyers')}</Text>}
             {result.lawyers.map(p => <Card key={`l${p.id}`} p={p} />)}
 
             {!!result.public_defender && (
               <View style={styles.pdBox} testID="help-public-defender">
-                <Text maxFontSizeMultiplier={1.4} style={styles.pdTitle}>Can’t afford a lawyer? Public defender</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.pdTitle}>{t('hn_pd_title')}</Text>
                 <Text maxFontSizeMultiplier={1.4} style={styles.pdName}>{result.public_defender.name}</Text>
-                {!!result.public_defender.eligibility && <Text maxFontSizeMultiplier={1.4} style={styles.pdBody}>Who qualifies: {result.public_defender.eligibility}</Text>}
+                {!!result.public_defender.eligibility && <Text maxFontSizeMultiplier={1.4} style={styles.pdBody}>{t('hn_pd_who')} {result.public_defender.eligibility}</Text>}
                 <Text maxFontSizeMultiplier={1.4} style={styles.pdBody}>{result.public_defender.note}</Text>
                 <View style={styles.actions}>
                   {!!result.public_defender.phone && (
                     <TouchableOpacity accessibilityRole="button" style={[styles.actionBtn, styles.actionCall]} onPress={() => Linking.openURL(`tel:${String(result.public_defender?.phone).replace(/[^\d+]/g, '')}`).catch(() => {})}>
-                      <Text maxFontSizeMultiplier={1.3} style={styles.actionCallText}>📞 Call</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.actionCallText}>📞 {t('hn_call')}</Text>
                     </TouchableOpacity>
                   )}
                   {!!result.public_defender.url && (
                     <TouchableOpacity accessibilityRole="link" style={styles.actionBtn} onPress={() => Linking.openURL(String(result.public_defender?.url)).catch(() => {})}>
-                      <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🌐 Website</Text>
+                      <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🌐 {t('hn_website')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
               </View>
             )}
 
-            <Text maxFontSizeMultiplier={1.4} style={styles.group}>🔓 Bail agents ({result.bail_agents.length})</Text>
-            {result.bail_agents.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-empty-bail">No bail agents match these filters here. Try fewer filters or a wider distance.</Text>}
+            <Text maxFontSizeMultiplier={1.4} style={styles.group}>🔓 {t('hn_bail_count', { n: result.bail_agents.length })}</Text>
+            {result.bail_agents.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.hint} testID="help-empty-bail">{t('hn_empty_bail')}</Text>}
             {result.bail_agents.map(p => <Card key={`b${p.id}`} p={p} />)}
 
             {result.inmate_lookup.length > 0 && (
               <View style={styles.pdBox} testID="help-inmate-lookup">
-                <Text maxFontSizeMultiplier={1.4} style={styles.pdTitle}>Find someone in jail (county inmate lookup)</Text>
+                <Text maxFontSizeMultiplier={1.4} style={styles.pdTitle}>{t('hn_inmate_title')}</Text>
                 {result.inmate_lookup.map(r => (
                   <TouchableOpacity key={r.id} accessibilityRole="link" style={styles.lookupRow} disabled={!r.url}
                     onPress={() => r.url && Linking.openURL(r.url).catch(() => {})}>
-                    <Text maxFontSizeMultiplier={1.4} style={styles.lookupText}>🔎 {r.name}{r.phone ? ` · ${r.phone}` : ''}</Text>
+                    <Text maxFontSizeMultiplier={1.4} style={styles.lookupText}>🔎 {r.name.replace(/^Inmate Lookup:\s*/i, '') /* recorded English label; the localized section title says it */}{r.phone ? ` · ${r.phone}` : ''}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             )}
             <TouchableOpacity accessibilityRole="button" testID="help-bail-calculator" style={styles.calcBtn}
               onPress={() => (navigation as any).navigate('BailCalculator', st ? { state: st, chargeType: filters.charge || undefined } : undefined)}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.calcBtnText}>💰 Typical bail amounts{st ? ` in ${STATE_NAMES[st] || st}` : ''}</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.calcBtnText}>💰 {st ? t('hn_bail_amounts_in', { state: stateName(st) }) : t('hn_bail_amounts')}</Text>
             </TouchableOpacity>
           </>
         )}
-        <Text maxFontSizeMultiplier={1.4} style={styles.group}>More help</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.group}>{t('hn_more_help')}</Text>
         <View style={styles.moreRow}>
           <TouchableOpacity accessibilityRole="button" testID="help-more-lawyers" style={styles.moreBtn} onPress={() => (navigation as any).navigate('LawyersTab')}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>⚖️ All lawyers</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>⚖️ {t('hn_all_lawyers')}</Text>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" testID="help-more-bail" style={styles.moreBtn} onPress={() => (navigation as any).navigate('BailTab')}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🔓 All bail agents</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🔓 {t('hn_all_bail')}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.moreRow}>
           <TouchableOpacity accessibilityRole="button" testID="help-more-courts" style={styles.moreBtn} onPress={() => (navigation as any).navigate('CourtLocator', st ? { state: st } : undefined)}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🏛️ Find a courthouse</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>🏛️ {t('hn_find_courthouse')}</Text>
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" testID="help-more-chat" style={styles.moreBtn} onPress={() => (navigation as any).navigate('ChatTab')}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💬 Ask a question</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💬 {t('hn_ask_question')}</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Call 988 crisis line" style={styles.moreBtnWide} onPress={() => Linking.openURL('tel:988').catch(() => showToast('Please dial 988.', 'warning'))}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💙 Crisis or feeling unsafe? Call 988</Text>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('cp_call_988_a11y')} style={styles.moreBtnWide} onPress={() => Linking.openURL('tel:988').catch(() => showToast(t('cp_dial_manually', { num: '988' }), 'warning'))}>
+          <Text maxFontSizeMultiplier={1.3} style={styles.actionText}>💙 {t('hn_crisis_988')}</Text>
         </TouchableOpacity>
-        <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>Listings come from public business data. Justice Gavel does not endorse any lawyer or bail agent. Not legal advice.</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.disclaimer}>{t('hn_disclaimer')}</Text>
       </ScrollView>
 
       <Modal visible={!!claim} transparent animationType="slide" onRequestClose={() => setClaim(null)} accessibilityViewIsModal>
         <View style={styles.overlay}>
           <View style={styles.sheet} testID="claim-modal">
-            <Text maxFontSizeMultiplier={1.3} style={styles.sheetTitle}>Claim this listing</Text>
-            <Text maxFontSizeMultiplier={1.3} style={styles.meta}>{claim?.name}. We check your license before linking it, so families can message you in the app. The public listing is not changed.</Text>
-            <TextInput accessibilityLabel={claim?.kind === 'lawyer' ? 'Bar number' : 'Bail agent license number'} testID="claim-license" style={[styles.input, { marginTop: 10 }]}
-              placeholder={claim?.kind === 'lawyer' ? 'Bar number' : 'License number'} placeholderTextColor={colors.textMuted} value={license} onChangeText={setLicense} maxLength={40} />
-            <TextInput accessibilityLabel="Phone we can reach you on (optional)" style={[styles.input, { marginTop: 8 }]} keyboardType="phone-pad"
-              placeholder="Phone (optional)" placeholderTextColor={colors.textMuted} value={claimPhone} onChangeText={setClaimPhone} maxLength={30} />
+            <Text maxFontSizeMultiplier={1.3} style={styles.sheetTitle}>{t('hn_claim_title')}</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.meta}>{t('hn_claim_body', { name: claim?.name || '' })}</Text>
+            <TextInput accessibilityLabel={claim?.kind === 'lawyer' ? t('hn_bar_number') : t('hn_license_number_a11y')} testID="claim-license" style={[styles.input, { marginTop: 10 }]}
+              placeholder={claim?.kind === 'lawyer' ? t('hn_bar_number') : t('hn_license_number')} placeholderTextColor={colors.textMuted} value={license} onChangeText={setLicense} maxLength={40} />
+            <TextInput accessibilityLabel={t('hn_claim_phone_a11y')} style={[styles.input, { marginTop: 8 }]} keyboardType="phone-pad"
+              placeholder={t('hn_claim_phone')} placeholderTextColor={colors.textMuted} value={claimPhone} onChangeText={setClaimPhone} maxLength={30} />
             <TouchableOpacity accessibilityRole="button" testID="claim-submit" disabled={license.trim().length < 3 || sending}
               style={[styles.submitBtn, (license.trim().length < 3 || sending) && styles.actionDisabled]} onPress={submitClaim}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.submitText}>Send claim</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.submitText}>{t('hn_send_claim')}</Text>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" style={styles.cancelBtn} onPress={() => setClaim(null)}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.cancelText}>Cancel</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.cancelText}>{t('cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -411,22 +426,22 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
       <Modal visible={!!report} transparent animationType="slide" onRequestClose={() => setReport(null)} accessibilityViewIsModal>
         <View style={styles.overlay}>
           <View style={styles.sheet} testID="report-modal">
-            <Text maxFontSizeMultiplier={1.3} style={styles.sheetTitle}>Report a problem</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.sheetTitle}>{t('hn_report_title')}</Text>
             <Text maxFontSizeMultiplier={1.3} style={styles.meta}>{report?.name}</Text>
-            {REASONS.map(r => (
-              <TouchableOpacity key={r.code} accessibilityRole="radio" accessibilityState={{ selected: reason === r.code }}
-                testID={`report-reason-${r.code}`} style={[styles.reasonRow, reason === r.code && styles.reasonRowOn]} onPress={() => setReason(r.code)}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.reasonText}>{reason === r.code ? '◉' : '○'}  {r.label}</Text>
+            {REASON_CODES.map(code => (
+              <TouchableOpacity key={code} accessibilityRole="radio" accessibilityState={{ selected: reason === code }}
+                testID={`report-reason-${code}`} style={[styles.reasonRow, reason === code && styles.reasonRowOn]} onPress={() => setReason(code)}>
+                <Text maxFontSizeMultiplier={1.3} style={styles.reasonText}>{reason === code ? '◉' : '○'}  {t(`hn_reason_${code}`)}</Text>
               </TouchableOpacity>
             ))}
-            <TextInput accessibilityLabel="Details (optional)" testID="report-details" style={[styles.input, { marginTop: 8 }]} maxLength={500}
-              placeholder="Details (optional)" placeholderTextColor={colors.textMuted} value={details} onChangeText={setDetails} />
+            <TextInput accessibilityLabel={t('hn_report_details')} testID="report-details" style={[styles.input, { marginTop: 8 }]} maxLength={500}
+              placeholder={t('hn_report_details')} placeholderTextColor={colors.textMuted} value={details} onChangeText={setDetails} />
             <TouchableOpacity accessibilityRole="button" testID="report-submit" disabled={!reason || sending}
               style={[styles.submitBtn, (!reason || sending) && styles.actionDisabled]} onPress={submitReport}>
-              {sending ? <ActivityIndicator color={colors.white} /> : <Text maxFontSizeMultiplier={1.3} style={styles.submitText}>Send report</Text>}
+              {sending ? <ActivityIndicator color={colors.white} /> : <Text maxFontSizeMultiplier={1.3} style={styles.submitText}>{t('hn_send_report')}</Text>}
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" style={styles.cancelBtn} onPress={() => setReport(null)}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.cancelText}>Cancel</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.cancelText}>{t('cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -31,6 +31,11 @@
  *        1d / morning-of (schedule rows checked) → share with a family follower
  *        (consent + code) → the follower's account sees the court date but not
  *        the case notes → airplane mode: rights card + court date still shown.
+ *   I18N "Just arrested?" in Spanish (es-US) and Vietnamese (vi-VN) browsers:
+ *        the app starts in the device language, every API call carries it
+ *        (Accept-Language), and the hub (3 steps), the state's rights card,
+ *        the combined results (server notes) and the court-date guidance are
+ *        in that language — no English sentence from en.json on any of them.
  * Exit 1 on any failure.
  */
 const http = require('http');
@@ -381,6 +386,112 @@ async function coreJourney(browser, base) {
   await context.close();
 }
 
+// ── I18N: the core path in Spanish and Vietnamese ───────────────────────────
+const I18N_DIR = path.join(ROOT, 'src', 'i18n');
+const readLang = (l) => JSON.parse(fs.readFileSync(path.join(I18N_DIR, `${l}.json`), 'utf8'));
+/** English sentence fragments (2+ words, 8+ chars) from en.json that the target language never uses. */
+function englishFragments(target) {
+  const all = Object.values(target).join('\n');
+  const out = new Set();
+  for (const v of Object.values(readLang('en'))) {
+    for (const raw of String(v).split(/[.!?:;—•\n()“”"·→←]+/)) {
+      const f = raw.trim();
+      if (f.length < 8 || (f.match(/[A-Za-z]{2,}/g) || []).length < 2 || /\{\w+\}/.test(f) || all.includes(f)) continue;
+      // Example place names in placeholders ("Shelby County") are proper nouns that real
+      // provider / jail records also carry — data, not app text.
+      if (/^(?:[A-Z][a-z]+ )+County$/.test(f)) continue;
+      out.add(f);
+    }
+  }
+  return [...out];
+}
+async function langJourney(browser, base, lang, locale) {
+  const ID = `I18N-${lang}`;
+  const L = readLang(lang);
+  const fragments = englishFragments(L);
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale, timezoneId: 'America/Chicago',
+    serviceWorkers: 'block', extraHTTPHeaders: { 'X-Forwarded-For': freshIp() } });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(String(e && e.message || e)));
+  const apiLangs = new Set();
+  const otherLang = [];
+  page.on('request', r => { if (r.url().startsWith(API)) { const h = r.headers()['accept-language'] || '(none)'; apiLangs.add(h); if (h !== lang) otherLang.push(`${r.method()} ${r.url().slice(API.length)} [${h}]`); } });
+  const noEnglish = async (where) => {
+    const txt = await bodyText(page);
+    const leaks = fragments.filter(f => txt.includes(f));
+    if (leaks.length) throw new Error(`${where}: English text shown: ${leaks.slice(0, 5).map(x => JSON.stringify(x)).join(', ')}`);
+    if (/Something went wrong/i.test(txt)) throw new Error(`${where}: ErrorBoundary`);
+    return txt;
+  };
+  const step = async (name, fn) => {
+    try { pass(`${ID} ${name}`, (await fn()) || 'ok'); return true; }
+    catch (e) { fail(`${ID} ${name}`, e.message); await page.screenshot({ path: path.join(OUT, `FAIL-${ID}-${name.replace(/\W+/g, '-')}.png`) }).catch(() => {}); return false; }
+  };
+  const fill = (s, p) => s.replace(/\{(\w+)\}/g, (m, k) => (p[k] !== undefined ? String(p[k]) : m));
+
+  let ok = await step('1 the app opens in the device language; hub step 1 + the script', async () => {
+    await page.goto(base + '/', { waitUntil: 'networkidle' });
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); localStorage.setItem('age_verified', '1'); });
+    await page.goto(base + '/', { waitUntil: 'networkidle' });
+    await byTid(page, 'onboarding-just-arrested').click({ timeout: 15000 });
+    await byTid(page, 'core-step-rights').waitFor({ timeout: 20000 });
+    const label = await byTid(page, 'core-step-label').innerText();
+    if (label.trim() !== fill(L.ja_step_of, { n: 1 })) throw new Error(`step label "${label}"`);
+    await byTid(page, 'core-state-button').click();
+    await byTid(page, 'core-state-TN').click({ timeout: 10000 });
+    await page.getByText(`“${L.rs_say_1}”`).first().waitFor({ timeout: 10000 });
+    await byTid(page, 'core-state-notice').filter({ hasText: fill(L.rc_state_pending, { state: 'Tennessee' }).slice(0, 25) }).first().waitFor({ timeout: 15000 });
+    const src = await byTid(page, 'core-script-source').innerText();
+    if (!src.startsWith(`${L.rc_source}: ${L.rc_script_source}`)) throw new Error(`source line "${src}"`);
+    await noEnglish('hub step 1');
+    return `"${label.trim()}", script + source + Tennessee notice in ${lang}`;
+  });
+
+  if (ok) ok = await step('2 rights card: 8 sections from the server in the language', async () => {
+    await byTid(page, 'core-open-rights-card').click();
+    await byTid(page, 'rights-state-notice').first().waitFor({ timeout: 15000 });
+    const n = await byTid(page, 'rights-section').count();
+    if (n !== 8) throw new Error(`${n} sections`);
+    const txt = await noEnglish('rights card');
+    for (const k of ['rc_b1', 'rc_b5', 'rc_b8']) if (!txt.includes(L[k].split('\n')[0])) throw new Error(`${k} not shown in ${lang}`);
+    const card = await apiCall('GET', `/rights/TN?lang=${lang}`);
+    if (card.body?.language !== lang) throw new Error(`server language ${card.body?.language}`);
+    await page.screenshot({ path: path.join(OUT, `${ID}-2-rights.png`) });
+    return `8 sections, server language=${card.body.language}`;
+  });
+
+  if (ok) ok = await step('3 steps 2 and 3: combined results with the server notes, court-date prompt and missed-date guidance', async () => {
+    await page.goto(base + '/just-arrested', { waitUntil: 'networkidle' });
+    await byTid(page, 'core-step-body').waitFor({ timeout: 15000 });
+    if (await byTid(page, 'core-next-1').count()) await byTid(page, 'core-next-1').click();
+    await byTid(page, 'core-step-help').waitFor({ timeout: 10000 });
+    await noEnglish('hub step 2');
+    await byTid(page, 'core-find-help').click({ timeout: 10000 });
+    await byTid(page, 'help-lawyer-card').first().waitFor({ timeout: 20000 });
+    const note = await byTid(page, 'help-ranking-note').innerText();
+    const srv = await apiCall('GET', `/help/nearby?state=TN&lang=${lang}`);
+    if (!note.includes(srv.body.meta.ranking)) throw new Error(`ranking note not the server's ${lang} text: "${note}"`);
+    await noEnglish('help now');
+    await page.goto(base + '/court-dates', { waitUntil: 'networkidle' });
+    await byTid(page, 'court-dates-sign-in').waitFor({ timeout: 15000 });
+    await page.getByText(L.ja_missed).first().click();
+    await byTid(page, 'missed-guidance').waitFor({ timeout: 10000 });
+    const txt = await noEnglish('court dates (guest)');
+    if (!txt.includes(L.cg_missed_4)) throw new Error('missed-date guidance last step not shown in the language');
+    await page.screenshot({ path: path.join(OUT, `${ID}-3-court-dates.png`) });
+    return 'results notes = server text; sign-in prompt, checklist and missed-date guidance in the language';
+  });
+
+  if (ok) await step('4 every API call carried the language', async () => {
+    const langs = [...apiLangs];
+    if (!langs.length || langs.some(x => x !== lang)) throw new Error(`Accept-Language seen: ${langs.join(', ')}; not the app language: ${otherLang.slice(0, 6).join(' | ')}`);
+    return `Accept-Language: ${langs.join(', ')} on every request`;
+  });
+  if (errors.length) fail(`${ID} no uncaught page errors`, errors.slice(0, 3).join(' | ')); else pass(`${ID} no uncaught page errors`, `${lang} session`);
+  await context.close();
+}
+
 (async () => {
   await new Promise((r, j) => server.once('error', j).listen(PORT, 'localhost', r));
   const base = `http://localhost:${PORT}`;
@@ -390,6 +501,11 @@ async function coreJourney(browser, base) {
 
   // ── CORE: "Just arrested?" end to end ──────────────────────────────────────
   if (!process.argv.includes('--skip-core')) await coreJourney(browser, base).catch(e => fail('CORE journey', e.message));
+  // ── I18N: the same path in Spanish and Vietnamese ─────────────────────────
+  if (!process.argv.includes('--skip-i18n')) {
+    await langJourney(browser, base, 'es', 'es-US').catch(e => fail('I18N-es journey', e.message));
+    await langJourney(browser, base, 'vi', 'vi-VN').catch(e => fail('I18N-vi journey', e.message));
+  }
   if (process.argv.includes('--only-core')) {
     await browser.close(); server.close();
     fs.writeFileSync(path.join(OUT, 'web-journeys-report.json'), JSON.stringify(results, null, 2));

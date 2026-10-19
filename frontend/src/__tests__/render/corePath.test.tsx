@@ -163,8 +163,9 @@ describe('RightsCardScreen — free, sourced, offline', () => {
     expect(screen.getAllByText(/Last reviewed: April 2026/).length).toBeGreaterThan(0);
     expect(calls.some(c => /billing/.test(c.url))).toBe(false);
     expect(screen.queryByText(/Subscribe/i)).toBeNull();
-    await waitFor(async () => expect(await AsyncStorage.getItem('cache_rights_v2_TN')).toBeTruthy());
-    expect(await AsyncStorage.getItem('cache_rights_v2_TN')).not.toContain('You must provide your name');
+    // one saved copy per language and state
+    await waitFor(async () => expect(await AsyncStorage.getItem('cache_rights_v3_en_TN')).toBeTruthy());
+    expect(await AsyncStorage.getItem('cache_rights_v3_en_TN')).not.toContain('You must provide your name');
   });
 
   it('a cited / reviewed state section IS shown', async () => {
@@ -281,7 +282,7 @@ describe('HelpNowScreen — lawyers and bail agents together', () => {
   });
 
   it('offline: the last results saved on this phone, labelled', async () => {
-    await AsyncStorage.setItem('helpnow_cache_v2', JSON.stringify({ result: RESULT, at: '2026-10-01T00:00:00Z' }));
+    await AsyncStorage.setItem('helpnow_cache_v3_en', JSON.stringify({ result: RESULT, at: '2026-10-01T00:00:00Z' }));
     on('get', '/help/nearby', () => netErr());
     wrap(<HelpNowScreen navigation={makeNavigation()} route={{} as any} />);
     expect(await screen.findByTestId('help-offline')).toBeTruthy();

@@ -20,44 +20,60 @@ import type { ScreenProps } from '../types/navigation';
 import { api, apiErrorMessage, unwrapList, deviceTimeZone } from '../services/api';
 import { useToast } from '../components/ToastProvider';
 import { useTheme } from '../constants/theme';
-import { t } from '../i18n';
+import { t, useLang, getLang, locale } from '../i18n';
 import { getToken } from '../utils/secureStorage';
 import { getUserState } from '../utils/userState';
 import { requestNotificationsInContext } from '../services/permissions';
 import {
   cacheCourtDates, getCachedCourtDates, cacheFollowing, getCachedFollowing, isOfflineError, saveCoreProgress,
-  formatCourtDay, HEARING_LABELS, shouldShowDeliveryPrompt, dismissDeliveryPrompt,
+  formatCourtDay, formatCourtTime, hearingLabel, statusLabel, HEARING_TYPES, shouldShowDeliveryPrompt, dismissDeliveryPrompt,
   type CourtDate, type CourtDatesList, type FollowedCase, type ReminderDelivery,
 } from '../services/corePath';
 
+export interface GuidanceItem { id?: string; text: string; source: string }
 export interface Guidance {
-  checklist: { bring: { text: string; source: string }[]; wear: { text: string; source: string }[]; note: string };
-  missed: { title: string; steps: { text: string; source: string }[]; note: string };
+  checklist: { title?: string; bring: GuidanceItem[]; wear: GuidanceItem[]; note: string; language?: string };
+  missed: { title: string; steps: GuidanceItem[]; note: string; language?: string };
+  language?: string;
 }
-// Bundled copy of GET /api/court-dates/guidance (same text, same sources) so it shows offline.
-export const BUNDLED_GUIDANCE: Guidance = {
-  checklist: {
-    bring: [
-      { text: 'Arrive early.', source: 'Justice Gavel court-reminder guidance' },
-      { text: 'Bring all your court paperwork and documents.', source: 'Justice Gavel court-reminder guidance' },
-      { text: 'For a bail hearing, things that can help: an employment letter or pay stubs, a lease or mortgage showing stable housing, and family members present in court.', source: 'Justice Gavel lesson: "How to Prepare for Your Bail Hearing"' },
-    ],
-    wear: [{ text: 'Business casual minimum. No orange. Clean and conservative.', source: 'Justice Gavel lesson: "How to Prepare for Your Bail Hearing"' }],
-    note: 'General information only — your lawyer or the court can tell you exactly what your hearing needs.',
-  },
-  missed: {
-    title: 'I missed my court date — what now?',
-    steps: [
-      { text: 'Missing court can lead to a bench warrant, and often the loss of any bail that was paid.', source: 'Justice Gavel court-reminder guidance; Justice Gavel in-app FAQ: "court date / missed hearing"' },
-      { text: 'Do not just stay away — a bench warrant stays active until it is dealt with.', source: 'Justice Gavel in-app FAQ: "court date / missed hearing"' },
-      { text: 'If a bail agent posted your bond, tell them — when you miss court, the bondsman is responsible for the full bail amount.', source: 'Justice Gavel bail calculator: "How bail bondsmen work"' },
-      { text: 'Call your lawyer or the court clerk.', source: 'Justice Gavel court-reminder guidance' },
-    ],
-    note: 'General information only — not legal advice.',
-  },
-};
+/**
+ * Bundled copy of GET /api/court-dates/guidance in the app's language (same
+ * text, same sources — the server's catalog is the source; a test checks
+ * they match) so it shows offline and before the server answers.
+ */
+export function bundledGuidance(): Guidance {
+  const src = { reminder: t('cg_src_reminder'), lesson: t('cg_src_bail_lesson'), faq: t('cg_src_faq'), calc: t('cg_src_bail_calc') };
+  return {
+    checklist: {
+      title: t('cg_checklist_title'),
+      bring: [
+        { id: 'bring_1', text: t('cg_bring_1'), source: src.reminder },
+        { id: 'bring_2', text: t('cg_bring_2'), source: src.reminder },
+        { id: 'bring_3', text: t('cg_bring_3'), source: src.lesson },
+      ],
+      wear: [{ id: 'wear_1', text: t('cg_wear_1'), source: src.lesson }],
+      note: t('cg_checklist_note'),
+      language: getLang(),
+    },
+    missed: {
+      title: t('cg_missed_title'),
+      steps: [
+        { id: 'missed_1', text: t('cg_missed_1'), source: `${src.reminder}; ${src.faq}` },
+        { id: 'missed_2', text: t('cg_missed_2'), source: src.faq },
+        { id: 'missed_3', text: t('cg_missed_3'), source: src.calc },
+        { id: 'missed_4', text: t('cg_missed_4'), source: src.reminder },
+      ],
+      note: t('cg_missed_note'),
+      language: getLang(),
+    },
+    language: getLang(),
+  };
+}
+/** The server's guidance when it is in the app's language, else the bundled copy. */
+export function pickGuidance(server: Guidance | null | undefined): Guidance {
+  return server?.missed && (server.language || 'en') === getLang() ? server : bundledGuidance();
+}
 
-const HEARING_TYPES = Object.keys(HEARING_LABELS);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -78,14 +94,14 @@ export function GuidanceView({ g, which, styles }: { g: Guidance; which: 'missed
       )}
       {(which === 'checklist' || which === 'both') && (
         <View style={styles.box} testID="court-checklist">
-          <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>✅ What to bring</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>✅ {t('cd_what_to_bring')}</Text>
           {g.checklist.bring.map((s, i) => (
             <View key={i} style={{ marginBottom: 6 }}>
               <Text maxFontSizeMultiplier={1.5} style={styles.boxText}>• {s.text}</Text>
               <Text maxFontSizeMultiplier={1.4} style={styles.source}>{t('rc_source')}: {s.source}</Text>
             </View>
           ))}
-          <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>👔 What to wear</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.boxTitle}>👔 {t('cd_what_to_wear')}</Text>
           {g.checklist.wear.map((s, i) => (
             <View key={i}>
               <Text maxFontSizeMultiplier={1.5} style={styles.boxText}>• {s.text}</Text>
@@ -100,6 +116,7 @@ export function GuidanceView({ g, which, styles }: { g: Guidance; which: 'missed
 }
 
 function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element {
+  const lang = useLang();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { showToast } = useToast();
@@ -114,7 +131,8 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [guidance, setGuidance] = useState<Guidance>(BUNDLED_GUIDANCE);
+  const [serverGuidance, setServerGuidance] = useState<Guidance | null>(null);
+  const guidance = pickGuidance(serverGuidance);
   const [showMissed, setShowMissed] = useState(params.guidance === 'missed');
   const [showPast, setShowPast] = useState(false);
   const [delivery, setDelivery] = useState<ReminderDelivery | null>(null);
@@ -143,7 +161,7 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
     const tok = await getToken().catch(() => null);
     if (!mounted.current) return;
     setSignedIn(!!tok);
-    api.get<Guidance>('/court-dates/guidance').then(r => { if (mounted.current && r.data?.missed) setGuidance(r.data); }).catch(() => {});
+    api.get<Guidance>('/court-dates/guidance').then(r => { if (mounted.current && r.data?.missed) setServerGuidance(r.data); }).catch(() => {});
     if (!tok) { setPhase('ok'); return; }
     try {
       const [cd, fol] = await Promise.all([
@@ -166,12 +184,18 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
           setPhase('offline'); return;
         }
       }
-      setErrorMsg(isOfflineError(e) ? 'You are offline and no court dates are saved on this phone yet.' : apiErrorMessage(e, 'Could not load your court dates.'));
+      setErrorMsg(isOfflineError(e) ? t('cd_offline_none') : apiErrorMessage(e, t('cd_load_failed')));
       setPhase('error');
     }
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+  // Language switched: guidance and server messages in the new language.
+  const firstLang = useRef(true);
+  useEffect(() => {
+    if (firstLang.current) { firstLang.current = false; return; }
+    load();
+  }, [lang, load]);
 
   const openAdd = useCallback(async () => {
     setFormError(''); setAdding(true);
@@ -190,15 +214,15 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
     try {
       const r = await api.get('/courthouses', { params: { q, ...(st ? { state: st } : {}), limit: 10 } });
       if (mounted.current) setChResults(unwrapList(r.data));
-    } catch (e) { showToast(apiErrorMessage(e, 'Could not search courthouses.'), 'error'); }
+    } catch (e) { showToast(apiErrorMessage(e, t('cd_courthouse_search_failed')), 'error'); }
   };
 
   const save = async () => {
     if (savingRef.current) return;
     const d = date.trim(); const tm = time.trim();
-    if (!DATE_RE.test(d)) { setFormError('Enter the date as YYYY-MM-DD, for example 2026-11-05.'); return; }
-    if (tm && !TIME_RE.test(tm)) { setFormError('Enter the time as HH:MM (24-hour), for example 09:30 — or leave it empty.'); return; }
-    if (!caseId && !caseTitle.trim()) { setFormError('Name this case (for example "DUI — Davidson County"), or pick one of your cases.'); return; }
+    if (!DATE_RE.test(d)) { setFormError(t('cd_err_date')); return; }
+    if (tm && !TIME_RE.test(tm)) { setFormError(t('cd_err_time')); return; }
+    if (!caseId && !caseTitle.trim()) { setFormError(t('cd_err_case')); return; }
     savingRef.current = true; setSaving(true); setFormError('');
     try {
       const st = (await getUserState())?.code;
@@ -210,7 +234,7 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
       const tz = deviceTimeZone();
       const r = await api.post<CourtDate & { reminders: { deliver_at: string; days_before: number }[] }>('/court-dates', body, tz ? { headers: { 'X-Timezone': tz } } : undefined);
       const n = r.data.reminders?.length || 0;
-      showToast(n ? `Saved. Reminders set: ${n === 4 ? '7 days, 3 days, 1 day before and the morning of' : `${n} reminder${n > 1 ? 's' : ''}`}.` : 'Saved. This date has passed, so it is in your archive.', 'success');
+      showToast(n ? (n === 4 ? t('cd_saved_all') : n === 1 ? t('cd_saved_one') : t('cd_saved_n', { n })) : t('cd_saved_past'), 'success');
       saveCoreProgress({ mark: 'court' }).catch(() => {});
       setAdding(false);
       setDate(''); setTime(''); setHearing(''); setCourthouse(null); setLocation(''); setCaseTitle(''); setChResults([]); setChQuery('');
@@ -218,20 +242,20 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
       await load();
       (navigation as any).navigate('CourtDateDetail', { id: r.data.id });
     } catch (e: any) {
-      setFormError(e?.response?.status === 409 ? 'This court date is already saved.' : apiErrorMessage(e, 'Could not save the court date.'));
+      setFormError(e?.response?.status === 409 ? t('cd_err_duplicate') : apiErrorMessage(e, t('cd_save_failed')));
     } finally { savingRef.current = false; if (mounted.current) setSaving(false); }
   };
 
   const follow = async () => {
     const c = code.trim();
-    if (c.replace(/[^A-Za-z0-9]/g, '').length < 10) { showToast('Enter the 10-character code your family member shared.', 'warning'); return; }
+    if (c.replace(/[^A-Za-z0-9]/g, '').length < 10) { showToast(t('cd_code_hint'), 'warning'); return; }
     setFollowingBusy(true);
     try {
       await api.post('/following/accept', { code: c });
-      showToast('You now follow their court dates. You will get the same reminders.', 'success');
+      showToast(t('cd_follow_ok'), 'success');
       setCode('');
       load();
-    } catch (e) { showToast(apiErrorMessage(e, 'That code did not work.'), 'error'); }
+    } catch (e) { showToast(apiErrorMessage(e, t('cd_code_failed')), 'error'); }
     finally { if (mounted.current) setFollowingBusy(false); }
   };
 
@@ -239,12 +263,12 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
 
   const Row = ({ d }: { d: CourtDate }) => (
     <TouchableOpacity accessibilityRole="button" testID="court-date-row" style={[styles.row, d.archived && styles.rowPast]}
-      accessibilityLabel={`${d.case_title}, court on ${formatCourtDay(d.court_date)}${d.court_time_label ? ` at ${d.court_time_label}` : ''}`}
+      accessibilityLabel={d.court_time ? t('cd_row_a11y_time', { title: d.case_title, day: formatCourtDay(d.court_date), time: formatCourtTime(d.court_time) }) : t('cd_row_a11y', { title: d.case_title, day: formatCourtDay(d.court_date) })}
       onPress={() => (navigation as any).navigate('CourtDateDetail', { id: d.id })}>
-      <Text maxFontSizeMultiplier={1.4} style={styles.rowDate}>📅 {formatCourtDay(d.court_date)}{d.court_time_label ? ` · ${d.court_time_label}` : ''}</Text>
+      <Text maxFontSizeMultiplier={1.4} style={styles.rowDate}>📅 {formatCourtDay(d.court_date)}{d.court_time ? ` · ${formatCourtTime(d.court_time)}` : ''}</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle}>{d.case_title}</Text>
       <Text maxFontSizeMultiplier={1.4} style={styles.rowSub}>
-        {[d.hearing_type ? HEARING_LABELS[d.hearing_type] || d.hearing_type : null, d.courthouse?.name, d.archived ? (d.status === 'scheduled' ? 'Past' : d.status) : null].filter(Boolean).join(' · ')}
+        {[d.hearing_type ? hearingLabel(d.hearing_type) : null, d.courthouse?.name, d.archived ? (d.status === 'scheduled' ? t('cd_past') : statusLabel(d.status)) : null].filter(Boolean).join(' · ')}
       </Text>
     </TouchableOpacity>
   );
@@ -278,53 +302,53 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
         <Text maxFontSizeMultiplier={1.3} style={styles.title} accessibilityRole="header">{t('ja_my_court_dates')}</Text>
         {phase === 'offline' && (
           <Text maxFontSizeMultiplier={1.4} style={styles.offline} testID="court-dates-offline">
-            📴 Offline — showing the court dates saved on this phone{savedAt ? ` (saved ${new Date(savedAt).toLocaleString()})` : ''}.
+            📴 {savedAt ? t('cd_offline_saved_at', { when: new Date(savedAt).toLocaleString(locale()) }) : t('cd_offline_saved')}
           </Text>
         )}
         <TouchableOpacity accessibilityRole="button" testID="court-date-add" style={[styles.primaryBtn, phase === 'offline' && { opacity: 0.5 }]} onPress={openAdd} disabled={phase === 'offline'}>
-          <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>＋ Add a court date</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>＋ {t('cd_add')}</Text>
         </TouchableOpacity>
-        <Text maxFontSizeMultiplier={1.4} style={styles.muted}>We remind you 7 days, 3 days and 1 day before, and the morning of. Add each date to your phone calendar too.</Text>
+        <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('cd_remind_note')}</Text>
         {!!delivery && phase === 'ok' && (
           <View style={styles.box} testID="reminder-delivery-prompt">
             <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>
-              ⚠️ {delivery.message || 'We could not send your court reminders. Turn on notifications or add an e-mail so we can remind you.'}
+              ⚠️ {delivery.message || t('cd_delivery_problem')}
             </Text>
             <TouchableOpacity accessibilityRole="button" testID="reminder-delivery-notifications" style={styles.secondaryBtn}
               onPress={async () => {
                 const answer = await requestNotificationsInContext().catch(() => 'declined');
-                if (answer === 'granted') { await dismissDeliveryPrompt(delivery); setDelivery(null); showToast('Notifications on — we will remind you.', 'success'); }
+                if (answer === 'granted') { await dismissDeliveryPrompt(delivery); setDelivery(null); showToast(t('cd_notif_on'), 'success'); }
               }}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>🔔 Turn on notifications</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>🔔 {t('cd_turn_on_notif')}</Text>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" testID="reminder-delivery-email" style={styles.secondaryBtn}
               onPress={() => { dismissDeliveryPrompt(delivery).catch(() => {}); setDelivery(null); (navigation as any).navigate('Settings'); }}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>✉️ Add an e-mail</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>✉️ {t('cd_add_email')}</Text>
             </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" testID="reminder-delivery-dismiss" style={styles.secondaryBtn}
               onPress={() => { dismissDeliveryPrompt(delivery).catch(() => {}); setDelivery(null); }}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>Not now</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('cd_not_now')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {phase === 'loading' && <ActivityIndicator style={{ marginVertical: 20 }} color={colors.textBrand} accessibilityLabel="Loading court dates" />}
+        {phase === 'loading' && <ActivityIndicator style={{ marginVertical: 20 }} color={colors.textBrand} accessibilityLabel={t('cd_loading_a11y')} />}
         {phase === 'error' && (
           <View style={styles.box} testID="court-dates-error">
             <Text maxFontSizeMultiplier={1.4} style={styles.boxText}>{errorMsg}</Text>
             <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={load}>
-              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>Try again</Text>
+              <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('try_again')}</Text>
             </TouchableOpacity>
           </View>
         )}
         {(phase === 'ok' || phase === 'offline') && list && (
           <>
-            <Text maxFontSizeMultiplier={1.4} style={styles.group}>Upcoming ({list.upcoming.length})</Text>
-            {list.upcoming.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.muted} testID="court-dates-empty">No upcoming court dates saved.</Text>}
+            <Text maxFontSizeMultiplier={1.4} style={styles.group}>{t('cd_upcoming', { n: list.upcoming.length })}</Text>
+            {list.upcoming.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.muted} testID="court-dates-empty">{t('cd_none_upcoming')}</Text>}
             {list.upcoming.map(d => <Row key={d.id} d={d} />)}
             {list.past.length > 0 && (
               <TouchableOpacity accessibilityRole="button" testID="court-dates-past-toggle" style={styles.secondaryBtn} onPress={() => setShowPast(v => !v)}>
-                <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{showPast ? 'Hide' : 'Show'} past court dates ({list.past.length})</Text>
+                <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t(showPast ? 'cd_hide_past' : 'cd_show_past', { n: list.past.length })}</Text>
               </TouchableOpacity>
             )}
             {showPast && list.past.map(d => <Row key={d.id} d={d} />)}
@@ -333,24 +357,24 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
 
         {(phase === 'ok' || phase === 'offline') && (
           <View testID="following-section">
-            <Text maxFontSizeMultiplier={1.4} style={styles.group}>👨‍👩‍👧 Family you follow</Text>
-            {following.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.muted}>When a family member shares their court dates with you, they show here — never their case notes.</Text>}
+            <Text maxFontSizeMultiplier={1.4} style={styles.group}>👨‍👩‍👧 {t('cd_family_title')}</Text>
+            {following.length === 0 && <Text maxFontSizeMultiplier={1.4} style={styles.muted}>{t('cd_family_empty')}</Text>}
             {following.map(f => (
               <View key={f.follow_id} style={styles.row} testID="following-case">
                 <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle}>{f.owner_first_name ? `${f.owner_first_name}: ` : ''}{f.case_title}</Text>
                 {f.court_dates.filter(d => !d.is_past).map(d => (
                   <Text key={d.id} maxFontSizeMultiplier={1.4} style={styles.rowDate} testID="following-court-date">
-                    📅 {formatCourtDay(d.court_date)}{d.court_time_label ? ` · ${d.court_time_label}` : ''}{d.courthouse ? ` · ${d.courthouse.name}` : ''}
+                    📅 {formatCourtDay(d.court_date)}{d.court_time ? ` · ${formatCourtTime(d.court_time)}` : ''}{d.courthouse ? ` · ${d.courthouse.name}` : ''}
                   </Text>
                 ))}
               </View>
             ))}
             {phase === 'ok' && (
               <View style={styles.followRow}>
-                <TextInput accessibilityLabel="Invite code from your family member" testID="follow-code-input" style={styles.input}
-                  placeholder="Invite code" placeholderTextColor={colors.textMuted} autoCapitalize="characters" value={code} onChangeText={setCode} />
+                <TextInput accessibilityLabel={t('cd_code_a11y')} testID="follow-code-input" style={styles.input}
+                  placeholder={t('cd_code_placeholder')} placeholderTextColor={colors.textMuted} autoCapitalize="characters" value={code} onChangeText={setCode} />
                 <TouchableOpacity accessibilityRole="button" testID="follow-code-submit" style={styles.goBtn} onPress={follow} disabled={following_}>
-                  <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>{following_ ? '…' : 'Follow'}</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>{following_ ? '…' : t('cd_follow')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -367,10 +391,10 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
 
       <Modal visible={adding} animationType="slide" onRequestClose={() => setAdding(false)} accessibilityViewIsModal>
         <ScrollView style={styles.screen} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" testID="court-date-form">
-          <Text maxFontSizeMultiplier={1.3} style={styles.title}>Add a court date</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('cd_add')}</Text>
           {cases.length > 0 && (
             <>
-              <Text maxFontSizeMultiplier={1.4} style={styles.label}>Case</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_case')}</Text>
               <View style={styles.chipsWrap}>
                 {cases.slice(0, 8).map(c => (
                   <TouchableOpacity key={c.id} accessibilityRole="radio" accessibilityState={{ selected: caseId === c.id }} testID="court-form-case"
@@ -383,27 +407,27 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
           )}
           {!caseId && (
             <>
-              <Text maxFontSizeMultiplier={1.4} style={styles.label}>Name this case</Text>
-              <TextInput accessibilityLabel="Case name" testID="court-form-title" style={styles.inputFull} value={caseTitle} onChangeText={setCaseTitle}
-                placeholder='e.g. "DUI — Davidson County"' placeholderTextColor={colors.textMuted} maxLength={300} />
+              <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_name_case')}</Text>
+              <TextInput accessibilityLabel={t('cd_case_name_a11y')} testID="court-form-title" style={styles.inputFull} value={caseTitle} onChangeText={setCaseTitle}
+                placeholder={t('cd_case_placeholder')} placeholderTextColor={colors.textMuted} maxLength={300} />
             </>
           )}
-          <Text maxFontSizeMultiplier={1.4} style={styles.label}>Court date</Text>
-          <TextInput accessibilityLabel="Court date, YYYY-MM-DD" testID="court-form-date" style={styles.inputFull} value={date} onChangeText={setDate}
-            placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted} maxLength={10} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.label}>Time (optional)</Text>
-          <TextInput accessibilityLabel="Court time, HH:MM 24-hour, optional" testID="court-form-time" style={styles.inputFull} value={time} onChangeText={setTime}
-            placeholder="HH:MM, e.g. 09:30" placeholderTextColor={colors.textMuted} maxLength={5} />
-          <Text maxFontSizeMultiplier={1.4} style={styles.label}>Hearing (optional)</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_court_date')}</Text>
+          <TextInput accessibilityLabel={t('cd_date_a11y')} testID="court-form-date" style={styles.inputFull} value={date} onChangeText={setDate}
+            placeholder={t('cd_date_placeholder')} placeholderTextColor={colors.textMuted} maxLength={10} />
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_time_optional')}</Text>
+          <TextInput accessibilityLabel={t('cd_time_a11y')} testID="court-form-time" style={styles.inputFull} value={time} onChangeText={setTime}
+            placeholder={t('cd_time_placeholder')} placeholderTextColor={colors.textMuted} maxLength={5} />
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_hearing_optional')}</Text>
           <View style={styles.chipsWrap}>
             {HEARING_TYPES.map(h => (
               <TouchableOpacity key={h} accessibilityRole="radio" accessibilityState={{ selected: hearing === h }} testID={`court-form-hearing-${h}`}
                 style={[styles.chip, hearing === h && styles.chipOn]} onPress={() => setHearing(hearing === h ? '' : h)}>
-                <Text maxFontSizeMultiplier={1.3} style={[styles.chipText, hearing === h && styles.chipTextOn]}>{HEARING_LABELS[h]}</Text>
+                <Text maxFontSizeMultiplier={1.3} style={[styles.chipText, hearing === h && styles.chipTextOn]}>{hearingLabel(h)}</Text>
               </TouchableOpacity>
             ))}
           </View>
-          <Text maxFontSizeMultiplier={1.4} style={styles.label}>Courthouse (optional)</Text>
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_courthouse_optional')}</Text>
           {courthouse ? (
             <TouchableOpacity accessibilityRole="button" testID="court-form-courthouse-selected" style={styles.row} onPress={() => setCourthouse(null)}>
               <Text maxFontSizeMultiplier={1.4} style={styles.rowTitle}>🏛️ {courthouse.name}  ✕</Text>
@@ -411,10 +435,10 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
           ) : (
             <>
               <View style={styles.followRow}>
-                <TextInput accessibilityLabel="Search courthouses by name or county" testID="court-form-courthouse-q" style={styles.input} value={chQuery}
-                  onChangeText={setChQuery} onSubmitEditing={searchCourthouses} placeholder="Courthouse name or county" placeholderTextColor={colors.textMuted} />
+                <TextInput accessibilityLabel={t('cd_courthouse_q_a11y')} testID="court-form-courthouse-q" style={styles.input} value={chQuery}
+                  onChangeText={setChQuery} onSubmitEditing={searchCourthouses} placeholder={t('cd_courthouse_q')} placeholderTextColor={colors.textMuted} />
                 <TouchableOpacity accessibilityRole="button" testID="court-form-courthouse-search" style={styles.goBtn} onPress={searchCourthouses}>
-                  <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>Find</Text>
+                  <Text maxFontSizeMultiplier={1.3} style={styles.goBtnText}>{t('cd_find')}</Text>
                 </TouchableOpacity>
               </View>
               {chResults.map(c => (
@@ -425,15 +449,15 @@ function CourtDatesScreen({ navigation, route }: ScreenProps): React.JSX.Element
               ))}
             </>
           )}
-          <Text maxFontSizeMultiplier={1.4} style={styles.label}>Room / courtroom (optional)</Text>
-          <TextInput accessibilityLabel="Room or courtroom, optional" testID="court-form-location" style={styles.inputFull} value={location} onChangeText={setLocation}
-            placeholder="e.g. Courtroom 4B" placeholderTextColor={colors.textMuted} maxLength={200} />
+          <Text maxFontSizeMultiplier={1.4} style={styles.label}>{t('cd_room_optional')}</Text>
+          <TextInput accessibilityLabel={t('cd_room_a11y')} testID="court-form-location" style={styles.inputFull} value={location} onChangeText={setLocation}
+            placeholder={t('cd_room_placeholder')} placeholderTextColor={colors.textMuted} maxLength={200} />
           {!!formError && <Text maxFontSizeMultiplier={1.4} style={styles.error} testID="court-form-error">{formError}</Text>}
           <TouchableOpacity accessibilityRole="button" testID="court-form-save" style={styles.primaryBtn} onPress={save} disabled={saving}>
-            {saving ? <ActivityIndicator color={colors.white} /> : <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>Save and set reminders</Text>}
+            {saving ? <ActivityIndicator color={colors.white} /> : <Text maxFontSizeMultiplier={1.3} style={styles.primaryBtnText}>{t('cd_save_reminders')}</Text>}
           </TouchableOpacity>
           <TouchableOpacity accessibilityRole="button" style={styles.secondaryBtn} onPress={() => setAdding(false)}>
-            <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>Cancel</Text>
+            <Text maxFontSizeMultiplier={1.3} style={styles.secondaryBtnText}>{t('cancel')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </Modal>

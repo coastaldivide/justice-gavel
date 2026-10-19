@@ -59,6 +59,7 @@ export function perUserAiLimit(req, res, next) {
 
 // ── General per-user rate limiter factory ─────────────────────────────────────
 // Usage: const limiter = makeUserLimiter({ windowMs: 60_000, max: 10, message: '...' })
+// `message` may be a function (req) => string (e.g. text in the request's language).
 // router.post('/', authRequired, limiter, handler)
 export function makeUserLimiter({ windowMs = 60_000, max = 10, message = 'Too many requests' } = {}) {
   const calls = new Map();
@@ -84,7 +85,7 @@ export function makeUserLimiter({ windowMs = 60_000, max = 10, message = 'Too ma
       const oldest     = Math.min(...times);
       const retryAfter = Math.ceil((oldest + windowMs - now) / 1000);
       res.setHeader('Retry-After', String(retryAfter));
-      return res.status(429).json({ error: message, retry_after_seconds: retryAfter });
+      return res.status(429).json({ error: typeof message === 'function' ? message(req) : message, retry_after_seconds: retryAfter });
     }
     times.push(now);
     calls.set(uid, times);

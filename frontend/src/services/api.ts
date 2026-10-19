@@ -14,6 +14,7 @@ import { getToken, clearAuth, setToken as storeToken } from '../utils/secureStor
 import { setAppAuth } from './auth';
 import { notifyDisclaimerRequired } from './legalGate';
 import { isIdempotentPost, newIdempotencyKey } from '../constants/idempotency';
+import { getLang } from '../i18n';
 
 // EXPO_PUBLIC_API_BASE must be set in frontend/.env for staging/production.
 // Falls back to the production API when the variable is not set.
@@ -57,12 +58,9 @@ instance.interceptors.request.use(async (config) => {
   // Reminders (court dates) fire at local wall-clock times: tell the server our zone.
   const tz = deviceTimeZone();
   if (tz) config.headers['X-Timezone'] = tz;
-  // Accept-Language from stored preference
-  try {
-    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-    const lang = await AsyncStorage.getItem('lang').catch(() => null);
-    if (lang) config.headers['Accept-Language'] = lang;
-  } catch { /* non-fatal */ }
+  // The app's current language (saved choice, else the device's): the server
+  // answers in it (rights card, guidance, errors) and writes reminders in it.
+  if (!config.headers['Accept-Language']) config.headers['Accept-Language'] = getLang();
   return config;
 });
 
