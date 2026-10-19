@@ -15,8 +15,13 @@
  * Keys are scoped to the caller: a hash of the Authorization header, or of
  * the client IP for anonymous calls (feedback, SOS from a guest), so nobody
  * can replay someone else's response. Rows live 24 h (table
- * idempotency_keys, migration 19). Mounted in app.js on the create routes the
- * app calls (IDEMPOTENT_POST_PATHS) — none of which returns credentials.
+ * idempotency_keys, migration 19; user_id, migration 21, so account deletion
+ * removes a user's rows). Mounted in app.js on the create routes the app calls
+ * (IDEMPOTENT_POST_PATHS). A route whose response carries a secret (the
+ * family-follower invite code) sets `res.locals.idempotencyNoStore = true`:
+ * the key still blocks a concurrent duplicate (409) but the response is NOT
+ * stored — the key is released when it finishes, so the secret is never
+ * written to this table.
  *
  * Storage failure fails OPEN (the request runs as if no key was sent) and is
  * logged: duplicate protection must never take a create endpoint down.
@@ -120,10 +125,10 @@ export function idempotency() {
       return origJson(body);
     };
     res.on('finish', () => {
-      const ok = res.statusCode >= 200 && res.statusCode < 300 && captured !== null;
+      const ok = res.statusCode >= 200 && res.statusCode < 300 && captured !== null && !res.locals?.idempotencyNoStore;
       const done = ok
-        ? db.run(`UPDATE idempotency_keys SET status = 'done', response_status = ?, response_body = ?, completed_at = NOW() WHERE scope = ? AND key = ?`,
-          [res.statusCode, captured, scope, key])
+        ? db.run(`UPDATE idempotency_keys SET status = 'done', response_status = ?, response_body = ?, completed_at = NOW(), user_id = ? WHERE scope = ? AND key = ?`,
+          [res.statusCode, captured, req.user?.id ?? null, scope, key])
         : db.run('DELETE FROM idempotency_keys WHERE scope = ? AND key = ?', [scope, key]);
       done.catch(e => logger.warn({ err: e.message }, '[idempotency] could not finalise key'));
     });

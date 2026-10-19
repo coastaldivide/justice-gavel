@@ -171,10 +171,18 @@ export async function acceptInvite(db, userId, rawCode) {
   const already = await db.get(
     `SELECT id FROM case_family_access WHERE case_id = ? AND user_id = ? AND status = 'active'`, [inv.case_id, userId]);
   if (already) throw new FollowError(409, 'already_following', 'You already follow this case.');
-  await db.run(
+  // Single use even under a race: only the request whose UPDATE flips the row
+  // from pending wins; a concurrent second accept of the same code gets the
+  // same "not valid any more" answer as a later one (and no reminders).
+  const won = await db.get(
     `UPDATE case_family_access SET user_id = ?, status = 'active', accepted = 1, accepted_at = NOW(),
             invite_code_hash = NULL, updated_at = NOW()
-      WHERE id = ? AND status = 'pending'`, [userId, inv.id]);
+      WHERE id = ? AND status = 'pending' AND invite_code_hash = ? RETURNING id`, [userId, inv.id, sha(code)])
+    .catch((e) => {
+      if (e.code === '23505') throw new FollowError(409, 'already_following', 'You already follow this case.');
+      throw e;
+    });
+  if (!won) throw new FollowError(404, 'invalid_code', 'This code is not valid any more. Ask for a new one.');
   if (Number(inv.share_reminders) === 1) {
     const c = await db.get('SELECT state FROM cases WHERE id = ?', [inv.case_id]);
     const dates = await db.all(

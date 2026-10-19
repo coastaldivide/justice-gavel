@@ -59,6 +59,7 @@ export const USER_REFS = {
   'consultation_bookings.user_id': 'delete',
   'consultations.user_id': 'delete',
   'court_dates.user_id': 'delete',
+  'idempotency_keys.user_id': 'delete',   // cached create responses (migration 21)
   'listing_claims.user_id': 'delete',
   'contract_executions.user_id': 'delete',
   'contract_redlines.user_id': 'delete',
@@ -321,6 +322,12 @@ export async function purgeAccountData(tx, uid, { email = null } = {}) {
   // 2. firms the user owns
   const firms = await transferOrDeleteFirms(tx, uid);
 
+  // 2b. listing reports stay in the admin queue, but their reporter_key is a
+  //     hash of the user id (sequential, so trivially reversible): replace it
+  //     before the reporter link is cleared, so the report cannot be tied
+  //     back to the deleted account.
+  await step(tx, `UPDATE listing_reports SET reporter_key = 'deleted:' || id::text WHERE reporter_user_id = ?`, [uid]);
+
   // 3. other people's records: clear the reference
   for (const [ref, action] of Object.entries(USER_REFS)) {
     if (action !== 'nullify') continue;
@@ -343,7 +350,7 @@ export async function purgeAccountData(tx, uid, { email = null } = {}) {
 }
 
 // ── Export ──────────────────────────────────────────────────────────────────
-const NEVER_EXPORT_TABLES = new Set(['refresh_tokens', 'password_resets']);
+const NEVER_EXPORT_TABLES = new Set(['refresh_tokens', 'password_resets', 'idempotency_keys']);
 const SECRET_COL = /(password|token|secret|hash|api_key|private_key|encryption|iv$|auth_tag)/i;
 const ENCRYPTED = { cases: ['notes'], case_messages: ['body', 'content'], messages: ['body', 'content'] };
 const EXPORT_LIMIT = 1000;

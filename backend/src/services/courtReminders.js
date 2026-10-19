@@ -196,8 +196,30 @@ async function ownerFirstName(db, userId) {
   return n ? n.split(/\s+/)[0].slice(0, 40) : null;
 }
 
+/**
+ * Run `fn(tx)` holding a per-hearing lock, so two re-plans of the same hearing
+ * (a double-tapped save, a PATCH racing the backfill sweep or a time-zone
+ * reschedule) cannot interleave their cancel-then-insert steps and leave two
+ * pending reminder sets behind (independent review: 8 parallel PATCHes left
+ * 5–8 copies of each reminder). The lock is a transaction-scoped Postgres
+ * advisory lock — re-entrant inside the same transaction — and is released on
+ * COMMIT/ROLLBACK. Other engines (local dev sql.js) run `fn` directly.
+ */
+export function withHearingLock(db, courtDateId, fn) {
+  if (db?.engine !== 'postgres' || typeof db.transaction !== 'function' || !courtDateId) return fn(db);
+  return db.transaction(async (tx) => {
+    await tx.get(`SELECT pg_advisory_xact_lock(hashtext('court_date_reminders'), CAST(? AS integer)) AS locked`,
+      [Number(courtDateId) % 2147483647]);
+    return fn(tx);
+  });
+}
+
 /** Plan one follower's reminders for one hearing (their own zone). */
-export async function scheduleFollowerReminders(db, { followerId, ownerId, caseId, courtDateId, courtDate, courtTime = null, place = null, state = null, now = new Date() }) {
+export function scheduleFollowerReminders(db, args) {
+  return withHearingLock(db, args?.courtDateId, (tx) => planFollowerReminders(tx, args));
+}
+
+async function planFollowerReminders(db, { followerId, ownerId, caseId, courtDateId, courtDate, courtTime = null, place = null, state = null, now = new Date() }) {
   await db.run(
     `UPDATE scheduled_pushes SET status = 'cancelled', error = 'rescheduled'
       WHERE user_id = ? AND court_date_id = ? AND notification_type = 'follower_court_reminder' AND status = 'pending'`,
@@ -291,8 +313,12 @@ async function placeFor(db, cd) {
   return cd.location || null;
 }
 
-/** Plan reminders for one court_dates row (looked up fresh). */
-export async function scheduleForCourtDate(db, courtDateId, now = new Date()) {
+/** Plan reminders for one court_dates row (looked up fresh, under the hearing lock). */
+export function scheduleForCourtDate(db, courtDateId, now = new Date()) {
+  return withHearingLock(db, courtDateId, (tx) => planForCourtDate(tx, courtDateId, now));
+}
+
+async function planForCourtDate(db, courtDateId, now) {
   const cd = await db.get(
     `SELECT cd.id, cd.case_id, cd.user_id, cd.court_date, cd.court_time, cd.courthouse_id, cd.location, cd.status, cd.deleted_at,
             c.title, c.state, c.status AS case_status, c.deleted_at AS case_deleted

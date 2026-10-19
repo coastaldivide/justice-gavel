@@ -524,6 +524,9 @@ async function createFollowerHandler(req, res) {
       ownerId: req.user.id, caseId: safeInt(req.params.id), email: b.email ?? null, name: b.name ?? null,
       consent: b.consent, shareReminders: b.share_reminders !== false,
     });
+    // The invite code is a one-time secret (only its hash is stored): keep it
+    // out of the idempotency replay cache too.
+    res.locals.idempotencyNoStore = true;
     res.status(201).json({ ok: true, ...out, message: 'Invite created. Share the code with your family member.' });
   } catch (e) { followFail(res, e, '/create'); }
 }
