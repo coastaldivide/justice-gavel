@@ -22,13 +22,11 @@ function easProjectId(): string | null {
 export async function registerForPushNotificationsAsync(): Promise<string | null | undefined> {
   try {
     const Notifications = await import('expo-notifications');
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== 'granted') return;
+    // Never prompt here (app start / foreground): permission is asked in
+    // context with a reason (services/permissions.ts). Only sync the token
+    // when the user has already allowed notifications.
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') return;
 
     // Expo push tokens are scoped to the EAS project; skip until it exists.
     const projectId = easProjectId();

@@ -41,6 +41,7 @@ Mitigations implemented:
  * Remaining risk: Some CA/IL provisions may apply regardless of display scope.
  * Get legal opinion before enabling public-facing arrest alerts.
  */
+import { logIgnored } from '../utils/ignored.js';
 import { err400, safeInt, sanitizeStr } from '../utils/routeHelpers.js';
 import { isStaff, requireStaff } from '../utils/staff.js';
 import { makeUserLimiter } from '../middleware/sharedAiLimiter.js';
@@ -78,7 +79,7 @@ router.post('/', authRequired, alertsLimiter, async (req,res)=>{
       `INSERT INTO alert_log (user_id, category, message, lat, lng, contact_count, sent_at)
        VALUES (?,?,?,?,?,?,NOW())`,
       [req.user?.id || null, category, msg, lat, lng, contacts.length]
-    ).catch(() => {});
+    ).catch(logIgnored('routes/alerts'));
     // Send to both contacts in parallel — each is independent
     // Promise.allSettled ensures both fire even if one fails, and preserves order
     const settled = await Promise.allSettled(
@@ -304,7 +305,7 @@ async function decideTakedown(req, res, decision) {
         await db.run(
           `UPDATE arrest_takedown_log SET status = 'pending', reviewed_by = NULL, reviewed_at = NULL,
                   taken_down_by = NULL, taken_down_at = NULL WHERE id = ?`, [id]
-        ).catch(() => {});   // best effort: the original error is reported below
+        ).catch(logIgnored('routes/alerts'));   // best effort: the original error is reported below
         throw e;
       }
     }

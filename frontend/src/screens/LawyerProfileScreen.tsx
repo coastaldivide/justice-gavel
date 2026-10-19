@@ -38,11 +38,14 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
 }
 
 import Analytics from '../services/analytics';
+import { useInFlight } from '../hooks/useInFlight';
 function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Element {
   const { showToast } = useToast();
 
+  const reviewGuard = React.useRef(false);
   const submitReview = async () => {
-    if (userRating === 0) return;
+    if (userRating === 0 || reviewGuard.current) return;
+    reviewGuard.current = true;
     setSubmitting(true);
     try {
       const res = await api.post('/reviews', {
@@ -62,6 +65,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
     } catch (e: any) {
       showToast(apiErrorMessage(e, 'Check your connection and try again.'), 'error');
     } finally {
+      reviewGuard.current = false;
       setSubmitting(false);
     }
   };
@@ -88,6 +92,8 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
   const [jtbProfile, setJtbProfile] = React.useState<any>(null);
 
   const [loading, setLoading] = useState(!preload);
+  // 'notfound' (404) vs 'network' (couldn't reach the server → offer Retry)
+  const [loadError, setLoadError] = useState<null | 'notfound' | 'network'>(null);
   const [userRating,  setUserRating]  = useState(0);
   const [reviewText,  setReviewText]  = useState('');
   const [submitting,  setSubmitting]  = useState(false);
@@ -112,7 +118,11 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
         if (mountedRef.current) {
           if (lawyerRes.status==='fulfilled' && lawyerRes.value?.data) {
             setLawyer(lawyerRes.value.data);
+            setLoadError(null);
             navigation.setOptions({ title: lawyerRes.value.data?.name || 'Attorney Profile' });
+          } else if (lawyerRes.status==='rejected') {
+            const status = (lawyerRes.reason as { response?: { status?: number } })?.response?.status;
+            setLoadError(status === 404 ? 'notfound' : 'network');
           }
           if (reviewRes.status==='fulfilled') {
             setReviews(unwrapList(reviewRes.value.data, 'reviews').slice(0, 5));
@@ -156,16 +166,17 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
     } catch { /* share cancelled */ }
   };
 
-  const handleSave = async () => {
-    hapticImpact();
+  const [runSave, savePending] = useInFlight();
+  const handleSave = () => runSave(async () => {
+    hapticImpact().catch(() => undefined);   // haptics are optional
     if (!lawyer) return;
     try {
       await api.post('/saved/lawyers', { lawyer_id: lawyer.id });
       showToast(`${lawyer.name} saved to your attorneys.`, 'success');
-    } catch {
-      showToast('Could not save attorney. Please try again.');
+    } catch (e) {
+      showToast(apiErrorMessage(e, 'Could not save attorney. Please try again.'), 'error');
     }
-  };
+  });
 
   const handleDirections = () => {
     if (!lawyer) return;
@@ -186,11 +197,20 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
   );
 
   if (!lawyer) return (
-    <View style={[s.screen, { justifyContent:'center', alignItems:'center', padding:32 }]}>
+    <View testID="lawyer-profile-unavailable" style={[s.screen, { justifyContent:'center', alignItems:'center', padding:32 }]}>
       <Text maxFontSizeMultiplier={1.4} style={{ fontSize:16, color:colors.textMuted,
         textAlign:'center' }}>
-        Attorney profile not available.
+        {loadError === 'network'
+          ? 'Could not load this attorney. Check your connection and try again.'
+          : 'Attorney profile not available.'}
       </Text>
+      {loadError === 'network' && (
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Try again"
+          onPress={() => { setLoading(true); loadProfile(true); }}
+          style={{ marginTop:16, paddingHorizontal:20, paddingVertical:12, minHeight:44, borderRadius:10, backgroundColor:colors.navy }}>
+          <Text maxFontSizeMultiplier={1.4} style={{ color:colors.white, fontWeight:'700' }}>Try again</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -492,7 +512,7 @@ function LawyerProfileScreen({ navigation, route }: ScreenProps): React.JSX.Elem
             accessibilityRole="button"
 
             style={[s.actionBtn, { flex:1, backgroundColor:colors.bgElevated, borderWidth:1, borderColor:colors.border }]}
-            onPress={handleSave} accessibilityLabel={"\u2b50 Save"}
+            onPress={handleSave} disabled={savePending} accessibilityState={{ disabled: savePending, busy: savePending }} accessibilityLabel={"\u2b50 Save"}
           accessibilityHint="Saves your changes">
             <Text maxFontSizeMultiplier={1.4} style={[s.actionBtnText, { color:colors.textPrimary }]}>⭐ Save</Text>
           </TouchableOpacity>

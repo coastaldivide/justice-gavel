@@ -1,3 +1,4 @@
+import { logIgnored } from '../utils/ignored.js';
 import logger from '../utils/logger.js';
 /**
  * outbound_bot.js — Justice Gavel Automated Revenue Engine
@@ -444,7 +445,7 @@ export async function sendPaymentLink({ phone, arrestId, recipientType, recipien
         (stripe_link_id, stripe_link_url, arrest_id, recipient_phone, recipient_type, recipient_id, amount_cents, status, expires_at)
        VALUES (?,?,?,?,?,?,?,?,?)`,
       [linkResult.id, linkResult.url, arrestId, phone, recipientType, recipientId, feeCents, 'pending', linkResult.expiresAt]
-    ).catch(() => {});
+    ).catch(logIgnored('services/outbound_bot'));
 
     // Text the payment link
     const smsBody = [
@@ -471,7 +472,7 @@ export async function sendPaymentLink({ phone, arrestId, recipientType, recipien
       status: smsResult.error ? 'failed' : 'sent',
       idempotencyKey: idempKey,
       errorMsg: smsResult.error,
-    }).catch(() => {});
+    }).catch(logIgnored('services/outbound_bot'));
 
     logger.info(`[bot] Payment link sent to ${phone} for arrest ${arrestId} — ${formatLeadFee(feeCents)}`);
     return { success: true, linkUrl: linkResult.url, feeCents, mock: linkResult.mock };
@@ -493,7 +494,7 @@ export async function deliverLead({ phone, arrestId, stripeLinkId, stripePayment
     await db.run(
       `UPDATE payment_links SET status = 'paid', paid_at = NOW(), stripe_pi_id = ? WHERE arrest_id = ? AND recipient_phone = ?`,
       [stripePaymentIntentId || null, arrestId, phone]
-    ).catch(() => {});
+    ).catch(logIgnored('services/outbound_bot'));
 
     // Log revenue
     const feeCents   = bondsmanLeadFeeCents(arrest);
@@ -504,14 +505,14 @@ export async function deliverLead({ phone, arrestId, stripeLinkId, stripePayment
       `INSERT INTO revenue_log (source, recipient_type, arrest_id, gross_cents, stripe_fee_cents, net_cents, stripe_link_id, stripe_pi_id)
        VALUES (?,?,?,?,?,?,?,?)`,
       ['lead_sale', 'bail_agent', arrestId, feeCents, stripeFee, netCents, stripeLinkId || null, stripePaymentIntentId || null]
-    ).catch(() => {});
+    ).catch(logIgnored('services/outbound_bot'));
 
     // Mark lead_purchase in billing table
     await db.run(
       `INSERT INTO lead_purchases (arrest_id, bail_amount, lead_fee_cents, status, contact_revealed, stripe_pi_id)
        VALUES (?,?,?,?,?,?) ON CONFLICT DO NOTHING`,
       [arrestId, arrest.bail_amount, feeCents, 'charged', 1, stripePaymentIntentId || null]
-    ).catch(() => {});
+    ).catch(logIgnored('services/outbound_bot'));
 
     // Deliver full arrest record via SMS
     const deliveryBody = [
@@ -542,7 +543,7 @@ export async function deliverLead({ phone, arrestId, stripeLinkId, stripePayment
       status: smsResult.error ? 'failed' : 'sent',
       idempotencyKey: deliveryIdempKey,
       errorMsg: smsResult.error,
-    }).catch(() => {});
+    }).catch(logIgnored('services/outbound_bot'));
 
     logger.info(`[bot] Lead delivered to ${phone} for arrest ${arrestId} — net revenue $${(netCents / 100).toFixed(2)}`);
     return { success: true, netCents, mock: smsResult.mock };

@@ -2,6 +2,7 @@
  * billing/pi_leads.js — PI / Civil Rights lead marketplace — submit, browse, accept leads
  * Part of the billing module. Mounted at /api/billing by billing/index.js
  */
+import { logIgnored } from '../../utils/ignored.js';
 import { billingLimiter } from './_shared.js';
 import { err400, err404, safeInt } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
@@ -129,7 +130,7 @@ router.post('/pi-lead/accept/:id', billingLimiter, authRequired, requireLeadAtto
     if (!reserved.changes) return res.status(409).json({ error: 'Lead is no longer available' });
     const release = () => db.run(
       `UPDATE pi_leads SET status='open', accepted_by=NULL WHERE id=? AND status='reserved' AND accepted_by=?`,
-      [lead.id, req.user.id]).catch(() => {});
+      [lead.id, req.user.id]).catch(logIgnored('routes/billing/pi_leads'));
 
     const Stripe = (await import('stripe')).default;
     const stripe = new Stripe(stripeKey, { timeout: 20_000, maxNetworkRetries: 2 });

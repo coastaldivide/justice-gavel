@@ -15,6 +15,7 @@
  * Library: web-push (npm install web-push)
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { Router }       from 'express';
 import { getDb }        from '../db/index.js';
 import { authRequired } from '../middleware/auth.js';
@@ -135,7 +136,7 @@ router.post('/send', authRequired, requireFirmRole('firm_admin'), async (req, re
       } catch (e) {
         if (e.statusCode === 410 || e.statusCode === 404) {
           // Subscription expired — clean it up
-          await db.run('DELETE FROM web_push_subscriptions WHERE endpoint=?', [sub.endpoint]).catch(() => {});
+          await db.run('DELETE FROM web_push_subscriptions WHERE endpoint=?', [sub.endpoint]).catch(logIgnored('routes/webpush'));
         }
         logger.warn(`[webpush/send] subscription failed: ${e.statusCode || e.message}`);
       }

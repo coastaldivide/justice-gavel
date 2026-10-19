@@ -1,6 +1,7 @@
 /**
  * attorney/verification.js — Bar verification submit + admin approve
  */
+import { logIgnored } from '../../utils/ignored.js';
 import { escapeHtml, safeUrl } from '../../utils/html.js';
 import { err400, err404 } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
@@ -83,10 +84,10 @@ router.post('/verify-bar', authRequired, routeLimiter, async (req, res) => {
         'SELECT bar_verified, pending_bar_verification FROM users WHERE id=?',
         [req.user.id]
       );
-    } catch { await db.exec('ROLLBACK').catch(() => {}); throw new Error('DB read failed'); }
+    } catch { await db.exec('ROLLBACK').catch(logIgnored('routes/attorney/verification')); throw new Error('DB read failed'); }
 
     if (current?.bar_verified) {
-      await db.exec('ROLLBACK').catch(() => {});
+      await db.exec('ROLLBACK').catch(logIgnored('routes/attorney/verification'));
       return res.json({ ok: true, status: 'already_verified', message: 'Your bar number is already verified.' });
     }
 
@@ -230,12 +231,12 @@ router.post('/approve-verification', authRequired, routeLimiter, async (req, res
         to:      attorney.email,
         subject: 'Justice Gavel — Bar Verification Approved ✅',
         text:    'Congratulations — your bar number has been verified. The JTB Verified badge is now active on your Justice Gavel profile. Thank you for helping us maintain a trusted network of attorneys.',
-      }).catch(() => {});
+      }).catch(logIgnored('routes/attorney/verification'));
       await sendPushToUser(attorney_user_id, {
         title: '✅ Bar Verified — JTB Badge Active',
         body:  'Your Justice Gavel JTB Verified badge is now live on your profile.',
         data:  { screen: 'AttorneyDashboard' },
-      }).catch(() => {});
+      }).catch(logIgnored('routes/attorney/verification'));
     } else {
       // Reject — clear pending, leave bar_verified=0
       await db.run(
@@ -253,7 +254,7 @@ router.post('/approve-verification', authRequired, routeLimiter, async (req, res
         to:      attorney.email,
         subject: 'Justice Gavel — Bar Verification Update',
         text:    `We were unable to verify your bar number at this time.\n\nReason: ${rejection_reason || 'Could not confirm active status with your state bar.'}\n\nIf you believe this is an error, please contact support@justicegavel.app with your full name, bar number, and state.`,
-      }).catch(() => {});
+      }).catch(logIgnored('routes/attorney/verification'));
     }
 
     return res.status(201).json({ ok: true, approved, attorney_user_id });

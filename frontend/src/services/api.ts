@@ -13,6 +13,7 @@ import axios, { AxiosRequestConfig } from 'axios';
 import { getToken, clearAuth, setToken as storeToken } from '../utils/secureStorage';
 import { setAppAuth } from './auth';
 import { notifyDisclaimerRequired } from './legalGate';
+import { isIdempotentPost, newIdempotencyKey } from '../constants/idempotency';
 
 // EXPO_PUBLIC_API_BASE must be set in frontend/.env for staging/production.
 // Falls back to the production API when the variable is not set.
@@ -242,10 +243,37 @@ async function request<T = any>(
   signal?: AbortSignal,
 ): Promise<{ data: T }> {
   const method = (config.method || 'GET').toUpperCase();
+  // Create endpoints the server de-duplicates (constants/idempotency.ts): send
+  // an Idempotency-Key and retry a dropped / timed-out request with the SAME
+  // key — the server replays the first answer instead of creating a duplicate.
+  if (method === 'POST' && isIdempotentPost(config.url)) {
+    const headers = { ...(config.headers as Record<string, string> | undefined) };
+    if (!headers['Idempotency-Key']) headers['Idempotency-Key'] = newIdempotencyKey();
+    const sendKeyed = () => instance.request<T>({ ...config, headers, signal });
+    return retryKeyedPost(sendKeyed);
+  }
   const send = () => instance.request<T>({ ...config, signal });
-  // Only idempotent reads are retried automatically. Retrying a POST (login,
-  // payment, booking) after a timeout could submit it twice.
+  // Other writes are never retried automatically: retrying a POST without a
+  // key (login, payment) after a timeout could submit it twice.
   return method === 'GET' || method === 'HEAD' ? withRetry(send) : send();
+}
+
+/** Retry only when no answer arrived (network / timeout) or the first copy is still running (409 in progress). */
+async function retryKeyedPost<T>(send: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await send();
+    } catch (err: unknown) {
+      lastErr = err;
+      const e = err as { response?: { status?: number; data?: { error?: string } }; code?: string };
+      const inProgress = e?.response?.status === 409 && e.response.data?.error === 'idempotency_in_progress';
+      const noAnswer = !e?.response && e?.code !== 'ERR_CANCELED';
+      if (!(inProgress || noAnswer) || i === attempts - 1) throw err;
+      await sleep(800 * 2 ** i);
+    }
+  }
+  throw lastErr;
 }
 
 // ── Cached GET (for static / rarely-changing data) ────────────────────────────

@@ -27,6 +27,7 @@
  * "SAML (H8)" block below) — never hand-rolled regexes over the XML.
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { Router }          from 'express';
 import { asyncRoute, err400, err403, err404, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
 import { getDb }           from '../db/index.js';
@@ -268,7 +269,7 @@ router.post('/acs', ssoLimiter, async (req, res) => {
       ({ profile } = await saml.validatePostResponseAsync({ SAMLResponse }));
     } catch (e) {
       logger.warn({ firmId, err: e?.message }, '[sso/acs] SAML validation failed');
-      await writeAuditLog(db, { firm_id: firmId, action: 'sso_signature_fail', resource: 'sso', ip: req.ip }).catch(() => {});
+      await writeAuditLog(db, { firm_id: firmId, action: 'sso_signature_fail', resource: 'sso', ip: req.ip }).catch(logIgnored('routes/sso'));
       return res.status(401).json({ error: 'SAML response could not be verified.', code: 'saml_invalid' });
     }
     if (!profile) return res.status(401).json({ error: 'SAML response could not be verified.', code: 'saml_invalid' });
@@ -313,7 +314,7 @@ router.post('/acs', ssoLimiter, async (req, res) => {
         [firmId, user.id]);
       if (!firmMember) {
         logger.warn({ firmId, userId: user.id }, '[sso/acs] refused: existing account is not a member of this firm');
-        await writeAuditLog(db, { firm_id: firmId, action: 'sso_account_not_member', resource: 'sso', ip: req.ip }).catch(() => {});
+        await writeAuditLog(db, { firm_id: firmId, action: 'sso_account_not_member', resource: 'sso', ip: req.ip }).catch(logIgnored('routes/sso'));
         return res.status(403).json({ error: 'This account is not a member of the firm. Ask your firm administrator to invite it.', code: 'sso_not_member' });
       }
       if (['banned', 'suspended', 'deleted', 'disabled'].includes(String(user.account_status || 'active'))) {
@@ -365,7 +366,7 @@ router.post('/logout', authRequired, routeLimiter, async (req, res) => {
   try {
     const db  = await getDb();
     // Clear push token to prevent stale notifications
-    await db.run('UPDATE users SET push_token=NULL WHERE id=?', [req.user.id]).catch(() => {});
+    await db.run('UPDATE users SET push_token=NULL WHERE id=?', [req.user.id]).catch(logIgnored('routes/sso'));
 
     await writeAuditLog(db, {
       user_id:  req.user.id,

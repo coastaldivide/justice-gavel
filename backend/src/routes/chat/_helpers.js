@@ -133,9 +133,13 @@ export async function callClaude(opts) {
   const maxTokens   = isDefender ? 1500 : 600;  // defenders get fuller responses
   const temperature = isDefender ? 0.3  : 0.4;  // defenders: precise; consumers: conversational
 
-  // Timeout (45 s), transient-failure retries, budget check and metering:
-  // services/aiClient.js.
+  // Per-attempt timeout, transient-failure retries, budget check and metering:
+  // services/aiClient.js. This AbortController is the overall 45 s deadline
+  // across all attempts (the queued job's own timeout is 45 s too).
+  const deadline = new AbortController();
+  const deadlineTimer = setTimeout(() => deadline.abort(), 45_000);
   const response = await anthropicFetch({
+    signal: deadline.signal,
     body: JSON.stringify({
       model:       CLAUDE_MODEL,
       max_tokens:  maxTokens,
@@ -143,7 +147,8 @@ export async function callClaude(opts) {
       system:      systemPrompt,
       messages,
     }),
-  }, { route: isDefender ? 'chat_defender' : 'chat', userId: opts.userId ?? null, timeoutMs: 45_000 });
+  }, { route: isDefender ? 'chat_defender' : 'chat', userId: opts.userId ?? null, timeoutMs: 40_000 })
+    .finally(() => clearTimeout(deadlineTimer));
 
   if (!response.ok) {
     const errText = await response.text().catch(() => '');

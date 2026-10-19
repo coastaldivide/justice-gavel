@@ -34,6 +34,7 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+  const [needsSignIn, setNeedsSignIn] = useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const [selected, setSelected] = useState<Schedule | null>(null);
   const [bondPct] = useState(10);
@@ -48,8 +49,8 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
     let cancel = false;
     setLoading(true);
     cachedGet(`/legaldata/bail?state=${state}&limit=200`)
-      .then(r => { if (!cancel) { setSchedules(unwrapList<Schedule>(r.data)); setFetchError(false); } })
-      .catch(() => { if (!cancel) { setSchedules([]); setFetchError(true); } })
+      .then(r => { if (!cancel) { setSchedules(unwrapList<Schedule>(r.data)); setFetchError(false); setNeedsSignIn(false); } })
+      .catch((e: { response?: { status?: number } }) => { if (!cancel) { setSchedules([]); setFetchError(true); setNeedsSignIn(e?.response?.status === 401); } })
       .finally(() => { if (!cancel) { setLoading(false); setRefreshing(false); } });
     return () => { cancel = true; };
   }, [state, refreshTick]);
@@ -128,10 +129,17 @@ function BailCalculatorScreen({ navigation }: ScreenProps) {
             No charges match “{filter}”. Try a shorter search.
           </Text>
         )}
+        {!loading && !fetchError && schedules.length === 0 && (
+          <Text testID="bail-no-schedules" maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginVertical: 16 }}>
+            No bail schedule is on file for {state === 'ALL' ? 'the national baseline' : state} yet. Pick another state, or ask the court clerk or a bail agent for the local amounts.
+          </Text>
+        )}
         {fetchError && !loading && !schedules.length && (
           <View style={{ alignItems:'center', padding:24 }}>
-            <Text maxFontSizeMultiplier={1.4} style={{ color: sub, marginBottom: 8, textAlign: 'center' }}>
-              Could not load bail schedules.
+            <Text testID="bail-fetch-error" maxFontSizeMultiplier={1.4} style={{ color: sub, marginBottom: 8, textAlign: 'center' }}>
+              {needsSignIn
+                ? 'Sign in (free) to see the bail schedule for your state.'
+                : 'Could not load bail schedules. Check your connection.'}
             </Text>
             <TouchableOpacity
               accessibilityRole="button"

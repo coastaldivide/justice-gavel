@@ -151,6 +151,23 @@ LIVE_PAYMENTS=false                      /api/pay multi-provider orchestrator: r
                                           Subscriptions and lead fees do NOT use this flag
 ```
 
+## Staging
+
+Staging is a second Railway environment (and a second Supabase project) that
+runs the SAME production build:
+
+```
+NODE_ENV=production                      production hardening (required secrets, strict CORS, no stack traces)
+APP_ENV=staging                          labels logs / Sentry / /health "staging"; refuses LIVE Stripe keys
+PRODUCTION_DATABASE_URL=<prod URL>       optional guard: staging refuses to boot if DATABASE_URL equals it
+DATABASE_URL=<staging Supabase URL>      never the production database
+STRIPE_SECRET_KEY=sk_test_…              test keys only (or unset → payments_unavailable, as in prod today)
+LIVE_REFRESH=false                       keep nightly jobs off unless you are testing them
+```
+
+`NODE_ENV=staging` is rejected at boot (it would silently switch production
+hardening off). Deploy and smoke-test steps: RUNBOOK.md → "Staging".
+
 ## Performance / ops tuning
 
 ```
@@ -164,6 +181,15 @@ PGSSL=false                              disable TLS to Postgres (local dev; aut
 MEMORY_LIMIT_MB=512                      container memory limit; the self-healing watchdog warns at
                                           72%, GCs/alerts at 85% and restarts gracefully at 93% of
                                           this (defaults match the 512 MB Railway plan)
+AI_DAILY_BUDGET_USD=50                   global daily AI spend cap in USD (UTC day). Every model call is
+                                          metered into ai_usage_log; at the cap AI features answer 503
+                                          ai_unavailable (reason daily_budget_reached) until 00:00 UTC.
+                                          'off' disables the cap (not recommended)
+AI_BUDGET_ALERT_PCT=80                   one SEV-2 alert per day at this share of the cap, one SEV-1
+                                          at 100 % (ONCALL_EMAIL / ALERT_WEBHOOK_URL / Sentry)
+AI_PRICE_INPUT_PER_MTOK / AI_PRICE_OUTPUT_PER_MTOK
+                                         override the USD per 1M tokens used for metering (defaults by
+                                          model family: Sonnet 3/15, Opus 15/75, Haiku 1/5)
 AI_CONCURRENCY=8                         parallel AI jobs (in-process or BullMQ)
 AI_JOB_TIMEOUT_MS=45000                  per-AI-job timeout
 AI_DRAIN_TIMEOUT_MS=10000                graceful shutdown waits this long for in-flight AI jobs

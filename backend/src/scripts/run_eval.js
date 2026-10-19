@@ -36,7 +36,7 @@ const QUESTIONS_FILE = path.resolve(__dirname, '../../data/eval/questions.json')
 const RUNS_DIR       = path.resolve(__dirname, '../../data/eval/runs');
 fs.mkdirSync(RUNS_DIR, { recursive: true });
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60_000, maxRetries: 2 });
 
 // The system prompt used by the Justice Gavel AI (mirrors /api/chat route)
 const SYSTEM_PROMPT = `You are Justice Gavel, an AI legal assistant helping criminal defendants understand their rights.

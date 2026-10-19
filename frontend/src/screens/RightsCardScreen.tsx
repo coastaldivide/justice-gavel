@@ -120,12 +120,13 @@ function RightsCardScreen({ navigation }: ScreenProps): React.JSX.Element {
     // Load user's saved state preference -- set during onboarding or Settings
       getUserState().then(async saved => {
         // If no state saved yet, try to auto-detect from GPS silently
-        let code = saved?.code || '';
-        if (!code) {
-          const detected = await detectAndSaveUserState().catch(() => null);
-          code = detected || '';
-        }
+        const code = saved?.code || '';
+        // Show the card right away; the state question never blocks it.
         loadCard(code);
+        if (!code) {
+          const detected = await detectAndSaveUserState({ prompt: true, reason: 'Your rights and court rules depend on your state. Justice Gavel uses your location once to pick your state — you can also choose it from the list.' }).catch(() => null);
+          if (detected) loadCard(detected);
+        }
       }).catch(() => {
         loadCard('');
       });

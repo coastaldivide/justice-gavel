@@ -15,6 +15,7 @@
  *   POST   /api/integrations/oauth/callback           — OAuth2 callback handler
  */
 
+import { logIgnored } from '../../utils/ignored.js';
 import { fetchWithTimeout } from '../../utils/http.js';
 import { Router }          from 'express';
 import { getDb }           from '../../db/index.js';
@@ -187,7 +188,7 @@ export async function refreshTokenIfNeeded(db, conn) {
       await db.run(
         "UPDATE integration_connections SET status='token_expired', last_error=?, updated_at=NOW() WHERE id=?",
         [`Re-authorization required — token refresh failed (${resp.status})`, conn.id]
-      ).catch(() => {});
+      ).catch(logIgnored('routes/integrations/index'));
       return conn;
     }
 

@@ -73,6 +73,36 @@ const OPTIONAL_FEATURES = {
   SHOW_SAMPLE_ARRESTS:   'Sample (seeded) arrest records are hidden from users (set SHOW_SAMPLE_ARRESTS=true only for demos)',
 };
 
+// ── Deployment environment (APP_ENV) ─────────────────────────────────────────
+// NODE_ENV says HOW the server runs (production hardening on/off); APP_ENV says
+// WHICH deployment it is. Staging is a production-hardened build with its own
+// database, keys and data: NODE_ENV=production + APP_ENV=staging. APP_ENV
+// labels logs, Sentry events and /health, and staging refuses live payment keys.
+export const APP_ENVS = ['development', 'test', 'staging', 'production'];
+
+/** Errors (fatal) and warnings for an environment — pure, for tests. */
+export function checkAppEnv(env = process.env) {
+  const errors = [], warnings = [];
+  const nodeEnv = env.NODE_ENV || 'development';
+  const appEnv = String(env.APP_ENV || (nodeEnv === 'production' ? 'production' : nodeEnv)).trim().toLowerCase();
+  if (!APP_ENVS.includes(appEnv)) errors.push(`APP_ENV="${env.APP_ENV}" is not one of ${APP_ENVS.join(', ')}`);
+  if (nodeEnv === 'staging') errors.push('NODE_ENV=staging is not supported — run staging with NODE_ENV=production and APP_ENV=staging');
+  if (appEnv === 'production' && nodeEnv !== 'production') errors.push('APP_ENV=production requires NODE_ENV=production');
+  if (appEnv === 'staging') {
+    if (nodeEnv !== 'production') warnings.push('APP_ENV=staging without NODE_ENV=production — staging will not match production behaviour');
+    const live = ['STRIPE_SECRET_KEY', 'STRIPE_SECRET'].filter(k => /^(sk|rk)_live_/.test(String(env[k] || '')));
+    if (live.length) errors.push(`${live[0]} is a LIVE Stripe key — staging must use test keys (sk_test_…)`);
+    const prodUrl = env === process.env ? process.env.PRODUCTION_DATABASE_URL : env.PRODUCTION_DATABASE_URL;
+    if (env.DATABASE_URL && prodUrl && env.DATABASE_URL === prodUrl) {
+      errors.push('DATABASE_URL equals PRODUCTION_DATABASE_URL — staging must never use the production database');
+    }
+    if (env.LIVE_REFRESH === 'true') warnings.push('LIVE_REFRESH=true on staging — nightly jobs (provider refresh, reminders) will run against the staging DB');
+  }
+  return { appEnv, errors, warnings };
+}
+
+export const APP_ENV = checkAppEnv().appEnv;
+
 /**
  * validateEnv — called once by server.js at startup.
  * Exits the process in production when a hard requirement is missing; otherwise
@@ -90,10 +120,16 @@ export function validateEnv({ exit = true } = {}) {
       : !!process.env[key];
     if (!present) logger.warn(`[config] ${key} not set — ${msg}`);
   }
+  const envCheck = checkAppEnv();
+  for (const w of envCheck.warnings) logger.warn(`[config] ${w}`);
+  if (envCheck.errors.length) {
+    for (const e of envCheck.errors) logger.error(`[config] ❌ ${e}`);
+    if (exit) process.exit(1);
+  }
   if (IS_PROD && String(process.env.SHOW_SAMPLE_ARRESTS || '').trim().toLowerCase() === 'true') {
     logger.warn('[config] ⚠️  SHOW_SAMPLE_ARRESTS=true in production — generated sample arrest records are visible to users (labelled "Sample record"). Use for demos only.');
   }
-  return { missing };
+  return { missing, envErrors: envCheck.errors };
 }
 
 // ── Exported configuration ─────────────────────────────────────────────────────
@@ -181,6 +217,8 @@ export const ALL_ENV_VARS = {
 
   // ── Database ─────────────────────────────────────────────────────────────
   DATABASE_URL:             process.env.DATABASE_URL               || '',    // POSTGRES_URL accepted as alias
+  PRODUCTION_DATABASE_URL:  process.env.PRODUCTION_DATABASE_URL    || '',    // staging only: the prod URL, so staging refuses to boot against it
+  APP_ENV:                  process.env.APP_ENV                    || '',    // development | test | staging | production (default from NODE_ENV)
   POSTGRES_URL:             process.env.POSTGRES_URL               || '',    // alias of DATABASE_URL
   PGSSL:                    process.env.PGSSL                      || '',    // 'false' disables TLS to Postgres
   DB_LOG_ERRORS:            process.env.DB_LOG_ERRORS              || 'false',
@@ -192,6 +230,10 @@ export const ALL_ENV_VARS = {
   AI_JOB_TIMEOUT_MS:        process.env.AI_JOB_TIMEOUT_MS          || '45000',
   AI_CONCURRENCY:           process.env.AI_CONCURRENCY             || '8',
   OPENAI_API_KEY:           process.env.OPENAI_API_KEY             || '',   // Whisper transcription
+  AI_DAILY_BUDGET_USD:      process.env.AI_DAILY_BUDGET_USD        || '50',  // services/aiBudget.js: global daily AI spend cap ('off' disables)
+  AI_BUDGET_ALERT_PCT:      process.env.AI_BUDGET_ALERT_PCT        || '80',  // SEV-2 alert at this share of the cap; SEV-1 at 100 %
+  AI_PRICE_INPUT_PER_MTOK:  process.env.AI_PRICE_INPUT_PER_MTOK    || '',    // override the USD/1M input-token price used for metering
+  AI_PRICE_OUTPUT_PER_MTOK: process.env.AI_PRICE_OUTPUT_PER_MTOK   || '',    // override the USD/1M output-token price used for metering
 
   // ── Admin ────────────────────────────────────────────────────────────────
   ADMIN_KEY:                process.env.ADMIN_KEY                  || '',

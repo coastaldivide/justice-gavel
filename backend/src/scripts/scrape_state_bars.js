@@ -61,7 +61,7 @@ function sleep(ms) { return new Promise(r => { setTimeout(r, ms); }); }
 async function fetchJson(url, params = {}, headers = {}) {
   const qs = new URLSearchParams(params).toString();
   const full = qs ? `${url}?${qs}` : url;
-  const res = await fetch(full, { headers: { 'User-Agent': UA, ...headers } });
+  const res = await fetch(full, { headers: { 'User-Agent': UA, ...headers }, signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`HTTP ${res.status} ${url}`);
   return res.json();
 }
@@ -69,7 +69,7 @@ async function fetchJson(url, params = {}, headers = {}) {
 async function fetchHtml(url, params = {}) {
   const qs = new URLSearchParams(params).toString();
   const full = qs ? `${url}?${qs}` : url;
-  const res = await fetch(full, { headers: { 'User-Agent': UA } });
+  const res = await fetch(full, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`HTTP ${res.status} ${url}`);
   return res.text();
 }

@@ -17,6 +17,7 @@
  *      memory, large media (audio) is STREAMED TO A TEMP FILE on disk;
  *   5. releases the reservation and deletes temp files when the response ends.
  */
+import { logIgnored } from '../utils/ignored.js';
 import multer from 'multer';
 import os     from 'os';
 import fs     from 'fs';
@@ -51,7 +52,7 @@ const diskStorage = multer.diskStorage({
   filename:    (_req, _file, cb) => cb(null, `${Date.now()}-${crypto.randomBytes(12).toString('hex')}.upload`),
 });
 
-function unlinkQuiet(p) { if (p) fs.promises.unlink(p).catch(() => {}); }
+function unlinkQuiet(p) { if (p) fs.promises.unlink(p).catch(logIgnored('middleware/uploads')); }
 
 /**
  * uploadGuard(opts) → Express middleware

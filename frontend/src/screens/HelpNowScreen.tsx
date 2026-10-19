@@ -261,10 +261,15 @@ function HelpNowScreen({ navigation }: ScreenProps): React.JSX.Element {
       if (lat && lng) { params.lat = lat; params.lng = lng; }
 
       // Fetch bail and lawyers in parallel
-      const [bailRes, lawyerRes] = await Promise.all([
-        api.get('/providers/bail',    { params: { ...params, radiusKm: 80 } }).catch(() => ({ data: [] })),
-        api.get('/providers/lawyers', { params }).catch(() => ({ data: [] })),
+      const [bailSettled, lawyerSettled] = await Promise.allSettled([
+        api.get('/providers/bail',    { params: { ...params, radiusKm: 80 } }),
+        api.get('/providers/lawyers', { params }),
       ]);
+      // Both lookups failed = we could not reach the server. That is an error
+      // (or the offline copy), never "no help in your area".
+      if (bailSettled.status === 'rejected' && lawyerSettled.status === 'rejected') throw bailSettled.reason;
+      const bailRes   = bailSettled.status === 'fulfilled' ? bailSettled.value : { data: [] };
+      const lawyerRes = lawyerSettled.status === 'fulfilled' ? lawyerSettled.value : { data: [] };
 
       const bailResult   = Array.isArray(bailRes.data)   ? bailRes.data[0]   : null;
       const lawyerResult = Array.isArray(lawyerRes.data) ? lawyerRes.data[0] : null;

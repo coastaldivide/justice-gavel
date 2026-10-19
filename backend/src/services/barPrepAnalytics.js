@@ -3,6 +3,7 @@
  * [I-05]
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { db }    from '../db/index.js';
 import { cache } from '../utils/redis.js';
 import { predictRetention } from '../utils/sm2.js';
@@ -186,7 +187,7 @@ export async function updateDailyProgress(userId, questionsAnswered, questionsCo
       `UPDATE bar_prep_progress SET daily_goal_met = true
        WHERE user_id = ? AND study_date = CURRENT_DATE`,
       [userId]
-    ).catch(() => {});
+    ).catch(logIgnored('services/barPrepAnalytics'));
   }
 
   return { dailyGoalJustMet };

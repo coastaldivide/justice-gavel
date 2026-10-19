@@ -15,6 +15,7 @@
  * Only the case owner can use these routes; everyone else gets 404 (case ids
  * of other users are not confirmed).
  */
+import { logIgnored } from '../utils/ignored.js';
 import { Router }        from 'express';
 import { authRequired }  from '../middleware/auth.js';
 import { getDb }         from '../db/index.js';
@@ -128,7 +129,7 @@ router.post('/:caseId/counsel', authRequired, limiter, async (req, res) => {
       body:  'A client invited you to their case. Open your Attorney Inbox to accept.',
       data:  { screen: 'AttorneyInbox' },
       channelId: 'attorney_messages',
-    }).catch(() => {});
+    }).catch(logIgnored('routes/caseCounsel'));
 
     res.status(201).json({ ok: true, assignment_id: assignmentId, status: 'pending', attorney_id: attorney.id });
   } catch (e) {

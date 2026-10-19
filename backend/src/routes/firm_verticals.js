@@ -43,6 +43,7 @@
  * PATCH  /api/firm-verticals/matters/:id/scoring  — update evidence_score + vulnerability (associate+)
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { Router }          from 'express';
 import { authRequired }    from '../middleware/auth.js';
 import { getDb }           from '../db/index.js';
@@ -1097,7 +1098,7 @@ router.post('/plea-offers', authRequired, routeLimiter, async (req, res) => {
       await db.run(
         "UPDATE matters SET plea_offer_pending=1, plea_expires_date=?, non_citizen=?, updated_at=NOW() WHERE id=?",
         [expires_date || null, non_citizen ? 1 : 0, safeInt(matter_id)]
-      ).catch(() => {});
+      ).catch(logIgnored('routes/firm_verticals'));
     }
 
     res.status(201).json({ created: true, id: r.lastID });
@@ -1151,7 +1152,7 @@ router.patch('/plea-offers/:id', authRequired, routeLimiter, async (req, res) =>
       await db.run(
         "UPDATE matters SET plea_offer_pending=0, updated_at=NOW() WHERE id=?",
         [row.matter_id]
-      ).catch(() => {});
+      ).catch(logIgnored('routes/firm_verticals'));
     }
 
     const updated = await db.get('SELECT * FROM plea_offers WHERE id=?', [offerId]);  /* intentional: full record for vertical UI */
@@ -1234,7 +1235,7 @@ router.post('/voluntary-departure', authRequired, routeLimiter, async (req, res)
       await db.run(
         "UPDATE matters SET vol_departure_date=?, updated_at=NOW() WHERE id=?",
         [departure_deadline, safeInt(matter_id)]
-      ).catch(() => {});
+      ).catch(logIgnored('routes/firm_verticals'));
     }
 
     res.status(201).json({ created: true, id: r.lastID });
@@ -1357,7 +1358,7 @@ router.post('/vop', authRequired, routeLimiter, async (req, res) => {
       await db.run(
         "UPDATE matters SET supervised_release=1, updated_at=NOW() WHERE id=?",
         [safeInt(matter_id)]
-      ).catch(() => {});
+      ).catch(logIgnored('routes/firm_verticals'));
     }
 
     res.status(201).json({ created: true, id: r.lastID });
@@ -1590,7 +1591,7 @@ router.post('/bop-exhaustion', authRequired, routeLimiter, async (req, res) => {
       await db.run(
         "UPDATE matters SET bop_request_date=?, updated_at=NOW() WHERE id=?",
         [warden_request_date, safeInt(matter_id)]
-      ).catch(() => {});
+      ).catch(logIgnored('routes/firm_verticals'));
     }
 
     res.status(201).json({ created: true, id: r.lastID, thirty_day_lapse: thirtyDayLapse });
@@ -2419,7 +2420,7 @@ router.post('/dual-sovereignty', authRequired, routeLimiter, async (req, res) =>
     );
 
     // Update matter flag
-    await db.run("UPDATE matters SET dual_sovereignty_risk=1, updated_at=NOW() WHERE id=?", [safeInt(matter_id)]).catch(() => {});
+    await db.run("UPDATE matters SET dual_sovereignty_risk=1, updated_at=NOW() WHERE id=?", [safeInt(matter_id)]).catch(logIgnored('routes/firm_verticals'));
 
     res.status(201).json({ created: true, id: r.lastID });
   } catch (e) {

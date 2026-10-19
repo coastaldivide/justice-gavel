@@ -1,3 +1,4 @@
+import { logIgnored } from '../../utils/ignored.js';
 import { escapeHtml } from '../../utils/html.js';
 import { notifyError } from '../../monitoring/errorNotifier.js';
 import { audit, AUDIT_ACTIONS } from '../../utils/audit.js';
@@ -107,7 +108,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     //      processed as if it were new.
     //
     //   2. NOW() is not a SQLite function. Even with the table present the
-    //      INSERT threw "no such function: NOW", and the .catch(() => {})
+    //      INSERT threw "no such function: NOW", and the .catch(logIgnored('routes/billing/webhooks'))
     //      hid it. Using the portable CURRENT_TIMESTAMP.
     //
     //   3. SELECT-then-INSERT is not atomic. Stripe can deliver a retry while
@@ -155,7 +156,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             `UPDATE subscriptions SET status=?, updated_at=NOW()
              WHERE user_id=? AND stripe_sub_id=?`,
             [status, sub.metadata.user_id, sub.id]
-          ).catch(() => {});
+          ).catch(logIgnored('routes/billing/webhooks'));
         }
         break;
       }
@@ -163,7 +164,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       // Dunning: mark past_due, notify user, retain access during grace period
       await syncSubscriptionState(db, event.data.object.subscription, 'past_due',
         event.data.object.customer);
-      notifyError('Payment failed', { code: 'payment_failed' }).catch(()=>{});
+      notifyError('Payment failed', { code: 'payment_failed' }).catch(logIgnored('routes/billing/webhooks'));
       logger.warn('[webhooks] payment failed — marking past_due for customer:',
         event.data.object.customer); {
         const inv = event.data.object;
@@ -176,7 +177,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             title: '⚠️ Payment Failed',
             body: 'Your Justice Gavel payment failed. Please update your payment method to keep your subscription.',
             data: { screen: 'Settings', tab: 'billing' },
-          }).catch(() => {});
+          }).catch(logIgnored('routes/billing/webhooks'));
         }
 
         // Email notification
@@ -201,7 +202,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 <p><strong><a href="https://justicegavel.app/settings/billing">Update your payment method →</a></strong></p>
 <p>If you have questions, reply to this email.</p>
 <p>— The Justice Gavel Team</p>`,
-          }).catch(() => {});
+          }).catch(logIgnored('routes/billing/webhooks'));
         }
         break;
       }
@@ -220,7 +221,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             title: '✅ Payment Confirmed',
             body: `${productName} — $${amountDollars} received. Thank you!`,
             data: { screen: 'Home' },
-          }).catch(() => {});
+          }).catch(logIgnored('routes/billing/webhooks'));
         }
 
         // Email receipt
@@ -241,7 +242,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 <p style="color:#666;font-size:12px">Reference: ${escapeHtml(session.id)}</p>
 <p>Thank you for using Justice Gavel.</p>
 <p>— The Justice Gavel Team</p>`,
-          }).catch(() => {});
+          }).catch(logIgnored('routes/billing/webhooks'));
         }
         break;
       }
@@ -260,7 +261,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             `UPDATE subscriptions SET status='active', updated_at=NOW()
              WHERE user_id=? AND stripe_sub_id=?`,
             [userId, inv.subscription]
-          ).catch(() => {});
+          ).catch(logIgnored('routes/billing/webhooks'));
         }
 
         // Push confirmation
@@ -269,7 +270,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             title: '✅ Subscription Renewed',
             body: `${planName} — $${amountDollars}. Your access continues uninterrupted.`,
             data: { screen: 'Home' },
-          }).catch(() => {});
+          }).catch(logIgnored('routes/billing/webhooks'));
         }
 
         // Email receipt
@@ -291,7 +292,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 <p style="color:#666;font-size:12px">Billing period: ${escapeHtml(new Date(inv.period_start * 1000).toLocaleDateString())} — ${escapeHtml(new Date(inv.period_end * 1000).toLocaleDateString())}<br>Invoice: ${escapeHtml(inv.id)}</p>
 <p><a href="https://justicegavel.app/settings/billing">Manage subscription →</a></p>
 <p>— The Justice Gavel Team</p>`,
-          }).catch(() => {});
+          }).catch(logIgnored('routes/billing/webhooks'));
         }
         break;
       }
@@ -305,11 +306,11 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         await db.run(
           `UPDATE users SET subscription_tier='advisor', advisor_expires_at=(NOW() + INTERVAL '1 day') WHERE id=?`,
           [uid]
-        ).catch(() => {});
+        ).catch(logIgnored('routes/billing/webhooks'));
         await sendPushToUser(db, Number(uid), {
           title: '✅ 24-Hour Access Active',
           body:  'Your Justice Gavel Advisor access is live for the next 24 hours.',
-        }).catch(() => {});
+        }).catch(logIgnored('routes/billing/webhooks'));
       }
       break;
     }
@@ -322,7 +323,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         await sendPushToUser(db, Number(uid), {
           title: '⚠️ Payment Failed',
           body:  'Your payment could not be processed. Please update your payment method.',
-        }).catch(() => {});
+        }).catch(logIgnored('routes/billing/webhooks'));
       }
       break;
     }
@@ -336,7 +337,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         await sendPushToUser(db, Number(uid), {
           title: '⏰ Trial Ends Soon',
           body:  'Your free trial ends in 3 days. Add a payment method to keep access.',
-        }).catch(() => {});
+        }).catch(logIgnored('routes/billing/webhooks'));
       }
       break;
     }
@@ -351,7 +352,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         await sendPushToUser(db, Number(uid), {
           title: '💳 Refund Issued',
           body:  `A refund of $${amt} has been issued to your original payment method.`,
-        }).catch(() => {});
+        }).catch(logIgnored('routes/billing/webhooks'));
       }
       break;
     }
@@ -366,7 +367,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         await db.run(
           "UPDATE user_subscriptions SET dispute_flag = true WHERE stripe_customer_id = ?",
           [custId]
-        ).catch(() => {});
+        ).catch(logIgnored('routes/billing/webhooks'));
         logger.warn('[webhook] dispute filed for customer:', custId);
       }
       break;

@@ -33,7 +33,7 @@ const argv = yargs(hideBin(process.argv))
   .argv;
 
 const RUNS_DIR  = path.resolve(__dirname, '../../data/eval/runs');
-const client    = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client    = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 60_000, maxRetries: 2 });
 
 // ── Grading rubrics ───────────────────────────────────────────────────────────
 const DIMENSIONS = {

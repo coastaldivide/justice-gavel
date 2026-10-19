@@ -151,7 +151,7 @@ function CourtLocatorScreen(): React.JSX.Element {
       )}
       {error ? (<>
         <Text maxFontSizeMultiplier={1.4} style={{ color: colors.emergencyDark, textAlign: 'center', margin: 20 }}>{error}</Text>
-        <TouchableOpacity accessibilityRole="button" onPress={() => doSearch('Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:colors.textOnNavy,fontWeight:'700'}}>Retry</Text></TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" onPress={() => doSearch(search.trim().length >= 2 ? search : 'Nashville')} style={{marginTop:8,padding:10,backgroundColor:COLORS.navy,borderRadius:8,alignItems:'center'}}><Text maxFontSizeMultiplier={1.4} style={{color:colors.textOnNavy,fontWeight:'700'}}>Retry</Text></TouchableOpacity>
       </>) : null}
       {/* FlashList only supports padding/background in contentContainerStyle,
           so the centered max-width column lives on a wrapper View instead. */}
@@ -163,9 +163,11 @@ function CourtLocatorScreen(): React.JSX.Element {
         keyExtractor={(i: Courthouse) => String(i.id)}
         contentContainerStyle={{ padding: 16, paddingTop: 4 }}
         ListEmptyComponent={
-          !loading ? (
-            <Text maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginTop: 40 }}>
-              📋 Search for a city or county to find the courthouse.
+          !loading && !error ? (
+            <Text testID="court-locator-empty" maxFontSizeMultiplier={1.4} style={{ color: sub, textAlign: 'center', marginTop: 40 }}>
+              {search.trim().length >= 2
+                ? `No courthouses found for “${search.trim()}”. Try the county name or the state.`
+                : '📋 Search for a city or county to find the courthouse.'}
             </Text>
           ) : null
         }

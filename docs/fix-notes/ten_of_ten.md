@@ -1040,3 +1040,46 @@ DB: lawyers 2,048, bail_agents 1,262, recovery_agents 531 → **0 to insert, 0 t
   had NULL ratings and the frontend rating renders are null-guarded (checked LawyerCard,
   LawyersScreen, SavedLawyers, QuickConnect, RecoveryAgents, BailSearch, Match).
 - Did NOT commit. Scratch DBs dropped, scratch servers stopped.
+
+# STEP 13 — 50-point vibe-coder checklist audit (docs/strategy/VIBE_CODER_CHECKLIST.md)
+
+All 50 rows now have a status + evidence (a test name, file or command that was actually run);
+"Owner actions" table at the bottom. **Before: ✅ 23 · 🟡 19 · ❌ 4 · ⏸ 4 → after: ✅ 40 · 🟡 4 · ❌ 0 · ⏸ 6.**
+(Work continued on top of coordinator checkpoint c651a8a after the container restart.)
+
+## Fixes (each with a behavioural test that fails on the old code)
+- 15/34 logs: `utils/redact.js` scrubs secrets/e-mails/phones in every log line (text + JSON), Sentry beforeSend/beforeBreadcrumb (bodies, query strings, cookies, auth headers dropped) and alert e-mails/webhooks; AsyncLocalStorage puts `request_id` on every line of a request; 5xx bodies carry it — `observability_redaction.test.js`.
+- 27 timeouts: `utils/http.js fetchWithTimeout` (timeout incl. body, retries + Retry-After) on all 21 fetches that had none (Whisper, Daily, Coinbase, OAuth, DMS/CalDAV/PM, feedback webhook, scrapers); Resend 10 s + idempotent retries; Stripe/web-push/SDK timeouts — `outbound_timeouts.test.js` (+ static guard: no `fetch(` without a signal).
+- 50 AI cost: `services/aiClient.js` + `services/aiBudget.js` — every AI call (17 fetch sites + 2 SDK clients) metered into ai_usage_log; global daily cap `AI_DAILY_BUDGET_USD` (default $50, UTC day), SEV-2 at 80 %, SEV-1 at 100 %, refusal without calling the provider; `requireAi` refuses up front — `ai_budget.test.js`, PG `duplicates_bounds_ai`.
+- 21/22 account export + delete: registry of all 175 users-referencing columns + 25 case child tables (`services/accountDeletion.js`); deletion leaves 0 orphans, de-links other people's records, hands a shared firm to a remaining member (previously the whole firm cascaded away); export returns every table (decrypted notes, no secrets). **In-app deletion was broken** (sent no password → always 400): Settings now has a password dialog and signs out locally — `integration/account_lifecycle.int.test.js` (fails on the old auth.js), `render/coreStates`.
+- 23 lists: 38 unbounded SELECTs got LIMITs; `list_bounds.test.js` guard (23 documented exceptions) + PG seeding test.
+- 24/39 duplicates: `middleware/idempotency.js` + migration 19 (`idempotency_keys`, unique saved-lawyer index, existing duplicate bookmarks collapsed); app sends `Idempotency-Key` on create POSTs and retries dropped ones with the same key; `useInFlight` / ref guards on core buttons; LawyerCard showed "Saved" after a failed save — fixed.
+- 18 transactions: firm create, matter create/delete, office join — `integration/transactions.int.test.js` (trigger-injected failure).
+- 2 deny by default: `public_routes.test.js` (66 non-JWT routes reviewed with reasons).
+- 5 input: `integration/input_fuzz.int.test.js` (14 endpoints × malformed values, 0 × 5xx).
+- 8/13: smoke test gained rate-limit (login/sign-up/reset → 429), security-header and idempotency checks (35 checks).
+- 25: 121 empty `.catch(() => {})` in backend routes/services → `logIgnored(where)`; guard test.
+- 29/31 jobs: `guardJob()` in every `scheduleGuarded` job — no overlap, failures alerted, per-job stats on /metrics — `scheduled_jobs.test.js`.
+- 35/36 app states: LawyerProfile network error + Try again; BailCalculator no-schedule + sign-in states; CourtLocator "No courthouses found"; CaseScreen load error (was "No cases yet") + offline court dates (cached without notes); HelpNow network failure is an error, not "no contacts"; Settings notification-pref failures revert + toast — `render/coreStates.test.tsx`.
+- 43 permissions: `services/permissions.ts` explainer + "Not now" + Settings link; notifications asked only when a court date is saved / reminders switched on (was: at every launch and foreground); Home/Onboarding location passive; unused iOS "Always" location keys and background `location` mode removed — `render/permissions.test.tsx`.
+- 17 backups: `backend/scripts/db-backup.sh` / `db-restore.sh` + `integration/backup_restore.int.test.js` (live → A → B, provider md5 match, tampered/non-empty refusals) + RUNBOOK; CI step asserts pg client tools exist.
+- 46 staging: `APP_ENV` (+ `checkAppEnv`): NODE_ENV=staging, live Stripe keys on staging and the prod DB on staging are refused at boot; /health, logs, Sentry carry env; `railway.staging.json` set NODE_ENV=staging + 15-min JWTs (broke prod hardening and the app's refresh) — fixed; RUNBOOK/RAILWAY_ENV_SETUP "Staging" — `app_env.test.js`.
+- Docs/env: new vars AI_DAILY_BUDGET_USD, AI_BUDGET_ALERT_PCT, AI_PRICE_INPUT/OUTPUT_PER_MTOK, APP_ENV, PRODUCTION_DATABASE_URL in config, both .env.example, RAILWAY_ENV_SETUP; RUNBOOK: backups, staging, AI cap, request ids, duplicate protection.
+- 7 stale source-pin tests updated to the new truth (location permission now in permissions.ts, stream via anthropicFetch, syncPushToken).
+
+## Not done (and why)
+- 14: frontend prod audit 29 high / 5 moderate — all from braces/node-forge/sprintf-js with no patched release.
+- 25: ~150 best-effort `.catch(() => {})` remain in the app (storage, haptics, analytics) — not user-facing.
+- 38: no real tablet / small-Android device pass (needs hardware).
+- 45: ~190 legacy source-text test files kept.
+- Owner items (⏸ 1, 17, 33, 44, 46, 49 + the budget value for 50): see the checklist's Owner actions.
+- No routes added/removed → openapi.json unchanged (drift test passes).
+
+## Gate
+1. Fresh DB: all 20 migrations (00..19) ON_ERROR_STOP applied twice — OK; 193 base tables, 0 without RLS; lawyers 2,046 / bail_agents 1,262, md5 identical before/after all suites.
+2. Backend `npm ci` OK, import smoke OK, `npm run lint` 0/0, `npm audit --omit=dev --audit-level=high` 0. Prod boot (TZ=UTC, generated secrets, no Stripe, mock Anthropic): **smoke-test 35/35**; every log line JSON with request_id, 0 unmasked e-mails; AI call metered (chat, 10/12 tokens); SIGTERM → drained → clean exit.
+3. Full backend jest: **333 suites passed / 29 PG-gated skipped; 27,967 passed / 212 skipped / 0 failed.**
+   PG-gated on a fresh migrated DB: arrest_visibility+alerts_takedown_pg+final_pass_fixes 3/40, integration 16/117, security 12/95, refresh 4/26 → **35 suites / 278 tests, 0 failed.**
+4. Frontend: tsc 0; eslint --max-warnings 0 → 0/0; npm test logic 49 suites/709 + render 8/56 pass; design-audit --ci 0; nav-targets 250/0; `expo export --platform web` OK; headless web smoke vs live prod backend **166 checks / 0 failed / 0 page errors / 0 console errors / 0 storms** (351 API requests).
+5. ci.yml: new step "Postgres client tools present" before the integration suite (backup test must not skip); new tests run inside existing steps; valid YAML.
+- Did NOT commit. Scratch DBs dropped, scratch servers stopped.

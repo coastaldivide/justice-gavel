@@ -13,6 +13,7 @@
  * GET    /api/firms/:id/audit          — audit log (partner+)
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { err400, err403, err404, safeInt,
          sanitizeStr, truncateStr,
          validateEmail, escapeLike }         from '../utils/routeHelpers.js';
@@ -63,26 +64,21 @@ router.post('/', authRequired, firmLimiter, async (req, res) => {
       });
     }
 
-    const r = await db.run(
-      'INSERT INTO firms (name, owner_id, plan) VALUES (?,?,?)',
-      [truncateStr(name.trim(), 200), req.user.id, 'advisor']
-    );
-    const firmId = r.lastID;
-
-    // Auto-add creator as firm_admin
-    await db.run(
-      `INSERT INTO firm_members (firm_id, user_id, firm_role, role, invited_by)
-       VALUES (?,?,?,?,?)`,
-      [firmId, req.user.id, 'firm_admin', 'firm_admin', req.user.id]
-    );
-
-    // Update user record with firm_id
-    // firm_id denorm — surface failures; mismatch causes authorization bugs
-    try {
-      await db.run('UPDATE users SET firm_id=? WHERE id=?', [firmId, req.user.id]);
-    } catch (e) {
-      logger.warn('[firms/create] firm_id sync failed — firm created but user.firm_id stale:', e?.message);
-    }
+    // Firm + creator's firm_admin membership + users.firm_id: all or nothing,
+    // so a failure can never leave a firm nobody administers.
+    const firmId = await db.transaction(async (tx) => {
+      const r = await tx.run(
+        'INSERT INTO firms (name, owner_id, plan) VALUES (?,?,?)',
+        [truncateStr(name.trim(), 200), req.user.id, 'advisor']
+      );
+      await tx.run(
+        `INSERT INTO firm_members (firm_id, user_id, firm_role, role, invited_by)
+         VALUES (?,?,?,?,?)`,
+        [r.lastID, req.user.id, 'firm_admin', 'firm_admin', req.user.id]
+      );
+      await tx.run('UPDATE users SET firm_id=? WHERE id=?', [r.lastID, req.user.id]);
+      return r.lastID;
+    });
 
     await writeAuditLog(db, {
       user_id: req.user.id,
@@ -576,7 +572,7 @@ router.post('/:id/invite', authRequired, inviteLimiter, requireFirmMember({ minR
 Download the app and use code ${firm.invite_code} to join your firm.
 
 Justice Gavel: https://justicegavel.com`,
-      }).catch(() => {});
+      }).catch(logIgnored('routes/firms'));
     }
 
     return res.status(201).json({ invited: true, email, firm_name: firm.name });

@@ -2,6 +2,7 @@
  * billing/connections.js — Emergency family connection and QuickConnect — $20 instant matchmaking
  * Part of the billing module. Mounted at /api/billing by billing/index.js
  */
+import { logIgnored } from '../../utils/ignored.js';
 import { stripe, LIVE, billingLimiter, getOrCreateStripeCustomer } from './_shared.js';
 import { err400, BUSINESS_CONSTANTS } from '../../utils/routeHelpers.js';
 import { Router }       from 'express';
@@ -193,7 +194,7 @@ router.post('/quickconnect', billingLimiter, authRequired, async (req, res) => {
       const demoCharged = finalAmountCents / 100;
       if (creditApplied > 0) {
           await db.run('UPDATE users SET credit_cents = GREATEST(0, credit_cents - ?) WHERE id=?',
-          [creditApplied, req.user.id]).catch(()=>{});
+          [creditApplied, req.user.id]).catch(logIgnored('routes/billing/connections'));
       }
       return res.json({
         success: true,
@@ -251,7 +252,7 @@ router.post('/quickconnect', billingLimiter, authRequired, async (req, res) => {
 
     if (creditApplied > 0) {
         await db.run('UPDATE users SET credit_cents = GREATEST(0, credit_cents - ?) WHERE id=?',
-        [creditApplied, req.user.id]).catch(()=>{});
+        [creditApplied, req.user.id]).catch(logIgnored('routes/billing/connections'));
     }
 
     // Log revenue

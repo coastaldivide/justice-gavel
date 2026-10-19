@@ -428,6 +428,43 @@ async function main() {
     assert(bad.status === 403, `expected 403 for unknown origin, got ${bad.status}`);
   });
 
+  await check('security headers: HSTS, nosniff, CSP frame-ancestors none, request id, no-store on /api', async () => {
+    const r = await fetch(BASE + '/api/health');
+    const h = (k) => r.headers.get(k) || '';
+    assert(/max-age=\d{7,}/.test(h('strict-transport-security')), `HSTS: ${h('strict-transport-security')}`);
+    assert(h('x-content-type-options') === 'nosniff', 'nosniff missing');
+    assert(/frame-ancestors 'none'/.test(h('content-security-policy')), 'CSP frame-ancestors missing');
+    assert(/^[\w.-]{8,}$/.test(h('x-request-id')), 'X-Request-ID missing');
+    assert(/no-store/.test(h('cache-control')), `Cache-Control on /api: ${h('cache-control')}`);
+  });
+
+  // Each limiter is tripped from its own client address (trust proxy 1 →
+  // X-Forwarded-For), so the rest of the run is unaffected.
+  const fromIp = (ip) => ({ 'X-Forwarded-For': ip });
+  await check('rate limits: failed logins, sign-ups and password resets → 429', async () => {
+    let last;
+    for (let i = 0; i < 11; i++) last = await call('POST', '/api/auth/login', { body: { identifier: `nobody-${i}@smoke.example.test`, password: 'Wrong123!' }, headers: fromIp('10.250.0.1') });
+    assert(last.status === 429, `11th failed login: expected 429, got ${last.status}`);
+    for (let i = 0; i < 6; i++) last = await call('POST', '/api/auth/register', { body: {}, headers: fromIp('10.250.0.2') });
+    assert(last.status === 429, `6th sign-up attempt: expected 429, got ${last.status}`);
+    for (let i = 0; i < 6; i++) last = await call('POST', '/api/auth/forgot-password', { body: { identifier: 'nobody@smoke.example.test' }, headers: fromIp('10.250.0.3') });
+    assert(last.status === 429, `6th reset request: expected 429, got ${last.status}`);
+  });
+
+  await check('Idempotency-Key: a retried POST /api/cases replays the first answer (one case)', async () => {
+    const key = `smoke-${crypto.randomUUID()}`;
+    const body = { title: `smoke idem ${key.slice(-6)}` };
+    const a = await call('POST', '/api/cases', { token, body, headers: { 'Idempotency-Key': key } });
+    const b = await call('POST', '/api/cases', { token, body, headers: { 'Idempotency-Key': key } });
+    assert(a.status === 201 && b.status === 201, `statuses ${a.status}/${b.status}`);
+    assert(a.json?.id && a.json.id === b.json?.id, `ids differ: ${a.json?.id} vs ${b.json?.id}`);
+    assert(b.headers.get('idempotent-replayed') === 'true', 'replay header missing');
+    if (DB_URL) {
+      const rows = await q('SELECT COUNT(*)::int AS n FROM cases WHERE user_id = $1 AND title = $2', [userId, body.title]);
+      assert(rows[0].n === 1, `expected 1 case, found ${rows[0].n}`);
+    }
+  });
+
   await check('logout revokes the refresh token', async () => {
     const r = await call('POST', '/api/auth/logout', { token, body: { refreshToken } });
     assert(r.status === 200, `expected 200, got ${brief(r)}`);

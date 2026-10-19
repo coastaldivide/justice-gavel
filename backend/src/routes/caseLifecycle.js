@@ -10,6 +10,7 @@
  *  5. Start a "Life After" email sequence
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { Router }     from 'express';
 import { sharedAiLimiter } from '../middleware/sharedAiLimiter.js';
 import { asyncRoute } from '../utils/routeHelpers.js';
@@ -57,7 +58,7 @@ router.post('/:id/close', sharedAiLimiter, authRequired, asyncRoute(async (req, 
       wait_years:           retention.wait_years,
       next_steps:           retention.next_steps,
     },
-  }).catch(() => {}); // non-critical
+  }).catch(logIgnored('routes/caseLifecycle')); // non-critical
 
   return res.json({
     data: {

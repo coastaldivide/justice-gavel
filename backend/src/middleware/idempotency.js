@@ -45,6 +45,12 @@ export const IDEMPOTENT_POST_PATHS = [
   '/api/consultations/callback-request',
 ];
 
+const PATH_RES = IDEMPOTENT_POST_PATHS.map(p => new RegExp(`^${p.replace(/:[A-Za-z]+/g, '[^/]+')}/?$`));
+/** True when POST <path> is one of the idempotent create endpoints. */
+export function isIdempotentPost(method, path) {
+  return method === 'POST' && PATH_RES.some(re => re.test(path));
+}
+
 const KEY_RE = /^[A-Za-z0-9_.:-]{8,128}$/;
 const TTL_HOURS = 24;
 const sha = (s) => createHash('sha256').update(s).digest('hex');
@@ -63,7 +69,7 @@ export { purgeExpired as purgeExpiredIdempotencyKeys };
 export function idempotency() {
   return async function idempotencyMiddleware(req, res, next) {
     const key = req.headers['idempotency-key'];
-    if (key === undefined || req.method !== 'POST') return next();
+    if (key === undefined || !isIdempotentPost(req.method, req.path)) return next();
     if (typeof key !== 'string' || !KEY_RE.test(key)) {
       return res.status(400).json({ error: 'invalid_idempotency_key', message: 'Idempotency-Key must be 8–128 characters (letters, digits, _ . : -).' });
     }

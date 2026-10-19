@@ -71,11 +71,8 @@
         "NSSpeechRecognitionUsageDescription": "Justice Gavel uses speech recognition to transcribe your voice notes.",
         "UIBackgroundModes": [
           "audio",
-          "fetch",
-          "location"
-        ],
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Justice Gavel uses your location in the background to notify you when someone you are monitoring has been arrested in your county.",
-        "NSLocationAlwaysUsageDescription": "Background location is used only for the arrest monitor feature when enabled."
+          "fetch"
+        ]
       },
       "appStoreUrl": "https://apps.apple.com/app/justice-gavel/id0000000000",
       "associatedDomains": [

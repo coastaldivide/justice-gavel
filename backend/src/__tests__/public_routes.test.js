@@ -1,0 +1,108 @@
+/**
+ * public_routes.test.js — checklist item 2: deny by default.
+ *
+ * Walks the routes the app actually mounts (scripts/lib/route-walker.mjs) and
+ * requires that every route WITHOUT a JWT guard is on this reviewed list with
+ * the reason it is public (or the other credential it checks). A new route
+ * that forgets authRequired fails here instead of shipping open.
+ */
+import { collectRoutes } from '../../scripts/lib/route-walker.mjs';
+
+// Other credentials a non-JWT route may require instead.
+const OTHER_GUARD = new Set(['requireAdmin', 'requireStaffOrAdminKey']);
+
+const PUBLIC = {
+  // health / ops
+  'GET /health': 'uptime probe (booleans only)',
+  'GET /api/health': 'uptime probe (booleans only)',
+  'GET /metrics': 'process gauges for the uptime monitor (no user data)',
+  // account entry points
+  'POST /api/auth/register': 'sign-up (rate limited)',
+  'POST /api/auth/login': 'sign-in (rate limited, lockout)',
+  'POST /api/auth/refresh': 'takes a refresh token / still-valid access token',
+  'POST /api/auth/forgot-password': 'non-enumerating, rate limited',
+  'POST /api/auth/reset-password': 'takes a single-use hashed reset token',
+  // signed webhooks
+  'POST /webhooks/stripe': 'Stripe signature verified',
+  'POST /api/webhooks/stripe': 'Stripe signature verified',
+  'POST /api/billing/webhook': 'Stripe signature verified',
+  // SSO / OAuth flows (signed assertions / state)
+  'POST /api/sso/acs': 'SAML assertion signature verified (H8)',
+  'GET /api/sso/login': 'starts SAML login',
+  'GET /api/sso/metadata': 'public SP metadata',
+  'GET /api/integrations/oauth/callback': 'OAuth state parameter verified',
+  // capability URLs
+  'GET /api/cases/shared/:token': 'unguessable share token chosen by the case owner',
+  'GET /api/integrations/caldav/ical/:firmId': 'HMAC token in the feed URL',
+  'GET /api/translate/session/:code': 'per-session 256-bit token (H7)',
+  'POST /api/translate/session/:code/message': 'per-session 256-bit token (H7)',
+  'GET /api/translate/session/:code/messages': 'per-session 256-bit token (H7)',
+  // guest-usable core path (people in crisis must not need an account)
+  'GET /api/providers/lawyers': 'directory search (guest core path)',
+  'GET /api/providers/lawyers/:id': 'directory profile',
+  'GET /api/providers/bail': 'bail-agent search (guest core path)',
+  'GET /api/providers/list': 'directory list',
+  'GET /api/providers/coverage': 'directory coverage counts',
+  'GET /api/providers/nearest-city': 'city lookup for coordinates',
+  'GET /api/providers/:id/reviews': 'public reviews',
+  'GET /api/bail': 'bail-agent directory',
+  'GET /api/bail/nearby': 'bail-agent directory',
+  'POST /api/bail/calculate': 'pure calculator',
+  'GET /api/bail/estimate-total': 'pure calculator',
+  'GET /api/bail/immigration': 'static guidance',
+  'GET /api/lessons/rights-card': 'know-your-rights card (offline-first core path)',
+  'GET /api/immigration/rights': 'static guidance',
+  'GET /api/immigration/relief-options': 'static guidance',
+  'GET /api/interrogation/recording-law': 'static guidance',
+  'GET /api/expungement/check': 'eligibility rules (rate limited)',
+  'GET /api/expungement/attorneys': 'directory',
+  'GET /api/consultations/slots/:lawyerId': 'free/busy slots, no client data',
+  'GET /api/match/profile/:lawyerId': 'public lawyer profile',
+  'GET /api/reviews': 'public reviews',
+  'GET /api/reviews/summary': 'public ratings',
+  'GET /api/push/tip': 'tip of the day',
+  'GET /api/research/topics': 'topic list',
+  'GET /api/golden-gavel/hall': 'public recognition list',
+  'GET /api/forum': 'public forum (optional auth)',
+  'GET /api/forum/:id': 'public forum (optional auth)',
+  'GET /api/forum/categories': 'public forum categories',
+  'GET /api/advocacy': 'static advocacy info',
+  'GET /api/webpush/key': 'VAPID public key',
+  // feedback works signed out (user_id NULL)
+  'POST /api/feedback': 'anonymous feedback allowed (M5)',
+  'GET /api/feedback/summary': 'aggregate rating',
+  'POST /api/feedback/ui': 'anonymous UI report',
+  // marketing / pricing pages
+  'GET /api/billing/tiers': 'price list',
+  'GET /api/billing/bondsman/tiers': 'price list',
+  'GET /api/insurance/plans': 'price list',
+  'GET /api/firm-acquisition/plans': 'price list',
+  'GET /api/firm-acquisition/vertical-demo': 'marketing demo data',
+  'POST /api/firm-acquisition/lead': 'sales contact form',
+  'GET /api/firm-verticals/presets': 'deadline-rule catalogue',
+  'GET /api/firm-verticals/pricing': 'price list',
+  'GET /api/firms/directory': 'public firm directory',
+  'GET /api/firms/:id/public-profile': 'public firm page',
+  'GET /api/firms/referral/:code': 'referral code lookup',
+};
+
+describe('item 2 — every route requires auth unless deliberately public', () => {
+  let routes;
+  beforeAll(async () => { routes = await collectRoutes(); }, 60_000);
+
+  test('no unreviewed public route', () => {
+    const open = routes
+      .filter(r => !r.auth && !(r.middleware || []).some(m => OTHER_GUARD.has(m)))
+      .map(r => `${r.method} ${r.path}`);
+    expect(open.filter(k => !(k in PUBLIC))).toEqual([]);
+  });
+
+  test('the reviewed list has no stale entries', () => {
+    const live = new Set(routes.map(r => `${r.method} ${r.path}`));
+    expect(Object.keys(PUBLIC).filter(k => !live.has(k))).toEqual([]);
+  });
+
+  test('sanity: the walker sees guarded routes too', () => {
+    expect(routes.filter(r => r.auth).length).toBeGreaterThan(400);
+  });
+});

@@ -87,7 +87,8 @@ describe('DISC7. Discrepancy Fixes — chat/stream + reviews + saved', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js', 'utf8');
     expect(src).toContain('Server-Sent Events streaming');
     expect(src).toContain("router.post('/stream'");
-    expect(src).toContain('API_URLS');
+    // the Anthropic call goes through services/aiClient.js (budget, timeout, retries, metering)
+    expect(src).toContain('anthropicFetch');
     // SSE path streams tokens as data: events
     expect(src).toContain('BUSINESS_CONSTANTS');
   });

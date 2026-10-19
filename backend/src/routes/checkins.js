@@ -1,3 +1,4 @@
+import { logIgnored } from '../utils/ignored.js';
 import { validate, schemas } from '../validation/schemas.js';
 /**
  * checkins.js — Post-release check-in system
@@ -415,7 +416,7 @@ router.post('/remind-all', requireStaffOrAdminKey, remindAllLimiter, async (req,
           title: 'Check-In Reminder',
           body:  'Your scheduled check-in is due today. Open Justice Gavel to check in.',
           data:  { screen: 'CheckIn' },
-        }).catch(() => {});
+        }).catch(logIgnored('routes/checkins'));
         sent++;
       })
     );

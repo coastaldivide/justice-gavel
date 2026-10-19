@@ -1,3 +1,4 @@
+import { logIgnored } from '../utils/ignored.js';
 import logger from '../utils/logger.js';
 import { getDb } from '../db/index.js';
 import { sendExpoPush, isExpoPushToken } from './expoPush.js';
@@ -105,11 +106,11 @@ export async function checkPushReceipts() {
               await db.run(
                 "DELETE FROM push_tokens WHERE token = ?",
                 [row.push_token]
-              ).catch(() => {});
+              ).catch(logIgnored('services/pushDelivery'));
               await db.run(
                 "UPDATE scheduled_pushes SET status='device_not_registered' WHERE id=?",
                 [row.id]
-              ).catch(() => {});
+              ).catch(logIgnored('services/pushDelivery'));
               invalidCount++;
               logger.info('[Push] Removed dead token:', row.push_token.slice(-8));
             }

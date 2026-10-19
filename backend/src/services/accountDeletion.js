@@ -294,11 +294,12 @@ async function transferOrDeleteFirms(tx, uid) {
 }
 
 /**
- * Delete the account and everything that belongs to it, inside `tx`
- * (db.transaction). Returns { attachmentKeys, firms } — the caller removes the
+ * Delete everything that belongs to the account, inside `tx`
+ * (db.transaction); the caller then deletes the users row in the same
+ * transaction. Returns { attachmentKeys, firms } — the caller removes the
  * attachment files after commit.
  */
-export async function purgeAccount(tx, uid, { email = null } = {}) {
+export async function purgeAccountData(tx, uid, { email = null } = {}) {
   const attachmentKeys = await stepAll(tx, 'SELECT storage, storage_key FROM message_attachments WHERE uploader_id = ? OR case_id IN (SELECT id FROM cases WHERE user_id = ?)', [uid, uid]);
 
   // 1. rows hanging off the user's own cases
@@ -332,9 +333,6 @@ export async function purgeAccount(tx, uid, { email = null } = {}) {
   // 5. pending invitations addressed to the user's e-mail
   if (email) await step(tx, 'DELETE FROM firm_invites WHERE LOWER(email) = LOWER(?)', [email]);
 
-  // 6. the account itself
-  await tx.run('DELETE FROM users WHERE id = ?', [uid]);
-  await step(tx, 'INSERT INTO account_deletion_log (deleted_at, reason) VALUES (NOW(), ?)', ['user_request']);
   return { attachmentKeys, firms };
 }
 

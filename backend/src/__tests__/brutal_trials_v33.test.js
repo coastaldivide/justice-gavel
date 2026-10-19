@@ -247,7 +247,7 @@ describe('S8a. offlineCache.ts — Full Export Coverage', () => {
 describe('S8b. FE Services — location.ts + theme.ts + userState + secureStorage', () => {
   test('S8b-01: location.ts getLocationWithCity uses GPS + falls back to DEFAULT_LOCATION', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/services/location.ts', 'utf8');
+    const src = fs.readFileSync(__REPO + '/frontend/src/services/location.ts', 'utf8') + fs.readFileSync(__REPO + '/frontend/src/services/permissions.ts','utf8') /* asks in context (item 43) */;
     expect(src).toContain('getLocationWithCity');
     expect(src).toContain('requestForegroundPermissionsAsync');
     expect(src).toContain('DEFAULT_LOCATION');
@@ -255,7 +255,7 @@ describe('S8b. FE Services — location.ts + theme.ts + userState + secureStorag
   });
   test('S8b-02: location.ts getLocation is the simpler coords-only function', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/services/location.ts', 'utf8');
+    const src = fs.readFileSync(__REPO + '/frontend/src/services/location.ts', 'utf8') + fs.readFileSync(__REPO + '/frontend/src/services/permissions.ts','utf8') /* asks in context (item 43) */;
     expect(src).toContain('getLocation');
     expect(src).toContain('detectAndSaveUserState');
   });

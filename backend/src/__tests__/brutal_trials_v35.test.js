@@ -269,7 +269,7 @@ describe('S8. FE Services — Final 4-Hit Exports Documented', () => {
   });
   test('S8-03: location.ts getLocationWithCity uses Accuracy.Balanced + falls back', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/services/location.ts', 'utf8');
+    const src = fs.readFileSync(__REPO + '/frontend/src/services/location.ts', 'utf8') + fs.readFileSync(__REPO + '/frontend/src/services/permissions.ts','utf8') /* asks in context (item 43) */;
     expect(src).toContain('getLocationWithCity');
     expect(src).toContain('requestForegroundPermissionsAsync');
     expect(src).toContain('Accuracy.Balanced');

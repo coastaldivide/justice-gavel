@@ -1,3 +1,4 @@
+import { logIgnored } from '../../utils/ignored.js';
 import { asyncRoute } from '../../utils/routeHelpers.js';
 /**
  * expungement/index.js — Expungement module entry point
@@ -111,7 +112,7 @@ router.post('/log-visit', authRequired, async (req, res) => {
     await db.run(
       `INSERT INTO expungement_check_log (user_id, source) VALUES (?, 'screen_visit')`,
       [req.user.id]
-    ).catch(() => {}); // Non-fatal — table may not exist in dev
+    ).catch(logIgnored('routes/expungement/index')); // Non-fatal — table may not exist in dev
     res.json({ logged: true });
   } catch { res.json({ logged: false }); }
 });

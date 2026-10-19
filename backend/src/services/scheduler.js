@@ -1,3 +1,4 @@
+import { logIgnored } from '../utils/ignored.js';
 import { scheduleGuarded } from '../utils/cronGuard.js';
 import { getDb } from '../db/index.js';
 const JOB_LAST_RUN = new Map(); // prevents duplicate runs within same window
@@ -139,7 +140,7 @@ async function runDocketReminderSweep() {
         due_date:  entry.due_date,
         priority:  entry.priority,
         days_past: Math.ceil((new Date() - new Date(entry.due_date + 'T12:00:00Z')) / 86400000),
-      }).catch(() => {});
+      }).catch(logIgnored('services/scheduler'));
     }
 
     logger.info(`[scheduler/docket] ${remindSent} reminders sent, ${overdue.length} overdue events dispatched`);
@@ -310,14 +311,14 @@ async function runConsultationReminderSweep(db) {
                    ${safeLink ? `<a href="${esc(safeLink)}" style="background:#0A1628;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin:12px 0">Join Video Call</a>` : ''}
                    <p style="color:#6B7280;font-size:12px">⚖️ This consultation does not create an attorney-client relationship.</p>`,
             text: `Reminder: ${row.lawyer_name} at ${timeLabel} ${dateLabel}.${safeLink ? ` Meeting link: ${safeLink}` : ''}`,
-          }).catch(() => {});
+          }).catch(logIgnored('services/scheduler'));
         }
 
         // Mark reminder sent
         await db.run(
           `UPDATE consultation_bookings SET reminder_sent = NOW() WHERE id = ?`,
           [row.id]
-        ).catch(() => {});
+        ).catch(logIgnored('services/scheduler'));
         sent++;
       } catch (e) {
         logger.warn('[scheduler/reminder] row failed', row.id, e?.message);

@@ -139,8 +139,16 @@ jobs:
           TEST_DATABASE_URL: ${{ env.CI_DATABASE_URL }}
         run: node --experimental-vm-modules node_modules/.bin/jest --no-coverage --ci src/__tests__/arrest_visibility.test.js src/__tests__/alerts_takedown_pg.test.js src/__tests__/final_pass_fixes.test.js
 
+      - name: Postgres client tools present (backup/restore test must not skip)
+        # integration/backup_restore.int.test.js runs scripts/db-backup.sh and
+        # db-restore.sh; it skips itself when pg_dump/pg_restore are missing, so
+        # fail here instead of silently not testing backups.
+        run: pg_dump --version && pg_restore --version && psql --version
+
       - name: Route integration suite on real Postgres (jest)
         # Every route group the app calls (auth, cases, chat/jobs, providers,
+        # account export/deletion (no orphans), idempotency + list bounds + AI
+        # budget, transactions, malformed-input fuzz, backup/restore round trip,
         # messages, billing/consultations, bail/legaldata/expungement, push,
         # saved/reviews) exercised end-to-end against the migrated database.
         # These suites skip themselves in the in-memory jest run below.

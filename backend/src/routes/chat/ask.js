@@ -1,3 +1,4 @@
+import { logIgnored } from '../../utils/ignored.js';
 import { requireAi } from '../../utils/ai.js';
 import { requireDisclaimer } from '../../middleware/disclaimer.js';
 /**
@@ -105,8 +106,8 @@ router.post('/ask', aiLimiter, authRequired, requireDisclaimer, requireAi, perUs
         history, newMessage: trimmedMsg, locationContext,
         mode, caseContext, user_state, user_state_name, userId: req.user.id,
       });
-      await saveMessage(db, sessionId, 'user',      trimmedMsg, req.user.id).catch(() => {});
-      await saveMessage(db, sessionId, 'assistant', r,          req.user.id).catch(() => {});
+      await saveMessage(db, sessionId, 'user',      trimmedMsg, req.user.id).catch(logIgnored('routes/chat/ask'));
+      await saveMessage(db, sessionId, 'assistant', r,          req.user.id).catch(logIgnored('routes/chat/ask'));
       return {
         role: 'assistant', reply: r,
         suggestLawyerSearch: detectLawyerHandoff(trimmedMsg, r),

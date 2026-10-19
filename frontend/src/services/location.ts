@@ -1,6 +1,21 @@
 import * as Location from 'expo-location';
 import { STATE_NAMES, setUserState, getUserState } from '../utils/userState';
 import { api } from './api';
+import { requestLocationInContext, locationGranted } from './permissions';
+
+/**
+ * prompt: true  → ask in context (our explainer with `reason`, then the system
+ *                 prompt) when permission is not granted yet — use when the user
+ *                 asked for something "near me";
+ * prompt: false → only use location that is already allowed (Home widgets,
+ *                 onboarding) — never shows a dialog.
+ */
+export interface LocationAsk { prompt?: boolean; reason?: string }
+
+async function permitted({ prompt = true, reason }: LocationAsk = {}): Promise<boolean> {
+  if (!prompt) return locationGranted();
+  return (await requestLocationInContext(reason)) === 'granted';
+}
 
 export interface Coords {
   lat: number;
@@ -27,10 +42,9 @@ const DEFAULT_LOCATION: LocationResult = {
  * Request GPS and resolve to nearest dataset city.
  * Falls back to Nashville if permission denied or GPS unavailable.
  */
-export async function getLocationWithCity(): Promise<LocationResult> {
+export async function getLocationWithCity(ask: LocationAsk = {}): Promise<LocationResult> {
   try {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return DEFAULT_LOCATION;
+    if (!(await permitted(ask))) return DEFAULT_LOCATION;
 
     const loc = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced
@@ -60,9 +74,8 @@ export async function getLocationWithCity(): Promise<LocationResult> {
 /**
  * Raw coords only — for bail search and other simple distance queries.
  */
-export async function getLocation(): Promise<Coords> {
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') throw new Error('Location permission denied');
+export async function getLocation(ask: LocationAsk = {}): Promise<Coords> {
+  if (!(await permitted(ask))) throw new Error('Location permission denied');
 
   // Try last-known position first for instant response (< 10min old)
   const lastKnown = await Location.getLastKnownPositionAsync({
@@ -98,14 +111,13 @@ export async function getLocation(): Promise<Coords> {
  *
  * Returns the detected state code, or null if detection failed.
  */
-export async function detectAndSaveUserState(): Promise<string | null> {
+export async function detectAndSaveUserState(ask: LocationAsk = { prompt: false }): Promise<string | null> {
   try {
     // Only auto-detect if the user hasn't already set a preference
     const existing = await getUserState();
     if (existing?.code) return existing.code;
 
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return null;
+    if (!(await permitted(ask))) return null;
 
     const loc = await Location.getCurrentPositionAsync({
       accuracy: (Location.Accuracy as any).Reduced,  // coarse is enough for state-level

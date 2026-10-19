@@ -25,6 +25,7 @@
  *   DELETE /api/integrations/recap/unlink/:matterId — remove the link
  */
 
+import { logIgnored } from '../../utils/ignored.js';
 import { Router }       from 'express';
 import { getDb }        from '../../db/index.js';
 import { authRequired } from '../../middleware/auth.js';
@@ -192,7 +193,7 @@ router.post('/link', authRequired, async (req, res) => {
           records_sent, records_received)
        VALUES (?, 'pull', 'docket_link', ?, ?, 'success', 0, 0)`,
       [ctx.firm_id, safeInt(matter_id), String(docket_id)]
-    ).catch(() => {});
+    ).catch(logIgnored('routes/integrations/recap'));
 
     logger.info(`[recap/link] firm ${ctx.firm_id} linked matter ${matter_id} → CL docket ${docket_id}`);
 
@@ -287,7 +288,7 @@ router.post('/import/:matterId', authRequired, recapLimiter, async (req, res) =>
              (firm_id, provider, entity_type, internal_id, external_id, synced_at)
            VALUES (?, 'recap', 'docket_entry', ?, ?, NOW()) ON CONFLICT DO NOTHING`,
           [ctx.firm_id, result.lastID, externalId]
-        ).catch(() => {});
+        ).catch(logIgnored('routes/integrations/recap'));
         imported++;
       }
     }
@@ -297,7 +298,7 @@ router.post('/import/:matterId', authRequired, recapLimiter, async (req, res) =>
       `UPDATE integration_external_ids SET synced_at=NOW()
        WHERE firm_id=? AND provider='recap' AND entity_type='matter' AND internal_id=?`,
       [ctx.firm_id, matterId]
-    ).catch(() => {});
+    ).catch(logIgnored('routes/integrations/recap'));
 
     await db.run(
       `INSERT INTO integration_sync_log
@@ -305,7 +306,7 @@ router.post('/import/:matterId', authRequired, recapLimiter, async (req, res) =>
           records_sent, records_received)
        VALUES (?, 'pull', 'docket_entries', ?, ?, 'success', 0, ?)`,
       [ctx.firm_id, matterId, docketId, imported]
-    ).catch(() => {});
+    ).catch(logIgnored('routes/integrations/recap'));
 
     logger.info(`[recap/import] matter ${matterId}: ${imported} imported, ${skipped} skipped`);
 
@@ -424,7 +425,7 @@ router.post('/refresh/:matterId', authRequired, recapLimiter, async (req, res) =
         await db.run(
           `INSERT INTO integration_external_ids (firm_id,provider,entity_type,internal_id,external_id) VALUES (?,'recap','docket_entry',?,?) ON CONFLICT DO NOTHING`,
           [ctx.firm_id, result.lastID, externalId]
-        ).catch(() => {});
+        ).catch(logIgnored('routes/integrations/recap'));
         imported++;
       }
     }
@@ -432,7 +433,7 @@ router.post('/refresh/:matterId', authRequired, recapLimiter, async (req, res) =
     await db.run(
       `UPDATE integration_external_ids SET synced_at=NOW() WHERE firm_id=? AND provider='recap' AND entity_type='matter' AND internal_id=?`,
       [ctx.firm_id, matterId]
-    ).catch(() => {});
+    ).catch(logIgnored('routes/integrations/recap'));
 
     res.json({ ok: true, matter_id: matterId, docket_id: docketId,
       total_fetched: entries.length, imported, skipped, days_back: daysBack });
@@ -513,7 +514,7 @@ export async function importDocketEntries(db, ctx, matterId, docketId, opts = {}
            (firm_id, provider, entity_type, internal_id, external_id, synced_at)
          VALUES (?, 'recap', 'docket_entry', ?, ?, NOW()) ON CONFLICT DO NOTHING`,
         [ctx.firm_id, result.lastID, externalId]
-      ).catch(() => {});
+      ).catch(logIgnored('routes/integrations/recap'));
       imported++;
     }
   }
@@ -523,7 +524,7 @@ export async function importDocketEntries(db, ctx, matterId, docketId, opts = {}
     `UPDATE integration_external_ids SET synced_at=NOW()
      WHERE firm_id=? AND provider='recap' AND entity_type='matter' AND internal_id=?`,
     [ctx.firm_id, matterId]
-  ).catch(() => {});
+  ).catch(logIgnored('routes/integrations/recap'));
 
   return { entries, imported, skipped };
 }

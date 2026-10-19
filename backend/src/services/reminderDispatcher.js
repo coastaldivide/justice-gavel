@@ -20,6 +20,7 @@
  * email through services/email.js (logged, not sent, without RESEND_API_KEY —
  * recorded as channel 'email_log_only' so nobody mistakes it for delivery).
  */
+import { logIgnored } from '../utils/ignored.js';
 import logger from '../utils/logger.js';
 import { getDb } from '../db/index.js';
 import { sendExpoPush, isExpoPushToken } from './expoPush.js';
@@ -125,8 +126,8 @@ async function deliverOne(db, row, now) {
     // Tokens Expo says are dead are removed so they are not retried forever.
     for (let i = 0; i < tickets.length; i++) {
       if (tickets[i]?.details?.error === 'DeviceNotRegistered') {
-        await db.run('DELETE FROM push_tokens WHERE token = ?', [tokens[i]]).catch(() => {});
-        await db.run('UPDATE users SET push_token = NULL WHERE push_token = ?', [tokens[i]]).catch(() => {});
+        await db.run('DELETE FROM push_tokens WHERE token = ?', [tokens[i]]).catch(logIgnored('services/reminderDispatcher'));
+        await db.run('UPDATE users SET push_token = NULL WHERE push_token = ?', [tokens[i]]).catch(logIgnored('services/reminderDispatcher'));
       }
     }
   }
@@ -182,7 +183,7 @@ export async function dispatchDueReminders({ db: dbArg, now = new Date(), limit 
     } catch (e) {
       counts.failed++;
       logger.error({ id: row.id, err: e.message }, '[reminders] delivery error');
-      await finish(db, row.id, { status: 'failed', error: String(e.message).slice(0, 300) }).catch(() => {});
+      await finish(db, row.id, { status: 'failed', error: String(e.message).slice(0, 300) }).catch(logIgnored('services/reminderDispatcher'));
     }
   }
   if (claimed.length) logger.info(counts, '[reminders] dispatch');

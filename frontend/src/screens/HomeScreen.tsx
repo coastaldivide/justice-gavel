@@ -144,7 +144,7 @@ function HomeScreen({ navigation }: ScreenProps): React.JSX.Element {
     }).catch(() => {});
 
     // Nearby counts on the Bail / Lawyer tiles (non-blocking; skipped without a location)
-    getLocation().then(({ lat, lng }) => {
+    getLocation({ prompt: false }).then(({ lat, lng }) => {
       api.get('/providers/bail', { params: { lat, lng, radiusKm: 80 } })
         .then(r => { if (mountedRef.current) setNearbyCounts(prev => ({ ...prev, bail: Array.isArray(r.data) ? r.data.length : 0 })); })
         .catch(() => {});
@@ -179,7 +179,7 @@ confirm('Send SOS?', `This will alert ${active.length} contact(s) with your loca
       { confirmLabel: 'Send now' }).then(async ok => { if (!ok) return;
       setSosSending(true);
         try {
-          const { lat, lng } = await getLocation();
+          const { lat, lng } = await getLocation({ reason: 'Your emergency contacts get your location with the SOS so they can find you. It is sent only to them.' }).catch(() => ({ lat: undefined, lng: undefined }));
           const userData = await AsyncStorage.getItem('user');
           const user = userData ? JSON.parse(userData) : {};
           await api.post('/alerts', { userName: user.displayName || user.name || 'User', contacts: active, lat, lng });

@@ -1,3 +1,4 @@
+import { logIgnored } from '../utils/ignored.js';
 import logger from '../utils/logger.js';
 /**
  * contentRefresh.js — Legal content staleness tracking and refresh service.
@@ -35,7 +36,7 @@ export async function refreshLegalContent() {
       await db.run(
         `UPDATE expungement_rules SET needs_review=1, stale_since=COALESCE(stale_since,NOW())
           WHERE content_verified_at < (NOW() - INTERVAL '30 days') OR content_verified_at IS NULL`
-      ).catch(() => {});
+      ).catch(logIgnored('services/contentRefresh'));
       const states = stale.map(r => r.state).join(', ');
       results.warnings.push(`expungement_rules: ${stale.length} states stale (${states}) — needs attorney review`);
       if (stale.length > 5) {
@@ -65,7 +66,7 @@ export async function refreshLegalContent() {
       await db.run(
         `UPDATE rights_cards SET needs_review=1, stale_since=COALESCE(stale_since,NOW())
           WHERE content_verified_at < (NOW() - INTERVAL '60 days') OR content_verified_at IS NULL`
-      ).catch(() => {});
+      ).catch(logIgnored('services/contentRefresh'));
       results.warnings.push(`rights_cards: ${staleCards.length} cards stale`);
     } else {
       results.updated.push('rights_cards: all current');
@@ -83,7 +84,7 @@ export async function refreshLegalContent() {
       await db.run(
         `UPDATE crisis_resources SET needs_verification=1
           WHERE last_verified < (NOW() - INTERVAL '30 days') OR last_verified IS NULL`
-      ).catch(() => {});
+      ).catch(logIgnored('services/contentRefresh'));
       results.warnings.push(`crisis_resources: ${staleRes.length} need phone verification`);
     } else {
       try {
@@ -104,7 +105,7 @@ export async function refreshLegalContent() {
          (run_at, category, results, warnings, errors)
        VALUES (NOW(), 'full_refresh', ?, ?, ?)`,
       [JSON.stringify(results.updated), JSON.stringify(results.warnings), JSON.stringify(results.errors)]
-    ).catch(() => {});
+    ).catch(logIgnored('services/contentRefresh'));
   } catch (e) { logger.warn('[contentRefresh/logRun]', e?.message); }
 
   if (results.warnings.length) {

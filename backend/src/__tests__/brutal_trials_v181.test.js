@@ -69,7 +69,7 @@ describe('RENDER. Conditional Rendering Safety', () => {
 describe('PLATFORM. Permission and Platform Handling', () => {
   test('PLATFORM-01: location service handles permissions internally', async () => {
     const fs = await import('fs');
-    const loc = fs.readFileSync(__REPO + '/frontend/src/services/location.ts','utf8');
+    const loc = fs.readFileSync(__REPO + '/frontend/src/services/location.ts','utf8') + fs.readFileSync(__REPO + '/frontend/src/services/permissions.ts','utf8') /* asks in context (item 43) */;
     // Screens import getLocation() which internally calls requestForegroundPermissionsAsync
     expect(loc).toContain('requestForegroundPermissionsAsync');
     expect(loc).toContain('permissionGranted');

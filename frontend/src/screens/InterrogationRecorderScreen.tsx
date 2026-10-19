@@ -1,4 +1,5 @@
 import { AIDisclaimer } from '../components/AIDisclaimer';
+import { requestLocationInContext, locationGranted } from '../services/permissions';
 import { useConfirm } from '../hooks/useConfirm';
 import { useToast } from '../components/ToastProvider';
 import { CONTENT_MAX_WIDTH } from '../utils/responsive';
@@ -122,8 +123,8 @@ function InterrogationRecorderScreen(): React.JSX.Element {
   useEffect(() => {
     (async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === 'granted' && mountedRef.current) {
+        const answer = await requestLocationInContext('Recording-consent law depends on the state you are in right now. Justice Gavel checks your location once to show the right warning before you record.');
+        if (answer === 'granted' && mountedRef.current) {
           const loc = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.Balanced,
           });
@@ -169,8 +170,7 @@ function InterrogationRecorderScreen(): React.JSX.Element {
 
   const getLocation = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return '';
+      if (!(await locationGranted())) return '';   // asked (with a reason) on open
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const [geo] = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
       return geo ? `${geo.city || ''}, ${geo.region || ''} ${geo.postalCode || ''}`.trim() : '';

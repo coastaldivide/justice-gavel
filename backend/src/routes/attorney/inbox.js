@@ -14,6 +14,7 @@
  * All data is scoped to the authenticated attorney (defender_id = req.user.id).
  */
 
+import { logIgnored } from '../../utils/ignored.js';
 import { Router }           from 'express';
 import { authRequired }     from '../../middleware/auth.js';
 import { err403, safeInt }  from '../../utils/routeHelpers.js';
@@ -240,7 +241,7 @@ router.post('/inbox/accept/:assignmentId', authRequired, acceptLimiter, async (r
       body: `${req.user.display_name || 'Your attorney'} accepted your case: ${assignment.title}`,
       data: { screen: 'Messages', caseId: assignment.case_id },
       channelId: 'case_updates',
-    }).catch(() => {});
+    }).catch(logIgnored('routes/attorney/inbox'));
 
     res.json({ success: true, assignment_id: assignmentId, status: 'active' });
   } catch (e) {

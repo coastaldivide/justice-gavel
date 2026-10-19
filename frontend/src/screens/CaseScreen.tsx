@@ -1,4 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
+import { requestNotificationsInContext } from '../services/permissions';
 import { escapeHtml } from '../utils/html';
 import { useToast } from '../components/ToastProvider';
 // T4-05: wrap heavy useEffect bodies with InteractionManager.runAfterInteractions
@@ -12,7 +13,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ScrollView,
 import { FlashList } from '@shopify/flash-list';
 import { unwrapList, api, apiErrorMessage } from '../services/api';
 import { planCourtReminders, formatReminderTime } from '../services/reminders';
-import { cacheAgeLabel, cacheSavedLawyers, getCachedLawyers } from '../services/offlineCache';
+import { cacheAgeLabel, cacheSavedLawyers, getCachedLawyers, cacheCases, getCachedCases } from '../services/offlineCache';
 import { t }   from '../i18n';
 import * as Calendar      from 'expo-calendar';
 import * as ImagePicker   from 'expo-image-picker';
@@ -403,6 +404,10 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
   const [inviting,      setInviting]      = useState(false);
   const [inviteError,   setInviteError]   = useState('');
   const [error, setError]       = useState('');
+  // Case list could not be loaded: 'offline' = showing this device's copy,
+  // 'error' = nothing to show (never pretend there are "no cases").
+  const [casesState, setCasesState] = useState<'ok' | 'offline' | 'error'>('ok');
+  const [casesCacheAge, setCasesCacheAge] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -411,7 +416,23 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
         api.get('/cases'),
         api.get('/cases/family'),
       ]);
-      if (myRes.status === 'fulfilled') setCases(unwrapList(myRes.value.data, 'cases'));
+      if (myRes.status === 'fulfilled') {
+        const list = unwrapList<Case>(myRes.value.data, 'cases');
+        setCases(list);
+        setCasesState('ok');
+        // Offline copy of court dates — titles/dates/status only, never notes.
+        cacheCases(list.map(c => ({ id: c.id, title: c.title, status: c.status, next_court_date: c.next_court_date,
+          state: c.state, charge: (c as { charge?: string }).charge, created_at: c.created_at }))).catch(() => undefined);
+      } else {
+        const status = (myRes.reason as { response?: { status?: number } })?.response?.status;
+        if (status === 401 || status === 403) { setCases([]); setCasesState('ok'); }
+        else {
+          const cached = (await getCachedCases().catch(() => null)) as { cases: Case[]; cachedAt: string | null; isCache: boolean } | null;
+          if (cached?.isCache && cached.cases.length) {
+            setCases(cached.cases); setCasesState('offline'); setCasesCacheAge(cacheAgeLabel(cached.cachedAt));
+          } else setCasesState('error');
+        }
+      }
       if (famRes.status === 'fulfilled') setFamilyCases(unwrapList(famRes.value.data, 'cases'));
     } catch (e: any) { __DEV__ && console.warn(e?.message); }
     api.get('/push/reminders').then(r => setUpcomingReminders(unwrapList(r.data, 'reminders'))).catch((e) => { __DEV__ && console.warn(e?.message); });
@@ -441,8 +462,12 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
     setModal(true);
   };
 
+  const saveGuard = React.useRef(false);
   const save = useCallback(async () => {
     if (!editCase.title?.trim()) { setError('Please enter a case title.'); return; }
+    // Ref guard: a second tap before the re-render must not create a second case.
+    if (saveGuard.current) return;
+    saveGuard.current = true;
     setSaving(true);
     setError('');
     try {
@@ -459,6 +484,8 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
       const planned = unwrapList<{ deliver_at: string }>(res?.data?.reminders);
       if (planned.length) {
         showToast(`Court reminders set: ${planned.map(r => formatReminderTime(r.deliver_at)).join(' · ')}`, 'success');
+        // The moment notifications matter: ask now, with the reason (never at app start).
+        requestNotificationsInContext().catch(() => 'declined');
       }
       await load();
     } catch (e: any) {
@@ -480,6 +507,7 @@ ${cas.notes ? `<h2>Notes</h2><div class="notes">${escapeHtml(String(cas.notes ||
 
       setError(apiErrorMessage(e, 'Could not save. Try again.'));
     } finally {
+      saveGuard.current = false;
       setSaving(false);
     }
   }, [editCase, load, showToast]);
@@ -778,6 +806,17 @@ showToast('Document read — specific fields could not be extracted. Check Notes
         )
         : loading
         ? <ActivityIndicator style={{ marginTop: 40 }} color={colors.navy} />
+        : casesState === 'error'
+          ? (
+            <View testID="case-load-error" style={styles.empty}>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyIcon}>📶</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptyTitle}>Could not load your cases</Text>
+              <Text maxFontSizeMultiplier={1.4} style={styles.emptySub}>Check your connection. Your cases are safe on the server.</Text>
+              <TouchableOpacity accessibilityRole="button" style={styles.emptyBtn} onPress={() => { load(); }} accessibilityLabel="Try again">
+                <Text maxFontSizeMultiplier={1.4} style={styles.emptyBtnText}>Try again</Text>
+              </TouchableOpacity>
+            </View>
+          )
         : cases.length === 0
           ? (
             <View testID="case-empty-state" style={styles.empty}>
@@ -806,6 +845,11 @@ showToast('Document read — specific fields could not be extracted. Check Notes
             />
           )
       }
+      {casesState === 'offline' && activeTab === 'cases' && (
+        <View testID="case-list-offline" style={styles.offlineBanner}>
+          <Text maxFontSizeMultiplier={1.4} style={styles.offlineBannerText}>📴 Offline: showing your court dates saved on this device ({casesCacheAge}). Pull to refresh when connected.</Text>
+        </View>
+      )}
       {offlineCases.length > 0 && <View testID="case-offline-message" style={styles.offlineBanner}><Text maxFontSizeMultiplier={1.4} style={styles.offlineBannerText}>📴 {offlineCases.length} case{offlineCases.length > 1 ? 's' : ''} saved offline — will sync when connected</Text></View>}
 
       {/* ── Family-shared cases ──────────────────────────────────────────── */}

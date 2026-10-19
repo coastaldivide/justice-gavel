@@ -13,6 +13,7 @@
  * Pagination added to GET /cases (previously unbounded).
  */
 
+import { logIgnored } from '../../utils/ignored.js';
 import { err400, err404, safeInt, sanitizeStr, truncateStr } from '../../utils/routeHelpers.js';
 import { makeUserLimiter }                    from '../../middleware/sharedAiLimiter.js';
 import { Router }                             from 'express';
@@ -333,7 +334,7 @@ router.post('/cases/:caseId/outcome', authRequired, assignLimiter, async (req, r
       await db.run(
         `UPDATE attorney_profiles SET outcome_score = ?, outcome_count = ? WHERE user_id = ?`,
         [outcomeScore, total, req.user.id]
-      ).catch(() => {}); // Non-fatal if column doesn't exist yet
+      ).catch(logIgnored('routes/attorney/cases')); // Non-fatal if column doesn't exist yet
     }
 
     res.json({
@@ -374,12 +375,14 @@ router.post('/office/join', authRequired, assignLimiter, async (req, res) => {
     if (!firstMember && !Number(members?.mine || 0)) {
       return res.status(403).json({ error: 'office_invite_required', message: 'This office already exists. Ask its administrator to add you.' });
     }
-    await db.run('UPDATE users SET office_id=? WHERE id=?', [officeId, req.user.id]);
-    await db.run(
-      `INSERT INTO office_members (office_id, office_name, user_id, role)
-       VALUES (?,?,?,?) ON CONFLICT DO NOTHING`,
-      [officeId, safeOfficeName, req.user.id, firstMember ? 'admin' : safeRole]
-    );
+    await db.transaction(async (tx) => {
+      await tx.run('UPDATE users SET office_id=? WHERE id=?', [officeId, req.user.id]);
+      await tx.run(
+        `INSERT INTO office_members (office_id, office_name, user_id, role)
+         VALUES (?,?,?,?) ON CONFLICT DO NOTHING`,
+        [officeId, safeOfficeName, req.user.id, firstMember ? 'admin' : safeRole]
+      );
+    });
     res.status(201).json({ ok: true, office_id: officeId, role: firstMember ? 'admin' : safeRole });
   } catch (e) {
     logger.error('[attorney/office/join]', e.message);

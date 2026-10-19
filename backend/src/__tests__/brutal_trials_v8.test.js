@@ -523,7 +523,10 @@ describe('8. push.ts — Push Notification Registration', () => {
   test('8-01: registerForPush is exported as async function', async () => {
     const fs  = await import('fs');
     const src = fs.readFileSync(__REPO + '/frontend/src/services/push.ts', 'utf8');
-    expect(src).toContain('export async function registerForPush');
+    // syncPushToken never prompts (permission is asked in context, item 43);
+    // registerForPush stays exported as an alias for older callers.
+    expect(src).toContain('export async function syncPushToken');
+    expect(src).toContain('export const registerForPush = syncPushToken');
   });
 
 

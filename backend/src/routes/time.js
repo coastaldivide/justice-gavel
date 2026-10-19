@@ -23,6 +23,7 @@
  *   GET    /api/time/invoices/:id/pdf     — generate PDF invoice (returns base64)
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { Router }          from 'express';
 import PDFDocument         from 'pdfkit';
 import { getDb }           from '../db/index.js';
@@ -449,7 +450,7 @@ router.post('/invoices', authRequired, requireFirmRole('partner'), invLimiter, a
       );
     }
 
-    dispatchWebhookEvent(db, ctx.firm_id, 'invoice.created', { invoice_id: invId, invoice_number: invoiceNumber, total_cents: total, matter_id: safeInt(matter_id) }).catch(()=>{});
+    dispatchWebhookEvent(db, ctx.firm_id, 'invoice.created', { invoice_id: invId, invoice_number: invoiceNumber, total_cents: total, matter_id: safeInt(matter_id) }).catch(logIgnored('routes/time'));
     await writeAuditLog(db, {
       user_id:  req.user.id,
       firm_id:  ctx.firm_id,
@@ -534,15 +535,15 @@ router.put('/invoices/:id', authRequired, requireFirmRole('partner'), async (req
 
     // If voiding, un-bill the time entries
     if (status === 'void' && invoice.status !== 'void') {
-      dispatchWebhookEvent(db, ctx?.firm_id, 'invoice.voided', { invoice_id: invoice.id }).catch(()=>{});
+      dispatchWebhookEvent(db, ctx?.firm_id, 'invoice.voided', { invoice_id: invoice.id }).catch(logIgnored('routes/time'));
       await db.run(
         "UPDATE time_entries SET billing_status='unbilled', invoice_id=NULL WHERE invoice_id=?",
         [invoice.id]
       );
     }
 
-    if (status === 'paid' && invoice.status !== 'paid') dispatchWebhookEvent(db, ctx?.firm_id, 'invoice.paid', { invoice_id: invoice.id }).catch(()=>{});
-    if (status === 'sent' && invoice.status !== 'sent') dispatchWebhookEvent(db, ctx?.firm_id, 'invoice.sent', { invoice_id: invoice.id }).catch(()=>{});
+    if (status === 'paid' && invoice.status !== 'paid') dispatchWebhookEvent(db, ctx?.firm_id, 'invoice.paid', { invoice_id: invoice.id }).catch(logIgnored('routes/time'));
+    if (status === 'sent' && invoice.status !== 'sent') dispatchWebhookEvent(db, ctx?.firm_id, 'invoice.sent', { invoice_id: invoice.id }).catch(logIgnored('routes/time'));
     updates.push("updated_at=NOW()");
     params.push(safeInt(req.params.id));
     await db.run(`UPDATE invoices SET ${updates.join(',')} WHERE id=?`, params);

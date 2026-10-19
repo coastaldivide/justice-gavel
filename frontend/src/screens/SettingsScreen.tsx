@@ -1,4 +1,5 @@
 import { useConfirm } from '../hooks/useConfirm';
+import { requestNotificationsInContext } from '../services/permissions';
 import { useToast } from '../components/ToastProvider';
 import { AppIcon } from '../components/AppIcon';
 /**
@@ -17,14 +18,15 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { COLORS, FONTS, RADIUS, SHADOW, useTheme } from '../constants/theme';
 import type {} from '../types/navigation';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, ActivityIndicator, RefreshControl, LayoutAnimation, Modal, FlatList, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, ActivityIndicator, RefreshControl, LayoutAnimation, Modal, FlatList, Platform, TextInput } from 'react-native';
 import AsyncStorage          from '@react-native-async-storage/async-storage';
 import { ScreenCapture, StoreReview, hapticImpact, RNShare } from '../utils/webCompat';
 import Constants   from 'expo-constants';
 import { api, apiErrorMessage } from '../services/api';
 import { setLang, t } from '../i18n'  // t() already available;
 import { getUserState, setUserState, STATE_NAMES, STATE_LIST } from '../utils/userState';
-import { clearAuth } from '../utils/secureStorage';
+import { clearAuth, getToken } from '../utils/secureStorage';
+import { useInFlight } from '../hooks/useInFlight';
 import { setAppAuth } from '../services/auth';
 import { clearAllCaches } from '../services/offlineCache';
 
@@ -242,11 +244,17 @@ function SettingsScreen({ navigation }: any) {
   };
 
   const toggleMaster = async (val: boolean) => {
+    if (val && Platform.OS !== 'web') {
+      // Turning reminders on is the moment to ask the OS (with the reason).
+      const answer = await requestNotificationsInContext();
+      if (answer !== 'granted') { showToast('Notifications stay off. You can turn them on any time here.', 'info'); return; }
+    }
     setNotifMaster(val);
     await AsyncStorage.setItem('notifs', String(val)).catch(() => {}); // non-fatal storage write
   };
 
   const togglePref = async (key: keyof NotifPrefs, val: boolean) => {
+    const prev = prefs;
     const next = { ...prefs, [key]: val };
     setPrefs(next);
     setPrefsSaving(true);
@@ -255,8 +263,52 @@ function SettingsScreen({ navigation }: any) {
       notif_legal_tips:        next.notif_legal_tips        ? 1 : 0,
       notif_arrest_alerts:     next.notif_arrest_alerts     ? 1 : 0,
       notif_checkin_reminders: next.notif_checkin_reminders ? 1 : 0,
-      notif_marketing:         next.notif_marketing         ? 1 : 0 }).catch((e) => { __DEV__ && console.warn(e?.message); }).finally(() => setPrefsSaving(false));
+      notif_marketing:         next.notif_marketing         ? 1 : 0 })
+      .catch((e) => {
+        // Not saved: put the switch back and say so (never a silent failure).
+        setPrefs(prev);
+        showToast(apiErrorMessage(e, 'Could not save your notification setting. Try again.'), 'error');
+      })
+      .finally(() => setPrefsSaving(false));
   };
+
+  // ── Account deletion (in-app, App Store 5.1.1(v)) / data export ──────────
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => { getToken().then(tk => setSignedIn(!!tk)).catch(() => setSignedIn(false)); }, []);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [runDelete, deleting] = useInFlight();
+  const [runExport, exporting] = useInFlight();
+
+  const deleteAccount = () => runDelete(async () => {
+    if (!deletePassword) { setDeleteError('Enter your password to confirm.'); return; }
+    setDeleteError('');
+    try {
+      await api.delete('/auth/account', { data: { password: deletePassword } });
+    } catch (e) {
+      setDeleteError(apiErrorMessage(e, 'Could not delete your account. Check your connection and try again.'));
+      return;
+    }
+    // The account is gone on the server: remove everything on this device too.
+    setDeleteOpen(false);
+    setDeletePassword('');
+    await clearAuth().catch(() => undefined);
+    await clearAllCaches().catch(() => undefined);
+    await AsyncStorage.multiRemove(['user', 'chat_session_id', 'has_browsed', 'last_push_token']).catch(() => undefined);
+    import('../services/analytics').then(m => m.reset()).catch(() => undefined);
+    showToast('Your account and data were permanently deleted.', 'success');
+    setAppAuth('guest');
+  });
+
+  const exportData = () => runExport(async () => {
+    try {
+      const res = await api.get('/auth/export');
+      await RNShare.share({ message: JSON.stringify(res.data, null, 2), title: 'My Justice Gavel Data Export' });
+    } catch (e) {
+      showToast(apiErrorMessage(e, 'Could not export your data. Please try again.'), 'error');
+    }
+  });
 
   const logout = async () => {
     const ok = await confirm('Sign out?', 'You can sign back in any time. Your data is saved.',
@@ -661,47 +713,36 @@ function SettingsScreen({ navigation }: any) {
             Permanently deletes your account, all cases, messages, and data.
             This cannot be undone.
           </Text>
-          <TouchableOpacity accessibilityRole="button"
+          {!signedIn ? (
+            <Text testID="account-delete-signed-out" maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.textMuted }}>
+              Sign in to export or delete your account data. Nothing is stored for guests beyond this device.
+            </Text>
+          ) : (<>
+          <TouchableOpacity accessibilityRole="button" testID="account-delete-open"
             style={{ backgroundColor: colors.emergencyDark, borderRadius: 8,
               paddingVertical: 12, alignItems: 'center' }}
             accessibilityLabel="Delete account permanently"
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            onPress={() => {
-              confirm('Delete Account?', 'This will permanently delete your account and all your data.',
-                { confirmLabel: 'Delete Account', destructive: true }).then(async ok => {
-                  if (!ok) return;
-                  try {
-                    await api.delete('/auth/account');
-                    showToast('Account deleted.', 'success');
-                  } catch {
-                    showToast('Could not delete account. Try again.', 'error');
-                  }
-                });
-            }}
+            onPress={() => { setDeleteError(''); setDeletePassword(''); setDeleteOpen(true); }}
           >
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, lineHeight: 22, fontWeight: "600", color: colors.white }}>
               Delete My Account
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button"
+          <TouchableOpacity accessibilityRole="button" testID="account-export"
             style={{ marginTop: 12, alignItems: 'center', padding: 8 }}
             accessibilityLabel="Export my data"
+            accessibilityState={{ disabled: exporting, busy: exporting }}
+            disabled={exporting}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            onPress={async () => {
-              try {
-                const res = await api.get('/auth/export');
-                const data = JSON.stringify(res.data, null, 2);
-                await RNShare.share({ message: data, title: 'My Justice Gavel Data Export' });
-              } catch {
-                showToast('Could not export your data. Please try again.');
-              }
-            }}
+            onPress={exportData}
           >
             <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 12, lineHeight: 20, color: colors.textBrand,
               textDecorationLine: 'underline' }}>
-              Export My Data (GDPR)
+              {exporting ? 'Preparing your export…' : 'Export My Data (GDPR)'}
             </Text>
           </TouchableOpacity>
+          </>)}
         </View>
       </View>
 
@@ -727,6 +768,50 @@ function SettingsScreen({ navigation }: any) {
             <Text style={{ color:colors.textMuted, fontSize:12 }}>Tell us what you think →</Text>
           </TouchableOpacity>
 
+      <Modal visible={deleteOpen} transparent animationType="fade" onRequestClose={() => !deleting && setDeleteOpen(false)}>
+        <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: colors.overlay }}>
+          <View testID="account-delete-dialog" style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 20 }}>
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 17, fontWeight: '800', color: colors.textPrimary, marginBottom: 8 }}>
+              Delete your account?
+            </Text>
+            <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 20, color: colors.textMuted, marginBottom: 14 }}>
+              This permanently deletes your account, cases, notes, messages, reminders and saved lawyers. It cannot be undone. Enter your password to confirm.
+            </Text>
+            <TextInput
+              secureTextEntry
+              testID="account-delete-password"
+              accessibilityLabel="Password"
+              value={deletePassword}
+              onChangeText={(v) => { setDeletePassword(v); if (deleteError) setDeleteError(''); }}
+              autoCapitalize="none"
+              autoComplete="password"
+              placeholder="Password"
+              placeholderTextColor={colors.textMuted}
+              editable={!deleting}
+              onSubmitEditing={deleteAccount}
+              style={{ borderWidth: 1, borderColor: deleteError ? colors.emergencyDark : colors.border, borderRadius: 10,
+                paddingHorizontal: 12, paddingVertical: 10, minHeight: 44, color: colors.textPrimary, backgroundColor: colors.bg }}
+            />
+            {!!deleteError && (
+              <Text testID="account-delete-error" accessibilityLiveRegion="polite" maxFontSizeMultiplier={1.4}
+                style={{ color: colors.danger, fontSize: 13, marginTop: 8 }}>{deleteError}</Text>
+            )}
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 18 }}>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cancel" disabled={deleting}
+                onPress={() => setDeleteOpen(false)} style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 44, justifyContent: 'center' }}>
+                <Text maxFontSizeMultiplier={1.4} style={{ color: colors.textPrimary, fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" testID="account-delete-confirm" accessibilityLabel="Delete account permanently"
+                accessibilityState={{ disabled: deleting, busy: deleting }} disabled={deleting} onPress={deleteAccount}
+                style={{ backgroundColor: colors.emergencyDark, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12, minHeight: 44, justifyContent: 'center' }}>
+                {deleting
+                  ? <ActivityIndicator color={colors.white} />
+                  : <Text maxFontSizeMultiplier={1.4} style={{ color: colors.white, fontWeight: '700' }}>Delete forever</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       </ScrollView>
   );
 }

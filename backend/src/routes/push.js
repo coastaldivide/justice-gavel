@@ -1,3 +1,4 @@
+import { logIgnored } from '../utils/ignored.js';
 import { err400, truncateStr } from '../utils/routeHelpers.js';
 import { sanitizeStr } from '../utils/sanitize.js';
 import { isValidTimeZone } from '../utils/timezone.js';
@@ -119,7 +120,7 @@ router.post('/retention/post-purchase', authRequired, async (req, res) => {
       `INSERT INTO scheduled_pushes (user_id, push_token, title, body, data, deliver_at, notification_type)
        SELECT ?, push_token, ?, ?, ?, ?, 'engagement' FROM users WHERE id=? AND push_token IS NOT NULL`,
       [req.user.id, msg.title, msg.body, msg.data, deliverAt, req.user.id]
-    ).catch(() => {}); // graceful — table may not exist yet in demo
+    ).catch(logIgnored('routes/push')); // graceful — table may not exist yet in demo
     return res.json({ scheduled: true, deliver_at: deliverAt, message: msg });
   } catch {
     return res.json({ scheduled: false, error: 'Could not schedule push. Please try again.' });
@@ -366,8 +367,8 @@ router.post('/receipts', authRequired, async (req, res) => {
               // Remove the invalid token (Expo includes it in receipt details)
               const badToken = receipt.details?.expoPushToken;
               if (badToken) {
-                await db.run('UPDATE users SET push_token = NULL WHERE push_token = ?', [badToken]).catch(() => {});
-                await db.run('DELETE FROM push_tokens WHERE token = ?', [badToken]).catch(() => {});
+                await db.run('UPDATE users SET push_token = NULL WHERE push_token = ?', [badToken]).catch(logIgnored('routes/push'));
+                await db.run('DELETE FROM push_tokens WHERE token = ?', [badToken]).catch(logIgnored('routes/push'));
               }
             }
           }

@@ -19,6 +19,7 @@
  * case_assignments row for that case.
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { Router }       from 'express';
 import crypto           from 'crypto';
 import multer           from 'multer';
@@ -252,7 +253,7 @@ router.post('/bulk', authRequired, bulkLimiter, async (req, res) => {
           body: preview(text),
           data: { screen: 'Messages', direct: true, from: req.user.id },
           channelId: 'attorney_messages',
-        }).catch(() => {});
+        }).catch(logIgnored('routes/messages'));
       }
     }
 
@@ -401,7 +402,7 @@ router.post('/attachment', authRequired, attachmentLimiter, requireStorage, pars
     });
   } catch (e) {
     logger.warn('[messages/attachment]', e?.message);
-    if (key) storage.remove(key).catch(() => {});
+    if (key) storage.remove(key).catch(logIgnored('routes/messages'));
     return res.status(500).json({ error: 'Could not store the attachment. Please try again.' });
   }
 });
@@ -473,7 +474,7 @@ router.get('/:caseId', authRequired, async (req, res, next) => {
       `UPDATE case_messages SET read_at = NOW()
         WHERE case_id = ? AND sender_id != ? AND read_at IS NULL`,
       [cid, req.user.id]
-    ).catch(() => {});
+    ).catch(logIgnored('routes/messages'));
 
     const messages = rows.reverse().map(r => {
       const m = decryptMessage(r);

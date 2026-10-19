@@ -41,6 +41,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { escapeHtml } from '../utils/html.js';
 import cron from 'node-cron';
 import { getDb }        from '../db/index.js';
@@ -995,7 +996,7 @@ async function persistScanResult(report) {
     // Prune old results — keep 30 days
     await db.run(
       "DELETE FROM scan_results WHERE created_at < (NOW() - INTERVAL '30 days')"
-    ).catch(() => {});
+    ).catch(logIgnored('services/healthScan'));
 
     logger.info(`[scan] Result persisted: ${report.scan_id} (${report.overall})`);
   } catch (e) {
@@ -1359,13 +1360,13 @@ export function startHealthScanScheduler() {
           subject: '🚨 [JusticeGavel] HEALTH SCAN CRASHED — immediate attention required',
           text:    `The Justice Gavel automated health scan crashed and could not complete.\n\n${crashText}`,
           html:    `<h2 style='color:red'>🚨 Justice Gavel Health Scan CRASHED</h2><p>The automated scan failed at <strong>${escapeHtml(crashTime)}</strong>. The app's self-monitoring is down.</p><pre>${escapeHtml(crashText)}</pre>`,
-        }).catch(() => {});
+        }).catch(logIgnored('services/healthScan'));
       }
       if (ADMIN_SMS) {
         await sendSms({
           to:   ADMIN_SMS,
           body: `JG SCAN CRASH at ${new Date().toLocaleString('en-US',{timeZone:'America/Chicago'})}: ${e.message.slice(0,100)}`,
-        }).catch(() => {});
+        }).catch(logIgnored('services/healthScan'));
       }
     }
   }, { timezone: tz });

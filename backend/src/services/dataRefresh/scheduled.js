@@ -9,6 +9,7 @@
  * Each step records a scrape_runs row; a step whose key is missing is skipped
  * with a log line and a 'skipped' run row.
  */
+import { logIgnored } from '../../utils/ignored.js';
 import { getDb } from '../../db/index.js';
 import logger from '../../utils/logger.js';
 import { runProviderRefresh, METRO_CITIES } from './providerRefresh.js';
@@ -111,7 +112,7 @@ async function runArrestIngestStep(db) {
     return { runId, ...r };
   } catch (e) {
     logger.error('[scheduler] arrest ingestion error:', e.message);
-    if (runId) await finishRun(db, runId, { errors: 1 }, { status: 'failed', errorSamples: [e.message] }).catch(() => {});
+    if (runId) await finishRun(db, runId, { errors: 1 }, { status: 'failed', errorSamples: [e.message] }).catch(logIgnored('services/dataRefresh/scheduled'));
     return { runId, status: 'failed' };
   }
 }

@@ -24,6 +24,7 @@
  * GET    /api/matters/workload         — per-attorney open matter count (firm_admin+)
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { err400, err403, err404, safeInt, sanitizeStr, truncateStr } from '../utils/routeHelpers.js';
 import { Router }                             from 'express';
 import { authRequired }                       from '../middleware/auth.js';
@@ -80,7 +81,10 @@ router.post('/', authRequired, matterLimiter, auditLog('matter', 'create'), asyn
     const firm_id = await getUserFirmId(db, req.user.id);
 
     // Anyone authenticated can create a matter; firm role gates team features
-    const r = await db.run(
+    // Matter + the creator's lead_attorney seat: one transaction (a matter
+    // with no team would be unreachable for everyone but staff).
+    const matterId = await db.transaction(async (tx) => {
+    const r = await tx.run(
       `INSERT INTO matters
         (firm_id, created_by, title, matter_type, practice_group, client_name,
          opposing_party, opposing_counsel, jurisdiction, status, priority,
@@ -105,14 +109,14 @@ router.post('/', authRequired, matterLimiter, auditLog('matter', 'create'), asyn
       ]
     );
 
-    const matterId = r.lastID;
-
     // Auto-add creator as lead_attorney on their own matter
-    await db.run(
+    await tx.run(
       `INSERT INTO matter_teams (matter_id, user_id, role, added_by)
        VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING`,
-      [matterId, req.user.id, 'lead_attorney', req.user.id]
+      [r.lastID, req.user.id, 'lead_attorney', req.user.id]
     );
+    return r.lastID;
+    });
 
     const matter = await db.get('SELECT id, firm_id, created_by, title, matter_type, practice_group, client_name, opposing_party, opposing_counsel, jurisdiction, status, priority, billing_rate, estimated_value, actual_value, notes, opened_date, closed_date, next_deadline, tags, created_at, updated_at FROM matters WHERE id = ?', [matterId]);
 
@@ -177,7 +181,7 @@ router.post('/', authRequired, matterLimiter, auditLog('matter', 'create'), asyn
               req.user.id,
               new Date().toISOString(), new Date().toISOString(),
             ]
-          ).catch(() => {}); // ignore if docket_entries table has different schema
+          ).catch(logIgnored('routes/matters')); // ignore if docket_entries table has different schema
         }
       } catch (_e) { logger?.warn?.("[matters] suppressed:", _e?.message); } // Non-blocking — never fail matter creation
     });
@@ -189,9 +193,9 @@ router.post('/', authRequired, matterLimiter, auditLog('matter', 'create'), asyn
           matter_id:   matterId,
           title:       matter?.title,
           client_name: matter?.client_name || null,
-        }).catch(() => {});
+        }).catch(logIgnored('routes/matters'));
       }
-    }).catch(() => {});
+    }).catch(logIgnored('routes/matters'));
     res.status(201).json(matter);
   } catch (e) {
     logger.error('[matters/create]', e.message);
@@ -483,9 +487,11 @@ router.delete('/:id', authRequired, requireMatterAccess('id', 'partner'), async 
       });
     }
 
-    await db.run('DELETE FROM matter_teams  WHERE matter_id=?', [before.id]);
-    await db.run('DELETE FROM matter_events WHERE matter_id=?', [before.id]);
-    await db.run('DELETE FROM matters WHERE id=?', [before.id]);
+    await db.transaction(async (tx) => {
+      await tx.run('DELETE FROM matter_teams  WHERE matter_id=?', [before.id]);
+      await tx.run('DELETE FROM matter_events WHERE matter_id=?', [before.id]);
+      await tx.run('DELETE FROM matters WHERE id=?', [before.id]);
+    });
 
     await writeAuditLog(db, {
       user_id: req.user.id,
@@ -857,7 +863,7 @@ router.patch('/:id/status', authRequired, requireMatterAccess('id', 'associate')
       `INSERT INTO case_status_history (case_id, user_id, old_status, new_status, note)
        VALUES (?,?,?,?,?)`,
       [id, req.user.id, matter.status, new_status, note || null]
-    ).catch(() => {});
+    ).catch(logIgnored('routes/matters'));
 
     return res.json({ id, old_status: matter.status, new_status, updated: true });
   } catch {

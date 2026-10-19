@@ -1,3 +1,4 @@
+import { logIgnored } from '../../utils/ignored.js';
 import { requireAi, CLAUDE_MODEL } from '../../utils/ai.js';
 import { safeJson, err400, BUSINESS_CONSTANTS } from '../../utils/routeHelpers.js';
 import { anthropicFetch, streamUsageMeter } from '../../services/aiClient.js';
@@ -215,8 +216,8 @@ router.post('/stream', aiLimiter, authRequired, requireDisclaimer, requireAi, pe
       // Only persist when tokens were actually received, so a failed stream
       // never leaves an orphan user turn (the client may retry via /chat/ask).
       if (fullText) {
-        await saveMessage(db, sessionId, 'user', trimmedMsg, req.user.id).catch(() => {});
-        await saveMessage(db, sessionId, 'assistant', fullText, req.user.id).catch(() => {});
+        await saveMessage(db, sessionId, 'user', trimmedMsg, req.user.id).catch(logIgnored('routes/chat/stream'));
+        await saveMessage(db, sessionId, 'assistant', fullText, req.user.id).catch(logIgnored('routes/chat/stream'));
       }
 
       // ── Final event with metadata ───────────────────────────────────────

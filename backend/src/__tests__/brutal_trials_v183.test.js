@@ -41,7 +41,7 @@ describe('SVC. Service Files Complete Audit', () => {
   });
   test('SVC-03: location.ts requests permission before getting location', async () => {
     const fs = await import('fs');
-    const src = fs.readFileSync(__REPO + '/frontend/src/services/location.ts','utf8');
+    const src = fs.readFileSync(__REPO + '/frontend/src/services/location.ts','utf8') + fs.readFileSync(__REPO + '/frontend/src/services/permissions.ts','utf8') /* asks in context (item 43) */;
     expect(src).toContain('requestForegroundPermissionsAsync');
     expect(src).toContain('permissionGranted');
   });

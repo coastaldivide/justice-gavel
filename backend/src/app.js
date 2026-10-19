@@ -86,11 +86,11 @@ import searchRouter                 from './routes/search.js';
 import { randomUUID } from 'crypto';
 import forumRouter from './routes/forum.js';
 import caseCounselRouter from './routes/caseCounsel.js';
-import { stripeConfigured } from './config.js';
+import { stripeConfigured, APP_ENV } from './config.js';
 import { aiConfigured } from './utils/ai.js';
 import { getDb } from './db/index.js';
 import { createDbHealthCheck } from './utils/healthCheck.js';
-import { idempotency, IDEMPOTENT_POST_PATHS } from './middleware/idempotency.js';
+import { idempotency } from './middleware/idempotency.js';
 
 
 // NOTE: Sentry is initialised once in ./instrument.js (imported first by
@@ -264,7 +264,7 @@ app.use(hpp());
 // ── Idempotency-Key on the create endpoints the app calls ────────────────────
 // A retried POST (dropped connection, double submit) replays the first
 // response instead of creating a duplicate. See middleware/idempotency.js.
-app.post(IDEMPOTENT_POST_PATHS, idempotency());
+app.use(idempotency());   // acts only on IDEMPOTENT_POST_PATHS
 
 // ── Global rate limit ─────────────────────────────────────────────────────────
 const limiter = rateLimit({
@@ -306,6 +306,7 @@ app.get(['/health', '/api/health'], async (req, res) => {
     app:        'Justice Gavel',
     version:    APP_VERSION,
     mode:       process.env.DEMO_MODE === 'true' ? 'demo' : 'live',
+    env:        APP_ENV,
     disclaimer_ver: '2026-01-01.1',
     queue,
     features: {
@@ -351,6 +352,8 @@ app.get('/metrics', async (req, res) => {
       // Connection pool: total/idle/waiting are live gauges; waiting > 0 means
       // requests are queueing for a connection. null on the sqlite dev fallback.
       db_pool: pool,
+      // Scheduled jobs: runs / failures / skipped overlaps / last success (utils/cronGuard.js)
+      jobs: (await import('./utils/cronGuard.js')).getJobStats(),
       process: {
         pid:       process.pid,
         platform:  process.platform,

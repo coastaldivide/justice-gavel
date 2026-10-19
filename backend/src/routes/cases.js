@@ -1,3 +1,4 @@
+import { logIgnored } from '../utils/ignored.js';
 import { validate, schemas } from '../validation/schemas.js';
 import { audit, AUDIT_ACTIONS } from '../utils/audit.js';
 /**
@@ -279,7 +280,7 @@ router.put('/:id', authRequired, validate(schemas.cases.update), casesLimiter, a
     // Expungement push when case closes/dismisses (fire once)
     const newStatus = canonStatus(status) ?? existing.status;
     if (['Closed', 'Dismissed'].includes(newStatus) && !existing.expungement_notified) {
-      triggerExpungementPush(db, req.user.id, updated).catch(() => {});
+      triggerExpungementPush(db, req.user.id, updated).catch(logIgnored('routes/cases'));
     }
 
     // Court reminders follow the case: re-plan when the date (or title/state,
@@ -301,7 +302,7 @@ router.put('/:id', authRequired, validate(schemas.cases.update), casesLimiter, a
     }
 
     // Push to linked family members (non-blocking)
-    notifyFamilyMembers(db, caseId, updated.title || existing.title).catch(() => {});
+    notifyFamilyMembers(db, caseId, updated.title || existing.title).catch(logIgnored('routes/cases'));
 
     res.json(updated);
   } catch (e) {

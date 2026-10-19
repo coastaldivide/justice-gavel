@@ -61,7 +61,8 @@ const SLIDES = [
 function OnboardingScreen({ navigation }: ScreenProps) {
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    detectAndSaveUserState().catch(() => {});
+    // Passive: uses location only if already allowed — no prompt during onboarding.
+    detectAndSaveUserState({ prompt: false }).catch(() => {});
   }, []);
 
   const { colors } = useTheme();

@@ -138,8 +138,11 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, isSelected
     return () => _task.cancel();
   }, []);
 
+  const savingRef = React.useRef(false);
   const toggleSave = async () => {
-    if (saving) return;
+    // Ref guard: a second tap before the re-render must not post twice.
+    if (savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     try {
       const token = await secureStorage.getToken();
@@ -149,7 +152,7 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, isSelected
           provider_id: item.id, name: item?.name, phone: item?.phone,
           address: item?.address, specialties: item.specialties || [], rating: item?.rating })).catch(() => {}); // non-fatal(() => {}); // non-fatal
         navigation.navigate('MoreTab', { screen: 'Login' });
-        setSaving(false); return;
+        return;
       }
       if (saved) {
         // Call DELETE to actually remove from saved list
@@ -169,8 +172,12 @@ const LawyerCard = React.memo(function LawyerCard({ item, navigation, isSelected
         setSaved(true);
         setSavedId(saveRes?.data?.id ?? null);
       }
-    } catch (e) { setSaved(true); if (__DEV__) console.warn('[LawyersScreen] save failed:', e); } // optimistic UI
-    finally { setSaving(false); }
+    } catch (e) {
+      // Keep the real state — never show "Saved" for a save that failed.
+      if (__DEV__) console.warn('[LawyersScreen] save failed:', e);
+      showToast(apiErrorMessage(e, 'Could not update your saved lawyers. Check your connection and try again.'), 'error');
+    }
+    finally { savingRef.current = false; setSaving(false); }
   };
   return (
     <View style={styles.card}>

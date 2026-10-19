@@ -25,6 +25,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { getDb }      from '../db/index.js';
 import { sendEmail }  from './email.js';
 import logger         from '../utils/logger.js';
@@ -152,9 +153,9 @@ export async function applyLegalHold(holdType, targetId, firmId, appliedBy, reas
 
   // Set the legal_hold flag on the record itself for fast lookups
   if (holdType === 'matter') {
-    await db.run('UPDATE matters SET legal_hold=1 WHERE id=?', [targetId]).catch(() => {});
+    await db.run('UPDATE matters SET legal_hold=1 WHERE id=?', [targetId]).catch(logIgnored('services/retention'));
   } else if (holdType === 'case') {
-    await db.run('UPDATE cases SET legal_hold=1 WHERE id=?', [targetId]).catch(() => {});
+    await db.run('UPDATE cases SET legal_hold=1 WHERE id=?', [targetId]).catch(logIgnored('services/retention'));
   }
 
   logger.info(`[retention/hold] ${holdType} ${targetId} hold applied by user ${appliedBy}`);
@@ -183,9 +184,9 @@ export async function releaseLegalHold(holdId, releasedBy) {
 
   if (otherHolds.n === 0) {
     if (hold.hold_type === 'matter') {
-      await db.run('UPDATE matters SET legal_hold=0 WHERE id=?', [hold.target_id]).catch(() => {});
+      await db.run('UPDATE matters SET legal_hold=0 WHERE id=?', [hold.target_id]).catch(logIgnored('services/retention'));
     } else if (hold.hold_type === 'case') {
-      await db.run('UPDATE cases SET legal_hold=0 WHERE id=?', [hold.target_id]).catch(() => {});
+      await db.run('UPDATE cases SET legal_hold=0 WHERE id=?', [hold.target_id]).catch(logIgnored('services/retention'));
     }
   }
 
@@ -263,7 +264,7 @@ export async function archiveCompletedDocketEntries(daysThreshold = 90) {
         await db.run('COMMIT');
         archived++;
       } catch (e) {
-        await db.run('ROLLBACK').catch(() => {});
+        await db.run('ROLLBACK').catch(logIgnored('services/retention'));
         errors.push({ entry_id: entry.id, error: e.message });
         logger.warn(`[retention/docket] failed to archive entry ${entry.id}: ${e.message}`);
       }
@@ -360,7 +361,7 @@ export async function onSubscriptionLapse(firmId) {
   await db.run(
     `UPDATE firms SET updated_at=NOW() WHERE id=?`,
     [firmId]
-  ).catch(() => {});
+  ).catch(logIgnored('services/retention'));
 
   logger.info(`[retention/grace] firm ${firmId} grace period until ${graceDate} — notifications: ${notifStatus} (${emailsSent} sent, ${emailsFailed} failed)`);
 }
@@ -449,7 +450,7 @@ export async function checkAccountInactivity() {
           user.user_id, user.firm_id, user.last_login_at, threshold.days,
           threshold.type, user.matters_count, user.cases_count,
         ]
-      ).catch(() => {});
+      ).catch(logIgnored('services/retention'));
 
       // Email the user if they have an email
       if (user.email) {

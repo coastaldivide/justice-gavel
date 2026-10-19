@@ -32,6 +32,7 @@
  *     - Habeas corpus (AEDPA): 365 days from final conviction
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { Router }          from 'express';
 import { getDb }           from '../db/index.js';
 import { authRequired }    from '../middleware/auth.js';
@@ -248,7 +249,7 @@ router.post('/calculate', authRequired, docketLimiter, async (req, res) => {
         savedIds.push(r.lastID);
         dispatchWebhookEvent(db, ctx?.firm_id, 'docket.deadline_created', {
           entry_id: r.lastID, title: d.title, due_date: d.due_date, priority: d.priority,
-        }).catch(() => {});
+        }).catch(logIgnored('routes/docket'));
       }
 
       await writeAuditLog(db, {
@@ -467,7 +468,7 @@ router.put('/entries/:id', authRequired, async (req, res) => {
             entry_id: entryId,
             title:    entry.title,
             due_date: entry.due_date,
-          }).catch(() => {});
+          }).catch(logIgnored('routes/docket'));
         }
       }
       updates.push(`${key}=?`); params.push(val);
@@ -499,7 +500,7 @@ router.put('/entries/:id', authRequired, async (req, res) => {
             );
           }
         } catch (e) { logger.warn('[docket/calendar-resync]', e?.message); }
-      }).catch(() => {});
+      }).catch(logIgnored('routes/docket'));
     }
 
     res.json(updated);

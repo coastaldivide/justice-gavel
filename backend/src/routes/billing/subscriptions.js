@@ -2,6 +2,7 @@
  * billing/subscriptions.js — Attorney & general subscriptions — subscribe, view, cancel, refund
  * Part of the billing module. Mounted at /api/billing by billing/index.js
  */
+import { logIgnored } from '../../utils/ignored.js';
 import { stripe, LIVE, TIERS, billingLimiter, getOrCreateStripeCustomer }
   from './_shared.js';
 import { err400, err404 } from '../../utils/routeHelpers.js';
@@ -220,7 +221,7 @@ router.post('/refund', billingLimiter, authRequired, async (req, res) => {
         autoApprove ? 1 : 0,
         autoApprove ? 'pending_stripe' : 'pending_review',
       ]
-    ).catch(() => {}); // don't fail the request if logging fails
+    ).catch(logIgnored('routes/billing/subscriptions')); // don't fail the request if logging fails
 
     // Process automatic refunds via Stripe
     if (autoApprove && LIVE && sub.stripe_sub_id && !sub.stripe_sub_id.startsWith('sub_mock')) {
@@ -255,10 +256,10 @@ router.post('/refund', billingLimiter, authRequired, async (req, res) => {
             `UPDATE refund_requests SET status='refunded', stripe_refund_id=?
               WHERE id = (SELECT id FROM refund_requests WHERE user_id=? ORDER BY id DESC LIMIT 1)`,
             [refund.id, req.user.id]
-          ).catch(() => {});
+          ).catch(logIgnored('routes/billing/subscriptions'));
 
           // Cancel the subscription
-          await stripe.subscriptions.cancel(sub.stripe_sub_id).catch(() => {});
+          await stripe.subscriptions.cancel(sub.stripe_sub_id).catch(logIgnored('routes/billing/subscriptions'));
           await db.run(
             `UPDATE subscriptions SET status='refunded' WHERE id=?`,
             [sub.id]
@@ -275,7 +276,7 @@ router.post('/refund', billingLimiter, authRequired, async (req, res) => {
             title: '✅ Refund Approved',
             body:  `$${refundDollars} will appear on your statement within 5–10 business days.`,
             data:  { screen: 'Settings' },
-          }).catch(() => {});
+          }).catch(logIgnored('routes/billing/subscriptions'));
 
           await sendEmail({
             to:      user?.email,
@@ -295,7 +296,7 @@ router.post('/refund', billingLimiter, authRequired, async (req, res) => {
               ``,
               `— The Justice Gavel Team`,
             ].join('\n'),
-          }).catch(() => {});
+          }).catch(logIgnored('routes/billing/subscriptions'));
 
           return res.json({
             ok:             true,
@@ -329,7 +330,7 @@ router.post('/refund', billingLimiter, authRequired, async (req, res) => {
         ``,
         `Review and process at: ${process.env.ADMIN_PANEL_URL || 'https://admin.justicegavel.app'}/refunds`,
       ].join('\n'),
-    }).catch(() => {});
+    }).catch(logIgnored('routes/billing/subscriptions'));
 
     const pendingMsg = isIn30DayWindow
       ? 'Your refund request is under review. Our team will respond within 1–2 business days.'

@@ -149,7 +149,8 @@ describe('CST. chat/ — SSE Streaming + REST Fallback Routes', () => {
     const src = fs.readFileSync(__REPO + '/backend/src/routes/chat/stream.js', 'utf8');
     expect(src).toContain('POST /stream');
     expect(src).toContain('Server-Sent Events streaming');
-    expect(src).toContain('API_URLS');
+    // the Anthropic call goes through services/aiClient.js (budget, timeout, retries, metering)
+    expect(src).toContain('anthropicFetch');
   });
   test('CST-02: chat/ask.js is POST /ask — standard request/response fallback', async () => {
     const fs = await import('fs');

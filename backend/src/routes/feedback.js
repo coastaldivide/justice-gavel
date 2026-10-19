@@ -9,6 +9,7 @@
  * User text is stored as typed (control characters stripped, never HTML-encoded);
  * it is escaped only where it is rendered into another format (the Slack ping).
  */
+import { logIgnored } from '../utils/ignored.js';
 import { fetchWithTimeout } from '../utils/http.js';
 import { Router }    from 'express';
 import rateLimit     from 'express-rate-limit';
@@ -117,7 +118,7 @@ router.post('/ui', feedbackLimiter, optionalAuth, async (req, res) => {
           contact ? `Contact: ${slackEscape(contact)}` : null,
         ].filter(Boolean).join('\n'),
       }),
-    }).catch(() => {});
+    }).catch(logIgnored('routes/feedback'));
   }
 
   return res.json({ received: true, message: 'Thank you — your feedback helps us improve Justice Gavel.' });

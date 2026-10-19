@@ -18,6 +18,7 @@
  *   GET  /api/conflicts/soc2/:firmId       — SOC 2 readiness checklist
  */
 
+import { logIgnored } from '../utils/ignored.js';
 import { Router }          from 'express';
 import { dispatchWebhookEvent } from './webhooks/outbound.js';
 import { getDb }           from '../db/index.js';
@@ -265,7 +266,7 @@ router.post('/index', authRequired, requireFirmRole('associate'), async (req, re
       await db.run(
         `INSERT INTO conflict_index (firm_id, matter_id, party_name_norm, party_name_orig, party_role) VALUES ${placeholders} ON CONFLICT DO NOTHING`,
         values
-      ).catch(() => {});
+      ).catch(logIgnored('routes/conflicts'));
     }
 
     await writeAuditLog(db, {
@@ -279,7 +280,7 @@ router.post('/index', authRequired, requireFirmRole('associate'), async (req, re
     });
 
     if (conflicts_found.length > 0 && ctx?.firm_id) {
-      dispatchWebhookEvent(db, ctx.firm_id, 'conflict.detected', { matter_id: matter_id||null, conflict_count: conflicts_found.length, query_names: parties ? parties.map(p => p.name || p) : [] }).catch(()=>{});
+      dispatchWebhookEvent(db, ctx.firm_id, 'conflict.detected', { matter_id: matter_id||null, conflict_count: conflicts_found.length, query_names: parties ? parties.map(p => p.name || p) : [] }).catch(logIgnored('routes/conflicts'));
     }
     res.json({
       added,

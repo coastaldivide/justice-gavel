@@ -1,3 +1,4 @@
+import { logIgnored } from '../utils/ignored.js';
 import { audit } from '../utils/audit.js';
 import { validate, schemas } from '../validation/schemas.js';
 /**
@@ -27,7 +28,7 @@ import { CONFIG } from '../config.js';
 import jwt from 'jsonwebtoken';
 import { authRequired } from '../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
-import { purgeAccount, exportAccount } from '../services/accountDeletion.js';
+import { purgeAccountData, exportAccount } from '../services/accountDeletion.js';
 import logger from '../utils/logger.js';
 
 const IS_TEST = process.env.NODE_ENV === 'test';
@@ -241,8 +242,8 @@ router.post('/login', authLimiter, validate(schemas.auth.login), async (req, res
       await recordFailedLogin(db, user.id).catch(e => logger.warn('[auth/login] lockout update:', e.message));
       return err401(res, 'Invalid credentials. Please check your email/phone and password.');
     }
-    if (user.failed_login_attempts || user.lock_until) await clearFailedLogins(db, user.id).catch(() => {});
-    db.run('UPDATE users SET last_seen = ? WHERE id = ?', [new Date().toISOString(), user.id]).catch(() => {});
+    if (user.failed_login_attempts || user.lock_until) await clearFailedLogins(db, user.id).catch(logIgnored('routes/auth'));
+    db.run('UPDATE users SET last_seen = ? WHERE id = ?', [new Date().toISOString(), user.id]).catch(logIgnored('routes/auth'));
 
     res.json(await issueTokenPair(user, db));
   } catch (e) {
@@ -383,7 +384,7 @@ router.post('/refresh', validate(schemas.auth.refresh), async (req, res) => {
       );
       if (!marked.changes) {
         // Reuse of a rotated token → possible theft: revoke every session
-        await db.run('DELETE FROM refresh_tokens WHERE user_id = ?', [decoded.id]).catch(() => {});
+        await db.run('DELETE FROM refresh_tokens WHERE user_id = ?', [decoded.id]).catch(logIgnored('routes/auth'));
         return res.status(401).json({ error: 'Refresh token already used or expired', code: 'token_reuse' });
       }
       const user = await db.get('SELECT * FROM users WHERE id = ?', [decoded.id]);
@@ -437,7 +438,16 @@ router.delete('/account', authRequired, async (req, res) => {
     // de-linked, owned firms handed to a remaining member — no orphans.
     let attachmentKeys = [];
     await db.transaction(async (tx) => {
-      ({ attachmentKeys } = await purgeAccount(tx, uid, { email: user.email }));
+      ({ attachmentKeys } = await purgeAccountData(tx, uid, { email: user.email }));
+      await tx.run('DELETE FROM users WHERE id = ?', [uid]);
+      await tx.run('SAVEPOINT deletion_log');
+      try {
+        await tx.run('INSERT INTO account_deletion_log (deleted_at, reason) VALUES (NOW(), ?)', ['user_request']);
+        await tx.run('RELEASE SAVEPOINT deletion_log');
+      } catch (e) {
+        await tx.run('ROLLBACK TO SAVEPOINT deletion_log');
+        logger.warn('[auth/account/delete] deletion log row not written:', e.message);
+      }
     });
     try { (await import('../middleware/auth.js')).invalidateUserCache?.(uid); } catch { /* ignore */ }
     // Remove the user's encrypted attachment files (best effort, after commit).
@@ -445,9 +455,9 @@ router.delete('/account', authRequired, async (req, res) => {
       import('../services/attachmentStorage.js').then(async ({ getAttachmentStorage }) => {
         const storage = await getAttachmentStorage();
         for (const a of attachmentKeys) {
-          if (storage && storage.kind === a.storage) await storage.remove(a.storage_key).catch(() => {});
+          if (storage && storage.kind === a.storage) await storage.remove(a.storage_key).catch(logIgnored('routes/auth'));
         }
-      }).catch(() => {});
+      }).catch(logIgnored('routes/auth'));
     }
     res.json({ ok: true, message: 'Account permanently deleted.' });
   } catch (e) {
@@ -463,7 +473,7 @@ async function sendExport(req, res) {
   try {
     const db = await getDb();
     const { profile, data, truncated } = await exportAccount(db, req.user.id);
-    await audit('compliance.data_export_requested', { userId: req.user.id, req }).catch(() => {});
+    await audit('compliance.data_export_requested', { userId: req.user.id, req }).catch(logIgnored('routes/auth'));
     res.setHeader('Content-Disposition', 'attachment; filename="justice-gavel-export.json"');
     res.json({
       exported_at: new Date().toISOString(),

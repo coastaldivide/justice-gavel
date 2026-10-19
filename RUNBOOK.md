@@ -66,6 +66,23 @@ recovery shows up within one cache window.
 **User communication:** AI features temporarily unavailable. Non-AI features
 (bail calculator, rights cards, attorney search) remain fully operational.
 
+### AI spend cap reached (`daily_budget_reached`)
+
+Every model call is metered into `ai_usage_log` (route, user, tokens, cost).
+When today's spend (UTC) reaches `AI_DAILY_BUDGET_USD` (default $50) AI routes
+answer `503 {error:'ai_unavailable', reason:'daily_budget_reached'}` until
+00:00 UTC; you get one SEV-2 alert at `AI_BUDGET_ALERT_PCT` (80 %) and one
+SEV-1 at 100 %.
+
+1. Who spent it: `GET /api/admin/ai-costs` (admin + X-Admin-Key) or
+   `SELECT route, user_id, count(*), sum(cost_usd) FROM ai_usage_log
+    WHERE queued_at >= date_trunc('day', now() at time zone 'utc') GROUP BY 1,2 ORDER BY 4 DESC LIMIT 20;`
+2. Abuse (one user / one route dominating): suspend the account
+   (`users.account_status='suspended'`) — per-user limits are 60 AI calls/hour.
+3. Legitimate growth: raise `AI_DAILY_BUDGET_USD` in Railway → takes effect on
+   the next request (no restart needed for a raise; the value is read live).
+4. Also keep a hard monthly limit in the Anthropic console as the last backstop.
+
 ---
 
 ## RUNBOOK: SEV-2 — Stripe Payment Failures
@@ -124,12 +141,51 @@ Redeploy. Restart: Railway dashboard → the service → Restart.
 
 ## DATABASE BACKUP
 
-Supabase takes daily backups automatically (point-in-time recovery on Pro).
-Manual: Supabase Dashboard → Project → Backups → Download.
+Two layers:
+
+1. **Supabase** takes daily backups (Pro plan: 7 days; enable the PITR add-on
+   for point-in-time recovery). Dashboard → Project → Database → Backups.
+2. **Off-platform copy** (our scripts, tested in CI by
+   `backend/src/__tests__/integration/backup_restore.int.test.js`):
+
+```bash
+# Back up (pg_dump custom format + .sha256; prunes dumps older than BACKUP_KEEP_DAYS=30)
+DATABASE_URL=postgres://… backend/scripts/db-backup.sh /secure/backups
+
+# Restore drill — into a NEW, EMPTY database, verified against the source
+createdb jg_restore_drill
+TARGET_DATABASE_URL=postgres://…/jg_restore_drill \
+SOURCE_DATABASE_URL=postgres://…/source_db \
+  backend/scripts/db-restore.sh /secure/backups/jg-<stamp>.dump
+# → "verified: row counts and provider checksums match the source" / "restore ok"
+```
+
+The restore refuses a non-empty target (exit 4) and a dump whose checksum does
+not match (exit 3). Run the backup daily from a machine/cron outside Railway
+(dumps contain encrypted notes/messages but also e-mails and phone numbers —
+store them encrypted, access-controlled) and do a restore drill monthly.
+**Real restore (incident):** restore into a fresh Supabase project, point
+`DATABASE_URL` at it, redeploy, then run the smoke test.
 
 **Critical tables to verify after incidents:** `users`, `audit_log`
 (append-only, never delete), `user_disclaimer_acceptance`, `refresh_tokens`,
 `subscriptions`.
+
+---
+
+## STAGING
+
+Staging = the production build with its own Railway environment, its own
+Supabase project and test keys:
+`NODE_ENV=production`, `APP_ENV=staging`, staging `DATABASE_URL`,
+`PRODUCTION_DATABASE_URL=<prod URL>` (boot guard), Stripe `sk_test_…` or none,
+`LIVE_REFRESH=false`. Config is in RAILWAY_ENV_SETUP.md → "Staging";
+`backend/railway.staging.json` is the service config (same as production).
+`NODE_ENV=staging` and live Stripe keys are refused at boot.
+
+Promote a change: deploy to staging → apply new migrations there first →
+`node backend/scripts/smoke-test.mjs https://<staging-host>` → only then
+apply the migrations to production and deploy. `/health` reports `env`.
 
 ---
 
@@ -167,6 +223,22 @@ set for alert email to actually send (otherwise alerts are logged only);
 One JSON object per line (Railway/Datadog-friendly). HTTP lines log the path
 **without the query string** (search params can carry PII). `LOG_FORMAT=text`
 switches to human-readable.
+
+Every line written while a request is handled carries its `request_id` (the
+`X-Request-ID` response header; 5xx bodies include it too) — search the logs
+for it to follow one request. The logger, Sentry and alert e-mails/webhooks
+scrub passwords, tokens, API keys, Authorization headers, e-mail addresses and
+phone numbers (`backend/src/utils/redact.js`). Best-effort side effects that
+fail are logged as `[best-effort] step failed` with where they happened.
+
+### Duplicate protection
+
+Create endpoints (cases, events, messages, reminders, saved lawyers, reviews,
+feedback, SOS alerts, contacts, monitors, bookings) accept an
+`Idempotency-Key`; the app sends one and retries a dropped request with the
+same key, so the server replays the first answer instead of creating a
+duplicate (`idempotency_keys`, 24 h, purged daily). `409
+idempotency_in_progress` = the same request is still running.
 
 ---
 

@@ -21,11 +21,13 @@ Notifications.setNotificationHandler({
 });
 
 /**
- * registerForPush — requests permission, gets Expo push token,
- * and POSTs it to /api/push/token so the backend can send notifications.
- * Returns the token string or null.
+ * syncPushToken — when notifications are ALREADY allowed, gets the Expo push
+ * token and POSTs it to /api/push/token. Never shows a permission prompt:
+ * asking happens in context (services/permissions.ts
+ * requestNotificationsInContext — when a court date is saved or reminders are
+ * turned on). Returns the token string or null.
  */
-export async function registerForPush(): Promise<string | null> {
+export async function syncPushToken(): Promise<string | null> {
   // Expo push tokens: native devices only, and only once an EAS project exists.
   if (Platform.OS === 'web') return null;
   const projectId = easProjectId();
@@ -35,13 +37,8 @@ export async function registerForPush(): Promise<string | null> {
     return null;
   }
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-  if (finalStatus !== 'granted') return null;
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status !== 'granted') return null;
 
   const tokenData = await Notifications.getExpoPushTokenAsync({ projectId }).catch(() => null);
   if (!tokenData) return null;
@@ -61,6 +58,9 @@ export async function registerForPush(): Promise<string | null> {
 
   return token;
 }
+
+/** @deprecated name kept for callers — same as syncPushToken (no prompt). */
+export const registerForPush = syncPushToken;
 
 /** Unregister the current device token (call on logout) */
 export async function unregisterPush(): Promise<void> {

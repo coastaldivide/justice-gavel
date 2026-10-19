@@ -21,6 +21,53 @@
 import cron   from 'node-cron';
 import logger from './logger.js';
 
+// ── Job monitoring ───────────────────────────────────────────────────────────
+// Every scheduled job runs through guardJob(): one run at a time per process
+// (an overrunning job is skipped, not stacked), and each run's outcome is kept
+// for /metrics (`jobs`). A failing run is logged AND alerted (SEV-2, deduped
+// per job by the notifier), so a broken nightly job cannot fail silently.
+const JOB_STATS = new Map();   // label → { runs, failures, skipped, running, last_started_at, last_ok_at, last_error, last_ms }
+
+export function getJobStats() {
+  return Object.fromEntries([...JOB_STATS].map(([k, v]) => [k, { ...v }]));
+}
+
+export function guardJob(label, handler) {
+  const st = () => {
+    if (!JOB_STATS.has(label)) JOB_STATS.set(label, { runs: 0, failures: 0, skipped: 0, running: false, last_started_at: null, last_ok_at: null, last_error: null, last_ms: null });
+    return JOB_STATS.get(label);
+  };
+  st();
+  return async function guardedJob(...args) {
+    const s = st();
+    if (s.running) {
+      s.skipped++;
+      logger.warn({ job: label }, '[cron] previous run still in progress — skipped this tick');
+      return;
+    }
+    s.running = true;
+    s.runs++;
+    s.last_started_at = new Date().toISOString();
+    const t0 = Date.now();
+    try {
+      await handler(...args);
+      s.last_ok_at = new Date().toISOString();
+      s.last_error = null;
+    } catch (e) {
+      s.failures++;
+      s.last_error = String(e?.message || e).slice(0, 300);
+      logger.error({ job: label, err: s.last_error }, '[cron] scheduled job failed');
+      try {
+        const { notifyError } = await import('../monitoring/errorNotifier.js');
+        await notifyError(`Scheduled job failed: ${label}`, { code: `job:${label}`, error: s.last_error });
+      } catch { /* alerting must never crash the scheduler */ }
+    } finally {
+      s.last_ms = Date.now() - t0;
+      s.running = false;
+    }
+  };
+}
+
 // No job in this app legitimately schedules more than ~20 days ahead.
 // (The longest real interval is weekly.) Anything beyond this is a parser bug.
 export const MAX_PLAUSIBLE_DELAY_MS = 20 * 24 * 60 * 60 * 1000;
@@ -40,7 +87,7 @@ export function scheduleGuarded(expr, label, handler, options = {}) {
     return null;
   }
 
-  const task = cron.schedule(expr, handler, options);
+  const task = cron.schedule(expr, guardJob(label, handler), options);
 
   try {
     const next = typeof task.getNextRun === 'function' ? task.getNextRun() : null;
@@ -70,4 +117,4 @@ export function scheduleGuarded(expr, label, handler, options = {}) {
   return task;
 }
 
-export default { scheduleGuarded, MAX_PLAUSIBLE_DELAY_MS };
+export default { scheduleGuarded, guardJob, getJobStats, MAX_PLAUSIBLE_DELAY_MS };
